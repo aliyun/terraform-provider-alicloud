@@ -19,6 +19,7 @@ import (
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -4308,7 +4309,7 @@ func TestAccAliCloudInstanceDedicatedBlockStorageCluster(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cannot initialize the storage cluster precheck: %s", err)
 			}
-			service := EbsService{rawClient.(*connectivity.AliyunClient)}
+			service := ebs.NewEbsService(rawClient.(*connectivity.AliyunClient))
 			cluster, err := service.DescribeEbsDedicatedBlockStorageCluster(clusterId)
 			if err != nil {
 				t.Fatalf("cannot read the required test storage cluster: %s", err)

@@ -1,11 +1,13 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudEbsReplicaPairDrill_basic5513(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_replica_pair_drill.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsReplicaPairDrillMap5513)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsReplicaPairDrillMap5513)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsReplicaPairDrill")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsreplicapairdrill%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsReplicaPairDrillBasicDependence5513)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsreplicapairdrill%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsReplicaPairDrillBasicDependence5513)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,7 +39,7 @@ func TestAccAliCloudEbsReplicaPairDrill_basic5513(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pair_id": CHECKSET,
+						"pair_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -52,8 +54,8 @@ func TestAccAliCloudEbsReplicaPairDrill_basic5513(t *testing.T) {
 }
 
 var AlicloudEbsReplicaPairDrillMap5513 = map[string]string{
-	"status":                CHECKSET,
-	"replica_pair_drill_id": CHECKSET,
+	"status":                acctest.CHECKSET,
+	"replica_pair_drill_id": acctest.CHECKSET,
 }
 
 func AlicloudEbsReplicaPairDrillBasicDependence5513(name string) string {
@@ -65,7 +67,7 @@ variable "name" {
 variable "region" {
   default = "%s"
 }
-`, name, defaultRegionToTest)
+`, name, acctest.DefaultRegionToTest)
 }
 
 // Test Ebs ReplicaPairDrill. <<< Resource test cases, automatically generated.

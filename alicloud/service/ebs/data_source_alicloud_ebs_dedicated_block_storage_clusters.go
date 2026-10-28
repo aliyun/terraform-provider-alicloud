@@ -1,4 +1,4 @@
-package alicloud
+package ebs
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEbsDedicatedBlockStorageClusters() *schema.Resource {
+func DataSourceDedicatedBlockStorageClusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEbsDedicatedBlockStorageClustersRead,
+		Read: dataSourceDedicatedBlockStorageClustersRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Optional: true,
@@ -120,7 +123,7 @@ func dataSourceAlicloudEbsDedicatedBlockStorageClusters() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEbsDedicatedBlockStorageClustersRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedBlockStorageClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := map[string]interface{}{
@@ -131,7 +134,7 @@ func dataSourceAlicloudEbsDedicatedBlockStorageClustersRead(d *schema.ResourceDa
 		request["DedicatedBlockStorageClusterId"] = v
 	}
 
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -147,7 +150,7 @@ func dataSourceAlicloudEbsDedicatedBlockStorageClustersRead(d *schema.ResourceDa
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		dedicatedBlockStorageClusterNameRegex = r
 	}
@@ -158,26 +161,26 @@ func dataSourceAlicloudEbsDedicatedBlockStorageClustersRead(d *schema.ResourceDa
 
 	for {
 		action := "DescribeDedicatedBlockStorageClusters"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
 			response = resp
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ebs_dedicated_block_storage_clusters", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ebs_dedicated_block_storage_clusters", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.DedicatedBlockStorageClusters", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DedicatedBlockStorageClusters", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DedicatedBlockStorageClusters", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -231,19 +234,19 @@ func dataSourceAlicloudEbsDedicatedBlockStorageClustersRead(d *schema.ResourceDa
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

@@ -1,35 +1,40 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// collection-order: bypass cross_region_copy_info.regions -- pre-existing attribute outside this change
+// collection-order: bypass special_retain_rules.rules -- pre-existing attribute outside this change
 
 // Test Ebs EnterpriseSnapshotPolicy. >>> Resource test cases, automatically generated.
 // Case 5473
 func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5473(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5473)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5473)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5473)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5473)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -321,13 +326,13 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5473(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -342,8 +347,8 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5473(t *testing.T) {
 }
 
 var AlicloudEbsEnterpriseSnapshotPolicyMap5473 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5473(name string) string {
@@ -360,22 +365,22 @@ variable "name" {
 func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5494)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5494)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5494)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5494)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -426,7 +431,7 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -471,7 +476,7 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -481,7 +486,7 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -508,7 +513,7 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 					testAccCheck(map[string]string{
 						"status":                          "DISABLED",
 						"desc":                            "DESC",
-						"resource_group_id":               CHECKSET,
+						"resource_group_id":               acctest.CHECKSET,
 						"enterprise_snapshot_policy_name": name + "_update",
 						"target_type":                     "DISK",
 					}),
@@ -546,13 +551,13 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -567,8 +572,8 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494(t *testing.T) {
 }
 
 var AlicloudEbsEnterpriseSnapshotPolicyMap5494 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5494(name string) string {
@@ -586,22 +591,22 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5484(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5484)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5484)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5484)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5484)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -761,13 +766,13 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5484(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -782,8 +787,8 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5484(t *testing.T) {
 }
 
 var AlicloudEbsEnterpriseSnapshotPolicyMap5484 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5484(name string) string {
@@ -800,22 +805,22 @@ variable "name" {
 func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5473_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5473)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5473)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5473)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5473)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -903,22 +908,22 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5473_twin(t *testing.T) {
 func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5494)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5494)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5494)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5494)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -948,7 +953,7 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"status":                          "DISABLED",
 						"desc":                            "DESC",
-						"resource_group_id":               CHECKSET,
+						"resource_group_id":               acctest.CHECKSET,
 						"enterprise_snapshot_policy_name": name,
 						"target_type":                     "DISK",
 						"tags.%":                          "2",
@@ -971,22 +976,22 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5494_twin(t *testing.T) {
 func TestAccAliCloudEbsEnterpriseSnapshotPolicy_basic5484_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5484)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyMap5484)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5484)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyBasicDependence5484)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

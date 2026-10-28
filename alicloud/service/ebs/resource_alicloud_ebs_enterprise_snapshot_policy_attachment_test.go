@@ -1,11 +1,13 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudEbsEnterpriseSnapshotPolicyAttachment_basic5526(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_enterprise_snapshot_policy_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyAttachmentMap5526)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsEnterpriseSnapshotPolicyAttachmentMap5526)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsEnterpriseSnapshotPolicyAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicyattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyAttachmentBasicDependence5526)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebsenterprisesnapshotpolicyattachment%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsEnterpriseSnapshotPolicyAttachmentBasicDependence5526)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.EbsEnterpriseSnapshotPolicySupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,8 +40,8 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicyAttachment_basic5526(t *testing.T
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"policy_id": CHECKSET,
-						"disk_id":   CHECKSET,
+						"policy_id": acctest.CHECKSET,
+						"disk_id":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -54,7 +56,7 @@ func TestAccAliCloudEbsEnterpriseSnapshotPolicyAttachment_basic5526(t *testing.T
 }
 
 var AlicloudEbsEnterpriseSnapshotPolicyAttachmentMap5526 = map[string]string{
-	"disk_id": CHECKSET,
+	"disk_id": acctest.CHECKSET,
 }
 
 func AlicloudEbsEnterpriseSnapshotPolicyAttachmentBasicDependence5526(name string) string {

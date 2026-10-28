@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package ebs. This file is generated automatically. Please do not modify it manually, thank you!
+package ebs
 
 import (
 	"fmt"
@@ -9,15 +9,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachment() *schema.Resource {
+func ResourceEnterpriseSnapshotPolicyAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentCreate,
-		Read:   resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentRead,
-		Delete: resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentDelete,
+		Create: resourceEnterpriseSnapshotPolicyAttachmentCreate,
+		Read:   resourceEnterpriseSnapshotPolicyAttachmentRead,
+		Delete: resourceEnterpriseSnapshotPolicyAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -41,7 +44,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachment() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -54,45 +57,45 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentCreate(d *schema.Resou
 	query["PolicyId"] = d.Get("policy_id")
 	query["DiskTargets.1"] = d.Get("disk_id")
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ebs_enterprise_snapshot_policy_attachment", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ebs_enterprise_snapshot_policy_attachment", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", query["PolicyId"], query["DiskTargets.1"]))
 
-	return resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentRead(d, meta)
+	return resourceEnterpriseSnapshotPolicyAttachmentRead(d, meta)
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ebsServiceV2 := EbsServiceV2{client}
+	ebsServiceV2 := NewEbsServiceV2(client)
 
 	objectRaw, err := ebsServiceV2.DescribeEbsEnterpriseSnapshotPolicyAttachment(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ebs_enterprise_snapshot_policy_attachment DescribeEbsEnterpriseSnapshotPolicyAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("policy_id", objectRaw["PolicyId"])
@@ -107,7 +110,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentRead(d *schema.Resourc
 	return nil
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -121,26 +124,26 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyAttachmentDelete(d *schema.Resou
 	query["DiskTargets.1"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

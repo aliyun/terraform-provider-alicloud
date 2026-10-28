@@ -1,63 +1,64 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func SkipTestAccAlicloudEbsDiskReplicaPairDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_ebs_disk_replica_pair.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_ebs_disk_replica_pair.default.id}_fake"]`,
 		}),
 	}
 
-	siteConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
+	siteConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
 			"site": `"production"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
 			"site": `"backup"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
 			"ids":  `["${alicloud_ebs_disk_replica_pair.default.id}"]`,
 			"site": `"production"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand, map[string]string{
 			"ids":  `["${alicloud_ebs_disk_replica_pair.default.id}_fake"]`,
 			"site": `"backup"`,
 		}),
 	}
 
-	EbsDiskReplicaPairCheckInfo.dataSourceTestCheck(t, rand, idsConf, siteConf, allConf)
+	EbsDiskReplicaPairCheckInfo.DataSourceTestCheck(t, rand, idsConf, siteConf, allConf)
 }
 
 var existEbsDiskReplicaPairMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"pairs.#":                       "1",
-		"pairs.0.id":                    CHECKSET,
-		"pairs.0.bandwidth":             CHECKSET,
+		"pairs.0.id":                    acctest.CHECKSET,
+		"pairs.0.bandwidth":             acctest.CHECKSET,
 		"pairs.0.description":           fmt.Sprintf("tf-testAccEbsDiskReplicaPair%d", rand),
-		"pairs.0.destination_disk_id":   CHECKSET,
+		"pairs.0.destination_disk_id":   acctest.CHECKSET,
 		"pairs.0.destination_region_id": "cn-hangzhou-onebox-nebula",
 		"pairs.0.destination_zone_id":   "cn-hangzhou-onebox-nebula-e",
-		"pairs.0.disk_id":               CHECKSET,
+		"pairs.0.disk_id":               acctest.CHECKSET,
 		"pairs.0.pair_name":             fmt.Sprintf("tf-testAccEbsDiskReplicaPair%d", rand),
-		"pairs.0.payment_type":          CHECKSET,
-		"pairs.0.rpo":                   CHECKSET,
-		"pairs.0.replica_pair_id":       CHECKSET,
-		"pairs.0.resource_group_id":     CHECKSET,
+		"pairs.0.payment_type":          acctest.CHECKSET,
+		"pairs.0.rpo":                   acctest.CHECKSET,
+		"pairs.0.replica_pair_id":       acctest.CHECKSET,
+		"pairs.0.resource_group_id":     acctest.CHECKSET,
 		"pairs.0.source_zone_id":        "cn-hangzhou-onebox-nebula-b",
 		"pairs.0.status":                "created",
 	}
@@ -69,10 +70,10 @@ var fakeEbsDiskReplicaPairMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var EbsDiskReplicaPairCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_ebs_disk_replica_pairs.default",
-	existMapFunc: existEbsDiskReplicaPairMapFunc,
-	fakeMapFunc:  fakeEbsDiskReplicaPairMapFunc,
+var EbsDiskReplicaPairCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_ebs_disk_replica_pairs.default",
+	ExistMapFunc: existEbsDiskReplicaPairMapFunc,
+	FakeMapFunc:  fakeEbsDiskReplicaPairMapFunc,
 }
 
 func testAccCheckAlicloudEbsDiskReplicaPairSourceConfig(rand int, attrMap map[string]string) string {

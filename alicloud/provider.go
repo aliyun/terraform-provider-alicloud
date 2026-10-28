@@ -557,12 +557,6 @@ func Provider() *schema.Provider {
 			// eais
 			"alicloud_eais_instances": dataSourceAlicloudEaisInstances(),
 
-			// ebs
-			"alicloud_ebs_regions":                          dataSourceAlicloudEbsRegions(),
-			"alicloud_ebs_disk_replica_groups":              dataSourceAlicloudEbsDiskReplicaGroups(),
-			"alicloud_ebs_dedicated_block_storage_clusters": dataSourceAlicloudEbsDedicatedBlockStorageClusters(),
-			"alicloud_ebs_disk_replica_pairs":               dataSourceAlicloudEbsDiskReplicaPairs(),
-
 			// ecd
 			"alicloud_ecd_desktop_groups":            dataSourceAliCloudEcdDesktopGroups(),
 			"alicloud_ecd_policy_groups":             dataSourceAlicloudEcdPolicyGroups(),
@@ -1763,16 +1757,6 @@ func Provider() *schema.Provider {
 			// eais
 			"alicloud_eais_client_instance_attachment": resourceAliCloudEaisClientInstanceAttachment(),
 			"alicloud_eais_instance":                   resourceAliCloudEaisInstance(),
-
-			// ebs
-			"alicloud_ebs_solution_instance":                     resourceAliCloudEbsSolutionInstance(),
-			"alicloud_ebs_enterprise_snapshot_policy_attachment": resourceAliCloudEbsEnterpriseSnapshotPolicyAttachment(),
-			"alicloud_ebs_enterprise_snapshot_policy":            resourceAliCloudEbsEnterpriseSnapshotPolicy(),
-			"alicloud_ebs_replica_group_drill":                   resourceAliCloudEbsReplicaGroupDrill(),
-			"alicloud_ebs_replica_pair_drill":                    resourceAliCloudEbsReplicaPairDrill(),
-			"alicloud_ebs_disk_replica_group":                    resourceAliCloudEbsDiskReplicaGroup(),
-			"alicloud_ebs_dedicated_block_storage_cluster":       resourceAlicloudEbsDedicatedBlockStorageCluster(),
-			"alicloud_ebs_disk_replica_pair":                     resourceAliCloudEbsDiskReplicaPair(),
 
 			// ecd
 			"alicloud_ecd_desktop_group":            resourceAliCloudEcdDesktopGroup(),

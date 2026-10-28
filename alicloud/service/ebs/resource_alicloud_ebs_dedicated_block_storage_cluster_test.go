@@ -1,11 +1,13 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,22 +15,22 @@ import (
 // lintignore: AT001
 func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 	var v map[string]interface{}
-	testAccPreCheckWithRegions(t, true, connectivity.EbsDedicatedBlockStorageClusterRegions)
+	acctest.PreCheckWithRegions(t, true, connectivity.EbsDedicatedBlockStorageClusterRegions)
 	resourceId := "alicloud_ebs_dedicated_block_storage_cluster.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsDedicatedBlockStorageClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsDedicatedBlockStorageClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsDedicatedBlockStorageCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sCluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsDedicatedBlockStorageClusterBasicDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sCluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsDedicatedBlockStorageClusterBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,7 +42,7 @@ func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"type":                                 "Premium",
-						"zone_id":                              CHECKSET,
+						"zone_id":                              acctest.CHECKSET,
 						"dedicated_block_storage_cluster_name": name,
 					}),
 				),
@@ -84,5 +86,5 @@ data "alicloud_ebs_regions" "default"{
   region_id = var.region
 }
 
-`, name, defaultRegionToTest)
+`, name, acctest.DefaultRegionToTest)
 }

@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package ebs. This file is generated automatically. Please do not modify it manually, thank you!
+package ebs
 
 import (
 	"fmt"
@@ -7,16 +7,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
+func ResourceDiskReplicaPair() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEbsDiskReplicaPairCreate,
-		Read:   resourceAliCloudEbsDiskReplicaPairRead,
-		Update: resourceAliCloudEbsDiskReplicaPairUpdate,
-		Delete: resourceAliCloudEbsDiskReplicaPairDelete,
+		Create: resourceDiskReplicaPairCreate,
+		Read:   resourceDiskReplicaPairRead,
+		Update: resourceDiskReplicaPairUpdate,
+		Delete: resourceDiskReplicaPairDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -30,7 +35,7 @@ func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: IntInSlice([]int{0, 10240, 20480, 51200, 102400}),
+				ValidateFunc: validators.IntInSlice([]int{0, 10240, 20480, 51200, 102400}),
 			},
 			"create_time": {
 				Type:     schema.TypeInt,
@@ -82,7 +87,7 @@ func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 60),
+				ValidateFunc: validators.IntBetween(0, 60),
 			},
 			"period_unit": {
 				Type:     schema.TypeString,
@@ -116,7 +121,7 @@ func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"pair_name": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -127,7 +132,7 @@ func resourceAliCloudEbsDiskReplicaPair() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskReplicaPairCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -138,7 +143,7 @@ func resourceAliCloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		request["ChargeType"] = convertEbsDiskReplicaPairChargeTypeRequest(v.(string))
@@ -167,8 +172,8 @@ func resourceAliCloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 		request["Description"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
 	if v, ok := d.GetOk("pair_name"); ok || d.HasChange("pair_name") {
@@ -178,11 +183,11 @@ func resourceAliCloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("disk_replica_pair_name"); ok {
 		request["PairName"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -190,35 +195,35 @@ func resourceAliCloudEbsDiskReplicaPairCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ebs_disk_replica_pair", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ebs_disk_replica_pair", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ReplicaPairId"]))
 
-	ebsServiceV2 := EbsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"created", "normal", "stopped", "syncing", "manual_syncing"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "Status", []string{}))
+	ebsServiceV2 := NewEbsServiceV2(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"created", "normal", "stopped", "syncing", "manual_syncing"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEbsDiskReplicaPairUpdate(d, meta)
+	return resourceDiskReplicaPairUpdate(d, meta)
 }
 
-func resourceAliCloudEbsDiskReplicaPairRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskReplicaPairRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ebsServiceV2 := EbsServiceV2{client}
+	ebsServiceV2 := NewEbsServiceV2(client)
 
 	objectRaw, err := ebsServiceV2.DescribeEbsDiskReplicaPair(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ebs_disk_replica_pair DescribeEbsDiskReplicaPair Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("bandwidth", objectRaw["Bandwidth"])
@@ -237,13 +242,13 @@ func resourceAliCloudEbsDiskReplicaPairRead(d *schema.ResourceData, meta interfa
 	d.Set("status", objectRaw["Status"])
 
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	d.Set("pair_name", d.Get("disk_replica_pair_name"))
 	return nil
 }
 
-func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskReplicaPairUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -252,10 +257,10 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 	d.Partial(true)
 
 	if d.HasChange("status") {
-		ebsServiceV2 := EbsServiceV2{client}
+		ebsServiceV2 := NewEbsServiceV2(client)
 		object, err := ebsServiceV2.DescribeEbsDiskReplicaPair(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
@@ -266,15 +271,15 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 				query = make(map[string]interface{})
 				request["ReplicaPairId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
+				request["ClientToken"] = helper.BuildClientToken(action)
 				if v, ok := d.GetOkExists("one_shot"); ok {
 					request["OneShot"] = v
 				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -282,14 +287,14 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				ebsServiceV2 := EbsServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "#$.LastRecoverPoint", []string{}))
+				ebsServiceV2 := NewEbsServiceV2(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "#$.LastRecoverPoint", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -299,15 +304,15 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 				query = make(map[string]interface{})
 				request["ReplicaPairId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
+				request["ClientToken"] = helper.BuildClientToken(action)
 				if v, ok := d.GetOkExists("reverse_replicate"); ok {
 					request["ReverseReplicate"] = v
 				}
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"OperationDenied.InvalidStatus", "InternalError"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"OperationDenied.InvalidStatus", "InternalError"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -315,14 +320,14 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				ebsServiceV2 := EbsServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "Status", []string{}))
+				ebsServiceV2 := NewEbsServiceV2(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -332,12 +337,12 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 				query = make(map[string]interface{})
 				request["ReplicaPairId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				request["ClientToken"] = helper.BuildClientToken(action)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"OperationDenied.InvalidStatus", "InternalError"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"OperationDenied.InvalidStatus", "InternalError"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -345,14 +350,14 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				ebsServiceV2 := EbsServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"failovered"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "Status", []string{}))
+				ebsServiceV2 := NewEbsServiceV2(client)
+				stateConf := helper.BuildStateConf([]string{}, []string{"failovered"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -365,7 +370,7 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 	query = make(map[string]interface{})
 	request["ReplicaPairId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
@@ -382,11 +387,11 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -394,9 +399,9 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -405,18 +410,18 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 	query = make(map[string]interface{})
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 	}
 	request["NewResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "DiskReplicaPair"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -424,23 +429,23 @@ func resourceAliCloudEbsDiskReplicaPairUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		ebsServiceV2 := EbsServiceV2{client}
+		ebsServiceV2 := NewEbsServiceV2(client)
 		if err := ebsServiceV2.SetResourceTags(d, "DiskReplicaPair"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudEbsDiskReplicaPairRead(d, meta)
+	return resourceDiskReplicaPairRead(d, meta)
 }
 
-func resourceAliCloudEbsDiskReplicaPairDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskReplicaPairDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDiskReplicaPair"
@@ -451,15 +456,15 @@ func resourceAliCloudEbsDiskReplicaPairDelete(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	request["ReplicaPairId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError", "OperationDenied.InvalidStatus"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InternalError", "OperationDenied.InvalidStatus"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -467,19 +472,19 @@ func resourceAliCloudEbsDiskReplicaPairDelete(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	ebsServiceV2 := EbsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "$.ReplicaPairId", []string{}))
+	ebsServiceV2 := NewEbsServiceV2(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ebsServiceV2.EbsDiskReplicaPairStateRefreshFunc(d.Id(), "$.ReplicaPairId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

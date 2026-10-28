@@ -1,22 +1,23 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudEbsDiskReplicaGroupsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.EBSSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEbsDiskReplicaGroupsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EBSSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEbsDiskReplicaGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ebs_disk_replica_group.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEbsDiskReplicaGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEbsDiskReplicaGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ebs_disk_replica_group.default.id}_fake"]`,
 		}),
 	}
@@ -24,22 +25,22 @@ func TestAccAliCloudEbsDiskReplicaGroupsDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                          "1",
 			"groups.#":                       "1",
-			"groups.0.id":                    CHECKSET,
+			"groups.0.id":                    acctest.CHECKSET,
 			"groups.0.description":           fmt.Sprintf("tf-testAccEbsDiskReplicaGroup%d", rand),
-			"groups.0.enable_rtc":            CHECKSET,
-			"groups.0.destination_region_id": CHECKSET,
-			"groups.0.destination_zone_id":   CHECKSET,
+			"groups.0.enable_rtc":            acctest.CHECKSET,
+			"groups.0.destination_region_id": acctest.CHECKSET,
+			"groups.0.destination_zone_id":   acctest.CHECKSET,
 			"groups.0.group_name":            fmt.Sprintf("tf-testAccEbsDiskReplicaGroup%d", rand),
-			"groups.0.primary_region":        CHECKSET,
-			"groups.0.primary_zone":          CHECKSET,
-			"groups.0.site":                  CHECKSET,
+			"groups.0.primary_region":        acctest.CHECKSET,
+			"groups.0.primary_zone":          acctest.CHECKSET,
+			"groups.0.site":                  acctest.CHECKSET,
 			"groups.0.rpo":                   "900",
-			"groups.0.replica_group_id":      CHECKSET,
-			"groups.0.source_region_id":      CHECKSET,
-			"groups.0.source_zone_id":        CHECKSET,
-			"groups.0.standby_region":        CHECKSET,
-			"groups.0.standby_zone":          CHECKSET,
-			"groups.0.status":                CHECKSET,
+			"groups.0.replica_group_id":      acctest.CHECKSET,
+			"groups.0.source_region_id":      acctest.CHECKSET,
+			"groups.0.source_zone_id":        acctest.CHECKSET,
+			"groups.0.standby_region":        acctest.CHECKSET,
+			"groups.0.standby_zone":          acctest.CHECKSET,
+			"groups.0.status":                acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudEbsDiskReplicaGroupsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -48,16 +49,16 @@ func TestAccAliCloudEbsDiskReplicaGroupsDataSource(t *testing.T) {
 			"groups.#": "0",
 		}
 	}
-	var alicloudEbsDiskReplicaGroupsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ebs_disk_replica_groups.default",
-		existMapFunc: existAlicloudEbsDiskReplicaGroupsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEbsDiskReplicaGroupsDataSourceNameMapFunc,
+	var alicloudEbsDiskReplicaGroupsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ebs_disk_replica_groups.default",
+		ExistMapFunc: existAlicloudEbsDiskReplicaGroupsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEbsDiskReplicaGroupsDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudEbsDiskReplicaGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	alicloudEbsDiskReplicaGroupsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
 func testAccCheckAlicloudEbsDiskReplicaGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -92,6 +93,6 @@ data "alicloud_ebs_disk_replica_groups" "default" {
 	%s
 }
 
-`, rand, defaultRegionToTest, strings.Join(pairs, "\n   "))
+`, rand, acctest.DefaultRegionToTest, strings.Join(pairs, "\n   "))
 	return config
 }

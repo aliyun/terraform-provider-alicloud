@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package ebs. This file is generated automatically. Please do not modify it manually, thank you!
+package ebs
 
 import (
 	"fmt"
@@ -8,16 +8,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicy() *schema.Resource {
+func ResourceEnterpriseSnapshotPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEbsEnterpriseSnapshotPolicyCreate,
-		Read:   resourceAliCloudEbsEnterpriseSnapshotPolicyRead,
-		Update: resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate,
-		Delete: resourceAliCloudEbsEnterpriseSnapshotPolicyDelete,
+		Create: resourceEnterpriseSnapshotPolicyCreate,
+		Read:   resourceEnterpriseSnapshotPolicyRead,
+		Update: resourceEnterpriseSnapshotPolicyUpdate,
+		Delete: resourceEnterpriseSnapshotPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -50,7 +56,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicy() *schema.Resource {
 									"retain_days": {
 										Type:         schema.TypeInt,
 										Optional:     true,
-										ValidateFunc: IntAtLeast(1),
+										ValidateFunc: validators.IntAtLeast(1),
 									},
 									"region_id": {
 										Type:     schema.TypeString,
@@ -84,12 +90,12 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicy() *schema.Resource {
 						"number": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntAtLeast(1),
+							ValidateFunc: validators.IntAtLeast(1),
 						},
 						"time_interval": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntAtLeast(1),
+							ValidateFunc: validators.IntAtLeast(1),
 						},
 						"time_unit": {
 							Type:     schema.TypeString,
@@ -164,7 +170,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicy() *schema.Resource {
 					},
 				},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"target_type": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -174,7 +180,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicy() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -185,7 +191,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -196,19 +202,19 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 		request["Desc"] = v
 	}
 	objectDataLocalMap := make(map[string]interface{})
-	if v := d.Get("schedule"); !IsNil(v) {
+	if v := d.Get("schedule"); !helper.IsNil(v) {
 		nodeNative, _ := jsonpath.Get("$[0].cron_expression", d.Get("schedule"))
 		if nodeNative != "" {
 			objectDataLocalMap["CronExpression"] = nodeNative
 		}
-		request["Schedule"], err = convertMaptoJsonString(objectDataLocalMap)
+		request["Schedule"], err = convert.ConvertMaptoJsonString(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	objectDataLocalMap1 := make(map[string]interface{})
-	if v := d.Get("retain_rule"); !IsNil(v) {
+	if v := d.Get("retain_rule"); !helper.IsNil(v) {
 		nodeNative1, _ := jsonpath.Get("$[0].number", d.Get("retain_rule"))
 		if nodeNative1 != "" && nodeNative1.(int) > 0 {
 			objectDataLocalMap1["Number"] = nodeNative1
@@ -221,26 +227,26 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 		if nodeNative3 != "" {
 			objectDataLocalMap1["TimeUnit"] = nodeNative3
 		}
-		request["RetainRule"], err = convertMaptoJsonString(objectDataLocalMap1)
+		request["RetainRule"], err = convert.ConvertMaptoJsonString(objectDataLocalMap1)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	objectDataLocalMap2 := make(map[string]interface{})
-	if v := d.Get("storage_rule"); !IsNil(v) {
+	if v := d.Get("storage_rule"); !helper.IsNil(v) {
 		nodeNative4, _ := jsonpath.Get("$[0].enable_immediate_access", d.Get("storage_rule"))
 		if nodeNative4 != "" {
 			objectDataLocalMap2["EnableImmediateAccess"] = nodeNative4
 		}
-		request["StorageRule"], err = convertMaptoJsonString(objectDataLocalMap2)
+		request["StorageRule"], err = convert.ConvertMaptoJsonString(objectDataLocalMap2)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	objectDataLocalMap3 := make(map[string]interface{})
-	if v := d.Get("cross_region_copy_info"); !IsNil(v) {
+	if v := d.Get("cross_region_copy_info"); !helper.IsNil(v) {
 		nodeNative5, _ := jsonpath.Get("$[0].enabled", d.Get("cross_region_copy_info"))
 		if nodeNative5 != "" {
 			objectDataLocalMap3["Enabled"] = nodeNative5
@@ -248,7 +254,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 		if v, ok := d.GetOk("cross_region_copy_info"); ok {
 			localData, err := jsonpath.Get("$[0].regions", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps := make([]map[string]interface{}, 0)
 			for _, dataLoop := range localData.([]interface{}) {
@@ -262,9 +268,9 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 			}
 			objectDataLocalMap3["Regions"] = localMaps
 		}
-		request["CrossRegionCopyInfo"], err = convertMaptoJsonString(objectDataLocalMap3)
+		request["CrossRegionCopyInfo"], err = convert.ConvertMaptoJsonString(objectDataLocalMap3)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -272,7 +278,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 		request["State"] = v
 	}
 	if _, ok := d.GetOk("tags"); ok {
-		added, _ := parsingTags(d)
+		added, _ := tags.ParsingTags(d)
 		count := 1
 		for key, value := range added {
 			request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -282,7 +288,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 	}
 
 	objectDataLocalMap4 := make(map[string]interface{})
-	if v := d.Get("special_retain_rules"); !IsNil(v) {
+	if v := d.Get("special_retain_rules"); !helper.IsNil(v) {
 		nodeNative10, _ := jsonpath.Get("$[0].enabled", d.Get("special_retain_rules"))
 		if nodeNative10 != "" {
 			objectDataLocalMap4["Enabled"] = nodeNative10
@@ -290,7 +296,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 		if v, ok := d.GetOk("special_retain_rules"); ok {
 			localData2, err := jsonpath.Get("$[0].rules", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps1 := make([]map[string]interface{}, 0)
 			for _, dataLoop2 := range localData2.([]interface{}) {
@@ -303,49 +309,49 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyCreate(d *schema.ResourceData, m
 			}
 			objectDataLocalMap4["Rules"] = localMaps1
 		}
-		request["SpecialRetainRules"], err = convertMaptoJsonString(objectDataLocalMap4)
+		request["SpecialRetainRules"], err = convert.ConvertMaptoJsonString(objectDataLocalMap4)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ebs_enterprise_snapshot_policy", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ebs_enterprise_snapshot_policy", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["PolicyId"]))
 
-	return resourceAliCloudEbsEnterpriseSnapshotPolicyRead(d, meta)
+	return resourceEnterpriseSnapshotPolicyRead(d, meta)
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ebsServiceV2 := EbsServiceV2{client}
+	ebsServiceV2 := NewEbsServiceV2(client)
 
 	objectRaw, err := ebsServiceV2.DescribeEbsEnterpriseSnapshotPolicy(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ebs_enterprise_snapshot_policy DescribeEbsEnterpriseSnapshotPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -445,12 +451,12 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyRead(d *schema.ResourceData, met
 	}
 	d.Set("storage_rule", storageRuleMaps)
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -463,7 +469,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 	query = make(map[string]interface{})
 	query["PolicyId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("enterprise_snapshot_policy_name") {
 		update = true
 	}
@@ -477,14 +483,14 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 		update = true
 	}
 	objectDataLocalMap := make(map[string]interface{})
-	if v := d.Get("schedule"); !IsNil(v) {
+	if v := d.Get("schedule"); !helper.IsNil(v) {
 		nodeNative, _ := jsonpath.Get("$[0].cron_expression", v)
 		if nodeNative != "" {
 			objectDataLocalMap["CronExpression"] = nodeNative
 		}
-		request["Schedule"], err = convertMaptoJsonString(objectDataLocalMap)
+		request["Schedule"], err = convert.ConvertMaptoJsonString(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -492,7 +498,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 		update = true
 	}
 	objectDataLocalMap1 := make(map[string]interface{})
-	if v := d.Get("retain_rule"); !IsNil(v) {
+	if v := d.Get("retain_rule"); !helper.IsNil(v) {
 		nodeNative1, _ := jsonpath.Get("$[0].number", v)
 		if nodeNative1 != "" && nodeNative1.(int) > 0 {
 			objectDataLocalMap1["Number"] = nodeNative1
@@ -505,23 +511,23 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 		if nodeNative3 != "" {
 			objectDataLocalMap1["TimeUnit"] = nodeNative3
 		}
-		request["RetainRule"], err = convertMaptoJsonString(objectDataLocalMap1)
+		request["RetainRule"], err = convert.ConvertMaptoJsonString(objectDataLocalMap1)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if d.HasChange("storage_rule") {
 		update = true
 		objectDataLocalMap2 := make(map[string]interface{})
-		if v := d.Get("storage_rule"); !IsNil(v) {
+		if v := d.Get("storage_rule"); !helper.IsNil(v) {
 			nodeNative4, _ := jsonpath.Get("$[0].enable_immediate_access", v)
 			if nodeNative4 != "" {
 				objectDataLocalMap2["EnableImmediateAccess"] = nodeNative4
 			}
-			request["StorageRule"], err = convertMaptoJsonString(objectDataLocalMap2)
+			request["StorageRule"], err = convert.ConvertMaptoJsonString(objectDataLocalMap2)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 	}
@@ -529,7 +535,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 	if d.HasChange("cross_region_copy_info") {
 		update = true
 		objectDataLocalMap3 := make(map[string]interface{})
-		if v := d.Get("cross_region_copy_info"); !IsNil(v) {
+		if v := d.Get("cross_region_copy_info"); !helper.IsNil(v) {
 			nodeNative5, _ := jsonpath.Get("$[0].enabled", v)
 			if nodeNative5 != "" {
 				objectDataLocalMap3["Enabled"] = nodeNative5
@@ -537,7 +543,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 			if v, ok := d.GetOk("cross_region_copy_info"); ok {
 				localData, err := jsonpath.Get("$[0].regions", v)
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 				localMaps := make([]map[string]interface{}, 0)
 				for _, dataLoop := range localData.([]interface{}) {
@@ -551,9 +557,9 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 				}
 				objectDataLocalMap3["Regions"] = localMaps
 			}
-			request["CrossRegionCopyInfo"], err = convertMaptoJsonString(objectDataLocalMap3)
+			request["CrossRegionCopyInfo"], err = convert.ConvertMaptoJsonString(objectDataLocalMap3)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 	}
@@ -566,7 +572,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 	if d.HasChange("special_retain_rules") {
 		update = true
 		objectDataLocalMap4 := make(map[string]interface{})
-		if v := d.Get("special_retain_rules"); !IsNil(v) {
+		if v := d.Get("special_retain_rules"); !helper.IsNil(v) {
 			nodeNative8, _ := jsonpath.Get("$[0].enabled", v)
 			if nodeNative8 != "" {
 				objectDataLocalMap4["Enabled"] = nodeNative8
@@ -574,7 +580,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 			if v, ok := d.GetOk("special_retain_rules"); ok {
 				localData1, err := jsonpath.Get("$[0].rules", v)
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 				localMaps1 := make([]map[string]interface{}, 0)
 				for _, dataLoop1 := range localData1.([]interface{}) {
@@ -587,31 +593,31 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 				}
 				objectDataLocalMap4["Rules"] = localMaps1
 			}
-			request["SpecialRetainRules"], err = convertMaptoJsonString(objectDataLocalMap4)
+			request["SpecialRetainRules"], err = convert.ConvertMaptoJsonString(objectDataLocalMap4)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -620,7 +626,7 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
@@ -628,37 +634,37 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyUpdate(d *schema.ResourceData, m
 
 	request["ResourceType"] = "EnterpriseSnapshotPolicy"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		ebsServiceV2 := EbsServiceV2{client}
+		ebsServiceV2 := NewEbsServiceV2(client)
 		if err := ebsServiceV2.SetResourceTags(d, "EnterpriseSnapshotPolicy"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudEbsEnterpriseSnapshotPolicyRead(d, meta)
+	return resourceEnterpriseSnapshotPolicyRead(d, meta)
 }
 
-func resourceAliCloudEbsEnterpriseSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceEnterpriseSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteEnterpriseSnapshotPolicy"
@@ -670,25 +676,25 @@ func resourceAliCloudEbsEnterpriseSnapshotPolicyDelete(d *schema.ResourceData, m
 	query["PolicyId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	request["ClientToken"] = buildClientToken(action)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	request["ClientToken"] = helper.BuildClientToken(action)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
