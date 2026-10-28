@@ -59,7 +59,19 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 			},
 			"firewall_vpc_cidr": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				ForceNew: true,
+			},
+			"firewall_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"firewall_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"region_no": {
@@ -71,7 +83,7 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"managed"}, false),
+				ValidateFunc: StringInSlice([]string{"managed", "manual", "semi-managed"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -104,6 +116,38 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 	}
 }
 
+// validateTrFirewallRouteModeContract enforces the per-route_mode required-field
+// contract before the CreateTrFirewallV2 API call. Cloud Firewall only returns a
+// generic ErrorParameters (400) after the call, so validating up front yields a
+// precise, actionable error. manual requires firewall_vpc_id, firewall_vswitch_id,
+// tr_attachment_master_zone and tr_attachment_slave_zone (the firewall ENI is
+// deployed in an existing VPC). managed and semi-managed behave alike: Cloud
+// Firewall creates and manages the firewall VPC, so only firewall_vpc_cidr is
+// required (firewall_vpc_id/firewall_vswitch_id are server-assigned and
+// backfilled by Read).
+func validateTrFirewallRouteModeContract(routeMode, firewallVpcId, firewallVswitchId, trAttachmentMasterZone, trAttachmentSlaveZone, firewallVpcCidr string) error {
+	switch routeMode {
+	case "manual":
+		if firewallVpcId == "" {
+			return fmt.Errorf("firewall_vpc_id is required when route_mode is manual")
+		}
+		if firewallVswitchId == "" {
+			return fmt.Errorf("firewall_vswitch_id is required when route_mode is manual")
+		}
+		if trAttachmentMasterZone == "" {
+			return fmt.Errorf("tr_attachment_master_zone is required when route_mode is manual")
+		}
+		if trAttachmentSlaveZone == "" {
+			return fmt.Errorf("tr_attachment_slave_zone is required when route_mode is manual")
+		}
+	case "managed", "semi-managed":
+		if firewallVpcCidr == "" {
+			return fmt.Errorf("firewall_vpc_cidr is required when route_mode is %s", routeMode)
+		}
+	}
+	return nil
+}
+
 func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
@@ -115,6 +159,17 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 	var err error
 	var endpoint string
 	request = make(map[string]interface{})
+
+	if err := validateTrFirewallRouteModeContract(
+		d.Get("route_mode").(string),
+		d.Get("firewall_vpc_id").(string),
+		d.Get("firewall_vswitch_id").(string),
+		d.Get("tr_attachment_master_zone").(string),
+		d.Get("tr_attachment_slave_zone").(string),
+		d.Get("firewall_vpc_cidr").(string),
+	); err != nil {
+		return WrapError(err)
+	}
 
 	request["CenId"] = d.Get("cen_id")
 	if v, ok := d.GetOk("tr_attachment_master_cidr"); ok {
@@ -139,7 +194,15 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("tr_attachment_master_zone"); ok {
 		request["TrAttachmentMasterZone"] = v
 	}
-	request["FirewallVpcCidr"] = d.Get("firewall_vpc_cidr")
+	if v, ok := d.GetOk("firewall_vpc_cidr"); ok {
+		request["FirewallVpcCidr"] = v
+	}
+	if v, ok := d.GetOk("firewall_vpc_id"); ok {
+		request["FirewallVpcId"] = v
+	}
+	if v, ok := d.GetOk("firewall_vswitch_id"); ok {
+		request["FirewallVswitchId"] = v
+	}
 	wait := incrementalWait(30*time.Second, 30*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
@@ -190,6 +253,8 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 	d.Set("firewall_description", objectRaw["FirewallDescription"])
 	d.Set("firewall_eni_id", objectRaw["FirewallEniId"])
 	d.Set("firewall_eni_vpc_id", objectRaw["FirewallEniVpcId"])
+	d.Set("firewall_vpc_id", objectRaw["FirewallEniVpcId"])
+	d.Set("firewall_vswitch_id", objectRaw["FirewallEniVswitchId"])
 	d.Set("firewall_name", objectRaw["FirewallName"])
 	d.Set("firewall_subnet_cidr", objectRaw["FirewallSubnetCidr"])
 	d.Set("firewall_vpc_attachment_id", objectRaw["TrAttachmentId"])
