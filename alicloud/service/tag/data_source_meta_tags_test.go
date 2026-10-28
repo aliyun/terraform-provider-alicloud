@@ -1,26 +1,28 @@
-package alicloud
+// Package tag_test.
+package tag_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudTagMetaTagsDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TagSupportRegions)
-	rand := acctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TagSupportRegions)
+	rand := tfacctest.RandInt()
 
-	keyNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudTagMetaTagsDataSourceConfig(rand, map[string]string{}),
-		fakeConfig:  "",
+	keyNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudTagMetaTagsDataSourceConfig(rand, map[string]string{}),
+		FakeConfig:  "",
 	}
 
 	var existTagMetaTagsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"tags.#": CHECKSET,
+			"tags.#": acctest.CHECKSET,
 		}
 	}
 
@@ -30,17 +32,17 @@ func TestAccAlicloudTagMetaTagsDataSource(t *testing.T) {
 		}
 	}
 
-	var tagMetaTagsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_tag_meta_tags.default",
-		existMapFunc: existTagMetaTagsMapFunc,
-		fakeMapFunc:  fakeTagMetaTagsMapFunc,
+	var tagMetaTagsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_tag_meta_tags.default",
+		ExistMapFunc: existTagMetaTagsMapFunc,
+		FakeMapFunc:  fakeTagMetaTagsMapFunc,
 	}
 
 	var perCheck = func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
 
-	tagMetaTagsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, perCheck, keyNameConf)
+	tagMetaTagsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, perCheck, keyNameConf)
 
 }
 

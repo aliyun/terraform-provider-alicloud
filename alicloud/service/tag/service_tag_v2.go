@@ -1,4 +1,4 @@
-package alicloud
+package tag
 
 import (
 	"fmt"
@@ -7,11 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 type TagServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+func NewTagServiceV2(client *connectivity.AliyunClient) *TagServiceV2 {
+	return &TagServiceV2{client: client}
 }
 
 // DescribeTagPolicy <<< Encapsulated get interface for Tag Policy.
@@ -27,12 +34,12 @@ func (s *TagServiceV2) DescribeTagPolicy(id string) (object map[string]interface
 	request["RegionId"] = client.RegionId
 	action := "GetPolicy"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -40,17 +47,17 @@ func (s *TagServiceV2) DescribeTagPolicy(id string) (object map[string]interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.PolicyId"}) {
-			return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.PolicyId"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Policy", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Policy", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policy", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Policy", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -60,10 +67,10 @@ func (s *TagServiceV2) TagPolicyStateRefreshFunc(id string, field string, failSt
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTagPolicy(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -78,7 +85,7 @@ func (s *TagServiceV2) TagPolicyStateRefreshFunc(id string, field string, failSt
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -100,12 +107,12 @@ func (s *TagServiceV2) DescribeTagAssociatedRule(id string) (object map[string]i
 	request["RegionId"] = client.RegionId
 	action := "ListAssociatedResourceRules"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Tag", "2018-08-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -113,18 +120,18 @@ func (s *TagServiceV2) DescribeTagAssociatedRule(id string) (object map[string]i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Rules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rules[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Rules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("AssociatedRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("AssociatedRule", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -134,10 +141,10 @@ func (s *TagServiceV2) TagAssociatedRuleStateRefreshFunc(id string, field string
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTagAssociatedRule(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -152,7 +159,7 @@ func (s *TagServiceV2) TagAssociatedRuleStateRefreshFunc(id string, field string
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
