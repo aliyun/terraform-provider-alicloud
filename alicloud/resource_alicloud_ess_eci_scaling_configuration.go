@@ -277,6 +277,10 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"stdin_once": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"security_context_run_as_user": {
 							Type:     schema.TypeInt,
 							Optional: true,
@@ -482,6 +486,47 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"ntp_servers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"dns_config_name_servers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"dns_config_search": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"data_cache_pl": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"data_cache_bucket": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"data_cache_provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"data_cache_bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"containers_update_type": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"init_containers": {
 				Type:     schema.TypeList,
@@ -881,6 +926,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
 		Containers[i]["Tty"] = ContainersMap["tty"]
 		Containers[i]["Stdin"] = ContainersMap["stdin"]
+		Containers[i]["StdinOnce"] = ContainersMap["stdin_once"]
 		Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 
 		Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
@@ -1062,6 +1108,28 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		}
 		request["HostAliase"] = HostAliases
 	}
+
+	if v, ok := d.GetOk("ntp_servers"); ok {
+		request["NtpServer"] = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("dns_config_name_servers"); ok {
+		request["DnsConfigNameServer"] = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("dns_config_search"); ok {
+		request["DnsConfigSearch"] = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("data_cache_pl"); ok {
+		request["DataCachePL"] = v
+	}
+	if v, ok := d.GetOk("data_cache_bucket"); ok {
+		request["DataCacheBucket"] = v
+	}
+	if v, ok := d.GetOkExists("data_cache_provisioned_iops"); ok {
+		request["DataCacheProvisionedIops"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOkExists("data_cache_bursting_enabled"); ok {
+		request["DataCacheBurstingEnabled"] = v.(bool)
+	}
 	response, err = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_eci_scaling_configuration", action, AlibabaCloudSdkGoERROR)
@@ -1126,6 +1194,14 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("instance_types", o["InstanceTypes"])
 	d.Set("spot_strategy", o["SpotStrategy"])
 	d.Set("override", d.Get("override").(bool))
+	d.Set("ntp_servers", o["NtpServers"])
+	d.Set("dns_config_name_servers", o["DnsConfigNameServers"])
+	d.Set("dns_config_search", o["DnsConfigSearches"])
+	d.Set("data_cache_pl", o["DataCachePL"])
+	d.Set("data_cache_bucket", o["DataCacheBucket"])
+	d.Set("data_cache_provisioned_iops", o["DataCacheProvisionedIops"])
+	d.Set("data_cache_bursting_enabled", o["DataCacheBurstingEnabled"])
+	d.Set("containers_update_type", d.Get("containers_update_type"))
 	if o["spot_price_limit"] != nil {
 		d.Set("spot_price_limit", strconv.FormatFloat(o["SpotPriceLimit"].(float64), 'f', 2, 64))
 	}
@@ -1203,6 +1279,7 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					"security_context_read_only_root_file_system": m1["SecurityContextReadOnlyRootFilesystem"],
 					"tty":                          m1["Tty"],
 					"stdin":                        m1["Stdin"],
+					"stdin_once":                   m1["StdinOnce"],
 					"security_context_run_as_user": m1["SecurityContextRunAsUser"],
 					"working_dir":                  m1["WorkingDir"],
 					"args":                         m1["Args"],
@@ -1723,6 +1800,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
 			Containers[i]["Tty"] = ContainersMap["tty"]
 			Containers[i]["Stdin"] = ContainersMap["stdin"]
+			Containers[i]["StdinOnce"] = ContainersMap["stdin_once"]
 			Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 			Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
 			Containers[i]["Arg"] = ContainersMap["args"]
@@ -1946,6 +2024,48 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			types = expandStringList(instanceTypes)
 		}
 		request["InstanceType"] = types
+	}
+	if d.HasChange("ntp_servers") || d.Get("override").(bool) {
+		update = true
+		if v, ok := d.GetOk("ntp_servers"); ok {
+			request["NtpServer"] = expandStringList(v.([]interface{}))
+		}
+	}
+	if d.HasChange("dns_config_name_servers") || d.Get("override").(bool) {
+		update = true
+		if v, ok := d.GetOk("dns_config_name_servers"); ok {
+			request["DnsConfigNameServer"] = expandStringList(v.([]interface{}))
+		}
+	}
+	if d.HasChange("dns_config_search") || d.Get("override").(bool) {
+		update = true
+		if v, ok := d.GetOk("dns_config_search"); ok {
+			request["DnsConfigSearch"] = expandStringList(v.([]interface{}))
+		}
+	}
+	if d.HasChange("data_cache_pl") || d.Get("override").(bool) {
+		update = true
+		if v, ok := d.GetOk("data_cache_pl"); ok {
+			request["DataCachePL"] = v
+		}
+	}
+	if d.HasChange("data_cache_bucket") || d.Get("override").(bool) {
+		update = true
+		if v, ok := d.GetOk("data_cache_bucket"); ok {
+			request["DataCacheBucket"] = v
+		}
+	}
+	if d.HasChange("data_cache_provisioned_iops") || d.Get("override").(bool) {
+		update = true
+		request["DataCacheProvisionedIops"] = requests.NewInteger(d.Get("data_cache_provisioned_iops").(int))
+	}
+	if d.HasChange("data_cache_bursting_enabled") || d.Get("override").(bool) {
+		update = true
+		request["DataCacheBurstingEnabled"] = d.Get("data_cache_bursting_enabled")
+	}
+	if d.HasChange("containers_update_type") {
+		update = true
+		request["ContainersUpdateType"] = d.Get("containers_update_type")
 	}
 	if update {
 		_, err = client.RpcPost("Ess", "2014-08-28", "ModifyEciScalingConfiguration", nil, request, false)

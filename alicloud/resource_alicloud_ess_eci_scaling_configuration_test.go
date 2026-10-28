@@ -1450,6 +1450,7 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 							"security_context_read_only_root_file_system": "true",
 							"tty":                          "true",
 							"stdin":                        "true",
+							"stdin_once":                   "true",
 							"security_context_run_as_user": "1",
 							"ports": []map[string]interface{}{
 								{
@@ -1572,6 +1573,9 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 							"ip":        "ip",
 						},
 					},
+					"ntp_servers":             []string{"ntp1.aliyun.com"},
+					"dns_config_name_servers": []string{"8.8.8.8"},
+					"dns_config_search":       []string{"aliyun.com"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1627,6 +1631,10 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 						"volumes.#":                                                     "1",
 						"host_aliases.#":                                                "1",
 						"acr_registry_infos.#":                                          "1",
+						"ntp_servers.#":                                                 "1",
+						"dns_config_name_servers.#":                                     "1",
+						"dns_config_search.#":                                           "1",
+						"containers.0.stdin_once":                                       "true",
 					}),
 				),
 			},
@@ -1708,6 +1716,7 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 							"security_context_read_only_root_file_system": "true",
 							"tty":                          "false",
 							"stdin":                        "false",
+							"stdin_once":                   "false",
 							"security_context_run_as_user": "1",
 							"ports": []map[string]interface{}{
 								{
@@ -1844,6 +1853,14 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 							"ip":        "ip",
 						},
 					},
+					"ntp_servers":                 []string{"ntp2.aliyun.com"},
+					"dns_config_name_servers":     []string{"8.8.4.4"},
+					"dns_config_search":           []string{"search2.aliyun.com"},
+					"data_cache_bucket":           "",
+					"data_cache_pl":               "",
+					"data_cache_provisioned_iops": 0,
+					"data_cache_bursting_enabled": false,
+					"containers_update_type":      "IncrementalUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1901,6 +1918,11 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 						"volumes.#":                                                     "1",
 						"host_aliases.#":                                                "1",
 						"acr_registry_infos.#":                                          "1",
+						"ntp_servers.#":                                                 "1",
+						"dns_config_name_servers.#":                                     "1",
+						"dns_config_search.#":                                           "1",
+						"containers.0.stdin_once":                                       "false",
+						"containers_update_type":                                        "IncrementalUpdate",
 					}),
 				),
 			},
@@ -2115,6 +2137,10 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 							"ip":        "ip",
 						},
 					},
+					"ntp_servers":             []string{"ntp1.aliyun.com"},
+					"dns_config_name_servers": []string{"8.8.8.8"},
+					"dns_config_search":       []string{"aliyun.com"},
+					"containers_update_type":  "RenewUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2169,6 +2195,10 @@ func TestAccAliCloudEssEciScalingConfiguration_supply(t *testing.T) {
 						"volumes.#":                                                     "1",
 						"host_aliases.#":                                                "1",
 						"acr_registry_infos.#":                                          "1",
+						"ntp_servers.#":                                                 "1",
+						"dns_config_name_servers.#":                                     "1",
+						"dns_config_search.#":                                           "1",
+						"containers_update_type":                                        "RenewUpdate",
 					}),
 				),
 			},
