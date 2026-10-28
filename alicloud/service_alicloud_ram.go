@@ -53,7 +53,8 @@ type PolicyDocumentStatementPrincipal struct {
 
 type PolicyDocumentStatement struct {
 	Effect    Effect
-	Action    interface{}
+	Action    interface{}                         `json:",omitempty"`
+	NotAction interface{}                         `json:",omitempty"`
 	Resource  interface{}                         `json:",omitempty"`
 	Principal PolicyDocumentStatementPrincipalSet `json:",omitempty"`
 	Condition PolicyDocumentStatementConditionSet `json:",omitempty"`

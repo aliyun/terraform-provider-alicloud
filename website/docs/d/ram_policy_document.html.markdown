@@ -35,7 +35,8 @@ resource "alicloud_ram_policy" "default" {
 
 `data.alicloud_ram_policy_document.basic_example.document` will evaluate to:
 
-```json
+```terraform
+document = <<EOF
 {
   "Statement": [
     {
@@ -49,7 +50,49 @@ resource "alicloud_ram_policy" "default" {
   ],
   "Version": "1"
 }
+EOF
 ```
+
+### NotAction Example
+
+```terraform
+data "alicloud_ram_policy_document" "not_action_example" {
+  version = "1"
+  statement {
+    effect     = "Allow"
+    not_action = ["ram:*", "ims:*"]
+    resource   = ["*"]
+  }
+}
+
+resource "alicloud_ram_policy" "default" {
+  policy_name     = "tf-example-not-action"
+  policy_document = data.alicloud_ram_policy_document.not_action_example.document
+  force           = true
+}
+```
+
+`data.alicloud_ram_policy_document.not_action_example.document` will evaluate to:
+
+```terraform
+document = <<EOF
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "NotAction": [
+        "ram:*",
+        "ims:*"
+      ],
+      "Resource": "*"
+    }
+  ],
+  "Version": "1"
+}
+EOF
+```
+
+-> **NOTE:** `action` and `not_action` are mutually exclusive within a statement; exactly one of them must be specified. Use `not_action` to grant all actions except the listed ones.
 
 ### Example Multiple Condition Keys and Values
 
@@ -92,7 +135,8 @@ resource "alicloud_ram_policy" "policy" {
 
 `data.alicloud_ram_policy_document.multiple_condition.document` will evaluate to:
 
-```json
+```terraform
+document = <<EOF
 {
   "Statement": [
     {
@@ -132,6 +176,7 @@ resource "alicloud_ram_policy" "policy" {
   ],
   "Version": "1"
 }
+EOF
 ```
 
 ### Example Assume-Role Policy with RAM Principal
@@ -157,7 +202,8 @@ resource "alicloud_ram_role" "role" {
 
 `data.alicloud_ram_policy_document.ram_example.document` will evaluate to:
 
-```json
+```terraform
+document = <<EOF
 {
   "Statement": [
     {
@@ -172,6 +218,7 @@ resource "alicloud_ram_role" "role" {
   ],
   "Version": "1"
 }
+EOF
 ```
 
 ### Example Assume-Role Policy with Service Principal
@@ -197,7 +244,8 @@ resource "alicloud_ram_role" "role" {
 
 `data.alicloud_ram_policy_document.service_example.document` will evaluate to:
 
-```json
+```terraform
+document = <<EOF
 {
   "Statement": [
     {
@@ -212,6 +260,7 @@ resource "alicloud_ram_role" "role" {
   ],
   "Version": "1"
 }
+EOF
 ```
 
 ### Example Assume-Role Policy with Federated Principal
@@ -242,7 +291,8 @@ resource "alicloud_ram_role" "role" {
 
 `data.alicloud_ram_policy_document.federated_example.document` will evaluate to:
 
-```json
+```terraform
+document = <<EOF
 {
   "Statement": [
     {
@@ -262,6 +312,7 @@ resource "alicloud_ram_role" "role" {
   ],
   "Version": "1"
 }
+EOF
 ```
 
 ## Argument Reference
@@ -277,7 +328,8 @@ The following arguments are supported:
 The statement supports the following:
 
 * `effect` - (Optional) This parameter indicates whether or not the `action` is allowed. Valid values are `Allow` and `Deny`. Default value is `Allow`. If you want to create a RAM role policy document, it must be `Allow`.
-* `action` - (Required) Action of the RAM policy document. If you want to create a RAM role policy document, it must be `["sts:AssumeRole"]`.
+* `action` - (Optional) Actions of the RAM policy document to be allowed or denied by the statement. Exactly one of `action` or `not_action` must be specified per statement. If you want to create a RAM role policy document, it must be `["sts:AssumeRole"]`.
+* `not_action` - (Optional) Actions excluded from the statement; the statement applies to all actions except the listed ones. Exactly one of `action` or `not_action` must be specified per statement. It cannot be specified together with `action`. A single element renders as a string; multiple elements render as an array.
 * `resource` - (Optional) List of specific objects which will be authorized. If you want to create a RAM policy document, it must be set.
 * `principal` - (Optional) Principal of the RAM policy document. If you want to create a RAM role policy document, it must be set. See [`principal`](#statement-principal) below.
 * `condition` - (Optional) Specifies the condition that are required for a policy to take effect. See [`condition`](#statement-condition) below.
