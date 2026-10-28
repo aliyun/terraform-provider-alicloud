@@ -4,9 +4,15 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 )
 
-// ServicePackage is a placeholder for the sas service; declarations move here when the product adopts the split layout.
+// ServicePackage is the registration declaration of the Sas service.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Sas",
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_security_center_grouped_instances",
+				Factory:  NewGroupedInstancesDataSource,
+			},
+		},
 	}
 }
