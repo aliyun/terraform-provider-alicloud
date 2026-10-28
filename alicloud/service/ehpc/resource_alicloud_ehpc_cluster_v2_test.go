@@ -1,35 +1,44 @@
-package alicloud
+package ehpc_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ehpc"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// collection-order: bypass additional_packages -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the cluster_v2 ACC is in a pre-existing failing state (scheduler-case drift forces replacement, post-test destroy 403), so a convergent two-member reorder apply cannot be run
+// collection-order: bypass addons -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the cluster_v2 ACC is in a pre-existing failing state (scheduler-case drift forces replacement, post-test destroy 403), so a convergent two-member reorder apply cannot be run
+// collection-order: bypass queues -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the cluster_v2 ACC is in a pre-existing failing state (scheduler-case drift forces replacement, post-test destroy 403), so a convergent two-member reorder apply cannot be run
+// collection-order: bypass queues.compute_nodes -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the cluster_v2 ACC is in a pre-existing failing state (scheduler-case drift forces replacement, post-test destroy 403), so a convergent two-member reorder apply cannot be run
+// collection-order: bypass queues.keep_alive_nodes -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the cluster_v2 ACC is in a pre-existing failing state (scheduler-case drift forces replacement, post-test destroy 403), so a convergent two-member reorder apply cannot be run
+// collection-order: bypass queues.vswitch_ids -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the cluster_v2 ACC is in a pre-existing failing state (scheduler-case drift forces replacement, post-test destroy 403), so a convergent two-member reorder apply cannot be run
 
 // Test Ehpc ClusterV2. >>> Resource test cases, automatically generated.
 // Case minimal_cluster_keyPair_test 12485
 func TestAccAliCloudEhpcClusterV2_basic12485(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_cluster_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12485)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12485)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcClusterV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterV2BasicDependence12485)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcClusterV2BasicDependence12485)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -115,14 +124,14 @@ func TestAccAliCloudEhpcClusterV2_basic12485(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_vpc_id":      CHECKSET,
+						"cluster_vpc_id":      acctest.CHECKSET,
 						"cluster_category":    "Standard",
 						"cluster_mode":        "Integrated",
-						"security_group_id":   CHECKSET,
+						"security_group_id":   acctest.CHECKSET,
 						"cluster_name":        "minimal-test-cluster",
 						"deletion_protection": "true",
 						"shared_storages.#":   "3",
-						"cluster_vswitch_id":  CHECKSET,
+						"cluster_vswitch_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -147,7 +156,7 @@ func TestAccAliCloudEhpcClusterV2_basic12485(t *testing.T) {
 }
 
 var AlicloudEhpcClusterV2Map12485 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEhpcClusterV2BasicDependence12485(name string) string {
@@ -225,22 +234,22 @@ resource "alicloud_security_group" "minimal_test_key_pair_security_group" {
 func TestAccAliCloudEhpcClusterV2_basic12089(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_cluster_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12089)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12089)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcClusterV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterV2BasicDependence12089)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcClusterV2BasicDependence12089)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -327,15 +336,15 @@ func TestAccAliCloudEhpcClusterV2_basic12089(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_vpc_id":      CHECKSET,
+						"cluster_vpc_id":      acctest.CHECKSET,
 						"cluster_category":    "Standard",
 						"cluster_mode":        "Integrated",
-						"security_group_id":   CHECKSET,
+						"security_group_id":   acctest.CHECKSET,
 						"cluster_name":        "minimal-test-cluster",
 						"deletion_protection": "false",
 						"client_version":      "2.0.47",
 						"shared_storages.#":   "3",
-						"cluster_vswitch_id":  CHECKSET,
+						"cluster_vswitch_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -360,7 +369,7 @@ func TestAccAliCloudEhpcClusterV2_basic12089(t *testing.T) {
 }
 
 var AlicloudEhpcClusterV2Map12089 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEhpcClusterV2BasicDependence12089(name string) string {
@@ -434,22 +443,22 @@ resource "alicloud_nas_access_rule" "minimal_test_clientVersion_access_rule" {
 func TestAccAliCloudEhpcClusterV2_basic12090(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_cluster_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12090)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12090)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcClusterV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterV2BasicDependence12090)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcClusterV2BasicDependence12090)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -535,14 +544,14 @@ func TestAccAliCloudEhpcClusterV2_basic12090(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_vpc_id":      CHECKSET,
+						"cluster_vpc_id":      acctest.CHECKSET,
 						"cluster_category":    "Standard",
 						"cluster_mode":        "Integrated",
-						"security_group_id":   CHECKSET,
+						"security_group_id":   acctest.CHECKSET,
 						"cluster_name":        "minimal-test-cluster",
 						"deletion_protection": "true",
 						"shared_storages.#":   "3",
-						"cluster_vswitch_id":  CHECKSET,
+						"cluster_vswitch_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -567,7 +576,7 @@ func TestAccAliCloudEhpcClusterV2_basic12090(t *testing.T) {
 }
 
 var AlicloudEhpcClusterV2Map12090 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEhpcClusterV2BasicDependence12090(name string) string {
@@ -637,22 +646,22 @@ resource "alicloud_nas_access_rule" "minimal_test_prepaid_access_rule" {
 func TestAccAliCloudEhpcClusterV2_basic12035(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_cluster_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12035)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12035)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcClusterV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterV2BasicDependence12035)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcClusterV2BasicDependence12035)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -748,16 +757,16 @@ func TestAccAliCloudEhpcClusterV2_basic12035(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_vpc_id":      CHECKSET,
-						"resource_group_id":   CHECKSET,
+						"cluster_vpc_id":      acctest.CHECKSET,
+						"resource_group_id":   acctest.CHECKSET,
 						"cluster_category":    "Standard",
 						"cluster_mode":        "Integrated",
-						"security_group_id":   CHECKSET,
+						"security_group_id":   acctest.CHECKSET,
 						"addons.#":            "1",
 						"cluster_name":        "full-test-cluster",
 						"deletion_protection": "true",
 						"shared_storages.#":   "3",
-						"cluster_vswitch_id":  CHECKSET,
+						"cluster_vswitch_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -784,7 +793,7 @@ func TestAccAliCloudEhpcClusterV2_basic12035(t *testing.T) {
 }
 
 var AlicloudEhpcClusterV2Map12035 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEhpcClusterV2BasicDependence12035(name string) string {
@@ -856,22 +865,22 @@ resource "alicloud_security_group" "full_test_security_group" {
 func TestAccAliCloudEhpcClusterV2_basic12036(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_cluster_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12036)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcClusterV2Map12036)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcClusterV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterV2BasicDependence12036)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcClusterV2BasicDependence12036)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -958,14 +967,14 @@ func TestAccAliCloudEhpcClusterV2_basic12036(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_vpc_id":      CHECKSET,
+						"cluster_vpc_id":      acctest.CHECKSET,
 						"cluster_category":    "Standard",
 						"cluster_mode":        "Integrated",
-						"security_group_id":   CHECKSET,
+						"security_group_id":   acctest.CHECKSET,
 						"cluster_name":        "minimal-test-cluster",
 						"deletion_protection": "false",
 						"shared_storages.#":   "3",
-						"cluster_vswitch_id":  CHECKSET,
+						"cluster_vswitch_id":  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -980,7 +989,7 @@ func TestAccAliCloudEhpcClusterV2_basic12036(t *testing.T) {
 }
 
 var AlicloudEhpcClusterV2Map12036 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEhpcClusterV2BasicDependence12036(name string) string {
@@ -1052,22 +1061,22 @@ resource "alicloud_nas_access_rule" "minimal_test_access_rule" {
 func TestAccAliCloudEhpcClusterV2_enhanced(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_cluster_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterV2MapEnhanced)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcClusterV2MapEnhanced)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcClusterV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterV2BasicDependenceEnhanced)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcClusterV2BasicDependenceEnhanced)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1235,15 +1244,15 @@ func TestAccAliCloudEhpcClusterV2_enhanced(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_vpc_id":        CHECKSET,
+						"cluster_vpc_id":        acctest.CHECKSET,
 						"cluster_category":      "Standard",
 						"cluster_mode":          "Integrated",
-						"security_group_id":     CHECKSET,
+						"security_group_id":     acctest.CHECKSET,
 						"cluster_name":          "enhanced-test-cluster",
 						"cluster_description":   "enhanced-test-cluster-description",
 						"deletion_protection":   "true",
 						"shared_storages.#":     "3",
-						"cluster_vswitch_id":    CHECKSET,
+						"cluster_vswitch_id":    acctest.CHECKSET,
 						"max_count":             "100",
 						"max_core_count":        "1000",
 						"grow_interval":         "2",
@@ -1255,9 +1264,9 @@ func TestAccAliCloudEhpcClusterV2_enhanced(t *testing.T) {
 						"tags.%":                "2",
 						"additional_packages.#": "1",
 						"queues.#":              "1",
-						"cluster_status":        CHECKSET,
-						"ehpc_version":          CHECKSET,
-						"modify_time":           CHECKSET,
+						"cluster_status":        acctest.CHECKSET,
+						"ehpc_version":          acctest.CHECKSET,
+						"modify_time":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1323,7 +1332,7 @@ func TestAccAliCloudEhpcClusterV2_enhanced(t *testing.T) {
 }
 
 var AlicloudEhpcClusterV2MapEnhanced = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEhpcClusterV2BasicDependenceEnhanced(name string) string {
