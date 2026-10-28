@@ -1,0 +1,219 @@
+package esa_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	esa "github.com/aliyun/terraform-provider-alicloud/alicloud/service/esa"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Test ESA Kv. >>> Resource test cases, automatically generated.
+// Case Kv_test2
+func TestAccAliCloudESAKvKv_test2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_kv.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudESAKvKv_test2Map)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEsaKv")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAKv%d", acctest.DefaultRegionToTest, rand)
+
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAKvKv_test2BasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expiration_ttl": "360",
+					"expiration":     "1690",
+					"namespace":      "${alicloud_esa_kv_namespace.resource_Namespace_Kv_test2.id}",
+					"key":            "test_key",
+					"url":            "https://yandanpub.oss-cn-hangzhou.aliyuncs.com/ces1.txt",
+					"isbase":         "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"isbase": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expiration": "1691",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expiration_ttl": "361",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"url": "https://yandanpub.oss-cn-hangzhou.aliyuncs.com/ces1.txt",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"expiration", "expiration_ttl", "isbase", "url"},
+			},
+		},
+	})
+}
+
+var AliCloudESAKvKv_test2Map = map[string]string{
+	"id": acctest.CHECKSET,
+}
+
+func AliCloudESAKvKv_test2BasicDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+resource "alicloud_esa_kv_namespace" "resource_Namespace_Kv_test2" {
+  description  = "this is a test namespace."
+  kv_namespace = "namespace1"
+}
+
+`, name)
+}
+
+// Case Kv_test1
+func TestAccAliCloudESAKvKv_test1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_esa_kv.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudESAKvKv_test1Map)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEsaKv")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAKv%d", acctest.DefaultRegionToTest, rand)
+
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudESAKvKv_test1BasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expiration_ttl": "360",
+					"value":          "example_value",
+					"expiration":     "1690",
+					"namespace":      "${alicloud_esa_kv_namespace.resource_Namespace_Kv_test1.id}",
+					"key":            "example_key",
+					"isbase":         "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"isbase": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expiration": "1691",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"expiration_ttl": "361",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"value": "test_value1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"expiration", "expiration_ttl", "isbase", "url"},
+			},
+		},
+	})
+}
+
+var AliCloudESAKvKv_test1Map = map[string]string{
+	"id": acctest.CHECKSET,
+}
+
+func AliCloudESAKvKv_test1BasicDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+resource "alicloud_esa_kv_namespace" "resource_Namespace_Kv_test1" {
+  description  = "this is a example namespace."
+  kv_namespace = "namespace1"
+}
+
+`, name)
+}
+
+// Test ESA Kv. <<< Resource test cases, automatically generated.
