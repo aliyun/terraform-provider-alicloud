@@ -82,6 +82,23 @@ func resourceAliCloudRdsDatabase() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"account_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"account_privilege": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"account_name"},
+				ValidateFunc: validation.StringInSlice([]string{"ReadOnly", "ReadWrite", "DDLOnly", "DMLOnly", "DBOwner"}, false),
+			},
+			"collation_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -113,6 +130,15 @@ func resourceAliCloudRdsDatabaseCreate(d *schema.ResourceData, meta interface{})
 	}
 	if v, ok := d.GetOk("description"); ok {
 		request["DBDescription"] = v
+	}
+	if v, ok := d.GetOk("collation_name"); ok {
+		request["CollationName"] = v
+	}
+	if v, ok := d.GetOk("account_name"); ok {
+		request["AccountName"] = v
+	}
+	if v, ok := d.GetOk("account_privilege"); ok {
+		request["AccountPrivilege"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)

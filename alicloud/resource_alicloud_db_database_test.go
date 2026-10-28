@@ -2,11 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudRdsDBDatabaseMySQL(t *testing.T) {
@@ -171,6 +174,73 @@ func TestAccAliCloudRdsDBDatabaseMySQL2(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRdsDBDatabaseMySQL3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_db_database.default"
+
+	var dbDatabaseBasicMap = map[string]string{
+		"instance_id": CHECKSET,
+		"description": "",
+	}
+
+	ra := resourceAttrInit(resourceId, dbDatabaseBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBDatabase")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testaccdbdatabase%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBDatabaseConfigAccountDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":       "${alicloud_db_instance.default.id}",
+					"data_base_name":    "${var.name}",
+					"character_set":     "utf8mb4",
+					"collation_name":    "utf8mb4_general_ci",
+					"account_name":      "${alicloud_rds_account.default.account_name}",
+					"account_privilege": "ReadWrite",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":       CHECKSET,
+						"data_base_name":    CHECKSET,
+						"character_set":     "utf8mb4",
+						"collation_name":    "utf8mb4_general_ci",
+						"account_name":      CHECKSET,
+						"account_privilege": "ReadWrite",
+					}),
+					testAccCheckRdsDatabaseAccountPrivilege(resourceId, "ReadWrite"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_name", "account_privilege", "collation_name"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "from terraform",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{"description": "from terraform"}),
+				),
 			},
 		},
 	})
@@ -507,6 +577,58 @@ resource "alicloud_db_instance" "default" {
 	instance_charge_type = "Postpaid"
 }
 `, name)
+}
+
+func testAccCheckRdsDatabaseAccountPrivilege(resourceId, accountPrivilege string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		accountRs, ok := s.RootModule().Resources["alicloud_rds_account.default"]
+		if !ok {
+			return fmt.Errorf("resource alicloud_rds_account.default not found in state")
+		}
+		accountName := accountRs.Primary.Attributes["account_name"]
+
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		parts := strings.Split(rs.Primary.ID, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("unexpected database id %s", rs.Primary.ID)
+		}
+		response, err := client.RpcPost("Rds", "2014-08-15", "DescribeDatabases", nil, map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": parts[0],
+			"DBName":       parts[1],
+		}, true)
+		if err != nil {
+			return err
+		}
+		accounts, err := jsonpath.Get("$.Databases.Database[0].Accounts.AccountPrivilegeInfo[*]", response)
+		if err != nil {
+			return err
+		}
+		for _, item := range accounts.([]interface{}) {
+			account, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if account["Account"] == accountName && account["AccountPrivilege"] == accountPrivilege {
+				return nil
+			}
+		}
+		return fmt.Errorf("account %s with privilege %s not found on database %s", accountName, accountPrivilege, rs.Primary.ID)
+	}
+}
+
+func resourceDBDatabaseConfigAccountDependence(name string) string {
+	return resourceDBDatabaseConfigDependence(name) + `
+resource "alicloud_rds_account" "default" {
+  db_instance_id   = alicloud_db_instance.default.id
+  account_name     = replace(var.name, "-", "_")
+  account_password = "Test12345"
+}
+`
 }
 
 func resourceDBDatabaseConfigPostgreSQLDependence(name string) string {
