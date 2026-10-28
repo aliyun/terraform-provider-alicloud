@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package servicecatalog. This file is generated automatically. Please do not modify it manually, thank you!
+package servicecatalog
 
 import (
 	"fmt"
@@ -8,6 +8,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -42,13 +46,13 @@ func resourceAliCloudServiceCatalogProductVersion() *schema.Resource {
 			"guidance": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Administrator guidance"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Administrator guidance"),
 			},
 			"product_id": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Product ID"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Product ID"),
 			},
 			"product_version_name": {
 				Type:     schema.TypeString,
@@ -58,7 +62,7 @@ func resourceAliCloudServiceCatalogProductVersion() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Template Type"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Template Type"),
 			},
 			"template_url": {
 				Type:     schema.TypeString,
@@ -93,22 +97,22 @@ func resourceAliCloudServiceCatalogProductVersionCreate(d *schema.ResourceData, 
 	request["ProductVersionName"] = d.Get("product_version_name")
 	request["TemplateType"] = d.Get("template_type")
 	request["TemplateUrl"] = d.Get("template_url")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_catalog_product_version", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_service_catalog_product_version", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ProductVersionId"]))
@@ -118,16 +122,16 @@ func resourceAliCloudServiceCatalogProductVersionCreate(d *schema.ResourceData, 
 
 func resourceAliCloudServiceCatalogProductVersionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	serviceCatalogServiceV2 := ServiceCatalogServiceV2{client}
+	serviceCatalogServiceV2 := NewService(client)
 
 	objectRaw, err := serviceCatalogServiceV2.DescribeServiceCatalogProductVersion(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_service_catalog_product_version DescribeServiceCatalogProductVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Active"] != nil {
@@ -190,21 +194,21 @@ func resourceAliCloudServiceCatalogProductVersionUpdate(d *schema.ResourceData, 
 	}
 	request["ProductVersionName"] = d.Get("product_version_name")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -223,26 +227,26 @@ func resourceAliCloudServiceCatalogProductVersionDelete(d *schema.ResourceData, 
 	request["ProductVersionId"] = d.Id()
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("servicecatalog", "2021-09-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

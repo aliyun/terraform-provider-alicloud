@@ -1,4 +1,4 @@
-package alicloud
+package servicecatalog
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -187,7 +191,13 @@ func dataSourceAlicloudServiceCatalogProvisionedProducts() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"tags": tagsSchema(),
+						"tags": {
+							Computed: true,
+							Type:     schema.TypeMap,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
 			},
@@ -312,7 +322,13 @@ func dataSourceAlicloudServiceCatalogProvisionedProducts() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"tags": tagsSchema(),
+						"tags": {
+							Computed: true,
+							Type:     schema.TypeMap,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
 			},
@@ -342,7 +358,7 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = helper.PageSizeLarge
 	}
 
 	idsMap := make(map[string]string)
@@ -359,7 +375,7 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		provisionedProductNameRegex = r
 	}
@@ -370,29 +386,29 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 
 	for {
 		action := "ListProvisionedProducts"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			resp, err := client.RpcPost("servicecatalog", "2021-09-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
 			response = resp
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_catalog_provisioned_products", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_service_catalog_provisioned_products", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.ProvisionedProductDetails", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ProvisionedProductDetails", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ProvisionedProductDetails", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -418,7 +434,7 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
-	servicecatalogService := ServicecatalogService{client}
+	servicecatalogService := NewService(client)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
@@ -454,7 +470,7 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 		id := fmt.Sprint(object["ProvisionedProductId"])
 		object, err = servicecatalogService.DescribeServiceCatalogProvisionedProduct(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["create_time"] = object["CreateTime"]
 		mapping["last_provisioning_task_id"] = object["LastProvisioningTaskId"]
@@ -498,27 +514,27 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 		mapping["status_message"] = object["StatusMessage"]
 		tagsRaw, _ := jsonpath.Get("$.TaskTags", object)
 		if tagsRaw != nil {
-			mapping["tags"] = tagsToMap(tagsRaw)
+			mapping["tags"] = tags.TagsToMap(tagsRaw)
 		}
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("products", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("provisioned_products", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }
