@@ -622,6 +622,7 @@ func (s *LogService) DescribeLogAudit(id string) (*slsPop.DescribeAppResponse, e
 		if IsExpectedErrors(err, []string{"AppNotExist"}) {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ = raw.(*slsPop.DescribeAppResponse)
