@@ -627,9 +627,6 @@ func Provider() *schema.Provider {
 			// eip
 			"alicloud_eip_addresses": dataSourceAlicloudEipAddresses(),
 
-			// eipanycast
-			"alicloud_eipanycast_anycast_eip_addresses": dataSourceAlicloudEipanycastAnycastEipAddresses(),
-
 			// eips
 			"alicloud_eips": dataSourceAlicloudEipAddresses(),
 
@@ -1825,10 +1822,6 @@ func Provider() *schema.Provider {
 			"alicloud_eip":                 resourceAliCloudEipAddress(),
 			"alicloud_eip_association":     resourceAliCloudEipAssociation(),
 			"alicloud_eip_address":         resourceAliCloudEipAddress(),
-
-			// eipanycast
-			"alicloud_eipanycast_anycast_eip_address":            resourceAliCloudEipanycastAnycastEipAddress(),
-			"alicloud_eipanycast_anycast_eip_address_attachment": resourceAliCloudEipanycastAnycastEipAddressAttachment(),
 
 			// elasticsearch
 			"alicloud_elasticsearch_instance": resourceAliCloudElasticsearchInstance(),

@@ -1,4 +1,4 @@
-package alicloud
+package eipanycast
 
 import (
 	"fmt"
@@ -6,13 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEipanycastAnycastEipAddresses() *schema.Resource {
+func DataSourceAnycastEipAddresses() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEipanycastAnycastEipAddressesRead,
+		Read: dataSourceAnycastEipAddressesRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -159,7 +163,7 @@ func dataSourceAlicloudEipanycastAnycastEipAddresses() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAnycastEipAddressesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListAnycastEipAddresses"
@@ -168,7 +172,7 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 		request["Name"] = v
 	}
 	if v, ok := d.GetOk("bind_instance_ids"); ok {
-		request["BindInstanceIds"] = convertListToJsonString(v.(*schema.Set).List())
+		request["BindInstanceIds"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 	}
 	if v, ok := d.GetOk("business_status"); ok {
 		request["BusinessStatus"] = v
@@ -188,13 +192,13 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 	if v, ok := d.GetOk("status"); ok {
 		request["Status"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 	var anycastEipAddressNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		anycastEipAddressNameRegex = r
 	}
@@ -213,13 +217,13 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 	for {
 		response, err = client.RpcPost("Eipanycast", "2020-03-09", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eipanycast_anycast_eip_addresses", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eipanycast_anycast_eip_addresses", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.AnycastList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AnycastList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.AnycastList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -247,7 +251,7 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		bandwidthVal, err := formatInt(object["Bandwidth"])
+		bandwidthVal, err := convert.FormatInt(object["Bandwidth"])
 		if err != nil {
 			return err
 		}
@@ -287,20 +291,20 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("addresses", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
