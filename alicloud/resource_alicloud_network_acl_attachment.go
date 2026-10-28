@@ -84,8 +84,8 @@ func resourceAliyunNetworkAclAttachmentRead(d *schema.ResourceData, meta interfa
 	vpcRes := make([]map[string]interface{}, 0)
 	for _, v := range vpcResource {
 		vpcRes = append(vpcRes, map[string]interface{}{
-			"ResourceId":   v.ResourceId,
-			"ResourceType": v.ResourceType,
+			"resource_id":   v.ResourceId,
+			"resource_type": v.ResourceType,
 		})
 	}
 	d.Set("resources", vpcRes)
