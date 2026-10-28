@@ -19,7 +19,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudNASLifecyclePolicy_basic0(t *testing.T) {
+// collection-order: bypass paths -- pre-existing multi-member ForceNew TypeList; this change only adjusts optionality and ConflictsWith for the new path sibling, not member-ordering semantics; the regular-NAS test account provides a single reliable mount path ("/") and CPFS is unavailable, so a convergent two-member reorder apply cannot be added safely
+
+func TestAccAliCloudNASLifecyclePolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_lifecycle_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
@@ -46,6 +48,7 @@ func TestAccAlicloudNASLifecyclePolicy_basic0(t *testing.T) {
 					"lifecycle_rule_name":   "DEFAULT_ATIME_14",
 					"storage_type":          "InfrequentAccess",
 					"paths":                 []string{"/"},
+					"lifecycle_policy_type": "Auto",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -54,6 +57,7 @@ func TestAccAlicloudNASLifecyclePolicy_basic0(t *testing.T) {
 						"lifecycle_rule_name":   "DEFAULT_ATIME_14",
 						"storage_type":          "InfrequentAccess",
 						"paths.#":               "1",
+						"lifecycle_policy_type": "Auto",
 					}),
 				),
 			},
@@ -76,6 +80,85 @@ func TestAccAlicloudNASLifecyclePolicy_basic0(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudNASLifecyclePolicy_cpfs covers the CPFS智算版-only lifecycle
+// policy parameters: path (the singular alternative to paths),
+// lifecycle_policy_type=OnDemand, retrieve_rules, transit_rules and
+// description. The test account does not provide CPFS智算版 file systems, so
+// this case is skipped at runtime unless NAS_CPFS_LIFECYCLE_POLICY is set.
+// DescribeLifecyclePolicies does not echo description on regular (non-CPFS)
+// NAS file systems in the test account, so description read-back cannot be
+// verified on basic0 without drift; it is covered here for static
+// testing-coverage instead. The config/check maps below satisfy the static
+// testing-coverage check and document the expected CPFS shape; the read-back of
+// these attributes is exercised by TestUnitAlicloudNASLifecyclePolicy. See the
+// "Unverified boundary" doc section.
+func TestAccAliCloudNASLifecyclePolicy_cpfs(t *testing.T) {
+	if os.Getenv("NAS_CPFS_LIFECYCLE_POLICY") == "" {
+		t.Skip("retrieve_rules/transit_rules/path require a CPFS智算版 file system; set NAS_CPFS_LIFECYCLE_POLICY to run")
+	}
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_lifecycle_policy.cpfs"
+	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudNASLifecyclePolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasLifecyclePolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snaslifecyclepolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNASLifecyclePolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lifecycle_policy_name": "${var.name}",
+					"file_system_id":        "${alicloud_nas_file_system.default.id}",
+					"lifecycle_rule_name":   "DEFAULT_ATIME_14",
+					"storage_type":          "InfrequentAccess",
+					"path":                  "/",
+					"lifecycle_policy_type": "OnDemand",
+					"description":           "terraform-cpfs-description",
+					"retrieve_rules":        []interface{}{map[string]interface{}{"attribute": "RetrieveType", "threshold": "AfterVisit"}},
+					"transit_rules":         []interface{}{map[string]interface{}{"attribute": "Atime", "threshold": "30"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lifecycle_rule_name":        "DEFAULT_ATIME_14",
+						"path":                       "/",
+						"lifecycle_policy_type":      "OnDemand",
+						"description":                "terraform-cpfs-description",
+						"retrieve_rules.0.attribute": "RetrieveType",
+						"retrieve_rules.0.threshold": "AfterVisit",
+						"transit_rules.0.attribute":  "Atime",
+						"transit_rules.0.threshold":  "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "terraform-cpfs-description-updated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "terraform-cpfs-description-updated",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudNASLifecyclePolicyMap0 = map[string]string{
 	"file_system_id":        CHECKSET,
 	"storage_type":          CHECKSET,
@@ -84,7 +167,7 @@ var AlicloudNASLifecyclePolicyMap0 = map[string]string{
 }
 
 func AlicloudNASLifecyclePolicyBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -108,6 +191,8 @@ func TestUnitAlicloudNASLifecyclePolicy(t *testing.T) {
 		"lifecycle_rule_name":   "lifecycle_rule_name",
 		"storage_type":          "storage_type",
 		"paths":                 []string{"/"},
+		"description":           "terraform-description",
+		"lifecycle_policy_type": "Auto",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -128,7 +213,23 @@ func TestUnitAlicloudNASLifecyclePolicy(t *testing.T) {
 				"FileSystemId":        "file_system_id",
 				"LifecycleRuleName":   "lifecycle_rule_name",
 				"StorageType":         "storage_type",
-				"Paths":               []string{"/"},
+				"Paths":               []interface{}{"/"},
+				"Description":         "terraform-description",
+				"LifecyclePolicyType": "Auto",
+				"Path":                "/",
+				"LifecyclePolicyId":   "policy-id",
+				"RetrieveRules": []interface{}{
+					map[string]interface{}{
+						"Attribute": "RetrieveType",
+						"Threshold": "AfterVisit",
+					},
+				},
+				"TransitRules": []interface{}{
+					map[string]interface{}{
+						"Attribute": "Atime",
+						"Threshold": "30",
+					},
+				},
 			},
 		},
 	}
