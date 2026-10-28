@@ -52,8 +52,16 @@ func dataSourceAlicloudPrivatelinkVpcEndpointConnections() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"traffic_control_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"endpoint_id": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"endpoint_owner_id": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"status": {
@@ -114,10 +122,12 @@ func dataSourceAlicloudPrivatelinkVpcEndpointConnectionsRead(d *schema.ResourceD
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":          fmt.Sprint(object["ServiceId"], ":", object["EndpointId"]),
-			"bandwidth":   object["Bandwidth"],
-			"endpoint_id": object["EndpointId"],
-			"status":      object["ConnectionStatus"],
+			"id":                   fmt.Sprint(object["ServiceId"], ":", object["EndpointId"]),
+			"bandwidth":            object["Bandwidth"],
+			"traffic_control_mode": object["TrafficControlMode"],
+			"endpoint_id":          object["EndpointId"],
+			"endpoint_owner_id":    object["EndpointOwnerId"],
+			"status":               object["ConnectionStatus"],
 		}
 		ids = append(ids, fmt.Sprint(object["ServiceId"], ":", object["EndpointId"]))
 		s = append(s, mapping)

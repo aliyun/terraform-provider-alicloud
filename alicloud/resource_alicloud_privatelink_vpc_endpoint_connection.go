@@ -34,6 +34,12 @@ func resourceAliCloudPrivateLinkVpcEndpointConnection() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: IntBetween(100, 10240),
 			},
+			"traffic_control_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Scalability", "BandwidthLimit"}, false),
+			},
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -50,6 +56,10 @@ func resourceAliCloudPrivateLinkVpcEndpointConnection() *schema.Resource {
 			},
 			"status": {
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"endpoint_owner_id": {
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 		},
@@ -73,6 +83,9 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionCreate(d *schema.ResourceDa
 
 	if v, ok := d.GetOkExists("bandwidth"); ok && v.(int) > 0 {
 		request["Bandwidth"] = v
+	}
+	if v, ok := d.GetOkExists("traffic_control_mode"); ok && v.(string) != "" {
+		request["TrafficControlMode"] = v
 	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
@@ -123,11 +136,17 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionRead(d *schema.ResourceData
 	if objectRaw["Bandwidth"] != nil {
 		d.Set("bandwidth", objectRaw["Bandwidth"])
 	}
+	if objectRaw["TrafficControlMode"] != nil {
+		d.Set("traffic_control_mode", objectRaw["TrafficControlMode"])
+	}
 	if objectRaw["ConnectionStatus"] != nil {
 		d.Set("status", objectRaw["ConnectionStatus"])
 	}
 	if objectRaw["EndpointId"] != nil {
 		d.Set("endpoint_id", objectRaw["EndpointId"])
+	}
+	if objectRaw["EndpointOwnerId"] != nil {
+		d.Set("endpoint_owner_id", objectRaw["EndpointOwnerId"])
 	}
 	if objectRaw["ServiceId"] != nil {
 		d.Set("service_id", objectRaw["ServiceId"])
@@ -155,6 +174,10 @@ func resourceAliCloudPrivateLinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 	if d.HasChange("bandwidth") {
 		update = true
 		request["Bandwidth"] = d.Get("bandwidth")
+	}
+	if d.HasChange("traffic_control_mode") {
+		update = true
+		request["TrafficControlMode"] = d.Get("traffic_control_mode")
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
