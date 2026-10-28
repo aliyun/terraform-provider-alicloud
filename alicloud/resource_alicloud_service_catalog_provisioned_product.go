@@ -288,17 +288,22 @@ func resourceAlicloudServiceCatalogProvisionedProductUpdate(d *schema.ResourceDa
 
 	if d.HasChange("parameters") {
 		update = true
-		if v, ok := d.GetOk("parameters"); ok {
-			parametersMaps := make([]map[string]interface{}, 0)
-			for _, value0 := range v.(*schema.Set).List() {
-				parameters := value0.(map[string]interface{})
-				parametersMap := make(map[string]interface{})
-				parametersMap["ParameterKey"] = parameters["parameter_key"]
-				parametersMap["ParameterValue"] = parameters["parameter_value"]
-				parametersMaps = append(parametersMaps, parametersMap)
-			}
-			request["Parameters"] = parametersMaps
+	}
+	// UpdateProvisionedProduct invokes ROS UpdateStack, which requires every
+	// template parameter on each update, not only the changed ones. Send the
+	// configured parameters whenever present so a tags-only update of a
+	// provisioned product whose template has parameters does not fail with
+	// "The Parameter (<key>) was not provided."
+	if v, ok := d.GetOk("parameters"); ok {
+		parametersMaps := make([]map[string]interface{}, 0)
+		for _, value0 := range v.(*schema.Set).List() {
+			parameters := value0.(map[string]interface{})
+			parametersMap := make(map[string]interface{})
+			parametersMap["ParameterKey"] = parameters["parameter_key"]
+			parametersMap["ParameterValue"] = parameters["parameter_value"]
+			parametersMaps = append(parametersMaps, parametersMap)
 		}
+		request["Parameters"] = parametersMaps
 	}
 	if d.HasChange("portfolio_id") {
 		update = true
