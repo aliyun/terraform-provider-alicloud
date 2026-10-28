@@ -175,7 +175,8 @@ func resourceAliCloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface
 		"dynamic_retry_status", "dynamic_route_cdn_v2", "dynamic_route_cpool", "dynamic_route_magic",
 		"dynamic_route_round_robin", "dynamic_route_session", "dynamic_route_tunnel", "dynamie_route_alllink_log",
 		"keepalive_sni", "l7tol4", "partition_back_to_origin", "dynamic_route_adapt_cache",
-		"dynamic_route_http_methods", "dynamic_mux_tls_enable", "dynamic_route_cdn_v2"}
+		"dynamic_route_http_methods", "dynamic_mux_tls_enable", "dynamic_route_cdn_v2",
+		"sequence"}
 
 	if functionArgs, ok := object["FunctionArgs"]; ok {
 		if functionArgList, ok := functionArgs.(map[string]interface{})["FunctionArg"]; ok {
