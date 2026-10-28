@@ -45,7 +45,7 @@ func testSweepSslVpnClientCerts(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] %s", WrapError(err))
-			return WrapError(err)
+			return nil
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*vpc.DescribeSslVpnClientCertsResponse)

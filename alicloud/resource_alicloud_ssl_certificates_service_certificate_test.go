@@ -53,11 +53,13 @@ func testSweepSslCertificatesServiceCertificate(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ssl_certificates_service_certificates", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list ssl certificates: %s", err)
+			return nil
 		}
 		resp, err := jsonpath.Get("$.CertificateList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CertificateList", response)
+			log.Printf("[ERROR] Failed to parse $.CertificateList: %s", err)
+			return nil
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
