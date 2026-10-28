@@ -758,4 +758,91 @@ func TestAccAliCloudDrdsPolardbxInstance_basic83815836_cloudauto(t *testing.T) {
 	})
 }
 
+// Case polardbx instance prepaid (PREPAY / Subscription) creation.
+// Prepaid creation charges the test account and its destroy semantics
+// (DeleteDBInstance vs Bss RefundInstance) still need product confirmation,
+// so it is gated behind ALICLOUD_TEST_DRDS_POLARDBX_PREPAY and not part of
+// the default regression matrix.
+func TestAccAliCloudDrdsPolardbxInstance_prepay(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_drds_polardbx_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMapPrepay)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDrdsPolardbxInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccdrds%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependencePrepay)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+			testAccPreCheckWithEnvVariable(t, "ALICLOUD_TEST_DRDS_POLARDBX_PREPAY")
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topology_type":  "1azone",
+					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
+					"primary_zone":   "cn-beijing-f",
+					"cn_node_count":  "2",
+					"dn_class":       "mysql.n4.medium.25",
+					"cn_class":       "polarx.x4.medium.2e",
+					"dn_node_count":  "2",
+					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
+					"engine_version": "8.0",
+					"payment_type":   "PREPAY",
+					"period":         "Month",
+					"used_time":      "1",
+					"auto_renew":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":   "PREPAY",
+						"topology_type":  "1azone",
+						"engine_version": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "auto_renew"},
+			},
+		},
+	})
+}
+
+var AlicloudDrdsPolardbxInstanceMapPrepay = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+	"region_id":   CHECKSET,
+}
+
+func AlicloudDrdsPolardbxInstanceBasicDependencePrepay(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = "cn-beijing-f"
+}
+
+`, name)
+}
+
 // Test Drds PolardbxInstance. <<< Resource test cases, automatically generated.

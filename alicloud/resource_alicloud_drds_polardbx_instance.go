@@ -25,6 +25,11 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(61 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"cn_class": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -66,6 +71,19 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 			"is_read_db_instance": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      "POSTPAY",
+				ValidateFunc: StringInSlice([]string{"POSTPAY", "PREPAY"}, false),
+			},
+			"period": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"primary_db_instance_name": {
 				Type:     schema.TypeString,
@@ -128,6 +146,12 @@ func resourceAliCloudDrdsPolardbxInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"1azone", "3azones"}, false),
 			},
+			"used_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: IntAtLeast(1),
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -161,7 +185,23 @@ func resourceAliCloudDrdsPolardbxInstanceCreate(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	request["PayType"] = "POSTPAY"
+	paymentType := d.Get("payment_type").(string)
+	request["PayType"] = paymentType
+	if paymentType == "PREPAY" {
+		if v, ok := d.GetOk("period"); ok && v.(string) != "" {
+			request["Period"] = v
+		} else {
+			request["Period"] = "Month"
+		}
+		if v, ok := d.GetOk("used_time"); ok && v.(int) > 0 {
+			request["UsedTime"] = v
+		} else {
+			request["UsedTime"] = 1
+		}
+		if v, ok := d.GetOkExists("auto_renew"); ok {
+			request["AutoRenew"] = v
+		}
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
@@ -245,6 +285,7 @@ func resourceAliCloudDrdsPolardbxInstanceRead(d *schema.ResourceData, meta inter
 	d.Set("dn_node_count", objectRaw["DnNodeCount"])
 	d.Set("dn_storage_space", objectRaw["DnStorageSpace"])
 	d.Set("engine_version", objectRaw["EngineVersion"])
+	d.Set("payment_type", convertDrdsPolardbxInstanceDBInstancePayTypeResponse(objectRaw["PayType"]))
 	d.Set("primary_zone", objectRaw["PrimaryZone"])
 	d.Set("region_id", objectRaw["RegionId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
@@ -472,8 +513,12 @@ func resourceAliCloudDrdsPolardbxInstanceDelete(d *schema.ResourceData, meta int
 }
 
 func convertDrdsPolardbxInstanceDBInstancePayTypeResponse(source interface{}) interface{} {
-	source = fmt.Sprint(source)
-	switch source {
+	str := fmt.Sprint(source)
+	switch str {
+	case "Postpaid", "postpaid", "POSTPAID":
+		return "POSTPAY"
+	case "Prepaid", "prepaid", "PREPAID":
+		return "PREPAY"
 	}
-	return source
+	return str
 }
