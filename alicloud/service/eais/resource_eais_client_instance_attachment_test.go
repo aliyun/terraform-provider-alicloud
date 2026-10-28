@@ -1,11 +1,14 @@
-package alicloud
+// Package eais_test.
+package eais_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eais"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +17,22 @@ import (
 func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10133(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_client_instance_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10133)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EaisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10133)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eais.NewEaisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEaisClientInstanceAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceais%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEaisClientInstanceAttachmentBasicDependence10133)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEaisClientInstanceAttachmentBasicDependence10133)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -41,8 +44,8 @@ func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10133(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":        CHECKSET,
-						"client_instance_id": CHECKSET,
+						"instance_id":        acctest.CHECKSET,
+						"client_instance_id": acctest.CHECKSET,
 						"status":             "Bound",
 						"ei_instance_type":   "eais.ei-a6.2xlarge",
 					}),
@@ -79,8 +82,8 @@ func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10133(t *testing.T) {
 }
 
 var AlicloudEaisClientInstanceAttachmentMap10133 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudEaisClientInstanceAttachmentBasicDependence10133(name string) string {
@@ -171,22 +174,22 @@ resource "alicloud_eais_instance" "eais" {
 func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10134(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_client_instance_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10134)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EaisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10134)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eais.NewEaisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEaisClientInstanceAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceais%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEaisClientInstanceAttachmentBasicDependence10134)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEaisClientInstanceAttachmentBasicDependence10134)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -195,8 +198,8 @@ func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10134(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":        CHECKSET,
-						"client_instance_id": CHECKSET,
+						"instance_id":        acctest.CHECKSET,
+						"client_instance_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -211,8 +214,8 @@ func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10134(t *testing.T) {
 }
 
 var AlicloudEaisClientInstanceAttachmentMap10134 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudEaisClientInstanceAttachmentBasicDependence10134(name string) string {
@@ -302,22 +305,22 @@ resource "alicloud_eais_instance" "eais" {
 func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10092(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eais_client_instance_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10092)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EaisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEaisClientInstanceAttachmentMap10092)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eais.NewEaisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEaisClientInstanceAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceais%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEaisClientInstanceAttachmentBasicDependence10092)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEaisClientInstanceAttachmentBasicDependence10092)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -327,8 +330,8 @@ func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10092(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":        CHECKSET,
-						"client_instance_id": CHECKSET,
+						"instance_id":        acctest.CHECKSET,
+						"client_instance_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -343,8 +346,8 @@ func SkipTestAccAliCloudEaisClientInstanceAttachment_basic10092(t *testing.T) {
 }
 
 var AlicloudEaisClientInstanceAttachmentMap10092 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudEaisClientInstanceAttachmentBasicDependence10092(name string) string {

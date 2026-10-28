@@ -1,4 +1,4 @@
-package alicloud
+package eais
 
 import (
 	"fmt"
@@ -7,16 +7,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEaisClientInstanceAttachment() *schema.Resource {
+func ResourceEaisClientInstanceAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create:             resourceAliCloudEaisClientInstanceAttachmentCreate,
-		Read:               resourceAliCloudEaisClientInstanceAttachmentRead,
-		Update:             resourceAliCloudEaisClientInstanceAttachmentUpdate,
-		Delete:             resourceAliCloudEaisClientInstanceAttachmentDelete,
+		Create:             ResourceEaisClientInstanceAttachmentCreate,
+		Read:               ResourceEaisClientInstanceAttachmentRead,
+		Update:             ResourceEaisClientInstanceAttachmentUpdate,
+		Delete:             ResourceEaisClientInstanceAttachmentDelete,
 		DeprecationMessage: "This resource has been deprecated since v1.278.0.",
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -64,10 +67,10 @@ func resourceAliCloudEaisClientInstanceAttachment() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEaisClientInstanceAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisClientInstanceAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	if InArray(fmt.Sprint(d.Get("category")), []string{"eais", ""}) {
+	if helper.InArray(fmt.Sprint(d.Get("category")), []string{"eais", ""}) {
 		action := "AttachEai"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -82,11 +85,11 @@ func resourceAliCloudEaisClientInstanceAttachmentCreate(d *schema.ResourceData, 
 		}
 		request["RegionId"] = client.RegionId
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -94,17 +97,17 @@ func resourceAliCloudEaisClientInstanceAttachmentCreate(d *schema.ResourceData, 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eais_client_instance_attachment", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eais_client_instance_attachment", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		d.SetId(fmt.Sprintf("%v:%v", response["ElasticAcceleratedInstanceId"], response["ClientInstanceId"]))
 
 	}
 
-	if v, ok := d.GetOk("category"); ok && InArray(fmt.Sprint(v), []string{"ei"}) {
+	if v, ok := d.GetOk("category"); ok && helper.InArray(fmt.Sprint(v), []string{"ei"}) {
 		action := "AttachEaisEi"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -122,11 +125,11 @@ func resourceAliCloudEaisClientInstanceAttachmentCreate(d *schema.ResourceData, 
 		if v, ok := d.GetOk("ei_instance_type"); ok {
 			request["EiInstanceType"] = v
 		}
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -134,31 +137,31 @@ func resourceAliCloudEaisClientInstanceAttachmentCreate(d *schema.ResourceData, 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eais_client_instance_attachment", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eais_client_instance_attachment", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		d.SetId(fmt.Sprintf("%v:%v", response["EiInstanceId"], response["ClientInstanceId"]))
 
 	}
 
-	return resourceAliCloudEaisClientInstanceAttachmentUpdate(d, meta)
+	return ResourceEaisClientInstanceAttachmentUpdate(d, meta)
 }
 
-func resourceAliCloudEaisClientInstanceAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisClientInstanceAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eaisServiceV2 := EaisServiceV2{client}
 
 	objectRaw, err := eaisServiceV2.DescribeEaisClientInstanceAttachment(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eais_client_instance_attachment DescribeEaisClientInstanceAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["StartTime"])
@@ -171,21 +174,21 @@ func resourceAliCloudEaisClientInstanceAttachmentRead(d *schema.ResourceData, me
 	return nil
 }
 
-func resourceAliCloudEaisClientInstanceAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisClientInstanceAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 
 	enableAction := false
-	if v, ok := d.GetOk("category"); ok && InArray(fmt.Sprint(v), []string{"ei"}) {
+	if v, ok := d.GetOk("category"); ok && helper.InArray(fmt.Sprint(v), []string{"ei"}) {
 		enableAction = true
 	}
 	if enableAction && d.HasChange("status") {
 		eaisServiceV2 := EaisServiceV2{client}
 		object, err := eaisServiceV2.DescribeEaisClientInstanceAttachment(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
@@ -197,11 +200,11 @@ func resourceAliCloudEaisClientInstanceAttachmentUpdate(d *schema.ResourceData, 
 				query = make(map[string]interface{})
 				request["EiInstanceId"] = parts[0]
 				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -209,9 +212,9 @@ func resourceAliCloudEaisClientInstanceAttachmentUpdate(d *schema.ResourceData, 
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -222,11 +225,11 @@ func resourceAliCloudEaisClientInstanceAttachmentUpdate(d *schema.ResourceData, 
 				query = make(map[string]interface{})
 				request["EiInstanceId"] = parts[0]
 				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -234,22 +237,22 @@ func resourceAliCloudEaisClientInstanceAttachmentUpdate(d *schema.ResourceData, 
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
 		}
 	}
 
-	return resourceAliCloudEaisClientInstanceAttachmentRead(d, meta)
+	return ResourceEaisClientInstanceAttachmentRead(d, meta)
 }
 
-func resourceAliCloudEaisClientInstanceAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisClientInstanceAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 
 	enableDelete := false
-	if InArray(fmt.Sprint(d.Get("category")), []string{"eais", ""}) {
+	if helper.InArray(fmt.Sprint(d.Get("category")), []string{"eais", ""}) {
 		enableDelete = true
 	}
 	if enableDelete {
@@ -264,12 +267,12 @@ func resourceAliCloudEaisClientInstanceAttachmentDelete(d *schema.ResourceData, 
 		request["ElasticAcceleratedInstanceId"] = parts[0]
 		request["RegionId"] = client.RegionId
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -277,20 +280,20 @@ func resourceAliCloudEaisClientInstanceAttachmentDelete(d *schema.ResourceData, 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
 
 	enableDelete = false
 	if v, ok := d.GetOk("category"); ok {
-		if InArray(fmt.Sprint(v), []string{"ei"}) {
+		if helper.InArray(fmt.Sprint(v), []string{"ei"}) {
 			enableDelete = true
 		}
 	}
@@ -306,12 +309,12 @@ func resourceAliCloudEaisClientInstanceAttachmentDelete(d *schema.ResourceData, 
 		request["EiInstanceId"] = parts[0]
 		request["RegionId"] = client.RegionId
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -319,13 +322,13 @@ func resourceAliCloudEaisClientInstanceAttachmentDelete(d *schema.ResourceData, 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}

@@ -1,69 +1,71 @@
-package alicloud
+// Package eais_test.
+package eais_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func SkipTestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_eais_instances.default"
 	name := fmt.Sprintf("tf-testacc-eaisInstance%v", rand)
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceEaisInstancesConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceEaisInstancesConfigDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_eais_instance.default.instance_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "fake_tf-testacc*",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_eais_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_eais_instance.default.id}_fake"},
 		}),
 	}
 
-	instanceTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	instanceTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":           []string{"${alicloud_eais_instance.default.id}"},
 			"instance_type": "eais.ei-a6.medium",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":           []string{"${alicloud_eais_instance.default.id}_fake"},
 			"instance_type": "eais.ei-a6.2xlarge",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_eais_instance.default.id}"},
 			"status": "Available",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_eais_instance.default.id}_fake"},
 			"status": "Unavailable",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_eais_instance.default.instance_name}",
 			"ids":           []string{"${alicloud_eais_instance.default.id}"},
 			"status":        "Available",
 			"instance_type": "eais.ei-a6.medium",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_eais_instance.default.instance_name}",
 			"ids":           []string{"${alicloud_eais_instance.default.id}"},
 			"status":        "Unavailable",
@@ -87,16 +89,16 @@ func SkipTestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var EaisInstancesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existEaisInstancesMapFunc,
-		fakeMapFunc:  fakeEaisInstancesMapFunc,
+	var EaisInstancesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existEaisInstancesMapFunc,
+		FakeMapFunc:  fakeEaisInstancesMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.EAISSystemSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, connectivity.EAISSystemSupportRegions)
 	}
-	EaisInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, instanceTypeConf, statusConf, allConf)
+	EaisInstancesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, instanceTypeConf, statusConf, allConf)
 }
 
 func dataSourceEaisInstancesConfigDependence(name string) string {
@@ -114,7 +116,7 @@ func dataSourceEaisInstancesConfigDependence(name string) string {
 		  vpc_id  = data.alicloud_vpcs.default.ids.0
           zone_id = data.alicloud_zones.default.ids.0
 		}
-		
+
 		resource "alicloud_security_group" "default" {
 		  name        = var.name
 		  description = "tf test"
