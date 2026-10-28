@@ -1,39 +1,40 @@
-package alicloud
+package mscopensubscription_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudMscSubContactsDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
+func TestAccAliCloudMscSubContactsDataSource(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_msc_sub_contact.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_msc_sub_contact.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_msc_sub_contact.default.contact_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_msc_sub_contact.default.contact_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_msc_sub_contact.default.id}"]`,
 			"name_regex": `"${alicloud_msc_sub_contact.default.contact_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMscSubContactsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_msc_sub_contact.default.id}_fake"]`,
 			"name_regex": `"${alicloud_msc_sub_contact.default.contact_name}fake"`,
 		}),
@@ -55,12 +56,12 @@ func TestAccAlicloudMscSubContactsDataSource(t *testing.T) {
 			"contacts.#": "0",
 		}
 	}
-	var alicloudEventBridgeEventBusesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_msc_sub_contacts.default",
-		existMapFunc: existAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+	var alicloudEventBridgeEventBusesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_msc_sub_contacts.default",
+		ExistMapFunc: existAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
 	}
-	alicloudEventBridgeEventBusesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	alicloudEventBridgeEventBusesCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudMscSubContactsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -70,7 +71,7 @@ func testAccCheckAlicloudMscSubContactsDataSourceName(rand int, attrMap map[stri
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "testtfac"
 }
 resource "alicloud_msc_sub_contact" "default" {
@@ -79,7 +80,7 @@ resource "alicloud_msc_sub_contact" "default" {
     email =  "123@163.com"
     mobile = "12345257908"
 }
-data "alicloud_msc_sub_contacts" "default" {	
+data "alicloud_msc_sub_contacts" "default" {
 	%s
 }
 `, strings.Join(pairs, " \n "))

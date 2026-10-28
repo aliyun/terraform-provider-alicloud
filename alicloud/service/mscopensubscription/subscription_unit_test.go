@@ -1,11 +1,9 @@
-package alicloud
+package mscopensubscription
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
-	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -13,137 +11,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudMscSubSubscription_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_msc_sub_subscription.default"
-	ra := resourceAttrInit(resourceId, AlicloudMscSubSubscriptionMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MscOpenSubscriptionService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMscSubSubscription")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smscsubsubscription%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMscSubSubscriptionBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"item_name":      "Notifications of Product Expiration",
-					"sms_status":     "1",
-					"email_status":   "1",
-					"pmsg_status":    "1",
-					"tts_status":     "0",
-					"webhook_status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"item_name":      "Notifications of Product Expiration",
-						"sms_status":     "1",
-						"email_status":   "1",
-						"pmsg_status":    "1",
-						"tts_status":     "0",
-						"webhook_status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tts_status":     "1",
-					"webhook_status": "1",
-					"sms_status":     "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"sms_status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"email_status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"email_status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"pmsg_status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"pmsg_status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"contact_ids": []string{"${alicloud_msc_sub_contact.default1.id}", "${alicloud_msc_sub_contact.default2.id}"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"contact_ids.#": "2",
-					}),
-				),
-			},
-			{
-				// A webhook ID can only reference a real DingTalk robot URL, which this
-				// test cannot provision. Removing the required item_name stops the plan
-				// before the placeholder reaches the API.
-				Config: testAccConfig(map[string]interface{}{
-					"webhook_ids": []interface{}{"1"},
-					"item_name":   REMOVEKEY,
-				}),
-				ExpectError: regexp.MustCompile("Missing required argument"),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudMscSubSubscriptionMap0 = map[string]string{}
-
-func AlicloudMscSubSubscriptionBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-resource "alicloud_msc_sub_contact" "default1" {
-  contact_name = "tfceo"
-  position = "CEO"
-  email = "123@163.com"
-  mobile = "12312345906"
-}
-resource "alicloud_msc_sub_contact" "default2" {
-  contact_name = "tfdirector"
-  position = "Technical Director"
-  email = "123@163.com"
-  mobile = "12312345906"
-}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAlicloudMscSubSubscription(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_msc_sub_subscription"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_msc_sub_subscription"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -160,7 +36,7 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -191,18 +67,18 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_msc_sub_subscription", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_msc_sub_subscription", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -210,13 +86,13 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMscopensubscriptionClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMscSubSubscriptionCreate(dInit, rawClient)
+	err = resourceSubscriptionCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -244,7 +120,7 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMscSubSubscriptionCreate(dInit, rawClient)
+		err := resourceSubscriptionCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -265,13 +141,13 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMscopensubscriptionClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMscSubSubscriptionUpdate(dExisted, rawClient)
+	err = resourceSubscriptionUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateSubscriptionItem
@@ -319,7 +195,7 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMscSubSubscriptionUpdate(dExisted, rawClient)
+		err := resourceSubscriptionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -358,7 +234,7 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMscSubSubscriptionRead(dExisted, rawClient)
+		err := resourceSubscriptionRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -369,7 +245,7 @@ func TestUnitAlicloudMscSubSubscription(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudMscSubSubscriptionDelete(dExisted, rawClient)
+	err = resourceSubscriptionDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }

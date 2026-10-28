@@ -1,4 +1,4 @@
-package alicloud
+package mscopensubscription_test
 
 import (
 	"fmt"
@@ -6,33 +6,34 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudMscSubWebhooksDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
+func TestAccAliCloudMscSubWebhooksDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_msc_sub_webhook.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_msc_sub_webhook.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_msc_sub_webhook.default.webhook_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_msc_sub_webhook.default.webhook_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_msc_sub_webhook.default.id}"]`,
 			"name_regex": `"${alicloud_msc_sub_webhook.default.webhook_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMscSubWebhooksDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_msc_sub_webhook.default.id}_fake"]`,
 			"name_regex": `"${alicloud_msc_sub_webhook.default.webhook_name}fake"`,
 		}),
@@ -53,18 +54,18 @@ func TestAccAlicloudMscSubWebhooksDataSource(t *testing.T) {
 		}
 	}
 
-	var alicloudMscSubWebhookCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_msc_sub_webhooks.default",
-		existMapFunc: existMscSubWebhooksMapFunc,
-		fakeMapFunc:  fakeMscSubWebhooksMapFunc,
+	var alicloudMscSubWebhookCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_msc_sub_webhooks.default",
+		ExistMapFunc: existMscSubWebhooksMapFunc,
+		FakeMapFunc:  fakeMscSubWebhooksMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_MSC_SUB_WEBHOOK_TOKEN")
+		acctest.PreCheck(t)
+		acctest.PreCheckWithEnvVariable(t, "ALICLOUD_MSC_SUB_WEBHOOK_TOKEN")
 	}
 
-	alicloudMscSubWebhookCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	alicloudMscSubWebhookCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudMscSubWebhooksDataSourceName(rand int, attrMap map[string]string) string {
@@ -74,7 +75,7 @@ func testAccCheckAlicloudMscSubWebhooksDataSourceName(rand int, attrMap map[stri
 	}
 
 	config := fmt.Sprintf(`
-variable "name" {	
+variable "name" {
   default = "testtfac"
 }
 resource "alicloud_msc_sub_webhook" "default" {
