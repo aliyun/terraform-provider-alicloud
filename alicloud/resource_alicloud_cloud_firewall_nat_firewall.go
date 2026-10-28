@@ -31,6 +31,25 @@ func resourceAliCloudCloudFirewallNatFirewall() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"firewall_service_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"PrimaryStandby", "MultiPrimary"}, false),
+			},
+			"firewall_service_zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"fw_vswitch_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"lang": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -116,49 +135,12 @@ func resourceAliCloudCloudFirewallNatFirewallCreate(d *schema.ResourceData, meta
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateSecurityProxy"
-	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	var err error
 	var endpoint string
-	request = make(map[string]interface{})
+	request := expandCloudFirewallNatFirewallCreateRequest(d)
 
-	if v, ok := d.GetOk("lang"); ok {
-		request["Lang"] = v
-	}
-	request["ProxyName"] = d.Get("proxy_name")
-	request["RegionNo"] = d.Get("region_no")
-	request["NatGatewayId"] = d.Get("nat_gateway_id")
-	request["VpcId"] = d.Get("vpc_id")
-	if v, ok := d.GetOk("vswitch_auto"); ok {
-		request["VswitchAuto"] = v
-	}
-	if v, ok := d.GetOk("nat_route_entry_list"); ok {
-		natRouteEntryListMaps := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["NextHopId"] = dataLoopTmp["nexthop_id"]
-			dataLoopMap["DestinationCidr"] = dataLoopTmp["destination_cidr"]
-			dataLoopMap["NextHopType"] = dataLoopTmp["nexthop_type"]
-			dataLoopMap["RouteTableId"] = dataLoopTmp["route_table_id"]
-			natRouteEntryListMaps = append(natRouteEntryListMaps, dataLoopMap)
-		}
-		request["NatRouteEntryList"] = natRouteEntryListMaps
-	}
-
-	if v, ok := d.GetOk("firewall_switch"); ok {
-		request["FirewallSwitch"] = v
-	}
-	if v, ok := d.GetOk("strict_mode"); ok {
-		request["StrictMode"] = v
-	}
-	if v, ok := d.GetOk("vswitch_cidr"); ok {
-		request["VswitchCidr"] = v
-	}
-	if v, ok := d.GetOk("vswitch_id"); ok {
-		request["VswitchId"] = v
-	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
@@ -212,6 +194,15 @@ func resourceAliCloudCloudFirewallNatFirewallRead(d *schema.ResourceData, meta i
 	d.Set("status", objectRaw["ProxyStatus"])
 	d.Set("strict_mode", objectRaw["StrictMode"])
 	d.Set("vpc_id", objectRaw["VpcId"])
+	// firewall_service_mode and firewall_service_zones are ForceNew (create-only,
+	// SwitchSecurityProxy does not accept them) but DescribeNatFirewallList returns
+	// both in each NatFirewallList item, so they are read back to keep state
+	// consistent on import and avoid an import-then-recreate diff. They are not
+	// listed in ImportStateVerifyIgnore (coverage rule forbids a ForceNew field
+	// being both read back and ignored). FwVswitchZoneId is not returned by the
+	// Read API and remains create-only without a d.Set.
+	d.Set("firewall_service_mode", objectRaw["FirewallServiceMode"])
+	d.Set("firewall_service_zones", objectRaw["FirewallServiceZones"])
 
 	natRouteEntryList1Raw := objectRaw["NatRouteEntryList"]
 	natRouteEntryListMaps := make([]map[string]interface{}, 0)
@@ -340,4 +331,64 @@ func convertCloudFirewallNatFirewallSwitchRequest(source interface{}) interface{
 		return "close"
 	}
 	return source
+}
+
+// expandCloudFirewallNatFirewallCreateRequest builds the CreateSecurityProxy
+// request body from the resource schema. It is extracted so the parameter
+// marshalling (including FirewallServiceMode / FirewallServiceZones /
+// FwVswitchZoneId) can be regression-tested without cloud calls.
+func expandCloudFirewallNatFirewallCreateRequest(d *schema.ResourceData) map[string]interface{} {
+	request := make(map[string]interface{})
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	request["ProxyName"] = d.Get("proxy_name")
+	request["RegionNo"] = d.Get("region_no")
+	request["NatGatewayId"] = d.Get("nat_gateway_id")
+	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("vswitch_auto"); ok {
+		request["VswitchAuto"] = v
+	}
+	if v, ok := d.GetOk("nat_route_entry_list"); ok {
+		natRouteEntryListMaps := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["NextHopId"] = dataLoopTmp["nexthop_id"]
+			dataLoopMap["DestinationCidr"] = dataLoopTmp["destination_cidr"]
+			dataLoopMap["NextHopType"] = dataLoopTmp["nexthop_type"]
+			dataLoopMap["RouteTableId"] = dataLoopTmp["route_table_id"]
+			natRouteEntryListMaps = append(natRouteEntryListMaps, dataLoopMap)
+		}
+		request["NatRouteEntryList"] = natRouteEntryListMaps
+	}
+
+	if v, ok := d.GetOk("firewall_switch"); ok {
+		request["FirewallSwitch"] = v
+	}
+	if v, ok := d.GetOk("strict_mode"); ok {
+		request["StrictMode"] = v
+	}
+	if v, ok := d.GetOk("vswitch_cidr"); ok {
+		request["VswitchCidr"] = v
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VswitchId"] = v
+	}
+	if v, ok := d.GetOk("firewall_service_mode"); ok {
+		request["FirewallServiceMode"] = v
+	}
+	if v, ok := d.GetOk("firewall_service_zones"); ok {
+		firewallServiceZones := make([]string, 0)
+		for _, zone := range v.([]interface{}) {
+			firewallServiceZones = append(firewallServiceZones, zone.(string))
+		}
+		request["FirewallServiceZones"] = firewallServiceZones
+	}
+	if v, ok := d.GetOk("fw_vswitch_zone_id"); ok {
+		request["FwVswitchZoneId"] = v
+	}
+
+	return request
 }
