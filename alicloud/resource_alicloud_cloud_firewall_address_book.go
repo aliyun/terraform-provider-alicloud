@@ -52,10 +52,11 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
 			},
 			"address_list": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:             schema.TypeList,
+				Optional:         true,
+				Computed:         true,
+				Elem:             &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: cloudFirewallAddressBookAddressListDiffSuppressFunc,
 			},
 			"ecs_tags": {
 				Type:     schema.TypeSet,
@@ -400,7 +401,7 @@ func resourceAliCloudCloudFirewallAddressBookCreate(d *schema.ResourceData, meta
 	}
 
 	if v, ok := d.GetOk("address_list"); ok {
-		request["AddressList"] = strings.Join(expandStringList(v.([]interface{})), ",")
+		request["AddressList"] = strings.Join(cloudFirewallAddressBookDedupStringList(expandStringList(v.([]interface{}))), ",")
 	}
 
 	if v, ok := d.GetOk("ecs_tags"); ok {
@@ -487,7 +488,10 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 	for _, addressListArg := range object["AddressList"].([]interface{}) {
 		addressListItems = append(addressListItems, fmt.Sprint(addressListArg))
 	}
-	d.Set("address_list", cloudFirewallAddressBookAddressOrder(addressListItems, d.Get("address_list").([]interface{})))
+	// An IP address book is a set: drop duplicate entries returned by the API so
+	// the state never carries dirty duplicates, then retain the configured order
+	// for surviving addresses.
+	d.Set("address_list", cloudFirewallAddressBookAddressOrder(cloudFirewallAddressBookDedupStringList(addressListItems), d.Get("address_list").([]interface{})))
 
 	ecsTags := make([]map[string]interface{}, 0)
 	for _, tagListItem := range object["TagList"].([]interface{}) {
@@ -573,7 +577,7 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 	if d.HasChange("address_list") {
 		update = true
 		if v, ok := d.GetOk("address_list"); ok {
-			request["AddressList"] = strings.Join(expandStringList(v.([]interface{})), ",")
+			request["AddressList"] = strings.Join(cloudFirewallAddressBookDedupStringList(expandStringList(v.([]interface{}))), ",")
 		}
 	}
 
@@ -699,7 +703,8 @@ func resourceAliCloudCloudFirewallAddressBookDelete(d *schema.ResourceData, meta
 
 // Cloud Firewall may return addresses in a different order. Retain the current
 // list order for surviving occurrences, then append new occurrences in API
-// order. The API remains authoritative for complete values and multiplicity.
+// order. Callers de-duplicate the remote list first, so the API is authoritative
+// for membership while duplicate entries are never retained in state.
 func cloudFirewallAddressBookAddressOrder(remote []string, previous []interface{}) []string {
 	remaining := make(map[string]int, len(remote))
 	for _, address := range remote {
@@ -723,4 +728,58 @@ func cloudFirewallAddressBookAddressOrder(remote []string, previous []interface{
 		ordered = append(ordered, address)
 	}
 	return ordered
+}
+
+// cloudFirewallAddressBookDedupStringList removes duplicate addresses while
+// preserving first-occurrence order. The Cloud Firewall address book is a set,
+// so repeated entries in configuration or API responses are non-semantic: they
+// must not be sent to the API nor retained in state.
+func cloudFirewallAddressBookDedupStringList(items []string) []string {
+	seen := make(map[string]bool, len(items))
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if seen[item] {
+			continue
+		}
+		seen[item] = true
+		result = append(result, item)
+	}
+	return result
+}
+
+// cloudFirewallAddressBookAddressListDiffSuppressFunc suppresses plan differences
+// that are only caused by duplicate entries. A configured address book that
+// repeats an IP must not produce a perpetual diff against the de-duplicated
+// remote/state list. Order is still significant: a real reorder or membership
+// change remains a planned change. Unknown or non-list values are left to the
+// SDK so Optional+Computed handling stays intact.
+func cloudFirewallAddressBookAddressListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldValue, newValue := d.GetChange("address_list")
+	oldList, ok := oldValue.([]interface{})
+	if !ok {
+		return false
+	}
+	newList, ok := newValue.([]interface{})
+	if !ok {
+		return false
+	}
+	return cloudFirewallAddressBookStringListEqual(
+		cloudFirewallAddressBookDedupStringList(expandStringList(oldList)),
+		cloudFirewallAddressBookDedupStringList(expandStringList(newList)),
+	)
+}
+
+// cloudFirewallAddressBookStringListEqual reports whether two string slices
+// are equal in length and element order, used to compare de-duplicated lists
+// without depending on reflect.
+func cloudFirewallAddressBookStringListEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
