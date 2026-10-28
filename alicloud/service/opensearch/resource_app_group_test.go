@@ -1,4 +1,4 @@
-package alicloud
+package opensearch_test
 
 import (
 	"fmt"
@@ -8,9 +8,14 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/opensearch"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -22,7 +27,7 @@ func init() {
 }
 
 func testSweepOpenSearchAppGroup(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -37,11 +42,11 @@ func testSweepOpenSearchAppGroup(region string) error {
 	ids := make([]string, 0)
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RoaGet("OpenSearch", "2017-12-25", action, request, nil, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -55,12 +60,13 @@ func testSweepOpenSearchAppGroup(region string) error {
 		}
 		resp, err := jsonpath.Get("$.result", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AppGroup.result", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.AppGroup.result", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if convertOpenSearchAppGroupPaymentTypeResponse(item["chargeType"].(string)) == "Subscription" {
+			// chargeType "PREPAY" maps to payment_type "Subscription"; skip subscription app groups.
+			if item["chargeType"].(string) == "PREPAY" {
 				log.Printf("[INFO] Skipping AppGroup: %v (%v)", item["name"], item["id"])
 				continue
 			}
@@ -77,7 +83,7 @@ func testSweepOpenSearchAppGroup(region string) error {
 			}
 			ids = append(ids, fmt.Sprint(item["name"]))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 	}
@@ -85,13 +91,13 @@ func testSweepOpenSearchAppGroup(region string) error {
 		log.Printf("[INFO] Deleting App Group: (%s)", id)
 		action := "/v4/openapi/app-groups/" + id
 		request := map[string]*string{
-			"appGroupIdentity": StringPointer(id),
+			"appGroupIdentity": helper.StringPointer(id),
 		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(time.Minute*9, func() *retry.RetryError {
 			response, err = client.RoaDelete("OpenSearch", "2017-12-25", action, request, nil, nil, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -107,25 +113,25 @@ func testSweepOpenSearchAppGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
+func TestAccAliCloudOpenSearchAppGroup_basic0(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_open_search_app_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudOpenSearchAppGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OpenSearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeOpenSearchAppGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudOpenSearchAppGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return opensearch.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAppGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testaccosappgroup%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOpenSearchAppGroupBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudOpenSearchAppGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -196,26 +202,26 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 }
 
 // There is an api error： InternalError. Reopen it after the error has been fixed.
-func TestAccAlicloudOpenSearchAppGroup_basic1(t *testing.T) {
+func TestAccAliCloudOpenSearchAppGroup_basic1(t *testing.T) {
 	t.Skip("InternalError. Reopen it after the error has been fixed.")
-	checkoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_open_search_app_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudOpenSearchAppGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OpenSearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeOpenSearchAppGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudOpenSearchAppGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return opensearch.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAppGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testaccosappgroup%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOpenSearchAppGroupBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudOpenSearchAppGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -295,12 +301,12 @@ func TestAccAlicloudOpenSearchAppGroup_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudOpenSearchAppGroupMap0 = map[string]string{
-	"instance_id": CHECKSET,
+var AliCloudOpenSearchAppGroupMap0 = map[string]string{
+	"instance_id": acctest.CHECKSET,
 }
 
-func AlicloudOpenSearchAppGroupBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+func AliCloudOpenSearchAppGroupBasicDependence0(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
