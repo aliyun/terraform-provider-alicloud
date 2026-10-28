@@ -1,4 +1,4 @@
-package alicloud
+package fc
 
 import (
 	"encoding/json"
@@ -9,6 +9,9 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -120,26 +123,26 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 	id := fmt.Sprintf("%s:%s:%s", serviceName, functionName, qualifier)
 
 	request := &fc.PutFunctionAsyncInvokeConfigInput{
-		ServiceName:  StringPointer(serviceName),
-		FunctionName: StringPointer(functionName),
+		ServiceName:  helper.StringPointer(serviceName),
+		FunctionName: helper.StringPointer(functionName),
 	}
 
 	if v, ok := d.GetOkExists("maximum_retry_attempts"); ok {
-		request.MaxAsyncRetryAttempts = Int64Pointer(int64(v.(int)))
+		request.MaxAsyncRetryAttempts = helper.Int64Pointer(int64(v.(int)))
 	}
 	if v, ok := d.GetOk("destination_config"); ok {
 		request.DestinationConfig = parseFCDestinationConfig(v.([]interface{}))
 	}
 
 	if qualifier != "" {
-		request.Qualifier = StringPointer(qualifier)
+		request.Qualifier = helper.StringPointer(qualifier)
 	}
 
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
-		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
+		request.MaxAsyncEventAgeInSeconds = helper.Int64Pointer(int64(v.(int)))
 	}
 	if v, ok := d.GetOk("stateful_invocation"); ok {
-		request.StatefulInvocation = BoolPointer(v.(bool))
+		request.StatefulInvocation = helper.BoolPointer(v.(bool))
 	}
 
 	var response *fc.PutFunctionAsyncInvokeConfigOutput
@@ -150,20 +153,20 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 			return fcClient.PutFunctionAsyncInvokeConfig(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return retry.RetryableError(WrapError(err))
+			if errs.IsExpectedErrors(err, []string{"AccessDenied"}) {
+				return retry.RetryableError(errs.WrapError(err))
 			}
-			return retry.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(errs.WrapError(err))
 		}
-		addDebug("PutFunctionAsyncInvokeConfig", raw, requestInfo, request)
+		logs.AddDebug("PutFunctionAsyncInvokeConfig", raw, requestInfo, request)
 		response, _ = raw.(*fc.PutFunctionAsyncInvokeConfigOutput)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_function_async_invoke_config", "PutFunctionAsyncInvokeConfig", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_function_async_invoke_config", "PutFunctionAsyncInvokeConfig", errs.FcGoSdk)
 	}
 
 	if response == nil {
-		return WrapError(Error("Putting function async invoke config got an empty response"))
+		return errs.WrapError(errs.Error("Putting function async invoke config got an empty response"))
 	}
 
 	d.SetId(id)
@@ -173,20 +176,20 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudFCAsyncInvokeConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 
 	object, err := fcService.DescribeFcFunctionAsyncInvokeConfig(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_fc_function_async_invoke_config: fcService.DescribeFcFunctionAsyncInvokeConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("destination_config", flattenFCFunctionEventInvokeConfigDestinationConfig(object.DestinationConfig)); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("service_name", object.Service)
@@ -207,23 +210,23 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 	serviceName, functionName, qualifier, err := parseFCDestinationConfigId(d.Id())
 
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request := &fc.PutFunctionAsyncInvokeConfigInput{
-		ServiceName:  StringPointer(serviceName),
-		FunctionName: StringPointer(functionName),
+		ServiceName:  helper.StringPointer(serviceName),
+		FunctionName: helper.StringPointer(functionName),
 	}
-	request.MaxAsyncRetryAttempts = Int64Pointer(int64(d.Get("maximum_retry_attempts").(int)))
+	request.MaxAsyncRetryAttempts = helper.Int64Pointer(int64(d.Get("maximum_retry_attempts").(int)))
 	request.DestinationConfig = parseFCDestinationConfig(d.Get("destination_config").([]interface{}))
-	request.Qualifier = StringPointer(qualifier)
+	request.Qualifier = helper.StringPointer(qualifier)
 
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
-		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
+		request.MaxAsyncEventAgeInSeconds = helper.Int64Pointer(int64(v.(int)))
 	}
 
 	if v, ok := d.GetOkExists("stateful_invocation"); ok {
-		request.StatefulInvocation = BoolPointer(v.(bool))
+		request.StatefulInvocation = helper.BoolPointer(v.(bool))
 	}
 
 	var response *fc.PutFunctionAsyncInvokeConfigOutput
@@ -234,20 +237,20 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 			return fcClient.PutFunctionAsyncInvokeConfig(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return retry.RetryableError(WrapError(err))
+			if errs.IsExpectedErrors(err, []string{"AccessDenied"}) {
+				return retry.RetryableError(errs.WrapError(err))
 			}
-			return retry.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(errs.WrapError(err))
 		}
-		addDebug("PutFunctionAsyncInvokeConfig", raw, requestInfo, request)
+		logs.AddDebug("PutFunctionAsyncInvokeConfig", raw, requestInfo, request)
 		response, _ = raw.(*fc.PutFunctionAsyncInvokeConfigOutput)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_function_async_invoke_config", "PutFunctionAsyncInvokeConfig", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_function_async_invoke_config", "PutFunctionAsyncInvokeConfig", errs.FcGoSdk)
 	}
 
 	if response == nil {
-		return WrapError(Error("Putting function async invoke config got an empty response"))
+		return errs.WrapError(errs.Error("Putting function async invoke config got an empty response"))
 	}
 
 	return resourceAlicloudFCAsyncInvokeConfigRead(d, meta)
@@ -255,10 +258,10 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 
 func resourceAlicloudFCAsyncInvokeConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 	serviceName, functionName, qualifier, err := parseFCDestinationConfigId(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := &fc.DeleteFunctionAsyncInvokeConfigInput{
 		ServiceName:  &serviceName,
@@ -271,14 +274,14 @@ func resourceAlicloudFCAsyncInvokeConfigDelete(d *schema.ResourceData, meta inte
 		return fcClient.DeleteFunctionAsyncInvokeConfig(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AsyncConfigNotExists"}) {
+		if errs.IsExpectedErrors(err, []string{"AsyncConfigNotExists"}) {
 			return nil
 		}
 		b, _ := json.Marshal(request)
-		return WrapErrorf(err, DefaultErrorMsg, string(b), "DeleteFunctionAsyncInvokeConfig", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, string(b), "DeleteFunctionAsyncInvokeConfig", errs.FcGoSdk)
 	}
-	addDebug("DeleteFunctionAsyncInvokeConfig", raw, requestInfo, request)
-	return WrapError(fcService.WaitForFcFunctionAsyncInvokeConfig(d.Id(), Deleted, DefaultTimeout))
+	logs.AddDebug("DeleteFunctionAsyncInvokeConfig", raw, requestInfo, request)
+	return errs.WrapError(fcService.WaitForFcFunctionAsyncInvokeConfig(d.Id(), Deleted, DefaultTimeout))
 }
 
 func parseFCDestinationConfig(l []interface{}) *fc.DestinationConfig {
@@ -305,7 +308,7 @@ func expandFCDestinationConfigOnSuccess(l []interface{}) *fc.Destination {
 	var onSuccess *fc.Destination
 	if v, ok := m["destination"].(string); ok {
 		onSuccess = &fc.Destination{
-			Destination: StringPointer(v),
+			Destination: helper.StringPointer(v),
 		}
 	}
 
@@ -321,7 +324,7 @@ func expandFCDestinationConfigOnFailure(l []interface{}) *fc.Destination {
 	var onFailure *fc.Destination
 	if v, ok := m["destination"].(string); ok {
 		onFailure = &fc.Destination{
-			Destination: StringPointer(v),
+			Destination: helper.StringPointer(v),
 		}
 	}
 
