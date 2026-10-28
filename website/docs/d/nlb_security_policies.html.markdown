@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Nlb Security Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
@@ -41,17 +41,18 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `security_policy_names` - (Optional, ForceNew) The names of the TLS security policies.
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Configuring`.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Security Policy names.
 * `policies` - A list of Nlb Security Policies. Each element contains the following attributes:
-	* `ciphers` - The supported cipher suites, which are determined by the TLS protocol version.
-	* `status` - The status of the resource.
-	* `tls_versions` - The TLS protocol versions that are supported.
-	* `resource_group_id` - The ID of the resource group.
-	* `security_policy_name` - The name of the TLS security policy.
-	* `tags` - A mapping of tags to assign to the resource.
-	* `id` - The id of the TLS security policy.
+  * `ciphers` - The supported cipher suites, which are determined by the TLS protocol version.
+  * `status` - The status of the resource.
+  * `tls_versions` - The TLS protocol versions that are supported.
+  * `resource_group_id` - The ID of the resource group.
+  * `security_policy_name` - The name of the TLS security policy.
+  * `tags` - A mapping of tags to assign to the resource.
+  * `id` - The id of the TLS security policy.

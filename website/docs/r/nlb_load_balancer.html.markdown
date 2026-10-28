@@ -114,7 +114,6 @@ resource "alicloud_vpc_ipv6_gateway" "default" {
 }
 
 resource "alicloud_nlb_load_balancer" "nlb" {
-  depends_on         = [alicloud_vpc_ipv6_gateway.default]
   load_balancer_name = var.name
   load_balancer_type = "Network"
   address_type       = "Intranet"
@@ -214,9 +213,9 @@ The modification_protection_config supports the following:
 
 The zone_mappings supports the following:
 * `allocation_id` - (Optional, Computed) The ID of the elastic IP address (EIP) that is associated with the Internet-facing NLB instance. You can specify one EIP for each zone. You must add at least two zones. You can add a maximum of 10 zones.
-* `ipv4_local_addresses` - (Optional, ForceNew, Set, Available since v1.245.0) IPv4 Local address list. The list of addresses that NLB interacts with backend services.
-* `ipv6_address` - (Optional, ForceNew) The IPv6 address of the NLB instance.
-* `ipv6_local_addresses` - (Optional, ForceNew, Set, Available since v1.245.0) IPv6 Local address list. The list of addresses that NLB interacts with backend services.
+* `ipv4_local_addresses` - (Optional, Computed, Set, Available since v1.245.0) IPv4 Local address list. The list of addresses that NLB interacts with backend services.
+* `ipv6_address` - (Optional, Computed) The IPv6 address of the NLB instance.
+* `ipv6_local_addresses` - (Optional, Computed, Set, Available since v1.245.0) IPv6 Local address list. The list of addresses that NLB interacts with backend services.
 * `private_ipv4_address` - (Optional, Computed) The private IP address. You must add at least two zones. You can add a maximum of 10 zones.
 * `vswitch_id` - (Required) The vSwitch in the zone. You can specify only one vSwitch (subnet) in each zone of an NLB instance. You must add at least two zones. You can add a maximum of 10 zones.
 * `zone_id` - (Required) The ID of the zone of the NLB instance. You must add at least two zones. You can add a maximum of 10 zones.
@@ -230,11 +229,11 @@ The following attributes are exported:
 * `deletion_protection_config` - Specifies whether to enable deletion protection. Default value: `false`.
   * `enabled_time` - Opening time of enable deletion protection.
 * `dns_name` - The domain name of the NLB instance.
-* `load_balancer_business_status` - The business status of the NLB instance. 
+* `load_balancer_business_status` - The business status of the NLB instance.
 * `modification_protection_config` - Specifies whether to enable the configuration read-only mode. Default value: `NonProtection`.
   * `enabled_time` - Opening time of the configuration read-only mode.
 * `region_id` - The ID of the region where the NLB instance is deployed.
-* `status` - The status of the NLB instance. 
+* `status` - The status of the NLB instance.
 * `zone_mappings` - Available Area Configuration List. You must add at least two zones. You can add a maximum of 10 zones.
   * `eni_id` - The ID of the elastic network interface (ENI).
   * `public_ipv4_address` - The public IPv4 address of the NLB instance.

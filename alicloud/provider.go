@@ -918,14 +918,6 @@ func Provider() *schema.Provider {
 			"alicloud_network_interfaces": dataSourceAlicloudEcsNetworkInterfaces(),
 			"alicloud_network_acls":       dataSourceAlicloudNetworkAcls(),
 
-			// nlb
-			"alicloud_nlb_server_groups":                   dataSourceAlicloudNlbServerGroups(),
-			"alicloud_nlb_security_policies":               dataSourceAlicloudNlbSecurityPolicies(),
-			"alicloud_nlb_load_balancers":                  dataSourceAlicloudNlbLoadBalancers(),
-			"alicloud_nlb_zones":                           dataSourceAlicloudNlbZones(),
-			"alicloud_nlb_listeners":                       dataSourceAlicloudNlbListeners(),
-			"alicloud_nlb_server_group_server_attachments": dataSourceAlicloudNlbServerGroupServerAttachments(),
-
 			// ocean
 			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
 
@@ -2276,18 +2268,6 @@ func Provider() *schema.Provider {
 			"alicloud_network_acl":                  resourceAliCloudVpcNetworkAcl(),
 			"alicloud_network_acl_attachment":       resourceAliyunNetworkAclAttachment(),
 			"alicloud_network_acl_entries":          resourceAliyunNetworkAclEntries(),
-
-			// nlb
-			"alicloud_nlb_hd_monitor_region_config":                         resourceAliCloudNlbHdMonitorRegionConfig(),
-			"alicloud_nlb_load_balancer_zone_shifted_attachment":            resourceAliCloudNlbLoadBalancerZoneShiftedAttachment(),
-			"alicloud_nlb_listener_additional_certificate_attachment":       resourceAliCloudNlbListenerAdditionalCertificateAttachment(),
-			"alicloud_nlb_loadbalancer_common_bandwidth_package_attachment": resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachment(),
-			"alicloud_nlb_server_group":                                     resourceAliCloudNlbServerGroup(),
-			"alicloud_nlb_security_policy":                                  resourceAliCloudNlbSecurityPolicy(),
-			"alicloud_nlb_load_balancer":                                    resourceAliCloudNlbLoadBalancer(),
-			"alicloud_nlb_listener":                                         resourceAliCloudNlbListener(),
-			"alicloud_nlb_server_group_server_attachment":                   resourceAliCloudNlbServerGroupServerAttachment(),
-			"alicloud_nlb_load_balancer_security_group_attachment":          resourceAliCloudNlbLoadBalancerSecurityGroupAttachment(),
 
 			// ocean
 			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
