@@ -1,62 +1,63 @@
-package alicloud
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOtsSearchIndexesDataSource_basic(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ots_search_indexes.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("testAcc%d", rand),
 		dataSourceOtsSearchIndexesConfigDependence)
 
-	instanceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	instanceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_search_index.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_search_index.default.id}-fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 			"name_regex":    "${alicloud_ots_search_index.default.index_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 			"name_regex":    "${alicloud_ots_search_index.default.index_name}-fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_search_index.default.id}"},
 			"name_regex":    "${alicloud_ots_search_index.default.index_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_search_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_search_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_search_index.default.id}"},
@@ -67,21 +68,21 @@ func TestAccAlicloudOtsSearchIndexesDataSource_basic(t *testing.T) {
 	var existOtsTablesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"names.#":                             "1",
-			"names.0":                             CHECKSET,
+			"names.0":                             acctest.CHECKSET,
 			"indexes.#":                           "1",
-			"indexes.0.id":                        CHECKSET,
-			"indexes.0.instance_name":             CHECKSET,
-			"indexes.0.table_name":                CHECKSET,
-			"indexes.0.index_name":                CHECKSET,
-			"indexes.0.create_time":               CHECKSET,
-			"indexes.0.time_to_live":              CHECKSET,
-			"indexes.0.sync_phase":                CHECKSET,
-			"indexes.0.current_sync_timestamp":    CHECKSET,
-			"indexes.0.schema":                    CHECKSET,
-			"indexes.0.storage_size":              CHECKSET,
-			"indexes.0.row_count":                 CHECKSET,
-			"indexes.0.reserved_read_cu":          CHECKSET,
-			"indexes.0.metering_last_update_time": CHECKSET,
+			"indexes.0.id":                        acctest.CHECKSET,
+			"indexes.0.instance_name":             acctest.CHECKSET,
+			"indexes.0.table_name":                acctest.CHECKSET,
+			"indexes.0.index_name":                acctest.CHECKSET,
+			"indexes.0.create_time":               acctest.CHECKSET,
+			"indexes.0.time_to_live":              acctest.CHECKSET,
+			"indexes.0.sync_phase":                acctest.CHECKSET,
+			"indexes.0.current_sync_timestamp":    acctest.CHECKSET,
+			"indexes.0.schema":                    acctest.CHECKSET,
+			"indexes.0.storage_size":              acctest.CHECKSET,
+			"indexes.0.row_count":                 acctest.CHECKSET,
+			"indexes.0.reserved_read_cu":          acctest.CHECKSET,
+			"indexes.0.metering_last_update_time": acctest.CHECKSET,
 		}
 	}
 
@@ -92,16 +93,16 @@ func TestAccAlicloudOtsSearchIndexesDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var otsTablesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existOtsTablesMapFunc,
-		fakeMapFunc:  fakeOtsTablesMapFunc,
+	var otsTablesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existOtsTablesMapFunc,
+		FakeMapFunc:  fakeOtsTablesMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 	}
-	otsTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, idsConf, nameRegexConf, allConf)
+	otsTablesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceOtsSearchIndexesConfigDependence(name string) string {

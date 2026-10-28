@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"fmt"
@@ -6,13 +6,16 @@ import (
 
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 // resourceAlicloudOtsTunnel Tablestore tunnel not support update
-func resourceAlicloudOtsTunnel() *schema.Resource {
+func ResourceOtsTunnel() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunOtsTunnelCreate,
 		Read:   resourceAliyunOtsTunnelRead,
@@ -114,19 +117,19 @@ func resourceAliyunOtsTunnelCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	// check table exists
 	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, e := otsService.DescribeOtsTable(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		if e != nil {
-			if NotFoundError(e) {
+			if errs.NotFoundError(e) {
 				return retry.RetryableError(e)
 			}
 			return retry.NonRetryableError(e)
 		}
 		return nil
 	}); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request := new(otsTunnel.CreateTunnelRequest)
@@ -141,15 +144,15 @@ func resourceAliyunOtsTunnelCreate(d *schema.ResourceData, meta interface{}) err
 			return tunnelClient.CreateTunnel(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTunnelIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("CreateTunnel", raw, requestInfo, request)
+		logs.AddDebug("CreateTunnel", raw, requestInfo, request)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_tunnel", "CreateTunnel", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_tunnel", "CreateTunnel", errs.AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", instanceName, COLON_SEPARATED, tableName, COLON_SEPARATED, tunnelName))
@@ -158,15 +161,15 @@ func resourceAliyunOtsTunnelCreate(d *schema.ResourceData, meta interface{}) err
 
 func resourceAliyunOtsTunnelRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	object, err := otsService.DescribeOtsTunnel(d.Id())
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_name", object.Tunnel.InstanceName)
@@ -197,11 +200,11 @@ func resourceAliyunOtsTunnelRead(d *schema.ResourceData, meta interface{}) error
 
 func resourceAliyunOtsTunnelDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	req := &otsTunnel.DeleteTunnelRequest{
 		TableName:  parts[1],
@@ -214,21 +217,21 @@ func resourceAliyunOtsTunnelDelete(d *schema.ResourceData, meta interface{}) err
 			return tunnelClient.DeleteTunnel(req)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTunnelIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("DeleteTunnel", raw, requestInfo, req)
+		logs.AddDebug("DeleteTunnel", raw, requestInfo, req)
 		return nil
 	})
 	if err != nil {
 		if isOtsTunnelNotFound(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTunnel", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteTunnel", errs.AliyunTablestoreGoSdk)
 	}
-	return WrapError(otsService.WaitForOtsTunnel(d.Id(), Deleted, DefaultTimeout))
+	return errs.WrapError(otsService.WaitForOtsTunnel(d.Id(), Deleted, DefaultTimeout))
 }
 
 func parseTunnelType(orig string) (otsTunnel.TunnelType, error) {
@@ -240,6 +243,6 @@ func parseTunnelType(orig string) (otsTunnel.TunnelType, error) {
 	case string(StreamTunnel):
 		return otsTunnel.TunnelTypeStream, nil
 	default:
-		return "", WrapError(Error("unknown ots tunnel type: %s", orig))
+		return "", errs.WrapError(errs.Error("unknown ots tunnel type: %s", orig))
 	}
 }

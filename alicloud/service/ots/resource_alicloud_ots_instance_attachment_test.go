@@ -1,41 +1,43 @@
-package alicloud
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	sdkots "github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudOtsInstanceAttachmentBasic(t *testing.T) {
-	var v ots.VpcInfo
+	var v sdkots.VpcInfo
 
 	resourceId := "alicloud_ots_instance_attachment.default"
-	ra := resourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceAttachmentConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsInstanceAttachmentConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -55,31 +57,31 @@ func TestAccAliCloudOtsInstanceAttachmentBasic(t *testing.T) {
 }
 
 func TestAccAliCloudOtsInstanceAttachmentHighPerformance(t *testing.T) {
-	var v ots.VpcInfo
+	var v sdkots.VpcInfo
 
 	resourceId := "alicloud_ots_instance_attachment.default"
-	ra := resourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsInstanceAttachmentBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceAttachmentConfigDependenceHighperformance)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsInstanceAttachmentConfigDependenceHighperformance)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -134,7 +136,7 @@ func resourceOtsInstanceAttachmentConfigDependence(name string) string {
 	locals {
 	  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 	}
-	`, name, string(OtsCapacity))
+	`, name, string(ots.OtsCapacity))
 }
 
 func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) string {
@@ -171,12 +173,12 @@ func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) s
 	locals {
 	  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 	}
-	`, name, string(OtsHighPerformance))
+	`, name, string(ots.OtsHighPerformance))
 }
 
 var otsInstanceAttachmentBasicMap = map[string]string{
-	"instance_name": CHECKSET,
-	"vpc_name":      CHECKSET,
-	"vswitch_id":    CHECKSET,
-	"vpc_id":        CHECKSET,
+	"instance_name": acctest.CHECKSET,
+	"vpc_name":      acctest.CHECKSET,
+	"vswitch_id":    acctest.CHECKSET,
+	"vpc_id":        acctest.CHECKSET,
 }

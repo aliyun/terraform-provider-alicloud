@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"fmt"
@@ -8,12 +8,14 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudOtsSearchIndex() *schema.Resource {
+func ResourceOtsSearchIndex() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunOtsSearchIndexCreate,
 		Read:   resourceAliyunOtsSearchIndexRead,
@@ -215,7 +217,7 @@ func resourceAlicloudOtsSearchIndex() *schema.Resource {
 func parseSearchIndexResourceArgs(d *schema.ResourceData) (*SearchIndexResourceArgs, error) {
 	indexSchema, err := parseSearchIndexSchema(d)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 	args := &SearchIndexResourceArgs{
 		instanceName: d.Get("instance_name").(string),
@@ -237,14 +239,14 @@ func parseSearchIndexSchema(d *schema.ResourceData) (*tablestore.IndexSchema, er
 	// required
 	fieldSchemas, err := parseFieldSchemas(schemaArg)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 	// optional
 	indexSetting := parseIndexSetting(schemaArg)
 	// optional
 	indexSort, err := parseIndexSort(schemaArg)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	return &tablestore.IndexSchema{
@@ -262,7 +264,7 @@ func parseFieldSchemas(schemaArg map[string]interface{}) ([]*tablestore.FieldSch
 		fsMap := fs.(map[string]interface{})
 		fieldSchema, err := parseFieldSchema(fsMap)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 
 		fieldSchemas = append(fieldSchemas, fieldSchema)
@@ -285,7 +287,7 @@ func parseIndexSort(schemaArg map[string]interface{}) (*search.Sort, error) {
 				sorterArg := s.(map[string]interface{})
 				sort, err := parseIndexFieldSort(sorterArg)
 				if err != nil {
-					return nil, WrapError(err)
+					return nil, errs.WrapError(err)
 				}
 
 				sorts = append(sorts, sort)
@@ -345,7 +347,7 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 	if v, ok := fsMap["field_type"]; ok {
 		vv, err := ConvertSearchIndexFieldTypeString(SearchIndexFieldTypeString(v.(string)))
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		fieldSchema.FieldType = vv
 	}
@@ -360,7 +362,7 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 	if v, ok := fsMap["analyzer"]; ok && fsMap["analyzer"] != "" {
 		analyzer, err := ConvertSearchIndexAnalyzerTypeString(SearchIndexAnalyzerTypeString(v.(string)))
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		fieldSchema.Analyzer = &analyzer
 	}
@@ -378,12 +380,12 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 func parseIndexFieldSort(sorterArg map[string]interface{}) (search.Sorter, error) {
 	sortFieldType, err := ConvertSearchIndexSortFieldTypeString(SearchIndexSortFieldTypeString(sorterArg["sorter_type"].(string)))
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	orderType, err := ConvertSearchIndexOrderTypeString(SearchIndexOrderTypeString(sorterArg["order"].(string)))
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	switch sort := sortFieldType.(type) {
@@ -396,13 +398,13 @@ func parseIndexFieldSort(sorterArg map[string]interface{}) (search.Sorter, error
 		sort.FieldName = sorterArg["field_name"].(string)
 		mode, err := ConvertSearchIndexSortModeString(SearchIndexSortModeString(sorterArg["mode"].(string)))
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		sort.Mode = &mode
 
 		return sort, nil
 	default:
-		return nil, WrapError(fmt.Errorf("not find search index sort field type [PrimaryKeySort|FieldSort]: %v", sortFieldType))
+		return nil, errs.WrapError(fmt.Errorf("not find search index sort field type [PrimaryKeySort|FieldSort]: %v", sortFieldType))
 	}
 }
 
@@ -417,15 +419,15 @@ type SearchIndexResourceArgs struct {
 func resourceAliyunOtsSearchIndexCreate(d *schema.ResourceData, meta interface{}) error {
 	args, err := parseSearchIndexResourceArgs(d)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	// check table exists
 	tableResp, err := otsService.LoopWaitTable(args.instanceName, args.tableName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// serverside arguments check
 	if err := args.checkArgs(tableResp); err != nil {
@@ -446,18 +448,18 @@ func resourceAliyunOtsSearchIndexCreate(d *schema.ResourceData, meta interface{}
 			return tableStoreClient.CreateSearchIndex(req)
 		})
 		defer func() {
-			addDebug("CreateTableSearchIndex", raw, reqClient, req)
+			logs.AddDebug("CreateTableSearchIndex", raw, reqClient, req)
 		}()
 
 		if err != nil {
-			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsSearchIndexIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_search_index", "CreateSearchIndex", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_search_index", "CreateSearchIndex", errs.AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(ID(args.instanceName, args.tableName, args.indexName, SearchIndexTypeHolder))
@@ -467,19 +469,19 @@ func resourceAliyunOtsSearchIndexCreate(d *schema.ResourceData, meta interface{}
 func (args *SearchIndexResourceArgs) checkArgs(tableResp *tablestore.DescribeTableResponse) error {
 
 	if args.indexName == args.tableName {
-		return WrapError(fmt.Errorf("index name cannot be the same as table: %s/%s", args.indexName, args.tableName))
+		return errs.WrapError(fmt.Errorf("index name cannot be the same as table: %s/%s", args.indexName, args.tableName))
 	}
 
 	if tableResp.TableOption.TimeToAlive != -1 {
-		return WrapError(fmt.Errorf("when creating a search index, the TimeToAlive of the table must be -1: %v", tableResp.TableOption.TimeToAlive))
+		return errs.WrapError(fmt.Errorf("when creating a search index, the TimeToAlive of the table must be -1: %v", tableResp.TableOption.TimeToAlive))
 	}
 	if tableResp.TableOption.MaxVersion != 1 {
-		return WrapError(fmt.Errorf("when creating a search index, the table's MaxVersion must be 1: %v", tableResp.TableOption.MaxVersion))
+		return errs.WrapError(fmt.Errorf("when creating a search index, the table's MaxVersion must be 1: %v", tableResp.TableOption.MaxVersion))
 	}
 
 	for _, fs := range args.schema.FieldSchemas {
 		if fs.FieldType == tablestore.FieldType_NESTED && *fs.EnableSortAndAgg {
-			return WrapError(fmt.Errorf("search index nested type field do not support enable_sort_and_agg: %s/%s", args.indexName, *fs.FieldName))
+			return errs.WrapError(fmt.Errorf("search index nested type field do not support enable_sort_and_agg: %s/%s", args.indexName, *fs.FieldName))
 		}
 	}
 
@@ -493,7 +495,7 @@ func (args *SearchIndexResourceArgs) checkArgs(tableResp *tablestore.DescribeTab
 				}
 			}
 			if !routerInPk {
-				return WrapError(fmt.Errorf("search index router field must be in primary key: %s/%s", args.indexName, router))
+				return errs.WrapError(fmt.Errorf("search index router field must be in primary key: %s/%s", args.indexName, router))
 			}
 		}
 	}
@@ -502,7 +504,7 @@ func (args *SearchIndexResourceArgs) checkArgs(tableResp *tablestore.DescribeTab
 		if len(args.schema.IndexSort.Sorters) > 0 {
 			for _, fs := range args.schema.FieldSchemas {
 				if fs.FieldType == tablestore.FieldType_NESTED {
-					return WrapError(fmt.Errorf("search index with nested field type does not support index_sort: %s/%s", args.indexName, *fs.FieldName))
+					return errs.WrapError(fmt.Errorf("search index with nested field type does not support index_sort: %s/%s", args.indexName, *fs.FieldName))
 				}
 			}
 		}
@@ -513,13 +515,13 @@ func (args *SearchIndexResourceArgs) checkArgs(tableResp *tablestore.DescribeTab
 
 func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	idx, err := otsService.DescribeOtsSearchIndex(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if idx == nil {
 		d.SetId("")
@@ -527,22 +529,22 @@ func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if err := d.Set("index_id", d.Id()); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("create_time", idx.CreateTime); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	phase, err := ConvertSearchIndexSyncPhase(idx.SyncStat.SyncPhase)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("sync_phase", string(phase)); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("current_sync_timestamp", idx.SyncStat.CurrentSyncTimestamp); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
@@ -551,18 +553,18 @@ func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) 
 func resourceAliyunOtsSearchIndexDelete(d *schema.ResourceData, meta interface{}) error {
 	instanceName, tableName, indexName, _, err := ParseIndexId(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 
 	if err := otsService.DeleteSearchIndex(instanceName, tableName, indexName); err != nil {
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteSearchIndex", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteSearchIndex", errs.AliyunTablestoreGoSdk)
 	}
 
-	return WrapError(otsService.WaitForSearchIndex(instanceName, tableName, indexName, Deleted, DefaultTimeout))
+	return errs.WrapError(otsService.WaitForSearchIndex(instanceName, tableName, indexName, Deleted, DefaultTimeout))
 }

@@ -1,4 +1,6 @@
-package alicloud
+// collection-order: bypass defined_columns -- pre-existing attribute outside this change
+// collection-order: bypass primary_keys -- pre-existing attribute outside this change
+package ots_test
 
 import (
 	"fmt"
@@ -6,40 +8,42 @@ import (
 	"testing"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudOtsSecondaryIndex_basic(t *testing.T) {
+func TestAccAliCloudOtsSecondaryIndex_basic(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_secondary_index.default"
-	ra := resourceAttrInit(resourceId, otsSecondaryIndexBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsSecondaryIndexBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsSecondaryIndexConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsSecondaryIndexConfigDependence)
 	pks := []string{"pk1", "pk2"}
 	cols := []string{"col2", "col1"}
 
-	randIndexType := string(random(Local, Global).(SecondaryIndexTypeString))
+	randIndexType := string(random(ots.Local, ots.Global).(ots.SecondaryIndexTypeString))
 	randIncludeBaseData := random(true, false).(bool)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -112,13 +116,13 @@ func resourceOtsSecondaryIndexConfigDependence(name string) string {
 	  time_to_live = -1
 	  max_version = 1
 	}
-	`, name, string(OtsCapacity))
+	`, name, string(ots.OtsCapacity))
 }
 
 var otsSecondaryIndexBasicMap = map[string]string{}
 
 func random(values ...interface{}) interface{} {
-	r := acctest.RandInt() % len(values)
+	r := tfacctest.RandInt() % len(values)
 	return values[r]
 }
 

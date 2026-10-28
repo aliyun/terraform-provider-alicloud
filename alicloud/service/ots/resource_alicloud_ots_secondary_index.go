@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"fmt"
@@ -7,12 +7,16 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudOtsSecondaryIndex() *schema.Resource {
+func ResourceOtsSecondaryIndex() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunOtsSecondaryIndexCreate,
 		Read:   resourceAliyunOtsSecondaryIndexRead,
@@ -83,11 +87,11 @@ func parseArgs(d *schema.ResourceData) *SecIndexResourceArgs {
 		includeBaseData: d.Get("include_base_data").(bool),
 		indexName:       d.Get("index_name").(string),
 		indexType:       SecondaryIndexTypeString(d.Get("index_type").(string)),
-		primaryKeys:     Unique(Interface2StrSlice(d.Get("primary_keys").([]interface{}))),
+		primaryKeys:     helper.Unique(convert.Interface2StrSlice(d.Get("primary_keys").([]interface{}))),
 	}
 
 	if v, ok := d.GetOk("defined_columns"); ok && len(v.([]interface{})) > 0 {
-		args.definedColumns = Unique(Interface2StrSlice(v.([]interface{})))
+		args.definedColumns = helper.Unique(convert.Interface2StrSlice(v.([]interface{})))
 	}
 	return args
 }
@@ -106,11 +110,11 @@ func resourceAliyunOtsSecondaryIndexCreate(d *schema.ResourceData, meta interfac
 	args := parseArgs(d)
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	// check table exists
 	tableResp, err := otsService.LoopWaitTable(args.instanceName, args.tableName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// serverside arguments check
 	if err := checkArgs(tableResp, args); err != nil {
@@ -119,7 +123,7 @@ func resourceAliyunOtsSecondaryIndexCreate(d *schema.ResourceData, meta interfac
 	// build request
 	idxType, err := ConvertSecIndexTypeString(args.indexType)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	req := &tablestore.CreateIndexRequest{
 		MainTableName:   args.tableName,
@@ -140,18 +144,18 @@ func resourceAliyunOtsSecondaryIndexCreate(d *schema.ResourceData, meta interfac
 			return tableStoreClient.CreateIndex(req)
 		})
 		defer func() {
-			addDebug("CreateTableSecondaryIndex", raw, reqClient, req)
+			logs.AddDebug("CreateTableSecondaryIndex", raw, reqClient, req)
 		}()
 
 		if err != nil {
-			if IsExpectedErrors(err, OtsSecondaryIndexIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsSecondaryIndexIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_secondary_index", "CreateIndex", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_secondary_index", "CreateIndex", errs.AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(ID(args.instanceName, args.tableName, args.indexName, string(args.indexType)))
@@ -163,24 +167,24 @@ func checkArgs(tableResp *tablestore.DescribeTableResponse, args *SecIndexResour
 	dataCols := simplifyCol(tableResp.TableMeta.DefinedColumns)
 
 	allCards := append(dataPks, dataCols...)
-	if !IsSubCollection(args.primaryKeys, allCards) {
-		return WrapError(fmt.Errorf("some primary keys not exist in table: %s/%s", args.primaryKeys, args.tableName))
+	if !helper.IsSubCollection(args.primaryKeys, allCards) {
+		return errs.WrapError(fmt.Errorf("some primary keys not exist in table: %s/%s", args.primaryKeys, args.tableName))
 	}
-	if !IsSubCollection(args.definedColumns, allCards) {
-		return WrapError(fmt.Errorf("some defined columns not exist in table: %s/%s", args.definedColumns, args.tableName))
+	if !helper.IsSubCollection(args.definedColumns, allCards) {
+		return errs.WrapError(fmt.Errorf("some defined columns not exist in table: %s/%s", args.definedColumns, args.tableName))
 	}
 	if args.indexName == args.tableName {
-		return WrapError(fmt.Errorf("index name cannot be the same as table: %s/%s", args.indexName, args.tableName))
+		return errs.WrapError(fmt.Errorf("index name cannot be the same as table: %s/%s", args.indexName, args.tableName))
 	}
 	if args.indexType == Local && args.primaryKeys[0] != dataPks[0] {
-		return WrapError(fmt.Errorf("when using a local secondary index, the first primary key of the index must be "+
+		return errs.WrapError(fmt.Errorf("when using a local secondary index, the first primary key of the index must be "+
 			"the same as the first primary key of the data table: %s/%s", args.primaryKeys, dataPks))
 	}
 	if tableResp.TableOption.TimeToAlive != -1 {
-		return WrapError(fmt.Errorf("when creating a secondary index, the TimeToAlive of the table must be -1: %v", tableResp.TableOption.TimeToAlive))
+		return errs.WrapError(fmt.Errorf("when creating a secondary index, the TimeToAlive of the table must be -1: %v", tableResp.TableOption.TimeToAlive))
 	}
 	if tableResp.TableOption.MaxVersion != 1 {
-		return WrapError(fmt.Errorf("when creating a secondary index, the table's MaxVersion must be 1: %v", tableResp.TableOption.MaxVersion))
+		return errs.WrapError(fmt.Errorf("when creating a secondary index, the table's MaxVersion must be 1: %v", tableResp.TableOption.MaxVersion))
 	}
 	return nil
 }
@@ -211,13 +215,13 @@ func simplifySecIndex(indexes []*tablestore.IndexMeta) []string {
 
 func resourceAliyunOtsSecondaryIndexRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	idx, err := otsService.DescribeOtsSecondaryIndex(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if idx == nil {
 		d.SetId("")
@@ -225,26 +229,26 @@ func resourceAliyunOtsSecondaryIndexRead(d *schema.ResourceData, meta interface{
 	}
 
 	if err := d.Set("instance_name", idx.InstanceName); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("table_name", idx.TableName); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("index_name", idx.Index.IndexName); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	indexType, err := ConvertSecIndexType(idx.Index.IndexType)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("index_type", string(indexType)); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("primary_keys", idx.Index.Primarykey); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("defined_columns", idx.Index.DefinedColumns); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
@@ -253,7 +257,7 @@ func resourceAliyunOtsSecondaryIndexRead(d *schema.ResourceData, meta interface{
 func resourceAliyunOtsSecondaryIndexDelete(d *schema.ResourceData, meta interface{}) error {
 	instanceName, tableName, indexName, _, err := ParseIndexId(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
@@ -270,11 +274,11 @@ func resourceAliyunOtsSecondaryIndexDelete(d *schema.ResourceData, meta interfac
 			return tableStoreClient.DeleteIndex(req)
 		})
 		defer func() {
-			addDebug("DeleteTableSecondaryIndex", raw, requestInfo, req)
+			logs.AddDebug("DeleteTableSecondaryIndex", raw, requestInfo, req)
 		}()
 
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -285,9 +289,9 @@ func resourceAliyunOtsSecondaryIndexDelete(d *schema.ResourceData, meta interfac
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTableSecondaryIndex", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteTableSecondaryIndex", errs.AliyunTablestoreGoSdk)
 	}
 
-	otsService := OtsService{client}
-	return WrapError(otsService.WaitForSecondaryIndex(instanceName, tableName, indexName, Deleted, DefaultTimeout))
+	otsService := NewService(client)
+	return errs.WrapError(otsService.WaitForSecondaryIndex(instanceName, tableName, indexName, Deleted, DefaultTimeout))
 }

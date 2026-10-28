@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"fmt"
@@ -8,12 +8,15 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudOtsTable() *schema.Resource {
+func ResourceOtsTable() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunOtsTableCreate,
 		Read:   resourceAliyunOtsTableRead,
@@ -96,7 +99,7 @@ func resourceAlicloudOtsTable() *schema.Resource {
 			"deviation_cell_version_in_sec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validateStringConvertInt64(),
+				ValidateFunc: validators.ValidateStringConvertInt64(),
 				Default:      "86400",
 			},
 			"enable_sse": {
@@ -133,18 +136,18 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	tableName := d.Get("table_name").(string)
 	tableMeta.TableName = tableName
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	if err := retry.Retry(1*time.Minute, func() *retry.RetryError {
 		_, e := otsService.DescribeOtsInstance(instanceName)
 		if e != nil {
-			if NotFoundError(e) {
+			if errs.NotFoundError(e) {
 				return retry.RetryableError(e)
 			}
 			return retry.NonRetryableError(e)
 		}
 		return nil
 	}); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	for _, primaryKey := range d.Get("primary_key").([]interface{}) {
 		pk := primaryKey.(map[string]interface{})
@@ -158,7 +161,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			columnArgs := definedColumn.(map[string]interface{})
 			columnType, err := ParseDefinedColumnType(columnArgs["type"].(string))
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			tableMeta.AddDefinedColumn(columnArgs["name"].(string), columnType)
 		}
@@ -191,7 +194,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			case string(SseByOk):
 				typ = tablestore.SSE_BYOK
 			default:
-				return WrapError(Error("unknown sse key type: %s", sseKeyType.(string)))
+				return errs.WrapError(errs.Error("unknown sse key type: %s", sseKeyType.(string)))
 			}
 			sseSpec.KeyType = &typ
 		}
@@ -214,15 +217,15 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.CreateTable(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("CreateTable", raw, requestinfo, request)
+		logs.AddDebug("CreateTable", raw, requestinfo, request)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_table", "CreateTable", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_table", "CreateTable", errs.AliyunTablestoreGoSdk)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
@@ -232,17 +235,17 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error {
 	instanceName, _, err := parseId(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	tableResp, err := otsService.DescribeOtsTable(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if tableResp == nil {
 		d.SetId("")
@@ -266,7 +269,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 	for _, column := range tableResp.TableMeta.DefinedColumns {
 		columnType, err := ConvertDefinedColumnType(column.ColumnType)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		item := map[string]interface{}{
 			"name": column.Name,
@@ -322,38 +325,38 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 				return tableStoreClient.UpdateTable(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+				if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug("UpdateTable", raw, requestinfo, request)
+			logs.AddDebug("UpdateTable", raw, requestinfo, request)
 			return nil
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTable", AliyunTablestoreGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateTable", errs.AliyunTablestoreGoSdk)
 		}
 	}
 	if d.HasChange("defined_column") {
 		o, n := d.GetChange("defined_column")
 		statedColumns, err := parseColsFromConfig(o.([]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		declareColumns, err := parseColsFromConfig(n.([]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		if needAddColumns, fetchErr := fetchNeedAddColumns(declareColumns, statedColumns); fetchErr != nil {
 			return fetchErr
 		} else if err := updateDefinedColumns(client, instanceName, tablestore.AddDefinedColumnRequest{TableName: tableName}, needAddColumns); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "AddTableDefineColumn", AliyunTablestoreGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "AddTableDefineColumn", errs.AliyunTablestoreGoSdk)
 		}
 
 		if needDeleteColumns, fetchErr := fetchNeedDeleteColumns(statedColumns, declareColumns); fetchErr != nil {
 			return fetchErr
 		} else if err := updateDefinedColumns(client, instanceName, tablestore.DeleteDefinedColumnRequest{TableName: tableName}, needDeleteColumns); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTableDefineColumn", AliyunTablestoreGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteTableDefineColumn", errs.AliyunTablestoreGoSdk)
 		}
 
 	}
@@ -366,7 +369,7 @@ func parseColsFromConfig(cols []interface{}) ([]*tablestore.DefinedColumnSchema,
 		colMap := col.(map[string]interface{})
 		columnType, err := ParseDefinedColumnType(colMap["type"].(string))
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		otsCols = append(otsCols, &tablestore.DefinedColumnSchema{
 			Name:       colMap["name"].(string),
@@ -383,7 +386,7 @@ func fetchNeedDeleteColumns(statedColumns []*tablestore.DefinedColumnSchema, dec
 		case ExistEqual:
 			continue
 		case ExistNotEqual:
-			return nil, WrapError(fmt.Errorf("modifying defined column type is not supported: %v", statedCol))
+			return nil, errs.WrapError(fmt.Errorf("modifying defined column type is not supported: %v", statedCol))
 		case NotExist:
 			needDeleteColumns = append(needDeleteColumns, statedCol)
 		}
@@ -399,7 +402,7 @@ func fetchNeedAddColumns(declareColumns []*tablestore.DefinedColumnSchema, state
 		case ExistEqual:
 			continue
 		case ExistNotEqual:
-			return nil, WrapError(fmt.Errorf("modifying defined column type is not supported: %v", declareCol))
+			return nil, errs.WrapError(fmt.Errorf("modifying defined column type is not supported: %v", declareCol))
 		case NotExist:
 			needAddColumns = append(needAddColumns, declareCol)
 		}
@@ -426,16 +429,16 @@ func updateDefinedColumns(client *connectivity.AliyunClient, instance string, re
 				}
 				return tableStoreClient.DeleteDefinedColumn(&request)
 			default:
-				return nil, WrapError(fmt.Errorf("unexpected defined column request type %T: %v", req, req))
+				return nil, errs.WrapError(fmt.Errorf("unexpected defined column request type %T: %v", req, req))
 			}
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("UpdateTableDefineColumn", raw, clientInfo, req)
+		logs.AddDebug("UpdateTableDefineColumn", raw, clientInfo, req)
 		return nil
 	}); err != nil {
 		return err
@@ -446,11 +449,11 @@ func updateDefinedColumns(client *connectivity.AliyunClient, instance string, re
 func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) error {
 	instanceName, tableName, err := parseId(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 
 	req := new(tablestore.DeleteTableRequest)
 	req.TableName = tableName
@@ -461,21 +464,21 @@ func resourceAliyunOtsTableDelete(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.DeleteTable(req)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("DeleteTable", raw, requestCli, req)
+		logs.AddDebug("DeleteTable", raw, requestCli, req)
 		return nil
 	})
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTable", AliyunTablestoreGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteTable", errs.AliyunTablestoreGoSdk)
 	}
-	return WrapError(otsService.WaitForOtsTable(instanceName, tableName, Deleted, DefaultTimeout))
+	return errs.WrapError(otsService.WaitForOtsTable(instanceName, tableName, Deleted, DefaultTimeout))
 }
 
 func parseId(d *schema.ResourceData, meta interface{}) (instanceName, tableName string, err error) {
@@ -487,7 +490,7 @@ func parseId(d *schema.ResourceData, meta interface{}) (instanceName, tableName 
 			instanceName = meta.(*connectivity.AliyunClient).OtsInstanceName
 			d.SetId(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		} else {
-			err = WrapError(Error("From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and " +
+			err = errs.WrapError(errs.Error("From Provider version 1.10.0, the provider field 'ots_instance_name' has been deprecated and " +
 				"you should use resource alicloud_ots_table's new field 'instance_name' and 'table_name' to re-import this resource."))
 			return
 		}

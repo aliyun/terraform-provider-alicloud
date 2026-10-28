@@ -1,55 +1,56 @@
-package alicloud
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOtsTablesDataSource_basic(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ots_tables.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("testAcc%d", rand),
 		dataSourceOtsTablesConfigDependence)
 
-	instanceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	instanceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 			"ids":           []string{"${alicloud_ots_table.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 			"ids":           []string{"${alicloud_ots_table.default.id}-fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 			"name_regex":    "${alicloud_ots_table.default.table_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 			"name_regex":    "${alicloud_ots_table.default.table_name}-fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 			"ids":           []string{"${alicloud_ots_table.default.id}"},
 			"name_regex":    "${alicloud_ots_table.default.table_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_table.default.instance_name}",
 			"ids":           []string{"${alicloud_ots_table.default.id}"},
 			"name_regex":    "${alicloud_ots_table.default.table_name}-fake",
@@ -59,10 +60,10 @@ func TestAccAlicloudOtsTablesDataSource_basic(t *testing.T) {
 	var existOtsTablesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"names.#":                "1",
-			"names.0":                CHECKSET,
+			"names.0":                acctest.CHECKSET,
 			"tables.#":               "1",
-			"tables.0.table_name":    CHECKSET,
-			"tables.0.instance_name": CHECKSET,
+			"tables.0.table_name":    acctest.CHECKSET,
+			"tables.0.instance_name": acctest.CHECKSET,
 			"tables.0.primary_key.#": "2",
 			"tables.0.time_to_live":  "-1",
 			"tables.0.max_version":   "1",
@@ -76,16 +77,16 @@ func TestAccAlicloudOtsTablesDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var otsTablesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existOtsTablesMapFunc,
-		fakeMapFunc:  fakeOtsTablesMapFunc,
+	var otsTablesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existOtsTablesMapFunc,
+		FakeMapFunc:  fakeOtsTablesMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 	}
-	otsTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, idsConf, nameRegexConf, allConf)
+	otsTablesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceOtsTablesConfigDependence(name string) string {

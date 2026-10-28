@@ -1,12 +1,17 @@
-package alicloud
+// collection-order: bypass defined_column -- pre-existing attribute outside this change
+// collection-order: bypass primary_key -- pre-existing attribute outside this change
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -15,27 +20,27 @@ func TestAccAliCloudOtsTable_basic(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
-	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsTableConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -49,11 +54,13 @@ func TestAccAliCloudOtsTable_basic(t *testing.T) {
 					},
 					"time_to_live": "-1",
 					"max_version":  "1",
+					"allow_update": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": "tf-" + name,
 						"table_name":    name,
+						"allow_update":  "false",
 					}),
 				),
 			},
@@ -119,6 +126,16 @@ func TestAccAliCloudOtsTable_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"allow_update": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_update": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"time_to_live":                  "-1",
 					"max_version":                   "1",
 					"deviation_cell_version_in_sec": "86400",
@@ -139,27 +156,27 @@ func TestAccAliCloudOtsTable_highPerformance(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
-	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependenceHighperformance)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsTableConfigDependenceHighperformance)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsHighPerformanceNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -244,27 +261,27 @@ func TestAccAliCloudOtsTable_multi(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default.4"
-	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsTableConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -298,27 +315,27 @@ func TestAccAliCloudOtsTable_withTableEncryption(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
-	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsTableConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -365,27 +382,27 @@ func TestAccAliCloudOtsTable_withTableByOKEncryption(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
-	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsTableBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependenceSseByOK)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsTableConfigDependenceSseByOK)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -445,7 +462,7 @@ func resourceOtsTableConfigDependence(name string) string {
 	    For = "acceptance test"
 	  }
 	}
-	`, name, string(OtsCapacity))
+	`, name, string(ots.OtsCapacity))
 }
 
 func resourceOtsTableConfigDependenceSseByOK(name string) string {
@@ -519,7 +536,7 @@ func resourceOtsTableConfigDependenceSseByOK(name string) string {
 	    For = "acceptance test"
 	  }
 	}
-	`, name, string(OtsCapacity))
+	`, name, string(ots.OtsCapacity))
 }
 
 func resourceOtsTableConfigDependenceHighperformance(name string) string {
@@ -537,7 +554,7 @@ func resourceOtsTableConfigDependenceHighperformance(name string) string {
 	    For = "acceptance test"
 	  }
 	}
-	`, name, string(OtsHighPerformance))
+	`, name, string(ots.OtsHighPerformance))
 }
 
 var otsTableBasicMap = map[string]string{
@@ -560,8 +577,8 @@ func testAccCheckOtsTableExist(n string, table *tablestore.DescribeTableResponse
 			return fmt.Errorf("no OTS table ID is set")
 		}
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		otsService := ots.NewService(client)
 
 		response, err := otsService.DescribeOtsTable(rs.Primary.ID)
 
@@ -580,11 +597,11 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 			continue
 		}
 
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		otsService := ots.NewService(client)
 
 		if _, err := otsService.DescribeOtsTable(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
 			return err

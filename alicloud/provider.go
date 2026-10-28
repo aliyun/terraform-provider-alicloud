@@ -955,13 +955,6 @@ func Provider() *schema.Provider {
 			"alicloud_oss_buckets":            dataSourceAlicloudOssBuckets(),
 
 			// ots
-			"alicloud_ots_service":              dataSourceAlicloudOtsService(),
-			"alicloud_ots_instances":            dataSourceAlicloudOtsInstances(),
-			"alicloud_ots_instance_attachments": dataSourceAlicloudOtsInstanceAttachments(),
-			"alicloud_ots_tables":               dataSourceAlicloudOtsTables(),
-			"alicloud_ots_tunnels":              dataSourceAlicloudOtsTunnels(),
-			"alicloud_ots_secondary_indexes":    dataSourceAlicloudOtsSecondaryIndexes(),
-			"alicloud_ots_search_indexes":       dataSourceAlicloudOtsSearchIndexes(),
 
 			// polardb
 			"alicloud_polardb_clusters":                    dataSourceAlicloudPolarDBClusters(),
@@ -2344,12 +2337,6 @@ func Provider() *schema.Provider {
 			"alicloud_oss_bucket_replication":                resourceAlicloudOssBucketReplication(),
 
 			// ots
-			"alicloud_ots_table":               resourceAlicloudOtsTable(),
-			"alicloud_ots_instance":            resourceAlicloudOtsInstance(),
-			"alicloud_ots_instance_attachment": resourceAlicloudOtsInstanceAttachment(),
-			"alicloud_ots_tunnel":              resourceAlicloudOtsTunnel(),
-			"alicloud_ots_secondary_index":     resourceAlicloudOtsSecondaryIndex(),
-			"alicloud_ots_search_index":        resourceAlicloudOtsSearchIndex(),
 
 			// pai
 			"alicloud_pai_workspace_user_config":    resourceAliCloudPaiWorkspaceUserConfig(),

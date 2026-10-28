@@ -11,11 +11,11 @@ description: |-
 
 This data source provides the ots tables of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.40.0+.
+-> **NOTE:** Available since v1.40.0.
 
 ## Example Usage
 
-``` terraform
+```terraform
 data "alicloud_ots_tables" "tables_ds" {
   instance_name = "sample-instance"
   name_regex    = "sample-table"
@@ -31,7 +31,7 @@ output "first_table_id" {
 
 The following arguments are supported:
 
-* `instance_name` - The name of OTS instance.
+* `instance_name` - (Required) The name of OTS instance.
 * `ids` - (Optional) A list of table IDs.
 * `name_regex` - (Optional) A regex string to filter results by table name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -46,7 +46,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - ID of the table. The value is `<instance_name>:<table_name>`.
   * `instance_name` - The OTS instance name.
   * `table_name` - The table name of the OTS which could not be changed.
-  * `primary_key` - The property of `TableMeta` which indicates the structure information of a table.
+  * `primary_key` - The property of `TableMeta` which indicates the structure information of a table. Each element contains the following attributes:
+    * `name` - Name for primary key.
+    * `type` - Type for primary key. `Integer`, `String` or `Binary` is allowed.
+  * `defined_column` - The property of `TableMeta` which indicates the structure information of a table. Each element contains the following attributes:
+    * `name` - Name for defined column.
+    * `type` - Type for defined column. `Integer`, `String`, `Binary`, `Double` or `Boolean` is allowed.
   * `time_to_live` - The retention time of data stored in this table.
   * `max_version` - The maximum number of versions stored in this table.
-	
