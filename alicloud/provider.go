@@ -2336,7 +2336,6 @@ func Provider() *schema.Provider {
 			"alicloud_pai_workspace_model_version":  resourceAliCloudPaiWorkspaceModelVersion(),
 			"alicloud_pai_workspace_model":          resourceAliCloudPaiWorkspaceModel(),
 			"alicloud_pai_workspace_member":         resourceAliCloudPaiWorkspaceMember(),
-			"alicloud_pai_flow_pipeline":            resourceAliCloudPaiFlowPipeline(),
 			"alicloud_pai_service":                  resourceAliCloudPaiService(),
 			"alicloud_pai_workspace_code_source":    resourceAliCloudPaiWorkspaceCodeSource(),
 			"alicloud_pai_workspace_run":            resourceAliCloudPaiWorkspaceRun(),

@@ -1,10 +1,13 @@
-package alicloud
+package paiflow_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/paiflow"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,24 +16,24 @@ import (
 func TestAccAliCloudPaiFlowPipeline_basic10139(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_flow_pipeline.default"
-	ra := resourceAttrInit(resourceId, AliCloudPaiFlowPipelineMap10139)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiFlowServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudPaiFlowPipelineMap10139)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiflow.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiFlowPipeline")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := randIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccpaiflow%d", rand)
 	uuid := fmt.Sprintf("terraformuuid%v", rand)
 	uuidUpdate := fmt.Sprintf("tfuuidupdatee%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPaiFlowPipelineBasicDependence10139)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPaiFlowPipelineBasicDependence10139)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,8 +42,8 @@ func TestAccAliCloudPaiFlowPipeline_basic10139(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"workspace_id": CHECKSET,
-						"manifest":     CHECKSET,
+						"workspace_id": acctest.CHECKSET,
+						"manifest":     acctest.CHECKSET,
 					}),
 				),
 			},
@@ -50,7 +53,7 @@ func TestAccAliCloudPaiFlowPipeline_basic10139(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"manifest": CHECKSET,
+						"manifest": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -67,23 +70,23 @@ func TestAccAliCloudPaiFlowPipeline_basic10139(t *testing.T) {
 func TestAccAliCloudPaiFlowPipeline_basic10139_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pai_flow_pipeline.default"
-	ra := resourceAttrInit(resourceId, AliCloudPaiFlowPipelineMap10139)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PaiFlowServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudPaiFlowPipelineMap10139)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return paiflow.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePaiFlowPipeline")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := randIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccpaiflow%d", rand)
 	uuid := fmt.Sprintf("terraformuuid%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudPaiFlowPipelineBasicDependence10139)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudPaiFlowPipelineBasicDependence10139)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -92,8 +95,8 @@ func TestAccAliCloudPaiFlowPipeline_basic10139_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"workspace_id": CHECKSET,
-						"manifest":     CHECKSET,
+						"workspace_id": acctest.CHECKSET,
+						"manifest":     acctest.CHECKSET,
 					}),
 				),
 			},
@@ -108,7 +111,7 @@ func TestAccAliCloudPaiFlowPipeline_basic10139_twin(t *testing.T) {
 }
 
 var AliCloudPaiFlowPipelineMap10139 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AliCloudPaiFlowPipelineBasicDependence10139(name string) string {
