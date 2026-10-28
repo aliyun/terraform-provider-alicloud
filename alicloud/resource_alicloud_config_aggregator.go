@@ -72,6 +72,22 @@ func resourceAliCloudConfigAggregator() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -118,6 +134,21 @@ func resourceAliCloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 	}
 	request["Description"] = d.Get("description")
 	request["AggregatorName"] = d.Get("aggregator_name")
+	if v, ok := d.GetOk("tags"); ok {
+		tagMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range convertToInterfaceArray(v) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Key"] = dataLoopTmp["key"]
+			dataLoopMap["Value"] = dataLoopTmp["value"]
+			tagMapsArray = append(tagMapsArray, dataLoopMap)
+		}
+		tagMapsJson, err := json.Marshal(tagMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tag"] = string(tagMapsJson)
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
@@ -191,6 +222,21 @@ func resourceAliCloudConfigAggregatorRead(d *schema.ResourceData, meta interface
 		return err
 	}
 
+	tagsRaw := objectRaw["Tags"]
+	tagsMaps := make([]map[string]interface{}, 0)
+	if tagsRaw != nil {
+		for _, tagChildRaw := range convertToInterfaceArray(tagsRaw) {
+			tagMap := make(map[string]interface{})
+			tagChildMap := tagChildRaw.(map[string]interface{})
+			tagMap["key"] = tagChildMap["TagKey"]
+			tagMap["value"] = tagChildMap["TagValue"]
+			tagsMaps = append(tagsMaps, tagMap)
+		}
+	}
+	if err := d.Set("tags", tagsMaps); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -243,6 +289,26 @@ func resourceAliCloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 		update = true
 	}
 	request["AggregatorName"] = d.Get("aggregator_name")
+	if d.HasChange("tags") {
+		update = true
+		if v, ok := d.GetOk("tags"); ok {
+			tagMapsArray := make([]interface{}, 0)
+			for _, dataLoop := range convertToInterfaceArray(v) {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["Key"] = dataLoopTmp["key"]
+				dataLoopMap["Value"] = dataLoopTmp["value"]
+				tagMapsArray = append(tagMapsArray, dataLoopMap)
+			}
+			tagMapsJson, err := json.Marshal(tagMapsArray)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Tag"] = string(tagMapsJson)
+		} else {
+			request["Tag"] = "[]"
+		}
+	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {

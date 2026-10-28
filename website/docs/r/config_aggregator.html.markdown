@@ -65,6 +65,7 @@ The following arguments are supported:
   - `CUSTOM`: Custom account group.
 * `description` - (Required) The description of the account group.
 * `folder_id` - (Optional, Available since v1.262.0) The ID of the attached folder. You can specify multiple folder IDs. Separate the IDs with commas (,). **NOTE:** If `aggregator_type` is set to `FOLDER`, `folder_id` is required.
+* `tags` - (Optional) The tags of the account group. See [`tags`](#tags) below.
 
 ### `aggregator_accounts`
 
@@ -72,6 +73,12 @@ The aggregator_accounts supports the following:
 * `account_id` - (Optional) The member ID.
 * `account_name` - (Optional) The member name.
 * `account_type` - (Optional) The affiliation of the member. Valid values: `ResourceDirectory`.
+
+### `tags`
+
+The tags supports the following:
+* `key` - (Optional) The key of the tag.
+* `value` - (Optional) The value of the tag.
 
 ## Attributes Reference
 
