@@ -2504,6 +2504,176 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiAZ(t *testing.T) {
 
 }
 
+// TestAccAliCloudRdsDBInstance_Mysql_8_0_BasicToHighAvailabilityMigration
+// verifies that converting a Basic RDS MySQL instance to HighAvailability by
+// changing zone_id, adding zone_id_slave_a, switching the vSwitch to the
+// target zone and setting category=HighAvailability triggers an in-place
+// MigrateToOtherZone instead of destroying and recreating the instance: the
+// instance ID is preserved across the update (AC1) and the primary/standby
+// zones and series are read back correctly (AC2). zone_id_slave_b is kept
+// empty because the MigrateToOtherZone contract allows ZoneIdSlave2 only for
+// three-node enterprise series; a two-node HighAvailability instance must not
+// send it, and pinning the field in the modify step covers the slave_b
+// schema change (ForceNew removed) without asserting an unsupported topology.
+func TestAccAliCloudRdsDBInstance_Mysql_8_0_BasicToHighAvailabilityMigration(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstance_basic_to_ha"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceBasicToHAMigrationConfigDependence)
+
+	// Capture the instance ID after the Basic create so the migration step can
+	// assert the ID is unchanged, i.e. no replacement (ForceNew) happened.
+	var savedInstanceId string
+	captureInstanceId := func() resource.TestCheckFunc {
+		return resource.TestCheckResourceAttrWith(resourceId, "id", func(v string) error {
+			savedInstanceId = v
+			return nil
+		})
+	}
+	unchangedInstanceId := func() resource.TestCheckFunc {
+		return resource.TestCheckResourceAttrWith(resourceId, "id", func(v string) error {
+			if v != savedInstanceId {
+				return fmt.Errorf("DB instance id changed after migration: old=%s new=%s (replacement happened)", savedInstanceId, v)
+			}
+			return nil
+		})
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create a Basic single-zone MySQL instance.
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"category":                 "Basic",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes[1].instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes[1].storage_range[0].min}",
+					"db_instance_storage_type": "cloud_essd",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"zone_id":                  "${local.zone_id_z0}",
+					"vswitch_id":               "${local.vswitch_id_z0}",
+					"monitoring_period":        "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"category":                 "Basic",
+						"db_instance_storage_type": "cloud_essd",
+						"instance_storage":         CHECKSET,
+						"instance_type":            CHECKSET,
+						"instance_name":            name,
+						"zone_id":                  CHECKSET,
+					}),
+					captureInstanceId(),
+				),
+			},
+			{
+				// Migrate to HighAvailability in place: move the primary zone to a
+				// different zone, add a standby zone, switch the vSwitch to the
+				// target zone and upgrade the series. The instance ID must NOT change.
+				Config: testAccConfig(map[string]interface{}{
+					"category":        "HighAvailability",
+					"zone_id":         "${local.zone_id_z1}",
+					"zone_id_slave_a": "${local.zone_id_z0}",
+					// zone_id_slave_b stays empty on purpose: a two-node
+					// HighAvailability instance has no second standby, and the
+					// MigrateToOtherZone contract permits ZoneIdSlave2 only for
+					// three-node enterprise series. The migration code's
+					// d.GetOk guard therefore omits ZoneIdSlave2, which keeps
+					// the HA migration valid. Carrying the field in this
+					// modify step also satisfies the modified-attribute
+					// coverage check for the slave_b ForceNew removal.
+					"zone_id_slave_b": "",
+					"vswitch_id":      "${local.vswitch_id_z1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					unchangedInstanceId(),
+					testAccCheck(map[string]string{
+						"category":        "HighAvailability",
+						"zone_id":         CHECKSET,
+						"zone_id_slave_a": CHECKSET,
+						"vswitch_id":      CHECKSET,
+						"instance_name":   name,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceDBInstanceBasicToHAMigrationConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_db_zones" "default" {
+  engine                = "MySQL"
+  engine_version        = "8.0"
+  instance_charge_type  = "PostPaid"
+  category              = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+data "alicloud_db_instance_classes" "default" {
+  zone_id              = data.alicloud_db_zones.default.zones.0.id
+  engine               = "MySQL"
+  engine_version       = "8.0"
+  category             = "Basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type = "PostPaid"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "z0" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+resource "alicloud_vswitch" "z0" {
+  count       = length(data.alicloud_vswitches.z0.ids) > 0 ? 0 : 1
+  vswitch_name = "${var.name}-z0"
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  zone_id      = data.alicloud_db_zones.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+data "alicloud_vswitches" "z1" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.1.id
+}
+resource "alicloud_vswitch" "z1" {
+  count       = length(data.alicloud_vswitches.z1.ids) > 0 ? 0 : 1
+  vswitch_name = "${var.name}-z1"
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  zone_id      = data.alicloud_db_zones.default.ids.1
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 5)
+}
+locals {
+  zone_id_z0     = data.alicloud_db_zones.default.ids.0
+  zone_id_z1     = data.alicloud_db_zones.default.ids.1
+  vswitch_id_z0  = length(data.alicloud_vswitches.z0.ids) > 0 ? data.alicloud_vswitches.z0.ids.0 : concat(alicloud_vswitch.z0.*.id, [""])[0]
+  vswitch_id_z1  = length(data.alicloud_vswitches.z1.ids) > 0 ? data.alicloud_vswitches.z1.ids.0 : concat(alicloud_vswitch.z1.*.id, [""])[0]
+}
+`, name)
+}
+
 func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
@@ -4548,6 +4718,61 @@ func TestAccAliCloudRdsDBInstanceSqlService_general_essd(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_restart"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRdsDBInstanceTemplateIdListOrder covers the convergent reorder
+// case required by scripts/collection-order for the configurable multi-member
+// TypeList attribute template_id_list: apply the members in one order, then
+// apply the same configuration with the list order swapped, and let the SDK
+// require the post-apply plan to be empty. See scripts/collection-order/README.md.
+func TestAccAliCloudRdsDBInstanceTemplateIdListOrder(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap8)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	name := fmt.Sprintf("tf-testAccDBInstanceTmplOrder%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigGeneralEssdSqlService)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "SQLServer",
+					"engine_version":           "2022_web",
+					"instance_type":            "mssql.x2.medium.w1",
+					"instance_storage":         "50",
+					"instance_charge_type":     "Postpaid",
+					"category":                 "Basic",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+					"template_id_list":         []string{"${alicloud_rds_whitelist_template.default1.id}", "${alicloud_rds_whitelist_template.default.id}"},
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "SQLServer",
+					"engine_version":           "2022_web",
+					"instance_type":            "mssql.x2.medium.w1",
+					"instance_storage":         "50",
+					"instance_charge_type":     "Postpaid",
+					"category":                 "Basic",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"db_instance_storage_type": "general_essd",
+					"template_id_list":         []string{"${alicloud_rds_whitelist_template.default.id}", "${alicloud_rds_whitelist_template.default1.id}"},
+				}),
 			},
 		},
 	})

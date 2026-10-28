@@ -112,7 +112,6 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 
@@ -125,15 +124,21 @@ func resourceAliCloudDBInstance() *schema.Resource {
 
 			"vswitch_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					// If it is a new resource, do not suppress.
 					if d.Id() == "" {
 						return false
 					}
-					// If it is not a new resource and it is a multi-zone deployment, it needs to be suppressed.
-					return len(strings.Split(new, ",")) > 1
+					// A zone/category migration (MigrateToOtherZone) places the instance
+					// into the target zone's vSwitch, so the configured vSwitch must be
+					// honored as a real diff and not suppressed.
+					if d.HasChanges("zone_id", "zone_id_slave_a", "zone_id_slave_b", "category") {
+						return false
+					}
+					// For an existing multi-zone deployment (either side carries multiple
+					// vSwitches), ignore the vSwitch diff to avoid perpetual drift.
+					return len(strings.Split(new, ",")) > 1 || len(strings.Split(old, ",")) > 1
 				},
 			},
 			"private_ip_address": {
@@ -428,13 +433,11 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"zone_id_slave_b": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"ca_type": {
 				Type:     schema.TypeString,
@@ -1918,6 +1921,74 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	// Migrate the instance to another zone (and/or switch the instance series,
+	// e.g. Basic -> HighAvailability) in place via MigrateToOtherZone instead of
+	// recreating the instance. zone_id, zone_id_slave_a, zone_id_slave_b and
+	// category are no longer ForceNew, so changing them on an existing instance
+	// triggers an in-place migration that preserves the instance ID. The vSwitch
+	// is also passed to the migration so the instance lands in the target zone's
+	// vSwitch; SwitchDBInstanceVpc below therefore skips the vSwitch change when a
+	// migration already handled it.
+	zoneMigration := !d.IsNewResource() && d.HasChanges("zone_id", "zone_id_slave_a", "zone_id_slave_b", "category")
+	if zoneMigration {
+		// wait instance status is running before migrating
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		action := "MigrateToOtherZone"
+		migrateRequest := map[string]interface{}{
+			"DBInstanceId": d.Id(),
+			"RegionId":     client.RegionId,
+			"SourceIp":     client.SourceIp,
+		}
+		// ZoneId is required by MigrateToOtherZone and must differ from the
+		// current primary zone; the configured value is the migration target.
+		if v, ok := d.GetOk("zone_id"); ok && Trim(v.(string)) != "" {
+			migrateRequest["ZoneId"] = Trim(v.(string))
+		}
+		if v, ok := d.GetOk("zone_id_slave_a"); ok && v.(string) != "" {
+			migrateRequest["ZoneIdSlave1"] = v
+		}
+		if v, ok := d.GetOk("zone_id_slave_b"); ok && v.(string) != "" {
+			migrateRequest["ZoneIdSlave2"] = v
+		}
+		if v, ok := d.GetOk("category"); ok && v.(string) != "" {
+			migrateRequest["Category"] = v
+		}
+		// VPC must stay unchanged during a zone migration; pass the current VPC
+		// and vSwitch so the API can place the instance in the target zone.
+		if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" {
+			migrateRequest["VPCId"] = v
+		}
+		if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
+			migrateRequest["VSwitchId"] = v
+		}
+		if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+			migrateRequest["EffectiveTime"] = v
+		}
+		var migrateResponse map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			migrateResponse, err = client.RpcPost("Rds", "2014-08-15", action, nil, migrateRequest, false)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "IncorrectDBInstanceState"}) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, migrateResponse, migrateRequest)
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	vpcService := VpcService{client}
 	netUpdate := false
 	netAction := "SwitchDBInstanceVpc"
@@ -1926,7 +1997,10 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		"RegionId":     client.RegionId,
 		"SourceIp":     client.SourceIp,
 	}
-	if d.HasChanges("vswitch_id") {
+	// SwitchDBInstanceVpc handles vSwitch/private IP changes that are NOT part of a
+	// zone migration; when a migration already placed the instance in the target
+	// zone's vSwitch, do not call SwitchDBInstanceVpc for the vSwitch change.
+	if !zoneMigration && d.HasChanges("vswitch_id") {
 		netUpdate = true
 	}
 	if d.HasChange("private_ip_address") {
