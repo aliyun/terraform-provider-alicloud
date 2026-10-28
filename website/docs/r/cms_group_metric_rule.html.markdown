@@ -116,7 +116,7 @@ The escalations supports the following:
 
 The critical supports the following:
 
-* `comparison_operator` - (Optional) The comparison operator of the threshold for critical-level alerts.
+* `comparison_operator` - (Optional) The comparison operator of the threshold for critical-level alerts. Valid values: `GreaterThanOrEqualToThreshold`, `GreaterThanThreshold`, `LessThanOrEqualToThreshold`, `LessThanThreshold`, `NotEqualToThreshold`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
 * `statistics` - (Optional) The statistical aggregation method for critical-level alerts.
 * `threshold` - (Optional) The threshold for critical-level alerts.
 * `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.
@@ -125,7 +125,7 @@ The critical supports the following:
 
 The info supports the following: 
 
-* `comparison_operator` - (Optional) The comparison operator of the threshold for info-level alerts.
+* `comparison_operator` - (Optional) The comparison operator of the threshold for info-level alerts. Valid values: `GreaterThanOrEqualToThreshold`, `GreaterThanThreshold`, `LessThanOrEqualToThreshold`, `LessThanThreshold`, `NotEqualToThreshold`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
 * `statistics` - (Optional) The statistical aggregation method for info-level alerts.
 * `threshold` - (Optional) The threshold for info-level alerts.
 * `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a info-level alert is triggered.
@@ -134,7 +134,7 @@ The info supports the following:
 
 The warn supports the following:
 
-* `comparison_operator` - (Optional) The comparison operator of the threshold for warn-level alerts.
+* `comparison_operator` - (Optional) The comparison operator of the threshold for warn-level alerts. Valid values: `GreaterThanOrEqualToThreshold`, `GreaterThanThreshold`, `LessThanOrEqualToThreshold`, `LessThanThreshold`, `NotEqualToThreshold`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
 * `statistics` - (Optional) The statistical aggregation method for warn-level alerts.
 * `threshold` - (Optional) The threshold for warn-level alerts.
 * `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.

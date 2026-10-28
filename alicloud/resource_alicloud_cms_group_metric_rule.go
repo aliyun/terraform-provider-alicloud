@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
@@ -138,6 +139,14 @@ func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
 									"comparison_operator": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											"GreaterThanOrEqualToThreshold", "GreaterThanThreshold",
+											"LessThanOrEqualToThreshold", "LessThanThreshold",
+											"NotEqualToThreshold", "GreaterThanYesterday",
+											"LessThanYesterday", "GreaterThanLastWeek",
+											"LessThanLastWeek", "GreaterThanLastPeriod",
+											"LessThanLastPeriod",
+										}, false),
 									},
 									"statistics": {
 										Type:     schema.TypeString,
@@ -163,6 +172,14 @@ func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
 									"comparison_operator": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											"GreaterThanOrEqualToThreshold", "GreaterThanThreshold",
+											"LessThanOrEqualToThreshold", "LessThanThreshold",
+											"NotEqualToThreshold", "GreaterThanYesterday",
+											"LessThanYesterday", "GreaterThanLastWeek",
+											"LessThanLastWeek", "GreaterThanLastPeriod",
+											"LessThanLastPeriod",
+										}, false),
 									},
 									"statistics": {
 										Type:     schema.TypeString,
@@ -189,6 +206,14 @@ func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
 									"comparison_operator": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											"GreaterThanOrEqualToThreshold", "GreaterThanThreshold",
+											"LessThanOrEqualToThreshold", "LessThanThreshold",
+											"NotEqualToThreshold", "GreaterThanYesterday",
+											"LessThanYesterday", "GreaterThanLastWeek",
+											"LessThanLastWeek", "GreaterThanLastPeriod",
+											"LessThanLastPeriod",
+										}, false),
 									},
 									"statistics": {
 										Type:     schema.TypeString,
