@@ -1,4 +1,4 @@
-package alicloud
+package imp
 
 import (
 	"fmt"
@@ -8,14 +8,17 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudImpAppTemplates() *schema.Resource {
+func DataSourceAppTemplates() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudImpAppTemplatesRead,
+		Read: dataSourceAppTemplatesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -115,19 +118,19 @@ func dataSourceAlicloudImpAppTemplates() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudImpAppTemplatesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAppTemplatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListAppTemplates"
 	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var appTemplateNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		appTemplateNameRegex = r
 	}
@@ -147,11 +150,11 @@ func dataSourceAlicloudImpAppTemplatesRead(d *schema.ResourceData, meta interfac
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("imp", "2021-06-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -159,13 +162,13 @@ func dataSourceAlicloudImpAppTemplatesRead(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_imp_app_templates", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_imp_app_templates", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Result.AppTemplateInfoList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Result.AppTemplateInfoList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Result.AppTemplateInfoList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -183,7 +186,7 @@ func dataSourceAlicloudImpAppTemplatesRead(d *schema.ResourceData, meta interfac
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -222,20 +225,20 @@ func dataSourceAlicloudImpAppTemplatesRead(d *schema.ResourceData, meta interfac
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("templates", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

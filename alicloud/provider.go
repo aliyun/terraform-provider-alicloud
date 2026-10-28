@@ -776,9 +776,6 @@ func Provider() *schema.Provider {
 			// imm
 			"alicloud_imm_projects": dataSourceAlicloudImmProjects(),
 
-			// imp
-			"alicloud_imp_app_templates": dataSourceAlicloudImpAppTemplates(),
-
 			// instance
 			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
 			"alicloud_instance_types":         dataSourceAliCloudInstanceTypes(),
@@ -2025,9 +2022,6 @@ func Provider() *schema.Provider {
 
 			// imm
 			"alicloud_imm_project": resourceAlicloudImmProject(),
-
-			// imp
-			"alicloud_imp_app_template": resourceAlicloudImpAppTemplate(),
 
 			// instance
 			"alicloud_instance": resourceAliCloudInstance(),
