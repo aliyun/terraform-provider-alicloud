@@ -530,16 +530,22 @@ jobs:
           value="$(scripts/ci/detect-build-input-changes.sh)"
           echo "changed=$value" >> "$GITHUB_OUTPUT"
       - name: Test Route A writable-cache fallback
-        # Deterministic regression for ensure-writable-go-cache.sh: healthy
-        # defaults kept, unwritable defaults redirected to a per-job RUNNER_TEMP
-        # subdir, and env/PATH propagation. Runs whenever route succeeds, so a
-        # CI-only PR exercises the helper in the same workflow that ships it.
+        shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          if [[ -f scripts/ci/test_ensure_writable_go_cache.py ]]; then
-            python3 -m unittest discover -s scripts/ci -p test_ensure_writable_go_cache.py
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
           fi
+          python3 "$helper" writable-cache
+
 
   ProductionBuild:
     needs: [route, BuildInputs]
