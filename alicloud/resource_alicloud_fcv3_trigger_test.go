@@ -570,4 +570,148 @@ func TestAccAliCloudFcv3Trigger_basic6985_raw(t *testing.T) {
 	})
 }
 
+// Case TestTrigger_EventBridge 6984
+var AlicloudFcv3TriggerMap6984 = map[string]string{
+
+	"create_time":  CHECKSET,
+	"trigger_name": CHECKSET,
+}
+
+// eventbridgeTriggerTestConfig renders a full eventbridge trigger config.
+// trigger_config uses jsonencode() so the HCL brackets stay balanced (the
+// coverage tool's bracket matcher choked on the previously-used raw escaped
+// JSON string that nested eventRuleFilterPattern:"{}"). source_arn is
+// intentionally omitted: for eventbridge triggers the FC server backfills
+// it after creation, which is the exact drift this resource's source_arn
+// DiffSuppressFunc suppresses.
+func eventbridgeTriggerTestConfig(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_fcv3_function" "function" {
+  memory_size = "512"
+  cpu         = 0.5
+  handler     = "index.Handler"
+  code {
+    zip_file = "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZTCJOooIwDMwNXLqXnnQlaalUhU5lRj2KZ/FOXkESGR114bJ/P/7jV4b1xRq1hijtFpM1682cuNgPmgysbRulPT0fRxXnMtwrSPyeCdYRokSLnuMLJTTkbUqEvDMbxm1VdcRD6Tk+T1LW2ldB66knsYdA5iNX17ebm6tN2VnPhcswMPmREPuBacb+CiapLarAj9gT6/H97dVlCNScY3mtYvRkxdZlwDKDEnanPWVLdrdkeXEGlFEazVdfPVHaVeHc3N15CUwppwOJXeK7HshAB8NuOU7J6sP4SRXuH/EvbUfMiqMmDqv5M5FNSfAj/wgAAP//UEsHCPl//NYAAQAArwEAAFBLAQIUABQACAAIAAAAAAD5f/zWAAEAAK8BAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5weVBLBQYAAAAAAQABADYAAAA2AQAAAAA="
+  }
+  function_name = var.name
+  runtime       = "python3.9"
+  disk_size     = "512"
+  log_config {
+    log_begin_rule = "None"
+  }
+}
+
+resource "alicloud_fcv3_trigger" "default" {
+  function_name  = alicloud_fcv3_function.function.function_name
+  trigger_type   = "eventbridge"
+  trigger_name   = var.name
+  description    = "create"
+  qualifier      = "LATEST"
+  trigger_config = jsonencode({
+    eventSourceConfig = {
+      eventSourceType = "Default"
+    }
+    eventRuleFilterPattern = "{}"
+  })
+}
+`, name)
+}
+
+func TestAccAliCloudFcv3Trigger_eventbridge(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_trigger.default"
+	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6984)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Trigger")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", defaultRegionToTest, rand)
+	cfg := eventbridgeTriggerTestConfig(name)
+	var step1CreateTime string
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// After creation the FC server backfills source_arn and
+				// trigger_config (adding asyncInvocationType/eventSinkConfig/
+				// runOptions/triggerEnable). source_arn's DiffSuppressFunc
+				// suppresses its config-empty vs state-backfilled diff so it
+				// does not force a replacement; trigger_config's drift is a
+				// pre-existing in-place update outside this fix's scope, so we
+				// expect a non-empty plan rather than asserting idempotency.
+				Config:             cfg,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name":  CHECKSET,
+						"trigger_type":   "eventbridge",
+						"trigger_name":   name,
+						"description":    "create",
+						"qualifier":      "LATEST",
+						"source_arn":     CHECKSET,
+						"trigger_config": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrWith(resourceId, "create_time", func(value string) error {
+						step1CreateTime = value
+						return nil
+					}),
+				),
+			},
+			{
+				// Re-applying the SAME config (source_arn still unset) must not
+				// recreate the trigger. Before the source_arn DiffSuppressFunc,
+				// the server-backfilled source_arn produced a config-empty vs
+				// state-backfilled diff that forced ForceNew on every plan. We
+				// verify suppression by comparing create_time across the two
+				// steps: a replacement would change create_time. This is robust
+				// to the unrelated trigger_config drift the FC server also
+				// backfills (asyncInvocationType/eventSinkConfig/runOptions/
+				// triggerEnable), which updates in-place and leaves create_time
+				// unchanged. The plan is therefore non-empty (trigger_config
+				// in-place update), so ExpectNonEmptyPlan tolerates that drift
+				// while create_time still asserts no replacement.
+				Config:             cfg,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name":  CHECKSET,
+						"trigger_type":   "eventbridge",
+						"trigger_name":   name,
+						"description":    "create",
+						"qualifier":      "LATEST",
+						"source_arn":     CHECKSET,
+						"trigger_config": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrWith(resourceId, "create_time", func(value string) error {
+						if step1CreateTime == "" {
+							return fmt.Errorf("create_time was not captured in step 1")
+						}
+						if value != step1CreateTime {
+							return fmt.Errorf("alicloud_fcv3_trigger was recreated on a no-op plan: create_time changed from %q to %q; the server-backfilled source_arn diff should be suppressed and the trigger updated in-place", step1CreateTime, value)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"trigger_config"},
+			},
+		},
+	})
+}
+
 // Test Fcv3 Trigger. <<< Resource test cases, automatically generated.

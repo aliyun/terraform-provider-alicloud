@@ -74,6 +74,16 @@ func resourceAliCloudFcv3Trigger() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+				// source_arn is create-only (ForceNew), but for eventbridge
+				// triggers the FC server backfills it after creation when the
+				// configuration leaves it unset. Suppress the resulting
+				// config-empty vs state-backfilled diff so a subsequent plan no
+				// longer forces a replacement; an explicit change to source_arn
+				// still triggers ForceNew. Mirrors the hand-patched
+				// trigger_config DiffSuppressFunc below.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return new == "" && old != ""
+				},
 			},
 			"status": {
 				Type:     schema.TypeString,
