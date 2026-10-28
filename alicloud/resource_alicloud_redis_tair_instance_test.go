@@ -453,6 +453,160 @@ func TestAccAliCloudRedisTairInstance_basic3340(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudRedisTairInstance_basic3340_withPasswordCreate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3340)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3340)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			// Distributed instances cannot be created in cn-beijing.
+			// GDC creation succeeds in cn-hangzhou; keep the full lifecycle coverage.
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":       "tair_rdb",
+					"zone_id":             "${local.zone_id}",
+					"instance_class":      "tair.rdb.2g",
+					"shard_count":         "2",
+					"vswitch_id":          "${local.vswitch_id}",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name":  name,
+					"payment_type":        "PayAsYouGo",
+					"global_instance_id":  "true",
+					"recover_config_mode": "whitelist,config",
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type":       "tair_rdb",
+						"zone_id":             CHECKSET,
+						"instance_class":      "tair.rdb.2g",
+						"shard_count":         "2",
+						"vswitch_id":          CHECKSET,
+						"vpc_id":              CHECKSET,
+						"tair_instance_name":  name,
+						"payment_type":        "PayAsYouGo",
+						"password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "password_wo", "password_wo_version"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRedisTairInstance_basic3340_withPasswordUPdate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3340)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RedisServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRedisTairInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3340)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			// Distributed instances cannot be created in cn-beijing.
+			// GDC creation succeeds in cn-hangzhou; keep the full lifecycle coverage.
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":       "tair_rdb",
+					"zone_id":             "${local.zone_id}",
+					"instance_class":      "tair.rdb.2g",
+					"shard_count":         "2",
+					"vswitch_id":          "${local.vswitch_id}",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name":  name,
+					"payment_type":        "PayAsYouGo",
+					"global_instance_id":  "true",
+					"recover_config_mode": "whitelist,config",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type":      "tair_rdb",
+						"zone_id":            CHECKSET,
+						"instance_class":     "tair.rdb.2g",
+						"shard_count":        "2",
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+						"tair_instance_name": name,
+						"payment_type":       "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_wo_version": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password_wo":         "YourPassword123!Update",
+					"password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password":            "YourPassword123!password",
+					"password_wo":         REMOVEKEY,
+					"password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password":            "YourPassword123!password",
+						"password_wo_version": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "password_wo", "password_wo_version"},
+			},
+		},
+	})
+}
+
 var AlicloudRedisTairInstanceMap3340 = map[string]string{
 	"resource_group_id": CHECKSET,
 	"port":              CHECKSET,
