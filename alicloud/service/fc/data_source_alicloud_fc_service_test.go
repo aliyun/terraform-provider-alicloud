@@ -2,7 +2,6 @@ package fc_test
 
 import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"testing"
 )
