@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -844,3 +845,56 @@ func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFuncWithApi(id st
 }
 
 // DescribeRedisGlobalSecurityIpGroup >>> Encapsulated.
+
+// DescribeTairInstanceDataNodes lists every data node of a Tair instance with its default and
+// current bandwidth, so the purchased additional bandwidth can be derived read-only.
+func (s *RedisServiceV2) DescribeTairInstanceDataNodes(id string) (nodes []map[string]interface{}, err error) {
+	action := "DescribeRoleZoneInfo"
+	pageNumber := 1
+	pageSize := 50
+	for {
+		request := map[string]interface{}{
+			"InstanceId": id,
+			"QueryType":  1,
+			"PageNumber": pageNumber,
+			"PageSize":   pageSize,
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return nodes, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		pageNodeList, _ := jsonpath.Get("$.Node.NodeInfo", response)
+		pageNodes, _ := pageNodeList.([]interface{})
+		for _, v := range pageNodes {
+			if node, ok := v.(map[string]interface{}); ok {
+				nodes = append(nodes, node)
+			}
+		}
+
+		totalCount := 0
+		if v, ok := response["TotalCount"]; ok {
+			totalCount, _ = strconv.Atoi(fmt.Sprint(v))
+		}
+		if len(pageNodes) == 0 || len(nodes) >= totalCount {
+			break
+		}
+		pageNumber++
+	}
+
+	return nodes, nil
+}

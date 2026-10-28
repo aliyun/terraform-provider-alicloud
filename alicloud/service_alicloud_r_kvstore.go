@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -996,4 +999,182 @@ func (s *R_kvstoreService) DescribeKvStoreGlobalSecurityGroupIds(id string) (glo
 	}
 
 	return globalSecurityGroupIds, nil
+}
+
+// DescribeKvstoreDataNodes lists every data node of an ApsaraDB for Redis/Tair instance with
+// its default and current bandwidth. DescribeRoleZoneInfo reports CurrentBandWidth as
+// "default bandwidth plus purchased additional bandwidth", which is the only read-only way to
+// observe the additional bandwidth bought through EnableAdditionalBandwidth.
+func (s *R_kvstoreService) DescribeKvstoreDataNodes(id string) (nodes []map[string]interface{}, err error) {
+	action := "DescribeRoleZoneInfo"
+	pageNumber := 1
+	pageSize := 50
+	for {
+		request := map[string]interface{}{
+			"InstanceId": id,
+			"QueryType":  1,
+			"PageNumber": pageNumber,
+			"PageSize":   pageSize,
+		}
+
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return nodes, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		pageNodeList, _ := jsonpath.Get("$.Node.NodeInfo", response)
+		pageNodes, _ := pageNodeList.([]interface{})
+		for _, v := range pageNodes {
+			if node, ok := v.(map[string]interface{}); ok {
+				nodes = append(nodes, node)
+			}
+		}
+
+		totalCount := 0
+		if v, ok := response["TotalCount"]; ok {
+			totalCount, _ = strconv.Atoi(fmt.Sprint(v))
+		}
+		if len(pageNodes) == 0 || len(nodes) >= totalCount {
+			break
+		}
+		pageNumber++
+	}
+
+	return nodes, nil
+}
+
+// buildAdditionalBandwidthState derives the additional_bandwidth value from the data nodes
+// returned by DescribeRoleZoneInfo. The response contains one entry per node, so a shard with a
+// replica reports both a master and a slave row: rows are grouped by shard (CustinsId) and the
+// master row is used. Read-only nodes (InsType 3) are not bandwidth targets. Shards are ordered
+// by the ordinal in their node name so the comma-separated value matches the shard order of a
+// multi-shard request, and a value uniform across all shards collapses to a single number, which
+// is how an All-scoped request is configured.
+func buildAdditionalBandwidthState(nodes []map[string]interface{}) string {
+	type shardBandwidth struct {
+		order  int
+		extra  int64
+		master bool
+	}
+
+	shards := make(map[string]*shardBandwidth)
+	for _, node := range nodes {
+		if fmt.Sprint(node["InsType"]) == "3" {
+			continue
+		}
+		shardId := fmt.Sprint(node["CustinsId"])
+		if shardId == "" || shardId == "<nil>" {
+			shardId = fmt.Sprint(node["InsName"])
+		}
+		if shardId == "" || shardId == "<nil>" {
+			continue
+		}
+
+		defaultBandWidth, _ := strconv.ParseInt(fmt.Sprint(node["DefaultBandWidth"]), 10, 64)
+		currentBandWidth, _ := strconv.ParseInt(fmt.Sprint(node["CurrentBandWidth"]), 10, 64)
+		extra := currentBandWidth - defaultBandWidth
+		if extra < 0 {
+			extra = 0
+		}
+
+		isMaster := strings.EqualFold(fmt.Sprint(node["Role"]), "master")
+		existing, ok := shards[shardId]
+		if !ok || (isMaster && !existing.master) {
+			shards[shardId] = &shardBandwidth{
+				order:  shardOrdinal(fmt.Sprint(node["InsName"])),
+				extra:  extra,
+				master: isMaster,
+			}
+		}
+	}
+	if len(shards) == 0 {
+		return ""
+	}
+
+	ordered := make([]*shardBandwidth, 0, len(shards))
+	for _, shard := range shards {
+		ordered = append(ordered, shard)
+	}
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return ordered[i].order < ordered[j].order
+	})
+
+	uniform := true
+	for _, shard := range ordered[1:] {
+		if shard.extra != ordered[0].extra {
+			uniform = false
+			break
+		}
+	}
+	if uniform {
+		return strconv.FormatInt(ordered[0].extra, 10)
+	}
+
+	values := make([]string, 0, len(ordered))
+	for _, shard := range ordered {
+		values = append(values, strconv.FormatInt(shard.extra, 10))
+	}
+	return strings.Join(values, ",")
+}
+
+// shardOrdinal extracts the trailing shard number from a node name such as r-xxx-db-1, so shards
+// sort numerically instead of lexicographically (db-10 must follow db-9).
+func shardOrdinal(nodeName string) int {
+	if idx := strings.LastIndex(nodeName, "-"); idx >= 0 {
+		if ordinal, err := strconv.Atoi(nodeName[idx+1:]); err == nil {
+			return ordinal
+		}
+	}
+	return 0
+}
+
+func isClusterOrReadWriteSplitArchitecture(architectureType string) bool {
+	architecture := strings.ToLower(strings.TrimSpace(architectureType))
+	if architecture == "" {
+		return false
+	}
+	return strings.Contains(architecture, "cluster") || strings.Contains(architecture, "split")
+}
+
+// validateAdditionalBandwidthNodeId mirrors the EnableAdditionalBandwidth contract: Bandwidth may
+// only be sent without NodeId on non-cluster, non-read/write-splitting instances. A shard count
+// above one also identifies a cluster instance when the architecture field is unavailable.
+func validateAdditionalBandwidthNodeId(architectureType string, shardCount int, additionalBandwidth, nodeId string) error {
+	if strings.TrimSpace(additionalBandwidth) == "" || strings.TrimSpace(nodeId) != "" {
+		return nil
+	}
+	if isClusterOrReadWriteSplitArchitecture(architectureType) || shardCount > 1 {
+		return fmt.Errorf("additional_bandwidth_node_id must be set when additional_bandwidth is used on a cluster or read/write splitting instance (architecture type: %s, shard count: %d)", architectureType, shardCount)
+	}
+	return nil
+}
+
+// additionalBandwidthFromRawConfig returns the additional_bandwidth values the user actually
+// configured. The fields are Optional+Computed, so d.Get() would also return values that were
+// only read back from the API.
+func additionalBandwidthFromRawConfig(d *schema.ResourceData) (additionalBandwidth, additionalBandwidthNodeId string) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return "", ""
+	}
+	if v := rawConfig.GetAttr("additional_bandwidth"); !v.IsNull() && v.IsKnown() {
+		additionalBandwidth = strings.TrimSpace(v.AsString())
+	}
+	if v := rawConfig.GetAttr("additional_bandwidth_node_id"); !v.IsNull() && v.IsKnown() {
+		additionalBandwidthNodeId = strings.TrimSpace(v.AsString())
+	}
+	return additionalBandwidth, additionalBandwidthNodeId
 }

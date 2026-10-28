@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudRedisTairInstance() *schema.Resource {
@@ -34,6 +37,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"additional_bandwidth": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^(\d+,)*\d+$`), "must be a comma separated list of non-negative integers"),
+			},
+			"additional_bandwidth_node_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"auto_renew": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -44,6 +57,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			},
 			"backup_id": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"bandwidth_burst": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"cluster_backup_id": {
@@ -567,6 +584,19 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
 
+	// additional_bandwidth is not part of DescribeInstanceAttribute, but DescribeRoleZoneInfo
+	// reports each data node's current and default bandwidth, so the purchased additional
+	// bandwidth is observable instead of being write-only.
+	dataNodes, err := redisServiceV2.DescribeTairInstanceDataNodes(d.Id())
+	if err != nil {
+		// The instance can be removed between the attribute read and this call.
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+	} else if v := buildAdditionalBandwidthState(dataNodes); v != "" {
+		d.Set("additional_bandwidth", v)
+	}
+
 	objectRaw, err = redisServiceV2.DescribeTairInstanceDescribeInstanceConfig(d.Id())
 	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
@@ -591,10 +621,12 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("param_sentinel_compat_enable", objectRaw["ParamSentinelCompatEnable"])
 	}
 
-	gotConfigs := make(map[string]interface{})
-	if v, ok := d.GetOk("config"); ok && v != nil {
-		gotConfigs = v.(map[string]interface{})
-	}
+	// OpenAPI returns every instance config, not only the ones the user configured. When config
+	// is not managed in the configuration the full template is kept, so an import read and later
+	// refreshes return the same map; filtering on the previous state instead would freeze the
+	// template seen at the first read and make parameters changed later appear as import-only
+	// additions.
+	configuredConfigKeys := configuredConfigKeysFromRawConfig(d)
 	if objectRaw["Config"] != nil && fmt.Sprint(objectRaw["Config"]) != "" {
 		configMap := make(map[string]string)
 		config, err := convertJsonStringToMap(fmt.Sprint(objectRaw["Config"]))
@@ -602,9 +634,10 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		for k, v := range config {
-			// OpenAPI returns all configs even if the user did not specify them. Filter via gotConfigs.
-			if _, ok := gotConfigs[k]; !ok && len(gotConfigs) > 0 {
-				continue
+			if len(configuredConfigKeys) > 0 {
+				if _, ok := configuredConfigKeys[k]; !ok {
+					continue
+				}
 			}
 			configMap[k] = fmt.Sprint(v)
 		}
@@ -1302,6 +1335,71 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+	if d.HasChanges("bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id") {
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		request["InstanceId"] = d.Id()
+		request["ChargeType"] = "PostPaid"
+		// GetOkExists is intentional in this update path: a removed bandwidth_burst reads as
+		// (false, true), so removal sends BandWidthBurst=false and disables burst. That is the
+		// documented removal semantics and is covered by the acceptance test's removal step;
+		// the GetRawConfig() alternative would change it to "leave burst as-is".
+		if v, ok := d.GetOkExists("bandwidth_burst"); ok {
+			request["BandWidthBurst"] = v
+		}
+
+		// additional_bandwidth is Optional+Computed, so d.Get would also return the value read
+		// back from DescribeRoleZoneInfo. Only the raw configuration says what the user actually
+		// configured; otherwise a value removed from the configuration would be re-applied.
+		additionalBandwidth, additionalBandwidthNodeId := additionalBandwidthFromRawConfig(d)
+		if additionalBandwidth != "" {
+			redisServiceV2 := RedisServiceV2{client}
+			instance, err := redisServiceV2.DescribeRedisTairInstance(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			architectureType := fmt.Sprint(instance["ArchitectureType"])
+			shardCount, _ := strconv.Atoi(fmt.Sprint(instance["ShardCount"]))
+			if err := validateAdditionalBandwidthNodeId(architectureType, shardCount, additionalBandwidth, additionalBandwidthNodeId); err != nil {
+				return WrapError(err)
+			}
+			request["Bandwidth"] = additionalBandwidth
+			if additionalBandwidthNodeId != "" {
+				request["NodeId"] = additionalBandwidthNodeId
+			}
+		}
+
+		if len(request) > 2 {
+			action = "EnableAdditionalBandwidth"
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				// autoRetry=false matches the kvstore copy of this mechanism and the adjacent
+				// ModifyInstanceBandwidth flow; the outer retry.Retry still absorbs lock/task conflicts.
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, false)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"CanNotAcquireLock", "Task.Conflict"}) || NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			redisServiceV2 := RedisServiceV2{client}
+			instanceStatusConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+			if _, err := instanceStatusConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+	}
 	if d.HasChange("tags") {
 		redisServiceV2 := RedisServiceV2{client}
 		if err := redisServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
@@ -1420,4 +1518,23 @@ func convertRedisTairInstanceShardTypeRequest(source interface{}) interface{} {
 	switch source {
 	}
 	return source
+}
+
+// configuredConfigKeysFromRawConfig returns the config map keys the user actually configured.
+// config is Optional+Computed, so d.Get would also return keys that were only read back from
+// the API.
+func configuredConfigKeysFromRawConfig(d *schema.ResourceData) map[string]struct{} {
+	keys := make(map[string]struct{})
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return keys
+	}
+	configValue := rawConfig.GetAttr("config")
+	if configValue.IsNull() || !configValue.IsKnown() {
+		return keys
+	}
+	for k := range configValue.AsValueMap() {
+		keys[k] = struct{}{}
+	}
+	return keys
 }

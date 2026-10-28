@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudKvstoreInstance() *schema.Resource {
@@ -31,6 +33,16 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"additional_bandwidth": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^(\d+,)*\d+$`), "must be a comma separated list of non-negative integers"),
+			},
+			"additional_bandwidth_node_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
@@ -74,6 +86,10 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
+			},
+			"bandwidth_burst": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"business_info": {
 				Type:     schema.TypeString,
@@ -685,6 +701,21 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 
 	d.Set("bandwidth", object["Bandwidth"])
 	d.Set("capacity", object["Capacity"])
+
+	// additional_bandwidth is not part of DescribeInstanceAttribute, but DescribeRoleZoneInfo
+	// reports each data node's current and default bandwidth, so the purchased additional
+	// bandwidth is observable instead of being write-only. The feature is Redis-only.
+	if fmt.Sprint(object["InstanceType"]) == string(KVStoreRedis) {
+		dataNodes, err := r_kvstoreService.DescribeKvstoreDataNodes(d.Id())
+		if err != nil {
+			// The instance can be removed between the attribute read and this call.
+			if !NotFoundError(err) {
+				return WrapError(err)
+			}
+		} else if v := buildAdditionalBandwidthState(dataNodes); v != "" {
+			d.Set("additional_bandwidth", v)
+		}
+	}
 
 	gotConfigs := make(map[string]interface{})
 	if v, ok := d.GetOk("config"); ok && v != nil {
@@ -1863,6 +1894,71 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChanges("bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id") {
+		enableAdditionalBandwidthReq := map[string]interface{}{
+			"InstanceId": d.Id(),
+			"ChargeType": "PostPaid",
+		}
+		// GetOkExists is intentional in this update path: a removed bandwidth_burst reads as
+		// (false, true), so removal sends BandWidthBurst=false and disables burst. That is the
+		// documented removal semantics and is covered by the acceptance test's removal step;
+		// the GetRawConfig() alternative would change it to "leave burst as-is".
+		if v, ok := d.GetOkExists("bandwidth_burst"); ok {
+			enableAdditionalBandwidthReq["BandWidthBurst"] = v
+		}
+
+		// additional_bandwidth is Optional+Computed, so d.Get would also return the value read
+		// back from DescribeRoleZoneInfo. Only the raw configuration says what the user actually
+		// configured; otherwise a value removed from the configuration would be re-applied.
+		additionalBandwidth, additionalBandwidthNodeId := additionalBandwidthFromRawConfig(d)
+		if additionalBandwidth != "" {
+			instance, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			architectureType := fmt.Sprint(instance["ArchitectureType"])
+			shardCount, _ := strconv.Atoi(fmt.Sprint(instance["ShardCount"]))
+			if err := validateAdditionalBandwidthNodeId(architectureType, shardCount, additionalBandwidth, additionalBandwidthNodeId); err != nil {
+				return WrapError(err)
+			}
+			enableAdditionalBandwidthReq["Bandwidth"] = additionalBandwidth
+			if additionalBandwidthNodeId != "" {
+				enableAdditionalBandwidthReq["NodeId"] = additionalBandwidthNodeId
+			}
+		}
+
+		if len(enableAdditionalBandwidthReq) > 2 {
+			action := "EnableAdditionalBandwidth"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, enableAdditionalBandwidthReq, false)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"CanNotAcquireLock", "Task.Conflict"}) || NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, enableAdditionalBandwidthReq)
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+			instanceStatusConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "InstanceStatus"))
+			if _, err := instanceStatusConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+			stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "IsOrderCompleted"))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 
