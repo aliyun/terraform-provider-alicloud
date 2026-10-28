@@ -1,37 +1,39 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package dms. This file is generated automatically. Please do not modify it manually, thank you!
+package dms_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dms"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // Test Dms Airflow. >>> Resource test cases, automatically generated.
 // Case Airflow_tests 11207
 func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
-	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	acctest.CheckoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_airflow.default"
-	ra := resourceAttrInit(resourceId, AlicloudDmsAirflowMap11207)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDmsAirflow")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDmsAirflowMap11207)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dms.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAirflow")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdms%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDmsAirflowBasicDependence11207)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDmsAirflowBasicDependence11207)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -56,14 +58,14 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 						"worker_serverless_replicas": "0",
 						"description":                "zhenyuan-test",
 						"zone_id":                    "cn-hangzhou-h",
-						"workspace_id":               CHECKSET,
-						"vpc_id":                     CHECKSET,
+						"workspace_id":               acctest.CHECKSET,
+						"vpc_id":                     acctest.CHECKSET,
 						"oss_path":                   "/",
 						"app_spec":                   "SMALL",
 						"oss_bucket_name":            "hansheng",
 						"airflow_name":               name,
-						"security_group_id":          CHECKSET,
-						"vswitch_id":                 CHECKSET,
+						"security_group_id":          acctest.CHECKSET,
+						"vswitch_id":                 acctest.CHECKSET,
 						"requirement_file":           "/Workspace/requirements.txt",
 						"plugins_dir":                "/Workspace/plugins",
 						"dags_dir":                   "/Workspace/dags",
@@ -85,7 +87,7 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"worker_serverless_replicas": "1",
-						"description":                CHECKSET,
+						"description":                acctest.CHECKSET,
 						"app_spec":                   "MEDIUM",
 						"airflow_name":               name + "_update",
 						"requirement_file":           "/Workspace/requirements2.txt",
@@ -106,8 +108,8 @@ func TestAccAliCloudDmsAirflow_basic11207(t *testing.T) {
 }
 
 var AlicloudDmsAirflowMap11207 = map[string]string{
-	"airflow_id": CHECKSET,
-	"region_id":  CHECKSET,
+	"airflow_id": acctest.CHECKSET,
+	"region_id":  acctest.CHECKSET,
 }
 
 func AlicloudDmsAirflowBasicDependence11207(name string) string {

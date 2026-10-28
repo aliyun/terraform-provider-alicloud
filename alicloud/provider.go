@@ -1646,7 +1646,6 @@ func Provider() *schema.Provider {
 			"alicloud_disk_attachment": resourceAlicloudEcsDiskAttachment(),
 
 			// dms
-			"alicloud_dms_airflow":                       resourceAliCloudDmsAirflow(),
 			"alicloud_dms_enterprise_workspace":          resourceAliCloudDmsEnterpriseWorkspace(),
 			"alicloud_dms_enterprise_authority_template": resourceAliCloudDMSEnterpriseAuthorityTemplate(),
 			"alicloud_dms_enterprise_instance":           resourceAlicloudDmsEnterpriseInstance(),
