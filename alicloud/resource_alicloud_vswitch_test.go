@@ -103,11 +103,21 @@ func testSweepVSwitches(region string) error {
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
+	if len(vswitches) == 0 {
+		log.Printf("[INFO] VSwitch: 0 vswitches in region %s", region)
+		return nil
+	}
+
 	sweeped := false
 	service := VpcService{client}
 	for _, vsw := range vswitches {
 		name := fmt.Sprint(vsw["VSwitchName"])
 		id := fmt.Sprint(vsw["VSwitchId"])
+		// NODELETING guard — always-active (both NORMAL and SWEEP_ALL).
+		if protectedSweepVpcName(name) {
+			log.Printf("[INFO] Skipping VSwitch (NODELETING): %s (%s)", name, id)
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {
