@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	testingterraform "github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -263,6 +264,97 @@ func TestAccAliCloudOosParameter_basic1(t *testing.T) {
 						"constraints":       CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOosParameter_changeResourceGroup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_parameter.default"
+	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudOOSParameterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosParameter")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soosparameter%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOOSParameterBasicDependence0)
+	testAccResourceGroupsDistinct := func(s *testingterraform.State) error {
+		rs, ok := s.RootModule().Resources["data.alicloud_resource_manager_resource_groups.default"]
+		if !ok {
+			return fmt.Errorf("data source alicloud_resource_manager_resource_groups.default not found in state")
+		}
+		first, second := rs.Primary.Attributes["groups.0.id"], rs.Primary.Attributes["groups.1.id"]
+		if first == "" || second == "" {
+			return fmt.Errorf("expected at least two resource groups, got %q and %q", first, second)
+		}
+		if first == second {
+			return fmt.Errorf("resource groups 0 and 1 resolve to the same id %q; the test requires two distinct groups", first)
+		}
+		return nil
+	}
+	testAccChangeResourceGroup := func(groupIndex string) resource.TestCheckFunc {
+		return resource.ComposeTestCheckFunc(
+			testAccResourceGroupsDistinct,
+			testAccCheck(map[string]string{
+				"tags.%": "2",
+			}),
+			resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "data.alicloud_resource_manager_resource_groups.default", "groups."+groupIndex+".id"),
+		)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_name": "${var.name}",
+					"type":           "String",
+					"value":          "tf-testacc-oos_parameter",
+					"tags": map[string]string{
+						"Created": "tfTestAcc",
+						"For":     "OosParameter",
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: testAccChangeResourceGroup("0"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_name": "${var.name}",
+					"type":           "String",
+					"value":          "tf-testacc-oos_parameter",
+					"tags": map[string]string{
+						"Created": "tfTestAcc",
+						"For":     "OosParameter",
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: testAccChangeResourceGroup("1"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_name": "${var.name}",
+					"type":           "String",
+					"value":          "tf-testacc-oos_parameter",
+					"tags": map[string]string{
+						"Created": "tfTestAcc",
+						"For":     "OosParameter",
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: testAccChangeResourceGroup("0"),
 			},
 			{
 				ResourceName:      resourceId,
