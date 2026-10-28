@@ -58,6 +58,11 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 					},
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			// lintignore: S018
 			"source_tag": {
 				Type:         schema.TypeSet,
@@ -116,6 +121,22 @@ func resourceAlicloudRosTemplateScratch() *schema.Resource {
 					},
 				},
 			},
+			"stacks": {
+				Type:     schema.TypeSet,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"stack_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -161,6 +182,9 @@ func resourceAlicloudRosTemplateScratchCreate(d *schema.ResourceData, meta inter
 		}
 	}
 	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	if v, ok := d.GetOk("source_resource_group"); ok {
 		sourceResourceGroupMap := map[string]interface{}{}
 		for _, sourceResourceGroup := range v.(*schema.Set).List() {
@@ -217,7 +241,8 @@ func resourceAlicloudRosTemplateScratchCreate(d *schema.ResourceData, meta inter
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			// LastTokenProcessing means the request with the same ClientToken is still being processed and should be retried.
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"LastTokenProcessing"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -255,9 +280,24 @@ func resourceAlicloudRosTemplateScratchRead(d *schema.ResourceData, meta interfa
 	d.Set("logical_id_strategy", object["LogicalIdStrategy"])
 
 	if preferenceParametersList, ok := object["PreferenceParameters"]; ok && preferenceParametersList != nil {
+		// The API also returns parameters that were not configured, for example InstanceDataReplicationOption,
+		// reading them back would produce a permanent diff.
+		configuredPreferenceKeys := make(map[string]struct{})
+		if v, ok := d.GetOk("preference_parameters"); ok {
+			for _, preferenceParameter := range v.(*schema.Set).List() {
+				if preferenceParameterMap, ok := preferenceParameter.(map[string]interface{}); ok {
+					configuredPreferenceKeys[fmt.Sprint(preferenceParameterMap["parameter_key"])] = struct{}{}
+				}
+			}
+		}
 		preferenceParametersMaps := make([]map[string]interface{}, 0)
 		for _, preferenceParametersListItem := range preferenceParametersList.([]interface{}) {
 			if preferenceParametersListItemMap, ok := preferenceParametersListItem.(map[string]interface{}); ok {
+				if len(configuredPreferenceKeys) > 0 {
+					if _, ok := configuredPreferenceKeys[fmt.Sprint(preferenceParametersListItemMap["ParameterKey"])]; !ok {
+						continue
+					}
+				}
 				if v, ok := preferenceParametersListItemMap["ParameterValue"]; ok && fmt.Sprint(v) != "" {
 					preferenceParametersListItemArg := make(map[string]interface{}, 0)
 					preferenceParametersListItemArg["parameter_key"] = preferenceParametersListItemMap["ParameterKey"]
@@ -317,6 +357,21 @@ func resourceAlicloudRosTemplateScratchRead(d *schema.ResourceData, meta interfa
 		d.Set("source_resources", sourceResourcesMaps)
 	}
 
+	d.Set("resource_group_id", object["ResourceGroupId"])
+
+	stacks := make([]map[string]interface{}, 0)
+	if stacksList, ok := object["Stacks"].([]interface{}); ok {
+		for _, v := range stacksList {
+			if stack, ok := v.(map[string]interface{}); ok {
+				stacks = append(stacks, map[string]interface{}{
+					"region_id": stack["RegionId"],
+					"stack_id":  stack["StackId"],
+				})
+			}
+		}
+	}
+	d.Set("stacks", stacks)
+
 	d.Set("status", object["Status"])
 	d.Set("template_scratch_type", object["TemplateScratchType"])
 	return nil
@@ -341,6 +396,12 @@ func resourceAlicloudRosTemplateScratchUpdate(d *schema.ResourceData, meta inter
 		update = true
 		if v, ok := d.GetOk("logical_id_strategy"); ok {
 			request["LogicalIdStrategy"] = v
+		}
+	}
+	if d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
 		}
 	}
 	if d.HasChange("source_tag") {
@@ -433,7 +494,8 @@ func resourceAlicloudRosTemplateScratchUpdate(d *schema.ResourceData, meta inter
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				// LastTokenProcessing means the request with the same ClientToken is still being processed and should be retried.
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"LastTokenProcessing"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
