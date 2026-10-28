@@ -170,7 +170,7 @@ func testSweepFCServices(region string) error {
 			logs.AddDebug(action, response, request)
 			resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 			if err != nil {
-				return errs.WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
+				return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
