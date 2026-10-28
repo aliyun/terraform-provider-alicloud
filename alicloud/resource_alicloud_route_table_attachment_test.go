@@ -47,7 +47,8 @@ func testSweepRouteTableAttachment(region string) error {
 			return vpcClient.DescribeRouteTableList(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving RouteTables: %s", err)
+			log.Printf("[ERROR] Failed to list RouteTables: %s", err)
+			break
 		}
 		resp, _ := raw.(*vpc.DescribeRouteTableListResponse)
 		if resp == nil || len(resp.RouterTableList.RouterTableListType) < 1 {
@@ -61,7 +62,8 @@ func testSweepRouteTableAttachment(region string) error {
 
 		page, err := getNextpageNumber(req.PageNumber)
 		if err != nil {
-			return err
+			log.Printf("[ERROR] Failed to get next page number: %s", err)
+			break
 		}
 		req.PageNumber = page
 	}
