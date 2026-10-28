@@ -42,7 +42,8 @@ func testSweepCdnDomains(region string) error {
 			return cdnClient.DescribeUserDomains(args)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving cdn domains: %s", err)
+			log.Printf("[ERROR] Failed to list cdn domains: %s", err)
+			break
 		}
 		resp, _ := raw.(*cdn.DomainsResponse)
 		if resp == nil || len(resp.Domains.PageData) < 1 {
