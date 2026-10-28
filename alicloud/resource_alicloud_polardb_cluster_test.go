@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/resourcemanager"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -3475,7 +3476,7 @@ func deleteTDEPolicyAndRole() error {
 	accountId, err := rawClient.(*connectivity.AliyunClient).AccountId()
 	policyId := fmt.Sprintf("AliyunRDSInstanceEncryptionRolePolicy:System:AliyunRDSInstanceEncryptionDefaultRole@role.%s.onaliyunservice.com:ServiceRole:%s", accountId, accountId)
 	ramPolicyExisted.SetId(policyId)
-	err = resourceAlicloudResourceManagerPolicyAttachmentDelete(ramPolicyExisted, rawClient)
+	err = resourcemanager.ResourcePolicyAttachmentDelete(ramPolicyExisted, rawClient)
 	if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Role", "EntityNotExist.Policy"}) {
 		return err
 	}

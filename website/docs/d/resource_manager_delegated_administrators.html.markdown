@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Resource Manager Delegated Administrators of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0.
 
 ## Example Usage
 
@@ -34,12 +34,12 @@ The following arguments are supported:
 * `service_principal` - (Optional, ForceNew) The identification of the trusted service.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `administrators` - A list of Resource Manager Delegated Administrators. Each element contains the following attributes:
-	* `account_id` - The ID of the member account.
-	* `delegation_enabled_time` - The time when the member was specified as a delegated administrator account.
-	* `id` - The ID of the Delegated Administrator.
-	* `service_principal` - The identity of the trusted service.
+  * `account_id` - The ID of the member account.
+  * `delegation_enabled_time` - The time when the member was specified as a delegated administrator account.
+  * `id` - The ID of the Delegated Administrator.
+  * `service_principal` - The identity of the trusted service.
