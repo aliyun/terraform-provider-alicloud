@@ -1,4 +1,4 @@
-package alicloud
+package gdb
 
 import (
 	"fmt"
@@ -7,17 +7,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
+func ResourceGraphDatabaseDbInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGraphDatabaseDbInstanceCreate,
-		Read:   resourceAlicloudGraphDatabaseDbInstanceRead,
-		Update: resourceAlicloudGraphDatabaseDbInstanceUpdate,
-		Delete: resourceAlicloudGraphDatabaseDbInstanceDelete,
+		Create: resourceGraphDatabaseDbInstanceCreate,
+		Read:   resourceGraphDatabaseDbInstanceRead,
+		Update: resourceGraphDatabaseDbInstanceUpdate,
+		Delete: resourceGraphDatabaseDbInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -126,7 +130,7 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDBInstance"
@@ -152,12 +156,12 @@ func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VPCId"] = v
 	}
-	request["ClientToken"] = buildClientToken("CreateDBInstance")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateDBInstance")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -165,38 +169,38 @@ func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_graph_database_db_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_graph_database_db_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DBInstanceId"]))
-	gdbService := GdbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
+	gdbService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGraphDatabaseDbInstanceUpdate(d, meta)
+	return resourceGraphDatabaseDbInstanceUpdate(d, meta)
 }
-func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gdbService := GdbService{client}
+	gdbService := NewService(client)
 	object, err := gdbService.DescribeGraphDatabaseDbInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_graph_database_db_instance gdbService.DescribeGraphDatabaseDbInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("db_instance_category", object["Category"])
 	d.Set("db_instance_description", object["DBInstanceDescription"])
 	d.Set("db_instance_network_type", object["DBInstanceNetworkType"])
 	d.Set("db_instance_storage_type", object["DBInstanceStorageType"])
 	d.Set("db_node_class", object["DBNodeClass"])
-	db_node_storageVal, err := formatInt(object["DBNodeStorage"])
+	db_node_storageVal, err := convert.FormatInt(object["DBNodeStorage"])
 	if err != nil {
 		return err
 	}
@@ -227,9 +231,9 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 	}
 	return nil
 }
-func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gdbService := GdbService{client}
+	gdbService := NewService(client)
 	var err error
 	var response map[string]interface{}
 	d.Partial(true)
@@ -246,11 +250,11 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 	}
 	if update {
 		action := "ModifyDBInstanceDescription"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -258,13 +262,13 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -288,11 +292,11 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				}
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayName"] = dBInstanceIPArrayArg["db_instance_ip_array_name"]
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = "Empty"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 					response, err = client.RpcPost("gdb", "2019-09-03", action, nil, modifyDBInstanceAccessWhiteListReq, false)
 					if err != nil {
-						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+						if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -300,9 +304,9 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 					}
 					return nil
 				})
-				addDebug(action, response, modifyDBInstanceAccessWhiteListReq)
+				logs.AddDebug(action, response, modifyDBInstanceAccessWhiteListReq)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
@@ -315,11 +319,11 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayAttribute"] = dBInstanceIPArrayArg["db_instance_ip_array_attribute"]
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayName"] = dBInstanceIPArrayArg["db_instance_ip_array_name"]
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = dBInstanceIPArrayArg["security_ips"]
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 					response, err = client.RpcPost("gdb", "2019-09-03", action, nil, modifyDBInstanceAccessWhiteListReq, false)
 					if err != nil {
-						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+						if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -327,15 +331,15 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 					}
 					return nil
 				})
-				addDebug(action, response, modifyDBInstanceAccessWhiteListReq)
+				logs.AddDebug(action, response, modifyDBInstanceAccessWhiteListReq)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 			}
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -355,12 +359,12 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 	if update {
 		modifyDBInstanceSpecReq["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
 		action := "ModifyDBInstanceSpec"
-		modifyDBInstanceSpecReq["ClientToken"] = buildClientToken("ModifyDBInstanceSpec")
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		modifyDBInstanceSpecReq["ClientToken"] = helper.BuildClientToken("ModifyDBInstanceSpec")
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, modifyDBInstanceSpecReq, true)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -368,21 +372,21 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, modifyDBInstanceSpecReq)
+		logs.AddDebug(action, response, modifyDBInstanceSpecReq)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudGraphDatabaseDbInstanceRead(d, meta)
+	return resourceGraphDatabaseDbInstanceRead(d, meta)
 }
-func resourceAlicloudGraphDatabaseDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceGraphDatabaseDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gdbService := GdbService{client}
+	gdbService := NewService(client)
 	action := "DeleteDBInstance"
 	var response map[string]interface{}
 	var err error
@@ -390,11 +394,11 @@ func resourceAlicloudGraphDatabaseDbInstanceDelete(d *schema.ResourceData, meta 
 		"DBInstanceId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -402,16 +406,16 @@ func resourceAlicloudGraphDatabaseDbInstanceDelete(d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }

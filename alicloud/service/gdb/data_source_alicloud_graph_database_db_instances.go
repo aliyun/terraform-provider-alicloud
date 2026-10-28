@@ -1,4 +1,4 @@
-package alicloud
+package gdb
 
 import (
 	"fmt"
@@ -6,14 +6,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudGraphDatabaseDbInstances() *schema.Resource {
+func DataSourceGraphDatabaseDbInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudGraphDatabaseDbInstancesRead,
+		Read: dataSourceGraphDatabaseDbInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"db_instance_description": {
 				Type:     schema.TypeString,
@@ -201,7 +205,7 @@ func dataSourceAlicloudGraphDatabaseDbInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDBInstances"
@@ -213,7 +217,7 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 	if v, ok := d.GetOk("status"); ok {
 		request["DBInstanceStatus"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 
@@ -229,11 +233,11 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("gdb", "2019-09-03", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -241,13 +245,13 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_graph_database_db_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_graph_database_db_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Items.DBInstance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Items.DBInstance", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -259,7 +263,7 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -298,10 +302,10 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 			continue
 		}
 		id := fmt.Sprint(object["DBInstanceId"])
-		gdbService := GdbService{client}
+		gdbService := NewService(client)
 		getResp, err := gdbService.DescribeGraphDatabaseDbInstance(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["connection_string"] = getResp["ConnectionString"]
 		mapping["current_minor_version"] = getResp["CurrentMinorVersion"]
@@ -328,7 +332,7 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 			}
 		}
 		if v, ok := getResp["Port"]; ok && v.(string) != "" {
-			portValue, err := formatInt(v)
+			portValue, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -336,7 +340,7 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 		}
 		mapping["public_connection_string"] = getResp["PublicConnectionString"]
 		if v, ok := getResp["PublicPort"]; ok && fmt.Sprint(v) != "0" {
-			publicPort, err := formatInt(v)
+			publicPort, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -345,16 +349,16 @@ func dataSourceAlicloudGraphDatabaseDbInstancesRead(d *schema.ResourceData, meta
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -744,8 +744,7 @@ func Provider() *schema.Provider {
 			"alicloud_gpdb_api_keys":          dataSourceAliCloudGpdbApiKeys(),
 			"alicloud_gpdb_db_instance_plans": dataSourceAlicloudGpdbDbInstancePlans(),
 
-			// graph
-			"alicloud_graph_database_db_instances": dataSourceAlicloudGraphDatabaseDbInstances(),
+			// graph (gdb migrated to alicloud/service/gdb)
 
 			// havips
 			"alicloud_havips": dataSourceAlicloudHavips(),
@@ -2014,8 +2013,7 @@ func Provider() *schema.Provider {
 			"alicloud_gpdb_account":                resourceAliCloudGpdbAccount(),
 			"alicloud_gpdb_db_instance_plan":       resourceAliCloudGpdbDbInstancePlan(),
 
-			// graph
-			"alicloud_graph_database_db_instance": resourceAlicloudGraphDatabaseDbInstance(),
+			// graph (gdb migrated to alicloud/service/gdb)
 
 			// havip
 			"alicloud_havip":            resourceAliCloudVpcHaVip(),

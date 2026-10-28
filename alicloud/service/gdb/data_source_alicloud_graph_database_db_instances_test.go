@@ -1,57 +1,58 @@
-package alicloud
+package gdb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudGraphDatabaseDbInstancesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 1000)
+	rand := tfacctest.RandIntRange(1, 1000)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"enable_details": "true",
 		}),
-		fakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_graph_database_db_instance.default.id}_fakeid"]`,
 			"enable_details": "true",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"status": `"Running"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"status": `"Creating"`,
 		}),
 	}
 
-	descriptionConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+	descriptionConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":                     `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"db_instance_description": `"${alicloud_graph_database_db_instance.default.db_instance_description}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":                     `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"db_instance_description": `"${alicloud_graph_database_db_instance.default.db_instance_description}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":                     `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"status":                  `"Running"`,
 			"db_instance_description": `"${alicloud_graph_database_db_instance.default.db_instance_description}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand, map[string]string{
 			"ids":                     `["${alicloud_graph_database_db_instance.default.id}"]`,
 			"status":                  `"Creating"`,
 			"db_instance_description": `"${alicloud_graph_database_db_instance.default.db_instance_description}_fake"`,
@@ -71,16 +72,16 @@ func TestAccAliCloudGraphDatabaseDbInstancesDataSource(t *testing.T) {
 			"instances.#": "0",
 		}
 	}
-	var alicloudGraphDatabaseDbInstanceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_graph_database_db_instances.default",
-		existMapFunc: existDataAlicloudGraphDatabaseDbInstancesSourceNameMapFunc,
-		fakeMapFunc:  fakeDataGraphDatabaseDbInstancesSourceNameMapFunc,
+	var alicloudGraphDatabaseDbInstanceCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_graph_database_db_instances.default",
+		ExistMapFunc: existDataAlicloudGraphDatabaseDbInstancesSourceNameMapFunc,
+		FakeMapFunc:  fakeDataGraphDatabaseDbInstancesSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.GraphDatabaseSupportRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.GraphDatabaseSupportRegions)
 	}
 
-	alicloudGraphDatabaseDbInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, descriptionConf, allConf)
+	alicloudGraphDatabaseDbInstanceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, descriptionConf, allConf)
 }
 
 func testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand int, attrMap map[string]string) string {
@@ -91,7 +92,7 @@ func testAccCheckAlicloudGraphDatabaseDbInstanceDataSourceName(rand int, attrMap
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testaccgraphdatabasedbinstance%d"
 }
 
@@ -106,7 +107,7 @@ resource "alicloud_graph_database_db_instance" "default" {
   db_instance_description = var.name
 }
 
-data "alicloud_graph_database_db_instances" "default" {	
+data "alicloud_graph_database_db_instances" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
