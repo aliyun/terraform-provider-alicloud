@@ -28,6 +28,12 @@ func init() {
 		F:    testSweepExpressConnectVirtualBorderRouters,
 		Dependencies: []string{
 			"alicloud_cen_instance",
+			// Detach VBR-scoped children before the VBR itself is deleted, so a
+			// VBR with an active CEN grant or associated physical connection can
+			// be removed without a DependencyViolation. These sweepers are
+			// registered in resource_alicloud_express_connect_sweeper_test.go.
+			"alicloud_express_connect_grant_rule_to_cen",
+			"alicloud_express_connect_vbr_pconn_association",
 		},
 	})
 }
