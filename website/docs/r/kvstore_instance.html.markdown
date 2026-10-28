@@ -15,6 +15,8 @@ Provides  Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance re
 
 -> **NOTE:** Destroying a `PrePaid` instance fails with an error since v1.294.0. To destroy it, convert the instance to `PostPaid` by setting `payment_type = "PostPaid"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
 
+-> **NOTE:** Refreshing a `Redis` type instance calls the `DescribeRoleZoneInfo` operation to read the additional bandwidth purchased for its data shards, so the RAM policy used by Terraform must allow `kvstore:DescribeRoleZoneInfo` in addition to the instance query permissions.
+
 ## Example Usage
 
 Basic Usage
@@ -26,6 +28,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -78,6 +88,14 @@ Launching a PrePaid instance
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example-prepaid"
 }
@@ -133,6 +151,14 @@ Setting Private Connection String
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example-with-connection"
 }
@@ -280,8 +306,7 @@ The following arguments are supported:
   - `0`: Disables automatic minor version update.
 * `bandwidth` - (Optional, Int) The total bandwidth of the instance. **NOTE:** From version 1.232.0, `bandwidth` can be set. If the instance is a cluster instance, `bandwidth` must be divisible by the number of `shard_count` in the instance, and if the instance is a read/write splitting instance, `bandwidth` cannot be set.
 * `bandwidth_burst` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable Elastic Burst for the instance. After it is enabled, the instance can temporarily burst beyond the default bandwidth limit during bandwidth auto scaling. **NOTE:** This attribute is only submitted through the `EnableAdditionalBandwidth` API and cannot be read back by instance query APIs; Terraform keeps the configured value in the state. The additional bandwidth is charged on a pay-as-you-go basis.
-* `additional_bandwidth` - (Optional, String, Available since v2.2.0) The additional bandwidth to add for the instance. Unit: MB/s. The maximum value is 6 times the default bandwidth of the instance (or single shard) specification, capped at 192 MB/s. When `additional_bandwidth_node_id` specifies multiple shard IDs, pass comma-separated bandwidth values in the same order. **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default), so bandwidth changed outside Terraform is detected on refresh. Setting this attribute adjusts the node bandwidth to the specification default plus this value, which also changes the total `bandwidth` of the instance. A value shared by all data nodes is returned as a single number; otherwise the values are comma separated in shard order. Removing the attribute does not release the purchased bandwidth; set `additional_bandwidth` to `"0"` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
-* `additional_bandwidth_node_id` - (Optional, String, Available since v2.2.0) The IDs of the data shards whose bandwidth is adjusted. You can call `DescribeLogicInstanceTopology` to obtain them. Separate multiple IDs with commas (,), or set to `All` for all data shards. Required for cluster or read/write splitting architectures when `additional_bandwidth` is set. **NOTE:** This attribute selects the target shards of a request and is not read back; Terraform keeps the configured value in the state.
+* `additional_bandwidth` - (Optional, Set, Available since v2.2.0) The additional bandwidth to add to each data shard of the instance. Unit: MB/s. Setting this block adjusts the shard bandwidth to the specification default plus the configured value, which also changes the total `bandwidth` of the instance. See [`additional_bandwidth`](#additional_bandwidth) below. **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default) for the shards managed by this resource, so bandwidth changed outside Terraform is detected on refresh. Removing a block does not release the purchased bandwidth of that shard; set its `bandwidth` to `0` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
 * `global_security_group_list` - (Optional, List, Available since v2.1.0) The list of Global Security Group Ids.
 
@@ -292,6 +317,13 @@ The following arguments are supported:
   -> **NOTE:** The `private_ip` must be in the Classless Inter-Domain Routing (CIDR) block of the VSwitch to which the instance belongs.
 
   -> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify the `backup_id` or `restore_time` parameter.
+
+### `additional_bandwidth`
+
+The `additional_bandwidth` block supports the following:
+
+* `node_id` - (Optional, String) The data shard whose bandwidth is adjusted. Use the shard node name (`r-xxx-db-0`, the `InsName` reported by the `DescribeRoleZoneInfo` operation) or its full topology ID (`r-xxx-db-0#123456`); a suffix such as `db-0` is also accepted when exactly one data shard of the instance ends with it. Required on [cluster](https://www.alibabacloud.com/help/en/redis/user-guide/cluster-instances) and [read/write splitting](https://www.alibabacloud.com/help/en/redis/user-guide/read-write-splitting-based-on-proxy-nodes) instances, and each data shard can be configured at most once. A standard instance takes `bandwidth` alone and must leave this argument unset, because `EnableAdditionalBandwidth` only accepts `NodeId` for the cluster and read/write splitting architectures.
+* `bandwidth` - (Optional, Int) The additional bandwidth to add. Unit: MB/s. Must be set in every `additional_bandwidth` block; a block without it is rejected. Valid values: non-negative integers. The maximum value is 6 times the default bandwidth of the instance (or shard) specification, capped at 192 MB/s. Set to `0` to release the additional bandwidth purchased for the shard.
 
 ### `parameters`
 

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1706,59 +1707,51 @@ func TestAccAliCloudRedisTairInstance_basic8747(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type":                "PayAsYouGo",
-					"instance_type":               "tair_essd",
-					"zone_id":                     "${var.zone_id}",
-					"instance_class":              "tair.essd.standard.xlarge",
-					"vswitch_id":                  "${alicloud_vswitch.defaultVSwitch.id}",
-					"vpc_id":                      "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"password":                    "123456Tf",
-					"port":                        "6379",
-					"engine_version":              "1.0",
-					"storage_performance_level":   "PL1",
-					"storage_size_gb":             "60",
-					"security_ips":                "127.0.0.2",
-					"security_ip_group_name":      "test1",
-					"param_repl_mode":             "async",
-					"param_semisync_repl_timeout": "500",
+					"payment_type":              "PayAsYouGo",
+					"instance_type":             "tair_essd",
+					"zone_id":                   "${var.zone_id}",
+					"instance_class":            "tair.essd.standard.xlarge",
+					"vswitch_id":                "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":                    "${alicloud_vpc.defaultVpc.id}",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"password":                  "123456Tf",
+					"port":                      "6379",
+					"engine_version":            "1.0",
+					"storage_performance_level": "PL1",
+					"storage_size_gb":           "60",
+					"security_ips":              "127.0.0.2",
+					"security_ip_group_name":    "test1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type":                "PayAsYouGo",
-						"instance_type":               "tair_essd",
-						"zone_id":                     CHECKSET,
-						"instance_class":              "tair.essd.standard.xlarge",
-						"vswitch_id":                  CHECKSET,
-						"vpc_id":                      CHECKSET,
-						"resource_group_id":           CHECKSET,
-						"password":                    "123456Tf",
-						"port":                        "6379",
-						"engine_version":              "1.0",
-						"storage_performance_level":   "PL1",
-						"storage_size_gb":             "60",
-						"security_ips":                "127.0.0.2",
-						"security_ip_group_name":      "test1",
-						"param_repl_mode":             "async",
-						"param_semisync_repl_timeout": "500",
+						"payment_type":              "PayAsYouGo",
+						"instance_type":             "tair_essd",
+						"zone_id":                   CHECKSET,
+						"instance_class":            "tair.essd.standard.xlarge",
+						"vswitch_id":                CHECKSET,
+						"vpc_id":                    CHECKSET,
+						"resource_group_id":         CHECKSET,
+						"password":                  "123456Tf",
+						"port":                      "6379",
+						"engine_version":            "1.0",
+						"storage_performance_level": "PL1",
+						"storage_size_gb":           "60",
+						"security_ips":              "127.0.0.2",
+						"security_ip_group_name":    "test1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_ips":                "127.0.0.3",
-					"param_repl_mode":             "semisync",
-					"param_semisync_repl_timeout": "600",
-					"effective_time":              "Immediately",
-					"modify_mode":                 "Cover",
+					"security_ips":   "127.0.0.3",
+					"effective_time": "Immediately",
+					"modify_mode":    "Cover",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ips":                "127.0.0.3",
-						"param_repl_mode":             "semisync",
-						"param_semisync_repl_timeout": "600",
-						"effective_time":              "Immediately",
-						"modify_mode":                 "Cover",
+						"security_ips":   "127.0.0.3",
+						"effective_time": "Immediately",
+						"modify_mode":    "Cover",
 					}),
 				),
 			},
@@ -1775,16 +1768,47 @@ func TestAccAliCloudRedisTairInstance_basic8747(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// DescribeInstanceConfig does not return ParamReplMode/ParamReplTimeout for
-				// tair_essd, so an import cannot recover these two values (verified: both keys are
-				// absent from the imported state while the apply state holds them).
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "param_repl_mode", "param_semisync_repl_timeout"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "effective_time", "force_upgrade", "global_instance_id", "modify_mode", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
+}
+
+// testAccCheckTairInstanceParam polls DescribeInstanceConfig until the parameter reaches the
+// expected value. Parameter writes are echoed asynchronously, so a single immediate read cannot
+// distinguish a slow echo from a value that was never applied.
+func testAccCheckTairInstanceParam(resourceId, paramKey, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		service := RedisServiceV2{client}
+		deadline := time.Now().Add(10 * time.Minute)
+		last := "<unset>"
+		for {
+			config, err := service.DescribeTairInstanceDescribeInstanceConfig(rs.Primary.ID)
+			if err != nil && !NotFoundError(err) {
+				return err
+			}
+			if value, ok := config[paramKey]; ok {
+				last = fmt.Sprint(value)
+			} else {
+				last = "<absent>"
+			}
+			if last == expected {
+				return nil
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("parameter %s expected %q, got %q after waiting", paramKey, expected, last)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
 }
 
 var AlicloudRedisTairInstanceMap8747 = map[string]string{
@@ -1896,6 +1920,9 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 						"effective_time": "Immediately",
 						"modify_mode":    "Cover",
 					}),
+					testAccCheckTairInstanceParam(resourceId, "ParamSentinelCompatEnable", "1"),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelPasswordFreeAccess", "yes"),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelPasswordFreeCommands", "ping"),
 				),
 			},
 			{
@@ -1907,16 +1934,15 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 					"effective_time":                                 "Immediately",
 					"modify_mode":                                    "Cover",
 				}),
-				// The service does not apply the enabled sentinel values on this instance type:
-				// after the enable step DescribeInstanceConfig still reports 0/no, so only the
-				// request acceptance is observable here. The disabled values are asserted in the
-				// following steps.
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ips":   "127.0.0.3",
 						"effective_time": "Immediately",
 						"modify_mode":    "Cover",
 					}),
+					testAccCheckTairInstanceParam(resourceId, "ParamSentinelCompatEnable", "1"),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelPasswordFreeAccess", "yes"),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelPasswordFreeCommands", "ping"),
 				),
 			},
 			{
@@ -1932,6 +1958,9 @@ func TestAccAliCloudRedisTairInstance_basic8703(t *testing.T) {
 						"security_ips":           "127.0.0.2",
 						"security_ip_group_name": "default",
 					}),
+					testAccCheckTairInstanceParam(resourceId, "ParamSentinelCompatEnable", "0"),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelPasswordFreeAccess", "no"),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelPasswordFreeCommands", "ping"),
 				),
 			},
 			{
@@ -2065,6 +2094,20 @@ func TestAccAliCloudRedisTairInstance_noLooseSentinel(t *testing.T) {
 					testAccCheck(map[string]string{
 						"security_ips": "127.0.0.3",
 					}),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelEnabled", "yes"),
+				),
+			},
+			{
+				// Settle step: the enabled value must survive a refresh before it is disabled.
+				Config: testAccConfig(map[string]interface{}{
+					"param_no_loose_sentinel_enabled": "yes",
+					"security_ips":                    "127.0.0.3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips": "127.0.0.3",
+					}),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelEnabled", "yes"),
 				),
 			},
 			{
@@ -2078,6 +2121,7 @@ func TestAccAliCloudRedisTairInstance_noLooseSentinel(t *testing.T) {
 						"security_ips":           "127.0.0.2",
 						"security_ip_group_name": "default",
 					}),
+					testAccCheckTairInstanceParam(resourceId, "ParamNoLooseSentinelEnabled", "no"),
 				),
 			},
 			{
@@ -3384,6 +3428,32 @@ func TestAccAliCloudRedisTairInstance_config(t *testing.T) {
 				),
 			},
 			{
+				// Replication parameters are not echoed by DescribeInstanceConfig on every
+				// instance type, so this case covers them without import verification.
+				Config: testAccConfig(map[string]interface{}{
+					"param_repl_mode":             "semisync",
+					"param_semisync_repl_timeout": "600",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"param_repl_mode":             "semisync",
+						"param_semisync_repl_timeout": "600",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"param_repl_mode":             "async",
+					"param_semisync_repl_timeout": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"param_repl_mode":             "async",
+						"param_semisync_repl_timeout": "300",
+					}),
+				),
+			},
+			{
 				// Convert the Subscription instance to PayAsYouGo before destroy so
 				// CheckDestroy can PASS and the test cleans up after itself (a
 				// Subscription instance cannot be destroyed immediately). Mirrors
@@ -3445,102 +3515,169 @@ func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth_burst":              "false",
-					"additional_bandwidth":         "20",
-					"additional_bandwidth_node_id": "All",
+					"bandwidth_burst": "false",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 20},
+						{"node_id": "db-1", "bandwidth": 20},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bandwidth_burst":              "false",
-						"additional_bandwidth":         "20",
-						"additional_bandwidth_node_id": "All",
+						"bandwidth_burst": "false",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "20"),
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "20",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-1",
+						"bandwidth": "20",
+					}),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 20, "db-1": 20}),
 				),
 			},
 			{
+				// Non-uniform per-shard values: each block carries its own value.
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "30",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 30},
+						{"node_id": "db-1", "bandwidth": 40},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "30",
-						"additional_bandwidth_node_id": "All",
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "30",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "30"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-1",
+						"bandwidth": "40",
+					}),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 30, "db-1": 40}),
 				),
 			},
 			{
-				// The contract requires NodeId for cluster and read/write splitting
-				// architectures, so the request is rejected before it reaches the API.
+				// An import has no configuration to key the read-back on, so every shard with
+				// purchased bandwidth is reported under its node name.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "bandwidth_burst", "additional_bandwidth"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported state, got %d", len(states))
+					}
+					instanceId := states[0].Attributes["id"]
+					want := map[string]int{instanceId + "-db-0": 30, instanceId + "-db-1": 40}
+					if got := importedAdditionalBandwidth(states[0]); !reflect.DeepEqual(want, got) {
+						return fmt.Errorf("expected the imported per-shard additional bandwidth %v, got %v", want, got)
+					}
+					return nil
+				},
+			},
+			{
+				// Dropping a block leaves the bandwidth purchased for that shard in place; only
+				// the remaining shard is managed and reported.
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "10",
-					"additional_bandwidth_node_id": REMOVEKEY,
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 20},
+					},
 				}),
-				ExpectError: regexp.MustCompile("additional_bandwidth_node_id must be set"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "20",
+					}),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 20, "db-1": 40}),
+				),
+			},
+			{
+				// A node_id that does not name exactly one data shard is rejected before the
+				// paid request is sent.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-9", "bandwidth": 10},
+					},
+				}),
+				ExpectError: regexp.MustCompile("does not match exactly one data shard"),
+			},
+			{
+				// A block without bandwidth has no meaning and is rejected instead of being
+				// sent as zero (which would release the purchased bandwidth).
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0"},
+					},
+				}),
+				ExpectError: regexp.MustCompile("additional_bandwidth requires bandwidth in every block"),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "30",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 30},
+						{"node_id": "db-1", "bandwidth": 30},
+					},
 				}),
 				// The out-of-band change made by the check below leaves the plan non-empty.
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "30",
-						"additional_bandwidth_node_id": "All",
-					}),
-					// Change the purchased bandwidth out of band; the next step's refresh must
-					// see the drift and reconcile it back to the configured value.
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 30, "db-1": 30}),
+					// Change the purchased bandwidth of one shard out of band; the next step's
+					// refresh must see the drift and reconcile it back to the configured value.
 					func(s *terraform.State) error {
 						rs, ok := s.RootModule().Resources[resourceId]
 						if !ok {
 							return fmt.Errorf("can't find resource by id: %s", resourceId)
 						}
-						return testAccSetAdditionalBandwidthOutOfBand(rs.Primary.ID, "40", "All")
+						return testAccSetAdditionalBandwidthOutOfBand(rs.Primary.ID, "db-1", 50)
 					},
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "30",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 30},
+						{"node_id": "db-1", "bandwidth": 30},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "30",
-						"additional_bandwidth_node_id": "All",
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-1",
+						"bandwidth": "30",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "30"),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 30, "db-1": 30}),
 				),
 			},
 			{
 				// Explicit "0" is the documented release path for the purchased bandwidth.
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "0",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 0},
+						{"node_id": "db-1", "bandwidth": 0},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "0",
-						"additional_bandwidth_node_id": "All",
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "0",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "0"),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 0, "db-1": 0}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth_burst":              REMOVEKEY,
-					"additional_bandwidth":         REMOVEKEY,
-					"additional_bandwidth_node_id": REMOVEKEY,
+					"bandwidth_burst":      REMOVEKEY,
+					"additional_bandwidth": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bandwidth_burst":              REMOVEKEY,
-						"additional_bandwidth":         REMOVEKEY,
-						"additional_bandwidth_node_id": REMOVEKEY,
+						"bandwidth_burst": REMOVEKEY,
 					}),
 				),
 			},
@@ -3548,7 +3685,7 @@ func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "bandwidth_burst", "additional_bandwidth_node_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "bandwidth_burst", "additional_bandwidth"},
 			},
 		},
 	})

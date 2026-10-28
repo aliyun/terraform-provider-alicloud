@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -34,14 +35,23 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"additional_bandwidth": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^(\d+,)*\d+$`), "must be a comma separated list of non-negative integers"),
-			},
-			"additional_bandwidth_node_id": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"node_id": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\S+$`), "must be a data shard name without surrounding whitespace"),
+						},
+						"bandwidth": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(0),
+						},
+					},
+				},
 			},
 			"auto_renew": {
 				Type:             schema.TypeBool,
@@ -708,12 +718,14 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	if fmt.Sprint(object["InstanceType"]) == string(KVStoreRedis) {
 		dataNodes, err := r_kvstoreService.DescribeKvstoreDataNodes(d.Id())
 		if err != nil {
-			// The instance can be removed between the attribute read and this call.
-			if !NotFoundError(err) {
+			// The instance can be removed between the attribute read and this call, and an
+			// incomplete page listing must not overwrite the state with a partial value.
+			if !NotFoundError(err) && !errors.Is(err, errIncompleteAdditionalBandwidthNodes) {
 				return WrapError(err)
 			}
-		} else if v := buildAdditionalBandwidthState(dataNodes); v != "" {
-			d.Set("additional_bandwidth", v)
+			log.Printf("[WARN] Keeping the previous additional_bandwidth of %s: %s", d.Id(), err)
+		} else if !refreshAdditionalBandwidthState(d, dataNodes) {
+			log.Printf("[WARN] Keeping the previous additional_bandwidth of %s: the DescribeRoleZoneInfo listing has no row for a configured data shard", d.Id())
 		}
 	}
 
@@ -1897,7 +1909,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChanges("bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id") {
+	if d.HasChanges("bandwidth_burst", "additional_bandwidth") {
 		enableAdditionalBandwidthReq := map[string]interface{}{
 			"InstanceId": d.Id(),
 			"ChargeType": "PostPaid",
@@ -1913,21 +1925,31 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		// additional_bandwidth is Optional+Computed, so d.Get would also return the value read
 		// back from DescribeRoleZoneInfo. Only the raw configuration says what the user actually
 		// configured; otherwise a value removed from the configuration would be re-applied.
-		additionalBandwidth, additionalBandwidthNodeId := additionalBandwidthFromRawConfig(d)
-		if additionalBandwidth != "" {
+		if targets, err := additionalBandwidthEntriesFromRawConfig(d); err != nil {
+			return WrapError(err)
+		} else if len(targets) > 0 {
 			instance, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
 			if err != nil {
 				return WrapError(err)
 			}
 			architectureType := fmt.Sprint(instance["ArchitectureType"])
 			shardCount, _ := strconv.Atoi(fmt.Sprint(instance["ShardCount"]))
-			if err := validateAdditionalBandwidthNodeId(architectureType, shardCount, additionalBandwidth, additionalBandwidthNodeId); err != nil {
+			var shardNames []string
+			if additionalBandwidthNeedsShardNames(targets) {
+				dataNodes, err := r_kvstoreService.DescribeKvstoreDataNodes(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+				shardNames = additionalBandwidthShardNames(additionalBandwidthNodeExtras(dataNodes))
+			}
+			nodeIds, bandwidths, err := buildAdditionalBandwidthRequest(architectureType, shardCount, shardNames, targets)
+			if err != nil {
 				return WrapError(err)
 			}
-			enableAdditionalBandwidthReq["Bandwidth"] = additionalBandwidth
-			if additionalBandwidthNodeId != "" {
-				enableAdditionalBandwidthReq["NodeId"] = additionalBandwidthNodeId
+			if nodeIds != "" {
+				enableAdditionalBandwidthReq["NodeId"] = nodeIds
 			}
+			enableAdditionalBandwidthReq["Bandwidth"] = bandwidths
 		}
 
 		if len(enableAdditionalBandwidthReq) > 2 {

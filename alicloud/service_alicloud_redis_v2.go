@@ -850,9 +850,7 @@ func (s *RedisServiceV2) RedisGlobalSecurityIpGroupStateRefreshFuncWithApi(id st
 // current bandwidth, so the purchased additional bandwidth can be derived read-only.
 func (s *RedisServiceV2) DescribeTairInstanceDataNodes(id string) (nodes []map[string]interface{}, err error) {
 	action := "DescribeRoleZoneInfo"
-	pageNumber := 1
-	pageSize := 50
-	for {
+	return collectAdditionalBandwidthNodes(func(pageNumber, pageSize int) ([]map[string]interface{}, int, error) {
 		request := map[string]interface{}{
 			"InstanceId": id,
 			"QueryType":  1,
@@ -862,7 +860,7 @@ func (s *RedisServiceV2) DescribeTairInstanceDataNodes(id string) (nodes []map[s
 
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = s.client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
@@ -875,11 +873,12 @@ func (s *RedisServiceV2) DescribeTairInstanceDataNodes(id string) (nodes []map[s
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return nodes, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return nil, 0, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 
 		pageNodeList, _ := jsonpath.Get("$.Node.NodeInfo", response)
 		pageNodes, _ := pageNodeList.([]interface{})
+		nodes := make([]map[string]interface{}, 0, len(pageNodes))
 		for _, v := range pageNodes {
 			if node, ok := v.(map[string]interface{}); ok {
 				nodes = append(nodes, node)
@@ -890,11 +889,6 @@ func (s *RedisServiceV2) DescribeTairInstanceDataNodes(id string) (nodes []map[s
 		if v, ok := response["TotalCount"]; ok {
 			totalCount, _ = strconv.Atoi(fmt.Sprint(v))
 		}
-		if len(pageNodes) == 0 || len(nodes) >= totalCount {
-			break
-		}
-		pageNumber++
-	}
-
-	return nodes, nil
+		return nodes, totalCount, nil
+	})
 }
