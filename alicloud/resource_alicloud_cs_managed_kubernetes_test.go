@@ -1,5 +1,17 @@
 package alicloud
 
+// collection-order: bypass worker_vswitch_ids -- pre-existing attribute outside this change
+// collection-order: bypass zone_ids -- pre-existing attribute outside this change
+// collection-order: bypass vswitch_ids -- pre-existing attribute outside this change
+// collection-order: bypass pod_vswitch_ids -- pre-existing attribute outside this change
+// collection-order: bypass addons -- pre-existing attribute outside this change
+// collection-order: bypass api_audiences -- pre-existing attribute outside this change
+// collection-order: bypass control_plane_log_components -- pre-existing attribute outside this change
+// collection-order: bypass control_plane_endpoints_config.load_balancers_config -- pre-existing attribute outside this change
+// collection-order: bypass control_plane_endpoints_config.internal_dns_config.bind_vpcs -- pre-existing attribute outside this change
+// collection-order: bypass retain_resources -- pre-existing attribute outside this change
+// collection-order: bypass delete_options -- pre-existing attribute outside this change
+
 import (
 	"context"
 	"fmt"
@@ -1221,6 +1233,8 @@ data "alicloud_zones" "default" {
   available_instance_type     = var.instance_type
 }
 
+data "alicloud_enhanced_nat_available_zones" "enhanced" {}
+
 data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
   cluster_type = "ManagedKubernetes"
   profile      = "Default"
@@ -1235,11 +1249,17 @@ resource "alicloud_vpc" "vpc" {
   vpc_name   = var.name
 }
 
+locals {
+  nat_zone_ids    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[*].zone_id
+  common_zones    = [for z in data.alicloud_zones.default.zones : z.id if contains(local.nat_zone_ids, z.id)]
+  vswitch_zone_id = length(local.common_zones) > 0 ? local.common_zones[0] : data.alicloud_enhanced_nat_available_zones.enhanced.zones[0].zone_id
+}
+
 resource "alicloud_vswitch" "vswitches" {
   count        = 1
   vpc_id       = alicloud_vpc.vpc.0.id
   cidr_block   = format("192.168.%%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.default.zones[count.index].id
+  zone_id      = local.vswitch_zone_id
   vswitch_name = var.name
 }
 
