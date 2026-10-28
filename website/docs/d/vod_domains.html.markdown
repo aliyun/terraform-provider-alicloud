@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vod Domains to the user.
 ---
 
-# alicloud\_vod\_domains
+# alicloud_vod_domains
 
 This data source provides the Vod Domains of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
 
@@ -69,7 +69,7 @@ The following arguments are supported:
   * `check_failed`: indicates that the domain name failed the review.
 
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -81,7 +81,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - The description of the domain name for CDN.
   * `ssl_protocol` - Indicates whether the Secure Sockets Layer (SSL) certificate is enabled. Valid values: `on`,`off`.
   * `domain_name` - The domain name for CDN.
-  * `sources` - The information about the address of the origin server. For more information about the Sources parameter, See the following `Block sources`.
   * `status` - The status of the resource.
   * `id` - The ID of the Domain. Its value is same as Queue Name.
   * `sand_box` - Indicates whether the domain name for CDN is in a sandbox environment.
+  * `sources` - The information about the address of the origin server. Each element contains the following attributes:
+    * `source_type` - The origin server type. Valid values: `ipaddr`, `domain`, `oss`.
+    * `source_content` - The address of the origin server. You can specify an IP address or a domain name.
+    * `source_port` - The port number. You can specify port 443 or 80. If you specify port 443, Alibaba Cloud CDN communicates with the origin server over HTTPS. You can also customize a port.
+    * `source_priority` - The priority of the origin server if multiple origin servers are specified. Valid values: `20`, `30`. Default value: `20`. A value of 20 indicates that the origin server is the primary origin server. A value of 30 indicates that the origin server is a secondary origin server.

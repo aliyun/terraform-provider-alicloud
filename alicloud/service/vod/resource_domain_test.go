@@ -1,34 +1,36 @@
-package alicloud
+package vod_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vod"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vod_domain.default"
-	ra := resourceAttrInit(resourceId, AliCloudVodDomainMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VodService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVodDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVodDomainBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVodDomainMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vod.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVodDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VodSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.VodSupportRegions)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -59,7 +61,7 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ssl_protocol": "on",
-						"cert_id":      CHECKSET,
+						"cert_id":      acctest.CHECKSET,
 						"cert_region":  "cn-hangzhou",
 					}),
 				),
@@ -71,24 +73,24 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cert_id":   CHECKSET,
-						"cert_name": CHECKSET,
+						"cert_id":   acctest.CHECKSET,
+						"cert_name": acctest.CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ssl_protocol": "off",
-					"cert_id":      REMOVEKEY,
-					"cert_name":    REMOVEKEY,
-					"cert_region":  REMOVEKEY,
+					"cert_id":      acctest.REMOVEKEY,
+					"cert_name":    acctest.REMOVEKEY,
+					"cert_region":  acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ssl_protocol": "off",
-						"cert_id":      REMOVEKEY,
-						"cert_name":    REMOVEKEY,
-						"cert_region":  REMOVEKEY,
+						"cert_id":      acctest.REMOVEKEY,
+						"cert_name":    acctest.REMOVEKEY,
+						"cert_region":  acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -105,8 +107,8 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 						"ssl_protocol": "on",
 						"cert_name":    name,
 						"cert_type":    "upload",
-						"ssl_pub":      CHECKSET,
-						"ssl_pri":      CHECKSET,
+						"ssl_pub":      acctest.CHECKSET,
+						"ssl_pri":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -119,8 +121,8 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cert_name": name + "update",
-						"ssl_pub":   CHECKSET,
-						"ssl_pri":   CHECKSET,
+						"ssl_pub":   acctest.CHECKSET,
+						"ssl_pri":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -173,13 +175,13 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -196,23 +198,23 @@ func TestAccAliCloudVodDomain_basic0(t *testing.T) {
 func TestAccAliCloudVodDomain_basic0_twin0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vod_domain.default"
-	ra := resourceAttrInit(resourceId, AliCloudVodDomainMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VodService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVodDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVodDomainBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVodDomainMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vod.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVodDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VodSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.VodSupportRegions)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -242,8 +244,8 @@ func TestAccAliCloudVodDomain_basic0_twin0(t *testing.T) {
 						"domain_name":  name,
 						"scope":        "overseas",
 						"ssl_protocol": "on",
-						"cert_id":      CHECKSET,
-						"cert_name":    CHECKSET,
+						"cert_id":      acctest.CHECKSET,
+						"cert_name":    acctest.CHECKSET,
 						"cert_type":    "cas",
 						"cert_region":  "cn-hangzhou",
 						"sources.#":    "1",
@@ -266,23 +268,23 @@ func TestAccAliCloudVodDomain_basic0_twin0(t *testing.T) {
 func TestAccAliCloudVodDomain_basic0_twin1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vod_domain.default"
-	ra := resourceAttrInit(resourceId, AliCloudVodDomainMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VodService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVodDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVodDomainBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudVodDomainMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return vod.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudVodDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VodSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.VodSupportRegions)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -314,8 +316,8 @@ func TestAccAliCloudVodDomain_basic0_twin1(t *testing.T) {
 						"ssl_protocol": "on",
 						"cert_name":    name,
 						"cert_type":    "upload",
-						"ssl_pub":      CHECKSET,
-						"ssl_pri":      CHECKSET,
+						"ssl_pub":      acctest.CHECKSET,
+						"ssl_pri":      acctest.CHECKSET,
 						"sources.#":    "1",
 						"tags.%":       "2",
 						"tags.Created": "TF",
@@ -334,12 +336,12 @@ func TestAccAliCloudVodDomain_basic0_twin1(t *testing.T) {
 }
 
 var AliCloudVodDomainMap0 = map[string]string{
-	"ssl_protocol": CHECKSET,
-	"cname":        CHECKSET,
+	"ssl_protocol": acctest.CHECKSET,
+	"cname":        acctest.CHECKSET,
 	"description":  "",
-	"status":       CHECKSET,
-	"gmt_created":  CHECKSET,
-	"gmt_modified": CHECKSET,
+	"status":       acctest.CHECKSET,
+	"gmt_created":  acctest.CHECKSET,
+	"gmt_modified": acctest.CHECKSET,
 }
 
 func AliCloudVodDomainBasicDependence0(name string) string {

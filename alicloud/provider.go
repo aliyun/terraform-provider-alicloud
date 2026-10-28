@@ -1157,7 +1157,6 @@ func Provider() *schema.Provider {
 			"alicloud_video_surveillance_system_groups": dataSourceAlicloudVideoSurveillanceSystemGroups(),
 
 			// vod
-			"alicloud_vod_domains": dataSourceAlicloudVodDomains(),
 
 			// vpc
 			"alicloud_vpc_route_target_groups":                 dataSourceAliCloudVpcRouteTargetGroups(),
@@ -2571,8 +2570,6 @@ func Provider() *schema.Provider {
 			"alicloud_video_surveillance_system_group": resourceAlicloudVideoSurveillanceSystemGroup(),
 
 			// vod
-			"alicloud_vod_domain":          resourceAliCloudVodDomain(),
-			"alicloud_vod_editing_project": resourceAlicloudVodEditingProject(),
 
 			// vpc
 			"alicloud_vpc_route_target_group":                      resourceAliCloudVpcRouteTargetGroup(),
