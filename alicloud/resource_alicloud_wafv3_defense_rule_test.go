@@ -868,7 +868,7 @@ resource "alicloud_wafv3_defense_template" "defaultfIoHt5" {
   status                = "1"
   description           = "testCreate"
 instance_id           = data.alicloud_wafv3_instances.default.ids.0
-  defense_template_name = "1782219455"
+  defense_template_name = "tpl-${var.name}"
   template_origin       = "custom"
   defense_scene         = "custom_acl"
   template_type         = "user_custom"

@@ -151,8 +151,8 @@ type crTag struct {
 	Digest      string `json:"digest"`
 	Tag         string `json:"tag"`
 	Status      string `json:"status"`
-	ImageUpdate int    `json:"imageUpdate"`
-	ImageCreate int    `json:"imageCreate"`
+	ImageUpdate int64  `json:"imageUpdate"`
+	ImageCreate int64  `json:"imageCreate"`
 	ImageSize   int    `json:"imageSize"`
 }
 

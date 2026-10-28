@@ -107,11 +107,11 @@ func dataSourceAlicloudMessageServiceQueues() *schema.Resource {
 							Computed: true,
 						},
 						"last_modify_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"create_time": {
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -245,14 +245,6 @@ func dataSourceAlicloudMessageServiceQueuesRead(d *schema.ResourceData, meta int
 			return err
 		}
 
-		last_modify_timeVal, err := formatInt(object["LastModifyTime"])
-		if err != nil {
-			return err
-		}
-		create_timeVal, err := formatInt(object["CreateTime"])
-		if err != nil {
-			return err
-		}
 		mapping := map[string]interface{}{
 			"id":                       fmt.Sprint(object["QueueName"]),
 			"queue_name":               fmt.Sprint(object["QueueName"]),
@@ -267,8 +259,8 @@ func dataSourceAlicloudMessageServiceQueuesRead(d *schema.ResourceData, meta int
 			"delay_messages":           delay_messagesVal,
 			"queue_url":                object["QueueUrl"],
 			"queue_internal_url":       object["QueueInternalUrl"],
-			"last_modify_time":         last_modify_timeVal,
-			"create_time":              create_timeVal,
+			"last_modify_time":         tsString(object["LastModifyTime"]),
+			"create_time":              tsString(object["CreateTime"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["QueueName"])

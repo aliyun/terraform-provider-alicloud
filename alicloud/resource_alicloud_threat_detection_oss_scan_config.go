@@ -67,8 +67,9 @@ func resourceAliCloudThreatDetectionOssScanConfig() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"last_modified_start_time": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateStringConvertInt64(),
 			},
 			"oss_scan_config_name": {
 				Type:     schema.TypeString,
@@ -188,7 +189,7 @@ func resourceAliCloudThreatDetectionOssScanConfigRead(d *schema.ResourceData, me
 	d.Set("decompress_max_layer", objectRaw["DecompressMaxLayer"])
 	d.Set("enable", objectRaw["Enable"])
 	d.Set("end_time", objectRaw["EndTime"])
-	d.Set("last_modified_start_time", objectRaw["LastModifiedStartTime"])
+	d.Set("last_modified_start_time", tsString(objectRaw["LastModifiedStartTime"]))
 	d.Set("oss_scan_config_name", objectRaw["Name"])
 	d.Set("start_time", objectRaw["StartTime"])
 

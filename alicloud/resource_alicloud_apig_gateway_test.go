@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// collection-order: bypass zones -- pre-existing TypeList attribute outside this change; this PR only converts timestamp attributes Int->String, it neither adds nor modifies zones.
+
 // Test Apig Gateway. >>> Resource test cases, automatically generated.
 // Case 资源组接入_prepay 9249
 func TestAccAliCloudApigGateway_basic9249(t *testing.T) {

@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -100,12 +101,14 @@ func resourceAliCloudWafv3DefenseRule() *schema.Resource {
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"start": {
-													Type:     schema.TypeInt,
-													Optional: true,
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: validateStringConvertInt64(),
 												},
 												"end": {
-													Type:     schema.TypeInt,
-													Optional: true,
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: validateStringConvertInt64(),
 												},
 											},
 										},
@@ -511,8 +514,12 @@ func resourceAliCloudWafv3DefenseRuleCreate(d *schema.ResourceData, meta interfa
 				dataLoopTmp = dataLoop.(map[string]interface{})
 			}
 			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["start"] = dataLoopTmp["start"]
-			dataLoopMap["end"] = dataLoopTmp["end"]
+			if startVal, e := strconv.ParseInt(fmt.Sprint(dataLoopTmp["start"]), 10, 64); e == nil {
+				dataLoopMap["start"] = startVal
+			}
+			if endVal, e := strconv.ParseInt(fmt.Sprint(dataLoopTmp["end"]), 10, 64); e == nil {
+				dataLoopMap["end"] = endVal
+			}
 			localMaps = append(localMaps, dataLoopMap)
 		}
 		timeConfig["timePeriods"] = localMaps
@@ -1033,16 +1040,12 @@ func resourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface
 				for _, timePeriodsChildRaw := range convertToInterfaceArray(timePeriodsRaw) {
 					timePeriodsMap := make(map[string]interface{})
 					timePeriodsChildRaw := timePeriodsChildRaw.(map[string]interface{})
-					timePeriodsChildRawEnd, err := formatInt(timePeriodsChildRaw["end"])
-					if err != nil {
-						return err
-					}
-					timePeriodsMap["end"] = timePeriodsChildRawEnd
-					timePeriodsChildRawStart, err := formatInt(timePeriodsChildRaw["start"])
-					if err != nil {
-						return err
-					}
-					timePeriodsMap["start"] = timePeriodsChildRawStart
+					// time_periods.start/end are now TypeString (32-bit overflow fix). The API
+					// response may carry these as float64 (scientific notation), json.Number or
+					// string; coerce to a plain decimal string so d.Set("config", ...) does not
+					// panic on a float64->string mismatch and avoids platform-width int overflow.
+					timePeriodsMap["end"] = tsString(timePeriodsChildRaw["end"])
+					timePeriodsMap["start"] = tsString(timePeriodsChildRaw["start"])
 
 					timePeriodsMaps = append(timePeriodsMaps, timePeriodsMap)
 				}
@@ -1226,8 +1229,12 @@ func resourceAliCloudWafv3DefenseRuleUpdate(d *schema.ResourceData, meta interfa
 				dataLoopTmp = dataLoop.(map[string]interface{})
 			}
 			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["start"] = dataLoopTmp["start"]
-			dataLoopMap["end"] = dataLoopTmp["end"]
+			if startVal, e := strconv.ParseInt(fmt.Sprint(dataLoopTmp["start"]), 10, 64); e == nil {
+				dataLoopMap["start"] = startVal
+			}
+			if endVal, e := strconv.ParseInt(fmt.Sprint(dataLoopTmp["end"]), 10, 64); e == nil {
+				dataLoopMap["end"] = endVal
+			}
 			localMaps = append(localMaps, dataLoopMap)
 		}
 		timeConfig["timePeriods"] = localMaps

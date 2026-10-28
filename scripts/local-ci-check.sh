@@ -600,9 +600,36 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   else
     echo -e "${YELLOW}⚠ No changes to check${NC}"
   fi
+
   rm -f "$TEMP_DIFF"
   echo
 fi
+
+# 2.8 Timestamp overflow regression check (32-bit int overflow guard)
+# Runs on any source change (not gated on website/docs) so .go timestamp-attribute
+# regressions are caught even when no documentation files are touched.
+echo -e "${BLUE}▶ Running timestamp overflow check...${NC}"
+TS_OVERFLOW_DIFF=$(mktemp)
+if [ -n "${CI_CHECK_BASE:-}" ]; then
+  git diff "$CI_CHECK_BASE" -- > "$TS_OVERFLOW_DIFF"
+  echo -e "${BLUE}  Checking changes against ${CI_CHECK_BASE}${NC}"
+else
+  git diff HEAD~1 HEAD > "$TS_OVERFLOW_DIFF" 2>/dev/null || true
+  echo -e "${BLUE}  Checking only latest commit${NC}"
+fi
+if [ -s "$TS_OVERFLOW_DIFF" ]; then
+  if go run "$SCRIPT_DIR/consistency/ts_overflow_check/main.go" -fileNames="$TS_OVERFLOW_DIFF"; then
+    echo -e "${GREEN}✓ PASSED: Timestamp overflow check${NC}"
+    PASSED_CHECKS+=("Timestamp overflow check")
+  else
+    echo -e "${RED}✗ FAILED: Timestamp overflow check${NC}"
+    FAILED_CHECKS+=("Timestamp overflow check")
+  fi
+else
+  echo -e "${YELLOW}⚠ No changes to check${NC}"
+fi
+rm -f "$TS_OVERFLOW_DIFF"
+echo
 
 # ============================================================================
 # 4. Build Check
