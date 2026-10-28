@@ -2066,9 +2066,6 @@ func Provider() *schema.Provider {
 			"alicloud_hbr_hana_backup_plan":   resourceAlicloudHbrHanaBackupPlan(),
 			"alicloud_hbr_hana_backup_client": resourceAlicloudHbrHanaBackupClient(),
 
-			// hologram
-			"alicloud_hologram_instance": resourceAliCloudHologramInstance(),
-
 			// image
 			"alicloud_image":                  resourceAliCloudEcsImage(),
 			"alicloud_image_export":           resourceAliCloudImageExport(),
