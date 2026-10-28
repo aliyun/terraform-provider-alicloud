@@ -157,10 +157,10 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
 	}
-	if v, ok := d.GetOk("renewal_duration"); ok {
+	if v, ok := d.GetOk("renew_period"); ok {
 		request["RenewPeriod"] = v
 	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
+		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renew_period", "renewal_status", d.Get("renewal_status")))
 	}
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
