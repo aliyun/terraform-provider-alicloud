@@ -58,9 +58,22 @@ resource "alicloud_oos_application" "default" {
 The following arguments are supported:
 
 * `application_name` - (Required) The name of the application.
-* `description` - (Optional) Application group description information.
+* `description` - (Optional) The description of the application.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
+* `application_source` - (Optional) The source of the application. It is a JSON string, such as `{"Platform":"github","Owner":"githubUser","RepoName":"githubUser/repoName"}`.
+* `alarm_config` - (Optional) The alarm configuration of the application. See [`alarm_config`](#alarm_config) below.
+* `service_id` - (Optional, ForceNew) The ID of the ComputeNest service corresponding to the application template.
+* `delete_alarm_rules_before_update` - (Optional) Whether to delete the existing alarm rules before updating the application alarm template. Default value: `false`.
+* `deployment_type` - (Optional, ForceNew) The deployment type of the application.
 * `tags` - (Optional) The tag of the resource.
+
+### `alarm_config`
+
+The alarm_config supports the following:
+
+* `template_ids` - (Optional) The list of alarm template IDs.
+* `health_check_url` - (Optional) The health check URL of the application.
+* `contact_groups` - (Optional) The list of alarm contact group names.
 
 ## Attributes Reference
 
