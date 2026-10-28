@@ -1,4 +1,4 @@
-package alicloud
+package privatelink
 
 import (
 	"fmt"
@@ -6,11 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
+func ResourceVpcEndpoint() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudPrivateLinkVpcEndpointCreate,
 		Read:   resourceAliCloudPrivateLinkVpcEndpointRead,
@@ -29,7 +34,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"IPv4", "DualStack", "IPv6"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"IPv4", "DualStack", "IPv6"}, false),
 			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
@@ -69,7 +74,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Interface", "Reverse", "GatewayLoadBalancer"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Interface", "Reverse", "GatewayLoadBalancer"}, false),
 			},
 			"policy_document": {
 				Type:     schema.TypeString,
@@ -116,7 +121,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vpc_endpoint_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -131,7 +136,7 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: IntInSlice([]int{0, 1}),
+				ValidateFunc: validators.IntInSlice([]int{0, 1}),
 			},
 		},
 	}
@@ -148,11 +153,11 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -200,11 +205,11 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("service_id"); ok {
 		request["ServiceId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -212,18 +217,18 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["EndpointId"]))
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudPrivateLinkVpcEndpointUpdate(d, meta)
@@ -235,12 +240,12 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 
 	objectRaw, err := privateLinkServiceV2.DescribePrivateLinkVpcEndpoint(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_privatelink_vpc_endpoint DescribePrivateLinkVpcEndpoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["AddressIpVersion"] != nil {
@@ -302,16 +307,16 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 	}
 
 	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointListTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	tagsMaps := objectRaw["TagResources"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	objectRaw, err = privateLinkServiceV2.DescribeVpcEndpointListVpcEndpointSecurityGroups(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("security_group_ids", convertSecurityGroupIdToStringList(objectRaw["SecurityGroups"]))
@@ -332,7 +337,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	query = make(map[string]interface{})
 	request["EndpointId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("policy_document") {
 		update = true
 		request["PolicyDocument"] = d.Get("policy_document")
@@ -361,11 +366,11 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	}
 
 	if update {
-		wait := incrementalWait(5*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(5*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -373,9 +378,9 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -395,11 +400,11 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 
 	request["ResourceType"] = "VpcEndpoint"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -407,21 +412,21 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		privateLinkServiceV2 := PrivateLinkServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("tags") {
 		privateLinkServiceV2 := PrivateLinkServiceV2{client}
 		if err := privateLinkServiceV2.SetResourceTags(d, "VpcEndpoint"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
@@ -440,14 +445,14 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				query = make(map[string]interface{})
 				query["EndpointId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
+				request["ClientToken"] = helper.BuildClientToken(action)
 				request["DryRun"] = d.Get("dry_run")
 				request["SecurityGroupId"] = item
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -455,14 +460,14 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				privateLinkServiceV2 := PrivateLinkServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -477,14 +482,14 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				query = make(map[string]interface{})
 				query["EndpointId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				request["ClientToken"] = buildClientToken(action)
+				request["ClientToken"] = helper.BuildClientToken(action)
 				request["DryRun"] = d.Get("dry_run")
 				request["SecurityGroupId"] = item
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -492,14 +497,14 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				privateLinkServiceV2 := PrivateLinkServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -520,18 +525,18 @@ func resourceAliCloudPrivateLinkVpcEndpointDelete(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	request["EndpointId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointOperationDenied"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrentCallNotSupported", "EndpointOperationDenied"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -539,19 +544,19 @@ func resourceAliCloudPrivateLinkVpcEndpointDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"EndpointNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

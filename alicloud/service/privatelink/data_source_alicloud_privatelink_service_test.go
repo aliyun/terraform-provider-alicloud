@@ -1,19 +1,20 @@
-package alicloud
+package privatelink_test
 
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudPrivateLinkServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_privatelink_service.default"
-	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
+	testAccCheck := acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudPrivateLinkServiceDataSourceNil,
@@ -21,6 +22,7 @@ func TestAccAliCloudPrivateLinkServiceDataSource(t *testing.T) {
 					testAccCheck(map[string]string{
 						"id":     "PrivateLinkServiceHasNotBeenOpened",
 						"status": "",
+						"enable": "Off",
 					}),
 				),
 			},
@@ -30,6 +32,7 @@ func TestAccAliCloudPrivateLinkServiceDataSource(t *testing.T) {
 					testAccCheck(map[string]string{
 						"id":     "PrivateLinkServiceHasNotBeenOpened",
 						"status": "",
+						"enable": "Off",
 					}),
 				),
 			},
@@ -37,8 +40,9 @@ func TestAccAliCloudPrivateLinkServiceDataSource(t *testing.T) {
 				Config: testAccCheckAliCloudPrivateLinkServiceDataSourceWithOn,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"id":     CHECKSET,
+						"id":     acctest.CHECKSET,
 						"status": "Opened",
+						"enable": "On",
 					}),
 				),
 			},

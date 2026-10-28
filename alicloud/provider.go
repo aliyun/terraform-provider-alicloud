@@ -938,13 +938,6 @@ func Provider() *schema.Provider {
 			"alicloud_polardb_lakebase_tenant_token":       dataSourceAlicloudPolarDBLakebaseTenantToken(),
 
 			// privatelink
-			"alicloud_privatelink_service":                        dataSourceAliCloudPrivateLinkService(),
-			"alicloud_privatelink_vpc_endpoint_services":          dataSourceAliCloudPrivateLinkVpcEndpointServices(),
-			"alicloud_privatelink_vpc_endpoints":                  dataSourceAlicloudPrivatelinkVpcEndpoints(),
-			"alicloud_privatelink_vpc_endpoint_connections":       dataSourceAlicloudPrivatelinkVpcEndpointConnections(),
-			"alicloud_privatelink_vpc_endpoint_service_resources": dataSourceAlicloudPrivatelinkVpcEndpointServiceResources(),
-			"alicloud_privatelink_vpc_endpoint_service_users":     dataSourceAlicloudPrivatelinkVpcEndpointServiceUsers(),
-			"alicloud_privatelink_vpc_endpoint_zones":             dataSourceAlicloudPrivatelinkVpcEndpointZones(),
 
 			// pvtz
 			"alicloud_pvtz_zones":          dataSourceAliCloudPvtzZones(),
@@ -2271,12 +2264,6 @@ func Provider() *schema.Provider {
 			"alicloud_polardb_zonal_account":             resourceAlicloudPolarDBZonalAccount(),
 
 			// privatelink
-			"alicloud_privatelink_vpc_endpoint_service":          resourceAliCloudPrivateLinkVpcEndpointService(),
-			"alicloud_privatelink_vpc_endpoint":                  resourceAliCloudPrivateLinkVpcEndpoint(),
-			"alicloud_privatelink_vpc_endpoint_connection":       resourceAliCloudPrivateLinkVpcEndpointConnection(),
-			"alicloud_privatelink_vpc_endpoint_service_resource": resourceAliCloudPrivateLinkVpcEndpointServiceResource(),
-			"alicloud_privatelink_vpc_endpoint_service_user":     resourceAliCloudPrivateLinkVpcEndpointServiceUser(),
-			"alicloud_privatelink_vpc_endpoint_zone":             resourceAliCloudPrivateLinkVpcEndpointZone(),
 
 			// pvtz
 			"alicloud_pvtz_zone":                   resourceAlicloudPvtzZone(),

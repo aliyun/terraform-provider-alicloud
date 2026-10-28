@@ -1,4 +1,4 @@
-package alicloud
+package privatelink
 
 import (
 	"fmt"
@@ -6,18 +6,23 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
+func DataSourceVpcEndpoints() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudPrivatelinkVpcEndpointsRead,
 		Schema: map[string]*schema.Schema{
 			"connection_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Pending", "Connecting", "Connected", "Disconnecting", "Disconnected", "Deleting", "ServiceDeleted"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Pending", "Connecting", "Connected", "Disconnecting", "Disconnected", "Deleting", "ServiceDeleted"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -32,7 +37,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Inactive", "Pending"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Inactive", "Pending"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -56,7 +61,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpoints() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"endpoints": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -154,15 +159,15 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 		request["VpcId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		request["Tag"] = tagsFromMap(v.(map[string]interface{}))
+		request["Tag"] = tags.TagsFromMap(v.(map[string]interface{}))
 	}
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 	var vpcEndpointNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		vpcEndpointNameRegex = r
 	}
@@ -181,13 +186,13 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 	for {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoints", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoints", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Endpoints", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Endpoints", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Endpoints", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -227,7 +232,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 			"status":                   object["EndpointStatus"],
 			"vpc_endpoint_name":        object["EndpointName"],
 			"vpc_id":                   object["VpcId"],
-			"tags":                     tagsToMap(object["Tags"]),
+			"tags":                     tags.TagsToMap(object["Tags"]),
 		}
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["EndpointId"]))
@@ -236,11 +241,11 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 			continue
 		}
 
-		privatelinkService := PrivatelinkService{client}
+		privatelinkService := NewService(client)
 		id := fmt.Sprint(object["EndpointId"])
 		getResp, err := privatelinkService.ListVpcEndpointSecurityGroups(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if v := getResp["SecurityGroups"].([]interface{}); len(v) > 0 {
 			mapping["security_group_ids"] = convertSecurityGroupIdToStringList(v)
@@ -250,20 +255,20 @@ func dataSourceAlicloudPrivatelinkVpcEndpointsRead(d *schema.ResourceData, meta 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("endpoints", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

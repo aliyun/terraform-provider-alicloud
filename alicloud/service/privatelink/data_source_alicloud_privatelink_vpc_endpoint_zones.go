@@ -1,15 +1,18 @@
-package alicloud
+package privatelink
 
 import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudPrivatelinkVpcEndpointZones() *schema.Resource {
+func DataSourceVpcEndpointZones() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudPrivatelinkVpcEndpointZonesRead,
 		Schema: map[string]*schema.Schema{
@@ -20,7 +23,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointZones() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Connected", "Connecting", "Creating", "Deleted", "Deleting", "Disconnected", "Disconnecting", "Wait"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Connected", "Connecting", "Creating", "Deleted", "Deleting", "Disconnected", "Disconnecting", "Wait"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -78,7 +81,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointZonesRead(d *schema.ResourceData, m
 	request := make(map[string]interface{})
 	request["EndpointId"] = d.Get("endpoint_id")
 	request["RegionId"] = client.RegionId
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
@@ -86,13 +89,13 @@ func dataSourceAlicloudPrivatelinkVpcEndpointZonesRead(d *schema.ResourceData, m
 	for {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zones", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zones", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Zones", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Zones", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Zones", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -124,16 +127,16 @@ func dataSourceAlicloudPrivatelinkVpcEndpointZonesRead(d *schema.ResourceData, m
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

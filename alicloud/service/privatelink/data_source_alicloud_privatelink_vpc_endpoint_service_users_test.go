@@ -1,34 +1,35 @@
-package alicloud
+package privatelink_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudPrivatelinkVpcEndpointServiceUsersDataSource(t *testing.T) {
 	resourceId := "data.alicloud_privatelink_vpc_endpoint_service_users.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccPrivatelinkVpcEndpointServiceUsers%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourcePrivatelinkVpcEndpointServiceUsersDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourcePrivatelinkVpcEndpointServiceUsersDependence)
 
-	userIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	userIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_id": "${alicloud_privatelink_vpc_endpoint_service_user.default.service_id}",
 			"user_id":    "${alicloud_privatelink_vpc_endpoint_service_user.default.user_id}",
 		}),
-		fakeConfig: "",
+		FakeConfig: "",
 	}
 
 	var existPrivatelinkVpcEndpointServiceUsersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":           "1",
-			"ids.0":           CHECKSET,
+			"ids.0":           acctest.CHECKSET,
 			"users.#":         "1",
-			"users.0.id":      CHECKSET,
-			"users.0.user_id": CHECKSET,
+			"users.0.id":      acctest.CHECKSET,
+			"users.0.user_id": acctest.CHECKSET,
 		}
 	}
 
@@ -38,17 +39,17 @@ func TestAccAlicloudPrivatelinkVpcEndpointServiceUsersDataSource(t *testing.T) {
 		}
 	}
 
-	var PrivatelinkVpcEndpointServiceUsersInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existPrivatelinkVpcEndpointServiceUsersMapFunc,
-		fakeMapFunc:  fakePrivatelinkVpcEndpointServiceUsersMapFunc,
+	var PrivatelinkVpcEndpointServiceUsersInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existPrivatelinkVpcEndpointServiceUsersMapFunc,
+		FakeMapFunc:  fakePrivatelinkVpcEndpointServiceUsersMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 	}
 
-	PrivatelinkVpcEndpointServiceUsersInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, userIdConf)
+	PrivatelinkVpcEndpointServiceUsersInfo.DataSourceTestCheckWithPreCheck(t, 0, preCheck, userIdConf)
 }
 
 func dataSourcePrivatelinkVpcEndpointServiceUsersDependence(name string) string {

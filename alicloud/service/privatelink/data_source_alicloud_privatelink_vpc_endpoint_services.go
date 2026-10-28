@@ -1,4 +1,4 @@
-package alicloud
+package privatelink
 
 import (
 	"fmt"
@@ -7,12 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudPrivateLinkVpcEndpointServices() *schema.Resource {
+func DataSourceVpcEndpointServices() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudPrivateLinkVpcEndpointServicesRead,
 		Schema: map[string]*schema.Schema{
@@ -39,14 +45,14 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServices() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "Normal",
-				ValidateFunc: StringInSlice([]string{"Normal", "FinancialLocked", "SecurityLocked"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Normal", "FinancialLocked", "SecurityLocked"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Pending"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Pending"}, false),
 			},
-			"tags": tagsSchemaForceNew(),
+			"tags": tags.TagsSchemaForceNew(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -116,7 +122,7 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 	request := make(map[string]interface{})
 
 	request["RegionId"] = client.RegionId
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 
 	if v, ok := d.GetOk("vpc_endpoint_service_name"); ok {
 		request["ServiceName"] = v
@@ -135,8 +141,8 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMaps := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMaps)
+		tagsMaps := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMaps)
 	}
 
 	var objects []map[string]interface{}
@@ -154,7 +160,7 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		vpcEndpointServiceNameRegex = r
 	}
@@ -163,11 +169,11 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 	var err error
 
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -175,15 +181,15 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_services", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_services", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Services", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Services", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -216,7 +222,7 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		connect_bandwidthVal, err := formatInt(object["ConnectBandwidth"])
+		connect_bandwidthVal, err := convert.FormatInt(object["ConnectBandwidth"])
 		if err != nil {
 			return err
 		}
@@ -230,7 +236,7 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 			"auto_accept_connection":    object["AutoAcceptEnabled"],
 			"service_business_status":   object["ServiceBusinessStatus"],
 			"status":                    object["ServiceStatus"],
-			"tags":                      tagsToMap(object["Tags"]),
+			"tags":                      tags.TagsToMap(object["Tags"]),
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
@@ -238,22 +244,22 @@ func dataSourceAliCloudPrivateLinkVpcEndpointServicesRead(d *schema.ResourceData
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("services", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

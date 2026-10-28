@@ -1,32 +1,88 @@
-package alicloud
+package privatelink_test
 
 import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	privatelink "github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatelink"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
 	testAccPrivateLinkCrossRegionServiceRegion  = "cn-hangzhou"
 	testAccPrivateLinkCrossRegionEndpointRegion = "cn-beijing"
 )
+
+var privatelinkTestEndpoints sync.Map
+var privatelinkTestSignVersion sync.Map
+
+// privatelinkTestClientForRegion rebuilds the package-level sweeper client on the
+// exported connectivity API: the flat-suite root helper is not reachable from
+// this package, so a local rebuild mirrors the actiontrail pattern.
+func privatelinkTestClientForRegion(region string) (*connectivity.AliyunClient, error) {
+	var accessKey, secretKey string
+	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_ACCESS_KEY")
+	}
+	if secretKey = os.Getenv("ALICLOUD_SECRET_KEY"); secretKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_SECRET_KEY")
+	}
+	securityToken := os.Getenv("ALICLOUD_SECURITY_TOKEN")
+
+	conf := connectivity.Config{
+		Region:      connectivity.Region(region),
+		RegionId:    region,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
+		Protocol:    "HTTPS",
+		Endpoints:   &privatelinkTestEndpoints,
+		SignVersion: &privatelinkTestSignVersion,
+	}
+	if securityToken != "" {
+		conf.SecurityToken = securityToken
+	}
+	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if v := strings.TrimSpace(securityToken); v != "" {
+		credentialConfig.SetType("sts").SetSecurityToken(v)
+	}
+	credential, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		return nil, err
+	}
+	conf.Credential = credential
+
+	return conf.Client()
+}
+
+// privatelinkTestSweepPreCheckWithRegions mirrors the root-package
+// testSweepPreCheckWithRegions gate; it is not reachable from a service test
+// package.
+func privatelinkTestSweepPreCheckWithRegions(region string, supported bool, regions []connectivity.Region) bool {
+	find := false
+	for _, r := range regions {
+		if region == string(r) {
+			find = true
+			break
+		}
+	}
+	return (find && !supported) || (!find && supported)
+}
 
 func init() {
 	resource.AddTestSweepers(
@@ -38,22 +94,21 @@ func init() {
 }
 
 func testSweepPrivatelinkVpcEndpointService(region string) error {
-	if !testSweepPreCheckWithRegions(region, false, connectivity.PrivateLinkRegions) {
+	if privatelinkTestSweepPreCheckWithRegions(region, false, connectivity.PrivateLinkRegions) {
 		log.Printf("[INFO] Skipping privatelink unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	client, err := privatelinkTestClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return errs.WrapErrorf(err, "Error getting Alicloud client.")
 	}
-	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf-testacc",
 	}
 	request := map[string]interface{}{
-		"MaxResults": PageSizeLarge,
+		"MaxResults": helper.PageSizeLarge,
 	}
 	var response map[string]interface{}
 	action := "ListVpcEndpointServices"
@@ -62,11 +117,11 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Services", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Services", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Services", response)
 		}
 		sweeped := false
 		result, _ := resp.([]interface{})
@@ -109,23 +164,23 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PrivatelinkService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatelink.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePrivatelinkVpcEndpointService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccPrivatelinkVpcEndpointServiceTest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceBasicDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -197,16 +252,16 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_base(t *testing.T) {
 
 func TestAccAliCloudPrivatelinkVpcEndpointService_supportedRegionList(t *testing.T) {
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
-	testAccCheck := ra.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	testAccCheck := ra.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccPrivateLinkCrossRegion%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckPrivateLinkCrossRegion(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(testAccPrivateLinkCrossRegionServiceRegion),
 		Steps: []resource.TestStep{
 			{
@@ -266,7 +321,7 @@ func testAccPrivateLinkVpcEndpointServiceSupportedAllRegionsConfig(name string) 
 }
 
 func testAccPreCheckPrivateLinkCrossRegion(t *testing.T) {
-	testAccPreCheck(t)
+	acctest.PreCheck(t)
 	if !testAccPrivateLinkRegionInList(connectivity.Hangzhou, connectivity.NLBSupportRegions) {
 		t.Skipf("Skipping unsupported service region %s. NLB supported regions: %v.", connectivity.Hangzhou, connectivity.NLBSupportRegions)
 		t.Skipped()
@@ -284,12 +339,11 @@ func testAccPrivateLinkRegionInList(region connectivity.Region, regions []connec
 
 func testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(region string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rawClient, err := sharedClientForRegion(region)
+		client, err := privatelinkTestClientForRegion(region)
 		if err != nil {
-			return WrapErrorf(err, "Error getting Alicloud client.")
+			return errs.WrapErrorf(err, "Error getting Alicloud client.")
 		}
-		client := rawClient.(*connectivity.AliyunClient)
-		service := PrivateLinkServiceV2{client}
+		service := privatelink.NewPrivateLinkServiceV2(client)
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "alicloud_privatelink_vpc_endpoint_service" {
@@ -297,7 +351,7 @@ func testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(region string) res
 			}
 			_, err := service.DescribePrivateLinkVpcEndpointService(rs.Primary.ID)
 			if err != nil {
-				if NotFoundError(err) {
+				if errs.NotFoundError(err) {
 					continue
 				}
 				return err
@@ -323,11 +377,10 @@ func testAccAttachPrivateLinkVpcEndpointServiceResources(serviceResourceName, re
 			return err
 		}
 
-		rawClient, err := sharedClientForRegion(testAccPrivateLinkCrossRegionServiceRegion)
+		client, err := privatelinkTestClientForRegion(testAccPrivateLinkCrossRegionServiceRegion)
 		if err != nil {
-			return WrapErrorf(err, "Error getting Alicloud client.")
+			return errs.WrapErrorf(err, "Error getting Alicloud client.")
 		}
-		client := rawClient.(*connectivity.AliyunClient)
 		for _, zoneId := range zoneIds {
 			if err := testAccAttachPrivateLinkVpcEndpointServiceResource(client, serviceId, resourceId, zoneId); err != nil {
 				return err
@@ -372,12 +425,12 @@ func testAccPrivateLinkNlbZoneIdsFromState(s *terraform.State, resourceName stri
 }
 
 func testAccAttachPrivateLinkVpcEndpointServiceResource(client *connectivity.AliyunClient, serviceId, resourceId, zoneId string) error {
-	privateLinkServiceV2 := PrivateLinkServiceV2{client}
+	privateLinkServiceV2 := privatelink.NewPrivateLinkServiceV2(client)
 	id := fmt.Sprintf("%s:%s:%s", serviceId, resourceId, zoneId)
 	if _, err := privateLinkServiceV2.DescribePrivateLinkVpcEndpointServiceResource(id); err == nil {
 		return nil
-	} else if !NotFoundError(err) {
-		return WrapError(err)
+	} else if !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	action := "AttachResourceToVpcEndpointService"
@@ -391,12 +444,12 @@ func testAccAttachPrivateLinkVpcEndpointServiceResource(client *connectivity.Ali
 	}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"EndpointServiceOperationDenied", "ConcurrentCallNotSupported", "EndpointServiceLocked"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -404,17 +457,17 @@ func testAccAttachPrivateLinkVpcEndpointServiceResource(client *connectivity.Ali
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
 		if _, describeErr := privateLinkServiceV2.DescribePrivateLinkVpcEndpointServiceResource(id); describeErr == nil {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service_resource", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service_resource", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{resourceId}, 5*time.Minute, 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceResourceStateRefreshFunc(id, "ResourceId", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{resourceId}, 5*time.Minute, 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointServiceResourceStateRefreshFunc(id, "ResourceId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, id)
+		return errs.WrapErrorf(err, errs.IdMsg, id)
 	}
 	return nil
 }
@@ -445,8 +498,8 @@ func testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceName stri
 
 var AlicloudPrivatelinkVpcEndpointServiceMap = map[string]string{
 	"service_business_status": "Normal",
-	"service_domain":          CHECKSET,
-	"status":                  CHECKSET,
+	"service_domain":          acctest.CHECKSET,
+	"status":                  acctest.CHECKSET,
 }
 
 func AlicloudPrivatelinkVpcEndpointServiceBasicDependence(name string) string {
@@ -454,7 +507,7 @@ func AlicloudPrivatelinkVpcEndpointServiceBasicDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	
+
 	data "alicloud_privatelink_service" "open" {
 	  enable = "On"
 	}
@@ -530,22 +583,22 @@ func testAccPrivateLinkQuotedList(values []string) string {
 func TestAccAliCloudPrivatelinkVpcEndpointService_resource(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatelink.NewPrivateLinkServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePrivateLinkVpcEndpointService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcesresource%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceResourceDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcesresource%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceResourceDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// Create the endpoint service with a backend resource attached
@@ -642,23 +695,23 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_resource(t *testing.T) {
 func TestAccAliCloudPrivatelinkVpcEndpointService_sameBackendDualZone(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatelink.NewPrivateLinkServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePrivateLinkVpcEndpointService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%splvpcessdualzone%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceResourceDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%splvpcessdualzone%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceResourceDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 		},
 		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		Providers:     acctest.SDKProviders,
+		CheckDestroy:  rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// Reproduces the cross-zone bug: the SAME backend load balancer is
@@ -786,346 +839,27 @@ resource "alicloud_nlb_load_balancer" "second" {
 `, name)
 }
 
-func TestUnitVpcEndpointServiceConnectBandwidthReadByResourceType(t *testing.T) {
-	p := Provider().ResourcesMap
-
-	cases := []struct {
-		name                string
-		serviceResourceType string
-		response            map[string]interface{}
-		expected            int
-	}{
-		{
-			name:                "slb missing connect bandwidth is authoritative",
-			serviceResourceType: "slb",
-			response: map[string]interface{}{
-				"ServiceResourceType": "slb",
-			},
-			expected: 0,
-		},
-		{
-			name:                "slb returned connect bandwidth is authoritative",
-			serviceResourceType: "slb",
-			response: map[string]interface{}{
-				"ServiceResourceType": "slb",
-				"ConnectBandwidth":    100,
-			},
-			expected: 100,
-		},
-		{
-			name:                "nlb missing connect bandwidth preserves config",
-			serviceResourceType: "nlb",
-			response: map[string]interface{}{
-				"ServiceResourceType": "nlb",
-			},
-			expected: 3072,
-		},
-		{
-			name:                "alb zero connect bandwidth preserves config",
-			serviceResourceType: "alb",
-			response: map[string]interface{}{
-				"ServiceResourceType": "alb",
-				"ConnectBandwidth":    0,
-			},
-			expected: 3072,
-		},
-		{
-			name:                "gwlb empty connect bandwidth preserves config",
-			serviceResourceType: "gwlb",
-			response: map[string]interface{}{
-				"ServiceResourceType": "gwlb",
-				"ConnectBandwidth":    "",
-			},
-			expected: 3072,
-		},
-	}
-
-	for _, tc := range cases {
-		d, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(nil, nil)
-		assert.Nil(t, d.Set("service_resource_type", tc.serviceResourceType))
-		assert.Nil(t, d.Set("connect_bandwidth", 3072))
-		setVpcEndpointServiceConnectBandwidth(d, tc.response)
-		assert.Equal(t, tc.expected, d.Get("connect_bandwidth"), tc.name)
-	}
-}
-
-// lintignore: R001
-func TestUnitAlicloudPrivatelinkVpcEndpointService(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(nil, nil)
-	dInit.MarkNewResource()
-	attributes := map[string]interface{}{
-		"service_description":    "CreateVpcEndpointServiceValue",
-		"connect_bandwidth":      100,
-		"auto_accept_connection": false,
-		"dry_run":                false,
-		"payer":                  "CreateVpcEndpointServiceValue",
-	}
-	for key, value := range attributes {
-		err := dInit.Set(key, value)
-		assert.Nil(t, err)
-		err = dExisted.Set(key, value)
-		assert.Nil(t, err)
-		if err != nil {
-			log.Printf("[ERROR] the field %s setting error", key)
-		}
-	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
-	ReadMockResponse := map[string]interface{}{
-		// GetVpcEndpointServiceAttribute
-		"AutoAcceptEnabled":     false,
-		"ConnectBandwidth":      100,
-		"ServiceBusinessStatus": "CreateVpcEndpointServiceValue",
-		"ServiceDescription":    "CreateVpcEndpointServiceValue",
-		"ServiceDomain":         "CreateVpcEndpointServiceValue",
-		"ServiceStatus":         "Active",
-		// ListVpcEndpointServiceResources — an empty array keeps jsonpath.Get
-		// successful and reflects no attached service resources in unit tests.
-		"Resources": []interface{}{},
-	}
-	CreateMockResponse := map[string]interface{}{
-		// CreateVpcEndpoint
-		"ServiceId": "CreateVpcEndpointServiceValue",
-	}
-	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
-			StatusCode: tea.Int(400),
-		}
-	}
-	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_privatelink_vpc_endpoint_service", errorCode))
-	}
-	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
-		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
-		}
-		return ReadMockResponse, nil
-	}
-
-	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPrivatelinkClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAliCloudPrivateLinkVpcEndpointServiceCreate(dInit, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	ReadMockResponseDiff := map[string]interface{}{
-		// GetVpcEndpointServiceAttribute Response
-		"ServiceId": "CreateVpcEndpointServiceValue",
-	}
-	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateVpcEndpointService" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						successResponseMock(ReadMockResponseDiff)
-						return CreateMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudPrivateLinkVpcEndpointServiceCreate(dInit, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(dInit.State(), nil)
-			for key, value := range attributes {
-				dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPrivatelinkClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	// UpdateVpcEndpointServiceAttribute
-	attributesDiff := map[string]interface{}{
-		"auto_accept_connection": true,
-		"connect_bandwidth":      200,
-		"service_description":    "UpdateVpcEndpointServiceAttributeValue",
-		"dry_run":                true,
-	}
-	diff, err := newInstanceDiff("alicloud_privatelink_vpc_endpoint_service", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(dInit.State(), diff)
-	ReadMockResponseDiff = map[string]interface{}{
-		// GetVpcEndpointServiceAttribute Response
-		"AutoAcceptEnabled":  true,
-		"ConnectBandwidth":   200,
-		"ServiceDescription": "UpdateVpcEndpointServiceAttributeValue",
-	}
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateVpcEndpointServiceAttribute" {
-				switch errorCode {
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if retryIndex >= len(errorCodes)-1 {
-						return successResponseMock(ReadMockResponseDiff)
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		default:
-			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_service"].Schema).Data(dExisted.State(), nil)
-			for key, value := range attributes {
-				dCompare.Set(key, value)
-			}
-			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
-		}
-		if retryIndex >= len(errorCodes)-1 {
-			break
-		}
-	}
-
-	// Read
-	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "GetVpcEndpointServiceAttribute" {
-				switch errorCode {
-				case "{}":
-					return notFoundResponseMock(errorCode)
-				case "NonRetryableError":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudPrivateLinkVpcEndpointServiceRead(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "{}":
-			assert.Nil(t, err)
-		}
-	}
-
-	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewPrivatelinkClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
-		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
-			StatusCode: tea.Int(400),
-		}
-	})
-	err = resourceAliCloudPrivateLinkVpcEndpointServiceDelete(dExisted, rawClient)
-	patches.Reset()
-	assert.NotNil(t, err)
-	errorCodes = []string{"NonRetryableError", "Throttling", "EndpointServiceConnectionDependence", "nil", "EndpointServiceNotFound"}
-	for index, errorCode := range errorCodes {
-		retryIndex := index - 1
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteVpcEndpointService" {
-				switch errorCode {
-				case "NonRetryableError", "EndpointServiceNotFound":
-					return failedResponseMock(errorCode)
-				default:
-					retryIndex++
-					if errorCodes[retryIndex] == "nil" {
-						ReadMockResponse = map[string]interface{}{}
-						return ReadMockResponse, nil
-					}
-					return failedResponseMock(errorCodes[retryIndex])
-				}
-			}
-			return ReadMockResponse, nil
-		})
-		err := resourceAliCloudPrivateLinkVpcEndpointServiceDelete(dExisted, rawClient)
-		patches.Reset()
-		switch errorCode {
-		case "NonRetryableError":
-			assert.NotNil(t, err)
-		case "EndpointServiceNotFound":
-			assert.Nil(t, err)
-		}
-	}
-
-}
-
 // Test PrivateLink VpcEndpointService. >>> Resource test cases, automatically generated.
 // Case 生命周期测试-克隆-nlb 4837
 func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceMap4837)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceMap4837)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatelink.NewPrivateLinkServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePrivateLinkVpcEndpointService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointservice%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceBasicDependence4837)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointservice%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceBasicDependence4837)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1147,7 +881,7 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 						"payer":                  "Endpoint",
 						"service_resource_type":  "nlb",
 						"zone_affinity_enabled":  "false",
-						"resource_group_id":      CHECKSET,
+						"resource_group_id":      acctest.CHECKSET,
 						"dry_run":                "false",
 						"service_support_ipv6":   "false",
 					}),
@@ -1166,7 +900,7 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 						"service_description":   "test-zejun-2",
 						"connect_bandwidth":     "3073",
 						"zone_affinity_enabled": "true",
-						"resource_group_id":     CHECKSET,
+						"resource_group_id":     acctest.CHECKSET,
 						//"service_support_ipv6":  "true",
 					}),
 				),
@@ -1183,7 +917,7 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 						"service_description":    "test-zejun",
 						"connect_bandwidth":      "3072",
 						"auto_accept_connection": "true",
-						"resource_group_id":      CHECKSET,
+						"resource_group_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1219,13 +953,13 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1240,12 +974,12 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case4837(t *testing.T) {
 }
 
 var AlicloudPrivateLinkVpcEndpointServiceMap4837 = map[string]string{
-	"vpc_endpoint_service_name": CHECKSET,
-	"status":                    CHECKSET,
-	"create_time":               CHECKSET,
-	"service_domain":            CHECKSET,
-	"service_business_status":   CHECKSET,
-	"region_id":                 CHECKSET,
+	"vpc_endpoint_service_name": acctest.CHECKSET,
+	"status":                    acctest.CHECKSET,
+	"create_time":               acctest.CHECKSET,
+	"service_domain":            acctest.CHECKSET,
+	"service_business_status":   acctest.CHECKSET,
+	"region_id":                 acctest.CHECKSET,
 }
 
 func AlicloudPrivateLinkVpcEndpointServiceBasicDependence4837(name string) string {
@@ -1264,21 +998,21 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 func TestAccAliCloudPrivatelinkVpcEndpointService_case9628(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceMap9628)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceMap9628)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatelink.NewPrivateLinkServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribePrivateLinkVpcEndpointService")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointservice%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceBasicDependence9628)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointservice%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceBasicDependence9628)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1344,13 +1078,13 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case9628(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1365,11 +1099,11 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_case9628(t *testing.T) {
 }
 
 var AlicloudPrivateLinkVpcEndpointServiceMap9628 = map[string]string{
-	"vpc_endpoint_service_name": CHECKSET,
-	"status":                    CHECKSET,
-	"create_time":               CHECKSET,
-	"service_business_status":   CHECKSET,
-	"region_id":                 CHECKSET,
+	"vpc_endpoint_service_name": acctest.CHECKSET,
+	"status":                    acctest.CHECKSET,
+	"create_time":               acctest.CHECKSET,
+	"service_business_status":   acctest.CHECKSET,
+	"region_id":                 acctest.CHECKSET,
 }
 
 func AlicloudPrivateLinkVpcEndpointServiceBasicDependence9628(name string) string {

@@ -1,14 +1,18 @@
-package alicloud
+package privatelink
 
 import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudPrivateLinkService() *schema.Resource {
+func DataSourceService() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudPrivateLinkServiceRead,
 		Schema: map[string]*schema.Schema{
@@ -16,7 +20,7 @@ func dataSourceAliCloudPrivateLinkService() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "Off",
-				ValidateFunc: StringInSlice([]string{"On", "Off"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"On", "Off"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -40,11 +44,11 @@ func dataSourceAliCloudPrivateLinkServiceRead(d *schema.ResourceData, meta inter
 	action := "OpenPrivateLinkService"
 	request := map[string]interface{}{}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -52,15 +56,15 @@ func dataSourceAliCloudPrivateLinkServiceRead(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, nil)
+	logs.AddDebug(action, response, nil)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OrderOpend"}) {
+		if errs.IsExpectedErrors(err, []string{"OrderOpend"}) {
 			d.SetId("PrivateLinkServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_service", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_privatelink_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId("PrivateLinkServiceHasBeenOpened")
