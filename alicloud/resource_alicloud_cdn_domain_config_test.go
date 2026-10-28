@@ -713,6 +713,71 @@ func TestAccAliCloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudCDNDomainConfig_set_hashkey_args_empty_arg_value covers the case
+// where a function_args entry has an empty arg_value. DescribeCdnDomainConfigs
+// omits such args from the response, so the Read must preserve them from the
+// existing state to keep the plan clean; otherwise every plan triggers an
+// in-place update. See https://github.com/aliyun/terraform-provider-alicloud/issues/4357
+func TestAccAliCloudCDNDomainConfig_set_hashkey_args_empty_arg_value(t *testing.T) {
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+
+	resourceId := "alicloud_cdn_domain_config.default"
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+
+	serviceFunc := func() interface{} {
+		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	emptyArgValueConfig := func() string {
+		return testAccConfig(map[string]interface{}{
+			"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+			"function_name": "set_hashkey_args",
+			"function_args": []map[string]interface{}{
+				{
+					"arg_name":  "disable",
+					"arg_value": "on",
+				},
+				{
+					"arg_name":  "hashkey_args",
+					"arg_value": "",
+				},
+			},
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: emptyArgValueConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name":     name,
+						"function_name":   "set_hashkey_args",
+						"function_args.#": "2",
+					}),
+				),
+			},
+			{
+				Config:             emptyArgValueConfig(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccAliCloudCDNDomainConfig_aliauth(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 

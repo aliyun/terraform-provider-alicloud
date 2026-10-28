@@ -269,6 +269,11 @@ func resourceAliCloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 		"oss_pri_buckets", "private_oss_tbl", "private_oss_ram_unauthorized", "cert", "cert_name",
 		"consistent_hash", "cert_type", "https", "dkey", "pkey"}
 
+	// returnedArgNames records the function arg names returned by the API in
+	// this read. DescribeCdnDomainConfigs omits args whose ArgValue is an empty
+	// string, so they cannot be rebuilt from the API response alone.
+	returnedArgNames := make(map[string]bool)
+
 	for _, k := range args {
 
 		arg := k.(map[string]interface{})
@@ -277,10 +282,36 @@ func resourceAliCloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 			continue
 		}
 
+		returnedArgNames[fmt.Sprint(arg["ArgName"])] = true
+
 		funArgs = append(funArgs, map[string]string{
 			"arg_name":  arg["ArgName"].(string),
 			"arg_value": arg["ArgValue"].(string),
 		})
+	}
+
+	// Preserve function args with an empty arg_value that the API does not
+	// return. Without this, applying a config containing an empty arg_value
+	// leaves the state out of sync with the configuration and triggers an
+	// in-place update on every plan.
+	if oldFunArgs, ok := d.Get("function_args").(*schema.Set); ok {
+		for _, raw := range oldFunArgs.List() {
+			oldArg, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			oldArgName, okName := oldArg["arg_name"].(string)
+			oldArgValue, okValue := oldArg["arg_value"].(string)
+			if !okName || !okValue {
+				continue
+			}
+			if oldArgValue == "" && !returnedArgNames[oldArgName] && !InArray(oldArgName, ignoreFunctionArg) {
+				funArgs = append(funArgs, map[string]string{
+					"arg_name":  oldArgName,
+					"arg_value": "",
+				})
+			}
+		}
 	}
 
 	parts := strings.Split(d.Id(), ":")
