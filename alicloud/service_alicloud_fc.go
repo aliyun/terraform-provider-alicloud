@@ -487,3 +487,26 @@ func (s *FcService) WaitForFcFunctionAsyncInvokeConfig(id string, status Status,
 		}
 	}
 }
+
+// parseFCDestinationConfigId is retained in the root package for the
+// in-package FcService compat copy (DescribeFcFunctionAsyncInvokeConfig).
+// The migrated copy lives in alicloud/service/fc; this root copy keeps the
+// retained root surface self-contained without importing the subpackage.
+func parseFCDestinationConfigId(id string) (serviceName string, functionName string, qualifier string, err error) {
+	idParts := strings.Split(id, ":")
+
+	if len(idParts) == 2 && idParts[0] != "" && idParts[1] != "" {
+		serviceName = idParts[0]
+		functionName = idParts[1]
+		return
+	}
+
+	if len(idParts) == 3 && idParts[0] != "" && idParts[1] != "" && idParts[2] != "" {
+		serviceName = idParts[0]
+		functionName = idParts[1]
+		qualifier = idParts[2]
+		return
+	}
+
+	return "", "", "", fmt.Errorf("unexpected format of ID (%s), expected service_name:function_name or service_name:function_name:qualifier", id)
+}
