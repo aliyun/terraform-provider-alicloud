@@ -20,7 +20,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/aligreen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqpopen"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/antiddospublic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
@@ -53,6 +52,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dcdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbasic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbgp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dds"
@@ -186,7 +186,6 @@ var servicePackages = []conns.ServicePackage{
 	aligreen.ServicePackage(),
 	alikafka.ServicePackage(),
 	amqpopen.ServicePackage(),
-	antiddospublic.ServicePackage(),
 	apig.ServicePackage(),
 	arms.ServicePackage(),
 	bpstudio.ServicePackage(),
@@ -218,6 +217,7 @@ var servicePackages = []conns.ServicePackage{
 	dbfs.ServicePackage(),
 	dbs.ServicePackage(),
 	dcdn.ServicePackage(),
+	ddosbasic.ServicePackage(),
 	ddosbgp.ServicePackage(),
 	ddoscoo.ServicePackage(),
 	dds.ServicePackage(),

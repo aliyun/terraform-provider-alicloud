@@ -1,4 +1,4 @@
-package alicloud
+package ddosbasic
 
 import (
 	"fmt"
@@ -6,17 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDdosBasicDefenseThreshold() *schema.Resource {
+func ResourceDdosBasicDefenseThreshold() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDdosBasicAntiddosCreate,
-		Read:   resourceAlicloudDdosBasicAntiddosRead,
-		Update: resourceAlicloudDdosBasicAntiddosUpdate,
-		Delete: resourceAlicloudDdosBasicAntiddosDelete,
+		Create: resourceDdosBasicAntiddosCreate,
+		Read:   resourceDdosBasicAntiddosRead,
+		Update: resourceDdosBasicAntiddosUpdate,
+		Delete: resourceDdosBasicAntiddosDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -70,7 +73,7 @@ func resourceAlicloudDdosBasicDefenseThreshold() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDdosBasicAntiddosCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicAntiddosCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "ModifyDefenseThreshold"
@@ -92,11 +95,11 @@ func resourceAlicloudDdosBasicAntiddosCreate(d *schema.ResourceData, meta interf
 		request["InternetIp"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -104,34 +107,34 @@ func resourceAlicloudDdosBasicAntiddosCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddos_basic_defense_threshold", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddos_basic_defense_threshold", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["InstanceType"], ":", d.Get("ddos_type")))
-	antiddosPublicService := AntiddosPublicService{client}
-	stateConf := BuildStateConf([]string{}, []string{"defense", "blackhole"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, antiddosPublicService.DdosBasicAntiDdosStateRefreshFunc(d.Id()))
+	antiddosPublicService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"defense", "blackhole"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, antiddosPublicService.DdosBasicAntiDdosStateRefreshFunc(d.Id()))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
-	return resourceAlicloudDdosBasicAntiddosRead(d, meta)
+	return resourceDdosBasicAntiddosRead(d, meta)
 }
-func resourceAlicloudDdosBasicAntiddosRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicAntiddosRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	antiddosPublicService := AntiddosPublicService{client}
+	antiddosPublicService := NewService(client)
 	object, err := antiddosPublicService.DescribeDdosBasicAntiddos(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddos_basic_antiddos antiddosPublicService.DescribeDdosBasicAntiddos Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_id", parts[0])
@@ -145,12 +148,12 @@ func resourceAlicloudDdosBasicAntiddosRead(d *schema.ResourceData, meta interfac
 	d.Set("max_pps", object["MaxPps"])
 	return nil
 }
-func resourceAlicloudDdosBasicAntiddosUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicAntiddosUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "ModifyDefenseThreshold"
 	update := false
@@ -186,11 +189,11 @@ func resourceAlicloudDdosBasicAntiddosUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -198,19 +201,19 @@ func resourceAlicloudDdosBasicAntiddosUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	antiddosPublicService := AntiddosPublicService{client}
-	stateConf := BuildStateConf([]string{}, []string{"defense", "blackhole"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, antiddosPublicService.DdosBasicAntiDdosStateRefreshFunc(d.Id()))
+	antiddosPublicService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"defense", "blackhole"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, antiddosPublicService.DdosBasicAntiDdosStateRefreshFunc(d.Id()))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
-	return resourceAlicloudDdosBasicAntiddosRead(d, meta)
+	return resourceDdosBasicAntiddosRead(d, meta)
 }
-func resourceAlicloudDdosBasicAntiddosDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicAntiddosDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource alicloud_ddos_basic_antiddos. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

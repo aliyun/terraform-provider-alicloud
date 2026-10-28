@@ -1,4 +1,4 @@
-package alicloud
+package ddosbasic
 
 import (
 	"fmt"
@@ -6,16 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDdosBasicThreshold() *schema.Resource {
+func ResourceDdosBasicThreshold() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDdosBasicThresholdCreate,
-		Read:   resourceAliCloudDdosBasicThresholdRead,
-		Update: resourceAliCloudDdosBasicThresholdUpdate,
-		Delete: resourceAliCloudDdosBasicThresholdDelete,
+		Create: resourceDdosBasicThresholdCreate,
+		Read:   resourceDdosBasicThresholdRead,
+		Update: resourceDdosBasicThresholdUpdate,
+		Delete: resourceDdosBasicThresholdDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,7 +33,7 @@ func resourceAliCloudDdosBasicThreshold() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ecs", "slb", "eip"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ecs", "slb", "eip"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -60,7 +65,7 @@ func resourceAliCloudDdosBasicThreshold() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDdosBasicThresholdCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicThresholdCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "ModifyIpDefenseThreshold"
@@ -74,11 +79,11 @@ func resourceAliCloudDdosBasicThresholdCreate(d *schema.ResourceData, meta inter
 	request["Bps"] = d.Get("bps")
 	request["Pps"] = d.Get("pps")
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -86,34 +91,34 @@ func resourceAliCloudDdosBasicThresholdCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddos_basic_threshold", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddos_basic_threshold", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["InstanceType"], request["InstanceId"], request["InternetIp"]))
 
-	return resourceAliCloudDdosBasicThresholdRead(d, meta)
+	return resourceDdosBasicThresholdRead(d, meta)
 }
 
-func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicThresholdRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	antiddosPublicService := AntiddosPublicService{client}
+	antiddosPublicService := NewService(client)
 
 	object, err := antiddosPublicService.DescribeDdosBasicThreshold(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddos_basic_threshold antiddosPublicService.DescribeDdosBasicThreshold Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_type", parts[0])
@@ -121,7 +126,7 @@ func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interfa
 	d.Set("internet_ip", parts[2])
 
 	if v, ok := object["Bps"]; ok && fmt.Sprint(v) != "0" {
-		bpsVal, err := formatInt(v)
+		bpsVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -129,7 +134,7 @@ func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := object["Pps"]; ok && fmt.Sprint(v) != "0" {
-		ppsVal, err := formatInt(v)
+		ppsVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -137,7 +142,7 @@ func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := object["MaxBps"]; ok && fmt.Sprint(v) != "0" {
-		max_bpsVal, err := formatInt(v)
+		max_bpsVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -145,7 +150,7 @@ func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := object["MaxPps"]; ok && fmt.Sprint(v) != "0" {
-		max_ppsVal, err := formatInt(v)
+		max_ppsVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -155,14 +160,14 @@ func resourceAliCloudDdosBasicThresholdRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAliCloudDdosBasicThresholdUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDdosBasicThresholdUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	update := false
 
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request := map[string]interface{}{
@@ -184,11 +189,11 @@ func resourceAliCloudDdosBasicThresholdUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "ModifyIpDefenseThreshold"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("antiddos-public", "2017-05-18", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -196,17 +201,17 @@ func resourceAliCloudDdosBasicThresholdUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDdosBasicThresholdRead(d, meta)
+	return resourceDdosBasicThresholdRead(d, meta)
 }
 
-func resourceAliCloudDdosBasicThresholdDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAliCloudDdosBasicThreshold. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceDdosBasicThresholdDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceDdosBasicThreshold. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
