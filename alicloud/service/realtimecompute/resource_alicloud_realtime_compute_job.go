@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -9,11 +9,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRealtimeComputeJob() *schema.Resource {
+func ResourceRealtimeComputeJob() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudRealtimeComputeJobCreate,
 		Read:   resourceAliCloudRealtimeComputeJobRead,
@@ -86,7 +91,7 @@ func resourceAliCloudRealtimeComputeJob() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"NONE", "LATEST_SAVEPOINT", "FROM_SAVEPOINT", "LATEST_STATE"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"NONE", "LATEST_SAVEPOINT", "FROM_SAVEPOINT", "LATEST_STATE"}, false),
 						},
 						"allow_non_restored_state": {
 							Type:     schema.TypeBool,
@@ -163,7 +168,7 @@ func resourceAliCloudRealtimeComputeJob() *schema.Resource {
 			"stop_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"NONE", "STOP_WITH_SAVEPOINT", "STOP_WITH_DRAIN"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"NONE", "STOP_WITH_SAVEPOINT", "STOP_WITH_DRAIN"}, false),
 			},
 		},
 	}
@@ -182,11 +187,11 @@ func resourceAliCloudRealtimeComputeJobCreate(d *schema.ResourceData, meta inter
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(d.Get("resource_id").(string))
+	header["workspace"] = helper.StringPointer(d.Get("resource_id").(string))
 
 	if v, ok := d.GetOk("local_variables"); ok {
 		localVariablesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["value"] = dataLoopTmp["value"]
@@ -198,7 +203,7 @@ func resourceAliCloudRealtimeComputeJobCreate(d *schema.ResourceData, meta inter
 
 	restoreStrategy := make(map[string]interface{})
 
-	if v := d.Get("restore_strategy"); !IsNil(v) {
+	if v := d.Get("restore_strategy"); !helper.IsNil(v) {
 		kind1, _ := jsonpath.Get("$[0].kind", v)
 		if kind1 != nil && kind1 != "" {
 			restoreStrategy["kind"] = kind1
@@ -226,11 +231,11 @@ func resourceAliCloudRealtimeComputeJobCreate(d *schema.ResourceData, meta inter
 		request["resourceQueueName"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("ververica", "2022-07-18", action, query, header, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -238,10 +243,10 @@ func resourceAliCloudRealtimeComputeJobCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_realtime_compute_job", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_realtime_compute_job", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	dataworkspaceVar, _ := jsonpath.Get("$.data.workspace", response)
@@ -249,10 +254,10 @@ func resourceAliCloudRealtimeComputeJobCreate(d *schema.ResourceData, meta inter
 	datajobIdVar, _ := jsonpath.Get("$.data.jobId", response)
 	d.SetId(fmt.Sprintf("%v:%v:%v", dataworkspaceVar, datanamespaceVar, datajobIdVar))
 
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, realtimeComputeServiceV2.RealtimeComputeJobStateRefreshFunc(d.Id(), "$.status.currentJobStatus", []string{}))
+	realtimeComputeServiceV2 := Service{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, realtimeComputeServiceV2.RealtimeComputeJobStateRefreshFunc(d.Id(), "$.status.currentJobStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudRealtimeComputeJobUpdate(d, meta)
@@ -260,16 +265,16 @@ func resourceAliCloudRealtimeComputeJobCreate(d *schema.ResourceData, meta inter
 
 func resourceAliCloudRealtimeComputeJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	realtimeComputeServiceV2 := Service{client}
 
 	objectRaw, err := realtimeComputeServiceV2.DescribeRealtimeComputeJob(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_realtime_compute_job DescribeRealtimeComputeJob Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("deployment_id", objectRaw["deploymentId"])
@@ -280,7 +285,7 @@ func resourceAliCloudRealtimeComputeJobRead(d *schema.ResourceData, meta interfa
 	localVariablesRaw := objectRaw["localVariables"]
 	localVariablesMaps := make([]map[string]interface{}, 0)
 	if localVariablesRaw != nil {
-		for _, localVariablesChildRaw := range convertToInterfaceArray(localVariablesRaw) {
+		for _, localVariablesChildRaw := range convert.ConvertToInterfaceArray(localVariablesRaw) {
 			localVariablesMap := make(map[string]interface{})
 			localVariablesChildRaw := localVariablesChildRaw.(map[string]interface{})
 			localVariablesMap["name"] = localVariablesChildRaw["name"]
@@ -364,7 +369,7 @@ func resourceAliCloudRealtimeComputeJobUpdate(d *schema.ResourceData, meta inter
 	var query map[string]*string
 	var body map[string]interface{}
 
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	realtimeComputeServiceV2 := Service{client}
 	objectRaw, _ := realtimeComputeServiceV2.DescribeRealtimeComputeJob(d.Id())
 
 	if d.HasChange("status.0.current_job_status") {
@@ -373,7 +378,7 @@ func resourceAliCloudRealtimeComputeJobUpdate(d *schema.ResourceData, meta inter
 
 		currentStatus, err := jsonpath.Get("$.status.currentJobStatus", objectRaw)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.status.currentJobStatus", objectRaw)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, d.Id(), "$.status.currentJobStatus", objectRaw)
 		}
 		if fmt.Sprint(currentStatus) != target {
 			if target == "CANCELLED" {
@@ -385,15 +390,15 @@ func resourceAliCloudRealtimeComputeJobUpdate(d *schema.ResourceData, meta inter
 				query = make(map[string]*string)
 				header = make(map[string]*string)
 				body = make(map[string]interface{})
-				header["workspace"] = StringPointer(parts[0])
+				header["workspace"] = helper.StringPointer(parts[0])
 
 				request["stopStrategy"] = d.Get("stop_strategy")
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("ververica", "2022-07-18", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -401,14 +406,14 @@ func resourceAliCloudRealtimeComputeJobUpdate(d *schema.ResourceData, meta inter
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"CANCELLED"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, realtimeComputeServiceV2.RealtimeComputeJobStateRefreshFunc(d.Id(), "$.status.currentJobStatus", []string{}))
+				realtimeComputeServiceV2 := Service{client}
+				stateConf := helper.BuildStateConf([]string{}, []string{"CANCELLED"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, realtimeComputeServiceV2.RealtimeComputeJobStateRefreshFunc(d.Id(), "$.status.currentJobStatus", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -431,13 +436,13 @@ func resourceAliCloudRealtimeComputeJobDelete(d *schema.ResourceData, meta inter
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("ververica", "2022-07-18", action, query, header, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -445,13 +450,13 @@ func resourceAliCloudRealtimeComputeJobDelete(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"990301"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"990301"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -9,12 +9,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudRealtimeComputeVariables() *schema.Resource {
+func DataSourceRealtimeComputeVariables() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudRealtimeComputeVariableRead,
 		Schema: map[string]*schema.Schema{
@@ -94,9 +97,9 @@ func dataSourceAliCloudRealtimeComputeVariableRead(d *schema.ResourceData, meta 
 	action := fmt.Sprintf("/api/v2/namespaces/%s/variables", namespace)
 	request := make(map[string]*string)
 	header := make(map[string]*string)
-	request["pageSize"] = StringPointer(strconv.Itoa(PageSizeLarge))
-	request["pageIndex"] = StringPointer("1")
-	header["workspace"] = StringPointer(workspace.(string))
+	request["pageSize"] = helper.StringPointer(strconv.Itoa(helper.PageSizeLarge))
+	request["pageIndex"] = helper.StringPointer("1")
+	header["workspace"] = helper.StringPointer(workspace.(string))
 
 	var objects []map[string]interface{}
 
@@ -114,7 +117,7 @@ func dataSourceAliCloudRealtimeComputeVariableRead(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		variableNameRegex = r
@@ -124,11 +127,11 @@ func dataSourceAliCloudRealtimeComputeVariableRead(d *schema.ResourceData, meta 
 	var err error
 
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutRead), func() *retry.RetryError {
 			response, err = client.RoaGet("ververica", "2022-07-18", action, request, header, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -136,15 +139,15 @@ func dataSourceAliCloudRealtimeComputeVariableRead(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_realtime_compute_variables", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_realtime_compute_variables", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.data", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.data", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.data", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -165,16 +168,16 @@ func dataSourceAliCloudRealtimeComputeVariableRead(d *schema.ResourceData, meta 
 			objects = append(objects, item)
 		}
 
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 
 		pageIndex, err := strconv.Atoi(*request["pageIndex"])
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
-		request["pageIndex"] = StringPointer(strconv.Itoa(pageIndex + 1))
+		request["pageIndex"] = helper.StringPointer(strconv.Itoa(pageIndex + 1))
 	}
 
 	ids := make([]string, 0)
@@ -196,22 +199,22 @@ func dataSourceAliCloudRealtimeComputeVariableRead(d *schema.ResourceData, meta 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("variables", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

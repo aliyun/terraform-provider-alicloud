@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -9,11 +9,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRealtimeComputeDeployment() *schema.Resource {
+func ResourceRealtimeComputeDeployment() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudRealtimeComputeDeploymentCreate,
 		Read:   resourceAliCloudRealtimeComputeDeploymentRead,
@@ -38,7 +43,7 @@ func resourceAliCloudRealtimeComputeDeployment() *schema.Resource {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"SQLSCRIPT", "JAR", "PYTHON"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"SQLSCRIPT", "JAR", "PYTHON"}, false),
 						},
 						"jar_artifact": {
 							Type:     schema.TypeList,
@@ -200,7 +205,7 @@ func resourceAliCloudRealtimeComputeDeployment() *schema.Resource {
 						"mode": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"SESSION", "PER_JOB"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"SESSION", "PER_JOB"}, false),
 						},
 						"name": {
 							Type:     schema.TypeString,
@@ -222,7 +227,7 @@ func resourceAliCloudRealtimeComputeDeployment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"STREAMING", "BATCH"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"STREAMING", "BATCH"}, false),
 			},
 			// lintignore: S006
 			"flink_conf": {
@@ -387,7 +392,7 @@ func resourceAliCloudRealtimeComputeDeployment() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"BASIC", "EXPERT"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"BASIC", "EXPERT"}, false),
 						},
 						"expert_resource_setting": {
 							Type:     schema.TypeList,
@@ -440,11 +445,11 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(d.Get("resource_id").(string))
+	header["workspace"] = helper.StringPointer(d.Get("resource_id").(string))
 
 	streamingResourceSetting := make(map[string]interface{})
 
-	if v := d.Get("streaming_resource_setting"); !IsNil(v) {
+	if v := d.Get("streaming_resource_setting"); !helper.IsNil(v) {
 		expertResourceSetting := make(map[string]interface{})
 		jobmanagerResourceSettingSpec := make(map[string]interface{})
 		cpu1, _ := jsonpath.Get("$[0].expert_resource_setting[0].jobmanager_resource_setting_spec[0].cpu", d.Get("streaming_resource_setting"))
@@ -515,14 +520,14 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 	}
 	logging := make(map[string]interface{})
 
-	if v := d.Get("logging"); !IsNil(v) {
+	if v := d.Get("logging"); !helper.IsNil(v) {
 		if v, ok := d.GetOk("logging"); ok {
 			localData, err := jsonpath.Get("$[0].log4j_loggers", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
+			for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -562,7 +567,7 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 
 	batchResourceSetting := make(map[string]interface{})
 
-	if v := d.Get("batch_resource_setting"); !IsNil(v) {
+	if v := d.Get("batch_resource_setting"); !helper.IsNil(v) {
 		basicResourceSetting1 := make(map[string]interface{})
 		taskmanagerResourceSettingSpec1 := make(map[string]interface{})
 		cpu7, _ := jsonpath.Get("$[0].basic_resource_setting[0].taskmanager_resource_setting_spec[0].cpu", d.Get("batch_resource_setting"))
@@ -611,7 +616,7 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 	}
 	if v, ok := d.GetOk("local_variables"); ok {
 		localVariablesMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range convertToInterfaceArray(v) {
+		for _, dataLoop1 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["value"] = dataLoop1Tmp["value"]
@@ -719,11 +724,11 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 	}
 	request["name"] = d.Get("deployment_name")
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("ververica", "2022-07-18", action, query, header, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -731,10 +736,10 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_realtime_compute_deployment", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_realtime_compute_deployment", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	dataworkspaceVar, _ := jsonpath.Get("$.data.workspace", response)
@@ -747,16 +752,16 @@ func resourceAliCloudRealtimeComputeDeploymentCreate(d *schema.ResourceData, met
 
 func resourceAliCloudRealtimeComputeDeploymentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	realtimeComputeServiceV2 := Service{client}
 
 	objectRaw, err := realtimeComputeServiceV2.DescribeRealtimeComputeDeployment(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_realtime_compute_deployment DescribeRealtimeComputeDeployment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("deployment_name", objectRaw["name"])
@@ -791,7 +796,7 @@ func resourceAliCloudRealtimeComputeDeploymentRead(d *schema.ResourceData, meta 
 
 			additionalDependenciesRaw := make([]interface{}, 0)
 			if jarArtifactRaw["additionalDependencies"] != nil {
-				additionalDependenciesRaw = convertToInterfaceArray(jarArtifactRaw["additionalDependencies"])
+				additionalDependenciesRaw = convert.ConvertToInterfaceArray(jarArtifactRaw["additionalDependencies"])
 			}
 
 			jarArtifactMap["additional_dependencies"] = additionalDependenciesRaw
@@ -811,19 +816,19 @@ func resourceAliCloudRealtimeComputeDeploymentRead(d *schema.ResourceData, meta 
 
 			additionalDependenciesRaw := make([]interface{}, 0)
 			if pythonArtifactRaw["additionalDependencies"] != nil {
-				additionalDependenciesRaw = convertToInterfaceArray(pythonArtifactRaw["additionalDependencies"])
+				additionalDependenciesRaw = convert.ConvertToInterfaceArray(pythonArtifactRaw["additionalDependencies"])
 			}
 
 			pythonArtifactMap["additional_dependencies"] = additionalDependenciesRaw
 			additionalPythonArchivesRaw := make([]interface{}, 0)
 			if pythonArtifactRaw["additionalPythonArchives"] != nil {
-				additionalPythonArchivesRaw = convertToInterfaceArray(pythonArtifactRaw["additionalPythonArchives"])
+				additionalPythonArchivesRaw = convert.ConvertToInterfaceArray(pythonArtifactRaw["additionalPythonArchives"])
 			}
 
 			pythonArtifactMap["additional_python_archives"] = additionalPythonArchivesRaw
 			additionalPythonLibrariesRaw := make([]interface{}, 0)
 			if pythonArtifactRaw["additionalPythonLibraries"] != nil {
-				additionalPythonLibrariesRaw = convertToInterfaceArray(pythonArtifactRaw["additionalPythonLibraries"])
+				additionalPythonLibrariesRaw = convert.ConvertToInterfaceArray(pythonArtifactRaw["additionalPythonLibraries"])
 			}
 
 			pythonArtifactMap["additional_python_libraries"] = additionalPythonLibrariesRaw
@@ -841,7 +846,7 @@ func resourceAliCloudRealtimeComputeDeploymentRead(d *schema.ResourceData, meta 
 
 			additionalDependenciesRaw := make([]interface{}, 0)
 			if sqlArtifactRaw["additionalDependencies"] != nil {
-				additionalDependenciesRaw = convertToInterfaceArray(sqlArtifactRaw["additionalDependencies"])
+				additionalDependenciesRaw = convert.ConvertToInterfaceArray(sqlArtifactRaw["additionalDependencies"])
 			}
 
 			sqlArtifactMap["additional_dependencies"] = additionalDependenciesRaw
@@ -923,7 +928,7 @@ func resourceAliCloudRealtimeComputeDeploymentRead(d *schema.ResourceData, meta 
 	localVariablesRaw := objectRaw["localVariables"]
 	localVariablesMaps := make([]map[string]interface{}, 0)
 	if localVariablesRaw != nil {
-		for _, localVariablesChildRaw := range convertToInterfaceArray(localVariablesRaw) {
+		for _, localVariablesChildRaw := range convert.ConvertToInterfaceArray(localVariablesRaw) {
 			localVariablesMap := make(map[string]interface{})
 			localVariablesChildRaw := localVariablesChildRaw.(map[string]interface{})
 			localVariablesMap["name"] = localVariablesChildRaw["name"]
@@ -948,7 +953,7 @@ func resourceAliCloudRealtimeComputeDeploymentRead(d *schema.ResourceData, meta 
 		log4jLoggersRaw := loggingRaw["log4jLoggers"]
 		log4JLoggersMaps := make([]map[string]interface{}, 0)
 		if log4jLoggersRaw != nil {
-			for _, log4jLoggersChildRaw := range convertToInterfaceArray(log4jLoggersRaw) {
+			for _, log4jLoggersChildRaw := range convert.ConvertToInterfaceArray(log4jLoggersRaw) {
 				log4JLoggersMap := make(map[string]interface{})
 				log4jLoggersChildRaw := log4jLoggersChildRaw.(map[string]interface{})
 				log4JLoggersMap["logger_level"] = log4jLoggersChildRaw["loggerLevel"]
@@ -1075,14 +1080,14 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 	query = make(map[string]*string)
 	header = make(map[string]*string)
 	body = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 
 	if d.HasChange("streaming_resource_setting") {
 		update = true
 	}
 	streamingResourceSetting := make(map[string]interface{})
 
-	if v := d.Get("streaming_resource_setting"); !IsNil(v) || d.HasChange("streaming_resource_setting") {
+	if v := d.Get("streaming_resource_setting"); !helper.IsNil(v) || d.HasChange("streaming_resource_setting") {
 		expertResourceSetting := make(map[string]interface{})
 		resourcePlan1, _ := jsonpath.Get("$[0].expert_resource_setting[0].resource_plan", d.Get("streaming_resource_setting"))
 		if resourcePlan1 != nil && resourcePlan1 != "" {
@@ -1236,7 +1241,7 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 	}
 	logging := make(map[string]interface{})
 
-	if v := d.Get("logging"); !IsNil(v) || d.HasChange("logging") {
+	if v := d.Get("logging"); !helper.IsNil(v) || d.HasChange("logging") {
 		logReservePolicy := make(map[string]interface{})
 		expirationDays1, _ := jsonpath.Get("$[0].log_reserve_policy[0].expiration_days", d.Get("logging"))
 		if expirationDays1 != nil && expirationDays1 != "" {
@@ -1256,7 +1261,7 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
+			for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -1286,7 +1291,7 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 	}
 	batchResourceSetting := make(map[string]interface{})
 
-	if v := d.Get("batch_resource_setting"); !IsNil(v) || d.HasChange("batch_resource_setting") {
+	if v := d.Get("batch_resource_setting"); !helper.IsNil(v) || d.HasChange("batch_resource_setting") {
 		basicResourceSetting1 := make(map[string]interface{})
 		taskmanagerResourceSettingSpec1 := make(map[string]interface{})
 		cpu7, _ := jsonpath.Get("$[0].basic_resource_setting[0].taskmanager_resource_setting_spec[0].cpu", d.Get("batch_resource_setting"))
@@ -1359,7 +1364,7 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 	}
 	if v, ok := d.GetOk("local_variables"); ok || d.HasChange("local_variables") {
 		localVariablesMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range convertToInterfaceArray(v) {
+		for _, dataLoop1 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["value"] = dataLoop1Tmp["value"]
@@ -1387,11 +1392,11 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 	request["name"] = d.Get("deployment_name")
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("ververica", "2022-07-18", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1399,9 +1404,9 @@ func resourceAliCloudRealtimeComputeDeploymentUpdate(d *schema.ResourceData, met
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1421,13 +1426,13 @@ func resourceAliCloudRealtimeComputeDeploymentDelete(d *schema.ResourceData, met
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("ververica", "2022-07-18", action, query, header, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1435,13 +1440,13 @@ func resourceAliCloudRealtimeComputeDeploymentDelete(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"990301"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"990301"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,11 +1,13 @@
-package alicloud
+package realtimecompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudRealtimeComputeSqlFile_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_sql_file.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeSqlFileMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeSqlFileMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeSqlFile")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeSqlFileBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeSqlFileBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,8 +50,8 @@ func TestAccAliCloudRealtimeComputeSqlFile_basic0(t *testing.T) {
 						"description":          "tf acc test sql file",
 						"batch_mode":           "true",
 						"session_cluster_name": name,
-						"workspace":            CHECKSET,
-						"namespace":            CHECKSET,
+						"workspace":            acctest.CHECKSET,
+						"namespace":            acctest.CHECKSET,
 					}),
 				),
 			},
@@ -85,7 +87,7 @@ func TestAccAliCloudRealtimeComputeSqlFile_basic0(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeSqlFileMap0 = map[string]string{
-	"sql_file_id": CHECKSET,
+	"sql_file_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeSqlFileBasicDependence0(name string) string {

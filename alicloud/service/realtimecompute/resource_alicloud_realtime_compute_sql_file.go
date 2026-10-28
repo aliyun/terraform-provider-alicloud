@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -9,11 +9,14 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRealtimeComputeSqlFile() *schema.Resource {
+func ResourceRealtimeComputeSqlFile() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudRealtimeComputeSqlFileCreate,
 		Read:   resourceAliCloudRealtimeComputeSqlFileRead,
@@ -85,7 +88,7 @@ func resourceAliCloudRealtimeComputeSqlFileCreate(d *schema.ResourceData, meta i
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(d.Get("workspace").(string))
+	header["workspace"] = helper.StringPointer(d.Get("workspace").(string))
 
 	if v, ok := d.GetOk("batch_mode"); ok {
 		request["batchMode"] = v
@@ -100,20 +103,20 @@ func resourceAliCloudRealtimeComputeSqlFileCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("parent_id"); ok {
 		request["parentId"] = v
 	} else {
-		realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+		realtimeComputeServiceV2 := Service{client}
 		rootFolderId, err := realtimeComputeServiceV2.GetSqlFileRootFolderId(d.Get("workspace").(string), namespace.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["parentId"] = rootFolderId
 	}
 	request["name"] = d.Get("name")
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("ververica", "2022-07-18", action, query, header, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -121,10 +124,10 @@ func resourceAliCloudRealtimeComputeSqlFileCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_realtime_compute_sql_file", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_realtime_compute_sql_file", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	dataworkspaceVar, _ := jsonpath.Get("$.data.workspace", response)
@@ -137,16 +140,16 @@ func resourceAliCloudRealtimeComputeSqlFileCreate(d *schema.ResourceData, meta i
 
 func resourceAliCloudRealtimeComputeSqlFileRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	realtimeComputeServiceV2 := Service{client}
 
 	objectRaw, err := realtimeComputeServiceV2.DescribeRealtimeComputeSqlFile(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_realtime_compute_sql_file DescribeRealtimeComputeSqlFile Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if v, ok := objectRaw["batchMode"]; ok && v != nil {
@@ -182,7 +185,7 @@ func resourceAliCloudRealtimeComputeSqlFileUpdate(d *schema.ResourceData, meta i
 	query = make(map[string]*string)
 	header = make(map[string]*string)
 	body = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 
 	if d.HasChange("batch_mode") {
 		update = true
@@ -218,11 +221,11 @@ func resourceAliCloudRealtimeComputeSqlFileUpdate(d *schema.ResourceData, meta i
 	request["name"] = d.Get("name")
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPatch("ververica", "2022-07-18", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -230,9 +233,9 @@ func resourceAliCloudRealtimeComputeSqlFileUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -251,13 +254,13 @@ func resourceAliCloudRealtimeComputeSqlFileDelete(d *schema.ResourceData, meta i
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("ververica", "2022-07-18", action, query, header, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -265,13 +268,13 @@ func resourceAliCloudRealtimeComputeSqlFileDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"990301"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"990301"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

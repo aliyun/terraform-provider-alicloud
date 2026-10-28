@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -8,6 +8,11 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -31,7 +36,7 @@ const (
 	realtimeComputeVvpBssProductTypeIntl = "sc_flinkserverless_public_intl" // confirmed by the Flink product owner 2026-09-03
 )
 
-func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
+func ResourceRealtimeComputeVvpInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudRealtimeComputeVvpInstanceCreate,
 		Read:   resourceAliCloudRealtimeComputeVvpInstanceRead,
@@ -49,7 +54,7 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 			"auto_renew_duration": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 6, 12}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3, 6, 12}),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -63,12 +68,12 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Month"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Month"}, false),
 			},
 			"renew_status": {
 				Type:     schema.TypeString,
@@ -134,7 +139,7 @@ func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
 					},
 				},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vswitch_ids": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -180,7 +185,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 	if v, ok := d.GetOk("vpc_id"); ok {
 		objectDataLocalMap["VpcId"] = v
 	}
-	if v := d.Get("storage"); !IsNil(v) {
+	if v := d.Get("storage"); !helper.IsNil(v) {
 		storage := make(map[string]interface{})
 		oss := make(map[string]interface{})
 		nodeNative1, _ := jsonpath.Get("$[0].oss[0].bucket", v)
@@ -200,7 +205,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 			objectDataLocalMap["VSwitchIds"] = nodeNative4
 		}
 	}
-	if v := d.Get("resource_spec"); !IsNil(v) {
+	if v := d.Get("resource_spec"); !helper.IsNil(v) {
 		resourceSpec := make(map[string]interface{})
 		nodeNative5, _ := jsonpath.Get("$[0].cpu", v)
 		if nodeNative5 != "" {
@@ -240,36 +245,36 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 		request["CreateInstanceRequest.ResourceGroupId"] = v
 	}
 	request["CreateInstanceRequest.ChargeType"] = convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(d.Get("payment_type").(string))
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"998001", "Invoke ABM failed"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"998001", "Invoke ABM failed"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_realtime_compute_vvp_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_realtime_compute_vvp_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.OrderInfo.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "ClusterStatus", []string{}))
+	realtimeComputeServiceV2 := Service{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "ClusterStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	if err := setRealtimeComputeVvpInstanceRenewal(d, meta); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return resourceAliCloudRealtimeComputeVvpInstanceRead(d, meta)
@@ -277,16 +282,16 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 
 func resourceAliCloudRealtimeComputeVvpInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	realtimeComputeServiceV2 := Service{client}
 
 	objectRaw, err := realtimeComputeServiceV2.DescribeRealtimeComputeVvpInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_realtime_compute_vvp_instance DescribeRealtimeComputeVvpInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["ResourceCreateTime"])
@@ -331,7 +336,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceRead(d *schema.ResourceData, meta
 	}
 	d.Set("storage", storageMaps)
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 	vSwitchIds1Raw := make([]interface{}, 0)
 	if objectRaw["VSwitchIds"] != nil {
 		vSwitchIds1Raw = objectRaw["VSwitchIds"].([]interface{})
@@ -344,10 +349,9 @@ func resourceAliCloudRealtimeComputeVvpInstanceRead(d *schema.ResourceData, meta
 		// renewal is read back from bss QueryAvailableInstances. bss uses a
 		// different naming from SetRenewal: RenewStatus / RenewalDuration /
 		// RenewalDurationUnit (vs. RenewalStatus / RenewalPeriod / RenewalPeriodUnit).
-		bssOpenApiService := BssOpenApiService{client}
-		renewRaw, err := bssOpenApiService.QueryAvailableInstances(d.Id(), client.RegionId, realtimeComputeVvpBssProductCode, realtimeComputeVvpBssProductType, realtimeComputeVvpBssProductCode, realtimeComputeVvpBssProductTypeIntl)
-		if err != nil && !NotFoundError(err) {
-			return WrapError(err)
+		renewRaw, err := realtimeComputeServiceV2.QueryAvailableInstances(d.Id(), client.RegionId, realtimeComputeVvpBssProductCode, realtimeComputeVvpBssProductType, realtimeComputeVvpBssProductCode, realtimeComputeVvpBssProductTypeIntl)
+		if err != nil && !errs.NotFoundError(err) {
+			return errs.WrapError(err)
 		}
 		d.Set("renew_status", renewRaw["RenewStatus"])
 		d.Set("auto_renew_duration", renewRaw["RenewalDuration"])
@@ -372,7 +376,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	objectDataLocalMap := make(map[string]interface{})
 	if d.HasChange("resource_spec") {
 		update = true
-		if v := d.Get("resource_spec"); !IsNil(v) {
+		if v := d.Get("resource_spec"); !helper.IsNil(v) {
 			resourceSpec := make(map[string]interface{})
 			nodeNative, _ := jsonpath.Get("$[0].cpu", v)
 			if nodeNative != "" {
@@ -391,27 +395,27 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	objectDataLocalMap["Region"] = client.RegionId
 	request["ModifyPrepayInstanceSpecRequest"] = objectDataLocalMap
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "ClusterStatus", []string{}))
+		realtimeComputeServiceV2 := Service{client}
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "ClusterStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -426,38 +430,38 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
+		realtimeComputeServiceV2 := Service{client}
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("tags") {
-		realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+		realtimeComputeServiceV2 := Service{client}
 		if err := realtimeComputeServiceV2.SetResourceTags(d, "vvpinstance"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	if err := setRealtimeComputeVvpInstanceRenewal(d, meta); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Partial(false)
 	return resourceAliCloudRealtimeComputeVvpInstanceRead(d, meta)
@@ -467,7 +471,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceDelete(d *schema.ResourceData, me
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v == "Subscription" {
-			return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+			return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 		}
 	}
 	client := meta.(*connectivity.AliyunClient)
@@ -480,29 +484,29 @@ func resourceAliCloudRealtimeComputeVvpInstanceDelete(d *schema.ResourceData, me
 	request["DeleteInstanceRequest.InstanceId"] = d.Id()
 	request["DeleteInstanceRequest.Region"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("foasconsole", "2019-06-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 9*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
+	realtimeComputeServiceV2 := Service{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 9*time.Minute, realtimeComputeServiceV2.RealtimeComputeVvpInstanceStateRefreshFunc(d.Id(), "InstanceId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
@@ -551,16 +555,16 @@ func setRealtimeComputeVvpInstanceRenewal(d *schema.ResourceData, meta interface
 	}
 	var response map[string]interface{}
 	var endpoint string
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err := retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		var err error
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = realtimeComputeVvpBssProductTypeIntl
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
@@ -569,9 +573,9 @@ func setRealtimeComputeVvpInstanceRenewal(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
