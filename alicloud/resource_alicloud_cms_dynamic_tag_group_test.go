@@ -22,6 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// collection-order: bypass contact_group_list -- pre-existing ForceNew TypeList not touched by this change; member-order coverage is an outstanding stock debt, not verified or resolved by this PR
+// collection-order: bypass template_id_list -- pre-existing ForceNew TypeList not touched by this change; member-order coverage is an outstanding stock debt, not verified or resolved by this PR
+
 func init() {
 	resource.AddTestSweepers(
 		"alicloud_cms_dynamic_tag_group",
