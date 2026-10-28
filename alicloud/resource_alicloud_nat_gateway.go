@@ -599,10 +599,17 @@ func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "IncorrectStatus.NatGateway", "InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
+		switch {
+		case IsExpectedErrors(err, []string{"IncorrectStatus.NatGateway"}):
+			// The gateway is being deleted. Fall through to the state waiter so
+			// deletion is confirmed to complete before reporting success, instead
+			// of returning early and racing dependent resources.
+		case IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}):
+			// The gateway no longer exists; deletion is idempotently complete.
 			return nil
+		default:
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))

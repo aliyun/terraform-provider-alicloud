@@ -4,15 +4,24 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -814,4 +823,118 @@ func AliCloudNatGatewayBasicDependence1(name string) string {
 		vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 	}
 `, name)
+}
+
+// TestUnitAliCloudNatGatewayDelete covers the delete error-branch routing that
+// acceptance tests cannot reproduce: the IncorrectStatus.NatGateway race where
+// DeleteNatGateway reports the gateway is already being deleted. The fix keeps
+// idempotent success for not-found errors but falls through to the state waiter
+// for IncorrectStatus.NatGateway so deletion is confirmed before reporting done.
+//
+// A no-credentials connectivity.AliyunClient is built locally so the test runs
+// (rather than skips) in CI envs without ALICLOUD_ACCESS_KEY: Config.Client with
+// SkipRegionValidation, a dummy StaticAK credential and a pre-populated "vpc"
+// endpoint cache initializes client.config without any network call, so the
+// inlined GetRetryTimeout and rpcRequest do not panic. The tea-rpc client.DoRequest
+// is stubbed to inject the DeleteNatGateway error under test and to answer the
+// waiter's DescribeNatGateways poll with a not-found error, driving the real
+// NatGatewayStateRefreshFunc into its production (nil, "", nil) NotFound idiom so the
+// empty-Target waiter confirms disappearance; reachability of the waiter is observed
+// through that DescribeNatGateways call rather than by stubbing the refresh itself
+// (which Go 1.25 inlines and cannot be patched).
+func TestUnitAliCloudNatGatewayDelete(t *testing.T) {
+	endpoints := sharedEndpointCacheForRegion("cn-hangzhou")
+	endpoints.Store("vpc", "vpc.cn-hangzhou.aliyuncs.com")
+	conf := &connectivity.Config{
+		Region:               connectivity.Region("cn-hangzhou"),
+		RegionId:             "cn-hangzhou",
+		AccessKey:            "dummy-access-key",
+		SecretKey:            "dummy-secret-key",
+		Protocol:             "HTTPS",
+		Endpoints:            endpoints,
+		SignVersion:          &signVersion,
+		SkipRegionValidation: true,
+		AccountType:          "Domestic",
+	}
+	cred, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId(conf.AccessKey).
+		SetAccessKeySecret(conf.SecretKey))
+	if err != nil {
+		t.Fatalf("failed to build dummy credential: %s", err)
+	}
+	conf.Credential = cred
+	aliClient, err := conf.Client()
+	if err != nil {
+		t.Fatalf("failed to build dummy client: %s", err)
+	}
+
+	p := Provider().ResourcesMap
+	newData := func() *schema.ResourceData {
+		d, _ := schema.InternalMap(p["alicloud_nat_gateway"].Schema).Data(nil, nil)
+		d.SetId("ngw-mock-id")
+		return d
+	}
+
+	sdkErr := func(code string) error {
+		return &tea.SDKError{
+			Code:       tea.String(code),
+			Data:       tea.String(code),
+			Message:    tea.String(code),
+			StatusCode: tea.Int(400),
+		}
+	}
+
+	cases := []struct {
+		name     string
+		resp     map[string]interface{}
+		err      error
+		wantErr  bool
+		wantWait bool
+	}{
+		{"DeleteSucceedsAndWaitsForConfirmation", map[string]interface{}{}, nil, false, true},
+		{"IncorrectStatusFallsThroughToWaiter", nil, sdkErr("IncorrectStatus.NatGateway"), false, true},
+		{"InvalidNatGatewayIdNotFoundIsIdempotent", nil, sdkErr("InvalidNatGatewayId.NotFound"), false, false},
+		{"InstanceNotExistsIsIdempotent", nil, sdkErr("INSTANCE_NOT_EXISTS"), false, false},
+		{"InvalidRegionIdNotFoundIsIdempotent", nil, sdkErr("InvalidRegionId.NotFound"), false, false},
+		{"UnexpectedErrorIsWrappedNotWaited", nil, sdkErr("Forbidden.RAM"), true, false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := newData()
+			var describeCalled int32
+
+			// The real VpcService.NatGatewayStateRefreshFunc runs unchanged; reachability
+			// of the state waiter is observed through the DescribeNatGateways poll it
+			// issues. Returning a not-found error there drives the refresh into its
+			// production (nil, "", nil) NotFound idiom, which the empty-Target waiter
+			// treats as "gone" and succeeds — so the delete reports done only after the
+			// waiter confirms disappearance, exactly as on the live API.
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest",
+				func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+					if action != nil {
+						switch *action {
+						case "DeleteNatGateway":
+							return tc.resp, tc.err
+						case "DescribeNatGateways":
+							atomic.AddInt32(&describeCalled, 1)
+							return nil, sdkErr("InvalidNatGatewayId.NotFound")
+						}
+					}
+					return nil, nil
+				})
+			defer patches.Reset()
+
+			err := resourceAliCloudNatGatewayDelete(d, aliClient)
+
+			if tc.wantErr {
+				assert.NotNil(t, err, "expected the delete error to be surfaced")
+			} else {
+				assert.Nil(t, err, "expected the delete to succeed")
+			}
+			assert.Equal(t, tc.wantWait, atomic.LoadInt32(&describeCalled) > 0,
+				"waiter reachability mismatch for %s", tc.name)
+		})
+	}
 }
