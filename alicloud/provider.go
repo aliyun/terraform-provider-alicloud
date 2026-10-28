@@ -944,22 +944,6 @@ func Provider() *schema.Provider {
 			"alicloud_ots_search_indexes":       dataSourceAlicloudOtsSearchIndexes(),
 
 			// polardb
-			"alicloud_polardb_clusters":                    dataSourceAlicloudPolarDBClusters(),
-			"alicloud_polardb_endpoints":                   dataSourceAlicloudPolarDBEndpoints(),
-			"alicloud_polardb_accounts":                    dataSourceAlicloudPolarDBAccounts(),
-			"alicloud_polardb_databases":                   dataSourceAlicloudPolarDBDatabases(),
-			"alicloud_polardb_zones":                       dataSourceAlicloudPolarDBZones(),
-			"alicloud_polardb_gateway_model_services":      dataSourceAlicloudPolarDBGatewayModelServices(),
-			"alicloud_polardb_gateway_model_apis":          dataSourceAlicloudPolarDBGatewayModelAPIs(),
-			"alicloud_polardb_gateway_cost_rules":          dataSourceAlicloudPolarDBGatewayCostRules(),
-			"alicloud_polardb_gateway_consumer_groups":     dataSourceAlicloudPolarDBGatewayConsumerGroups(),
-			"alicloud_polardb_gateway_consumers":           dataSourceAlicloudPolarDBGatewayConsumers(),
-			"alicloud_polardb_gateway_budget_policies":     dataSourceAlicloudPolarDBGatewayBudgetPolicies(),
-			"alicloud_polardb_gateway_rate_limit_policies": dataSourceAlicloudPolarDBGatewayRateLimitPolicies(),
-			"alicloud_polardb_global_database_networks":    dataSourceAlicloudPolarDBGlobalDatabaseNetworks(),
-			"alicloud_polardb_parameter_groups":            dataSourceAlicloudPolarDBParameterGroups(),
-			"alicloud_polardb_polar_fs_instances":          dataSourceAlicloudPolarDBPolarFsInstances(),
-			"alicloud_polardb_lakebase_tenant_token":       dataSourceAlicloudPolarDBLakebaseTenantToken(),
 
 			// privatelink
 			"alicloud_privatelink_service":                        dataSourceAliCloudPrivateLinkService(),
@@ -2307,40 +2291,8 @@ func Provider() *schema.Provider {
 			"alicloud_pai_workspace_workspace":      resourceAliCloudPaiWorkspaceWorkspace(),
 
 			// polar
-			"alicloud_polar_db_extension": resourceAliCloudPolarDbExtension(),
 
 			// polardb
-			"alicloud_polardb_global_security_ip_group":  resourceAliCloudPolardbGlobalSecurityIpGroup(),
-			"alicloud_polardb_cluster":                   resourceAlicloudPolarDBCluster(),
-			"alicloud_polardb_cluster_endpoint":          resourceAlicloudPolarDBClusterEndpoint(),
-			"alicloud_polardb_backup_policy":             resourceAlicloudPolarDBBackupPolicy(),
-			"alicloud_polardb_database":                  resourceAliCloudPolarDbDatabase(),
-			"alicloud_polardb_account":                   resourceAliCloudPolarDbAccount(),
-			"alicloud_polardb_account_privilege":         resourceAlicloudPolarDBAccountPrivilege(),
-			"alicloud_polardb_endpoint":                  resourceAlicloudPolarDBEndpoint(),
-			"alicloud_polardb_dynamo_table":              resourceAlicloudPolarDBDynamoTable(),
-			"alicloud_polardb_dynamo_item":               resourceAlicloudPolarDBDynamoItem(),
-			"alicloud_polardb_endpoint_address":          resourceAlicloudPolarDBEndpointAddress(),
-			"alicloud_polardb_primary_endpoint":          resourceAlicloudPolarDBPrimaryEndpoint(),
-			"alicloud_polardb_application":               resourceAlicloudPolarDBApplication(),
-			"alicloud_polardb_application_endpoint":      resourceAlicloudPolarDBApplicationEndpoint(),
-			"alicloud_polardb_batch_task":                resourceAlicloudPolarDBBatchTask(),
-			"alicloud_polardb_aicluster":                 resourceAlicloudPolarDBAICluster(),
-			"alicloud_polardb_gateway":                   resourceAlicloudPolarDBGateway(),
-			"alicloud_polardb_polar_fs":                  resourceAlicloudPolarDBPolarFs(),
-			"alicloud_polardb_polar_fs_endpoint":         resourceAlicloudPolarDBPolarFsEndpoint(),
-			"alicloud_polardb_gateway_model_service":     resourceAlicloudPolarDBGatewayModelService(),
-			"alicloud_polardb_gateway_model_api":         resourceAlicloudPolarDBGatewayModelAPI(),
-			"alicloud_polardb_gateway_cost_rule":         resourceAlicloudPolarDBGatewayCostRule(),
-			"alicloud_polardb_gateway_consumer_group":    resourceAlicloudPolarDBGatewayConsumerGroup(),
-			"alicloud_polardb_gateway_consumer":          resourceAlicloudPolarDBGatewayConsumer(),
-			"alicloud_polardb_gateway_budget_policy":     resourceAlicloudPolarDBGatewayBudgetPolicy(),
-			"alicloud_polardb_gateway_rate_limit_policy": resourceAlicloudPolarDBGatewayRateLimitPolicy(),
-			"alicloud_polardb_global_database_network":   resourceAlicloudPolarDBGlobalDatabaseNetwork(),
-			"alicloud_polardb_parameter_group":           resourceAliCloudPolarDbParameterGroup(),
-			"alicloud_polardb_zonal_db_cluster":          resourceAliCloudPolarDbZonalCluster(),
-			"alicloud_polardb_zonal_endpoint":            resourceAlicloudPolarDBZonalEndpoint(),
-			"alicloud_polardb_zonal_account":             resourceAlicloudPolarDBZonalAccount(),
 
 			// privatelink
 			"alicloud_privatelink_vpc_endpoint_service":          resourceAliCloudPrivateLinkVpcEndpointService(),
