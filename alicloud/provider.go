@@ -1938,9 +1938,6 @@ func Provider() *schema.Provider {
 			"alicloud_fc_function_async_invoke_config": resourceAlicloudFCFunctionAsyncInvokeConfig(),
 			"alicloud_fc_layer_version":                resourceAlicloudFcLayerVersion(),
 
-			// fcv2
-			"alicloud_fcv2_function": resourceAliCloudFcv2Function(),
-
 			// fcv3
 			"alicloud_fcv3_vpc_binding":         resourceAliCloudFcv3VpcBinding(),
 			"alicloud_fcv3_layer_version":       resourceAliCloudFcv3LayerVersion(),

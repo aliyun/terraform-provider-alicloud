@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv2
 
 import (
 	"encoding/json"
@@ -11,11 +11,14 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv2Function() *schema.Resource {
+func ResourceFcv2Function() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudFcv2FunctionCreate,
 		Read:   resourceAliCloudFcv2FunctionRead,
@@ -343,7 +346,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("timeout"); ok {
 		objectDataLocalMap["timeout"] = v
 	}
-	if v := d.Get("code"); !IsNil(v) {
+	if v := d.Get("code"); !helper.IsNil(v) {
 		code := make(map[string]interface{})
 		nodeNative8, _ := jsonpath.Get("$[0].oss_bucket_name", v)
 		if nodeNative8 != "" {
@@ -359,7 +362,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 		}
 		objectDataLocalMap["code"] = code
 	}
-	if v := d.Get("custom_container_config"); !IsNil(v) {
+	if v := d.Get("custom_container_config"); !helper.IsNil(v) {
 		customContainerConfig := make(map[string]interface{})
 		nodeNative11, _ := jsonpath.Get("$[0].args", v)
 		if nodeNative11 != "" {
@@ -392,7 +395,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("instance_type"); ok {
 		objectDataLocalMap["instanceType"] = v
 	}
-	if v := d.Get("custom_health_check_config"); !IsNil(v) {
+	if v := d.Get("custom_health_check_config"); !helper.IsNil(v) {
 		customHealthCheckConfig := make(map[string]interface{})
 		nodeNative19, _ := jsonpath.Get("$[0].http_get_url", v)
 		if nodeNative19 != "" {
@@ -437,7 +440,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 			objectDataLocalMap["layers"] = nodeNative28
 		}
 	}
-	if v := d.Get("custom_runtime_config"); !IsNil(v) {
+	if v := d.Get("custom_runtime_config"); !helper.IsNil(v) {
 		customRuntimeConfig := make(map[string]interface{})
 		nodeNative29, _ := jsonpath.Get("$[0].command", v)
 		if nodeNative29 != "" {
@@ -449,12 +452,12 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 		}
 		objectDataLocalMap["customRuntimeConfig"] = customRuntimeConfig
 	}
-	if v := d.Get("custom_dns"); !IsNil(v) {
+	if v := d.Get("custom_dns"); !helper.IsNil(v) {
 		customDNS := make(map[string]interface{})
 		if v, ok := d.GetOk("custom_dns"); ok {
 			localData, err := jsonpath.Get("$[0].dns_options", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps := make([]map[string]interface{}, 0)
 			for _, dataLoop := range localData.([]interface{}) {
@@ -479,7 +482,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("environment_variables"); ok {
 		objectDataLocalMap["environmentVariables"] = v
 	}
-	if v := d.Get("instance_lifecycle_config"); !IsNil(v) {
+	if v := d.Get("instance_lifecycle_config"); !helper.IsNil(v) {
 		instanceLifecycleConfig := make(map[string]interface{})
 		preFreeze := make(map[string]interface{})
 		nodeNative36, _ := jsonpath.Get("$[0].pre_freeze[0].handler", v)
@@ -508,24 +511,24 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	body = objectDataLocalMap
 	headerParams := make(map[string]*string)
 	b, err := json.Marshal(body)
-	headerParams["content-md5"] = tea.String(MD5(b))
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	headerParams["content-md5"] = tea.String(helper.MD5(b))
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC-Open", "2021-04-06", action, query, headerParams, body, false)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv2_function", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv2_function", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", serviceName, objectDataLocalMap["functionName"]))
@@ -535,16 +538,16 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 
 func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv2ServiceV2 := Fcv2ServiceV2{client}
+	fcv2Service := NewService(client)
 
-	objectRaw, err := fcv2ServiceV2.DescribeFcv2Function(d.Id())
+	objectRaw, err := fcv2Service.DescribeFcv2Function(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_fcv2_function DescribeFcv2Function Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("ca_port", objectRaw["caPort"])
@@ -709,7 +712,7 @@ func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("service_name", parts[0])
 	if accountId, err := client.AccountId(); err != nil {
-		log.Print(WrapError(err))
+		log.Print(errs.WrapError(err))
 	} else {
 		d.Set("function_arn", fmt.Sprintf("acs:fc:%s:%s:services/%s.LATEST/functions/%s", client.RegionId, accountId, parts[0], parts[1]))
 	}
@@ -777,7 +780,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("code") {
 		update = true
-		if v := d.Get("code"); !IsNil(v) {
+		if v := d.Get("code"); !helper.IsNil(v) {
 			code := make(map[string]interface{})
 			nodeNative7, _ := jsonpath.Get("$[0].oss_bucket_name", v)
 			if nodeNative7 != "" {
@@ -796,7 +799,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("custom_container_config") {
 		update = true
-		if v := d.Get("custom_container_config"); !IsNil(v) {
+		if v := d.Get("custom_container_config"); !helper.IsNil(v) {
 			customContainerConfig := make(map[string]interface{})
 			nodeNative10, _ := jsonpath.Get("$[0].args", v)
 			if nodeNative10 != "" {
@@ -841,7 +844,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("custom_health_check_config") {
 		update = true
-		if v := d.Get("custom_health_check_config"); !IsNil(v) {
+		if v := d.Get("custom_health_check_config"); !helper.IsNil(v) {
 			customHealthCheckConfig := make(map[string]interface{})
 			nodeNative18, _ := jsonpath.Get("$[0].http_get_url", v)
 			if nodeNative18 != "" {
@@ -896,7 +899,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("custom_dns") {
 		update = true
-		if v := d.Get("custom_dns"); !IsNil(v) {
+		if v := d.Get("custom_dns"); !helper.IsNil(v) {
 			customDNS := make(map[string]interface{})
 			nodeNative28, _ := jsonpath.Get("$[0].name_servers", v)
 			if nodeNative28 != "" {
@@ -905,7 +908,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 			if v, ok := d.GetOk("custom_dns"); ok {
 				localData, err := jsonpath.Get("$[0].dns_options", v)
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 				localMaps := make([]map[string]interface{}, 0)
 				for _, dataLoop := range localData.([]interface{}) {
@@ -926,7 +929,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("custom_runtime_config") {
 		update = true
-		if v := d.Get("custom_runtime_config"); !IsNil(v) {
+		if v := d.Get("custom_runtime_config"); !helper.IsNil(v) {
 			customRuntimeConfig := make(map[string]interface{})
 			nodeNative32, _ := jsonpath.Get("$[0].command", v)
 			if nodeNative32 != "" {
@@ -945,7 +948,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("instance_lifecycle_config") {
 		update = true
-		if v := d.Get("instance_lifecycle_config"); !IsNil(v) {
+		if v := d.Get("instance_lifecycle_config"); !helper.IsNil(v) {
 			instanceLifecycleConfig := make(map[string]interface{})
 			preStop := make(map[string]interface{})
 			nodeNative35, _ := jsonpath.Get("$[0].pre_stop[0].handler", v)
@@ -979,24 +982,24 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	body = objectDataLocalMap
 	headerParams := make(map[string]*string)
 	b, err := json.Marshal(body)
-	headerParams["content-md5"] = tea.String(MD5(b))
+	headerParams["content-md5"] = tea.String(helper.MD5(b))
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC-Open", "2021-04-06", action, query, headerParams, body, false)
 
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1016,23 +1019,23 @@ func resourceAliCloudFcv2FunctionDelete(d *schema.ResourceData, meta interface{}
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC-Open", "2021-04-06", action, query, nil, nil, false)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
