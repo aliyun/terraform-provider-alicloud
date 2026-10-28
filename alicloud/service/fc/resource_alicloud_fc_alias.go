@@ -1,4 +1,4 @@
-package alicloud
+package fc
 
 import (
 	"fmt"
@@ -7,6 +7,9 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -88,20 +91,20 @@ func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) err
 			return fcClient.CreateAlias(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return retry.RetryableError(WrapError(err))
+			if errs.IsExpectedErrors(err, []string{"AccessDenied"}) {
+				return retry.RetryableError(errs.WrapError(err))
 			}
-			return retry.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(errs.WrapError(err))
 		}
-		addDebug("CreateAlias", raw, requestInfo, request)
+		logs.AddDebug("CreateAlias", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateAliasOutput)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_alias", "CreateAlias", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_alias", "CreateAlias", errs.FcGoSdk)
 	}
 
 	if response == nil {
-		return WrapError(Error("Creating function compute alias got an empty response"))
+		return errs.WrapError(Error("Creating function compute alias got an empty response"))
 	}
 
 	d.SetId(fmt.Sprintf("%s:%s", serviceName, *response.AliasName))
@@ -111,21 +114,21 @@ func resourceAlicloudFCAliasCreate(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudFCAliasRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 
 	id := d.Id()
 	response, err := fcService.DescribeFcAlias(id)
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_fc_alias fcService.DescribeFcAlias Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	serviceName := parts[0]
 	d.Set("service_name", serviceName)
@@ -143,7 +146,7 @@ func resourceAlicloudFCAliasRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudFCAliasUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return err
 	}
@@ -178,9 +181,9 @@ func resourceAlicloudFCAliasUpdate(d *schema.ResourceData, meta interface{}) err
 			return fcClient.UpdateAlias(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateAlias", FcGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateAlias", errs.FcGoSdk)
 		}
-		addDebug("UpdateAlias", raw, requestInfo, request)
+		logs.AddDebug("UpdateAlias", raw, requestInfo, request)
 	}
 
 	return resourceAlicloudFCAliasRead(d, meta)
@@ -189,7 +192,7 @@ func resourceAlicloudFCAliasUpdate(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudFCAliasDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return err
 	}
@@ -203,12 +206,12 @@ func resourceAlicloudFCAliasDelete(d *schema.ResourceData, meta interface{}) err
 		return fcClient.DeleteAlias(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AliasNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"AliasNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteAlias", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteAlias", errs.FcGoSdk)
 	}
-	addDebug("DeleteCustomDomain", raw, requestInfo, request)
+	logs.AddDebug("DeleteCustomDomain", raw, requestInfo, request)
 	return nil
 }
 

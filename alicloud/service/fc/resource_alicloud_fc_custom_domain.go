@@ -1,4 +1,4 @@
-package alicloud
+package fc
 
 import (
 	"encoding/json"
@@ -7,6 +7,8 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -124,21 +126,21 @@ func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface
 			return fcClient.CreateCustomDomain(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return retry.RetryableError(WrapError(err))
+			if errs.IsExpectedErrors(err, []string{"AccessDenied"}) {
+				return retry.RetryableError(errs.WrapError(err))
 			}
-			return retry.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(errs.WrapError(err))
 		}
-		addDebug("CreateCusomDomain", raw, requestInfo, request)
+		logs.AddDebug("CreateCusomDomain", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateCustomDomainOutput)
 		return nil
 
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_custom_domain", "CreateCustomDomain", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_custom_domain", "CreateCustomDomain", errs.FcGoSdk)
 	}
 
 	if response == nil {
-		return WrapError(Error("Creating function compute custom domain got a empty response"))
+		return errs.WrapError(Error("Creating function compute custom domain got a empty response"))
 	}
 
 	d.SetId(*response.DomainName)
@@ -148,16 +150,16 @@ func resourceAlicloudFCCustomDomainCreate(d *schema.ResourceData, meta interface
 
 func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 
 	object, err := fcService.DescribeFcCustomDomain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_fc_custom_domain fcService.DescribeFcCustomDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("domain_name", object.DomainName)
@@ -180,7 +182,7 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 	if err := d.Set("route_config", routeConfig); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	var certConfig []map[string]interface{}
@@ -202,11 +204,11 @@ func resourceAlicloudFCCustomDomainRead(d *schema.ResourceData, meta interface{}
 			// Skip the null cert config.
 		} else {
 			b, _ := json.Marshal(object)
-			return WrapError(Error("Illegal cert config: %s", string(b)))
+			return errs.WrapError(Error("Illegal cert config: %s", string(b)))
 		}
 	}
 	if err := d.Set("cert_config", certConfig); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
@@ -241,9 +243,9 @@ func resourceAlicloudFCCustomDomainUpdate(d *schema.ResourceData, meta interface
 			return fcClient.UpdateCustomDomain(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateCustomDomain", FcGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateCustomDomain", errs.FcGoSdk)
 		}
-		addDebug("UpdateCustomDomain", raw, requestInfo, request)
+		logs.AddDebug("UpdateCustomDomain", raw, requestInfo, request)
 	}
 
 	return resourceAlicloudFCCustomDomainRead(d, meta)
@@ -251,7 +253,7 @@ func resourceAlicloudFCCustomDomainUpdate(d *schema.ResourceData, meta interface
 
 func resourceAlicloudFCCustomDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 	domainName := d.Id()
 	request := fc.NewDeleteCustomDomainInput(domainName)
 	var requestInfo *fc.Client
@@ -260,13 +262,13 @@ func resourceAlicloudFCCustomDomainDelete(d *schema.ResourceData, meta interface
 		return fcClient.DeleteCustomDomain(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNameNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"DomainNameNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, domainName, "DeleteCustomDomain", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, domainName, "DeleteCustomDomain", errs.FcGoSdk)
 	}
-	addDebug("DeleteCustomDomain", raw, requestInfo, request)
-	return WrapError(fcService.WaitForFcCustomDomain(domainName, Deleted, DefaultTimeout))
+	logs.AddDebug("DeleteCustomDomain", raw, requestInfo, request)
+	return errs.WrapError(fcService.WaitForFcCustomDomain(domainName, Deleted, DefaultTimeout))
 }
 
 func parseRouteConfig(d *schema.ResourceData) (config *fc.RouteConfig) {

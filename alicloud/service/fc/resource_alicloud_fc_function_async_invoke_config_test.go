@@ -1,24 +1,26 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
+	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
+	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"log"
 	"os"
 	"strings"
 	"testing"
 	"time"
-
-	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
-	"github.com/aliyun/fc-go-sdk"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 var gNamePrefix string
 
 func init() {
-	gNamePrefix = fmt.Sprintf("tf-testacc%salicloudfcasyncinvoke", defaultRegionToTest)
+	gNamePrefix = fmt.Sprintf("tf-testacc%salicloudfcasyncinvoke", acctest.DefaultRegionToTest)
 	resource.AddTestSweepers("alicloud_fc_function_async_invoke_config", &resource.Sweeper{
 		Name: "alicloud_fc_function_async_invoke_config",
 		F:    testSweepFCFunctionAsyncInvokeConfig,
@@ -30,11 +32,11 @@ func init() {
 }
 
 func testSweepFCFunctionAsyncInvokeConfig(region string) error {
-	if testSweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
 		log.Printf("[INFO] Skipping Function Compute unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -206,26 +208,26 @@ func testSweepFCFunctionAsyncInvokeConfig(region string) error {
 
 func TestAccAlicloudFCFunctionAsyncInvokeConfigUpdate(t *testing.T) {
 	var v *fc.GetFunctionAsyncInvokeConfigOutput
-	rand := acctest.RandIntRange(10000, 999999)
+	rand := tfacctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("%s-%d", gNamePrefix, rand)
 	var basicMap = map[string]string{
-		"created_time":       CHECKSET,
-		"last_modified_time": CHECKSET,
+		"created_time":       acctest.CHECKSET,
+		"last_modified_time": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_function_async_invoke_config.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -301,26 +303,26 @@ func TestAccAlicloudFCFunctionAsyncInvokeConfigUpdate(t *testing.T) {
 
 func TestAccAlicloudFCFunctionAsyncInvokeStatefulInvocationUpdate(t *testing.T) {
 	var v *fc.GetFunctionAsyncInvokeConfigOutput
-	rand := acctest.RandIntRange(10000, 999999)
+	rand := tfacctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("%s-%d", gNamePrefix, rand)
 	var basicMap = map[string]string{
-		"created_time":       CHECKSET,
-		"last_modified_time": CHECKSET,
+		"created_time":       acctest.CHECKSET,
+		"last_modified_time": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_function_async_invoke_config.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

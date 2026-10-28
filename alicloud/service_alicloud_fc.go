@@ -13,6 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// Migrated to alicloud/service/fc.Service. This root copy is retained for
+// in-package root test consumers (e.g. provider_test.go TestAccAlicloudProviderFC)
+// that cannot import the product subpackage without a cycle.
 type FcService struct {
 	client *connectivity.AliyunClient
 }

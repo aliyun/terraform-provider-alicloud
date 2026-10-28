@@ -1,10 +1,12 @@
-package alicloud
+package fc
 
 import (
 	"regexp"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -119,9 +121,9 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 			return fcClient.ListTriggers(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", FcGoSdk)
+			return errs.WrapErrorf(err, DataDefaultErrorMsg, "alicloud_fc_triggers", "ListTriggers", errs.FcGoSdk)
 		}
-		addDebug("ListTriggers", raw, requestInfo, request)
+		logs.AddDebug("ListTriggers", raw, requestInfo, request)
 		response, _ := raw.(*fc.ListTriggersOutput)
 
 		if len(response.Triggers) < 1 {
@@ -153,7 +155,7 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 				if nameRegex != "" {
 					r, err = regexp.Compile(nameRegex.(string))
 					if err != nil {
-						return WrapError(err)
+						return errs.WrapError(err)
 					}
 				}
 				if r != nil && !r.MatchString(mapping["name"].(string)) {
@@ -181,13 +183,13 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("triggers", triggerMappings); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.

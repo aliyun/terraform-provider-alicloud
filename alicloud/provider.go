@@ -699,12 +699,6 @@ func Provider() *schema.Provider {
 			"alicloud_express_connect_router_interfaces":              dataSourceAlicloudExpressConnectRouterInterfaces(),
 
 			// fc
-			"alicloud_fc_functions":      dataSourceAlicloudFcFunctions(),
-			"alicloud_fc_services":       dataSourceAlicloudFcServices(),
-			"alicloud_fc_triggers":       dataSourceAlicloudFcTriggers(),
-			"alicloud_fc_custom_domains": dataSourceAlicloudFcCustomDomains(),
-			"alicloud_fc_zones":          dataSourceAlicloudFcZones(),
-			"alicloud_fc_service":        dataSourceAlicloudFcService(),
 
 			// fcv3
 			"alicloud_fcv3_functions": dataSourceAliCloudFcv3Functions(),
@@ -1962,13 +1956,6 @@ func Provider() *schema.Provider {
 			"alicloud_express_connect_router_interface":              resourceAliCloudExpressConnectRouterInterface(),
 
 			// fc
-			"alicloud_fc_service":                      resourceAlicloudFCService(),
-			"alicloud_fc_function":                     resourceAlicloudFCFunction(),
-			"alicloud_fc_trigger":                      resourceAlicloudFCTrigger(),
-			"alicloud_fc_alias":                        resourceAlicloudFCAlias(),
-			"alicloud_fc_custom_domain":                resourceAlicloudFCCustomDomain(),
-			"alicloud_fc_function_async_invoke_config": resourceAlicloudFCFunctionAsyncInvokeConfig(),
-			"alicloud_fc_layer_version":                resourceAlicloudFcLayerVersion(),
 
 			// fcv2
 			"alicloud_fcv2_function": resourceAliCloudFcv2Function(),
