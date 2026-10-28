@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -510,4 +511,35 @@ func (s *Service) WaitForFcFunctionAsyncInvokeConfig(id string, status Status, t
 			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, id, errs.ProviderERROR)
 		}
 	}
+}
+
+// describeVSwitch mirrors root VpcService.DescribeVSwitch
+// (alicloud/service_alicloud_vpc.go) for FC vpc_config parsing. VpcService lives
+// in the root package and cannot be imported by the FC subpackage without a cycle,
+// so this local copy preserves the required vswitch lookup behavior 1:1.
+func describeVSwitch(client *connectivity.AliyunClient, id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+	request := vpc.CreateDescribeVSwitchAttributesRequest()
+	request.RegionId = client.RegionId
+	request.VSwitchId = id
+
+	invoker := helper.NewInvoker()
+	err = invoker.Run(func() error {
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVSwitchAttributes(request)
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
+				return errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
+			}
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
+		if response.VSwitchId != id {
+			return errs.WrapErrorf(errs.NotFoundErr("vswitch", id), errs.NotFoundMsg, errs.ProviderERROR)
+		}
+		v = *response
+		return nil
+	})
+	return
 }

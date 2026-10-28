@@ -313,8 +313,8 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("description", object.Description)
 	d.Set("internet_access", object.InternetAccess)
 	d.Set("role", object.Role)
-	if tags := object.Tags; tags != nil {
-		d.Set("tags", tags.TagsToMap(tags))
+	if t := object.Tags; t != nil {
+		d.Set("tags", tags.TagsToMap(t))
 	}
 	var logConfigs []map[string]interface{}
 	if logconfig := object.LogConfig; logconfig != nil && *logconfig.Project != "" {
@@ -585,7 +585,6 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 
 func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCConfig, err error) {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 	if v, ok := d.GetOk("vpc_config"); ok {
 
 		confs := v.([]interface{})
@@ -600,7 +599,7 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 		}
 		if conf != nil {
 			vswitchIds := conf["vswitch_ids"].(*schema.Set).List()
-			vsw, e := vpcService.DescribeVSwitch(vswitchIds[0].(string))
+			vsw, e := describeVSwitch(client, vswitchIds[0].(string))
 			if e != nil {
 				err = errs.WrapError(e)
 				return
