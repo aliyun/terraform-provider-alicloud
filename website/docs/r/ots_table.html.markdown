@@ -16,6 +16,8 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 
 -> **NOTE:** Available since v1.9.2.
 
+-> **NOTE:** The `primary_key.auto_increment` and `enable_local_txn` options are mutually exclusive; a table may enable one but not both. The auto-increment primary key must be of type `Integer`, cannot be the partition key (the first `primary_key`), and at most one primary key can be set to `auto_increment = true`.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -79,6 +81,36 @@ resource "alicloud_ots_table" "default" {
 }
 ```
 
+### Example Usage - Auto increment primary key
+
+```terraform
+variable "name" {
+  default = "tf-example"
+}
+
+resource "alicloud_ots_instance" "default" {
+  name        = "${var.name}"
+  description = var.name
+  accessed_by = "Any"
+}
+
+resource "alicloud_ots_table" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = "tf_example"
+  time_to_live  = -1
+  max_version   = 1
+  primary_key {
+    name = "pk1"
+    type = "Integer"
+  }
+  primary_key {
+    name           = "pk2"
+    type           = "Integer"
+    auto_increment = true
+  }
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_table&spm=docs.r.ots_table.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -88,15 +120,16 @@ The following arguments are supported:
 * `instance_name` - (Required, ForceNew) The name of the OTS instance in which table will located.
 * `table_name` - (Required, ForceNew) The table name of the OTS instance. If changed, a new table would be created.
 * `primary_key` - (Required, ForceNew) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of primary key. The number of `primary_key` should not be less than one and not be more than four. See [`primary_key`](#primary_key) below.
+* `enable_local_txn` - (Bool, Optional, ForceNew, Available since v2.2.0) Whether to enable local transaction for the table. Defaults to `false`. Local transaction and auto-increment primary key (`primary_key.auto_increment`) are mutually exclusive. Modifying this field forces a new resource; local transaction cannot be enabled on an existing table via Terraform.
 * `defined_column` - (Optional, Available since v1.187.0) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of defined column. The number of `defined_column` should not be more than 32. See [`defined_column`](#defined_column) below.
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 * `allow_update` - (Optional, Available since v1.224.0) Whether allow data update operations. Default value is true. Skipping the resource state refresh step may result in unnecessary execution plan when upgrading from an earlier version.
 * `deviation_cell_version_in_sec` - (Optional, Available in 1.42.0+) The max version offset of the table. The valid value is 1-9223372036854775807. Defaults to 86400.
-* `enable_sse` - (Optional, Available since v1.172.0) Whether enable OTS server side encryption. Default value is false.
-* `sse_key_type` - (Optional, Available since v1.172.0) The key type of OTS server side encryption. `SSE_KMS_SERVICE`, `SSE_BYOK` is allowed.
-* `sse_key_id` - (Optional, Available since v1.224.0) . The key ID of secret. `sse_key_id` is valid only when `sse_key_type` is set to `SSE_BYOK`.
-* `sse_role_arn` - (Optional, Available since v1.224.0) The arn of role that can access kms service. `sse_role_arn` is valid only when `sse_key_type` is set to `SSE_BYOK`.
+* `enable_sse` - (Optional, Available since v1.172.0) Whether enable OTS server side encryption. Default value is false. **Note: The parameter is immutable after resource creation.** Changing it after creation has no effect on the table; recreate the resource to change the SSE setting.
+* `sse_key_type` - (Optional, Available since v1.172.0) The key type of OTS server side encryption. `SSE_KMS_SERVICE`, `SSE_BYOK` is allowed. **Note: The parameter is immutable after resource creation.**
+* `sse_key_id` - (Optional, Available since v1.224.0) . The key ID of secret. `sse_key_id` is valid only when `sse_key_type` is set to `SSE_BYOK`. **Note: The parameter is immutable after resource creation.**
+* `sse_role_arn` - (Optional, Available since v1.224.0) The arn of role that can access kms service. `sse_role_arn` is valid only when `sse_key_type` is set to `SSE_BYOK`. **Note: The parameter is immutable after resource creation.**
 
 ### `defined_column`
 
@@ -109,6 +142,7 @@ The defined_column supports the following:
 The primary_key supports the following:
 * `name` - (Required, ForceNew) Name for primary key.
 * `type` - (Required, ForceNew) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
+* `auto_increment` - (Bool, Optional, ForceNew, Available since v2.2.0) Whether to enable auto increment for this primary key. Defaults to `false`. When set to `true`, `type` must be `Integer` and this primary key must not be the partition key (the first one). At most one primary key can be set to `auto_increment = true`. Auto-increment primary key and local transaction (`enable_local_txn`) are mutually exclusive.
 
 ## Attributes Reference
 

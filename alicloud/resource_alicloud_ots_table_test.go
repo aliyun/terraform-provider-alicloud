@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// collection-order: bypass defined_column -- pre-existing attribute outside this change
 func TestAccAliCloudOtsTable_basic(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
@@ -425,6 +426,295 @@ func TestAccAliCloudOtsTable_withTableByOKEncryption(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOtsTable_withAutoIncrementPrimaryKey(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+						{
+							"name":           "pk2",
+							"type":           "Integer",
+							"auto_increment": "true",
+						},
+					},
+					"time_to_live": "-1",
+					"max_version":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"primary_key.#":                 "2",
+						"primary_key.0.name":            "pk1",
+						"primary_key.0.type":            "Integer",
+						"primary_key.0.auto_increment":  "false",
+						"primary_key.1.name":            "pk2",
+						"primary_key.1.type":            "Integer",
+						"primary_key.1.auto_increment":  "true",
+						"time_to_live":                  "-1",
+						"max_version":                   "1",
+						"deviation_cell_version_in_sec": "86400",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_local_txn"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOtsTable_withLocalTxn(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"enable_local_txn": "true",
+					"time_to_live":     "-1",
+					"max_version":      "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_local_txn":              "true",
+						"primary_key.#":                 "1",
+						"primary_key.0.name":            "pk1",
+						"primary_key.0.type":            "Integer",
+						"primary_key.0.auto_increment":  "false",
+						"time_to_live":                  "-1",
+						"max_version":                   "1",
+						"deviation_cell_version_in_sec": "86400",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_local_txn"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOtsTable_withAllowUpdate(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"allow_update": "true",
+					"time_to_live": "-1",
+					"max_version":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_update":                  "true",
+						"primary_key.#":                 "1",
+						"primary_key.0.name":            "pk1",
+						"primary_key.0.type":            "Integer",
+						"primary_key.0.auto_increment":  "false",
+						"time_to_live":                  "-1",
+						"max_version":                   "1",
+						"deviation_cell_version_in_sec": "86400",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"allow_update": "false",
+					"time_to_live": "-1",
+					"max_version":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_update":                  "false",
+						"primary_key.#":                 "1",
+						"primary_key.0.name":            "pk1",
+						"primary_key.0.type":            "Integer",
+						"primary_key.0.auto_increment":  "false",
+						"time_to_live":                  "-1",
+						"max_version":                   "1",
+						"deviation_cell_version_in_sec": "86400",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_local_txn"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudOtsTable_primaryKeyOrder exercises the convergent reorder coverage
+// required for the configurable multi-member primary_key TypeList: apply two distinct
+// primary keys in one order, then apply the same members reordered. primary_key is
+// ForceNew, so the second step replaces the table; the OTS CreateTable API echoes the
+// submitted primary-key order (the first key is the partition key), so the post-apply
+// plan converges to empty. See scripts/collection-order/README.md.
+func TestAccAliCloudOtsTable_primaryKeyOrder(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+						{
+							"name": "pk2",
+							"type": "String",
+						},
+					},
+					"time_to_live": "-1",
+					"max_version":  "1",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk2",
+							"type": "String",
+						},
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"time_to_live": "-1",
+					"max_version":  "1",
+				}),
 			},
 		},
 	})
