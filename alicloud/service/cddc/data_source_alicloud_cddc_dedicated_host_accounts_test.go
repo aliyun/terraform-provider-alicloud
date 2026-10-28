@@ -1,50 +1,51 @@
-package alicloud
+package cddc_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudCddcDedicatedHostAccountsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_cddc_dedicated_host_account.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_cddc_dedicated_host_account.default.id}_fake"]`,
 		}),
 	}
-	dedicatedHostIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+	dedicatedHostIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"ids":               `["${alicloud_cddc_dedicated_host_account.default.id}"]`,
 			"dedicated_host_id": `"${alicloud_cddc_dedicated_host_account.default.dedicated_host_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"ids":               `["${alicloud_cddc_dedicated_host_account.default.id}"]`,
 			"dedicated_host_id": `"${alicloud_cddc_dedicated_host_account.default.dedicated_host_id}_fake"`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"name_regex": `"${alicloud_cddc_dedicated_host_account.default.account_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"name_regex": `"${alicloud_cddc_dedicated_host_account.default.account_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"ids":               `["${alicloud_cddc_dedicated_host_account.default.id}"]`,
 			"dedicated_host_id": `"${alicloud_cddc_dedicated_host_account.default.dedicated_host_id}"`,
 			"name_regex":        `"${alicloud_cddc_dedicated_host_account.default.account_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name, map[string]string{
 			"ids":               `["${alicloud_cddc_dedicated_host_account.default.id}_fake"]`,
 			"dedicated_host_id": `"${alicloud_cddc_dedicated_host_account.default.dedicated_host_id}_fake"`,
 			"name_regex":        `"${alicloud_cddc_dedicated_host_account.default.account_name}_fake"`,
@@ -55,9 +56,9 @@ func TestAccAlicloudCddcDedicatedHostAccountsDataSource(t *testing.T) {
 			"ids.#":                        "1",
 			"names.#":                      "1",
 			"accounts.#":                   "1",
-			"accounts.0.id":                CHECKSET,
+			"accounts.0.id":                acctest.CHECKSET,
 			"accounts.0.account_name":      name,
-			"accounts.0.dedicated_host_id": CHECKSET,
+			"accounts.0.dedicated_host_id": acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -66,17 +67,17 @@ func TestAccAlicloudCddcDedicatedHostAccountsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudCddcDedicatedHostAccountsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_cddc_dedicated_host_accounts.default",
-		existMapFunc: existAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc,
+	var alicloudCddcDedicatedHostAccountsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_cddc_dedicated_host_accounts.default",
+		ExistMapFunc: existAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudCddcDedicatedHostAccountsDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 	}
 
-	alicloudCddcDedicatedHostAccountsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, dedicatedHostIdConf, nameRegexConf, allConf)
+	alicloudCddcDedicatedHostAccountsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, dedicatedHostIdConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudCddcDedicatedHostAccountsDataSourceName(name string, attrMap map[string]string) string {
 	var pairs []string

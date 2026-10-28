@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"strconv"
@@ -6,14 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudCddcHostEcsLevelInfos() *schema.Resource {
+func DataSourceHostEcsLevelInfos() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCddcHostEcsLevelInfosRead,
+		Read: dataSourceHostEcsLevelInfosRead,
 		Schema: map[string]*schema.Schema{
 			"db_type": {
 				Type:         schema.TypeString,
@@ -66,7 +69,7 @@ func dataSourceAlicloudCddcHostEcsLevelInfos() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCddcHostEcsLevelInfosRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceHostEcsLevelInfosRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DescribeHostEcsLevelInfo"
 	request := make(map[string]interface{})
@@ -80,11 +83,11 @@ func dataSourceAlicloudCddcHostEcsLevelInfosRead(d *schema.ResourceData, meta in
 	var objects []map[string]interface{}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -92,13 +95,13 @@ func dataSourceAlicloudCddcHostEcsLevelInfosRead(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cddc_host_ecs_level_infos", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cddc_host_ecs_level_infos", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.HostEcsLevelInfos", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.HostEcsLevelInfos", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.HostEcsLevelInfos", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -120,10 +123,10 @@ func dataSourceAlicloudCddcHostEcsLevelInfosRead(d *schema.ResourceData, meta in
 	}
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 	if err := d.Set("infos", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

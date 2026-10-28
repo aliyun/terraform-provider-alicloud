@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -6,14 +6,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudCddcDedicatedHosts() *schema.Resource {
+func DataSourceDedicatedHosts() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCddcDedicatedHostsRead,
+		Read: dataSourceDedicatedHostsRead,
 		Schema: map[string]*schema.Schema{
 			"allocation_status": {
 				Type:         schema.TypeString,
@@ -44,7 +49,7 @@ func dataSourceAlicloudCddcDedicatedHosts() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"0", "1", "2", "3", "4", "5", "6", "7"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -191,7 +196,7 @@ func dataSourceAlicloudCddcDedicatedHosts() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedHostsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDedicatedHosts"
@@ -207,9 +212,9 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 		request["HostType"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
+		respJson, err := convert.ConvertMaptoJsonString(v.(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Tags"] = respJson
 	}
@@ -217,7 +222,7 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 		request["OrderId"] = v
 	}
 	request["PageNumbers"] = 1
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
@@ -236,11 +241,11 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -248,16 +253,16 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cddc_dedicated_hosts", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cddc_dedicated_hosts", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if _, ok := response["DedicatedHosts"]; !ok {
 			break
 		}
 		resp, err := jsonpath.Get("$.DedicatedHosts.DedicatedHosts", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DedicatedHosts.DedicatedHosts", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DedicatedHosts.DedicatedHosts", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -269,7 +274,7 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -300,7 +305,7 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 			"mem_allocation_ratio":    object["MemAllocationRatio"],
 			"memory_used":             object["MemoryUsed"],
 			"open_permission":         object["OpenPermission"],
-			"allocation_status":       convertCddcAllocationStatusResponse(object["AllocationStatus"].(string)),
+			"allocation_status":       convertAllocationStatusResponse(object["AllocationStatus"].(string)),
 			"status":                  object["HostStatus"],
 			"storage_used":            object["StorageUsed"],
 			"vswitch_id":              object["VSwitchId"],
@@ -313,31 +318,31 @@ func dataSourceAlicloudCddcDedicatedHostsRead(d *schema.ResourceData, meta inter
 			continue
 		}
 		id := fmt.Sprint(object["DedicatedHostGroupId"], ":", object["DedicatedHostId"])
-		cddcService := CddcService{client}
-		getResp, err := cddcService.DescribeCddcDedicatedHost(id)
+		cddcService := NewService(client)
+		getResp, err := cddcService.DescribeDedicatedHost(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["expired_time"] = getResp["ExpiredTime"]
 		getResp1, err := cddcService.ListTagResources(id, "DEDICATEDHOST")
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		mapping["tags"] = tagsToMap(getResp1)
+		mapping["tags"] = tags.TagsToMap(getResp1)
 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("hosts", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

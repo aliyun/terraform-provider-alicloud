@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -6,16 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
+func ResourceDedicatedHostGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCddcDedicatedHostGroupCreate,
-		Read:   resourceAlicloudCddcDedicatedHostGroupRead,
-		Update: resourceAlicloudCddcDedicatedHostGroupUpdate,
-		Delete: resourceAlicloudCddcDedicatedHostGroupDelete,
+		Create: resourceDedicatedHostGroupCreate,
+		Read:   resourceDedicatedHostGroupRead,
+		Update: resourceDedicatedHostGroupUpdate,
+		Delete: resourceDedicatedHostGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -25,13 +30,13 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Evenly", "Intensively"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Evenly", "Intensively"}, false),
 			},
 			"cpu_allocation_ratio": {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: IntBetween(100, 300),
+				ValidateFunc: validators.IntBetween(100, 300),
 			},
 			"dedicated_host_group_desc": {
 				Type:     schema.TypeString,
@@ -41,13 +46,13 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: IntBetween(100, 300),
+				ValidateFunc: validators.IntBetween(100, 300),
 			},
 			"engine": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Redis", "SQLServer", "MySQL", "PostgreSQL", "MongoDB", "alisql", "tair", "mssql"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Redis", "SQLServer", "MySQL", "PostgreSQL", "MongoDB", "alisql", "tair", "mssql"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Id() != "" && new == "SQLServer"
 				},
@@ -61,7 +66,7 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 100),
+				ValidateFunc: validators.IntBetween(0, 100),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -78,7 +83,7 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCddcDedicatedHostGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDedicatedHostGroup"
@@ -94,12 +99,12 @@ func resourceAlicloudCddcDedicatedHostGroupCreate(d *schema.ResourceData, meta i
 		request["DedicatedHostGroupDesc"] = v
 	}
 	if v, ok := d.GetOk("open_permission"); ok {
-		request["OpenPermission"] = convertCddcDedicatedHostGroupOpenPermissionRequest(v.(bool))
+		request["OpenPermission"] = convertDedicatedHostGroupOpenPermissionRequest(v.(bool))
 	}
 	request["Engine"] = d.Get("engine")
 	if v, ok := d.GetOk("disk_allocation_ratio"); ok {
 		//if d.Get("engine").(string) == "SQLServer" && v.(int) > 100 {
-		//	return WrapError(fmt.Errorf("disk_allocation_ratio needs to be less than 100 under the SQLServer"))
+		//	return errs.WrapError(fmt.Errorf("disk_allocation_ratio needs to be less than 100 under the SQLServer"))
 		//}
 		request["DiskAllocationRatio"] = v
 	}
@@ -111,12 +116,12 @@ func resourceAlicloudCddcDedicatedHostGroupCreate(d *schema.ResourceData, meta i
 	}
 	request["RegionId"] = client.RegionId
 	request["VPCId"] = d.Get("vpc_id")
-	request["ClientToken"] = buildClientToken("CreateDedicatedHostGroup")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateDedicatedHostGroup")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -124,30 +129,30 @@ func resourceAlicloudCddcDedicatedHostGroupCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cddc_dedicated_host_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cddc_dedicated_host_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DedicatedHostGroupId"]))
 
-	return resourceAlicloudCddcDedicatedHostGroupRead(d, meta)
+	return resourceDedicatedHostGroupRead(d, meta)
 }
-func resourceAlicloudCddcDedicatedHostGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cddcService := CddcService{client}
-	object, err := cddcService.DescribeCddcDedicatedHostGroup(d.Id())
+	cddcService := NewService(client)
+	object, err := cddcService.DescribeDedicatedHostGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host_group cddcService.DescribeCddcDedicatedHostGroup Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host_group cddcService.DescribeDedicatedHostGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("allocation_policy", object["AllocationPolicy"])
 	if v, ok := object["CpuAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
-		cpu_allocation_ratioVal, err := formatInt(v)
+		cpu_allocation_ratioVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -155,31 +160,31 @@ func resourceAlicloudCddcDedicatedHostGroupRead(d *schema.ResourceData, meta int
 	}
 	d.Set("dedicated_host_group_desc", object["DedicatedHostGroupDesc"])
 	if v, ok := object["DiskAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
-		disk_allocation_ratioVal, err := formatInt(v)
+		disk_allocation_ratioVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
 		d.Set("disk_allocation_ratio", disk_allocation_ratioVal)
 	}
 
-	d.Set("engine", convertCddcDedicatedHostGroupEngineResponse(object["Engine"]))
+	d.Set("engine", convertDedicatedHostGroupEngineResponse(object["Engine"]))
 	d.Set("host_replace_policy", object["HostReplacePolicy"])
 	if v, ok := object["MemAllocationRatio"]; ok && fmt.Sprint(v) != "0" {
-		mem_allocation_ratioVal, err := formatInt(v)
+		mem_allocation_ratioVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
 		d.Set("mem_allocation_ratio", mem_allocation_ratioVal)
 	}
 	d.Set("vpc_id", object["VPCId"])
-	openPermission, err := formatInt(object["OpenPermission"])
+	openPermission, err := convert.FormatInt(object["OpenPermission"])
 	if err != nil {
 		return err
 	}
-	d.Set("open_permission", convertCddcDedicatedHostGroupOpenPermissionResponse(openPermission))
+	d.Set("open_permission", convertDedicatedHostGroupOpenPermissionResponse(openPermission))
 	return nil
 }
-func resourceAlicloudCddcDedicatedHostGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -226,11 +231,11 @@ func resourceAlicloudCddcDedicatedHostGroupUpdate(d *schema.ResourceData, meta i
 	}
 	if update {
 		action := "ModifyDedicatedHostGroupAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -238,14 +243,14 @@ func resourceAlicloudCddcDedicatedHostGroupUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudCddcDedicatedHostGroupRead(d, meta)
+	return resourceDedicatedHostGroupRead(d, meta)
 }
-func resourceAlicloudCddcDedicatedHostGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDedicatedHostGroup"
 	var response map[string]interface{}
@@ -255,11 +260,11 @@ func resourceAlicloudCddcDedicatedHostGroupDelete(d *schema.ResourceData, meta i
 	}
 
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -267,14 +272,14 @@ func resourceAlicloudCddcDedicatedHostGroupDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
 
-func convertCddcDedicatedHostGroupEngineResponse(engine interface{}) string {
+func convertDedicatedHostGroupEngineResponse(engine interface{}) string {
 	switch engine {
 	case "mysql":
 		engine = "MySQL"
@@ -288,7 +293,7 @@ func convertCddcDedicatedHostGroupEngineResponse(engine interface{}) string {
 	return fmt.Sprint(engine)
 }
 
-func convertCddcDedicatedHostGroupOpenPermissionRequest(source interface{}) interface{} {
+func convertDedicatedHostGroupOpenPermissionRequest(source interface{}) interface{} {
 	switch source {
 	case true:
 		return 3
@@ -298,7 +303,7 @@ func convertCddcDedicatedHostGroupOpenPermissionRequest(source interface{}) inte
 	return 3
 }
 
-func convertCddcDedicatedHostGroupOpenPermissionResponse(source interface{}) interface{} {
+func convertDedicatedHostGroupOpenPermissionResponse(source interface{}) interface{} {
 	switch source {
 	case 0:
 		return false

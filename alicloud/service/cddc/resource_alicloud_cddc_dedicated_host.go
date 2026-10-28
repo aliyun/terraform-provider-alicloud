@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -7,17 +7,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudCddcDedicatedHost() *schema.Resource {
+func ResourceDedicatedHost() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCddcDedicatedHostCreate,
-		Read:   resourceAlicloudCddcDedicatedHostRead,
-		Update: resourceAlicloudCddcDedicatedHostUpdate,
-		Delete: resourceAlicloudCddcDedicatedHostDelete,
+		Create: resourceDedicatedHostCreate,
+		Read:   resourceDedicatedHostRead,
+		Update: resourceDedicatedHostUpdate,
+		Delete: resourceDedicatedHostDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -81,7 +85,7 @@ func resourceAlicloudCddcDedicatedHost() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"used_time": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -100,7 +104,7 @@ func resourceAlicloudCddcDedicatedHost() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCddcDedicatedHostCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDedicatedHost"
@@ -120,7 +124,7 @@ func resourceAlicloudCddcDedicatedHostCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("os_password"); ok {
 		request["OsPassword"] = v
 	}
-	request["PayType"] = convertCddcDedicatedPaymentTypeRequest(d.Get("payment_type").(string))
+	request["PayType"] = convertDedicatedPaymentTypeRequest(d.Get("payment_type").(string))
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	}
@@ -132,12 +136,12 @@ func resourceAlicloudCddcDedicatedHostCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
-	request["ClientToken"] = buildClientToken("CreateDedicatedHost")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateDedicatedHost")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -145,31 +149,31 @@ func resourceAlicloudCddcDedicatedHostCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cddc_dedicated_host", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cddc_dedicated_host", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	responseDedicateHostList := response["DedicateHostList"].(map[string]interface{})
 	d.SetId(fmt.Sprint(request["DedicatedHostGroupId"], ":", responseDedicateHostList["DedicateHostList"].([]interface{})[0].(map[string]interface{})["DedicatedHostId"]))
-	cddcService := CddcService{client}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcService.CddcDedicatedHostStateRefreshFunc(d.Id(), []string{"5"}))
+	cddcService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcService.DedicatedHostStateRefreshFunc(d.Id(), []string{"5"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCddcDedicatedHostUpdate(d, meta)
+	return resourceDedicatedHostUpdate(d, meta)
 }
-func resourceAlicloudCddcDedicatedHostRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cddcService := CddcService{client}
-	object, err := cddcService.DescribeCddcDedicatedHost(d.Id())
+	cddcService := NewService(client)
+	object, err := cddcService.DescribeDedicatedHost(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host cddcService.DescribeCddcDedicatedHost Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host cddcService.DescribeDedicatedHost Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("dedicated_host_group_id", object["DedicatedHostGroupId"])
 	d.Set("host_class", object["HostClass"])
@@ -177,28 +181,28 @@ func resourceAlicloudCddcDedicatedHostRead(d *schema.ResourceData, meta interfac
 	d.Set("status", object["HostStatus"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
-	d.Set("allocation_status", convertCddcAllocationStatusResponse(object["AllocationStatus"].(string)))
+	d.Set("allocation_status", convertAllocationStatusResponse(object["AllocationStatus"].(string)))
 	d.Set("dedicated_host_id", object["DedicatedHostId"])
 	listTagResourcesObject, err := cddcService.ListTagResources(d.Id(), "DEDICATEDHOST")
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("tags", tags.TagsToMap(listTagResourcesObject))
 	return nil
 }
-func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cddcService := CddcService{client}
+	cddcService := NewService(client)
 	var err error
 	var response map[string]interface{}
 	d.Partial(true)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if d.HasChange("tags") {
 		if err := cddcService.SetResourceTags(d, "DEDICATEDHOST"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -211,14 +215,14 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		}
 		request["RegionId"] = client.RegionId
 		if v, ok := d.GetOk("allocation_status"); ok {
-			request["AllocationStatus"] = convertCddcAllocationStatusRequest(v.(string))
+			request["AllocationStatus"] = convertAllocationStatusRequest(v.(string))
 		}
 		action := "ModifyDedicatedHostAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -226,13 +230,13 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cddcService.CddcDedicatedHostStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cddcService.DedicatedHostStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -243,11 +247,11 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		request["TargetClassCode"] = d.Get("host_class")
 		request["RegionId"] = client.RegionId
 		action := "ModifyDedicatedHostClass"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -255,31 +259,31 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cddcService.CddcDedicatedHostStateRefreshFunc(d.Id(), []string{"5"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cddcService.DedicatedHostStateRefreshFunc(d.Id(), []string{"5"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudCddcDedicatedHostRead(d, meta)
+	return resourceDedicatedHostRead(d, meta)
 }
-func resourceAlicloudCddcDedicatedHostDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AlicloudResourceCddcDedicatedHost. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
 
-func convertCddcDedicatedPaymentTypeRequest(source string) string {
+func convertDedicatedPaymentTypeRequest(source string) string {
 	switch source {
 	case "Subscription":
 		return "Prepaid"
 	}
 	return source
 }
-func convertCddcAllocationStatusRequest(source string) string {
+func convertAllocationStatusRequest(source string) string {
 	switch source {
 	case "Allocatable":
 		return "1"
@@ -288,7 +292,7 @@ func convertCddcAllocationStatusRequest(source string) string {
 	}
 	return source
 }
-func convertCddcAllocationStatusResponse(source string) string {
+func convertAllocationStatusResponse(source string) string {
 	switch source {
 	case "1":
 		return "Allocatable"

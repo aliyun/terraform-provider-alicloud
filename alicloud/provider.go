@@ -307,13 +307,6 @@ func Provider() *schema.Provider {
 			"alicloud_cassandra_zones":        dataSourceAlicloudCassandraZones(),
 			"alicloud_cassandra_backup_plans": dataSourceAlicloudCassandraBackupPlans(),
 
-			// cddc
-			"alicloud_cddc_dedicated_host_groups":   dataSourceAlicloudCddcDedicatedHostGroups(),
-			"alicloud_cddc_zones":                   dataSourceAlicloudCddcZones(),
-			"alicloud_cddc_host_ecs_level_infos":    dataSourceAlicloudCddcHostEcsLevelInfos(),
-			"alicloud_cddc_dedicated_hosts":         dataSourceAlicloudCddcDedicatedHosts(),
-			"alicloud_cddc_dedicated_host_accounts": dataSourceAlicloudCddcDedicatedHostAccounts(),
-
 			// cdn
 			"alicloud_cdn_domain_configs":           dataSourceAliCloudCdnDomainConfigs(),
 			"alicloud_cdn_service":                  dataSourceAliCloudCdnService(),
@@ -1466,12 +1459,6 @@ func Provider() *schema.Provider {
 			"alicloud_cassandra_cluster":     resourceAlicloudCassandraCluster(),
 			"alicloud_cassandra_data_center": resourceAlicloudCassandraDataCenter(),
 			"alicloud_cassandra_backup_plan": resourceAlicloudCassandraBackupPlan(),
-
-			// cddc
-			"alicloud_cddc_dedicated_propre_host":  resourceAliCloudCddcDedicatedPropreHost(),
-			"alicloud_cddc_dedicated_host_group":   resourceAlicloudCddcDedicatedHostGroup(),
-			"alicloud_cddc_dedicated_host":         resourceAlicloudCddcDedicatedHost(),
-			"alicloud_cddc_dedicated_host_account": resourceAlicloudCddcDedicatedHostAccount(),
 
 			// cdn
 			"alicloud_cdn_domain":                 resourceAlicloudCdnDomain(),

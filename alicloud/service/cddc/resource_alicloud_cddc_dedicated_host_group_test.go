@@ -1,33 +1,35 @@
-package alicloud
+package cddc_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cddc"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,7 +39,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine": "Redis",
-						"vpc_id": CHECKSET,
+						"vpc_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -143,22 +145,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic0(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -170,7 +172,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						// This engine type is no longer supported.
 						// "engine": "SQLServer",
-						"vpc_id": CHECKSET,
+						"vpc_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -265,22 +267,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic1(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -290,7 +292,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine": "MySQL",
-						"vpc_id": CHECKSET,
+						"vpc_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -386,22 +388,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic2(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -411,7 +413,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine": "PostgreSQL",
-						"vpc_id": CHECKSET,
+						"vpc_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -507,22 +509,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic3(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -532,7 +534,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine": "MongoDB",
-						"vpc_id": CHECKSET,
+						"vpc_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -628,22 +630,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic4(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -660,7 +662,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 						"host_replace_policy":       "Auto",
 						"dedicated_host_group_desc": name,
 						// "engine":                    "SQLServer",
-						"vpc_id":          CHECKSET,
+						"vpc_id":          acctest.CHECKSET,
 						"open_permission": "true",
 					}),
 				),
@@ -677,22 +679,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic5(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic6(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -709,7 +711,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic6(t *testing.T) {
 						"host_replace_policy":       "Auto",
 						"dedicated_host_group_desc": name,
 						"engine":                    "alisql",
-						"vpc_id":                    CHECKSET,
+						"vpc_id":                    acctest.CHECKSET,
 						"open_permission":           "true",
 					}),
 				),
@@ -726,22 +728,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic6(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic7(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -758,7 +760,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic7(t *testing.T) {
 						"host_replace_policy":       "Auto",
 						"dedicated_host_group_desc": name,
 						"engine":                    "tair",
-						"vpc_id":                    CHECKSET,
+						"vpc_id":                    acctest.CHECKSET,
 						"open_permission":           "true",
 					}),
 				),
@@ -775,22 +777,22 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic7(t *testing.T) {
 func TestAccAliCloudCddcDedicatedHostGroup_basic8(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scddcdedicatedhostgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -807,7 +809,7 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic8(t *testing.T) {
 						"host_replace_policy":       "Auto",
 						"dedicated_host_group_desc": name,
 						"engine":                    "mssql",
-						"vpc_id":                    CHECKSET,
+						"vpc_id":                    acctest.CHECKSET,
 						"open_permission":           "true",
 					}),
 				),
@@ -822,8 +824,8 @@ func TestAccAliCloudCddcDedicatedHostGroup_basic8(t *testing.T) {
 }
 
 var AlicloudCDDCDedicatedHostGroupMap0 = map[string]string{
-	"engine": CHECKSET,
-	"vpc_id": CHECKSET,
+	"engine": acctest.CHECKSET,
+	"vpc_id": acctest.CHECKSET,
 }
 
 func AlicloudCDDCDedicatedHostGroupBasicDependence0(name string) string {
