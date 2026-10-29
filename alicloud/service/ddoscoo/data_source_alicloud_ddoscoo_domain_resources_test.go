@@ -1,42 +1,43 @@
-package alicloud
+package ddoscoo_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDdosCooDomainResourcesDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, []connectivity.Region{"ap-southeast-1", "cn-hangzhou"})
-	rand := acctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, []connectivity.Region{"ap-southeast-1", "cn-hangzhou"})
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%d.qq.com", rand)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids": `["${alicloud_ddoscoo_domain_resource.default.domain}_fake"]`,
 		}),
 	}
-	instanceIdsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
+	instanceIdsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.0}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.1}"]`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.0}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
+		FakeConfig: testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name, map[string]string{
 			"ids":          `["${alicloud_ddoscoo_domain_resource.default.domain}_fake"]`,
 			"instance_ids": `["${data.alicloud_ddoscoo_instances.default.ids.1}"]`,
 		}),
@@ -59,15 +60,15 @@ func TestAccAliCloudDdosCooDomainResourcesDataSource(t *testing.T) {
 			"ids.#": "0",
 		}
 	}
-	var alicloudDdoscooDomainResourcesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ddoscoo_domain_resources.default",
-		existMapFunc: existAlicloudDdoscooDomainResourcesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDdoscooDomainResourcesDataSourceNameMapFunc,
+	var alicloudDdoscooDomainResourcesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ddoscoo_domain_resources.default",
+		ExistMapFunc: existAlicloudDdoscooDomainResourcesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDdoscooDomainResourcesDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 	}
-	alicloudDdoscooDomainResourcesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, instanceIdsConf, allConf)
+	alicloudDdoscooDomainResourcesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, instanceIdsConf, allConf)
 }
 func testAccCheckAlicloudDdoscooDomainResourcesDataSourceName(name string, attrMap map[string]string) string {
 	var pairs []string
@@ -81,7 +82,7 @@ data "alicloud_ddoscoo_instances" "default" {}
 resource "alicloud_ddoscoo_domain_resource" "default" {
 	domain = "%s"
 	instance_ids = [data.alicloud_ddoscoo_instances.default.ids.0]
-  	proxy_types {   
+  	proxy_types {
     	proxy_ports = [443]
    	 	proxy_type = "https"
   	}
@@ -89,7 +90,7 @@ resource "alicloud_ddoscoo_domain_resource" "default" {
 	rs_type = 0
 }
 
-data "alicloud_ddoscoo_domain_resources" "default" {	
+data "alicloud_ddoscoo_domain_resources" "default" {
 	%s
 }
 `, name, strings.Join(pairs, " \n "))

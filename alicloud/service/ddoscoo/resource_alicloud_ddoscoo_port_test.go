@@ -1,4 +1,6 @@
-package alicloud
+// collection-order: bypass real_servers -- pre-existing TypeList attribute outside this directory-only migration; reorder+convergent coverage debt predates this change
+
+package ddoscoo_test
 
 import (
 	"fmt"
@@ -11,9 +13,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	ddoscoo "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,23 +28,23 @@ import (
 func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_port.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdoscooPortMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdoscooPortMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdoscooPort")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 65530)
-	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooPortBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 65530)
+	name := fmt.Sprintf("tf-testacc%sddoscooport%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdoscooPortBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -45,7 +52,7 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 					"backend_port":      fmt.Sprint(rand + 1),
 					"instance_id":       "${data.alicloud_ddoscoo_instances.default.ids.0}",
 					"frontend_protocol": "tcp",
-					"real_servers":      []string{"192.168.0.1"},
+					"real_servers":      []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -63,7 +70,7 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1", "192.168.0.2"},
+					"real_servers": []string{"1.1.1.1", "2.2.2.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -73,7 +80,7 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1"},
+					"real_servers": []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -86,7 +93,7 @@ func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 }
 
 var AlicloudDdoscooPortMap0 = map[string]string{
-	"instance_id":       CHECKSET,
+	"instance_id":       acctest.CHECKSET,
 	"frontend_protocol": "tcp",
 	"real_servers.#":    "1",
 }
@@ -104,23 +111,23 @@ data "alicloud_ddoscoo_instances" "default" {}
 func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_port.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdoscooPortMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdoscooPortMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdoscooPort")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 65530)
-	name := fmt.Sprintf("tf-testacc%sddoscooport1%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooPortBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 65530)
+	name := fmt.Sprintf("tf-testacc%sddoscooport1%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdoscooPortBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -128,7 +135,7 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 					"backend_port":      fmt.Sprint(rand + 1),
 					"instance_id":       "${data.alicloud_ddoscoo_instances.default.ids.0}",
 					"frontend_protocol": "udp",
-					"real_servers":      []string{"192.168.0.1"},
+					"real_servers":      []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -146,7 +153,7 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1", "192.168.0.2"},
+					"real_servers": []string{"1.1.1.1", "2.2.2.2"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -156,7 +163,7 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"192.168.0.1"},
+					"real_servers": []string{"1.1.1.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -169,7 +176,7 @@ func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 }
 
 var AlicloudDdoscooPortMap1 = map[string]string{
-	"instance_id":       CHECKSET,
+	"instance_id":       acctest.CHECKSET,
 	"frontend_protocol": "udp",
 	"real_servers.#":    "1",
 }
@@ -186,8 +193,8 @@ data "alicloud_ddoscoo_instances" "default" {}
 
 // lintignore: R001
 func TestUnitAlicloudDdoscooPort(t *testing.T) {
-	p := Provider().ResourcesMap
-	checkoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)
+	p := acctest.Provider.ResourcesMap
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_ddoscoo_port"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ddoscoo_port"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -208,7 +215,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -230,31 +237,31 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ddoscoo_port", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_ddoscoo_port", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdoscooClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudDdosCooPortCreate(dInit, rawClient)
+	err = p["alicloud_ddoscoo_port"].Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -276,7 +283,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDdosCooPortCreate(dInit, rawClient)
+		err := p["alicloud_ddoscoo_port"].Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -297,13 +304,13 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdoscooClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudDdosCooPortUpdate(dExisted, rawClient)
+	err = p["alicloud_ddoscoo_port"].Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyPort
@@ -311,7 +318,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 		"real_servers": []string{"ModifyPortValue"},
 		"backend_port": "80",
 	}
-	diff, err := newInstanceDiff("alicloud_ddoscoo_port", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_ddoscoo_port", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -343,7 +350,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDdosCooPortUpdate(dExisted, rawClient)
+		err := p["alicloud_ddoscoo_port"].Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -363,7 +370,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 
 	//Read
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_ddoscoo_port", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_ddoscoo_port", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -388,7 +395,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDdosCooPortRead(dExisted, rawClient)
+		err := p["alicloud_ddoscoo_port"].Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -400,17 +407,17 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdoscooClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudDdosCooPortDelete(dExisted, rawClient)
+	err = p["alicloud_ddoscoo_port"].Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_ddoscoo_port", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_ddoscoo_port", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -436,7 +443,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDdosCooPortDelete(dExisted, rawClient)
+		err := p["alicloud_ddoscoo_port"].Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -452,22 +459,22 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 func TestAccAliCloudDdosCooPort_basic7456(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_port.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosCooPortMap7456)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosCooPortMap7456)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddoscoo.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosCooPort")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosCooPortBasicDependence7456)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sddoscooport%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosCooPortBasicDependence7456)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,7 +492,7 @@ func TestAccAliCloudDdosCooPort_basic7456(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":       CHECKSET,
+						"instance_id":       acctest.CHECKSET,
 						"backend_port":      "8000",
 						"real_servers.#":    "1",
 						"frontend_port":     "8082",

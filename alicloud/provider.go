@@ -437,9 +437,6 @@ func Provider() *schema.Provider {
 			"alicloud_dcdn_waf_rules":    dataSourceAlicloudDcdnWafRules(),
 
 			// ddoscoo
-			"alicloud_ddoscoo_instances":        dataSourceAlicloudDdoscooInstances(),
-			"alicloud_ddoscoo_domain_resources": dataSourceAlicloudDdoscooDomainResources(),
-			"alicloud_ddoscoo_ports":            dataSourceAlicloudDdoscooPorts(),
 
 			// direct
 			"alicloud_direct_mail_receiverses":        dataSourceAlicloudDirectMailReceiverses(),
@@ -1395,12 +1392,6 @@ func Provider() *schema.Provider {
 			"alicloud_dcdn_er":                           resourceAlicloudDcdnEr(),
 
 			// ddoscoo
-			"alicloud_ddoscoo_web_cc_rule":                resourceAliCloudDdosCooWebCcRule(),
-			"alicloud_ddoscoo_domain_precise_access_rule": resourceAliCloudDdosCooDomainPreciseAccessRule(),
-			"alicloud_ddoscoo_instance":                   resourceAliCloudDdoscooInstance(),
-			"alicloud_ddoscoo_scheduler_rule":             resourceAlicloudDdoscooSchedulerRule(),
-			"alicloud_ddoscoo_domain_resource":            resourceAliCloudDdosCooDomainResource(),
-			"alicloud_ddoscoo_port":                       resourceAliCloudDdosCooPort(),
 
 			// direct
 			"alicloud_direct_mail_receivers":         resourceAlicloudDirectMailReceivers(),

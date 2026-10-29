@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"fmt"
@@ -8,11 +8,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDdosCooDomainPreciseAccessRule() *schema.Resource {
+func ResourceDdoscooDomainPreciseAccessRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudDdosCooDomainPreciseAccessRuleCreate,
 		Read:   resourceAliCloudDdosCooDomainPreciseAccessRuleRead,
@@ -30,7 +35,7 @@ func resourceAliCloudDdosCooDomainPreciseAccessRule() *schema.Resource {
 			"action": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"accept", "block", "challenge", "watch"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"accept", "block", "challenge", "watch"}, false),
 			},
 			"condition": {
 				Type:     schema.TypeSet,
@@ -91,13 +96,13 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleCreate(d *schema.ResourceData
 
 	rulesDataList := make(map[string]interface{})
 
-	if v := d.Get("condition"); !IsNil(v) {
+	if v := d.Get("condition"); !helper.IsNil(v) {
 		localData, err := jsonpath.Get("$", v)
 		if err != nil {
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -123,17 +128,17 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleCreate(d *schema.ResourceData
 
 	RulesMap := make([]interface{}, 0)
 	RulesMap = append(RulesMap, rulesDataList)
-	request["Rules"] = convertObjectToJsonString(RulesMap)
+	request["Rules"] = convert.ConvertObjectToJsonString(RulesMap)
 
 	if v, ok := d.GetOkExists("expires"); ok {
 		request["Expires"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -141,10 +146,10 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleCreate(d *schema.ResourceData
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_domain_precise_access_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddoscoo_domain_precise_access_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["Domain"], rulesDataList["name"]))
@@ -154,16 +159,16 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleCreate(d *schema.ResourceData
 
 func resourceAliCloudDdosCooDomainPreciseAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddosCooServiceV2 := DdosCooServiceV2{client}
+	ddosCooServiceV2 := NewService(client)
 
 	objectRaw, err := ddosCooServiceV2.DescribeDdosCooDomainPreciseAccessRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddoscoo_domain_precise_access_rule DescribeDdosCooDomainPreciseAccessRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("action", objectRaw["Action"])
@@ -173,7 +178,7 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleRead(d *schema.ResourceData, 
 	conditionListChildRaw := objectRaw["ConditionList"]
 	conditionMaps := make([]map[string]interface{}, 0)
 	if conditionListChildRaw != nil {
-		for _, contentRaw := range convertToInterfaceArray(conditionListChildRaw) {
+		for _, contentRaw := range convert.ConvertToInterfaceArray(conditionListChildRaw) {
 			conditionMap := make(map[string]interface{})
 			conditionListChildRaw := contentRaw.(map[string]interface{})
 
@@ -214,13 +219,13 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleUpdate(d *schema.ResourceData
 	if d.HasChange("condition") {
 		update = true
 	}
-	if v := d.Get("condition"); !IsNil(v) {
+	if v := d.Get("condition"); !helper.IsNil(v) {
 		localData, err := jsonpath.Get("$", v)
 		if err != nil {
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -247,7 +252,7 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleUpdate(d *schema.ResourceData
 
 	RulesMap := make([]interface{}, 0)
 	RulesMap = append(RulesMap, rulesDataList)
-	request["Rules"] = convertObjectToJsonString(RulesMap)
+	request["Rules"] = convert.ConvertObjectToJsonString(RulesMap)
 
 	if d.HasChange("expires") {
 		update = true
@@ -258,11 +263,11 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleUpdate(d *schema.ResourceData
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -270,9 +275,9 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleUpdate(d *schema.ResourceData
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -293,11 +298,11 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleDelete(d *schema.ResourceData
 	request["Domain"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -305,13 +310,13 @@ func resourceAliCloudDdosCooDomainPreciseAccessRuleDelete(d *schema.ResourceData
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

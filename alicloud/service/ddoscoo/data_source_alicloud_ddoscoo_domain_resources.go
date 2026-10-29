@@ -1,4 +1,4 @@
-package alicloud
+package ddoscoo
 
 import (
 	"fmt"
@@ -6,12 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDdoscooDomainResources() *schema.Resource {
+func DataSourceDdoscooDomainResources() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudDdoscooDomainResourcesRead,
 		Schema: map[string]*schema.Schema{
@@ -149,7 +153,7 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("query_domain_pattern"); ok {
 		request["QueryDomainPattern"] = v
 	}
-	request["PageSize"] = PageSizeSmall
+	request["PageSize"] = helper.PageSizeSmall
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 
@@ -165,25 +169,25 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_domain_resources", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ddoscoo_domain_resources", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.WebRules", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.WebRules", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.WebRules", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -195,7 +199,7 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeSmall {
+		if len(result) < helper.PageSizeSmall {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -204,7 +208,7 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		rs_typeVal, err := formatInt(object["RsType"])
+		rs_typeVal, err := convert.FormatInt(object["RsType"])
 		if err != nil {
 			return err
 		}
@@ -245,16 +249,16 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("resources", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
