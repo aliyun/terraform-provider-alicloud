@@ -1,76 +1,77 @@
-package alicloud
+package expressconnectrouter_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_express_connect_router_vpc_associations.default"
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", defaultRegionToTest, rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterVpcAssociationsConfig)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervpcassociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterVpcAssociationsConfig)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"ids":    []string{"${alicloud_express_connect_router_vpc_association.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"ids":    []string{"${alicloud_express_connect_router_vpc_association.default.id}_fake"},
 		}),
 	}
 
-	associationIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	associationIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":         "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"association_id": "${alicloud_express_connect_router_vpc_association.default.association_id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":         "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"association_id": "${alicloud_express_connect_router_vpc_association.default.association_id}_fake",
 		}),
 	}
 
-	vpcIdConfConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	vpcIdConfConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"vpc_id": "${alicloud_express_connect_router_vpc_association.default.vpc_id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"vpc_id": "${alicloud_express_connect_router_vpc_association.default.vpc_id}_fake",
 		}),
 	}
 
-	associationRegionIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	associationRegionIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"association_region_id": "${alicloud_express_connect_router_vpc_association.default.association_region_id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"association_region_id": "${alicloud_express_connect_router_vpc_association.default.association_region_id}_fake",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"status": "ACTIVE",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"status": "CREATING",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"ids":                   []string{"${alicloud_express_connect_router_vpc_association.default.id}"},
 			"association_id":        "${alicloud_express_connect_router_vpc_association.default.association_id}",
@@ -78,7 +79,7 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *test
 			"association_region_id": "${alicloud_express_connect_router_vpc_association.default.association_region_id}",
 			"status":                "ACTIVE",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                "${alicloud_express_connect_router_vpc_association.default.ecr_id}",
 			"ids":                   []string{"${alicloud_express_connect_router_vpc_association.default.id}_fake"},
 			"association_id":        "${alicloud_express_connect_router_vpc_association.default.association_id}_fake",
@@ -92,17 +93,17 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *test
 		return map[string]string{
 			"ids.#":                                "1",
 			"associations.#":                       "1",
-			"associations.0.id":                    CHECKSET,
-			"associations.0.ecr_id":                CHECKSET,
-			"associations.0.association_id":        CHECKSET,
-			"associations.0.vpc_id":                CHECKSET,
-			"associations.0.association_node_type": CHECKSET,
-			"associations.0.vpc_owner_id":          CHECKSET,
-			"associations.0.allowed_prefixes_mode": CHECKSET,
-			"associations.0.status":                CHECKSET,
-			"associations.0.create_time":           CHECKSET,
-			"associations.0.modify_time":           CHECKSET,
-			"associations.0.allowed_prefixes.#":    CHECKSET,
+			"associations.0.id":                    acctest.CHECKSET,
+			"associations.0.ecr_id":                acctest.CHECKSET,
+			"associations.0.association_id":        acctest.CHECKSET,
+			"associations.0.vpc_id":                acctest.CHECKSET,
+			"associations.0.association_node_type": acctest.CHECKSET,
+			"associations.0.vpc_owner_id":          acctest.CHECKSET,
+			"associations.0.allowed_prefixes_mode": acctest.CHECKSET,
+			"associations.0.status":                acctest.CHECKSET,
+			"associations.0.create_time":           acctest.CHECKSET,
+			"associations.0.modify_time":           acctest.CHECKSET,
+			"associations.0.allowed_prefixes.#":    acctest.CHECKSET,
 		}
 	}
 
@@ -113,17 +114,17 @@ func TestAccAliCloudExpressConnectRouterVpcAssociationsDataSource_basic0(t *test
 		}
 	}
 
-	var aliCloudExpressConnectRouterVpcAssociationsInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_express_connect_router_vpc_associations.default",
-		existMapFunc: existAliCloudExpressConnectRouterVpcAssociationsMapFunc,
-		fakeMapFunc:  fakeAliCloudExpressConnectRouterVpcAssociationsMapFunc,
+	var aliCloudExpressConnectRouterVpcAssociationsInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_express_connect_router_vpc_associations.default",
+		ExistMapFunc: existAliCloudExpressConnectRouterVpcAssociationsMapFunc,
+		FakeMapFunc:  fakeAliCloudExpressConnectRouterVpcAssociationsMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
-	aliCloudExpressConnectRouterVpcAssociationsInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, associationIdConf, vpcIdConfConf, associationRegionIdConf, statusConf, allConf)
+	aliCloudExpressConnectRouterVpcAssociationsInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, associationIdConf, vpcIdConfConf, associationRegionIdConf, statusConf, allConf)
 }
 
 func dataSourceExpressConnectRouterVpcAssociationsConfig(name string) string {

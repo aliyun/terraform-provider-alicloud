@@ -1,83 +1,84 @@
-package alicloud
+package expressconnectrouter_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudExpressConnectRouterExpressConnectRoutersDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_express_connect_router_express_connect_routers.default"
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterExpressConnectRouterExpressConnectRouter%d", defaultRegionToTest, rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterExpressConnectRoutersConfig)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterExpressConnectRouterExpressConnectRouter%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterExpressConnectRoutersConfig)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_express_connect_router_express_connect_router.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_express_connect_router_express_connect_router.default.id}_fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_express_connect_router_express_connect_router.default.ecr_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_express_connect_router_express_connect_router.default.ecr_name}_fake",
 		}),
 	}
 
-	ecrIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	ecrIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_express_connect_router.default.id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_express_connect_router.default.id}_fake",
 		}),
 	}
 
-	ecrNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	ecrNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_name": "${alicloud_express_connect_router_express_connect_router.default.ecr_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_name": "${alicloud_express_connect_router_express_connect_router.default.ecr_name}_fake",
 		}),
 	}
 
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"resource_group_id": "${alicloud_express_connect_router_express_connect_router.default.resource_group_id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.2.id}",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_express_connect_router.default.id}",
 			"status": "ACTIVE",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_express_connect_router.default.id}",
 			"status": "UPDATING",
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"tags": map[string]string{
 				"Created": "TF",
 				"For":     "ExpressConnectRouter",
 			},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"tags": map[string]string{
 				"Created": "TF",
 				"For":     "ExpressConnectRouter_Fake",
@@ -85,8 +86,8 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRoutersDataSource_basic0(t
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_express_connect_router_express_connect_router.default.id}"},
 			"name_regex":        "${alicloud_express_connect_router_express_connect_router.default.ecr_name}",
 			"ecr_id":            "${alicloud_express_connect_router_express_connect_router.default.id}",
@@ -98,7 +99,7 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRoutersDataSource_basic0(t
 				"For":     "ExpressConnectRouter",
 			},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_express_connect_router_express_connect_router.default.id}_fake"},
 			"name_regex":        "${alicloud_express_connect_router_express_connect_router.default.ecr_name}_fake",
 			"ecr_id":            "${alicloud_express_connect_router_express_connect_router.default.id}_fake",
@@ -117,17 +118,17 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRoutersDataSource_basic0(t
 			"ids.#":                       "1",
 			"names.#":                     "1",
 			"routers.#":                   "1",
-			"routers.0.id":                CHECKSET,
-			"routers.0.ecr_id":            CHECKSET,
-			"routers.0.ecr_name":          CHECKSET,
-			"routers.0.description":       CHECKSET,
-			"routers.0.owner_id":          CHECKSET,
-			"routers.0.resource_group_id": CHECKSET,
-			"routers.0.alibaba_side_asn":  CHECKSET,
-			"routers.0.biz_status":        CHECKSET,
-			"routers.0.status":            CHECKSET,
-			"routers.0.create_time":       CHECKSET,
-			"routers.0.modify_time":       CHECKSET,
+			"routers.0.id":                acctest.CHECKSET,
+			"routers.0.ecr_id":            acctest.CHECKSET,
+			"routers.0.ecr_name":          acctest.CHECKSET,
+			"routers.0.description":       acctest.CHECKSET,
+			"routers.0.owner_id":          acctest.CHECKSET,
+			"routers.0.resource_group_id": acctest.CHECKSET,
+			"routers.0.alibaba_side_asn":  acctest.CHECKSET,
+			"routers.0.biz_status":        acctest.CHECKSET,
+			"routers.0.status":            acctest.CHECKSET,
+			"routers.0.create_time":       acctest.CHECKSET,
+			"routers.0.modify_time":       acctest.CHECKSET,
 			"routers.0.tags.%":            "2",
 			"routers.0.tags.Created":      "TF",
 			"routers.0.tags.For":          "ExpressConnectRouter",
@@ -142,17 +143,17 @@ func TestAccAliCloudExpressConnectRouterExpressConnectRoutersDataSource_basic0(t
 		}
 	}
 
-	var aliCloudExpressConnectRouterExpressConnectRoutersInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_express_connect_router_express_connect_routers.default",
-		existMapFunc: existAliCloudExpressConnectRouterExpressConnectRoutersMapFunc,
-		fakeMapFunc:  fakeAliCloudExpressConnectRouterExpressConnectRoutersMapFunc,
+	var aliCloudExpressConnectRouterExpressConnectRoutersInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_express_connect_router_express_connect_routers.default",
+		ExistMapFunc: existAliCloudExpressConnectRouterExpressConnectRoutersMapFunc,
+		FakeMapFunc:  fakeAliCloudExpressConnectRouterExpressConnectRoutersMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
-	aliCloudExpressConnectRouterExpressConnectRoutersInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, ecrIdConf, ecrNameConf, resourceGroupIdConf, statusConf, tagsConf, allConf)
+	aliCloudExpressConnectRouterExpressConnectRoutersInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, ecrIdConf, ecrNameConf, resourceGroupIdConf, statusConf, tagsConf, allConf)
 }
 
 func dataSourceExpressConnectRouterExpressConnectRoutersConfig(name string) string {

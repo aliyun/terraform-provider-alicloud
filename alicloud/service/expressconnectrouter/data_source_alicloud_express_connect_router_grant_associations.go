@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package expressconnectrouter
 
 import (
 	"fmt"
@@ -7,13 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudExpressConnectRouterGrantAssociations() *schema.Resource {
+func DataSourceGrantAssociations() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudExpressConnectRouterGrantAssociationRead,
+		Read: dataSourceGrantAssociationsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -40,7 +44,7 @@ func dataSourceAliCloudExpressConnectRouterGrantAssociations() *schema.Resource 
 			"caller_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ECR", "OTHER"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ECR", "OTHER"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -106,14 +110,14 @@ func dataSourceAliCloudExpressConnectRouterGrantAssociations() *schema.Resource 
 	}
 }
 
-func dataSourceAliCloudExpressConnectRouterGrantAssociationRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceGrantAssociationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeInstanceGrantedToExpressConnectRouter"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["MaxResults"] = PageSizeLarge
-	request["ClientToken"] = buildClientToken(action)
+	request["MaxResults"] = helper.PageSizeLarge
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["EcrId"] = d.Get("ecr_id")
 
@@ -149,11 +153,11 @@ func dataSourceAliCloudExpressConnectRouterGrantAssociationRead(d *schema.Resour
 	var err error
 
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -161,15 +165,15 @@ func dataSourceAliCloudExpressConnectRouterGrantAssociationRead(d *schema.Resour
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_express_connect_router_grant_associations", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_express_connect_router_grant_associations", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.EcrGrantedInstanceList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.EcrGrantedInstanceList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.EcrGrantedInstanceList", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -213,18 +217,18 @@ func dataSourceAliCloudExpressConnectRouterGrantAssociationRead(d *schema.Resour
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("associations", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package expressconnectrouter
 
 import (
 	"fmt"
@@ -6,13 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudExpressConnectRouterTrAssociations() *schema.Resource {
+func DataSourceVpcAssociations() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudExpressConnectRouterTrAssociationRead,
+		Read: dataSourceVpcAssociationsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -28,7 +32,7 @@ func dataSourceAliCloudExpressConnectRouterTrAssociations() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"transit_router_id": {
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -36,14 +40,10 @@ func dataSourceAliCloudExpressConnectRouterTrAssociations() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"cen_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"CREATING", "ACTIVE", "INACTIVE", "ASSOCIATING", "DISSOCIATING", "UPDATING", "DELETING"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"CREATING", "ACTIVE", "INACTIVE", "ASSOCIATING", "DISSOCIATING", "UPDATING", "DELETING"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -66,7 +66,7 @@ func dataSourceAliCloudExpressConnectRouterTrAssociations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"transit_router_id": {
+						"vpc_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -74,11 +74,7 @@ func dataSourceAliCloudExpressConnectRouterTrAssociations() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"transit_router_owner_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"cen_id": {
+						"vpc_owner_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -110,15 +106,15 @@ func dataSourceAliCloudExpressConnectRouterTrAssociations() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudExpressConnectRouterTrAssociationRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceVpcAssociationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeExpressConnectRouterAssociation"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["AssociationNodeType"] = "TR"
-	request["MaxResults"] = PageSizeLarge
-	request["ClientToken"] = buildClientToken(action)
+	request["AssociationNodeType"] = "VPC"
+	request["MaxResults"] = helper.PageSizeLarge
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["EcrId"] = d.Get("ecr_id")
 
@@ -126,16 +122,12 @@ func dataSourceAliCloudExpressConnectRouterTrAssociationRead(d *schema.ResourceD
 		request["AssociationId"] = v
 	}
 
-	if v, ok := d.GetOk("transit_router_id"); ok {
-		request["TransitRouterId"] = v
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
 	}
 
 	if v, ok := d.GetOk("association_region_id"); ok {
 		request["AssociationRegionId"] = v
-	}
-
-	if v, ok := d.GetOk("cen_id"); ok {
-		request["CenId"] = v
 	}
 
 	status, statusOk := d.GetOk("status")
@@ -156,11 +148,11 @@ func dataSourceAliCloudExpressConnectRouterTrAssociationRead(d *schema.ResourceD
 	var err error
 
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -168,22 +160,22 @@ func dataSourceAliCloudExpressConnectRouterTrAssociationRead(d *schema.ResourceD
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_express_connect_router_tr_associations", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_express_connect_router_vpc_associations", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.AssociationList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AssociationList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.AssociationList", response)
 		}
 
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprintf("%v:%v:%v", item["EcrId"], item["AssociationId"], item["TransitRouterId"])]; !ok {
+				if _, ok := idsMap[fmt.Sprintf("%v:%v:%v", item["EcrId"], item["AssociationId"], item["VpcId"])]; !ok {
 					continue
 				}
 			}
@@ -206,36 +198,35 @@ func dataSourceAliCloudExpressConnectRouterTrAssociationRead(d *schema.ResourceD
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                      fmt.Sprintf("%v:%v:%v", object["EcrId"], object["AssociationId"], object["TransitRouterId"]),
-			"ecr_id":                  fmt.Sprint(object["EcrId"]),
-			"association_id":          fmt.Sprint(object["AssociationId"]),
-			"transit_router_id":       fmt.Sprint(object["TransitRouterId"]),
-			"association_node_type":   object["AssociationNodeType"],
-			"transit_router_owner_id": fmt.Sprint(object["TransitRouterOwnerId"]),
-			"cen_id":                  object["CenId"],
-			"allowed_prefixes_mode":   object["AllowedPrefixesMode"],
-			"status":                  object["Status"],
-			"create_time":             object["GmtCreate"],
-			"modify_time":             object["GmtModified"],
-			"allowed_prefixes":        object["AllowedPrefixes"],
+			"id":                    fmt.Sprintf("%v:%v:%v", object["EcrId"], object["AssociationId"], object["VpcId"]),
+			"ecr_id":                fmt.Sprint(object["EcrId"]),
+			"association_id":        fmt.Sprint(object["AssociationId"]),
+			"vpc_id":                fmt.Sprint(object["VpcId"]),
+			"association_node_type": object["AssociationNodeType"],
+			"vpc_owner_id":          fmt.Sprint(object["VpcOwnerId"]),
+			"allowed_prefixes_mode": object["AllowedPrefixesMode"],
+			"status":                object["Status"],
+			"create_time":           object["GmtCreate"],
+			"modify_time":           object["GmtModified"],
+			"allowed_prefixes":      object["AllowedPrefixes"],
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("associations", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

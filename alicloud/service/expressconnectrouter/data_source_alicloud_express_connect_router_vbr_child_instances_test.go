@@ -1,77 +1,78 @@
-package alicloud
+package expressconnectrouter_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudExpressConnectRouterVbrChildInstancesDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_express_connect_router_vbr_child_instances.default"
-	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervbrchildinstance%d", defaultRegionToTest, rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterVbrChildInstancesConfig)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectrouterexpressconnectroutervbrchildinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceExpressConnectRouterVbrChildInstancesConfig)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"ids":    []string{"${alicloud_express_connect_router_vbr_child_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"ids":    []string{"${alicloud_express_connect_router_vbr_child_instance.default.id}_fake"},
 		}),
 	}
 
-	childInstanceIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	childInstanceIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":            "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"child_instance_id": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":            "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"child_instance_id": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_id}_fake",
 		}),
 	}
 
-	childInstanceTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	childInstanceTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":              "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"child_instance_type": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_type}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":              "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"ids":                 []string{"${alicloud_express_connect_router_vbr_child_instance.default.id}_fake"},
 			"child_instance_type": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_type}",
 		}),
 	}
 
-	childInstanceRegionIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	childInstanceRegionIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                   "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"child_instance_region_id": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_region_id}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                   "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"child_instance_region_id": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_region_id}_fake",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"status": "ACTIVE",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id": "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"status": "CREATING",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                   "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"ids":                      []string{"${alicloud_express_connect_router_vbr_child_instance.default.id}"},
 			"child_instance_id":        "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_id}",
@@ -79,7 +80,7 @@ func TestAccAliCloudExpressConnectRouterVbrChildInstancesDataSource_basic0(t *te
 			"child_instance_region_id": "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_region_id}",
 			"status":                   "ACTIVE",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ecr_id":                   "${alicloud_express_connect_router_vbr_child_instance.default.ecr_id}",
 			"ids":                      []string{"${alicloud_express_connect_router_vbr_child_instance.default.id}_fake"},
 			"child_instance_id":        "${alicloud_express_connect_router_vbr_child_instance.default.child_instance_id}_fake",
@@ -93,16 +94,16 @@ func TestAccAliCloudExpressConnectRouterVbrChildInstancesDataSource_basic0(t *te
 		return map[string]string{
 			"ids.#":                                "1",
 			"instances.#":                          "1",
-			"instances.0.id":                       CHECKSET,
-			"instances.0.ecr_id":                   CHECKSET,
-			"instances.0.child_instance_id":        CHECKSET,
-			"instances.0.child_instance_type":      CHECKSET,
-			"instances.0.child_instance_owner_id":  CHECKSET,
-			"instances.0.child_instance_region_id": CHECKSET,
-			"instances.0.description":              CHECKSET,
-			"instances.0.status":                   CHECKSET,
-			"instances.0.create_time":              CHECKSET,
-			"instances.0.modify_time":              CHECKSET,
+			"instances.0.id":                       acctest.CHECKSET,
+			"instances.0.ecr_id":                   acctest.CHECKSET,
+			"instances.0.child_instance_id":        acctest.CHECKSET,
+			"instances.0.child_instance_type":      acctest.CHECKSET,
+			"instances.0.child_instance_owner_id":  acctest.CHECKSET,
+			"instances.0.child_instance_region_id": acctest.CHECKSET,
+			"instances.0.description":              acctest.CHECKSET,
+			"instances.0.status":                   acctest.CHECKSET,
+			"instances.0.create_time":              acctest.CHECKSET,
+			"instances.0.modify_time":              acctest.CHECKSET,
 		}
 	}
 
@@ -113,17 +114,17 @@ func TestAccAliCloudExpressConnectRouterVbrChildInstancesDataSource_basic0(t *te
 		}
 	}
 
-	var aliCloudExpressConnectRouterVbrChildInstancesInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_express_connect_router_vbr_child_instances.default",
-		existMapFunc: existAliCloudExpressConnectRouterVbrChildInstancesMapFunc,
-		fakeMapFunc:  fakeAliCloudExpressConnectRouterVbrChildInstancesMapFunc,
+	var aliCloudExpressConnectRouterVbrChildInstancesInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_express_connect_router_vbr_child_instances.default",
+		ExistMapFunc: existAliCloudExpressConnectRouterVbrChildInstancesMapFunc,
+		FakeMapFunc:  fakeAliCloudExpressConnectRouterVbrChildInstancesMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
-	aliCloudExpressConnectRouterVbrChildInstancesInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, childInstanceIdConf, childInstanceTypeConf, childInstanceRegionIdConf, statusConf, allConf)
+	aliCloudExpressConnectRouterVbrChildInstancesInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, childInstanceIdConf, childInstanceTypeConf, childInstanceRegionIdConf, statusConf, allConf)
 }
 
 func dataSourceExpressConnectRouterVbrChildInstancesConfig(name string) string {

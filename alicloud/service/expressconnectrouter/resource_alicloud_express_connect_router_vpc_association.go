@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package expressconnectrouter
 
 import (
 	"fmt"
@@ -9,16 +9,19 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociation() *schema.Resource {
+func ResourceVpcAssociation() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationCreate,
-		Read:   resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationRead,
-		Update: resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationUpdate,
-		Delete: resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationDelete,
+		Create: resourceVpcAssociationCreate,
+		Read:   resourceVpcAssociationRead,
+		Update: resourceVpcAssociationUpdate,
+		Delete: resourceVpcAssociationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,11 +45,6 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociation() *sc
 				Required: true,
 				ForceNew: true,
 			},
-			"cen_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -60,22 +58,22 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociation() *sc
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"transit_router_id": {
+			"vpc_id": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				ForceNew: true,
 			},
-			"transit_router_owner_id": {
+			"vpc_owner_id": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -86,75 +84,71 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationCreate
 	var err error
 	request = make(map[string]interface{})
 	request["EcrId"] = d.Get("ecr_id")
-	request["TransitRouterId"] = d.Get("transit_router_id")
+	request["VpcId"] = d.Get("vpc_id")
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["AssociationRegionId"] = d.Get("association_region_id")
+	if v, ok := d.GetOk("vpc_owner_id"); ok {
+		request["VpcOwnerId"] = v
+	}
 	if v, ok := d.GetOk("allowed_prefixes"); ok {
 		allowedPrefixesMaps := v.([]interface{})
 		request["AllowedPrefixes"] = allowedPrefixesMaps
 	}
 
-	if v, ok := d.GetOk("transit_router_owner_id"); ok {
-		request["TransitRouterOwnerId"] = v
-	}
-	if v, ok := d.GetOk("cen_id"); ok {
-		request["CenId"] = v
-	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_express_connect_router_tr_association", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_express_connect_router_vpc_association", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v:%v", request["EcrId"], response["AssociationId"], request["TransitRouterId"]))
+	d.SetId(fmt.Sprintf("%v:%v:%v", request["EcrId"], response["AssociationId"], request["VpcId"]))
 
-	expressConnectRouterServiceV2 := ExpressConnectRouterServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVE", "INACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+	expressConnectRouterServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationRead(d, meta)
+	return resourceVpcAssociationRead(d, meta)
 }
 
-func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcAssociationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	expressConnectRouterServiceV2 := ExpressConnectRouterServiceV2{client}
+	expressConnectRouterServiceV2 := NewService(client)
 
-	objectRaw, err := expressConnectRouterServiceV2.DescribeExpressConnectRouterExpressConnectRouterTrAssociation(d.Id())
+	objectRaw, err := expressConnectRouterServiceV2.DescribeExpressConnectRouterExpressConnectRouterVpcAssociation(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_express_connect_router_tr_association DescribeExpressConnectRouterExpressConnectRouterTrAssociation Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_express_connect_router_vpc_association DescribeExpressConnectRouterExpressConnectRouterVpcAssociation Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("association_region_id", objectRaw["RegionId"])
-	d.Set("cen_id", objectRaw["CenId"])
 	d.Set("create_time", objectRaw["GmtCreate"])
 	d.Set("status", objectRaw["Status"])
-	d.Set("transit_router_owner_id", objectRaw["TransitRouterOwnerId"])
+	d.Set("vpc_owner_id", objectRaw["VpcOwnerId"])
 	d.Set("association_id", objectRaw["AssociationId"])
 	d.Set("ecr_id", objectRaw["EcrId"])
-	d.Set("transit_router_id", objectRaw["TransitRouterId"])
+	d.Set("vpc_id", objectRaw["VpcId"])
 
 	allowedPrefixes1Raw := make([]interface{}, 0)
 	if objectRaw["AllowedPrefixes"] != nil {
@@ -166,12 +160,12 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationRead(d
 	parts := strings.Split(d.Id(), ":")
 	d.Set("ecr_id", parts[0])
 	d.Set("association_id", parts[1])
-	d.Set("transit_router_id", parts[2])
+	d.Set("vpc_id", parts[2])
 
 	return nil
 }
 
-func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -184,7 +178,7 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationUpdate
 	query = make(map[string]interface{})
 	request["EcrId"] = parts[0]
 	request["AssociationId"] = parts[1]
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("allowed_prefixes") {
 		update = true
 		if v, ok := d.GetOk("allowed_prefixes"); ok {
@@ -196,33 +190,33 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationUpdate
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		expressConnectRouterServiceV2 := ExpressConnectRouterServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVE", "INACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+		expressConnectRouterServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationRead(d, meta)
+	return resourceVpcAssociationRead(d, meta)
 }
 
-func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcAssociationDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -235,37 +229,37 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouterTrAssociationDelete
 	request["EcrId"] = parts[0]
 	request["AssociationId"] = parts[1]
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ExpressConnectRouter", "2023-09-01", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Conflict.Lock"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound.AssociationId"}) {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.AssociationId"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	expressConnectRouterServiceV2 := ExpressConnectRouterServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterTrAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
+	expressConnectRouterServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, expressConnectRouterServiceV2.ExpressConnectRouterExpressConnectRouterVpcAssociationStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
