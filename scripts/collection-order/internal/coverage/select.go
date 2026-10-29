@@ -164,6 +164,21 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 		implementation := strings.TrimSuffix(path, "_test.go")
 		if implementation != path {
 			implementation += ".go"
+			// A *_test.go file whose mechanically trimmed implementation never
+			// existed is a same-package helper (validation, unit, ...), not the
+			// main test of a missing resource. The registry references
+			// constructors rather than filenames, and main.go reads every
+			// non-test resource_*.go file into fileFunctions, so the helper's
+			// real implementation is already present. Associate the helper with
+			// that implementation so the resource's main coverage check runs
+			// instead of a git show on a path that never existed; a test with no
+			// matching implementation still falls through to oldSource below and
+			// fails closed.
+			if _, ok := fileFunctions[implementation]; !ok {
+				if actual, ok := helperImplementation(path, fileFunctions); ok {
+					implementation = actual
+				}
+			}
 		}
 		names, exists := fileFunctions[implementation]
 		if !exists {
@@ -227,4 +242,49 @@ func Names(selected map[string]string) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// helperImplementation associates a *_test.go file whose mechanically trimmed
+// implementation path never existed with the actual implementation file in the
+// same package directory. The registry references constructors, not filenames,
+// and main.go reads every non-test resource_*.go file into fileFunctions, so a
+// helper such as resource_example_validation_test.go has its real
+// implementation resource_example.go already present. Matching the longest
+// implementation stem that prefixes the test stem keeps
+// resource_example_extra_validation_test.go with resource_example_extra.go
+// rather than resource_example.go. A main test (resource_example_test.go) is
+// never a helper: its trimmed path is the implementation itself, which exists
+// in fileFunctions, so this function is only reached for helpers.
+func helperImplementation(testPath string, fileFunctions map[string]map[string]bool) (string, bool) {
+	testDir, testBase := splitPath(testPath)
+	if !strings.HasSuffix(testBase, "_test.go") {
+		return "", false
+	}
+	testStem := strings.TrimSuffix(testBase, "_test.go")
+	var best string
+	bestLen := -1
+	for implPath := range fileFunctions {
+		implDir, implBase := splitPath(implPath)
+		if implDir != testDir {
+			continue
+		}
+		implStem := strings.TrimSuffix(implBase, ".go")
+		if implStem == testStem || !strings.HasPrefix(testStem, implStem+"_") {
+			continue
+		}
+		if len(implStem) > bestLen {
+			best = implPath
+			bestLen = len(implStem)
+		}
+	}
+	return best, best != ""
+}
+
+// splitPath returns the directory and base name of a slash-separated
+// repository-relative path.
+func splitPath(path string) (dir, base string) {
+	if i := strings.LastIndex(path, "/"); i >= 0 {
+		return path[:i], path[i+1:]
+	}
+	return "", path
 }
