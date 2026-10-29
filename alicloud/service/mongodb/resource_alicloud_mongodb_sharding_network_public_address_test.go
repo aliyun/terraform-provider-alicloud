@@ -1,0 +1,363 @@
+package mongodb_test
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"testing"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mongodb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestAccAliCloudMongoDBShardingNetworkPublicAddress_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_sharding_network_public_address.default"
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMongoDBShardingNetworkPublicAddressMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mongodb.NewMongoDBService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMongodbShardingNetworkPublicAddress")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smongodbshardingnetworkpublicaddress%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongoDBShardingNetworkPublicAddressBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id": "${alicloud_mongodb_sharding_instance.default.id}",
+					"node_id":        "${alicloud_mongodb_sharding_instance.default.mongo_list.0.node_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":                    acctest.CHECKSET,
+						"node_id":                           acctest.CHECKSET,
+						"network_address.#":                 "1",
+						"network_address.0.node_id":         acctest.CHECKSET,
+						"network_address.0.expired_time":    "",
+						"network_address.0.ip_address":      acctest.CHECKSET,
+						"network_address.0.network_address": acctest.CHECKSET,
+						"network_address.0.network_type":    acctest.CHECKSET,
+						"network_address.0.node_type":       "",
+						"network_address.0.port":            acctest.CHECKSET,
+						"network_address.0.role":            acctest.CHECKSET,
+						"network_address.0.vpc_id":          "",
+						"network_address.0.vswitch_id":      "",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AlicloudMongoDBShardingNetworkPublicAddressMap0 = map[string]string{
+	"node_id":        acctest.CHECKSET,
+	"db_instance_id": acctest.CHECKSET,
+}
+
+func AlicloudMongoDBShardingNetworkPublicAddressBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_mongodb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+	}
+
+	resource "alicloud_vswitch" "vswitch" {
+  		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  		zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
+  		vswitch_name = "subnet-for-local-test"
+	}
+
+	resource "alicloud_mongodb_sharding_instance" "default" {
+  		zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
+  		vswitch_id     = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  		engine_version = "4.2"
+  		name           = var.name
+  		mongo_list {
+    		node_class = "dds.mongos.mid"
+  		}
+  		mongo_list {
+    		node_class = "dds.mongos.mid"
+  		}
+  		shard_list {
+    		node_class   = "dds.shard.mid"
+    		node_storage = 10
+  		}
+  		shard_list {
+    		node_class   = "dds.shard.mid"
+    		node_storage = 10
+  		}
+	}
+`, name)
+}
+
+// lintignore: R001
+func TestUnitAlicloudMongoDBShardingNetworkPublicAddress(t *testing.T) {
+	p := acctest.Provider.ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_public_address"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_public_address"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"db_instance_id": "AllocatePublicNetworkAddressValue",
+		"node_id":        "AllocatePublicNetworkAddressValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sweep.SharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"NetworkAddresses": map[string]interface{}{
+			"NetworkAddress": []interface{}{
+				map[string]interface{}{
+					"NetworkType":    "Public",
+					"VswitchId":      "AllocatePublicNetworkAddressValue",
+					"Port":           "AllocatePublicNetworkAddressValue",
+					"VPCId":          "AllocatePublicNetworkAddressValue",
+					"IPAddress":      "AllocatePublicNetworkAddressValue",
+					"ExpiredTime":    "AllocatePublicNetworkAddressValue",
+					"NodeType":       "mongos",
+					"Role":           "AllocatePublicNetworkAddressValue",
+					"NetworkAddress": "AllocatePublicNetworkAddressValue",
+					"NodeId":         "AllocatePublicNetworkAddressValue",
+				},
+			},
+		},
+		"DBInstances": map[string]interface{}{
+			"DBInstance": []interface{}{
+				map[string]interface{}{
+					"DBInstanceStatus": "Running",
+					"DBInstanceId":     "AllocatePublicNetworkAddressValue",
+				},
+			},
+		},
+	}
+	CreateMockResponse := map[string]interface{}{
+		// AllocatePublicNetworkAddress
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_mongodb_sharding_network_public_address", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = mongodb.ResourceAlicloudMongodbShardingNetworkPublicAddressCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// DescribeShardingNetworkAddress Response
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "AllocatePublicNetworkAddress" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mongodb.ResourceAlicloudMongodbShardingNetworkPublicAddressCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_public_address"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	attributesDiff := map[string]interface{}{}
+	diff, err := acctest.NewInstanceDiff("alicloud_mongodb_sharding_network_public_address", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_mongodb_sharding_network_public_address"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeShardingNetworkAddress" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mongodb.ResourceAlicloudMongodbShardingNetworkPublicAddressRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = mongodb.ResourceAlicloudMongodbShardingNetworkPublicAddressDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{
+		"db_instance_id": "AllocatePublicNetworkAddressValue",
+		"node_id":        "AllocatePublicNetworkAddressValue",
+	}
+	diff, err = acctest.NewInstanceDiff("alicloud_mongodb_sharding_network_public_address", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_mongodb_sharding_network_public_address"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ReleasePublicNetworkAddress" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{
+							"NetworkAddresses": map[string]interface{}{
+								"NetworkAddress": []interface{}{
+									map[string]interface{}{
+										"NetworkType": "Public",
+										"NodeType":    "mongos",
+										"NodeId":      "AllocatePublicNetworkAddressValue",
+									},
+								},
+							},
+							"DBInstances": map[string]interface{}{
+								"DBInstance": []interface{}{
+									map[string]interface{}{
+										"DBInstanceStatus": "Running",
+										"DBInstanceId":     "AllocatePublicNetworkAddressValue",
+									},
+								},
+							},
+						}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mongodb.ResourceAlicloudMongodbShardingNetworkPublicAddressDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
+			assert.Nil(t, err)
+		}
+	}
+
+}
