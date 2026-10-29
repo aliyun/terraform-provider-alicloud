@@ -112,6 +112,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/milvus"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mnsopen"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mongodb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mscopensubscription"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/nas"
@@ -285,6 +286,7 @@ var servicePackages = []conns.ServicePackage{
 	milvus.ServicePackage(),
 	mns.ServicePackage(),
 	mnsopen.ServicePackage(),
+	mongodb.ServicePackage(),
 	mscopensubscription.ServicePackage(),
 	mse.ServicePackage(),
 	nas.ServicePackage(),
