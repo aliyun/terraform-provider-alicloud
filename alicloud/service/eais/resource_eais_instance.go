@@ -1,4 +1,4 @@
-package alicloud
+package eais
 
 import (
 	"encoding/json"
@@ -8,16 +8,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEaisInstance() *schema.Resource {
+func ResourceEaisInstance() *schema.Resource {
 	return &schema.Resource{
-		Create:             resourceAliCloudEaisInstanceCreate,
-		Read:               resourceAliCloudEaisInstanceRead,
-		Update:             resourceAliCloudEaisInstanceUpdate,
-		Delete:             resourceAliCloudEaisInstanceDelete,
+		Create:             ResourceEaisInstanceCreate,
+		Read:               ResourceEaisInstanceRead,
+		Update:             ResourceEaisInstanceUpdate,
+		Delete:             ResourceEaisInstanceDelete,
 		DeprecationMessage: "This resource has been deprecated since v1.278.0.",
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -62,7 +67,7 @@ func resourceAliCloudEaisInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"eais.ei-a6.2xlarge", "eais.ei-a6.medium"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"eais.ei-a6.2xlarge", "eais.ei-a6.medium"}, false),
 			},
 			"region_id": {
 				Type:     schema.TypeString,
@@ -83,7 +88,7 @@ func resourceAliCloudEaisInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -103,10 +108,10 @@ func resourceAliCloudEaisInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	if InArray(fmt.Sprint(d.Get("category")), []string{"eais", ""}) {
+	if helper.InArray(fmt.Sprint(d.Get("category")), []string{"eais", ""}) {
 		action := "CreateEai"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -114,14 +119,14 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 		var err error
 		request = make(map[string]interface{})
 		request["RegionId"] = client.RegionId
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if v, ok := d.GetOk("resource_group_id"); ok {
 			request["ResourceGroupId"] = v
 		}
 		if v, ok := d.GetOk("tags"); ok {
-			tagsMap := ConvertTags(v.(map[string]interface{}))
-			request = expandTagsToMap(request, tagsMap)
+			tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+			request = tags.ExpandTagsToMap(request, tagsMap)
 		}
 
 		request["InstanceType"] = d.Get("instance_type")
@@ -133,11 +138,11 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 		if v, ok := d.GetOk("image"); ok {
 			request["Image"] = v
 		}
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -145,23 +150,23 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eais_instance", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eais_instance", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		d.SetId(fmt.Sprint(response["ElasticAcceleratedInstanceId"]))
 
 		eaisServiceV2 := EaisServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
 
-	if v, ok := d.GetOk("category"); ok && InArray(fmt.Sprint(v), []string{"jupyter"}) {
+	if v, ok := d.GetOk("category"); ok && helper.InArray(fmt.Sprint(v), []string{"jupyter"}) {
 		action := "CreateEaiJupyter"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -169,14 +174,14 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 		var err error
 		request = make(map[string]interface{})
 		request["RegionId"] = client.RegionId
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if v, ok := d.GetOk("resource_group_id"); ok {
 			request["ResourceGroupId"] = v
 		}
 		if v, ok := d.GetOk("tags"); ok {
-			tagsMap := ConvertTags(v.(map[string]interface{}))
-			request = expandTagsToMap(request, tagsMap)
+			tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+			request = tags.ExpandTagsToMap(request, tagsMap)
 		}
 
 		request["SecurityGroupId"] = d.Get("security_group_id")
@@ -195,17 +200,17 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			environmentVarMapsJson, err := json.Marshal(environmentVarMapsArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["EnvironmentVar"] = string(environmentVarMapsJson)
 		}
 
 		request["EaisType"] = d.Get("instance_type")
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -213,23 +218,23 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eais_instance", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eais_instance", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		d.SetId(fmt.Sprint(response["ElasticAcceleratedInstanceId"]))
 
 		eaisServiceV2 := EaisServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"InUse"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"InUse"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
 
-	if v, ok := d.GetOk("category"); ok && InArray(fmt.Sprint(v), []string{"ei"}) {
+	if v, ok := d.GetOk("category"); ok && helper.InArray(fmt.Sprint(v), []string{"ei"}) {
 		action := "CreateEaisEi"
 		var request map[string]interface{}
 		var response map[string]interface{}
@@ -237,14 +242,14 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 		var err error
 		request = make(map[string]interface{})
 		request["RegionId"] = client.RegionId
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if v, ok := d.GetOk("resource_group_id"); ok {
 			request["ResourceGroupId"] = v
 		}
 		if v, ok := d.GetOk("tags"); ok {
-			tagsMap := ConvertTags(v.(map[string]interface{}))
-			request = expandTagsToMap(request, tagsMap)
+			tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+			request = tags.ExpandTagsToMap(request, tagsMap)
 		}
 
 		if v, ok := d.GetOk("instance_name"); ok {
@@ -253,11 +258,11 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 		request["InstanceType"] = d.Get("instance_type")
 		request["VSwitchId"] = d.Get("vswitch_id")
 		request["SecurityGroupId"] = d.Get("security_group_id")
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -265,37 +270,37 @@ func resourceAliCloudEaisInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_eais_instance", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eais_instance", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		d.SetId(fmt.Sprint(response["EiInstanceId"]))
 
 		eaisServiceV2 := EaisServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Bindable"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Bindable"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
 
-	return resourceAliCloudEaisInstanceUpdate(d, meta)
+	return ResourceEaisInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudEaisInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eaisServiceV2 := EaisServiceV2{client}
 
 	objectRaw, err := eaisServiceV2.DescribeEaisInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eais_instance DescribeEaisInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreationTime"])
@@ -308,12 +313,12 @@ func resourceAliCloudEaisInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("vswitch_id", objectRaw["VSwitchId"])
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -324,13 +329,13 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 		eaisServiceV2 := EaisServiceV2{client}
 		object, err := eaisServiceV2.DescribeEaisInstance(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
 		if object["Status"].(string) != target {
 			enableAction := false
-			if v, ok := d.GetOk("category"); ok && InArray(fmt.Sprint(v), []string{"jupyter"}) {
+			if v, ok := d.GetOk("category"); ok && helper.InArray(fmt.Sprint(v), []string{"jupyter"}) {
 				enableAction = true
 			}
 			if target == "Stopped" && enableAction {
@@ -339,11 +344,11 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 				query = make(map[string]interface{})
 				request["InstanceId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -351,14 +356,14 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				eaisServiceV2 := EaisServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -368,11 +373,11 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 				query = make(map[string]interface{})
 				request["InstanceId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -380,14 +385,14 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 				eaisServiceV2 := EaisServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"InUse"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"InUse"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, eaisServiceV2.EaisInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 
 			}
@@ -405,11 +410,11 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 	request["ResourceGroupId"] = d.Get("resource_group_id")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -417,26 +422,26 @@ func resourceAliCloudEaisInstanceUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
 		eaisServiceV2 := EaisServiceV2{client}
 		if err := eaisServiceV2.SetResourceTags(d, "instance"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
-	return resourceAliCloudEaisInstanceRead(d, meta)
+	return ResourceEaisInstanceRead(d, meta)
 }
 
-func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceEaisInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	enableDelete := true
 	if v, ok := d.GetOk("category"); ok {
-		if InArray(fmt.Sprint(v), []string{"ei"}) {
+		if helper.InArray(fmt.Sprint(v), []string{"ei"}) {
 			enableDelete = false
 			log.Printf("[WARN] Cannot destroy resource alicloud_eais_instance which category valued ei. Terraform will remove this resource from the state file, however resources may remain.")
 		}
@@ -452,12 +457,12 @@ func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}
 		request["ElasticAcceleratedInstanceId"] = d.Id()
 		request["RegionId"] = client.RegionId
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -465,20 +470,20 @@ func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
 
 	enableDelete = false
 	if v, ok := d.GetOk("category"); ok {
-		if InArray(fmt.Sprint(v), []string{"ei"}) {
+		if helper.InArray(fmt.Sprint(v), []string{"ei"}) {
 			enableDelete = true
 		}
 	}
@@ -493,12 +498,12 @@ func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}
 		request["EiInstanceId"] = d.Id()
 		request["RegionId"] = client.RegionId
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPost("eais", "2019-06-24", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -506,13 +511,13 @@ func resourceAliCloudEaisInstanceDelete(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidParameter.InstanceId.NotFound"}) || NotFoundError(err) {
+			if errs.IsExpectedErrors(err, []string{"InvalidParameter.InstanceId.NotFound"}) || errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}

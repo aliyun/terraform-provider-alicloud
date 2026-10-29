@@ -504,9 +504,6 @@ func Provider() *schema.Provider {
 			"alicloud_dts_migration_jobs":       dataSourceAlicloudDtsMigrationJobs(),
 			"alicloud_dts_instances":            dataSourceAlicloudDtsInstances(),
 
-			// eais
-			"alicloud_eais_instances": dataSourceAlicloudEaisInstances(),
-
 			// ecd
 			"alicloud_ecd_desktop_groups":            dataSourceAliCloudEcdDesktopGroups(),
 			"alicloud_ecd_policy_groups":             dataSourceAlicloudEcdPolicyGroups(),
@@ -1529,10 +1526,6 @@ func Provider() *schema.Provider {
 			"alicloud_dts_synchronization_job":      resourceAlicloudDtsSynchronizationJob(),
 			"alicloud_dts_consumer_channel":         resourceAlicloudDtsConsumerChannel(),
 			"alicloud_dts_instance":                 resourceAliCloudDtsInstance(),
-
-			// eais
-			"alicloud_eais_client_instance_attachment": resourceAliCloudEaisClientInstanceAttachment(),
-			"alicloud_eais_instance":                   resourceAliCloudEaisInstance(),
 
 			// ecd
 			"alicloud_ecd_desktop_group":            resourceAliCloudEcdDesktopGroup(),
