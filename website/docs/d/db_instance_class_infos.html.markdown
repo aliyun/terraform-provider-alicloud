@@ -11,11 +11,11 @@ description: |-
 
 This data source operation to query the instance types that are available to specific instances of Alibaba Cloud.
 
--> **NOTE:** Available in v1.196.0+
+-> **NOTE:** Available since v1.196.0
 
 ## Example Usage
 
-```tf
+```terraform
 data "alicloud_db_instance_class_infos" "resources" {
   commodity_code = "bards"
   order_type     = "BUY"
@@ -49,6 +49,19 @@ The following arguments are supported:
 
   -> **NOTE**: If you use the CommodityCode parameter to query the instance types that are available to read-only instances, you must specify the DBInstanceId parameter.
 * `db_instance_id` - (Optional) The ID of the primary instance.
+* `infos` - (Optional) A list of Rds available resource. See [`infos`](#infos) below.
+
+### `infos`
+
+* `class_code` - (Optional) The code of the instance type.
+* `class_group` - (Optional) The instance family of the instance.
+* `cpu` - (Optional) The number of cores that are supported by the instance type. Unit: cores.
+* `max_connections` - (Optional) The maximum number of connections that are supported by the instance type. Unit: connections.
+* `max_iombps` - (Optional) The maximum I/O bandwidth that is supported by the instance type. Unit: Mbit/s.
+* `max_iops` - (Optional) The maximum input/output operations per second (IOPS) that is supported by the instance type. Unit: operations per second.
+* `memory_class` - (Optional) The memory capacity that is supported by the instance type. Unit: GB.
+* `reference_price` - (Optional) The fee that you must pay for the instance type. Unit: cent (USD).
+* `instruction_set_arch` - (Optional) The architecture of the instance type.
 
 
 ## Attributes Reference

@@ -432,12 +432,7 @@ func Provider() *schema.Provider {
 			// dataworks
 			"alicloud_dataworks_service": dataSourceAlicloudDataWorksService(),
 
-			// db
-			"alicloud_db_zones":                dataSourceAlicloudDBZones(),
-			"alicloud_db_instances":            dataSourceAlicloudDBInstances(),
-			"alicloud_db_instance_engines":     dataSourceAlicloudDBInstanceEngines(),
-			"alicloud_db_instance_classes":     dataSourceAliCloudDBInstanceClasses(),
-			"alicloud_db_instance_class_infos": dataSourceAlicloudDBInstanceClassInfos(),
+			// db (registered in alicloud/service/rds)
 
 			// dbfs
 			"alicloud_dbfs_instances":               dataSourceAlicloudDbfsInstances(),
@@ -715,7 +710,6 @@ func Provider() *schema.Provider {
 			// instance
 			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
 			"alicloud_instance_types":         dataSourceAliCloudInstanceTypes(),
-			"alicloud_instance_keywords":      dataSourceAlicloudInstanceKeywords(),
 
 			// instances
 			"alicloud_instances": dataSourceAlicloudInstances(),
@@ -890,17 +884,7 @@ func Provider() *schema.Provider {
 			// rdc
 			"alicloud_rdc_organizations": dataSourceAlicloudRdcOrganizations(),
 
-			// rds
-			"alicloud_rds_backups":               dataSourceAlicloudRdsBackups(),
-			"alicloud_rds_modify_parameter_logs": dataSourceAlicloudRdsModifyParameterLogs(),
-			"alicloud_rds_parameter_groups":      dataSourceAlicloudRdsParameterGroups(),
-			"alicloud_rds_collation_time_zones":  dataSourceAlicloudRdsCollationTimeZones(),
-			"alicloud_rds_accounts":              dataSourceAlicloudRdsAccounts(),
-			"alicloud_rds_cross_regions":         dataSourceAlicloudRdsCrossRegions(),
-			"alicloud_rds_cross_region_backups":  dataSourceAlicloudRdsCrossRegionBackups(),
-			"alicloud_rds_character_set_names":   dataSourceAlicloudRdsCharacterSetNames(),
-			"alicloud_rds_slots":                 dataSourceAlicloudRdsSlots(),
-			"alicloud_rds_class_details":         dataSourceAlicloudRdsClassDetails(),
+			// rds (registered in alicloud/service/rds)
 
 			// realtime
 			"alicloud_realtime_compute_variables": dataSourceAliCloudRealtimeComputeVariables(),
@@ -1441,15 +1425,7 @@ func Provider() *schema.Provider {
 
 			// database
 
-			// db
-			"alicloud_db_database":                        resourceAliCloudRdsDatabase(),
-			"alicloud_db_account":                         resourceAliCloudRdsAccount(),
-			"alicloud_db_account_privilege":               resourceAlicloudDBAccountPrivilege(),
-			"alicloud_db_backup_policy":                   resourceAlicloudDBBackupPolicy(),
-			"alicloud_db_connection":                      resourceAlicloudDBConnection(),
-			"alicloud_db_read_write_splitting_connection": resourceAlicloudDBReadWriteSplittingConnection(),
-			"alicloud_db_instance":                        resourceAliCloudDBInstance(),
-			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
+			// db (registered in alicloud/service/rds)
 
 			// dbfs
 			"alicloud_dbfs_instance":              resourceAliCloudDbfsDbfsInstance(),
@@ -2110,25 +2086,7 @@ func Provider() *schema.Provider {
 			// rdc
 			"alicloud_rdc_organization": resourceAlicloudRdcOrganization(),
 
-			// rds
-			"alicloud_rds_custom_disk_attachment":       resourceAliCloudRdsCustomDiskAttachment(),
-			"alicloud_rds_custom_disk":                  resourceAliCloudRdsCustomDisk(),
-			"alicloud_rds_custom_deployment_set":        resourceAliCloudRdsCustomDeploymentSet(),
-			"alicloud_rds_custom":                       resourceAliCloudRdsCustom(),
-			"alicloud_rds_whitelist_template":           resourceAliCloudRdsWhitelistTemplate(),
-			"alicloud_rds_backup":                       resourceAliCloudRdsBackup(),
-			"alicloud_rds_db_proxy":                     resourceAlicloudRdsDBProxy(),
-			"alicloud_rds_db_proxy_public":              resourceAliCloudRdsDBProxyPublic(),
-			"alicloud_rds_clone_db_instance":            resourceAlicloudRdsCloneDbInstance(),
-			"alicloud_rds_upgrade_db_instance":          resourceAlicloudRdsUpgradeDbInstance(),
-			"alicloud_rds_instance_cross_backup_policy": resourceAlicloudRdsInstanceCrossBackupPolicy(),
-			"alicloud_rds_ddr_instance":                 resourceAlicloudRdsDdrInstance(),
-			"alicloud_rds_parameter_group":              resourceAlicloudRdsParameterGroup(),
-			"alicloud_rds_account":                      resourceAliCloudRdsAccount(),
-			"alicloud_rds_db_node":                      resourceAlicloudRdsDBNode(),
-			"alicloud_rds_db_instance_endpoint":         resourceAlicloudRdsDBInstanceEndpoint(),
-			"alicloud_rds_db_instance_endpoint_address": resourceAlicloudRdsDBInstanceEndpointAddress(),
-			"alicloud_rds_service_linked_role":          resourceAlicloudRdsServiceLinkedRole(),
+			// rds (registered in alicloud/service/rds)
 
 			// realtime
 			"alicloud_realtime_compute_variable":     resourceAliCloudRealtimeComputeVariable(),
