@@ -1,4 +1,4 @@
-package alicloud
+package yundundbaudit
 
 import (
 	"log"
@@ -8,13 +8,17 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDbauditInstances() *schema.Resource {
+func DataSourceInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDbauditInstancesRead,
+		Read: dataSourceInstancesRead,
 
 		Schema: map[string]*schema.Schema{
 			"description_regex": {
@@ -75,20 +79,20 @@ func dataSourceAlicloudDbauditInstances() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": tags.TagsSchema(),
 					},
 				},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
-func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := yundun_dbaudit.CreateDescribeInstancesRequest()
-	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageSize = requests.NewInteger(helper.PageSizeSmall)
 	request.CurrentPage = requests.NewInteger(1)
 	var instances []yundun_dbaudit.Instance
 
@@ -127,9 +131,9 @@ func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interfa
 			return dbauditClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*yundun_dbaudit.DescribeInstancesResponse)
 		if len(response.Instances) < 1 {
 			break
@@ -142,14 +146,14 @@ func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interfa
 			instances = append(instances, e)
 		}
 
-		if len(response.Instances) < PageSizeSmall {
+		if len(response.Instances) < helper.PageSizeSmall {
 			break
 		}
 
 		currentPageNo := request.CurrentPage
 
-		if page, err := getNextpageNumber(currentPageNo); err != nil {
-			return WrapError(err)
+		if page, err := helper.GetNextpageNumber(currentPageNo); err != nil {
+			return errs.WrapError(err)
 		} else {
 			request.CurrentPage = page
 		}
@@ -159,19 +163,19 @@ func dataSourceAlicloudDbauditInstancesRead(d *schema.ResourceData, meta interfa
 	for _, inst := range instances {
 		request := yundun_dbaudit.CreateListTagResourcesRequest()
 		request.RegionId = client.RegionId
-		request.ResourceType = strings.ToUpper(string(TagResourceInstance))
+		request.ResourceType = strings.ToUpper(string(tags.TagResourceInstance))
 		request.ResourceId = &[]string{inst.InstanceId}
 		raw, err := client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
 			return dbauditClient.ListTagResources(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit_tags", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_yundun_dbaudit_tags", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*yundun_dbaudit.ListTagResourcesResponse)
 		instanceTags = append(instanceTags, yundun_dbaudit.TagResources{TagResource: response.TagResources})
 	}
-	return WrapError(extractDbauditInstance(d, instances, instanceTags))
+	return errs.WrapError(extractDbauditInstance(d, instances, instanceTags))
 }
 
 func extractDbauditInstance(d *schema.ResourceData, specs []yundun_dbaudit.Instance, tags []yundun_dbaudit.TagResources) error {
@@ -196,21 +200,21 @@ func extractDbauditInstance(d *schema.ResourceData, specs []yundun_dbaudit.Insta
 		instances = append(instances, instanceMap)
 	}
 
-	d.SetId(dataResourceIdHash(instanceIds))
+	d.SetId(helper.DataResourceIdHash(instanceIds))
 	if err := d.Set("ids", instanceIds); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("descriptions", descriptions); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", instances); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// storage locally
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), instances)
+		helper.WriteToFile(output.(string), instances)
 	}
 	log.Printf("DEBUF data source finnished")
 	return nil
