@@ -1109,8 +1109,6 @@ func Provider() *schema.Provider {
 			"alicloud_threat_detection_instances":              dataSourceAlicloudThreatDetectionInstances(),
 
 			// tsdb
-			"alicloud_tsdb_instances": dataSourceAlicloudTsdbInstances(),
-			"alicloud_tsdb_zones":     dataSourceAlicloudTsdbZones(),
 
 			// video
 			"alicloud_video_surveillance_system_groups": dataSourceAlicloudVideoSurveillanceSystemGroups(),
@@ -2476,7 +2474,6 @@ func Provider() *schema.Provider {
 			"alicloud_threat_detection_instance":                           resourceAliCloudThreatDetectionInstance(),
 
 			// tsdb
-			"alicloud_tsdb_instance": resourceAlicloudTsdbInstance(),
 
 			// video
 			"alicloud_video_surveillance_system_group": resourceAlicloudVideoSurveillanceSystemGroup(),

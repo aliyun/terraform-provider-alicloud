@@ -1,4 +1,4 @@
-package alicloud
+package tsdb
 
 import (
 	"fmt"
@@ -6,17 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudTsdbInstance() *schema.Resource {
+func ResourceTsdbInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudTsdbInstanceCreate,
-		Read:   resourceAlicloudTsdbInstanceRead,
-		Update: resourceAlicloudTsdbInstanceUpdate,
-		Delete: resourceAlicloudTsdbInstanceDelete,
+		Create: ResourceTsdbInstanceCreate,
+		Read:   ResourceTsdbInstanceRead,
+		Update: ResourceTsdbInstanceUpdate,
+		Delete: ResourceTsdbInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -88,9 +91,9 @@ func resourceAlicloudTsdbInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceTsdbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hitsdbService := HitsdbService{client}
+	tsdbService := NewTsdbService(client)
 	var response map[string]interface{}
 	action := "CreateHiTSDBInstance"
 	request := make(map[string]interface{})
@@ -126,12 +129,11 @@ func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}
 		request["ZoneId"] = v
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	vswitchId := helper.Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
-		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitchWithTeadsl(vswitchId)
+		vsw, err := tsdbService.describeVSwitch(vswitchId)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["VPCId"] = vsw["VpcId"]
 		request["VSwitchId"] = vswitchId
@@ -139,32 +141,32 @@ func resourceAlicloudTsdbInstanceCreate(d *schema.ResourceData, meta interface{}
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
-	request["ClientToken"] = buildClientToken("CreateHiTSDBInstance")
+	request["ClientToken"] = helper.BuildClientToken("CreateHiTSDBInstance")
 	response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_tsdb_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_tsdb_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, hitsdbService.TsdbInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, tsdbService.TsdbInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudTsdbInstanceRead(d, meta)
+	return ResourceTsdbInstanceRead(d, meta)
 }
-func resourceAlicloudTsdbInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceTsdbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hitsdbService := HitsdbService{client}
-	object, err := hitsdbService.DescribeTsdbInstance(d.Id())
+	tsdbService := NewTsdbService(client)
+	object, err := tsdbService.DescribeTsdbInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_tsdb_instance hitsdbService.DescribeTsdbInstance Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_tsdb_instance tsdbService.DescribeTsdbInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("disk_category", object["DiskCategory"])
 	d.Set("engine_type", object["EngineType"])
@@ -177,9 +179,9 @@ func resourceAlicloudTsdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("zone_id", object["ZoneId"])
 	return nil
 }
-func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hitsdbService := HitsdbService{client}
+	tsdbService := NewTsdbService(client)
 	var response map[string]interface{}
 	var err error
 	d.Partial(true)
@@ -197,21 +199,21 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 			request["AppKey"] = d.Get("app_key")
 		}
 		action := "RenameHiTSDBInstanceAlias"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -231,31 +233,31 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 			modifyHiTSDBInstanceClassReq["AppKey"] = d.Get("app_key")
 		}
 		action := "ModifyHiTSDBInstanceClass"
-		wait := incrementalWait(3*time.Second, 30*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 30*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, modifyHiTSDBInstanceClassReq, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessingError"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"OperationDenied.OrderProcessingError"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, modifyHiTSDBInstanceClassReq)
+			logs.AddDebug(action, response, modifyHiTSDBInstanceClassReq)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, hitsdbService.TsdbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, tsdbService.TsdbInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudTsdbInstanceRead(d, meta)
+	return ResourceTsdbInstanceRead(d, meta)
 }
-func resourceAlicloudTsdbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceTsdbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHiTSDBInstance"
 	var response map[string]interface{}
@@ -267,24 +269,24 @@ func resourceAlicloudTsdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("app_key"); ok {
 		request["AppKey"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsNotAvailable", "Instance.IsNotPostPay"}) {
+		if errs.IsExpectedErrors(err, []string{"Instance.IsNotAvailable", "Instance.IsNotPostPay"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

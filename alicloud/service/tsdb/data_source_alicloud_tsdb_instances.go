@@ -1,17 +1,20 @@
-package alicloud
+package tsdb
 
 import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudTsdbInstances() *schema.Resource {
+func DataSourceTsdbInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudTsdbInstancesRead,
+		Read: DataSourceTsdbInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"app_key": {
 				Type:     schema.TypeString,
@@ -134,7 +137,7 @@ func dataSourceAlicloudTsdbInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func DataSourceTsdbInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeHiTSDBInstanceList"
@@ -152,7 +155,7 @@ func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{
 		request["StatusList"] = v
 	}
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 
@@ -171,13 +174,13 @@ func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{
 	for {
 		response, err = client.RpcPost("hitsdb", "2017-06-01", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_tsdb_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_tsdb_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.InstanceList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.InstanceList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -192,7 +195,7 @@ func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -221,11 +224,11 @@ func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{
 			continue
 		}
 
-		hitsdbService := HitsdbService{client}
+		tsdbService := NewTsdbService(client)
 		id := fmt.Sprint(object["InstanceId"])
-		getResp, err := hitsdbService.DescribeTsdbInstance(id)
+		getResp, err := tsdbService.DescribeTsdbInstance(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["auto_renew"] = getResp["AutoRenew"]
 		mapping["cpu_number"] = getResp["CpuNumber"]
@@ -236,16 +239,16 @@ func dataSourceAlicloudTsdbInstancesRead(d *schema.ResourceData, meta interface{
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		_ = helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
