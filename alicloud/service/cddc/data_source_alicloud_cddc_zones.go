@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -7,13 +7,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudCddcZones() *schema.Resource {
+func DataSourceZones() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCddcZonesRead,
+		Read: dataSourceZonesRead,
 		Schema: map[string]*schema.Schema{
 			"output_file": {
 				Type:     schema.TypeString,
@@ -48,7 +51,7 @@ func dataSourceAlicloudCddcZones() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCddcZonesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ids := make([]string, 0)
 	action := "DescribeRegions"
@@ -56,11 +59,11 @@ func dataSourceAlicloudCddcZonesRead(d *schema.ResourceData, meta interface{}) e
 	var objects []map[string]interface{}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -68,13 +71,13 @@ func dataSourceAlicloudCddcZonesRead(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cddc_zones", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cddc_zones", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.Regions.RDSRegion", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Regions.RDSRegion", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Regions.RDSRegion", response)
 	}
 
 	result, _ := resp.([]interface{})
@@ -98,15 +101,15 @@ func dataSourceAlicloudCddcZonesRead(d *schema.ResourceData, meta interface{}) e
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

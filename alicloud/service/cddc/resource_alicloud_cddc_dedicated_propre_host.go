@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package cddc. This file is generated automatically. Please do not modify it manually, thank you!
+package cddc
 
 import (
 	"encoding/json"
@@ -10,16 +10,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
+func ResourceDedicatedPropreHost() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCddcDedicatedPropreHostCreate,
-		Read:   resourceAliCloudCddcDedicatedPropreHostRead,
-		Update: resourceAliCloudCddcDedicatedPropreHostUpdate,
-		Delete: resourceAliCloudCddcDedicatedPropreHostDelete,
+		Create: resourceDedicatedPropreHostCreate,
+		Read:   resourceDedicatedPropreHostRead,
+		Update: resourceDedicatedPropreHostUpdate,
+		Delete: resourceDedicatedPropreHostDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -125,7 +131,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"alisql", "tair", "mssql", "mysql"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"alisql", "tair", "mssql", "mysql"}, false),
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -135,12 +141,12 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
+				ValidateFunc: validators.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
 			},
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 100),
+				ValidateFunc: validators.IntBetween(0, 100),
 			},
 			"key_pair_name": {
 				Type:     schema.TypeString,
@@ -159,7 +165,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Subscription"}, true),
+				ValidateFunc: validators.StringInSlice([]string{"Subscription"}, true),
 			},
 			"period": {
 				Type:     schema.TypeString,
@@ -168,7 +174,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 			"period_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Monthly"}, true),
+				ValidateFunc: validators.StringInSlice([]string{"Monthly"}, true),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -181,7 +187,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"tags": tagsSchemaForceNew(),
+			"tags": tags.TagsSchemaForceNew(),
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -204,7 +210,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 	}
 }
 
-func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedPropreHostCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -216,7 +222,7 @@ func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta 
 	request = make(map[string]interface{})
 	query["DedicatedHostGroupId"] = d.Get("dedicated_host_group_id")
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["Engine"] = d.Get("engine")
 	request["SecurityGroupId"] = d.Get("security_group_id")
@@ -274,17 +280,17 @@ func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta 
 		}
 		eCSClassListMapsJson, err := json.Marshal(eCSClassListMaps)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["ECSClassList"] = string(eCSClassListMapsJson)
 	}
 
-	request["PayType"] = convertCddcDedicatedPropreHostPayTypeRequest(d.Get("payment_type").(string))
+	request["PayType"] = convertDedicatedPropreHostPayTypeRequest(d.Get("payment_type").(string))
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		tagsMapJson, err := convertListMapToJsonString(tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		tagsMapJson, err := convert.ConvertListMapToJsonString(tagsMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Tags"] = tagsMapJson
 	}
@@ -307,52 +313,52 @@ func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cddc_dedicated_propre_host", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cddc_dedicated_propre_host", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	OrderListOrderListDedicatedHostGroupName, _ := jsonpath.Get("$.OrderList.OrderList[0].DedicatedHostGroupName", response)
 	OrderListOrderListECSInstanceIds, _ := jsonpath.Get("$.OrderList.OrderList[0].ECSInstanceIds", response)
 	d.SetId(fmt.Sprintf("%v:%v", OrderListOrderListDedicatedHostGroupName, OrderListOrderListECSInstanceIds))
 
-	cddcServiceV2 := CddcServiceV2{client}
+	cddcServiceV2 := NewServiceV2(client)
 	sysDiskCapacity := d.Get("ecs_class_list.0.sys_disk_capacity")
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(sysDiskCapacity)}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcServiceV2.CddcDedicatedPropreHostStateRefreshFunc(d.Id(), "$.EcsClasses[0].SysDiskCapacity", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(sysDiskCapacity)}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcServiceV2.DedicatedPropreHostStateRefreshFunc(d.Id(), "$.EcsClasses[0].SysDiskCapacity", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudCddcDedicatedPropreHostRead(d, meta)
+	return resourceDedicatedPropreHostRead(d, meta)
 }
 
-func resourceAliCloudCddcDedicatedPropreHostRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedPropreHostRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cddcServiceV2 := CddcServiceV2{client}
+	cddcServiceV2 := NewServiceV2(client)
 
-	objectRaw, err := cddcServiceV2.DescribeCddcDedicatedPropreHost(d.Id())
+	objectRaw, err := cddcServiceV2.DescribeDedicatedPropreHost(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_propre_host DescribeCddcDedicatedPropreHost Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_propre_host DescribeDedicatedPropreHost Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("engine", objectRaw["Engine"])
@@ -375,7 +381,7 @@ func resourceAliCloudCddcDedicatedPropreHostRead(d *schema.ResourceData, meta in
 	d.Set("ecs_zone_id", dedicatedInstancesChild1Raw["ZoneId"])
 	d.Set("image_id", dedicatedInstancesChild1Raw["ImageId"])
 	d.Set("key_pair_name", dedicatedInstancesChild1Raw["KeyPairName"])
-	d.Set("payment_type", convertCddcDedicatedPropreHostDedicatedInstancesInstanceChargeTypeResponse(dedicatedInstancesChild1Raw["InstanceChargeType"]))
+	d.Set("payment_type", convertDedicatedPropreHostDedicatedInstancesInstanceChargeTypeResponse(dedicatedInstancesChild1Raw["InstanceChargeType"]))
 	d.Set("resource_group_id", dedicatedInstancesChild1Raw["ResourceGroupId"])
 	d.Set("security_group_id", dedicatedInstancesChild1Raw["SecurityGroupIds"])
 	d.Set("vswitch_id", dedicatedInstancesChild1Raw["VSwitchId"])
@@ -401,7 +407,7 @@ func resourceAliCloudCddcDedicatedPropreHostRead(d *schema.ResourceData, meta in
 	}
 	d.Set("ecs_class_list", ecsClassListMaps)
 	tagsMaps, _ := jsonpath.Get("$.Tags", dedicatedInstancesChild1Raw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("dedicated_host_group_name", parts[0])
@@ -410,24 +416,24 @@ func resourceAliCloudCddcDedicatedPropreHostRead(d *schema.ResourceData, meta in
 	return nil
 }
 
-func resourceAliCloudCddcDedicatedPropreHostUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedPropreHostUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] Cannot update resource Alicloud Resource Dedicated Propre Host.")
 	return nil
 }
 
-func resourceAliCloudCddcDedicatedPropreHostDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedPropreHostDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Dedicated Propre Host. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
 
-func convertCddcDedicatedPropreHostDedicatedInstancesInstanceChargeTypeResponse(source interface{}) interface{} {
+func convertDedicatedPropreHostDedicatedInstancesInstanceChargeTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PrePaid":
 		return "Subscription"
 	}
 	return source
 }
-func convertCddcDedicatedPropreHostPayTypeRequest(source interface{}) interface{} {
+func convertDedicatedPropreHostPayTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "Subscription":
 		return "PrePaid"

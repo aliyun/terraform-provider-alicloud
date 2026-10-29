@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudCddcDedicatedHostAccounts() *schema.Resource {
+func DataSourceDedicatedHostAccounts() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCddcDedicatedHostAccountsRead,
+		Read: dataSourceDedicatedHostAccountsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -72,7 +75,7 @@ func dataSourceAlicloudCddcDedicatedHostAccounts() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCddcDedicatedHostAccountsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedHostAccountsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDedicatedHosts"
@@ -88,7 +91,7 @@ func dataSourceAlicloudCddcDedicatedHostAccountsRead(d *schema.ResourceData, met
 	if v, ok := d.GetOk("page_size"); ok {
 		request["PageSize"] = v
 	} else {
-		request["PageSize"] = PageSizeMedium
+		request["PageSize"] = helper.PageSizeMedium
 	}
 	request["RegionId"] = client.RegionId
 	var objects []map[string]interface{}
@@ -106,17 +109,17 @@ func dataSourceAlicloudCddcDedicatedHostAccountsRead(d *schema.ResourceData, met
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		accountNameRegex = r
 	}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -124,13 +127,13 @@ func dataSourceAlicloudCddcDedicatedHostAccountsRead(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cddc_dedicated_host_accounts", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cddc_dedicated_host_accounts", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.DedicatedHosts.DedicatedHosts", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DedicatedHosts.DedicatedHosts", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DedicatedHosts.DedicatedHosts", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -159,20 +162,20 @@ func dataSourceAlicloudCddcDedicatedHostAccountsRead(d *schema.ResourceData, met
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("accounts", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -1,33 +1,35 @@
-package alicloud
+package cddc_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cddc"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudCddcDedicatedHostAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_account.default"
-	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostAccountMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CddcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCddcDedicatedHostAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCDDCDedicatedHostAccountMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cddc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDedicatedHostAccount")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCDDCDedicatedHostAccountBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCDDCDedicatedHostAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.CDDCSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,7 +40,7 @@ func TestAccAliCloudCddcDedicatedHostAccount_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dedicated_host_id": CHECKSET,
+						"dedicated_host_id": acctest.CHECKSET,
 						"account_name":      name,
 					}),
 				),

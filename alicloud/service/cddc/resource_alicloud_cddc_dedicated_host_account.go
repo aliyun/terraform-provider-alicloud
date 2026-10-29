@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudCddcDedicatedHostAccount() *schema.Resource {
+func ResourceDedicatedHostAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCddcDedicatedHostAccountCreate,
-		Read:   resourceAlicloudCddcDedicatedHostAccountRead,
-		Update: resourceAlicloudCddcDedicatedHostAccountUpdate,
-		Delete: resourceAlicloudCddcDedicatedHostAccountDelete,
+		Create: resourceDedicatedHostAccountCreate,
+		Read:   resourceDedicatedHostAccountRead,
+		Update: resourceDedicatedHostAccountUpdate,
+		Delete: resourceDedicatedHostAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -50,7 +53,7 @@ func resourceAlicloudCddcDedicatedHostAccount() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCddcDedicatedHostAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDedicatedHostAccount"
@@ -63,12 +66,12 @@ func resourceAlicloudCddcDedicatedHostAccountCreate(d *schema.ResourceData, meta
 	}
 	request["DedicatedHostId"] = d.Get("dedicated_host_id")
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("CreateDedicatedHostAccount")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateDedicatedHostAccount")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -76,43 +79,43 @@ func resourceAlicloudCddcDedicatedHostAccountCreate(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cddc_dedicated_host_account", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cddc_dedicated_host_account", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["DedicatedHostId"], ":", request["AccountName"]))
-	cddcService := CddcService{client}
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["AccountName"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcService.CddcDedicatedHostAccountStateRefreshFunc(d, []string{}))
+	cddcService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(request["AccountName"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cddcService.DedicatedHostAccountStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCddcDedicatedHostAccountRead(d, meta)
+	return resourceDedicatedHostAccountRead(d, meta)
 }
-func resourceAlicloudCddcDedicatedHostAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cddcService := CddcService{client}
-	object, err := cddcService.DescribeCddcDedicatedHostAccount(d.Id())
+	cddcService := NewService(client)
+	object, err := cddcService.DescribeDedicatedHostAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host_account cddcService.DescribeCddcDedicatedHostAccount Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cddc_dedicated_host_account cddcService.DescribeDedicatedHostAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("account_name", object["AccountName"])
 	d.Set("account_type", object["AccountType"])
 	d.Set("dedicated_host_id", object["DedicatedHostId"])
 	return nil
 }
-func resourceAlicloudCddcDedicatedHostAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := map[string]interface{}{
 		"AccountName":     parts[1],
@@ -123,11 +126,11 @@ func resourceAlicloudCddcDedicatedHostAccountUpdate(d *schema.ResourceData, meta
 	}
 	request["RegionId"] = client.RegionId
 	action := "ModifyDedicatedHostAccount"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -135,17 +138,17 @@ func resourceAlicloudCddcDedicatedHostAccountUpdate(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	return resourceAlicloudCddcDedicatedHostAccountRead(d, meta)
+	return resourceDedicatedHostAccountRead(d, meta)
 }
-func resourceAlicloudCddcDedicatedHostAccountDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedHostAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "DeleteDedicatedHostAccount"
 	var response map[string]interface{}
@@ -155,11 +158,11 @@ func resourceAlicloudCddcDedicatedHostAccountDelete(d *schema.ResourceData, meta
 	}
 
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -167,9 +170,9 @@ func resourceAlicloudCddcDedicatedHostAccountDelete(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	// wait for complete async operation
 	time.Sleep(2 * time.Minute)

@@ -1,4 +1,4 @@
-package alicloud
+package cddc
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudCddcDedicatedHostGroups() *schema.Resource {
+func DataSourceDedicatedHostGroups() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCddcDedicatedHostGroupsRead,
+		Read: dataSourceDedicatedHostGroupsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -182,7 +186,7 @@ func dataSourceAlicloudCddcDedicatedHostGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDedicatedHostGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDedicatedHostGroups"
@@ -196,7 +200,7 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		userNameRegex = r
 	}
@@ -212,11 +216,11 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 	}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("cddc", "2020-03-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -224,13 +228,13 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cddc_dedicated_host_groups", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cddc_dedicated_host_groups", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.DedicatedHostGroups.DedicatedHostGroups", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DedicatedHostGroups.DedicatedHostGroups", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DedicatedHostGroups.DedicatedHostGroups", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -250,27 +254,27 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		cpu_allocation_ratioVal, err := formatInt(object["CpuAllocationRatio"])
+		cpu_allocation_ratioVal, err := convert.FormatInt(object["CpuAllocationRatio"])
 		if err != nil {
 			return err
 		}
 
-		disk_allocation_ratioVal, err := formatInt(object["DiskAllocationRatio"])
+		disk_allocation_ratioVal, err := convert.FormatInt(object["DiskAllocationRatio"])
 		if err != nil {
 			return err
 		}
 
-		host_numberVal, err := formatInt(object["HostNumber"])
+		host_numberVal, err := convert.FormatInt(object["HostNumber"])
 		if err != nil {
 			return err
 		}
 
-		instance_numberVal, err := formatInt(object["InstanceNumber"])
+		instance_numberVal, err := convert.FormatInt(object["InstanceNumber"])
 		if err != nil {
 			return err
 		}
 
-		mem_allocation_ratioVal, err := formatInt(object["MemAllocationRatio"])
+		mem_allocation_ratioVal, err := convert.FormatInt(object["MemAllocationRatio"])
 		if err != nil {
 			return err
 		}
@@ -290,7 +294,7 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 			"disk_allocation_ratio":     disk_allocation_ratioVal,
 			"disk_used_amount":          object["DiskUsedAmount"],
 			"disk_utility":              object["DiskUtility"],
-			"engine":                    convertCddcDedicatedHostGroupEngineResponse(object["Engine"]),
+			"engine":                    convertDedicatedHostGroupEngineResponse(object["Engine"]),
 			"host_number":               host_numberVal,
 			"host_replace_policy":       object["HostReplacePolicy"],
 			"instance_number":           instance_numberVal,
@@ -307,18 +311,18 @@ func dataSourceAlicloudCddcDedicatedHostGroupsRead(d *schema.ResourceData, meta 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

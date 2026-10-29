@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cddc Host Ecs Level Infos of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -43,12 +43,12 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `image_category` - (Optional, ForceNew) Host image. Valid values: `WindowsWithMssqlEntAlwaysonLicense`, `WindowsWithMssqlStdLicense`, `WindowsWithMssqlEntLicense`, `WindowsWithMssqlWebLicense`, `AliLinux`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `infos` - A list of Cddc Dedicated Hosts. Each element contains the following attributes:
-	* `res_class_code` - The ApsaraDB RDS instance type of the host ecs level info.
-	* `ecs_class_code` - The Elastic Compute Service (ECS) instance type.
-	* `ecs_class` - The instance family of the host ecs level info.
-	* `description` - The description of the host ecs level info.
+  * `res_class_code` - The ApsaraDB RDS instance type of the host ecs level info.
+  * `ecs_class_code` - The Elastic Compute Service (ECS) instance type.
+  * `ecs_class` - The instance family of the host ecs level info.
+  * `description` - The description of the host ecs level info.
