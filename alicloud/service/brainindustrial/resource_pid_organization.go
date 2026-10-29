@@ -1,4 +1,4 @@
-package alicloud
+package brainindustrial
 
 import (
 	"fmt"
@@ -6,16 +6,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudBrainIndustrialPidOrganization() *schema.Resource {
+func ResourcePidOrganization() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudBrainIndustrialPidOrganizationCreate,
-		Read:   resourceAlicloudBrainIndustrialPidOrganizationRead,
-		Update: resourceAlicloudBrainIndustrialPidOrganizationUpdate,
-		Delete: resourceAlicloudBrainIndustrialPidOrganizationDelete,
+		Create: resourcePidOrganizationCreate,
+		Read:   resourcePidOrganizationRead,
+		Update: resourcePidOrganizationUpdate,
+		Delete: resourcePidOrganizationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -34,7 +37,7 @@ func resourceAlicloudBrainIndustrialPidOrganization() *schema.Resource {
 	}
 }
 
-func resourceAlicloudBrainIndustrialPidOrganizationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourcePidOrganizationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreatePidOrganization"
@@ -45,45 +48,45 @@ func resourceAlicloudBrainIndustrialPidOrganizationCreate(d *schema.ResourceData
 	}
 
 	request["OrganizationName"] = d.Get("pid_organization_name")
-	request["ClientToken"] = buildClientToken("CreatePidOrganization")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreatePidOrganization")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_brain_industrial_pid_organization", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_brain_industrial_pid_organization", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["OrganizationId"]))
 
-	return resourceAlicloudBrainIndustrialPidOrganizationRead(d, meta)
+	return resourcePidOrganizationRead(d, meta)
 }
-func resourceAlicloudBrainIndustrialPidOrganizationRead(d *schema.ResourceData, meta interface{}) error {
+func resourcePidOrganizationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	brain_industrialService := Brain_industrialService{client}
-	object, err := brain_industrialService.DescribeBrainIndustrialPidOrganization(d.Id())
+	service := NewService(client)
+	object, err := service.DescribePidOrganization(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_brain_industrial_pid_organization brain_industrialService.DescribeBrainIndustrialPidOrganization Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_brain_industrial_pid_organization brainindustrialService.DescribePidOrganization Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("pid_organization_name", object["OrganizationName"])
 	return nil
 }
-func resourceAlicloudBrainIndustrialPidOrganizationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourcePidOrganizationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -93,26 +96,26 @@ func resourceAlicloudBrainIndustrialPidOrganizationUpdate(d *schema.ResourceData
 		}
 		request["OrganizationName"] = d.Get("pid_organization_name")
 		action := "UpdatePidOrganization"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudBrainIndustrialPidOrganizationRead(d, meta)
+	return resourcePidOrganizationRead(d, meta)
 }
-func resourceAlicloudBrainIndustrialPidOrganizationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourcePidOrganizationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePidOrganization"
 	var response map[string]interface{}
@@ -121,21 +124,21 @@ func resourceAlicloudBrainIndustrialPidOrganizationDelete(d *schema.ResourceData
 		"OrganizationId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

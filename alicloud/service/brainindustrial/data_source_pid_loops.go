@@ -1,4 +1,4 @@
-package alicloud
+package brainindustrial
 
 import (
 	"fmt"
@@ -6,13 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudBrainIndustrialPidLoops() *schema.Resource {
+func DataSourcePidLoops() *schema.Resource {
 	return &schema.Resource{
-		Read:               dataSourceAlicloudBrainIndustrialPidLoopsRead,
+		Read:               dataSourcePidLoopsRead,
 		DeprecationMessage: "This data source has been deprecated since v1.229.1 and will be removed in the future.",
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
@@ -105,7 +108,7 @@ func dataSourceAlicloudBrainIndustrialPidLoops() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudBrainIndustrialPidLoopsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourcePidLoopsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListPidLoops"
@@ -114,14 +117,14 @@ func dataSourceAlicloudBrainIndustrialPidLoopsRead(d *schema.ResourceData, meta 
 		request["PidLoopName"] = v
 	}
 	request["PidProjectId"] = d.Get("pid_project_id")
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["CurrentPage"] = 1
 	var objects []map[string]interface{}
 	var pidLoopNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		pidLoopNameRegex = r
 	}
@@ -141,13 +144,13 @@ func dataSourceAlicloudBrainIndustrialPidLoopsRead(d *schema.ResourceData, meta 
 	for {
 		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_brain_industrial_pid_loops", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_brain_industrial_pid_loops", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.PidLoopList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PidLoopList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.PidLoopList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -167,7 +170,7 @@ func dataSourceAlicloudBrainIndustrialPidLoopsRead(d *schema.ResourceData, meta 
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
@@ -191,11 +194,11 @@ func dataSourceAlicloudBrainIndustrialPidLoopsRead(d *schema.ResourceData, meta 
 			continue
 		}
 
-		brain_industrialService := Brain_industrialService{client}
+		service := NewService(client)
 		id := fmt.Sprint(object["PidLoopId"])
-		getResp, err := brain_industrialService.DescribeBrainIndustrialPidLoop(id)
+		getResp, err := service.DescribePidLoop(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["pid_loop_configuration"] = getResp["PidLoopConfiguration"]
 		mapping["pid_loop_desc"] = getResp["PidLoopDesc"]
@@ -206,20 +209,20 @@ func dataSourceAlicloudBrainIndustrialPidLoopsRead(d *schema.ResourceData, meta 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("loops", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

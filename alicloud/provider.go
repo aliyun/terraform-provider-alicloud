@@ -268,10 +268,6 @@ func Provider() *schema.Provider {
 			"alicloud_bastionhost_host_share_keys": dataSourceAlicloudBastionhostHostShareKeys(),
 
 			// brain
-			"alicloud_brain_industrial_service":           dataSourceAlicloudBrainIndustrialService(),
-			"alicloud_brain_industrial_pid_organizations": dataSourceAlicloudBrainIndustrialPidOrganizations(),
-			"alicloud_brain_industrial_pid_projects":      dataSourceAlicloudBrainIndustrialPidProjects(),
-			"alicloud_brain_industrial_pid_loops":         dataSourceAlicloudBrainIndustrialPidLoops(),
 
 			// bss
 
@@ -1319,9 +1315,6 @@ func Provider() *schema.Provider {
 			"alicloud_bastionhost_host_account_share_key_attachment":        resourceAlicloudBastionhostHostAccountShareKeyAttachment(),
 
 			// brain
-			"alicloud_brain_industrial_pid_organization": resourceAlicloudBrainIndustrialPidOrganization(),
-			"alicloud_brain_industrial_pid_project":      resourceAlicloudBrainIndustrialPidProject(),
-			"alicloud_brain_industrial_pid_loop":         resourceAlicloudBrainIndustrialPidLoop(),
 
 			// cas
 			"alicloud_cas_certificate": resourceAliCloudSslCertificatesServiceCertificate(),

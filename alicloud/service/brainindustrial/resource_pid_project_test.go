@@ -1,4 +1,4 @@
-package alicloud
+package brainindustrial_test
 
 import (
 	"fmt"
@@ -13,9 +13,13 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,15 +34,15 @@ func init() {
 }
 
 func testSweepBrainIndustrialPidProject(region string) error {
-	if !testSweepPreCheckWithRegions(region, false, connectivity.BrainIndustrialRegions) {
+	if !brainIndustrialSweepSupportedRegion(region) {
 		log.Printf("[INFO] Skipping Brain Industrial unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := brainIndustrialTestClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return errs.WrapErrorf(err, "Error getting Alicloud client.")
 	}
-	client := rawClient.(*connectivity.AliyunClient)
+	client := rawClient
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -53,11 +57,11 @@ func testSweepBrainIndustrialPidProject(region string) error {
 	for {
 		response, err = client.RpcPost("brain-industrial", "2020-09-20", action, nil, request, true)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		resp, err := jsonpath.Get("$.PidProjectList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PidProjectList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.PidProjectList", response)
 		}
 		for _, v := range resp.([]interface{}) {
 			item := v.(map[string]interface{})
@@ -77,7 +81,7 @@ func testSweepBrainIndustrialPidProject(region string) error {
 			}
 			response, err = client.RpcPost("brain-industrial", "2020-09-20", actionDelete, nil, requestDelete, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"-100"}) {
+				if errs.IsExpectedErrors(err, []string{"-100"}) {
 					log.Printf("[INFO] Firstly, Delete Loop belongs to Project")
 					actionLoopList := "ListPidLoops"
 					requestLoopList := map[string]interface{}{
@@ -113,7 +117,7 @@ func testSweepBrainIndustrialPidProject(region string) error {
 						log.Printf("[ERROR] Failed to again delete Brain Industrial Project  (%s): %s", item["PidProjectName"].(string), responseAgain["Message"].(string))
 					}
 				}
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if len(resp.([]interface{})) < request["PageSize"].(int) {
@@ -124,26 +128,26 @@ func testSweepBrainIndustrialPidProject(region string) error {
 	return nil
 }
 
-func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
+func TestAccAliCloudBrainIndustrialPidProject_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_brain_industrial_pid_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudBrainIndustrialPidProjectMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Brain_industrialService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeBrainIndustrialPidProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudBrainIndustrialPidProjectMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return brainindustrial.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribePidProject")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudBrainIndustrialPidProjectBasicDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudBrainIndustrialPidProjectBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.BrainIndustrialRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.BrainIndustrialRegions)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -153,7 +157,7 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pid_organization_id": CHECKSET,
+						"pid_organization_id": acctest.CHECKSET,
 						"pid_project_desc":    "tf test",
 						"pid_project_name":    name,
 					}),
@@ -170,7 +174,7 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pid_organization_id": CHECKSET,
+						"pid_organization_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -202,7 +206,7 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"pid_organization_id": CHECKSET,
+						"pid_organization_id": acctest.CHECKSET,
 						"pid_project_desc":    "tf test",
 						"pid_project_name":    name,
 					}),
@@ -212,9 +216,9 @@ func TestAccAlicloudBrainIndustrialPidProject_basic(t *testing.T) {
 	})
 }
 
-var AlicloudBrainIndustrialPidProjectMap = map[string]string{}
+var AliCloudBrainIndustrialPidProjectMap = map[string]string{}
 
-func AlicloudBrainIndustrialPidProjectBasicDependence(name string) string {
+func AliCloudBrainIndustrialPidProjectBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	resource "alicloud_brain_industrial_pid_organization" "default" {
 		pid_organization_name = "%s"
@@ -225,10 +229,10 @@ func AlicloudBrainIndustrialPidProjectBasicDependence(name string) string {
 }
 
 // lintignore: R001
-func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(nil, nil)
+func TestUnitAliCloudBrainIndustrialPidProject(t *testing.T) {
+	resourceSchema := brainindustrial.ResourcePidProject()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"pid_organization_id": "CreatePidProjectValue",
@@ -245,12 +249,11 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := brainIndustrialTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// ListPidProjects
 		"PidProjectList": []interface{}{
@@ -273,18 +276,18 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_brain_industrial_pid_project", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_brain_industrial_pid_project", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -292,13 +295,13 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAistudioClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudBrainIndustrialPidProjectCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -326,14 +329,14 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudBrainIndustrialPidProjectCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -347,13 +350,13 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAistudioClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudBrainIndustrialPidProjectUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdatePidProject
@@ -362,11 +365,11 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 		"pid_project_name":    "UpdatePidProjectValue",
 		"pid_project_desc":    "UpdatePidProjectValue",
 	}
-	diff, err := newInstanceDiff("alicloud_brain_industrial_pid_project", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_brain_industrial_pid_project", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// ListPidProjects Response
 		"PidProjectList": []interface{}{
@@ -395,14 +398,14 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudBrainIndustrialPidProjectUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -434,7 +437,7 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudBrainIndustrialPidProjectRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -447,13 +450,13 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAistudioClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudBrainIndustrialPidProjectDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -477,7 +480,7 @@ func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudBrainIndustrialPidProjectDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
