@@ -64,7 +64,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dmsenterprise"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dysmsapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eais"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
@@ -153,6 +152,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sls"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/smartag"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/starrocks"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/swasopen"
@@ -235,7 +235,6 @@ var servicePackages = []conns.ServicePackage{
 	dmsenterprise.ServicePackage(),
 	drds.ServicePackage(),
 	dts.ServicePackage(),
-	dysmsapi.ServicePackage(),
 	eais.ServicePackage(),
 	eas.ServicePackage(),
 	ebs.ServicePackage(),
@@ -324,6 +323,7 @@ var servicePackages = []conns.ServicePackage{
 	slb.ServicePackage(),
 	sls.ServicePackage(),
 	smartag.ServicePackage(),
+	sms.ServicePackage(),
 	starrocks.ServicePackage(),
 	sts.ServicePackage(),
 	swasopen.ServicePackage(),
