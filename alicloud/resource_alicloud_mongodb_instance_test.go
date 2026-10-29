@@ -1,19 +1,29 @@
 package alicloud
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func init() {
@@ -1054,6 +1064,296 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudMongoDBInstance_crossBackup verifies the cross-region
+// (geo-redundant) backup attributes and high-frequency backup retention
+// introduced for the MongoDB replica set instance. It enables geo-redundant
+// backup against a destination region, asserts the read-back values, then
+// disables the geo-redundancy policy.
+func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceCrossBackupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceCrossBackup%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		// tags and global_security_group_list are Optional-only (not Computed) and are
+		// filled by Read alone, so the ID-only refresh comparison always reports their
+		// collection headers (tags.%, global_security_group_list.#) as extra. Ignore
+		// only these two read-filled collections; the cross-region attributes under test
+		// stay inside the ID-only check.
+		IDRefreshIgnore: []string{"tags", "global_security_group_list"},
+		Providers:       testAccProviders,
+		CheckDestroy:    nil,
+		Steps: []resource.TestStep{
+			{
+				// Cross-region backup requires an ESSD (cloud disk) instance
+				// (https://help.aliyun.com/zh/mongodb/user-guide/cross-region-backup):
+				// on a local-disk instance the service accepts the policy request but never
+				// reports a geo-redundant policy back, so the steps below could not verify
+				// anything.
+				// ESSD AutoPL (cloud_auto) is only sold on the mdb.shard.* cloud-disk
+				// class family; the classic mongo.x8.* local-disk class is rejected by
+				// the sales check (SaleValidateNoSpecificCodeFailed). The spec below is
+				// the combination the repository already provisions with cloud_auto in
+				// TestAccAliCloudMongoDBInstance_basic1_twin.
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":      "8.0",
+					"db_instance_class":   "mdb.shard.2x.xlarge.d",
+					"db_instance_storage": "80",
+					"storage_type":        "cloud_auto",
+					"provisioned_iops":    "2000",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":      "8.0",
+						"db_instance_class":   "mdb.shard.2x.xlarge.d",
+						"db_instance_storage": "80",
+						"storage_type":        "cloud_auto",
+						"provisioned_iops":    "2000",
+						"vswitch_id":          CHECKSET,
+						// Step 0 creates a baseline instance without cross-region backup
+						// enabled; DescribeBackupPolicy omits the cross-backup fields for
+						// such instances, so the cross attributes are legitimately empty
+						// in state. Remove them from this step's check; Step 2 re-asserts
+						// them with concrete values once cross-region backup is enabled.
+						"cross_backup_period":             REMOVEKEY,
+						"cross_backup_type":               REMOVEKEY,
+						"cross_retention_type":            REMOVEKEY,
+						"cross_retention_value":           REMOVEKEY,
+						"cross_log_retention_type":        REMOVEKEY,
+						"cross_log_retention_value":       REMOVEKEY,
+						"dest_region":                     REMOVEKEY,
+						"enable_cross_log_backup":         REMOVEKEY,
+						"high_frequency_backup_retention": REMOVEKEY,
+						"preserve_one_each_hour":          REMOVEKEY,
+						"src_region":                      REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cross_backup_period":       []string{"Monday", "Tuesday"},
+					"cross_backup_type":         "update",
+					"cross_retention_type":      "delay",
+					"cross_retention_value":     7,
+					"cross_log_retention_type":  "delay",
+					"cross_log_retention_value": 7,
+					"dest_region":               "cn-shanghai",
+					"enable_cross_log_backup":   1,
+					"src_region":                "cn-beijing",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cross_backup_period.#":     "2",
+						"cross_backup_type":         "update",
+						"cross_retention_type":      "delay",
+						"cross_retention_value":     "7",
+						"cross_log_retention_type":  "delay",
+						"cross_log_retention_value": "7",
+						"dest_region":               "cn-shanghai",
+						"enable_cross_log_backup":   "1",
+						"src_region":                "cn-beijing",
+					}),
+					// Read keeps the configured value when DescribeBackupPolicy omits a
+					// key, so the state assertions above cannot prove the write reached the
+					// service. Read the policy straight from the API as well.
+					testAccCheckMongoDBInstanceCrossBackupPolicy(resourceId, true),
+				),
+			},
+			{
+				// Switching cross-region log backup off used to drop the explicit 0 and
+				// leave the cloud-side setting untouched. The API-side check proves the
+				// disable actually reached the service.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_cross_log_backup": 0,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_cross_log_backup": "0",
+					}),
+					testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId, false),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cross_backup_period":       REMOVEKEY,
+					"cross_retention_type":      REMOVEKEY,
+					"cross_retention_value":     REMOVEKEY,
+					"cross_log_retention_type":  REMOVEKEY,
+					"cross_log_retention_value": REMOVEKEY,
+					"dest_region":               REMOVEKEY,
+					"enable_cross_log_backup":   REMOVEKEY,
+					"src_region":                REMOVEKEY,
+					"cross_backup_type":         "delete",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cross_backup_type": "delete",
+					}),
+					testAccCheckMongoDBInstanceCrossBackupPolicy(resourceId, false),
+				),
+			},
+		},
+	})
+}
+
+// testAccCheckMongoDBInstanceCrossBackupPolicy reads the backup policy straight from
+// the DDS API instead of trusting the Terraform state, so a write that never reached
+// the service (or a Read that merely kept the configured value) cannot pass.
+func testAccCheckMongoDBInstanceCrossBackupPolicy(resourceId string, expectCrossPeriod bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is not present in the state", resourceId)
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		service := MongoDBService{client}
+		policy, err := service.DescribeMongoDBBackupPolicy(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("failed to describe the backup policy of %s: %s", rs.Primary.ID, err)
+		}
+		crossPeriod := ""
+		if v, ok := policy["CrossBackupPeriod"]; ok {
+			crossPeriod = fmt.Sprint(v)
+		}
+		if expectCrossPeriod && crossPeriod == "" {
+			return fmt.Errorf("DescribeBackupPolicy must report CrossBackupPeriod after enabling geo-redundant backup, got %#v", policy)
+		}
+		if !expectCrossPeriod && crossPeriod != "" {
+			return fmt.Errorf("DescribeBackupPolicy must not report CrossBackupPeriod=%q after deleting the geo-redundant policy", crossPeriod)
+		}
+		return nil
+	}
+}
+
+// testAccCheckMongoDBInstanceCrossLogBackupPolicy reads the cross-region log backup
+// switch straight from the DDS API, so an apply that silently dropped an explicit 0
+// cannot pass on the state value alone.
+func testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId string, expectEnabled bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is not present in the state", resourceId)
+		}
+		client := testAccProvider.Meta().(*connectivity.AliyunClient)
+		service := MongoDBService{client}
+		policy, err := service.DescribeMongoDBBackupPolicy(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("failed to describe the backup policy of %s: %s", rs.Primary.ID, err)
+		}
+		want := "0"
+		if expectEnabled {
+			want = "1"
+		}
+		got := fmt.Sprint(policy["EnableCrossLogBackup"])
+		if got != want {
+			return fmt.Errorf("DescribeBackupPolicy must report EnableCrossLogBackup=%s, got %q (policy %#v)", want, got, policy)
+		}
+		return nil
+	}
+}
+
+// TestAccAliCloudMongoDBInstance_validation covers the input-only and
+// environment-dependent attributes (TDE, KMS-encrypted password, PrePaid
+// billing, and restore source) that cannot be exercised end to end in the
+// shared ACC environment. Following the established convention used by peer
+// resources, these attributes are set in a config that omits the required
+// `db_instance_class`, so the plan is rejected for that missing argument; the
+// steps only register the attributes for must-set and modification coverage.
+// The high-frequency backup attributes never reach the API here: their request
+// contract is asserted in TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization.
+func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
+	resourceId := "alicloud_mongodb_instance.default"
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceValidation%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":         "4.2",
+					"db_instance_storage":    "20",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"instance_charge_type":   "PrePaid",
+					"period":                 "1",
+					"auto_renew":             "true",
+					"auto_renew_duration":    "1",
+					"tde_status":             "enabled",
+					"encryptor_name":         "aes-256-cbc",
+					"encryption_key":         "key",
+					"role_arn":               "acs:ram::1234567890123456:role/example",
+					"kms_encrypted_password": "kms-password",
+					"kms_encryption_context": map[string]string{"name": "value"},
+					"src_db_instance_id":     "src-instance-id",
+					"restore_time":           "2026-01-01T00:00:00Z",
+					// High-frequency backup only takes effect when the instance already runs
+					// Flash snapshots with a minute-level BackupInterval, which the shared ACC
+					// account cannot provision (local_ssd instance class), so these two
+					// attributes are registered here for must-set/modification coverage only.
+					"high_frequency_backup_retention": 3,
+					"preserve_one_each_hour":          true,
+				}),
+				ExpectError: regexp.MustCompile(`db_instance_class.*is required`),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":                  "4.2",
+					"db_instance_storage":             "20",
+					"vswitch_id":                      "${alicloud_vswitch.default.id}",
+					"instance_charge_type":            "PostPaid",
+					"period":                          "12",
+					"auto_renew":                      "false",
+					"auto_renew_duration":             "3",
+					"tde_status":                      "disabled",
+					"encryptor_name":                  "aes-256-cfb",
+					"encryption_key":                  "key-update",
+					"role_arn":                        "acs:ram::1234567890123456:role/example-update",
+					"kms_encrypted_password":          "kms-password-update",
+					"kms_encryption_context":          map[string]string{"name": "value-update"},
+					"src_db_instance_id":              "src-instance-id-update",
+					"restore_time":                    "2026-02-01T00:00:00Z",
+					"high_frequency_backup_retention": 7,
+					"preserve_one_each_hour":          false,
+				}),
+				ExpectError: regexp.MustCompile(`db_instance_class.*is required`),
+			},
+		},
+	})
+}
+
+var AliCloudMongoDBInstanceCrossBackupMap = map[string]string{
+	"cross_backup_period":             CHECKSET,
+	"cross_backup_type":               CHECKSET,
+	"cross_retention_type":            CHECKSET,
+	"cross_retention_value":           CHECKSET,
+	"cross_log_retention_type":        CHECKSET,
+	"cross_log_retention_value":       CHECKSET,
+	"dest_region":                     CHECKSET,
+	"enable_cross_log_backup":         CHECKSET,
+	"high_frequency_backup_retention": CHECKSET,
+	"preserve_one_each_hour":          CHECKSET,
+	"src_region":                      CHECKSET,
+}
+
 var AliCloudMongoDBInstanceMap0 = map[string]string{
 	"storage_engine":      CHECKSET,
 	"storage_type":        CHECKSET,
@@ -1176,4 +1476,394 @@ func AliCloudMongoDBInstanceBasicDependence1(name string) string {
   		global_security_ip_list = "192.168.1.1"
 	}
 `, name, mongodbTestZonePrimary())
+}
+
+const mongodbBackupPolicyFixtureInstanceId = "dds-fixture-instance"
+
+// mongodbBackupPolicyFixture serves the DDS endpoint used by the instance update
+// chain. Every request is recorded so the tests can assert the parameters that were
+// actually serialized onto the wire. ModifyBackupPolicy answers 400 so the update
+// chain stops immediately after the request was captured instead of waiting for a
+// real cloud instance.
+type mongodbBackupPolicyFixture struct {
+	mu       sync.Mutex
+	requests []map[string]string
+}
+
+func (f *mongodbBackupPolicyFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	form := make(map[string]string, len(r.Form))
+	for key := range r.Form {
+		form[key] = r.Form.Get(key)
+	}
+	f.mu.Lock()
+	f.requests = append(f.requests, form)
+	f.mu.Unlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	switch r.Form.Get("Action") {
+	case "DescribeDBInstanceAttribute":
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"DBInstances": map[string]interface{}{
+				"DBInstance": []interface{}{map[string]interface{}{
+					"DBInstanceId":     mongodbBackupPolicyFixtureInstanceId,
+					"DBInstanceStatus": "Running",
+				}},
+			},
+		})
+	case "ModifyBackupPolicy":
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"Code": "InvalidParameter", "Message": "fixture captured the modify request", "RequestId": "fixture"})
+	default:
+		// The update chain always reads the auto-renewal attribute, so the fixture keeps
+		// that response stable instead of letting an unrelated read fail early.
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"Items": map[string]interface{}{
+				"Item": []interface{}{map[string]interface{}{
+					"DbInstanceId": mongodbBackupPolicyFixtureInstanceId,
+					"Duration":     0,
+				}},
+			},
+		})
+	}
+}
+
+func (f *mongodbBackupPolicyFixture) captured(action string) []map[string]string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	result := make([]map[string]string, 0)
+	for _, request := range f.requests {
+		if request["Action"] == action {
+			result = append(result, request)
+		}
+	}
+	return result
+}
+
+func newMongoDBBackupPolicyFixture(t *testing.T) (*mongodbBackupPolicyFixture, *connectivity.AliyunClient) {
+	t.Helper()
+	fixture := &mongodbBackupPolicyFixture{}
+	server := httptest.NewServer(http.HandlerFunc(fixture.serveHTTP))
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatalf("failed to build the fixture credential: %s", err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("failed to build the fixture client: %s", err)
+	}
+	endpoints.Store("dds", endpoint)
+	return fixture, client
+}
+
+// mongodbBackupPolicyFixtureRawConfigValue mirrors the protocol raw config: every
+// optional+computed attribute is present as a null value when it is not configured,
+// which is what attributeConfiguredInConfig distinguishes from an explicit zero.
+func mongodbBackupPolicyFixtureRawConfigValue(overrides map[string]cty.Value) cty.Value {
+	attributes := map[string]cty.Value{
+		"backup_retention_period":         cty.NullVal(cty.Number),
+		"cross_backup_period":             cty.NullVal(cty.Set(cty.String)),
+		"cross_backup_type":               cty.NullVal(cty.String),
+		"cross_retention_type":            cty.NullVal(cty.String),
+		"cross_retention_value":           cty.NullVal(cty.Number),
+		"cross_log_retention_type":        cty.NullVal(cty.String),
+		"cross_log_retention_value":       cty.NullVal(cty.Number),
+		"dest_region":                     cty.NullVal(cty.String),
+		"enable_cross_log_backup":         cty.NullVal(cty.Number),
+		"high_frequency_backup_retention": cty.NullVal(cty.Number),
+		"preserve_one_each_hour":          cty.NullVal(cty.Bool),
+		"src_region":                      cty.NullVal(cty.String),
+	}
+	for key, value := range overrides {
+		attributes[key] = value
+	}
+	return cty.ObjectVal(attributes)
+}
+
+func mongodbBackupPolicyFixtureState(overrides map[string]string) *sdktf.InstanceState {
+	attributes := map[string]string{
+		"id":                      mongodbBackupPolicyFixtureInstanceId,
+		"engine_version":          "4.2",
+		"db_instance_class":       "mongo.x8.medium",
+		"db_instance_storage":     "20",
+		"backup_time":             "02:00Z-03:00Z",
+		"backup_retention_period": "30",
+		"snapshot_backup_type":    "Standard",
+		"backup_interval":         "-1",
+	}
+	for key, value := range overrides {
+		attributes[key] = value
+	}
+	return &sdktf.InstanceState{ID: mongodbBackupPolicyFixtureInstanceId, Attributes: attributes}
+}
+
+func mongodbBackupPolicyFixtureConfig(overrides map[string]interface{}) map[string]interface{} {
+	raw := map[string]interface{}{
+		"engine_version":      "4.2",
+		"db_instance_class":   "mongo.x8.medium",
+		"db_instance_storage": 20,
+	}
+	for key, value := range overrides {
+		raw[key] = value
+	}
+	return raw
+}
+
+func mongodbBackupPolicyFixtureUpdateData(t *testing.T, resourceInstance *schema.Resource, state *sdktf.InstanceState, raw map[string]interface{}, rawConfig map[string]cty.Value) *schema.ResourceData {
+	t.Helper()
+	diff, err := resourceInstance.Diff(context.Background(), state, sdktf.NewResourceConfigRaw(raw), nil)
+	if err != nil {
+		t.Fatalf("failed to build the update diff: %s", err)
+	}
+	diff.RawConfig = mongodbBackupPolicyFixtureRawConfigValue(rawConfig)
+	d, err := schema.InternalMap(resourceInstance.Schema).Data(state, diff)
+	if err != nil {
+		t.Fatalf("failed to build the update resource data: %s", err)
+	}
+	d.SetId(mongodbBackupPolicyFixtureInstanceId)
+	return d
+}
+
+func newMongoDBBackupPolicyFixtureResource() *schema.Resource {
+	resourceInstance := resourceAliCloudMongoDBInstance()
+	resourceInstance.Timeouts = &schema.ResourceTimeout{Update: schema.DefaultTimeout(60 * time.Second)}
+	return resourceInstance
+}
+
+// mongodbBackupPolicyFixtureRunUpdate drives the public resource update entry and
+// returns the single ModifyBackupPolicy request it serialized.
+func mongodbBackupPolicyFixtureRunUpdate(t *testing.T, state *sdktf.InstanceState, raw map[string]interface{}, rawConfig map[string]cty.Value) map[string]string {
+	t.Helper()
+	fixture, client := newMongoDBBackupPolicyFixture(t)
+	resourceInstance := newMongoDBBackupPolicyFixtureResource()
+	d := mongodbBackupPolicyFixtureUpdateData(t, resourceInstance, state, raw, rawConfig)
+	if err := resourceInstance.Update(d, client); err == nil {
+		t.Fatal("the fixture answers ModifyBackupPolicy with 400, so Update must return the API error")
+	}
+	requests := fixture.captured("ModifyBackupPolicy")
+	if len(requests) != 1 {
+		t.Fatalf("expected exactly 1 ModifyBackupPolicy request, got %d", len(requests))
+	}
+	return requests[0]
+}
+
+func mongodbBackupPolicyFixtureRunUpdateError(t *testing.T, state *sdktf.InstanceState, raw map[string]interface{}, rawConfig map[string]cty.Value) (string, []map[string]string) {
+	t.Helper()
+	fixture, client := newMongoDBBackupPolicyFixture(t)
+	resourceInstance := newMongoDBBackupPolicyFixtureResource()
+	d := mongodbBackupPolicyFixtureUpdateData(t, resourceInstance, state, raw, rawConfig)
+	err := resourceInstance.Update(d, client)
+	if err == nil {
+		t.Fatal("the update must be rejected before any request is sent")
+	}
+	return err.Error(), fixture.captured("ModifyBackupPolicy")
+}
+
+func mongodbBackupPolicyFixtureAssertOmitted(t *testing.T, request map[string]string, keys ...string) {
+	t.Helper()
+	for _, key := range keys {
+		if value, ok := request[key]; ok {
+			t.Fatalf("the ModifyBackupPolicy request must omit %s, got %q", key, value)
+		}
+	}
+}
+
+func mongodbBackupPolicyFixtureAssertSent(t *testing.T, request map[string]string, key, want string) {
+	t.Helper()
+	value, ok := request[key]
+	if !ok {
+		t.Fatalf("the ModifyBackupPolicy request must carry %s=%q, got keys %v", key, want, request)
+	}
+	if value != want {
+		t.Fatalf("the ModifyBackupPolicy request must carry %s=%q, got %q", key, want, value)
+	}
+}
+
+func mongodbBackupPolicyFixtureCrossConfig(t *testing.T, enableCrossLogBackup int) (map[string]interface{}, map[string]cty.Value) {
+	t.Helper()
+	raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+		"cross_backup_period":       []interface{}{"Monday"},
+		"cross_backup_type":         "update",
+		"cross_retention_type":      "never",
+		"cross_log_retention_type":  "never",
+		"cross_log_retention_value": 7,
+		"dest_region":               "cn-shanghai",
+		"src_region":                "cn-beijing",
+		"enable_cross_log_backup":   enableCrossLogBackup,
+	})
+	values := map[string]cty.Value{
+		"cross_backup_period":       cty.SetVal([]cty.Value{cty.StringVal("Monday")}),
+		"cross_backup_type":         cty.StringVal("update"),
+		"cross_retention_type":      cty.StringVal("never"),
+		"cross_log_retention_type":  cty.StringVal("never"),
+		"cross_log_retention_value": cty.NumberIntVal(7),
+		"dest_region":               cty.StringVal("cn-shanghai"),
+		"src_region":                cty.StringVal("cn-beijing"),
+		"enable_cross_log_backup":   cty.NumberIntVal(int64(enableCrossLogBackup)),
+	}
+	return raw, values
+}
+
+// TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization locks the wire
+// contract of the geo-redundant backup attributes: legitimate zero values are sent
+// when the configuration sets them, and the high-frequency backup attributes are only
+// replayed while the snapshot backup type and interval accept them. The pre-fix
+// implementation used GetOk, so the explicit 0/false assertions captured no key, and
+// it replayed the high-frequency attributes for Standard instances.
+func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.T) {
+	t.Run("explicit zero disables cross log backup", func(t *testing.T) {
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 0)
+		state := mongodbBackupPolicyFixtureState(map[string]string{"enable_cross_log_backup": "1"})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "EnableCrossLogBackup", "0")
+	})
+
+	t.Run("explicit false disables hourly sparse backup", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"preserve_one_each_hour": false})
+		values := map[string]cty.Value{"preserve_one_each_hour": cty.False}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"snapshot_backup_type":   "Flash",
+			"backup_interval":        "15",
+			"preserve_one_each_hour": "true",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "PreserveOneEachHour", "false")
+	})
+
+	t.Run("unrelated update omits the unconfigured cross log switch", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"backup_retention_period": 35})
+		values := map[string]cty.Value{"backup_retention_period": cty.NumberIntVal(35)}
+		state := mongodbBackupPolicyFixtureState(map[string]string{"enable_cross_log_backup": "1"})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "BackupRetentionPeriod", "35")
+		mongodbBackupPolicyFixtureAssertOmitted(t, request, "EnableCrossLogBackup", "PreserveOneEachHour", "HighFrequencyBackupRetention")
+	})
+
+	t.Run("standard snapshot type omits high frequency attributes", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"backup_retention_period": 35})
+		values := map[string]cty.Value{"backup_retention_period": cty.NumberIntVal(35)}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"high_frequency_backup_retention": "7",
+			"preserve_one_each_hour":          "true",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertOmitted(t, request, "HighFrequencyBackupRetention", "PreserveOneEachHour")
+	})
+
+	t.Run("flash minute interval replays high frequency attributes", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"backup_retention_period": 35})
+		values := map[string]cty.Value{"backup_retention_period": cty.NumberIntVal(35)}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"snapshot_backup_type":            "Flash",
+			"backup_interval":                 "15",
+			"high_frequency_backup_retention": "7",
+			"preserve_one_each_hour":          "false",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "HighFrequencyBackupRetention", "7")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "PreserveOneEachHour", "false")
+	})
+
+	t.Run("complete update mode is serialized", func(t *testing.T) {
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		state := mongodbBackupPolicyFixtureState(map[string]string{"enable_cross_log_backup": "0"})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossBackupType", "update")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossBackupPeriod", "Monday")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionType", "never")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "never")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "DestRegion", "cn-shanghai")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "SrcRegion", "cn-beijing")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "EnableCrossLogBackup", "1")
+	})
+}
+
+// TestUnitAliCloudMongoDBInstanceCrossBackupValidation locks the local contract check
+// that runs before the ModifyBackupPolicy request is built: incomplete geo-redundant
+// combinations are rejected with the missing attribute named, and no request leaves
+// the provider.
+func TestUnitAliCloudMongoDBInstanceCrossBackupValidation(t *testing.T) {
+	t.Run("enabling without the cross log switch is rejected", func(t *testing.T) {
+		// Changing the operation selector to "update" requires the user to state the log
+		// backup switch explicitly; a value that only exists in state must not silently
+		// decide it.
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		delete(raw, "enable_cross_log_backup")
+		delete(values, "enable_cross_log_backup")
+		state := mongodbBackupPolicyFixtureState(map[string]string{"enable_cross_log_backup": "1"})
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, state, raw, values)
+		if !strings.Contains(errText, "enable_cross_log_backup") {
+			t.Fatalf("the error must name the missing enable_cross_log_backup, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("an incomplete combination must not reach the API, got %d requests", len(requests))
+		}
+	})
+
+	t.Run("geo attributes without the operation selector are rejected", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"dest_region": "cn-shanghai"})
+		values := map[string]cty.Value{"dest_region": cty.StringVal("cn-shanghai")}
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, mongodbBackupPolicyFixtureState(nil), raw, values)
+		if !strings.Contains(errText, "cross_backup_type") {
+			t.Fatalf("the error must name the missing cross_backup_type, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("a partial geo-redundant configuration must not reach the API, got %d requests", len(requests))
+		}
+	})
+
+	t.Run("removed cross log switch on an unrelated update replays the state value", func(t *testing.T) {
+		// Optional+Computed keeps the state value when the attribute is removed from the
+		// configuration, so an unrelated backup update must not fail and must carry the
+		// effective value.
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		delete(raw, "enable_cross_log_backup")
+		delete(values, "enable_cross_log_backup")
+		raw["backup_retention_period"] = 35
+		values["backup_retention_period"] = cty.NumberIntVal(35)
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"cross_backup_type":       "update",
+			"enable_cross_log_backup": "1",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "EnableCrossLogBackup", "1")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "BackupRetentionPeriod", "35")
+	})
+
+	t.Run("update mode without the destination region is rejected", func(t *testing.T) {
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		delete(raw, "dest_region")
+		delete(values, "dest_region")
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, mongodbBackupPolicyFixtureState(nil), raw, values)
+		if !strings.Contains(errText, "dest_region") {
+			t.Fatalf("the error must name the missing dest_region, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("an incomplete combination must not reach the API, got %d requests", len(requests))
+		}
+	})
+
+	t.Run("delay retention without a value is rejected", func(t *testing.T) {
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		raw["cross_retention_type"] = "delay"
+		values["cross_retention_type"] = cty.StringVal("delay")
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, mongodbBackupPolicyFixtureState(nil), raw, values)
+		if !strings.Contains(errText, "cross_retention_value") {
+			t.Fatalf("the error must name the missing cross_retention_value, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("an incomplete combination must not reach the API, got %d requests", len(requests))
+		}
+	})
 }

@@ -245,6 +245,66 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"-1", "15", "30", "60", "120", "180", "240", "360", "480", "720"}, false),
 			},
+			"cross_backup_period": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"cross_backup_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"update", "delete"}, false),
+			},
+			"cross_retention_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"delay", "never"}, false),
+			},
+			"cross_retention_value": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"cross_log_retention_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"delay", "never"}, false),
+			},
+			"cross_log_retention_value": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"dest_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"enable_cross_log_backup": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
+			},
+			"high_frequency_backup_retention": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"preserve_one_each_hour": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"src_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"ssl_action": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -735,6 +795,67 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("log_backup_retention_period", log_backup_retention_periodVal)
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
+	if crossBackupPeriod, ok := backupPolicy["CrossBackupPeriod"].(string); ok && crossBackupPeriod != "" {
+		d.Set("cross_backup_period", strings.Split(crossBackupPeriod, ","))
+	}
+	// cross_backup_type is a write-only action selector for ModifyBackupPolicy
+	// (values: update|delete), not a persistent state returned by DescribeBackupPolicy.
+	// Keep it out of Read so the config value is preserved after Update writes the
+	// configured value to state (same pattern as ssl_action).
+	// The remaining cross-region backup attributes are write-side as well: ModifyBackupPolicy
+	// accepts them, but DescribeBackupPolicy (called here without SrcRegion) does not return
+	// them, so a bare d.Set would overwrite the configured values with nil-derived zero/empty
+	// values right after enabling cross-region backup. Guard each Set the same way
+	// cross_backup_period is guarded above (skip when the response omits the key or returns
+	// an empty value); the guarded Set keeps the configured value Update already wrote to
+	// state, matching how ssl_action retains its configured value without a Read Set.
+	if v, ok := backupPolicy["CrossRetentionType"]; ok && fmt.Sprint(v) != "" {
+		d.Set("cross_retention_type", v)
+	}
+	if v, ok := backupPolicy["CrossRetentionValue"]; ok && fmt.Sprint(v) != "" {
+		cross_retention_valueVal, formatErr := formatInt(v)
+		if formatErr != nil {
+			return formatErr
+		}
+		d.Set("cross_retention_value", cross_retention_valueVal)
+	}
+	if v, ok := backupPolicy["CrossLogRetentionType"]; ok && fmt.Sprint(v) != "" {
+		d.Set("cross_log_retention_type", v)
+	}
+	if v, ok := backupPolicy["CrossLogRetentionValue"]; ok && fmt.Sprint(v) != "" {
+		cross_log_retention_valueVal, formatErr := formatInt(v)
+		if formatErr != nil {
+			return formatErr
+		}
+		d.Set("cross_log_retention_value", cross_log_retention_valueVal)
+	}
+	if v, ok := backupPolicy["DestRegion"]; ok && fmt.Sprint(v) != "" {
+		d.Set("dest_region", v)
+	}
+	if v, ok := backupPolicy["EnableCrossLogBackup"]; ok && fmt.Sprint(v) != "" {
+		enable_cross_log_backupVal, formatErr := formatInt(v)
+		if formatErr != nil {
+			return formatErr
+		}
+		d.Set("enable_cross_log_backup", enable_cross_log_backupVal)
+	}
+	if v, ok := backupPolicy["HighFrequencyBackupRetention"]; ok && fmt.Sprint(v) != "" {
+		high_frequency_backup_retentionVal, formatErr := formatInt(v)
+		if formatErr != nil {
+			return formatErr
+		}
+		d.Set("high_frequency_backup_retention", high_frequency_backup_retentionVal)
+	}
+	if v, ok := backupPolicy["PreserveOneEachHour"]; ok && fmt.Sprint(v) != "" {
+		preserve_one_each_hourVal, formatErr := formatBool(v)
+		if formatErr != nil {
+			return formatErr
+		}
+		d.Set("preserve_one_each_hour", preserve_one_each_hourVal)
+	}
+	if v, ok := backupPolicy["SrcRegion"]; ok && fmt.Sprint(v) != "" {
+		d.Set("src_region", v)
+	}
 	retention_periodVal, formatErr := formatInt(backupPolicy["BackupRetentionPeriod"])
 	if formatErr != nil {
 		return formatErr
@@ -1375,7 +1496,7 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") || d.HasChange("cross_backup_period") || d.HasChange("cross_backup_type") || d.HasChange("cross_retention_type") || d.HasChange("cross_retention_value") || d.HasChange("cross_log_retention_type") || d.HasChange("cross_log_retention_value") || d.HasChange("dest_region") || d.HasChange("enable_cross_log_backup") || d.HasChange("high_frequency_backup_retention") || d.HasChange("preserve_one_each_hour") || d.HasChange("src_region") {
 		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}

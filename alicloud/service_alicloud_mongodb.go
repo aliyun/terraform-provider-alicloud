@@ -709,7 +709,105 @@ func (s *MongoDBService) DescribeMongoDBShardingTDEInfo(id string) (object map[s
 	return object, nil
 }
 
+// isMinuteLevelBackupInterval reports whether the snapshot backup interval supports
+// high-frequency backups; the API only accepts high_frequency_backup_retention and
+// preserve_one_each_hour for the 15 and 30 minute intervals.
+func isMinuteLevelBackupInterval(interval string) bool {
+	return interval == "15" || interval == "30"
+}
+
+// attributeConfiguredInConfig reports whether the attribute is explicitly present in
+// the planned configuration. Optional+Computed attributes are null in the raw config
+// when the user leaves them out, so this distinguishes "not configured" from a
+// legitimate zero value that GetOk would drop.
+func attributeConfiguredInConfig(d *schema.ResourceData, key string) bool {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() || !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute(key) {
+		return false
+	}
+	value := rawConfig.GetAttr(key)
+	return value.IsKnown() && !value.IsNull()
+}
+
+// validateMongoDBCrossBackupPolicy enforces the ModifyBackupPolicy contract before a
+// request is built: geo-redundant backup attributes need the operation selector, and
+// enabling the policy requires the full parameter set plus a retention value for each
+// "delay" retention type.
+func validateMongoDBCrossBackupPolicy(d *schema.ResourceData) error {
+	crossBackupType, _ := d.Get("cross_backup_type").(string)
+
+	configuredCrossAttributes := make([]string, 0, 8)
+	for _, key := range []string{
+		"cross_backup_period",
+		"cross_retention_type",
+		"cross_retention_value",
+		"cross_log_retention_type",
+		"cross_log_retention_value",
+		"dest_region",
+		"src_region",
+		"enable_cross_log_backup",
+	} {
+		if attributeConfiguredInConfig(d, key) {
+			configuredCrossAttributes = append(configuredCrossAttributes, key)
+		}
+	}
+	if crossBackupType == "" && len(configuredCrossAttributes) > 0 {
+		return fmt.Errorf("cross_backup_type must be set to \"update\" or \"delete\" when the geo-redundant backup attributes %s are configured", strings.Join(configuredCrossAttributes, ", "))
+	}
+	if crossBackupType != "update" {
+		return nil
+	}
+
+	missing := make([]string, 0, 6)
+	if v, ok := d.GetOk("src_region"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "src_region")
+	}
+	if v, ok := d.GetOk("dest_region"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "dest_region")
+	}
+	if v, ok := d.GetOk("cross_retention_type"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "cross_retention_type")
+	}
+	if v, ok := d.GetOk("cross_backup_period"); !ok || v.(*schema.Set).Len() == 0 {
+		missing = append(missing, "cross_backup_period")
+	}
+	// enable_cross_log_backup accepts 0 as a legitimate value, so its presence must be
+	// read from the configuration instead of GetOk. Only when the operation selector
+	// itself changes does the user have to state the switch explicitly: a value that
+	// already lives in state (Optional+Computed, e.g. after the attribute was removed
+	// from the configuration) is replayed by the request builder instead of failing an
+	// unrelated update.
+	if d.HasChange("cross_backup_type") && !attributeConfiguredInConfig(d, "enable_cross_log_backup") {
+		missing = append(missing, "enable_cross_log_backup")
+	}
+	if v, ok := d.GetOk("cross_log_retention_type"); !ok || fmt.Sprint(v) == "" {
+		missing = append(missing, "cross_log_retention_type")
+	}
+	if _, ok := d.GetOk("cross_log_retention_value"); !ok {
+		missing = append(missing, "cross_log_retention_value")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("cross_backup_type is set to \"update\", so the geo-redundant backup attributes %s must be configured", strings.Join(missing, ", "))
+	}
+
+	if crossRetentionType, _ := d.Get("cross_retention_type").(string); crossRetentionType == "delay" {
+		if _, ok := d.GetOk("cross_retention_value"); !ok {
+			return fmt.Errorf("cross_retention_value must be configured when cross_retention_type is set to \"delay\"")
+		}
+	}
+	if crossLogRetentionType, _ := d.Get("cross_log_retention_type").(string); crossLogRetentionType == "delay" {
+		if _, ok := d.GetOk("cross_log_retention_value"); !ok {
+			return fmt.Errorf("cross_log_retention_value must be configured when cross_log_retention_type is set to \"delay\"")
+		}
+	}
+	return nil
+}
+
 func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error {
+	if err := validateMongoDBCrossBackupPolicy(d); err != nil {
+		return err
+	}
+
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0*time.Second, s.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
@@ -755,6 +853,77 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 
 	if v, ok := d.GetOk("backup_interval"); ok {
 		request["BackupInterval"] = v
+	}
+
+	// The geo-redundant backup parameters are only accepted while cross_backup_type
+	// selects "update", so a user change is always sent and the state value is only
+	// replayed for that accepted combination (R4.6). An unrelated backup-policy update
+	// therefore never re-sends a stale cross-region payload.
+	crossBackupType, _ := d.Get("cross_backup_type").(string)
+	crossBackupUpdate := crossBackupType == "update"
+	snapshotBackupType, _ := d.Get("snapshot_backup_type").(string)
+	backupInterval, _ := d.Get("backup_interval").(string)
+	highFrequencyBackupApplicable := snapshotBackupType == "Flash" && isMinuteLevelBackupInterval(backupInterval)
+
+	if d.HasChange("cross_backup_period") || crossBackupUpdate {
+		if v, ok := d.GetOk("cross_backup_period"); ok {
+			crossPeriodList := expandStringList(v.(*schema.Set).List())
+			request["CrossBackupPeriod"] = strings.Join(crossPeriodList[:], COMMA_SEPARATED)
+		}
+	}
+
+	if v, ok := d.GetOk("cross_backup_type"); ok && (d.HasChange("cross_backup_type") || crossBackupUpdate) {
+		request["CrossBackupType"] = v
+	}
+
+	if d.HasChange("cross_retention_type") || crossBackupUpdate {
+		if v, ok := d.GetOk("cross_retention_type"); ok {
+			request["CrossRetentionType"] = v
+		}
+	}
+
+	if d.HasChange("cross_retention_value") || crossBackupUpdate {
+		if v, ok := d.GetOk("cross_retention_value"); ok {
+			request["CrossRetentionValue"] = v
+		}
+	}
+
+	if d.HasChange("cross_log_retention_type") || crossBackupUpdate {
+		if v, ok := d.GetOk("cross_log_retention_type"); ok {
+			request["CrossLogRetentionType"] = v
+		}
+	}
+
+	if d.HasChange("cross_log_retention_value") || crossBackupUpdate {
+		if v, ok := d.GetOk("cross_log_retention_value"); ok {
+			request["CrossLogRetentionValue"] = v
+		}
+	}
+
+	if d.HasChange("dest_region") || crossBackupUpdate {
+		if v, ok := d.GetOk("dest_region"); ok {
+			request["DestRegion"] = v
+		}
+	}
+
+	if v, ok := d.Get("enable_cross_log_backup").(int); ok && (d.HasChange("enable_cross_log_backup") || crossBackupUpdate) {
+		request["EnableCrossLogBackup"] = v
+	}
+
+	if d.HasChange("high_frequency_backup_retention") || highFrequencyBackupApplicable {
+		if v, ok := d.GetOk("high_frequency_backup_retention"); ok {
+			request["HighFrequencyBackupRetention"] = v
+		}
+	}
+
+	if v, ok := d.Get("preserve_one_each_hour").(bool); ok && (d.HasChange("preserve_one_each_hour") || highFrequencyBackupApplicable) {
+		request["PreserveOneEachHour"] = v
+	}
+
+	if d.HasChange("src_region") || crossBackupUpdate {
+		if v, ok := d.GetOk("src_region"); ok {
+			request["SrcRegion"] = v
+		}
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
