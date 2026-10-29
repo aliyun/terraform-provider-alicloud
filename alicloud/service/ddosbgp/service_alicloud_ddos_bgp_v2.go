@@ -1,4 +1,4 @@
-package alicloud
+package ddosbgp
 
 import (
 	"fmt"
@@ -7,12 +7,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type DdosBgpServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+// NewDdosBgpServiceV2 constructs a DdosBgpServiceV2 bound to the shared client.
+func NewDdosBgpServiceV2(client *connectivity.AliyunClient) *DdosBgpServiceV2 {
+	return &DdosBgpServiceV2{client: client}
 }
 
 // DescribeDdosBgpPolicy <<< Encapsulated get interface for DdosBgp Policy.
@@ -26,32 +35,32 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.PolicyList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PolicyList[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.PolicyList[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Policy", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -62,17 +71,17 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpPolicy(id string) (object map[string]i
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("Policy", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("Policy", id), errs.NotFoundMsg, response)
 }
 
 func (s *DdosBgpServiceV2) DdosBgpPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBgpPolicy(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -80,7 +89,7 @@ func (s *DdosBgpServiceV2) DdosBgpPolicyStateRefreshFunc(id string, field string
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -104,12 +113,12 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpInstance(id string) (object map[string
 	request["PageNo"] = "1"
 	request["PageSize"] = "10"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -117,21 +126,21 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpInstance(id string) (object map[string
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound", "InvalidInstance"}) {
-			return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound", "InvalidInstance"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.InstanceList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceList[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.InstanceList[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Instance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Instance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -149,12 +158,12 @@ func (s *DdosBgpServiceV2) DescribeInstanceListTagResources(id string) (object m
 	request["ResourceType"] = "INSTANCE"
 	action := "ListTagResources"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -162,9 +171,9 @@ func (s *DdosBgpServiceV2) DescribeInstanceListTagResources(id string) (object m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -182,12 +191,12 @@ func (s *DdosBgpServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 
 	action := "DescribeInstanceSpecs"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -195,14 +204,14 @@ func (s *DdosBgpServiceV2) DescribeInstanceDescribeInstanceSpecs(id string) (obj
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.InstanceSpecs[0].PackConfig", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceSpecs[0].PackConfig", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.InstanceSpecs[0].PackConfig", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -212,10 +221,10 @@ func (s *DdosBgpServiceV2) DdosBgpInstanceStateRefreshFunc(id string, field stri
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBgpInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -230,7 +239,7 @@ func (s *DdosBgpServiceV2) DdosBgpInstanceStateRefreshFunc(id string, field stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -249,10 +258,10 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -267,11 +276,11 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -279,9 +288,9 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -300,11 +309,11 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -312,9 +321,9 @@ func (s *DdosBgpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -334,7 +343,7 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpIp(id string) (object map[string]inter
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -347,12 +356,12 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpIp(id string) (object map[string]inter
 	request["PageNo"] = "1"
 	request["PageSize"] = "10"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -360,18 +369,18 @@ func (s *DdosBgpServiceV2) DescribeDdosBgpIp(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.IpList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.IpList[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.IpList[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Ip", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Ip", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -381,10 +390,10 @@ func (s *DdosBgpServiceV2) DdosBgpIpStateRefreshFunc(id string, field string, fa
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDdosBgpIp(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -399,7 +408,7 @@ func (s *DdosBgpServiceV2) DdosBgpIpStateRefreshFunc(id string, field string, fa
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

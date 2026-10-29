@@ -1,35 +1,46 @@
-package alicloud
+package ddosbgp_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	ddosbgp "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbgp"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// collection-order: bypass content.finger_print_rule_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.layer4_rule_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.layer4_rule_list.condition_list -- pre-existing nested TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.port_rule_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.reflect_block_udp_port_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.region_block_country_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.region_block_province_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
+// collection-order: bypass content.source_block_list -- pre-existing TypeList on alicloud_ddos_bgp_policy, schema unchanged by this directory-migration move
 
 // Test DdosBgp Policy. >>> Resource test cases, automatically generated.
 // Case l3策略类型测试_2 7021
 func TestAccAliCloudDdosBgpPolicy_basic7021(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7021)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7021)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7021)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7021)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -467,21 +478,21 @@ variable "region_block_province_list-_update1" {
 func TestAccAliCloudDdosBgpPolicy_basic7022(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7022)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7022)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7022)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7022)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -691,21 +702,21 @@ variable "policy_name" {
 func TestAccAliCloudDdosBgpPolicy_basic6912(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6912)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6912)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6912)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6912)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1143,21 +1154,21 @@ variable "region_block_province_list-_update1" {
 func TestAccAliCloudDdosBgpPolicy_basic6856(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6856)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6856)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6856)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6856)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1367,21 +1378,21 @@ variable "policy_name" {
 func TestAccAliCloudDdosBgpPolicy_basic7021_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7021)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7021)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7021)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7021)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1531,21 +1542,21 @@ func TestAccAliCloudDdosBgpPolicy_basic7021_twin(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic7022_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7022)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7022)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7022)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7022)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1595,21 +1606,21 @@ func TestAccAliCloudDdosBgpPolicy_basic7022_twin(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic6912_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6912)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6912)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6912)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6912)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1759,21 +1770,21 @@ func TestAccAliCloudDdosBgpPolicy_basic6912_twin(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic6856_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6856)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6856)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6856)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6856)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1823,21 +1834,21 @@ func TestAccAliCloudDdosBgpPolicy_basic6856_twin(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic7021_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7021)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7021)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7021)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7021)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2071,21 +2082,21 @@ func TestAccAliCloudDdosBgpPolicy_basic7021_raw(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic7022_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7022)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap7022)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7022)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence7022)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2238,21 +2249,21 @@ func TestAccAliCloudDdosBgpPolicy_basic7022_raw(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic6912_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6912)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6912)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6912)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6912)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2486,21 +2497,21 @@ func TestAccAliCloudDdosBgpPolicy_basic6912_raw(t *testing.T) {
 func TestAccAliCloudDdosBgpPolicy_basic6856_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddos_bgp_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6856)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DdosBgpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDdosBgpPolicyMap6856)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ddosbgp.NewDdosBgpServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDdosBgpPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_bgp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6856)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDdosBgpPolicyBasicDependence6856)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

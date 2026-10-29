@@ -1,4 +1,4 @@
-package alicloud
+package ddosbgp
 
 import (
 	"fmt"
@@ -7,6 +7,11 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -51,7 +56,7 @@ func resourceAliCloudDdosBgpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"IPv4", "IPv6"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"IPv4", "IPv6"}, false),
 			},
 			"normal_bandwidth": {
 				Type:     schema.TypeInt,
@@ -60,7 +65,7 @@ func resourceAliCloudDdosBgpInstance() *schema.Resource {
 			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
 				Default:      12,
 			},
@@ -73,13 +78,13 @@ func resourceAliCloudDdosBgpInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Enterprise", "Professional"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Enterprise", "Professional"}, false),
 			},
 			"name": {
 				Type:       schema.TypeString,
@@ -102,7 +107,7 @@ func resourceAliCloudDdosBgpInstanceCreate(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	parameterMapList := make([]map[string]interface{}, 0)
 	if v, ok := d.GetOk("type"); ok {
@@ -161,15 +166,15 @@ func resourceAliCloudDdosBgpInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 	request["SubscriptionType"] = "Subscription"
 	var endpoint string
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
 			}
@@ -177,19 +182,19 @@ func resourceAliCloudDdosBgpInstanceCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddosbgp_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddosbgp_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
 	ddosBgpServiceV2 := DdosBgpServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 50*time.Second, ddosBgpServiceV2.DdosBgpInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 50*time.Second, ddosBgpServiceV2.DdosBgpInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudDdosBgpInstanceUpdate(d, meta)
@@ -201,12 +206,12 @@ func resourceAliCloudDdosBgpInstanceRead(d *schema.ResourceData, meta interface{
 
 	objectRaw, err := ddosBgpServiceV2.DescribeDdosBgpInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddosbgp_instance DescribeDdosBgpInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_name", objectRaw["Remark"])
@@ -217,16 +222,16 @@ func resourceAliCloudDdosBgpInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("name", objectRaw["Remark"])
 
 	objectRaw, err = ddosBgpServiceV2.DescribeInstanceListTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	objectRaw, err = ddosBgpServiceV2.DescribeInstanceDescribeInstanceSpecs(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("bandwidth", objectRaw["Bandwidth"])
@@ -259,11 +264,11 @@ func resourceAliCloudDdosBgpInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	request["ResourceType"] = "INSTANCE"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -271,9 +276,9 @@ func resourceAliCloudDdosBgpInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -294,11 +299,11 @@ func resourceAliCloudDdosBgpInstanceUpdate(d *schema.ResourceData, meta interfac
 		request["Remark"] = d.Get("name")
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -306,16 +311,16 @@ func resourceAliCloudDdosBgpInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
 		ddosBgpServiceV2 := DdosBgpServiceV2{client}
 		if err := ddosBgpServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)

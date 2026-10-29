@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package ddosbgp. This file is generated automatically. Please do not modify it manually, thank you!
+package ddosbgp
 
 import (
 	"encoding/json"
@@ -9,6 +9,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -192,7 +196,7 @@ func resourceAliCloudDdosBgpPolicy() *schema.Resource {
 									"type": {
 										Type:         schema.TypeInt,
 										Required:     true,
-										ValidateFunc: IntBetween(3, 6),
+										ValidateFunc: validators.IntBetween(3, 6),
 									},
 									"exceed_limit_times": {
 										Type:     schema.TypeInt,
@@ -308,22 +312,22 @@ func resourceAliCloudDdosBgpPolicyCreate(d *schema.ResourceData, meta interface{
 
 	request["Name"] = d.Get("policy_name")
 	request["Type"] = d.Get("type")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddos_bgp_policy", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ddos_bgp_policy", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
@@ -337,12 +341,12 @@ func resourceAliCloudDdosBgpPolicyRead(d *schema.ResourceData, meta interface{})
 
 	objectRaw, err := ddosBgpServiceV2.DescribeDdosBgpPolicy(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddos_bgp_policy DescribeDdosBgpPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Name"] != nil {
@@ -563,7 +567,7 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("content"); ok {
 			localData, err := jsonpath.Get("$[0].source_block_list", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps := make([]interface{}, 0)
 			for _, dataLoop := range localData.([]interface{}) {
@@ -586,7 +590,7 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("content"); ok {
 			localData1, err := jsonpath.Get("$[0].port_rule_list", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps1 := make([]interface{}, 0)
 			for _, dataLoop1 := range localData1.([]interface{}) {
@@ -607,7 +611,7 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("content"); ok {
 			localData2, err := jsonpath.Get("$[0].finger_print_rule_list", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps2 := make([]interface{}, 0)
 			for _, dataLoop2 := range localData2.([]interface{}) {
@@ -637,7 +641,7 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("content"); ok {
 			localData3, err := jsonpath.Get("$[0].layer4_rule_list", v)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			localMaps3 := make([]interface{}, 0)
 			for _, dataLoop3 := range localData3.([]interface{}) {
@@ -667,7 +671,7 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Content"] = string(objectDataLocalMapJson)
 	}
@@ -677,21 +681,21 @@ func resourceAliCloudDdosBgpPolicyUpdate(d *schema.ResourceData, meta interface{
 	}
 	request["Name"] = d.Get("policy_name")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -709,23 +713,23 @@ func resourceAliCloudDdosBgpPolicyDelete(d *schema.ResourceData, meta interface{
 	request = make(map[string]interface{})
 	query["Id"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ddosbgp", "2018-07-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
