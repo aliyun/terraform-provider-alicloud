@@ -1,42 +1,43 @@
-package alicloud
+// Package quickbi_test.
+package quickbi_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudQuickBIUsersDataSource(t *testing.T) {
 	t.Skip()
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_quick_bi_user.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_quick_bi_user.default.id}_fakeid"]`,
 		}),
 	}
 
-	keywordConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
+	keywordConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
 			"keyword": `"${alicloud_quick_bi_user.default.nick_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
 			"keyword": `"${alicloud_quick_bi_user.default.nick_name}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
 			"ids":     `["${alicloud_quick_bi_user.default.id}"]`,
 			"keyword": `"${alicloud_quick_bi_user.default.nick_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuickBIUserDataSourceName(rand, map[string]string{
 			"ids":     `["${alicloud_quick_bi_user.default.id}_fake"]`,
 			"keyword": `"${alicloud_quick_bi_user.default.nick_name}"`,
 		}),
@@ -58,15 +59,20 @@ func TestAccAlicloudQuickBIUsersDataSource(t *testing.T) {
 			"users.#": "0",
 		}
 	}
-	var alicloudQuickBIUserCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_quick_bi_users.default",
-		existMapFunc: existDataAlicloudQuickBIUsersSourceNameMapFunc,
-		fakeMapFunc:  fakeDataAlicloudQuickBIUsersSourceNameMapFunc,
+	var alicloudQuickBIUserCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_quick_bi_users.default",
+		ExistMapFunc: existDataAlicloudQuickBIUsersSourceNameMapFunc,
+		FakeMapFunc:  fakeDataAlicloudQuickBIUsersSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		// QuickBI is not available in the default test region (cn-beijing); the
+		// service serves cn-hangzhou (and other supported regions) per the official
+		// endpoint metadata. Force a supported region so the acceptance tests
+		// exercise a real endpoint instead of NXDOMAIN. Production code is unchanged.
+		t.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+		acctest.PreCheck(t)
 	}
-	alicloudQuickBIUserCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, keywordConf, allConf)
+	alicloudQuickBIUserCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, keywordConf, allConf)
 }
 func testAccCheckAlicloudQuickBIUserDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -76,8 +82,8 @@ func testAccCheckAlicloudQuickBIUserDataSourceName(rand int, attrMap map[string]
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
-	default = "tf-testAccQuickBIUser%d"
+variable "name" {
+  default = "tf-testAccQuickBIUser%d"
 }
 data "alicloud_ram_users" "default" {
   name_regex  = "terraform*"
@@ -90,7 +96,7 @@ resource "alicloud_quick_bi_user" "default" {
   user_type       = "Developer"
 }
 
-data "alicloud_quick_bi_users" "default" {	
+data "alicloud_quick_bi_users" "default" {
 	%s
 }
 `, rand, "openapiautomation@test.aliyunid.com", strings.Join(pairs, " \n "))
