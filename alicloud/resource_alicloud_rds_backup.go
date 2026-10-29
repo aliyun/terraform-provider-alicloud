@@ -29,6 +29,10 @@ func resourceAliCloudRdsBackup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"backup_job_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"backup_method": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -127,6 +131,9 @@ func resourceAliCloudRdsBackupCreate(d *schema.ResourceData, meta interface{}) e
 	time.Sleep(1 * time.Minute)
 	object, err := rdsService.DescribeBackupTasks(d.Get("db_instance_id").(string), response["BackupJobId"].(string))
 	d.SetId(fmt.Sprint(request["DBInstanceId"], ":", object["BackupId"].(string)))
+	if err := d.Set("backup_job_id", response["BackupJobId"].(string)); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rds_backup", "SetBackupJobId", AlibabaCloudSdkGoERROR)
+	}
 
 	return resourceAliCloudRdsBackupRead(d, meta)
 }
@@ -174,9 +181,14 @@ func resourceAliCloudRdsBackupDelete(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	var err error
+	// The resource ID is a composite "DBInstanceId:BackupId"; DeleteBackup only
+	// accepts the bare backup set ID.
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	request = make(map[string]interface{})
-	request["BackupId"] = d.Id()
+	request["BackupId"] = parts[1]
 	request["RegionId"] = client.RegionId
 
 	request["DBInstanceId"] = d.Get("db_instance_id")
