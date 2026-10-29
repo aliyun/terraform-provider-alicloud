@@ -79,11 +79,26 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"auto_use_coupon": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				// The coupon is only used by CreateTairInstance, so changes after creation are
+				// suppressed instead of forcing a new instance. The check is based on the state
+				// ID because a plan-time diff is not marked as a new resource yet: keying on
+				// IsNewResource() would also suppress the create-time value.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != ""
+				},
+			},
 			"bandwidth_burst": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"cluster_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"coupon_no": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -135,6 +150,12 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"instance_endpoint_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"AzIndependentEndpoint", "UnifiedEndpoint"}, false),
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
@@ -254,6 +275,11 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -311,6 +337,11 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"slave_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"src_db_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -340,14 +371,13 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 			"storage_performance_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validators.StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
 			},
 			"storage_size_gb": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
@@ -483,6 +513,22 @@ func ResourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("connection_string_prefix"); ok {
 		request["ConnectionStringPrefix"] = v
 	}
+	applyTairInstanceReplicaCountRequest(d, request)
+	if v, ok := d.GetOk("maintain_start_time"); ok {
+		request["MaintainStartTime"] = v
+	}
+	if v, ok := d.GetOk("maintain_end_time"); ok {
+		request["MaintainEndTime"] = v
+	}
+	if v, ok := d.GetOk("coupon_no"); ok {
+		request["CouponNo"] = v
+	}
+	if v, ok := tairInstanceConfiguredValue(d, "auto_use_coupon"); ok {
+		request["AutoUseCoupon"] = convert.ConvertBoolToString(v.(bool))
+	}
+	if v, ok := d.GetOk("instance_endpoint_type"); ok {
+		request["InstanceEndpointType"] = v
+	}
 	wait := helper.IncrementalWait(180*time.Second, 180*time.Second)
 	internalErrRetryCount := 0
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -599,6 +645,20 @@ func ResourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 			return err
 		}
 		d.Set("storage_size_gb", storage_size_gbVal)
+	}
+	if objectRaw["ReplicaCount"] != nil {
+		replicaCountVal, err := convert.FormatInt(objectRaw["ReplicaCount"])
+		if err != nil {
+			return err
+		}
+		d.Set("replica_count", replicaCountVal)
+	}
+	if objectRaw["SlaveReplicaCount"] != nil {
+		slaveReplicaCountVal, err := convert.FormatInt(objectRaw["SlaveReplicaCount"])
+		if err != nil {
+			return err
+		}
+		d.Set("slave_replica_count", slaveReplicaCountVal)
 	}
 	if objectRaw["InstanceName"] != nil {
 		d.Set("tair_instance_name", objectRaw["InstanceName"])
@@ -759,10 +819,43 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	// Resolve the order type before the first write of this update: a prepaid request whose
+	// direction cannot be derived deterministically is refused here, so the earlier write
+	// steps of this function cannot be left half-applied. Only a request that this update
+	// really sends is classified: a new resource creates the instance through
+	// CreateTairInstance and this update carries no specification change for it.
+	var (
+		orderType      string
+		slaveOrderType string
+		err            error
+	)
+	if !d.IsNewResource() {
+		if tairInstanceMainSpecRequested(d) {
+			orderType, err = tairInstanceSpecOrderType(d, tairInstanceMainSpecOrderTypeFields...)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+		}
+		if d.HasChange("slave_replica_count") {
+			slaveOrderType, err = tairInstanceSpecOrderType(d, "slave_replica_count")
+			if err != nil {
+				return errs.WrapError(err)
+			}
+		}
+	}
+	// ModifyInstanceSpec carries the two replica counts in separate requests and the API keeps
+	// ReplicaCount+SlaveReplicaCount within 4. When the primary count grows while the secondary
+	// count shrinks, the secondary decrease is sent first so the intermediate sum stays within
+	// the limit; every other combination keeps the primary request first.
+	slaveSpecFirst := false
+	if !d.IsNewResource() && d.HasChange("replica_count") && d.HasChange("slave_replica_count") {
+		oldReplicaCount, newReplicaCount := d.GetChange("replica_count")
+		oldSlaveReplicaCount, newSlaveReplicaCount := d.GetChange("slave_replica_count")
+		slaveSpecFirst = newReplicaCount.(int) > oldReplicaCount.(int) && newSlaveReplicaCount.(int) < oldSlaveReplicaCount.(int)
+	}
 	d.Partial(true)
 
 	action := "ModifyInstanceAttribute"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -810,6 +903,54 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
+	// The secondary zone replica count is applied in its own ModifyInstanceSpec request: the two
+	// counts can move in opposite directions, and a prepaid order can only declare one OrderType,
+	// so each request carries the direction of the fields it actually changes.
+	sendSlaveReplicaCountSpec := func() error {
+		slaveRequest := buildRedisTairInstanceSlaveReplicaCountRequest(
+			d.Id(),
+			client.RegionId,
+			helper.BuildClientToken("ModifyInstanceSpec"),
+			d.Get("instance_class").(string),
+			d.Get("slave_replica_count").(int),
+			optionalTairInstanceUpdateOption(d, "force_upgrade"),
+			optionalTairInstanceUpdateOption(d, "effective_time"),
+			slaveOrderType,
+		)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		var slaveResponse map[string]interface{}
+		var slaveErr error
+		slaveErr = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			slaveResponse, slaveErr = client.RpcPost("R-kvstore", "2015-01-01", "ModifyInstanceSpec", nil, slaveRequest, true)
+			if slaveErr != nil {
+				// The first order may still be processing when this request arrives, so the
+				// in-progress order code has to stay retryable here as well.
+				if redisTairInstanceOrderRetryable(slaveErr) {
+					wait()
+					return retry.RetryableError(slaveErr)
+				}
+				return retry.NonRetryableError(slaveErr)
+			}
+			return nil
+		})
+		logs.AddDebug("ModifyInstanceSpec", slaveResponse, slaveRequest)
+		if slaveErr != nil {
+			return errs.WrapErrorf(slaveErr, errs.DefaultErrorMsg, d.Id(), "ModifyInstanceSpec", errs.AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+		return nil
+	}
+	if slaveSpecFirst {
+		if err := sendSlaveReplicaCountSpec(); err != nil {
+			return err
+		}
+	}
 	update = false
 	action = "ModifyInstanceSpec"
 	request = make(map[string]interface{})
@@ -821,13 +962,16 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 	}
 	request["InstanceClass"] = d.Get("instance_class")
-	if v, ok := d.GetOkExists("force_upgrade"); ok {
+	if v := optionalTairInstanceUpdateOption(d, "force_upgrade"); v != nil {
 		request["ForceUpgrade"] = v
 	}
-	if v, ok := d.GetOk("effective_time"); ok {
+	if v := optionalTairInstanceUpdateOption(d, "effective_time"); v != nil {
 		request["EffectiveTime"] = v
 	}
 	request["AutoPay"] = "true"
+	if orderType != "" {
+		request["OrderType"] = orderType
+	}
 	if v, ok := d.GetOkExists("slave_read_only_count"); ok {
 		request["SlaveReadOnlyCount"] = v
 	}
@@ -838,6 +982,27 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 		request["NodeType"] = d.Get("node_type")
 	}
+	if !d.IsNewResource() && d.HasChange("replica_count") {
+		update = true
+		request["ReplicaCount"] = d.Get("replica_count")
+	}
+	if !d.IsNewResource() && d.HasChange("storage_size_gb") {
+		update = true
+		request["Storage"] = d.Get("storage_size_gb")
+		// ModifyInstanceSpec requires StorageType whenever the storage size of a tair_essd
+		// instance changes, even when the performance level itself is unchanged.
+		if v, ok := d.Get("storage_performance_level").(string); ok && v != "" {
+			request["StorageType"] = convertRedisTairInstanceStorageTypeRequest(v)
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("storage_performance_level") {
+		// Removing the attribute must not serialize an empty StorageType: the API only
+		// accepts essd_pl1, essd_pl2 and essd_pl3.
+		if v, ok := d.Get("storage_performance_level").(string); ok && v != "" {
+			update = true
+			request["StorageType"] = convertRedisTairInstanceStorageTypeRequest(v)
+		}
+	}
 
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -846,7 +1011,7 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if redisTairInstanceOrderRetryable(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -859,9 +1024,14 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		redisServiceV2 := RedisServiceV2{client}
-		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	if !slaveSpecFirst && !d.IsNewResource() && d.HasChange("slave_replica_count") {
+		if err := sendSlaveReplicaCountSpec(); err != nil {
+			return err
 		}
 	}
 	update = false
@@ -983,6 +1153,9 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("auto_renew_period"); ok {
 		request["AutoRenewPeriod"] = v
 	}
+	if v, ok := d.GetOk("coupon_no"); ok {
+		request["CouponNo"] = v
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -990,7 +1163,7 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if redisTairInstanceOrderRetryable(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1604,4 +1777,216 @@ func configuredConfigKeysFromRawConfig(d *schema.ResourceData) map[string]struct
 		}
 	}
 	return keys
+}
+
+// tairInstanceConfiguredValue returns the value the user configured for an attribute and
+// whether that attribute is present and non-null in the configuration. Values that come only
+// from API read-back (Optional+Computed) or from state are not treated as configured, so an
+// explicit zero value stays distinguishable from an unset or removed attribute.
+func tairInstanceConfiguredValue(d *schema.ResourceData, key string) (interface{}, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return nil, false
+	}
+	rawType := rawConfig.Type()
+	if !rawType.IsObjectType() || !rawType.HasAttribute(key) {
+		return nil, false
+	}
+	value := rawConfig.GetAttr(key)
+	if value.IsNull() || !value.IsKnown() {
+		return nil, false
+	}
+	return d.Get(key), true
+}
+
+// optionalTairInstanceUpdateOption returns the configured value of an execution option and
+// nil when the user did not set it or removed it, so the option is omitted from the request
+// instead of being sent with its zero value or with a stale state value.
+func optionalTairInstanceUpdateOption(d *schema.ResourceData, key string) interface{} {
+	if v, ok := tairInstanceConfiguredValue(d, key); ok {
+		return v
+	}
+	return nil
+}
+
+// applyTairInstanceReplicaCountRequest adds the replica counts the user configured to a
+// CreateTairInstance request. Both attributes are Optional+Computed, so the configuration is
+// inspected instead of GetOkExists to keep an explicit 0 distinguishable from an unset value.
+func applyTairInstanceReplicaCountRequest(d *schema.ResourceData, request map[string]interface{}) {
+	if v, ok := tairInstanceConfiguredValue(d, "replica_count"); ok {
+		request["ReplicaCount"] = v
+	}
+	if v, ok := tairInstanceConfiguredValue(d, "slave_replica_count"); ok {
+		request["SlaveReplicaCount"] = v
+	}
+}
+
+const (
+	tairInstanceSpecDirectionUnchanged = iota
+	tairInstanceSpecDirectionUpgrade
+	tairInstanceSpecDirectionDowngrade
+	tairInstanceSpecDirectionUnknown
+)
+
+// tairInstanceMainSpecOrderTypeFields are every price-bearing field the main
+// ModifyInstanceSpec request can carry. read_only_count and slave_read_only_count are carried
+// by that request as well, so the classification covers the whole serialized request.
+var tairInstanceMainSpecOrderTypeFields = []string{
+	"instance_class",
+	"node_type",
+	"replica_count",
+	"storage_size_gb",
+	"storage_performance_level",
+	"read_only_count",
+	"slave_read_only_count",
+}
+
+// tairInstanceMainSpecRequested reports whether this update sends the main ModifyInstanceSpec
+// request. It mirrors the branch conditions of the request builder, so a create-time update
+// that only writes the newly created instance is not classified as a specification change.
+func tairInstanceMainSpecRequested(d *schema.ResourceData) bool {
+	if d.HasChange("instance_class") || d.HasChange("node_type") || d.HasChange("replica_count") || d.HasChange("storage_size_gb") {
+		return true
+	}
+	if d.HasChange("storage_performance_level") {
+		level, _ := d.Get("storage_performance_level").(string)
+		return level != ""
+	}
+	return false
+}
+
+// tairInstanceSpecOrderType returns the ModifyInstanceSpec OrderType for one prepaid
+// request. The API compares the price of the target specification carried by that request
+// with the current one, so the direction is derived from every price-bearing field of the
+// request: a request mixing increases and decreases, or combining a field whose direction
+// cannot be compared locally with another changed field, is refused instead of being sent
+// with a contradictory OrderType. A single field that cannot be compared locally keeps the
+// API default (UPGRADE), and an empty result keeps the default for every other request.
+func tairInstanceSpecOrderType(d *schema.ResourceData, fields ...string) (string, error) {
+	// ModifyInstanceSpec runs before TransformInstanceChargeType in this update, so the order
+	// is priced with the billing type the instance still has in state. Reading the planned
+	// payment_type would classify a conversion that has not happened yet.
+	previousPaymentType, _ := d.GetChange("payment_type")
+	if paymentType, _ := previousPaymentType.(string); paymentType != "Subscription" {
+		return "", nil
+	}
+	var upgrades, downgrades, unknown []string
+	for _, field := range fields {
+		if !d.HasChange(field) {
+			continue
+		}
+		switch tairInstanceSpecFieldDirection(d, field) {
+		case tairInstanceSpecDirectionUpgrade:
+			upgrades = append(upgrades, field)
+		case tairInstanceSpecDirectionDowngrade:
+			downgrades = append(downgrades, field)
+		case tairInstanceSpecDirectionUnknown:
+			unknown = append(unknown, field)
+		}
+	}
+	if len(unknown) > 0 {
+		if len(upgrades) > 0 || len(downgrades) > 0 {
+			changed := append(append([]string{}, upgrades...), downgrades...)
+			return "", fmt.Errorf("cannot determine the ModifyInstanceSpec OrderType for the prepaid instance: the price direction of %s cannot be compared with %s in the same request, so the update is refused instead of risking a wrong order", strings.Join(unknown, ", "), strings.Join(changed, ", "))
+		}
+		return "", nil
+	}
+	if len(upgrades) > 0 && len(downgrades) > 0 {
+		return "", fmt.Errorf("cannot determine the ModifyInstanceSpec OrderType for the prepaid instance: %s increase while %s decrease in the same request, so the update is refused instead of risking a wrong order", strings.Join(upgrades, ", "), strings.Join(downgrades, ", "))
+	}
+	if len(downgrades) > 0 {
+		return "DOWNGRADE", nil
+	}
+	return "", nil
+}
+
+// tairInstanceSpecFieldDirection classifies one price-bearing field of a ModifyInstanceSpec
+// request. Numeric sizes, read-only counts and ESSD performance levels are comparable locally;
+// the instance class and the node architecture are not, because a smaller capacity or a
+// different node layout can cost more than the current one.
+func tairInstanceSpecFieldDirection(d *schema.ResourceData, field string) int {
+	switch field {
+	case "replica_count", "slave_replica_count", "storage_size_gb", "read_only_count", "slave_read_only_count":
+		oldValue, newValue := d.GetChange(field)
+		oldCount, _ := oldValue.(int)
+		newCount, _ := newValue.(int)
+		switch {
+		case newCount > oldCount:
+			return tairInstanceSpecDirectionUpgrade
+		case newCount < oldCount:
+			return tairInstanceSpecDirectionDowngrade
+		default:
+			return tairInstanceSpecDirectionUnchanged
+		}
+	case "storage_performance_level":
+		oldValue, newValue := d.GetChange(field)
+		newLevel := fmt.Sprint(newValue)
+		if newLevel == "" {
+			// Removing the attribute does not serialize StorageType.
+			return tairInstanceSpecDirectionUnchanged
+		}
+		oldRank, oldKnown := redisTairInstanceStoragePerformanceLevelRank(fmt.Sprint(oldValue))
+		newRank, newKnown := redisTairInstanceStoragePerformanceLevelRank(newLevel)
+		if !oldKnown || !newKnown {
+			return tairInstanceSpecDirectionUnknown
+		}
+		switch {
+		case newRank > oldRank:
+			return tairInstanceSpecDirectionUpgrade
+		case newRank < oldRank:
+			return tairInstanceSpecDirectionDowngrade
+		default:
+			return tairInstanceSpecDirectionUnchanged
+		}
+	default:
+		return tairInstanceSpecDirectionUnknown
+	}
+}
+
+// redisTairInstanceStoragePerformanceLevelRank orders the ESSD performance levels from the
+// lowest to the highest so a level change can be classified as an upgrade or a downgrade.
+func redisTairInstanceStoragePerformanceLevelRank(level string) (int, bool) {
+	switch level {
+	case "PL1":
+		return 1, true
+	case "PL2":
+		return 2, true
+	case "PL3":
+		return 3, true
+	default:
+		return 0, false
+	}
+}
+
+// redisTairInstanceOrderRetryable reports whether an order-style RPC should be retried:
+// transient errors plus the order code returned while the previous order is still being
+// processed. Every ModifyInstanceSpec and TransformInstanceChargeType retry uses it so the
+// same in-progress condition is handled consistently.
+func redisTairInstanceOrderRetryable(err error) bool {
+	return helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"Order.LatestOrderIsHanding"})
+}
+
+// buildRedisTairInstanceSlaveReplicaCountRequest builds the standalone ModifyInstanceSpec
+// request that changes only SlaveReplicaCount after the request carrying ReplicaCount has
+// converged, so each prepaid order can declare the direction of the count it changes. User
+// configured execution options are carried over; omitting them would make the API fall back
+// to its defaults (force upgrade enabled, run immediately).
+func buildRedisTairInstanceSlaveReplicaCountRequest(instanceId, regionId, clientToken, instanceClass string, slaveReplicaCount int, forceUpgrade, effectiveTime interface{}, orderType string) map[string]interface{} {
+	request := map[string]interface{}{
+		"InstanceId":        instanceId,
+		"RegionId":          regionId,
+		"ClientToken":       clientToken,
+		"InstanceClass":     instanceClass,
+		"SlaveReplicaCount": slaveReplicaCount,
+	}
+	if forceUpgrade != nil {
+		request["ForceUpgrade"] = forceUpgrade
+	}
+	if effectiveTime != nil {
+		request["EffectiveTime"] = effectiveTime
+	}
+	if orderType != "" {
+		request["OrderType"] = orderType
+	}
+	return request
 }
