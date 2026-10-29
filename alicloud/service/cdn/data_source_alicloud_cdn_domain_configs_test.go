@@ -1,18 +1,19 @@
-package alicloud
+package cdn_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudCdnDomainConfigsDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_cdn_domain_configs.default"
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceCdnDomainConfigsConfig)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceCdnDomainConfigsConfig)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -96,14 +97,14 @@ func TestAccAliCloudCdnDomainConfigsDataSource_basic0(t *testing.T) {
 			"ids.#":                               "1",
 			"names.#":                             "1",
 			"configs.#":                           "1",
-			"configs.0.id":                        CHECKSET,
-			"configs.0.function_name":             CHECKSET,
-			"configs.0.config_id":                 CHECKSET,
-			"configs.0.parent_id":                 CHECKSET,
-			"configs.0.status":                    CHECKSET,
-			"configs.0.function_args.#":           CHECKSET,
-			"configs.0.function_args.0.arg_name":  CHECKSET,
-			"configs.0.function_args.0.arg_value": CHECKSET,
+			"configs.0.id":                        acctest.CHECKSET,
+			"configs.0.function_name":             acctest.CHECKSET,
+			"configs.0.config_id":                 acctest.CHECKSET,
+			"configs.0.parent_id":                 acctest.CHECKSET,
+			"configs.0.status":                    acctest.CHECKSET,
+			"configs.0.function_args.#":           acctest.CHECKSET,
+			"configs.0.function_args.0.arg_name":  acctest.CHECKSET,
+			"configs.0.function_args.0.arg_value": acctest.CHECKSET,
 		}
 	}
 
@@ -122,7 +123,7 @@ func TestAccAliCloudCdnDomainConfigsDataSource_basic0(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
 	aliCloudCdnDomainConfigsInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, functionNameConf, configIdConf, statusConf, allConf)
@@ -153,6 +154,10 @@ resource "alicloud_cdn_domain_config" "default" {
   function_args {
     arg_name  = "rule"
     arg_value = "{\"match\":{\"logic\":\"and\",\"criteria\":[{\"matchType\":\"clientipVer\",\"matchObject\":\"CONNECTING_IP\",\"matchOperator\":\"equals\",\"matchValue\":\"v6\",\"negate\":false}]},\"name\":\"example\",\"status\":\"enable\"}"
+  }
+  function_args {
+    arg_name  = "sequence"
+    arg_value = "1"
   }
 }
 `, name)

@@ -1,4 +1,4 @@
-package alicloud
+package cdn
 
 import (
 	"reflect"
@@ -11,40 +11,10 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestAccAlicloudCDNServiceDataSource(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCheckAlicloudCdnServiceDataSource,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_cdn_service.current"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cdn_service.current", "id"),
-					resource.TestCheckResourceAttr("data.alicloud_cdn_service.current", "status", "Opened"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cdn_service.current", "internet_charge_type"),
-					resource.TestCheckResourceAttrSet("data.alicloud_cdn_service.current", "opening_time"),
-					//resource.TestCheckResourceAttrSet("data.alicloud_cdn_service.current", "changing_charge_type"),
-					//resource.TestCheckResourceAttrSet("data.alicloud_cdn_service.current", "changing_affect_time"),
-				),
-			},
-		},
-	})
-}
-
-const testAccCheckAlicloudCdnServiceDataSource = `
-data "alicloud_cdn_service" "current" {
-	enable = "On"
-	internet_charge_type = "PayByTraffic"
-}
-`
 
 func testUnitCdnServiceMockMeta(t *testing.T) *connectivity.AliyunClient {
 	credential, err := credentials.NewCredential(new(credentials.Config).
@@ -157,9 +127,9 @@ func TestUnitAliCloudCdnServiceRead(t *testing.T) {
 				return openedResponse(), nil
 			case "OpenCdnService":
 				return nil, &tea.SDKError{
-					Code:       String("CdnService.HasOpened"),
-					Data:       String("CdnService.HasOpened"),
-					Message:    String("The CDN service has been opened."),
+					Code:       helper.String("CdnService.HasOpened"),
+					Data:       helper.String("CdnService.HasOpened"),
+					Message:    helper.String("The CDN service has been opened."),
 					StatusCode: tea.Int(400),
 				}
 			}

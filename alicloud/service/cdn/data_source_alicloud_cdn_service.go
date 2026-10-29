@@ -1,4 +1,4 @@
-package alicloud
+package cdn
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -20,13 +24,13 @@ func dataSourceAliCloudCdnService() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "Off",
-				ValidateFunc: StringInSlice([]string{"On", "Off"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"On", "Off"}, false),
 			},
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "PayByTraffic",
-				ValidateFunc: StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -56,15 +60,15 @@ func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenCdnService)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
-	addDebug("DescribeCdnService", response, nil)
+	response, err := conn.DoRequest(helper.StringPointer("DescribeCdnService"), nil, helper.StringPointer("POST"), helper.StringPointer("2018-05-10"), helper.StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+	logs.AddDebug("DescribeCdnService", response, nil)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied", "CdnServiceNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"OperationDenied", "CdnServiceNotFound"}) {
 			log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
 		} else {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -78,19 +82,19 @@ func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 			chargeType = v.(string)
 		}
 		if chargeType == "" {
-			return WrapError(fmt.Errorf("Field 'internet_charge_type' is required when 'enable' is 'On'."))
+			return errs.WrapError(fmt.Errorf("Field 'internet_charge_type' is required when 'enable' is 'On'."))
 		}
 		requestBody := map[string]interface{}{"InternetChargeType": chargeType}
 
 		if !opened {
-			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
-			addDebug("OpenCdnService", resp, nil)
+			resp, err := conn.DoRequest(helper.StringPointer("OpenCdnService"), nil, helper.StringPointer("POST"), helper.StringPointer("2018-05-10"), helper.StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
+			logs.AddDebug("OpenCdnService", resp, nil)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"CdnService.HasOpened"}) {
+				if errs.IsExpectedErrors(err, []string{"CdnService.HasOpened"}) {
 					log.Printf("[DEBUG] Datasource alicloud_cdn_service has opened!!!")
 					opened = true
 				} else {
-					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "OpenCdnService", AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cdn_service", "OpenCdnService", errs.AlibabaCloudSdkGoERROR)
 				}
 			} else {
 				opened = true
@@ -100,15 +104,15 @@ func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 		action := "DescribeCdnService"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(4*time.Minute, func() *retry.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &runtime)
+			response, err = conn.DoRequest(helper.StringPointer(action), nil, helper.StringPointer("POST"), helper.StringPointer("2018-05-10"), helper.StringPointer("AK"), nil, nil, &runtime)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"CdnServiceNotFound"}) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"CdnServiceNotFound"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"OperationDenied"}) {
+				if errs.IsExpectedErrors(err, []string{"OperationDenied"}) {
 					log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
 					return nil
 				}
@@ -116,9 +120,9 @@ func dataSourceAliCloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, nil)
+		logs.AddDebug(action, response, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cdn_service", action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 

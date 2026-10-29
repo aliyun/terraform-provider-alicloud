@@ -1,4 +1,4 @@
-package alicloud
+package cdn
 
 import (
 	"fmt"
@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -322,7 +325,7 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 
 	if args.CdnType != cdn.LiveStream {
 		if v, ok := d.GetOk("sources"); ok && v.(*schema.Set).Len() > 0 {
-			sources := expandStringList(v.(*schema.Set).List())
+			sources := convert.ExpandStringList(v.(*schema.Set).List())
 			args.Sources = strings.Join(sources, ",")
 		} else {
 			return fmt.Errorf("Sources is required when 'cdn_type' is not 'liveStream'.")
@@ -367,7 +370,7 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 			attributeUpdate = true
 		}
 		if d.HasChange("sources") {
-			sources := expandStringList(d.Get("sources").(*schema.Set).List())
+			sources := convert.ExpandStringList(d.Get("sources").(*schema.Set).List())
 			args.Sources = strings.Join(sources, ",")
 			attributeUpdate = true
 		}
@@ -391,7 +394,7 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if d.HasChange("block_ips") {
-		blockIps := expandStringList(d.Get("block_ips").(*schema.Set).List())
+		blockIps := convert.ExpandStringList(d.Get("block_ips").(*schema.Set).List())
 		args := cdn.IpBlackRequest{DomainName: d.Id(), BlockIps: strings.Join(blockIps, ",")}
 		_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
 			return cdnClient.SetIpBlackListConfig(args)
@@ -597,7 +600,7 @@ func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 			return cdnClient.DeleteCdnDomain(args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceBusy"}) {
+			if errs.IsExpectedErrors(err, []string{"ServiceBusy"}) {
 				return retry.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
 			}
 			return retry.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
@@ -651,7 +654,7 @@ func queryStringConfigUpdate(client *connectivity.AliyunClient, d *schema.Resour
 	val := valSet.List()[0].(map[string]interface{})
 	args.Enable = val["enable"].(string)
 	if v, ok := val["hash_key_args"]; ok && len(v.([]interface{})) > 0 {
-		hashKeyArgs := expandStringList(v.([]interface{}))
+		hashKeyArgs := convert.ExpandStringList(v.([]interface{}))
 		args.HashKeyArgs = strings.Join(hashKeyArgs, ",")
 	}
 	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
@@ -724,7 +727,7 @@ func referConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData
 	args.ReferType = val["refer_type"].(string)
 	args.AllowEmpty = val["allow_empty"].(string)
 	if v, ok := val["refer_list"]; ok && len(v.([]interface{})) > 0 {
-		referList := expandStringList(v.([]interface{}))
+		referList := convert.ExpandStringList(v.([]interface{}))
 		args.ReferList = strings.Join(referList, ",")
 	}
 	_, err := client.WithCdnClient(func(cdnClient *cdn.CdnClient) (interface{}, error) {
@@ -976,11 +979,11 @@ func WaitForDomainStatus(Id string, status Status, timeout int, meta interface{}
 		if domain.DomainStatus == string(status) {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
+		timeout = timeout - helper.DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("Domain", string(status)))
+			return errs.GetTimeErrorFromString(errs.GetTimeoutMessage("Domain", string(status)))
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
@@ -998,11 +1001,11 @@ func WaitForServerCertificate(client *connectivity.AliyunClient, Id string, serv
 		if strings.TrimSpace(domain.ServerCertificate) == strings.TrimSpace(serverCertificate) {
 			break
 		}
-		timeout = timeout - DefaultIntervalShort
+		timeout = timeout - helper.DefaultIntervalShort
 		if timeout <= 0 {
-			return GetTimeErrorFromString(GetTimeoutMessage("ServerCertificate", string(serverCertificate)))
+			return errs.GetTimeErrorFromString(errs.GetTimeoutMessage("ServerCertificate", string(serverCertificate)))
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 	return nil
 }

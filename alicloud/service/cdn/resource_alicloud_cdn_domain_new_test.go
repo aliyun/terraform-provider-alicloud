@@ -1,4 +1,4 @@
-package alicloud
+package cdn_test
 
 import (
 	"fmt"
@@ -8,9 +8,15 @@ import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	alicdn "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -22,9 +28,9 @@ func init() {
 }
 
 func testSweepCdnDomains_new(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -33,26 +39,26 @@ func testSweepCdnDomains_new(region string) error {
 		fmt.Sprintf("tf_testacc%s", region),
 	}
 
-	var domains []cdn.PageData
-	args := cdn.CreateDescribeUserDomainsRequest()
+	var domains []alicdn.PageData
+	args := alicdn.CreateDescribeUserDomainsRequest()
 	args.PageNumber = requests.NewInteger(1)
-	args.PageSize = requests.NewInteger(PageSizeLarge)
+	args.PageSize = requests.NewInteger(helper.PageSizeLarge)
 	for {
 
-		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+		raw, err := client.WithCdnClient_new(func(cdnClient *alicdn.Client) (interface{}, error) {
 			return cdnClient.DescribeUserDomains(args)
 		})
 		if err != nil {
 			log.Printf("Error retrieving CDN Domain new: %s", err)
 		}
-		addDebug(args.GetActionName(), raw)
-		resp, _ := raw.(*cdn.DescribeUserDomainsResponse)
+		logs.AddDebug(args.GetActionName(), raw)
+		resp, _ := raw.(*alicdn.DescribeUserDomainsResponse)
 		if resp == nil || len(resp.Domains.PageData) < 1 {
 			break
 		}
 		domains = append(domains, resp.Domains.PageData...)
 
-		if page, err := getNextpageNumber(args.PageNumber); err != nil {
+		if page, err := helper.GetNextpageNumber(args.PageNumber); err != nil {
 			log.Printf("Error get Next page Number: %s", err)
 			break
 		} else {
@@ -74,45 +80,45 @@ func testSweepCdnDomains_new(region string) error {
 			continue
 		}
 		log.Printf("[INFO] Deleting CDN domain: %s", name)
-		request := cdn.CreateDeleteCdnDomainRequest()
+		request := alicdn.CreateDeleteCdnDomainRequest()
 		request.DomainName = name
-		raw, err := client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
+		raw, err := client.WithCdnClient_new(func(cdnClient *alicdn.Client) (interface{}, error) {
 			return cdnClient.DeleteCdnDomain(request)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete CDN domain (%s): %s", name, err)
 		}
-		addDebug(request.GetActionName(), raw)
+		logs.AddDebug(request.GetActionName(), raw)
 	}
 	return nil
 }
 
 func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
-	var v *cdn.GetDomainDetailModel
+	var v *alicdn.GetDomainDetailModel
 
 	resourceId := "alicloud_cdn_domain_new.domain"
-	ra := resourceAttrInit(resourceId, cdnDomainBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, cdnDomainBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("test%s%d.pfytlm.xyz", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -131,9 +137,9 @@ func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":       CHECKSET,
+						"domain_name":       acctest.CHECKSET,
 						"scope":             "domestic",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"sources.#":         "1",
 					}),
 				),
@@ -145,7 +151,7 @@ func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -266,17 +272,17 @@ func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
 							"cert_id":                   "${alicloud_ssl_certificates_service_certificate.default.id}",
 							"cert_region":               "cn-hangzhou",
 							"cert_type":                 "cas",
-							"cert_name":                 REMOVEKEY,
+							"cert_name":                 acctest.REMOVEKEY,
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"certificate_config.0.server_certificate_status": "on",
-						"certificate_config.0.cert_id":                   CHECKSET,
-						"certificate_config.0.cert_region":               CHECKSET,
+						"certificate_config.0.cert_id":                   acctest.CHECKSET,
+						"certificate_config.0.cert_region":               acctest.CHECKSET,
 						"certificate_config.0.cert_type":                 "cas",
-						"certificate_config.0.cert_name":                 REMOVEKEY,
+						"certificate_config.0.cert_name":                 acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -318,7 +324,7 @@ func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"domain_name": name,
 					"cdn_type":    "web",
-					"scope":       REMOVEKEY,
+					"scope":       acctest.REMOVEKEY,
 					"certificate_config": []map[string]interface{}{
 						{
 							"server_certificate_status": "off",
@@ -344,20 +350,20 @@ func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
 							"weight":   "10",
 						},
 					},
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scope":                            REMOVEKEY,
+						"scope":                            acctest.REMOVEKEY,
 						"sources.#":                        "3",
 						"certificate_config.0.cert_id":     "",
 						"certificate_config.0.cert_name":   "",
 						"certificate_config.0.cert_region": "",
 						"certificate_config.0.server_certificate_status": "off",
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-						"tags.Updated": REMOVEKEY,
+						"tags.%":       acctest.REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
+						"tags.Updated": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -366,31 +372,31 @@ func TestAccAliCloudCDNDomainNew_basic(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainNew_scope(t *testing.T) {
-	var v *cdn.GetDomainDetailModel
+	var v *alicdn.GetDomainDetailModel
 
 	resourceId := "alicloud_cdn_domain_new.domain"
-	ra := resourceAttrInit(resourceId, cdnDomainBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, cdnDomainBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, strconv.Itoa(rand), resourceCdnDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -509,8 +515,8 @@ EOF
 }
 
 var cdnDomainBasicMap = map[string]string{
-	"domain_name": CHECKSET,
-	"scope":       CHECKSET,
+	"domain_name": acctest.CHECKSET,
+	"scope":       acctest.CHECKSET,
 	"cdn_type":    "web",
 }
 
@@ -522,22 +528,22 @@ const testPrivateKey = `-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQC+7dgpkQi
 func TestAccAliCloudCdnDomain_basic3176(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cdn_domain_new.default"
-	ra := resourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cdn.NewCdnServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeCdnDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("test%s%d.pfytlm.xyz", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCdnDomainBasicDependence3176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -555,7 +561,7 @@ func TestAccAliCloudCdnDomain_basic3176(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name": CHECKSET,
+						"domain_name": acctest.CHECKSET,
 						"cdn_type":    "web",
 						"sources.#":   "1",
 					}),
@@ -623,13 +629,13 @@ func TestAccAliCloudCdnDomain_basic3176(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -659,22 +665,22 @@ variable "name" {
 func TestAccAliCloudCdnDomain_basic3176_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cdn_domain_new.default"
-	ra := resourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cdn.NewCdnServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeCdnDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("test%s%d.pfytlm.xyz", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCdnDomainBasicDependence3176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithAccountSiteType(t, DomesticSite)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -698,7 +704,7 @@ func TestAccAliCloudCdnDomain_basic3176_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scope":        "domestic",
-						"domain_name":  CHECKSET,
+						"domain_name":  acctest.CHECKSET,
 						"cdn_type":     "web",
 						"sources.#":    "1",
 						"tags.%":       "2",

@@ -283,13 +283,6 @@ func Provider() *schema.Provider {
 			"alicloud_cassandra_zones":        dataSourceAlicloudCassandraZones(),
 			"alicloud_cassandra_backup_plans": dataSourceAlicloudCassandraBackupPlans(),
 
-			// cdn
-			"alicloud_cdn_domain_configs":           dataSourceAliCloudCdnDomainConfigs(),
-			"alicloud_cdn_service":                  dataSourceAliCloudCdnService(),
-			"alicloud_cdn_real_time_log_deliveries": dataSourceAlicloudCdnRealTimeLogDeliveries(),
-			"alicloud_cdn_ip_info":                  dataSourceAlicloudCdnIpInfo(),
-			"alicloud_cdn_blocked_regions":          dataSourceAlicloudCdnBlockedRegions(),
-
 			// cen
 			"alicloud_cen_instances":                                    dataSourceAlicloudCenInstances(),
 			"alicloud_cen_bandwidth_packages":                           dataSourceAlicloudCenBandwidthPackages(),
@@ -1273,13 +1266,6 @@ func Provider() *schema.Provider {
 			"alicloud_cassandra_cluster":     resourceAlicloudCassandraCluster(),
 			"alicloud_cassandra_data_center": resourceAlicloudCassandraDataCenter(),
 			"alicloud_cassandra_backup_plan": resourceAlicloudCassandraBackupPlan(),
-
-			// cdn
-			"alicloud_cdn_domain":                 resourceAlicloudCdnDomain(),
-			"alicloud_cdn_domain_new":             resourceAliCloudCdnDomain(),
-			"alicloud_cdn_domain_config":          resourceAliCloudCdnDomainConfig(),
-			"alicloud_cdn_real_time_log_delivery": resourceAliCloudCdnRealTimeLogDelivery(),
-			"alicloud_cdn_fc_trigger":             resourceAlicloudCdnFcTrigger(),
 
 			// cen
 			"alicloud_cen_transit_router_ecr_attachment":               resourceAliCloudCenTransitRouterEcrAttachment(),
