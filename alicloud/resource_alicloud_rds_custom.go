@@ -2,10 +2,13 @@
 package alicloud
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -41,6 +44,11 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"auto_use_coupon": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"create_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -57,6 +65,19 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 							Optional: true,
 							ForceNew: true,
 						},
+						"device": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"encrypted": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"true", "false"}, false),
+						},
 						"performance_level": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -67,8 +88,19 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 							Optional: true,
 							ForceNew: true,
 						},
+						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
 					},
 				},
+			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 			"deployment_set_id": {
 				Type:     schema.TypeString,
@@ -88,6 +120,11 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"enable_jumbo_frame": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
 			},
 			"force": {
 				Type:     schema.TypeBool,
@@ -152,6 +189,23 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"promotion_code": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"reboot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"reboot_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"reboot_when_finished": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -197,6 +251,12 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 							ForceNew: true,
 							Computed: true,
 						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
 						"size": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -210,6 +270,16 @@ func resourceAliCloudRdsCustom() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"user_data_in_base64": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -252,6 +322,15 @@ func resourceAliCloudRdsCustomCreate(d *schema.ResourceData, meta interface{}) e
 			dataLoopMap["Size"] = dataLoopTmp["size"]
 			dataLoopMap["PerformanceLevel"] = dataLoopTmp["performance_level"]
 			dataLoopMap["Category"] = dataLoopTmp["category"]
+			if device, ok := dataLoopTmp["device"].(string); ok && device != "" {
+				dataLoopMap["Device"] = device
+			}
+			if encrypted, ok := dataLoopTmp["encrypted"].(string); ok && encrypted != "" {
+				dataLoopMap["Encrypted"] = encrypted
+			}
+			if snapshotId, ok := dataLoopTmp["snapshot_id"].(string); ok && snapshotId != "" {
+				dataLoopMap["SnapshotId"] = snapshotId
+			}
 			dataDiskMapsArray = append(dataDiskMapsArray, dataLoopMap)
 		}
 		dataDiskMapsJson, err := json.Marshal(dataDiskMapsArray)
@@ -285,12 +364,27 @@ func resourceAliCloudRdsCustomCreate(d *schema.ResourceData, meta interface{}) e
 		if size3 != nil && size3 != "" {
 			systemDisk["Size"] = size3
 		}
+		performanceLevel3, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel3 != nil && performanceLevel3 != "" {
+			systemDisk["PerformanceLevel"] = performanceLevel3
+		}
 
 		systemDiskJson, err := json.Marshal(systemDisk)
 		if err != nil {
 			return WrapError(err)
 		}
 		request["SystemDisk"] = string(systemDiskJson)
+	}
+
+	if v, ok := d.GetOkExists("enable_jumbo_frame"); ok {
+		networkOptions := map[string]interface{}{
+			"EnableJumboFrame": v,
+		}
+		networkOptionsJson, err := json.Marshal(networkOptions)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["NetworkOptions"] = string(networkOptionsJson)
 	}
 
 	if v, ok := d.GetOk("io_optimized"); ok {
@@ -369,11 +463,26 @@ func resourceAliCloudRdsCustomCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("create_extra_param"); ok {
 		request["CreateExtraParam"] = v
 	}
+	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
+		request["AutoUseCoupon"] = v
+	}
+	if v, ok := d.GetOk("promotion_code"); ok {
+		request["PromotionCode"] = v
+	}
+	if v, ok := d.GetOkExists("deletion_protection"); ok {
+		request["DeletionProtection"] = v
+	}
+	if v, ok := d.GetOk("user_data"); ok {
+		request["UserData"] = v
+	}
+	if v, ok := d.GetOkExists("user_data_in_base64"); ok {
+		request["UserDataInBase64"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InsufficientCapacity"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -422,6 +531,26 @@ func resourceAliCloudRdsCustomRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("status", objectRaw["Status"])
 	d.Set("zone_id", objectRaw["ZoneId"])
 
+	if v, ok := objectRaw["DeletionProtection"].(bool); ok {
+		d.Set("deletion_protection", v)
+	}
+	if v, ok := objectRaw["EnableJumboFrame"].(bool); ok {
+		d.Set("enable_jumbo_frame", v)
+	}
+
+	// DescribeRCInstanceAttribute always returns UserData as a Base64 string.
+	// Decode it back to the configured representation so refresh and import keep
+	// reporting the value the user configured.
+	if userDataRaw, ok := objectRaw["UserData"].(string); ok && userDataRaw != "" {
+		if rdsCustomRawConfigHasAttribute(d, "user_data_in_base64") && d.Get("user_data_in_base64").(bool) {
+			d.Set("user_data", userDataRaw)
+		} else if decoded, err := base64.StdEncoding.DecodeString(userDataRaw); err == nil {
+			d.Set("user_data", string(decoded))
+		} else {
+			d.Set("user_data", userDataRaw)
+		}
+	}
+
 	vpcAttributesRawObj, _ := jsonpath.Get("$.VpcAttributes", objectRaw)
 	vpcAttributesRaw := make(map[string]interface{})
 	if vpcAttributesRawObj != nil {
@@ -443,10 +572,20 @@ func resourceAliCloudRdsCustomRead(d *schema.ResourceData, meta interface{}) err
 			dataDiskMap["category"] = dataDiskChildRaw["Category"]
 			dataDiskMap["performance_level"] = dataDiskChildRaw["PerformanceLevel"]
 			dataDiskMap["size"] = dataDiskChildRaw["Size"]
+			if v, ok := dataDiskChildRaw["Device"].(string); ok {
+				dataDiskMap["device"] = v
+			}
+			if v, ok := dataDiskChildRaw["Encrypted"].(string); ok {
+				dataDiskMap["encrypted"] = v
+			}
+			if v, ok := dataDiskChildRaw["SnapshotId"].(string); ok {
+				dataDiskMap["snapshot_id"] = v
+			}
 
 			dataDiskMaps = append(dataDiskMaps, dataDiskMap)
 		}
 	}
+	dataDiskMaps = orderRdsCustomDataDisks(d.Get("data_disk"), dataDiskMaps)
 	if err := d.Set("data_disk", dataDiskMaps); err != nil {
 		return err
 	}
@@ -461,6 +600,9 @@ func resourceAliCloudRdsCustomRead(d *schema.ResourceData, meta interface{}) err
 	if len(systemDiskRaw) > 0 {
 		systemDiskMap["category"] = systemDiskRaw["SystemDiskCategory"]
 		systemDiskMap["size"] = systemDiskRaw["SystemDiskSize"]
+		if v, ok := systemDiskRaw["SystemDiskPerformanceLevel"].(string); ok {
+			systemDiskMap["performance_level"] = v
+		}
 
 		systemDiskMaps = append(systemDiskMaps, systemDiskMap)
 	}
@@ -620,8 +762,30 @@ func resourceAliCloudRdsCustomUpdate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	if rdsCustomRawConfigHasAttribute(d, "auto_use_coupon") {
+		request["AutoUseCoupon"] = d.Get("auto_use_coupon").(bool)
+	}
+	if v, ok := d.GetOk("promotion_code"); ok {
+		request["PromotionCode"] = v
+	}
+	rebootWhenFinished := true
+	if rdsCustomRawConfigHasAttribute(d, "reboot_when_finished") {
+		rebootWhenFinished = d.Get("reboot_when_finished").(bool)
+		request["RebootWhenFinished"] = rebootWhenFinished
+	}
+	rebootTime, _ := d.Get("reboot_time").(string)
+	if rebootTime != "" {
+		request["RebootTime"] = rebootTime
+	}
 
 	if update {
+		if rebootTime != "" {
+			if err := validateRdsCustomRebootTime(rebootTime, rebootWhenFinished); err != nil {
+				return WrapError(err)
+			}
+		} else if !rebootWhenFinished && fmt.Sprint(objectRaw["Status"]) == "Running" {
+			return WrapError(errors.New("reboot_time is required when reboot_when_finished is false and the instance is Running"))
+		}
 		wait := incrementalWait(20*time.Second, 20*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Rds", "2014-08-15", action, query, request, true)
@@ -704,6 +868,19 @@ func resourceAliCloudRdsCustomUpdate(d *schema.ResourceData, meta interface{}) e
 		request["Password"] = v
 	}
 
+	if !d.IsNewResource() && (d.HasChange("deletion_protection") || d.HasChange("enable_jumbo_frame") || d.HasChange("reboot")) {
+		update = true
+	}
+	if !d.IsNewResource() && d.HasChange("deletion_protection") && rdsCustomRawConfigHasAttribute(d, "deletion_protection") {
+		request["DeletionProtection"] = d.Get("deletion_protection").(bool)
+	}
+	if !d.IsNewResource() && d.HasChange("enable_jumbo_frame") && rdsCustomRawConfigHasAttribute(d, "enable_jumbo_frame") {
+		request["EnableJumboFrame"] = d.Get("enable_jumbo_frame").(bool)
+	}
+	if !d.IsNewResource() && d.HasChange("reboot") && d.Get("reboot").(bool) {
+		request["Reboot"] = true
+	}
+
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
@@ -775,4 +952,90 @@ func resourceAliCloudRdsCustomDelete(d *schema.ResourceData, meta interface{}) e
 	}
 
 	return nil
+}
+
+// rdsCustomRawConfigHasAttribute reports whether the attribute is present in the
+// configuration (explicit null is treated as absent). It distinguishes an
+// explicit false from an unset or removed attribute, which GetOkExists cannot.
+func rdsCustomRawConfigHasAttribute(d *schema.ResourceData, name string) bool {
+	raw := d.GetRawConfig()
+	if raw.IsNull() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute(name) {
+		return false
+	}
+	return !raw.GetAttr(name).IsNull()
+}
+
+// validateRdsCustomRebootTime mirrors the ModifyRCInstance contract: when
+// RebootWhenFinished is false the restart time is mandatory, must be expressed
+// in UTC as yyyy-MM-ddTHH:mmZ and must fall within the next 48 hours.
+func validateRdsCustomRebootTime(rebootTime string, rebootWhenFinished bool) error {
+	if rebootWhenFinished {
+		return nil
+	}
+	if rebootTime == "" {
+		return errors.New("reboot_time is required when reboot_when_finished is false")
+	}
+	parsed, err := time.Parse("2006-01-02T15:04Z", rebootTime)
+	if err != nil {
+		return fmt.Errorf("reboot_time must follow the ISO 8601 UTC format yyyy-MM-ddTHH:mmZ: %s", err)
+	}
+	now := time.Now().UTC()
+	if parsed.Before(now) || parsed.After(now.Add(48*time.Hour)) {
+		return errors.New("reboot_time must be within the next 48 hours in UTC")
+	}
+	return nil
+}
+
+// orderRdsCustomDataDisks keeps the order the disks are tracked in the
+// configuration/state. DescribeRCInstanceAttribute does not echo the submitted
+// order, so members are joined by device (or by category/size/performance level
+// when no device is configured). Without configured members (import) the
+// canonical device order is used, which is the order the instance was created
+// with.
+func orderRdsCustomDataDisks(prior interface{}, disks []map[string]interface{}) []map[string]interface{} {
+	priorList := convertToInterfaceArray(prior)
+	if len(priorList) == 0 {
+		sort.SliceStable(disks, func(i, j int) bool {
+			left, _ := disks[i]["device"].(string)
+			right, _ := disks[j]["device"].(string)
+			if left == "" || right == "" {
+				return left != "" && right == ""
+			}
+			return left < right
+		})
+		return disks
+	}
+	used := make([]bool, len(disks))
+	ordered := make([]map[string]interface{}, 0, len(disks))
+	for _, item := range priorList {
+		priorItem, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for i, disk := range disks {
+			if used[i] || !rdsCustomDataDiskMatches(priorItem, disk) {
+				continue
+			}
+			used[i] = true
+			ordered = append(ordered, disk)
+			break
+		}
+	}
+	for i, disk := range disks {
+		if !used[i] {
+			ordered = append(ordered, disk)
+		}
+	}
+	return ordered
+}
+
+func rdsCustomDataDiskMatches(prior, remote map[string]interface{}) bool {
+	if device, _ := prior["device"].(string); device != "" {
+		if remoteDevice, _ := remote["device"].(string); remoteDevice != "" {
+			return device == remoteDevice
+		}
+	}
+	return fmt.Sprint(prior["category"]) == fmt.Sprint(remote["category"]) &&
+		fmt.Sprint(prior["size"]) == fmt.Sprint(remote["size"]) &&
+		fmt.Sprint(prior["performance_level"]) == fmt.Sprint(remote["performance_level"])
 }
