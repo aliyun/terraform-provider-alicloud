@@ -475,11 +475,7 @@ func Provider() *schema.Provider {
 			// drds
 
 			// dts
-			"alicloud_dts_subscription_jobs":    dataSourceAlicloudDtsSubscriptionJobs(),
-			"alicloud_dts_synchronization_jobs": dataSourceAlicloudDtsSynchronizationJobs(),
-			"alicloud_dts_consumer_channels":    dataSourceAlicloudDtsConsumerChannels(),
-			"alicloud_dts_migration_jobs":       dataSourceAlicloudDtsMigrationJobs(),
-			"alicloud_dts_instances":            dataSourceAlicloudDtsInstances(),
+			// (registered via dts.ServicePackage)
 
 			// ecd
 			"alicloud_ecd_desktop_groups":            dataSourceAliCloudEcdDesktopGroups(),
@@ -1440,12 +1436,7 @@ func Provider() *schema.Provider {
 			// drds
 
 			// dts
-			"alicloud_dts_job_monitor_rule":         resourceAlicloudDtsJobMonitorRule(),
-			"alicloud_dts_subscription_job":         resourceAliCloudDtsSubscriptionJob(),
-			"alicloud_dts_synchronization_instance": resourceAlicloudDtsSynchronizationInstance(),
-			"alicloud_dts_synchronization_job":      resourceAlicloudDtsSynchronizationJob(),
-			"alicloud_dts_consumer_channel":         resourceAlicloudDtsConsumerChannel(),
-			"alicloud_dts_instance":                 resourceAliCloudDtsInstance(),
+			// (registered via dts.ServicePackage)
 
 			// ecd
 			"alicloud_ecd_desktop_group":            resourceAliCloudEcdDesktopGroup(),

@@ -1,49 +1,86 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const dtsSubscriptionJobsDataSourceId = "data.alicloud_dts_subscription_jobs.default"
+
 func TestAccAlicloudDTSSubscriptionJobsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	subscriptionJobidconf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_dts_subscription_job.default.id}"]`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_dts_subscription_job.default.id}_fake"]`,
-		}),
-	}
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}_fake"`,
-		}),
-	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			// subscriptionJobidconf
+			{
+				Config: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
+					"ids": `["${alicloud_dts_subscription_job.default.id}"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSubscriptionJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
+					"ids": `["${alicloud_dts_subscription_job.default.id}_fake"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSubscriptionJobFakeChecks()...),
+			},
+			// nameRegexConf
+			{
+				Config: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
+					"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSubscriptionJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
+					"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}_fake"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSubscriptionJobFakeChecks()...),
+			},
+			// allConf
+			{
+				Config: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
+					"ids":        `["${alicloud_dts_subscription_job.default.id}"]`,
+					"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}"`,
+					"status":     `"${alicloud_dts_subscription_job.default.status}"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSubscriptionJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
+					"ids":        `["${alicloud_dts_subscription_job.default.id}"]`,
+					"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}_fake"`,
+					"status":     `"Abnormal"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSubscriptionJobFakeChecks()...),
+			},
+		},
+	})
+}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_dts_subscription_job.default.id}"]`,
-			"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}"`,
-			"status":     `"${alicloud_dts_subscription_job.default.status}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_dts_subscription_job.default.id}"]`,
-			"name_regex": `"${alicloud_dts_subscription_job.default.dts_job_name}_fake"`,
-			"status":     `"Abnormal"`,
-		}),
+func dtsSubscriptionJobExistChecks() []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(dtsSubscriptionJobsDataSourceId, "jobs.#", "1"),
+		resource.TestCheckResourceAttrSet(dtsSubscriptionJobsDataSourceId, "jobs.0.dts_job_id"),
 	}
+}
 
-	DtsSubscriptionJobCheckInfo.dataSourceTestCheck(t, rand, subscriptionJobidconf, nameRegexConf, allConf)
+func dtsSubscriptionJobFakeChecks() []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(dtsSubscriptionJobsDataSourceId, "jobs.#", "0"),
+	}
 }
 
 func testAccCheckAlicloudDtsSubscriptionJobSourceConfig(rand int, attrMap map[string]string) string {
@@ -139,23 +176,4 @@ data "alicloud_dts_subscription_jobs" "default" {
 }
 `, rand, strings.Join(pairs, "\n   "))
 	return config
-}
-
-var existDtsSubscriptionJobMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"jobs.#":            "1",
-		"jobs.0.dts_job_id": CHECKSET,
-	}
-}
-
-var fakeDtsSubscriptionJobMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"jobs.#": "0",
-	}
-}
-
-var DtsSubscriptionJobCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_dts_subscription_jobs.default",
-	existMapFunc: existDtsSubscriptionJobMapFunc,
-	fakeMapFunc:  fakeDtsSubscriptionJobMapFunc,
 }

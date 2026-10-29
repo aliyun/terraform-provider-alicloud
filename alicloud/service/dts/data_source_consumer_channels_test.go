@@ -1,55 +1,64 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudDTSConsumerChannelsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000, 9999)
-	checkoutSupportedRegions(t, true, connectivity.DTSSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsConsumerChannelsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_dts_consumer_channel.default.id}"]`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsConsumerChannelsDataSourceName(rand, map[string]string{
-			"ids": `["${alicloud_dts_consumer_channel.default.id}_fake"]`,
-		}),
-	}
-	var existAlicloudDtsConsumerChannelsDataSourceNameMapFunc = func(rand int) map[string]string {
-		return map[string]string{
-			"ids.#":                               "1",
-			"channels.#":                          "1",
-			"channels.0.consumer_group_name":      fmt.Sprintf("tf_testAcc%d", rand),
-			"channels.0.consumer_group_user_name": fmt.Sprintf("tf_testAcc%d", rand),
-			"channels.0.message_delay":            CHECKSET,
-			"channels.0.id":                       CHECKSET,
-			"channels.0.consumption_checkpoint":   "",
-			"channels.0.consumer_group_id":        CHECKSET,
-			"channels.0.unconsumed_data":          CHECKSET,
-		}
-	}
-	var fakeAlicloudDtsConsumerChannelsDataSourceNameMapFunc = func(rand int) map[string]string {
-		return map[string]string{
-			"ids.#":   "0",
-			"names.#": "0",
-		}
-	}
-	var alicloudDtsConsumerChannelsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dts_consumer_channels.default",
-		existMapFunc: existAlicloudDtsConsumerChannelsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDtsConsumerChannelsDataSourceNameMapFunc,
-	}
+const dtsConsumerChannelsDataSourceId = "data.alicloud_dts_consumer_channels.default"
 
-	preCheck := func() {
-		testAccPreCheck(t)
-	}
-	alicloudDtsConsumerChannelsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+func TestAccAlicloudDTSConsumerChannelsDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1000, 9999)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckAlicloudDtsConsumerChannelsDataSourceName(rand, map[string]string{
+					"ids": `["${alicloud_dts_consumer_channel.default.id}"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsConsumerChannelsExistChecks(rand)...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsConsumerChannelsDataSourceName(rand, map[string]string{
+					"ids": `["${alicloud_dts_consumer_channel.default.id}_fake"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsConsumerChannelsFakeChecks()...),
+			},
+		},
+	})
 }
+
+func dtsConsumerChannelsExistChecks(rand int) []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "ids.#", "1"),
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "channels.#", "1"),
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "channels.0.consumer_group_name", fmt.Sprintf("tf_testAcc%d", rand)),
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "channels.0.consumer_group_user_name", fmt.Sprintf("tf_testAcc%d", rand)),
+		resource.TestCheckResourceAttrSet(dtsConsumerChannelsDataSourceId, "channels.0.message_delay"),
+		resource.TestCheckResourceAttrSet(dtsConsumerChannelsDataSourceId, "channels.0.id"),
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "channels.0.consumption_checkpoint", ""),
+		resource.TestCheckResourceAttrSet(dtsConsumerChannelsDataSourceId, "channels.0.consumer_group_id"),
+		resource.TestCheckResourceAttrSet(dtsConsumerChannelsDataSourceId, "channels.0.unconsumed_data"),
+	}
+}
+
+func dtsConsumerChannelsFakeChecks() []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "ids.#", "0"),
+		resource.TestCheckResourceAttr(dtsConsumerChannelsDataSourceId, "names.#", "0"),
+	}
+}
+
 func testAccCheckAlicloudDtsConsumerChannelsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
@@ -58,7 +67,7 @@ func testAccCheckAlicloudDtsConsumerChannelsDataSourceName(rand int, attrMap map
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf_testAcc%d"
 }
 
@@ -132,9 +141,8 @@ resource "alicloud_dts_subscription_job" "default" {
     source_endpoint_database_name       = "tfaccountpri_0"
     source_endpoint_user_name           = "tftestprivilege"
     source_endpoint_password            = "Test12345"
-    db_list                             =  <<EOF
-        {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
-    EOF
+    db_list                             = "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}"
+    depends_on                          = [alicloud_db_database.db, alicloud_db_account_privilege.privilege]
     subscription_instance_network_type  = "vpc"
     subscription_instance_vpc_id        = data.alicloud_vpcs.default.ids[0]
     subscription_instance_vswitch_id    = data.alicloud_vswitches.default.ids[0]

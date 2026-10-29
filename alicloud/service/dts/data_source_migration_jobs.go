@@ -1,4 +1,4 @@
-package alicloud
+package dts
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
+func DataSourceMigrationJobs() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDtsSynchronizationJobsRead,
+		Read: dataSourceMigrationJobsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -27,10 +30,10 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Downgrade", "Failed", "Finished", "InitializeFailed", "Initializing", "Locked", "Modifying", "NotConfigured", "NotStarted", "PreCheckPass", "PrecheckFailed", "Prechecking", "Retrying", "Suspending", "Synchronizing", "Upgrade"}, false),
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -41,14 +44,6 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"checkpoint": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"create_time": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"data_initialization": {
 							Type:     schema.TypeBool,
 							Computed: true,
@@ -113,7 +108,7 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"expire_time": {
+						"payment_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -169,10 +164,6 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"synchronization_direction": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 					},
 				},
 			},
@@ -185,29 +176,24 @@ func dataSourceAlicloudDtsSynchronizationJobs() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDtsSynchronizationJobsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceMigrationJobsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDtsJobs"
 	request := make(map[string]interface{})
-	request["JobType"] = "SYNC"
+	request["JobType"] = "MIGRATION"
 	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("status"); ok {
-		request["Status"] = v
-	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var jobNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		jobNameRegex = r
 	}
-	status, statusOk := d.GetOk("status")
-
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -220,11 +206,11 @@ func dataSourceAlicloudDtsSynchronizationJobsRead(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -232,48 +218,42 @@ func dataSourceAlicloudDtsSynchronizationJobsRead(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dts_synchronization_jobs", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_dts_migration_jobs", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.DtsJobList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DtsJobList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DtsJobList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			// see comment on function DescribeDtsSynchronizationJob
-			if item["Status"] == "synchronizing" || item["Status"] == "Initializing" {
-				item["Status"] = "Synchronizing"
-			}
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["DtsJobId"])]; !ok {
 					continue
 				}
 			}
+
 			if jobNameRegex != nil && !jobNameRegex.MatchString(fmt.Sprint(item["DtsJobName"])) {
 				continue
 			}
-			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
-				continue
-			}
+
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	ids := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		migrationModeObj := object["MigrationMode"].(map[string]interface{})
 		destinationEndpointObj := object["DestinationEndpoint"].(map[string]interface{})
 		sourceEndpointObj := object["SourceEndpoint"].(map[string]interface{})
 		mapping := map[string]interface{}{
-			"checkpoint":                          object["Checkpoint"],
-			"create_time":                         object["CreateTime"],
 			"data_initialization":                 migrationModeObj["DataInitialization"],
 			"data_synchronization":                migrationModeObj["DataSynchronization"],
 			"structure_initialization":            migrationModeObj["StructureInitialization"],
@@ -289,10 +269,10 @@ func dataSourceAlicloudDtsSynchronizationJobsRead(d *schema.ResourceData, meta i
 			"destination_endpoint_user_name":      destinationEndpointObj["UserName"],
 			"dts_instance_id":                     object["DtsInstanceID"],
 			"id":                                  fmt.Sprint(object["DtsJobId"]),
+			"payment_type":                        convertDtsMigrationJobPaymentTypeResponse(object["PayType"]),
 			"dts_job_id":                          fmt.Sprint(object["DtsJobId"]),
 			"dts_job_name":                        object["DtsJobName"],
-			"expire_time":                         object["ExpireTime"],
-			"source_endpoint_database_name":       object["ReverseJob"].(map[string]interface{})["SourceEndpoint"].(map[string]interface{})["DatabaseName"],
+			"source_endpoint_database_name":       sourceEndpointObj["DatabaseName"],
 			"source_endpoint_engine_name":         sourceEndpointObj["EngineName"],
 			"source_endpoint_ip":                  sourceEndpointObj["Ip"],
 			"source_endpoint_instance_id":         sourceEndpointObj["InstanceID"],
@@ -302,38 +282,38 @@ func dataSourceAlicloudDtsSynchronizationJobsRead(d *schema.ResourceData, meta i
 			"source_endpoint_region":              sourceEndpointObj["Region"],
 			"source_endpoint_user_name":           sourceEndpointObj["UserName"],
 			"status":                              object["Status"],
-			"synchronization_direction":           object["DtsJobDirection"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["DtsJobName"])
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			s = append(s, mapping)
 			continue
 		}
 		id := fmt.Sprint(object["DtsJobId"])
-		dtsService := DtsService{client}
-		getResp, err := dtsService.DescribeDtsSynchronizationJob(id)
+		dtsService := NewService(client)
+		getResp, err := dtsService.DescribeDtsMigrationJob(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["source_endpoint_owner_id"] = getResp["SourceEndpoint"].(map[string]interface{})["AliyunUid"]
 		mapping["source_endpoint_role"] = getResp["SourceEndpoint"].(map[string]interface{})["RoleName"]
-		if err != nil {
-			return WrapError(err)
-		}
-
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("jobs", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

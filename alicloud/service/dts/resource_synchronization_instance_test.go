@@ -1,8 +1,8 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"reflect"
 	"testing"
 
@@ -10,77 +10,93 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
+const synchronizationInstanceResourceId = "alicloud_dts_synchronization_instance.default"
+
 func TestAccAliCloudDTSSynchronizationInstance_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dts_synchronization_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtssynchronizationinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSSynchronizationInstanceBasicDependence0)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtssynchronizationinstance%d", dtsTestRegion(), rand)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-beijing")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkSynchronizationInstanceDestroy(synchronizationInstanceResourceId),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_pay":                         "false",
-					"auto_start":                       "false",
-					"payment_type":                     "PayAsYouGo",
-					"source_endpoint_engine_name":      "MySQL",
-					"source_endpoint_region":           "${data.alicloud_regions.default.regions.0.id}",
-					"destination_endpoint_engine_name": "MySQL",
-					"destination_endpoint_region":      "${data.alicloud_regions.default.regions.0.id}",
-					"compute_unit":                     "2",
-					"database_count":                   "1",
-					"instance_class":                   "small",
-					"payment_duration":                 "1",
-					"payment_duration_unit":            "Month",
-					"quantity":                         "1",
-					"sync_architecture":                "oneway",
-				}),
+				Config: synchronizationInstanceBasicDependence0(name) + `
+resource "alicloud_dts_synchronization_instance" "default" {
+  auto_pay                         = "false"
+  auto_start                       = "false"
+  compute_unit                     = "2"
+  database_count                   = "1"
+  destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = "${data.alicloud_regions.default.regions.0.id}"
+  instance_class                   = "small"
+  payment_duration                 = "1"
+  payment_duration_unit            = "Month"
+  payment_type                     = "PayAsYouGo"
+  quantity                          = "1"
+  source_endpoint_engine_name      = "MySQL"
+  source_endpoint_region            = "${data.alicloud_regions.default.regions.0.id}"
+  sync_architecture                 = "oneway"
+}
+`,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type":                     "PayAsYouGo",
-						"source_endpoint_engine_name":      "MySQL",
-						"source_endpoint_region":           CHECKSET,
-						"destination_endpoint_engine_name": "MySQL",
-						"destination_endpoint_region":      CHECKSET,
-					}),
+					resource.TestCheckResourceAttr(synchronizationInstanceResourceId, "payment_type", "PayAsYouGo"),
+					resource.TestCheckResourceAttr(synchronizationInstanceResourceId, "source_endpoint_engine_name", "MySQL"),
+					resource.TestCheckResourceAttrSet(synchronizationInstanceResourceId, "source_endpoint_region"),
+					resource.TestCheckResourceAttr(synchronizationInstanceResourceId, "destination_endpoint_engine_name", "MySQL"),
+					resource.TestCheckResourceAttrSet(synchronizationInstanceResourceId, "destination_endpoint_region"),
+					resource.TestCheckNoResourceAttr(synchronizationInstanceResourceId, "period"),
+					resource.TestCheckNoResourceAttr(synchronizationInstanceResourceId, "used_time"),
+					resource.TestCheckNoResourceAttr(synchronizationInstanceResourceId, "order_type"),
+					resource.TestCheckNoResourceAttr(synchronizationInstanceResourceId, "synchronization_direction"),
+					resource.TestCheckNoResourceAttr(synchronizationInstanceResourceId, "status"),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "payment_duration", "payment_duration_unit"},
+				ResourceName:            synchronizationInstanceResourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"database_count", "status", "quantity", "sync_architecture", "auto_pay", "auto_start", "compute_unit", "payment_duration", "payment_duration_unit"},
 			},
 		},
 	})
 }
 
-var AlicloudDTSSynchronizationInstanceMap0 = map[string]string{
-	"period":                    NOSET,
-	"used_time":                 NOSET,
-	"order_type":                NOSET,
-	"synchronization_direction": NOSET,
-	"status":                    NOSET,
+func checkSynchronizationInstanceDestroy(resourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "alicloud_dts_synchronization_instance" {
+				continue
+			}
+			client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+			if _, err := dts.NewService(client).DescribeDtsSynchronizationInstance(rs.Primary.ID); err != nil {
+				if errs.NotFoundError(err) {
+					continue
+				}
+				return err
+			}
+			return fmt.Errorf("the resource %s %s was not destroyed", resourceId, rs.Primary.ID)
+		}
+		return nil
+	}
 }
 
-func AlicloudDTSSynchronizationInstanceBasicDependence0(name string) string {
+func synchronizationInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -97,9 +113,9 @@ data "alicloud_regions" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(nil, nil)
+	resourceSchema := dts.ResourceSynchronizationInstance()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"auto_pay":                         "false",
@@ -122,17 +138,13 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 		assert.Nil(t, err)
 		err = dExisted.Set(key, value)
 		assert.Nil(t, err)
-		if err != nil {
-			log.Printf("[ERROR] the field %s setting error", key)
-		}
 	}
 	region := "cn-beijing"
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := dtsTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeDtsJobDetail
 		"SourceEndpoint": map[string]interface{}{
@@ -154,32 +166,34 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dts_synchronization_instance", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dts_synchronization_instance", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			for k, v := range operationMockResponse {
+				ReadMockResponse[k] = v
+			}
 		}
 		return ReadMockResponse, nil
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsSynchronizationInstanceCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -201,14 +215,14 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsSynchronizationInstanceCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -220,7 +234,7 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 	}
 
 	// Update
-	err = resourceAlicloudDtsSynchronizationInstanceUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	assert.Nil(t, err)
 
 	// Read
@@ -244,7 +258,7 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsSynchronizationInstanceRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -255,15 +269,15 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsSynchronizationInstanceDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidJobId"}
@@ -285,7 +299,7 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsSynchronizationInstanceDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -294,5 +308,4 @@ func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
-
 }

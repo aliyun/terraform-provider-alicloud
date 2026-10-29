@@ -1,4 +1,4 @@
-package alicloud
+package dts
 
 import (
 	"fmt"
@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
+func ResourceSynchronizationInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDtsSynchronizationInstanceCreate,
-		Read:   resourceAlicloudDtsSynchronizationInstanceRead,
-		Update: resourceAlicloudDtsSynchronizationInstanceUpdate,
-		Delete: resourceAlicloudDtsSynchronizationInstanceDelete,
+		Create: resourceSynchronizationInstanceCreate,
+		Read:   resourceSynchronizationInstanceRead,
+		Update: resourceSynchronizationInstanceUpdate,
+		Delete: resourceSynchronizationInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -53,7 +57,7 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				Required:         true,
 				ForceNew:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, true),
-				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_region": {
 				Type:     schema.TypeString,
@@ -65,7 +69,7 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 				Required:         true,
 				ForceNew:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, true),
-				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_region": {
 				Type:     schema.TypeString,
@@ -101,7 +105,7 @@ func resourceAlicloudDtsSynchronizationInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDtsInstance"
@@ -155,11 +159,11 @@ func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, me
 	if v, ok := d.GetOk("payment_duration"); ok {
 		request["UsedTime"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -167,26 +171,26 @@ func resourceAlicloudDtsSynchronizationInstanceCreate(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dts_synchronization_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dts_synchronization_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 
-	return resourceAlicloudDtsSynchronizationInstanceRead(d, meta)
+	return resourceSynchronizationInstanceRead(d, meta)
 }
-func resourceAlicloudDtsSynchronizationInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dtsService := DtsService{client}
+	dtsService := NewService(client)
 	object, err := dtsService.DescribeDtsSynchronizationInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_instance dtsService.DescribeDtsSynchronizationInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_class", object["DtsJobClass"])
@@ -201,11 +205,11 @@ func resourceAlicloudDtsSynchronizationInstanceRead(d *schema.ResourceData, meta
 	}
 	return nil
 }
-func resourceAlicloudDtsSynchronizationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudDtsSynchronizationInstanceRead(d, meta)
+	return resourceSynchronizationInstanceRead(d, meta)
 }
-func resourceAlicloudDtsSynchronizationInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSynchronizationInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		if v.(string) == "Subscription" {
@@ -223,11 +227,11 @@ func resourceAlicloudDtsSynchronizationInstanceDelete(d *schema.ResourceData, me
 	}
 
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -235,12 +239,12 @@ func resourceAlicloudDtsSynchronizationInstanceDelete(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidJobId"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidJobId"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

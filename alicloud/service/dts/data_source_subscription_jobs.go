@@ -1,4 +1,4 @@
-package alicloud
+package dts
 
 import (
 	"encoding/json"
@@ -9,14 +9,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDtsSubscriptionJobs() *schema.Resource {
+func DataSourceSubscriptionJobs() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDtsSubscriptionJobsRead,
+		Read: dataSourceSubscriptionJobsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -39,7 +43,7 @@ func dataSourceAlicloudDtsSubscriptionJobs() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Abnormal", "Downgrade", "Locked", "Normal", "NotConfigured", "NotStarted", "PreCheckPass", "PrecheckFailed", "Prechecking", "Retrying", "Starting", "Upgrade"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -190,21 +194,21 @@ func dataSourceAlicloudDtsSubscriptionJobs() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceSubscriptionJobsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDtsJobs"
 	request := make(map[string]interface{})
 	request["JobType"] = "SUBSCRIBE"
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var jobNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		jobNameRegex = r
 	}
@@ -227,11 +231,11 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -239,13 +243,13 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dts_subscription_jobs", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_dts_subscription_jobs", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.DtsJobList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DtsJobList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DtsJobList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -281,7 +285,7 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -319,18 +323,18 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 		mapping["subscription_instance_vpc_id"] = jsonData["vpcId"]
 		mapping["subscription_instance_vswitch_id"] = jsonData["vswitchId"]
 
-		tags := make(map[string]interface{})
+		tagsMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.TagList", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["TagKey"].(string)
 				value := t.(map[string]interface{})["TagValue"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagsMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagsMap
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
@@ -338,10 +342,10 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 			continue
 		}
 		id := fmt.Sprint(object["DtsJobId"])
-		dtsService := DtsService{client}
+		dtsService := NewService(client)
 		getResp, err := dtsService.DescribeDtsSubscriptionJob(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["source_endpoint_owner_id"] = getResp["SourceEndpoint"].(map[string]interface{})["AliyunUid"]
 		mapping["source_endpoint_role"] = getResp["SourceEndpoint"].(map[string]interface{})["RoleName"]
@@ -350,20 +354,20 @@ func dataSourceAlicloudDtsSubscriptionJobsRead(d *schema.ResourceData, meta inte
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("jobs", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
