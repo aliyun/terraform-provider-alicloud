@@ -4825,3 +4825,201 @@ resource "alicloud_vswitch" "defaultAislbL" {
 
 `, name, name, name)
 }
+
+// Case 查询节点/索引节点(searchNodeConfiguration/indexNodeConfiguration) - 仅 ES 9.99 AI 引擎实例支持,
+// 9.99 实例仅由这两类节点组成,不可与数据节点/冷节点/协调节点共存,创建即经 CreateInstance 传入,
+// Update 阶段调整 amount/disk/performance_level(spec/disk_type 为 ForceNew,保持不变以免触发重建)。
+func TestAccAliCloudElasticsearchInstance_searchIndexNode(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapSearchIndexNode)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeElasticsearchInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfes%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceSearchIndex99)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// 产品侧久瑞(工单 87139713,2026-10-27 评论)最终确认可创建配置:
+				// 查询/索引节点仅 ES 9.99 支持,spec=elasticsearch.turbo2.cae.large(久瑞给的可购买确切规格;
+				// 早期 turbo2.ci.xlarge/turbo1.ci.xlarge 均 InvalidComponent,根因机型未加白名单,
+				// 久瑞已给测试账号加白并给出此确切可售规格),disk_type=cloud_essd,
+				// region 杭州可用区 cn-hangzhou-k;且不可与数据节点/冷节点/协调节点共存。
+				// 故 9.99 实例创建即传 search/index 节点,不设 data/master。
+				// instance_category=x-pack(久瑞纠正:IS 不支持 9.99 Agent 引擎版);kibana=elasticsearch.sn1ne.large。
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":        "1",
+					"description":       "search-index-node",
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbK.id}",
+					"version":           "9.99",
+					"password":          "Admain@123",
+					"instance_category": "x-pack",
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.sn1ne.large",
+							"disk":   "0",
+						},
+					},
+					"search_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "3",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "200",
+							"performance_level": "PL1",
+						},
+					},
+					"index_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "3",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "200",
+							"performance_level": "PL1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_count":                                    "1",
+						"description":                                   "search-index-node",
+						"payment_type":                                  "PayAsYouGo",
+						"version":                                       "9.99.0_with_X-Pack",
+						"instance_category":                             "x-pack",
+						"kibana_configuration.0.amount":                 "1",
+						"kibana_configuration.0.spec":                   "elasticsearch.sn1ne.large",
+						"kibana_configuration.0.disk":                   "0",
+						"search_node_configuration.0.spec":              "elasticsearch.turbo2.cae.large",
+						"search_node_configuration.0.amount":            "3",
+						"search_node_configuration.0.disk_type":         "cloud_essd",
+						"search_node_configuration.0.disk":              "200",
+						"search_node_configuration.0.performance_level": "PL1",
+						"index_node_configuration.0.spec":               "elasticsearch.turbo2.cae.large",
+						"index_node_configuration.0.amount":             "3",
+						"index_node_configuration.0.disk_type":          "cloud_essd",
+						"index_node_configuration.0.disk":               "200",
+						"index_node_configuration.0.performance_level":  "PL1",
+					}),
+				),
+			},
+			{
+				// 更新阶段:调整查询/索引节点 amount/disk/performance_level,验证 UpdateInstance
+				// 对 search/index 的处理。spec/disk_type 为 ForceNew(与 data_node.disk_type 一致,
+				// 9.99 search/index 单一规格),保持不变以免触发重建。
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":        "1",
+					"description":       "search-index-node",
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbK.id}",
+					"version":           "9.99",
+					"password":          "Admain@123",
+					"instance_category": "x-pack",
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.sn1ne.large",
+							"disk":   "0",
+						},
+					},
+					"search_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "4",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "1024",
+							"performance_level": "PL2",
+						},
+					},
+					"index_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "4",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "1024",
+							"performance_level": "PL2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_configuration.0.amount":                 "1",
+						"kibana_configuration.0.spec":                   "elasticsearch.sn1ne.large",
+						"kibana_configuration.0.disk":                   "0",
+						"search_node_configuration.0.spec":              "elasticsearch.turbo2.cae.large",
+						"search_node_configuration.0.amount":            "4",
+						"search_node_configuration.0.disk_type":         "cloud_essd",
+						"search_node_configuration.0.disk":              "1024",
+						"search_node_configuration.0.performance_level": "PL2",
+						"index_node_configuration.0.spec":               "elasticsearch.turbo2.cae.large",
+						"index_node_configuration.0.amount":             "4",
+						"index_node_configuration.0.disk_type":          "cloud_essd",
+						"index_node_configuration.0.disk":               "1024",
+						"index_node_configuration.0.performance_level":  "PL2",
+					}),
+				),
+			},
+			// import 验证:kibana_whitelist 为 Computed 属性,Create/Update 不发送(仅设 kibanaConfiguration
+			// 节点规格),enable_kibana_public_network 未开启时 DiffSuppressFunc 抑制其 diff,值完全由 API 默认返回。
+			// 实测同实例不同 Describe 返回 127.0.0.1 与 127.0.0.1/32 不一致(provider-runs v2 taskId=24583 run.log:
+			// import 前 state=127.0.0.1、import 后 Read=127.0.0.1/32),属 API 规范化漂移,非 search/index 节点特性
+			// 范围;search/index 全部断言已在 Step 1/2 通过。import 比较走原始值不走 DiffSuppressFunc,故对该非托管
+			// Computed 属性忽略,与资源自身 suppress 语义一致。
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+		},
+	})
+}
+
+var AlicloudElasticsearchInstanceMapSearchIndexNode = map[string]string{
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
+}
+
+// ES 9.99 search/index 节点用例依赖:cn-hangzhou-k 可用区 vswitch(产品侧久瑞核实该可用区
+// 支持 9.99 的 search/index 节点,spec 用久瑞确认的可购买规格 elasticsearch.turbo2.cae.large)。9.99 实例仅由查询/索引节点组成,
+// 不设数据节点/冷节点/协调节点。
+func AlicloudElasticsearchInstanceBasicDependenceSearchIndex99(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultLPXHTQ" {
+  description = "es-instance-case"
+  vpc_name    = "es-instance-case"
+  dry_run     = false
+  cidr_block  = "10.0.10.0/24"
+  is_default  = false
+}
+
+resource "alicloud_vswitch" "defaultAislbK" {
+  vpc_id       = alicloud_vpc.defaultLPXHTQ.id
+  zone_id      = "cn-hangzhou-k"
+  description  = "tf-case"
+  cidr_block   = "10.0.10.0/24"
+  vswitch_name = "es-instanc-case"
+}
+
+
+`, name)
+}
