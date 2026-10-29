@@ -1,12 +1,15 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,11 +39,17 @@ func testSweepArmsAlertContact(region string) error {
 	if err != nil {
 		return WrapErrorf(err, "error getting Alicloud client.")
 	}
-	client := rawClient.(*connectivity.AliyunClient)
+	return sweepArmsAlertContact(rawClient.(*connectivity.AliyunClient))
+}
 
+// sweepArmsAlertContact cleans both test-created and documentation-example
+// contacts: the documented example names its contact with the
+// "terraform-example" prefix, so that prefix must be recognized as well.
+func sweepArmsAlertContact(client *connectivity.AliyunClient) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testacc",
+		"terraform-example",
 	}
 
 	request := make(map[string]interface{})
@@ -48,6 +57,7 @@ func testSweepArmsAlertContact(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["CurrentPage"] = 1
 	var response map[string]interface{}
+	var err error
 	for {
 		action := "SearchAlertContact"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -109,7 +119,46 @@ func testSweepArmsAlertContact(region string) error {
 	return nil
 }
 
-func TestAccAlicloudARMSAlertContact_basic(t *testing.T) {
+// TestUnitArmsAlertContactSweeper pins that the alert-contact sweeper, which
+// also cleans the contact created by the notification-policy documentation
+// example, recognizes the documented "terraform-example" prefix without
+// widening cleanup to unrelated contacts.
+func TestUnitArmsAlertContactSweeper(t *testing.T) {
+	var mu sync.Mutex
+	deleted := map[string]bool{}
+	// ARMS test client shared with the notification-policy unit tests.
+	client := armsNotificationPolicyTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "SearchAlertContact":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"PageBean": map[string]interface{}{"Contacts": []map[string]interface{}{
+					{"ContactId": float64(11), "ContactName": "tf-testAcc-contact"},
+					{"ContactId": float64(12), "ContactName": "terraform-example"},
+					{"ContactId": float64(13), "ContactName": "prod-contact"},
+				}},
+			})
+		case "DeleteAlertContact":
+			mu.Lock()
+			deleted[r.Form.Get("ContactId")] = true
+			mu.Unlock()
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"IsSuccess": true})
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+	if err := sweepArmsAlertContact(client); err != nil {
+		t.Fatalf("sweeper returned an error: %s", err)
+	}
+	if !deleted["11"] || !deleted["12"] {
+		t.Fatalf("test and documented-example prefixes must be swept: %v", deleted)
+	}
+	if deleted["13"] {
+		t.Fatalf("unrelated contact must be retained: %v", deleted)
+	}
+}
+
+func TestAccAliCloudARMSAlertContact_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_arms_alert_contact.default"
 	ra := resourceAttrInit(resourceId, ArmsAlertContactMap)
