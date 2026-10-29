@@ -1,4 +1,4 @@
-package alicloud
+package ebs
 
 import (
 	"fmt"
@@ -6,14 +6,25 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
+func DataSourceDiskReplicaPairs() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEbsDiskReplicaGroupsRead,
+		Read: dataSourceDiskReplicaPairsRead,
 		Schema: map[string]*schema.Schema{
+			"replica_group_id": {
+				Optional: true,
+				Type:     schema.TypeString,
+			},
+			"site": {
+				Optional: true,
+				Type:     schema.TypeString,
+			},
 			"ids": {
 				Optional: true,
 				Computed: true,
@@ -26,7 +37,7 @@ func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
 				Optional: true,
 				Type:     schema.TypeString,
 			},
-			"groups": {
+			"pairs": {
 				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
@@ -35,13 +46,17 @@ func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
+						"bandwidth": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
 						"description": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"enable_rtc": {
+						"destination_disk_id": {
 							Computed: true,
-							Type:     schema.TypeBool,
+							Type:     schema.TypeString,
 						},
 						"destination_region_id": {
 							Computed: true,
@@ -51,47 +66,31 @@ func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"group_name": {
+						"disk_id": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"last_recover_point": {
+						"pair_name": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"primary_region": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"primary_zone": {
+						"payment_type": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
 						"rpo": {
 							Computed: true,
-							Type:     schema.TypeInt,
+							Type:     schema.TypeString,
 						},
-						"replica_group_id": {
+						"replica_pair_id": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
-						"site": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"source_region_id": {
+						"resource_group_id": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
 						"source_zone_id": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"standby_region": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"standby_zone": {
 							Computed: true,
 							Type:     schema.TypeString,
 						},
@@ -106,49 +105,66 @@ func dataSourceAlicloudEbsDiskReplicaGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEbsDiskReplicaGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDiskReplicaPairsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
 
-	if v, ok := d.GetOk("ids"); ok {
-		request["GroupIds"] = convertListToCommaSeparate(v.([]interface{}))
+	if v, ok := d.GetOk("replica_group_id"); ok {
+		request["ReplicaGroupId"] = v
 	}
+	if v, ok := d.GetOk("site"); ok {
+		request["Site"] = v
+	}
+	request["MaxResults"] = helper.PageSizeLarge
 
-	request["MaxResults"] = PageSizeLarge
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
 
 	var err error
 	var objects []interface{}
 	var response map[string]interface{}
 
 	for {
-		action := "DescribeDiskReplicaGroups"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		action := "DescribeDiskReplicaPairs"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
 			response = resp
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ebs_disk_replica_groups", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ebs_disk_replica_pairs", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		resp, err := jsonpath.Get("$.ReplicaGroups", response)
+		resp, err := jsonpath.Get("$.ReplicaPairs", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ReplicaGroups", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ReplicaPairs", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["ReplicaPairId"])]; !ok {
+					continue
+				}
+			}
 			objects = append(objects, item)
 		}
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
@@ -163,38 +179,37 @@ func dataSourceAlicloudEbsDiskReplicaGroupsRead(d *schema.ResourceData, meta int
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
-			"id":                    fmt.Sprint(object["ReplicaGroupId"]),
+			"id":                    fmt.Sprint(object["ReplicaPairId"]),
+			"bandwidth":             object["Bandwidth"],
 			"description":           object["Description"],
-			"enable_rtc":            object["EnableRtc"],
-			"destination_region_id": object["DestinationRegionId"],
-			"destination_zone_id":   object["DestinationZoneId"],
-			"group_name":            object["GroupName"],
-			"primary_region":        object["PrimaryRegion"],
-			"primary_zone":          object["PrimaryZone"],
 			"rpo":                   object["RPO"],
-			"replica_group_id":      object["ReplicaGroupId"],
-			"site":                  object["Site"],
-			"source_region_id":      object["SourceRegionId"],
+			"replica_pair_id":       object["ReplicaPairId"],
+			"resource_group_id":     object["ResourceGroupId"],
+			"destination_disk_id":   object["ResourceGroupId"],
+			"destination_region_id": object["DestinationRegion"],
+			"destination_zone_id":   object["DestinationZoneId"],
+			"disk_id":               object["SourceDiskId"],
+			"pair_name":             object["PairName"],
+			"payment_type":          object["ChargeType"],
 			"source_zone_id":        object["SourceZoneId"],
-			"standby_region":        object["StandbyRegion"],
-			"standby_zone":          object["StandbyZone"],
 			"status":                object["Status"],
 		}
-		ids = append(ids, fmt.Sprint(mapping["id"]))
+
+		ids = append(ids, fmt.Sprint(object["ReplicaPairId"]))
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+	if err := d.Set("pairs", s); err != nil {
+		return errs.WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
-
 	return nil
 }

@@ -1,4 +1,4 @@
-package alicloud
+package ebs
 
 import (
 	"fmt"
@@ -7,16 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudEbsDedicatedBlockStorageCluster() *schema.Resource {
+func ResourceDedicatedBlockStorageCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEbsDedicatedBlockStorageClusterCreate,
-		Read:   resourceAlicloudEbsDedicatedBlockStorageClusterRead,
-		Update: resourceAlicloudEbsDedicatedBlockStorageClusterUpdate,
-		Delete: resourceAlicloudEbsDedicatedBlockStorageClusterDelete,
+		Create: resourceDedicatedBlockStorageClusterCreate,
+		Read:   resourceDedicatedBlockStorageClusterRead,
+		Update: resourceDedicatedBlockStorageClusterUpdate,
+		Delete: resourceDedicatedBlockStorageClusterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -98,9 +101,9 @@ func resourceAlicloudEbsDedicatedBlockStorageCluster() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEbsDedicatedBlockStorageClusterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedBlockStorageClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ebsService := EbsService{client}
+	ebsService := NewEbsService(client)
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
@@ -119,50 +122,50 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterCreate(d *schema.ResourceDat
 
 	var response map[string]interface{}
 	action := "CreateDedicatedBlockStorageCluster"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
 		response = resp
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ebs_dedicated_block_storage_cluster", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ebs_dedicated_block_storage_cluster", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if v, err := jsonpath.Get("$.DbscId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_ebs_dedicated_block_storage_cluster")
+		return errs.WrapErrorf(err, errs.IdMsg, "alicloud_ebs_dedicated_block_storage_cluster")
 	} else {
 		d.SetId(fmt.Sprint(v))
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ebsService.EbsDedicatedBlockStorageClusterStateRefreshFunc(d, []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ebsService.EbsDedicatedBlockStorageClusterStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudEbsDedicatedBlockStorageClusterRead(d, meta)
+	return resourceDedicatedBlockStorageClusterRead(d, meta)
 }
 
-func resourceAlicloudEbsDedicatedBlockStorageClusterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedBlockStorageClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ebsService := EbsService{client}
+	ebsService := NewEbsService(client)
 
 	object, err := ebsService.DescribeEbsDedicatedBlockStorageCluster(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ebs_dedicated_block_storage_cluster ebsService.DescribeEbsDedicatedBlockStorageCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("available_capacity", object["DedicatedBlockStorageClusterCapacity"].(map[string]interface{})["AvailableCapacity"])
@@ -184,7 +187,7 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterRead(d *schema.ResourceData,
 	return nil
 }
 
-func resourceAlicloudEbsDedicatedBlockStorageClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedBlockStorageClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var err error
@@ -207,29 +210,29 @@ func resourceAlicloudEbsDedicatedBlockStorageClusterUpdate(d *schema.ResourceDat
 
 	if update {
 		action := "ModifyDedicatedBlockStorageClusterAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			resp, err := client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+			logs.AddDebug(action, resp, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAlicloudEbsDedicatedBlockStorageClusterRead(d, meta)
+	return resourceDedicatedBlockStorageClusterRead(d, meta)
 }
 
-func resourceAlicloudEbsDedicatedBlockStorageClusterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDedicatedBlockStorageClusterDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceAlicloudEbsDedicatedBlockStorageCluster. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

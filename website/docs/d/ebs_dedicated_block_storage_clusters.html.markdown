@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Ebs Dedicated Block Storage Cluster available to the user.
 
--> **NOTE:** Available in 1.196.0+
+-> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
 
@@ -30,7 +30,6 @@ output "alicloud_ebs_dedicated_block_storage_cluster_example_id" {
 
 The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Dedicated Block Storage Cluster IDs.
-* `dedicated_block_storage_cluster_names` - (Optional, ForceNew) The name of the Dedicated Block Storage Cluster. You can specify at most 10 names.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -41,6 +40,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Dedicated Block Storage Cluster IDs.
 * `names` - A list of name of Dedicated Block Storage Clusters.
 * `clusters` - A list of Dedicated Block Storage Cluster Entries. Each element contains the following attributes:
+  * `id` - The first ID of the Dedicated Block Storage Cluster.
   * `available_capacity` - The available capacity of the dedicated block storage cluster. Unit: GiB.
   * `category` - The type of cloud disk that can be created by a dedicated block storage cluster.
   * `create_time` - The creation time of the resource

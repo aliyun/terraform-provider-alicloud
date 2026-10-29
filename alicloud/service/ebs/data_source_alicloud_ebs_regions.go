@@ -1,16 +1,19 @@
-package alicloud
+package ebs
 
 import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudEbsRegions() *schema.Resource {
+func DataSourceRegions() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEbsRegionsRead,
+		Read: dataSourceRegionsRead,
 		Schema: map[string]*schema.Schema{
 			"region_id": {
 				Type:     schema.TypeString,
@@ -48,7 +51,7 @@ func dataSourceAlicloudEbsRegions() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEbsRegionsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceRegionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeRegions"
@@ -64,13 +67,13 @@ func dataSourceAlicloudEbsRegionsRead(d *schema.ResourceData, meta interface{}) 
 	var err error
 	response, err = client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ebs_zones", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ebs_zones", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.Regions", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Regions", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Regions", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -105,10 +108,10 @@ func dataSourceAlicloudEbsRegionsRead(d *schema.ResourceData, meta interface{}) 
 	d.SetId(time.Now().String())
 
 	if err := d.Set("regions", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

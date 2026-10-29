@@ -1,4 +1,4 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
@@ -8,9 +8,15 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -24,7 +30,7 @@ func init() {
 }
 
 func testSweepEbsDiskReplicaGroup(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -35,14 +41,14 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 	}
 	action := "DescribeDiskReplicaGroups"
 	request := map[string]interface{}{}
-	request["MaxResults"] = PageSizeXLarge
+	request["MaxResults"] = helper.PageSizeXLarge
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -50,14 +56,14 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
 		}
 
 		resp, err := jsonpath.Get("$.ReplicaGroups", response)
-		totalCount, formatErr := formatInt(response["TotalCount"])
+		totalCount, formatErr := convert.FormatInt(response["TotalCount"])
 		if formatErr != nil {
 			return formatErr
 		}
@@ -87,7 +93,7 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 				"ReplicaGroupId": item["ReplicaGroupId"],
 				"RegionId":       client.RegionId,
 			}
-			request["ClientToken"] = buildClientToken("DeleteDiskReplicaGroup")
+			request["ClientToken"] = helper.BuildClientToken("DeleteDiskReplicaGroup")
 			_, err = client.RpcPost("ebs", "2021-07-30", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ebs DiskReplicaGroup (%s): %s", item["ReplicaGroupId"].(string), err)
@@ -106,22 +112,22 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_disk_replica_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsDiskReplicaGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccebs%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsDiskReplicaGroupBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsDiskReplicaGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -137,13 +143,13 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_rtc":              "true",
-						"source_region_id":        CHECKSET,
+						"source_region_id":        acctest.CHECKSET,
 						"description":             "cctest",
-						"destination_region_id":   CHECKSET,
-						"destination_zone_id":     CHECKSET,
-						"source_zone_id":          CHECKSET,
+						"destination_region_id":   acctest.CHECKSET,
+						"destination_zone_id":     acctest.CHECKSET,
+						"source_zone_id":          acctest.CHECKSET,
 						"disk_replica_group_name": name,
-						"resource_group_id":       CHECKSET,
+						"resource_group_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -153,7 +159,7 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -274,13 +280,13 @@ func TestAccAliCloudEbsDiskReplicaGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -299,22 +305,22 @@ var AlicloudEbsDiskReplicaGroupMap0 = map[string]string{}
 func TestAccAliCloudEbsDiskReplicaGroup_rtc(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_disk_replica_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsDiskReplicaGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsDiskReplicaGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccebs%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsDiskReplicaGroupRtcDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsDiskReplicaGroupRtcDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -329,11 +335,11 @@ func TestAccAliCloudEbsDiskReplicaGroup_rtc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_rtc":              "true",
-						"source_region_id":        CHECKSET,
+						"source_region_id":        acctest.CHECKSET,
 						"description":             "cctest",
-						"destination_region_id":   CHECKSET,
-						"destination_zone_id":     CHECKSET,
-						"source_zone_id":          CHECKSET,
+						"destination_region_id":   acctest.CHECKSET,
+						"destination_zone_id":     acctest.CHECKSET,
+						"source_zone_id":          acctest.CHECKSET,
 						"disk_replica_group_name": name,
 					}),
 				),

@@ -1,35 +1,40 @@
-package alicloud
+package ebs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ebs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// collection-order: bypass parameters -- pre-existing attribute outside this change
 
 // Test Ebs SolutionInstance. >>> Resource test cases, automatically generated.
 // Case 创建并更新用例 5796
 func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_solution_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsSolutionInstanceMap5796)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsSolutionInstanceMap5796)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsSolutionInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebssolutioninstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsSolutionInstanceBasicDependence5796)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebssolutioninstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsSolutionInstanceBasicDependence5796)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      testAccCheckEbsSolutionInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -91,7 +96,7 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 						"solution_id":            "mysql_compare",
 						"parameters.#":           "10",
 						"solution_instance_name": name,
-						"resource_group_id":      CHECKSET,
+						"resource_group_id":      acctest.CHECKSET,
 						"tags.%":                 "2",
 						"tags.Created":           "TF",
 						"tags.For":               "Test",
@@ -129,7 +134,7 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -159,7 +164,7 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -189,7 +194,7 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -248,7 +253,7 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 						"solution_id":            "mysql_compare",
 						"parameters.#":           "10",
 						"solution_instance_name": name + "_update",
-						"resource_group_id":      CHECKSET,
+						"resource_group_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -263,9 +268,9 @@ func TestAccAliCloudEbsSolutionInstance_basic5796(t *testing.T) {
 }
 
 var AlicloudEbsSolutionInstanceMap5796 = map[string]string{
-	"status":                 CHECKSET,
-	"create_time":            CHECKSET,
-	"solution_instance_name": CHECKSET,
+	"status":                 acctest.CHECKSET,
+	"create_time":            acctest.CHECKSET,
+	"solution_instance_name": acctest.CHECKSET,
 }
 
 func AlicloudEbsSolutionInstanceBasicDependence5796(name string) string {
@@ -282,21 +287,21 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 func TestAccAliCloudEbsSolutionInstance_basic5796_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_solution_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudEbsSolutionInstanceMap5796)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EbsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEbsSolutionInstanceMap5796)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ebs.NewEbsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEbsSolutionInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sebssolutioninstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEbsSolutionInstanceBasicDependence5796)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sebssolutioninstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEbsSolutionInstanceBasicDependence5796)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      testAccCheckEbsSolutionInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -354,7 +359,7 @@ func TestAccAliCloudEbsSolutionInstance_basic5796_twin(t *testing.T) {
 						"solution_id":            "mysql_compare",
 						"parameters.#":           "10",
 						"solution_instance_name": name,
-						"resource_group_id":      CHECKSET,
+						"resource_group_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -369,17 +374,17 @@ func TestAccAliCloudEbsSolutionInstance_basic5796_twin(t *testing.T) {
 }
 
 func testAccCheckEbsSolutionInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	ebsService := EbsServiceV2{client}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	ebsService := ebs.NewEbsServiceV2(client)
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "alicloud_ebs_solution_instance" {
 			continue
 		}
 		if resp, err := ebsService.DescribeEbsSolutionInstance(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				continue
 			}
-			return WrapError(err)
+			return errs.WrapError(err)
 		} else {
 			// check ID and status
 			if rs.Primary.ID == fmt.Sprint(resp["SolutionInstanceId"]) && resp["Status"] == "DELETE_COMPLETE" {

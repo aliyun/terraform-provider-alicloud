@@ -1,4 +1,4 @@
-package alicloud
+package ebs
 
 import (
 	"context"
@@ -8,12 +8,23 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type EbsServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+// NewEbsServiceV2 is the exported constructor: the client field stays
+// unexported, so callers outside the package (including the flat layout's
+// acceptance tests) build values with it.
+func NewEbsServiceV2(client *connectivity.AliyunClient) *EbsServiceV2 {
+	return &EbsServiceV2{client: client}
 }
 
 // DescribeEbsReplicaPairDrill <<< Encapsulated get interface for Ebs ReplicaPairDrill.
@@ -25,7 +36,7 @@ func (s *EbsServiceV2) DescribeEbsReplicaPairDrill(id string) (object map[string
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribePairDrills"
 	request = make(map[string]interface{})
@@ -34,33 +45,33 @@ func (s *EbsServiceV2) DescribeEbsReplicaPairDrill(id string) (object map[string
 	query["DrillId"] = parts[1]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Drills[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Drills[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Drills[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("ReplicaPairDrill", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("ReplicaPairDrill", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -70,10 +81,10 @@ func (s *EbsServiceV2) EbsReplicaPairDrillStateRefreshFunc(id string, field stri
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsReplicaPairDrill(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -81,7 +92,7 @@ func (s *EbsServiceV2) EbsReplicaPairDrillStateRefreshFunc(id string, field stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -99,7 +110,7 @@ func (s *EbsServiceV2) DescribeEbsReplicaGroupDrill(id string) (object map[strin
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeReplicaGroupDrills"
 	request = make(map[string]interface{})
@@ -108,33 +119,33 @@ func (s *EbsServiceV2) DescribeEbsReplicaGroupDrill(id string) (object map[strin
 	query["DrillId"] = parts[1]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Drills[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Drills[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Drills[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("ReplicaGroupDrill", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("ReplicaGroupDrill", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -144,10 +155,10 @@ func (s *EbsServiceV2) EbsReplicaGroupDrillStateRefreshFunc(id string, field str
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsReplicaGroupDrill(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -155,7 +166,7 @@ func (s *EbsServiceV2) EbsReplicaGroupDrillStateRefreshFunc(id string, field str
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -176,41 +187,41 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicy(id string) (object ma
 	query = make(map[string]interface{})
 	request["PolicyIds.1"] = id
 	query["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Policies[*]", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicy", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("EnterpriseSnapshotPolicy", id), errs.NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicy", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("EnterpriseSnapshotPolicy", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Name"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicy", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("EnterpriseSnapshotPolicy", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -220,10 +231,10 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, fi
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsEnterpriseSnapshotPolicy(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -231,7 +242,7 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, fi
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -241,21 +252,21 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyStateRefreshFunc(id string, fi
 // DescribeEbsEnterpriseSnapshotPolicy >>> Encapsulated.
 
 // TagResources <<< Encapsulated TagResources call for Ebs.
-func (s *EbsServiceV2) TagResources(d *schema.ResourceData, resourceType string, tags map[string]interface{}) error {
-	if len(tags) == 0 {
+func (s *EbsServiceV2) TagResources(d *schema.ResourceData, resourceType string, tagMap map[string]interface{}) error {
+	if len(tagMap) == 0 {
 		return nil
 	}
 	client := s.client
 	action := "TagResources"
 	request := map[string]interface{}{
 		"RegionId":     client.RegionId,
-		"ClientToken":  buildClientToken(action),
+		"ClientToken":  helper.BuildClientToken(action),
 		"ResourceType": resourceType,
 		"ResourceId.1": d.Id(),
 	}
 	count := 1
-	for key, value := range tags {
-		if ignoredTags(key, fmt.Sprint(value)) {
+	for key, value := range tagMap {
+		if tags.IgnoredTags(key, fmt.Sprint(value)) {
 			continue
 		}
 		request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -267,12 +278,12 @@ func (s *EbsServiceV2) TagResources(d *schema.ResourceData, resourceType string,
 	}
 
 	var response map[string]interface{}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err := retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		var err error
 		response, err = client.RpcPost("ebs", "2021-07-30", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -280,9 +291,9 @@ func (s *EbsServiceV2) TagResources(d *schema.ResourceData, resourceType string,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
@@ -299,10 +310,10 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -312,17 +323,17 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -330,9 +341,9 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -343,7 +354,7 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -352,11 +363,11 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -364,9 +375,9 @@ func (s *EbsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -385,7 +396,7 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicyAttachment(id string) 
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeEnterpriseSnapshotPolicy"
 	request = make(map[string]interface{})
@@ -393,36 +404,36 @@ func (s *EbsServiceV2) DescribeEbsEnterpriseSnapshotPolicyAttachment(id string) 
 	request["DiskIds.1"] = parts[1]
 	request["PolicyIds.1"] = parts[0]
 	query["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Policies[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policies[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Policies[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("EnterpriseSnapshotPolicyAttachment", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("EnterpriseSnapshotPolicyAttachment", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -432,10 +443,10 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyAttachmentStateRefreshFunc(id 
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsEnterpriseSnapshotPolicyAttachment(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -443,7 +454,7 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyAttachmentStateRefreshFunc(id 
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -463,41 +474,41 @@ func (s *EbsServiceV2) DescribeEbsSolutionInstance(id string) (object map[string
 	query = make(map[string]interface{})
 	request["SolutionInstanceId.1"] = id
 	query["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Data[*]", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("SolutionInstance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SolutionInstance", id), errs.NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("SolutionInstance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SolutionInstance", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("SolutionInstance", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SolutionInstance", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -507,10 +518,10 @@ func (s *EbsServiceV2) EbsSolutionInstanceStateRefreshFunc(id string, field stri
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsSolutionInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -518,7 +529,7 @@ func (s *EbsServiceV2) EbsSolutionInstanceStateRefreshFunc(id string, field stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -540,12 +551,12 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaPair(id string) (object map[string]
 	request["RegionId"] = client.RegionId
 	action := "DescribeDiskReplicaPairs"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -553,18 +564,18 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaPair(id string) (object map[string]
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ReplicaPairs[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReplicaPairs[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ReplicaPairs[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DiskReplicaPair", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DiskReplicaPair", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -574,10 +585,10 @@ func (s *EbsServiceV2) EbsDiskReplicaPairStateRefreshFunc(id string, field strin
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDiskReplicaPair(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -592,7 +603,7 @@ func (s *EbsServiceV2) EbsDiskReplicaPairStateRefreshFunc(id string, field strin
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -613,12 +624,12 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaGroup(id string) (object map[string
 	request["RegionId"] = client.RegionId
 	action := "DescribeDiskReplicaGroups"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -626,18 +637,18 @@ func (s *EbsServiceV2) DescribeEbsDiskReplicaGroup(id string) (object map[string
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ReplicaGroups[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReplicaGroups[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ReplicaGroups[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DiskReplicaGroup", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DiskReplicaGroup", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -653,15 +664,15 @@ func (s *EbsServiceV2) DescribeDiskReplicaGroupListTagResources(id string) (obje
 	request["RegionId"] = client.RegionId
 	request["ResourceType"] = "DiskReplicaGroup"
 	action := "ListTagResources"
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("ebs", "2021-07-30", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -669,9 +680,9 @@ func (s *EbsServiceV2) DescribeDiskReplicaGroupListTagResources(id string) (obje
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -681,10 +692,10 @@ func (s *EbsServiceV2) EbsDiskReplicaGroupStateRefreshFunc(id string, field stri
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEbsDiskReplicaGroup(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -699,7 +710,7 @@ func (s *EbsServiceV2) EbsDiskReplicaGroupStateRefreshFunc(id string, field stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
