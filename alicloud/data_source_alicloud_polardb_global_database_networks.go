@@ -68,6 +68,14 @@ func dataSourceAlicloudPolarDBGlobalDatabaseNetworks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"gdn_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"db_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -181,15 +189,37 @@ func dataSourceAlicloudPolarDBGlobalDatabaseNetworksRead(d *schema.ResourceData,
 	}
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
+	polarDBService := PolarDBService{client}
 	for _, object := range objects {
+		gdnId := fmt.Sprint(object["GDNId"])
+		// DescribeGlobalDatabaseNetworks omits ResourceGroupId, so the resource
+		// group of each GDN is resolved with the single query below.
+		detail, describeErr := polarDBService.DescribePolarDBGlobalDatabaseNetwork(gdnId)
+		if describeErr != nil {
+			// The GDN may have been removed between the list call and this lookup.
+			if NotFoundError(describeErr) {
+				continue
+			}
+			return WrapErrorf(describeErr, DataDefaultErrorMsg, "alicloud_polardb_global_database_networks", "DescribeGlobalDatabaseNetwork", AlibabaCloudSdkGoERROR)
+		}
 		mapping := map[string]interface{}{
-			"id":          fmt.Sprint(object["GDNId"]),
-			"gdn_id":      fmt.Sprint(object["GDNId"]),
+			"id":          gdnId,
+			"gdn_id":      gdnId,
 			"description": object["GDNDescription"],
 			"db_type":     object["DBType"],
 			"db_version":  object["DBVersion"],
 			"create_time": object["CreateTime"],
 			"status":      object["GDNStatus"],
+		}
+		if labels, ok := detail["Labels"].(map[string]interface{}); ok {
+			mapping["gdn_version"] = labels["GDNVersion"]
+		}
+		// ResourceGroupId is documented as a top-level response field, but the
+		// API may omit it. Keep the key so the output reads as an empty value
+		// instead of a missing attribute.
+		mapping["resource_group_id"] = ""
+		if v, ok := detail["ResourceGroupId"].(string); ok {
+			mapping["resource_group_id"] = v
 		}
 		if v, ok := object["DBClusters"]; ok {
 			dbClustersMaps := make([]map[string]interface{}, 0)

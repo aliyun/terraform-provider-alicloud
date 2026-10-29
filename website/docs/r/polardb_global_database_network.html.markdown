@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
@@ -57,6 +65,7 @@ resource "alicloud_polardb_cluster" "default" {
 resource "alicloud_polardb_global_database_network" "default" {
   db_cluster_id = alicloud_polardb_cluster.default.id
   description   = "terraform-example"
+  gdn_version   = "1.0"
 }
 ```
 
@@ -69,6 +78,13 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The ID of the primary cluster.
 * `status` - (Computed) The status of the Global Database Network.
 * `description` - (Optional, Computed) The description of the Global Database Network.
+* `enable_global_domain_name` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable the global domain name.
+
+  -> **NOTE:** `enable_global_domain_name` is only sent when the Global Database Network is created or updated. The API does not return this parameter, so it cannot be read back from the remote resource.
+* `gdn_version` - (Optional, Computed, ForceNew, String, Available since v2.2.0) The version of the Global Database Network. Defaults to `1.0`.
+* `resource_group_id` - (Optional, Computed, String, Available since v2.2.0) The ID of the resource group.
+
+  -> **NOTE:** `resource_group_id` is sent when the Global Database Network is created and when it is moved through `ModifyGlobalDatabaseNetwork`. The current Global Database Network response does not return a readable value, so the attribute keeps the configured value, is empty after `terraform import`, and changes made in the console are not detected as drift.
 
 ## Attributes Reference
 

@@ -117,6 +117,9 @@ func testSweepPolarDBGlobalDatabaseNetwork(region string) error {
 }
 
 func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
+	// Keep the provider's API request/response debug in the acceptance log so
+	// the create and update calls can be verified at the API boundary.
+	t.Setenv("DEBUG", "terraform")
 	var v map[string]interface{}
 	resourceId := "alicloud_polardb_global_database_network.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudPolarDBGlobalDatabaseNetworkMap)
@@ -137,21 +140,39 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id": "${alicloud_polardb_cluster.default.id}",
+					"db_cluster_id":             "${alicloud_polardb_cluster.default.id}",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"gdn_version":               "1.0",
+					"enable_global_domain_name": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id": CHECKSET,
+						"db_cluster_id":             CHECKSET,
+						"resource_group_id":         CHECKSET,
+						"gdn_version":               "1.0",
+						"enable_global_domain_name": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testAcc",
+					"enable_global_domain_name": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "tf-testAcc",
+						"enable_global_domain_name": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "tf-testAcc",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "tf-testAcc",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -161,21 +182,24 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "update-tf-testAcc",
+						"description":       "update-tf-testAcc",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_global_domain_name", "resource_group_id"},
 			},
 		},
 	})
 }
 
 var resourceAlicloudPolarDBGlobalDatabaseNetworkMap = map[string]string{
-	"status": CHECKSET,
+	"status":            CHECKSET,
+	"resource_group_id": CHECKSET,
 }
 
 func resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence(name string) string {
@@ -183,6 +207,8 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence(name string) st
 variable "name" {
 	default = "%s"
 }
+
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_vpcs" "default" {
 	name_regex = "^default-NODELETING$"
@@ -207,6 +233,9 @@ resource "alicloud_polardb_cluster" "default" {
 	db_node_class = "polar.mysql.x4.medium"
 	vswitch_id    = alicloud_vswitch.default.id
 	description   = "${var.name}"
+	lifecycle {
+		ignore_changes = [encrypt_new_tables]
+	}
 }
 
 `, name)
@@ -219,8 +248,11 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	dExisted, _ := schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"db_cluster_id": "CreatePolarDBGDNValue",
-		"description":   "CreatePolarDBGDNValue",
+		"db_cluster_id":             "CreatePolarDBGDNValue",
+		"description":               "CreatePolarDBGDNValue",
+		"enable_global_domain_name": true,
+		"gdn_version":               "CreatePolarDBGDNValue",
+		"resource_group_id":         "CreatePolarDBGDNValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -241,8 +273,12 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeGlobalDatabaseNetwork
-		"GDNStatus":      "active",
-		"GDNDescription": "CreatePolarDBGDNValue",
+		"GDNStatus":       "active",
+		"GDNDescription":  "CreatePolarDBGDNValue",
+		"ResourceGroupId": "CreatePolarDBGDNValue",
+		"Labels": map[string]interface{}{
+			"GDNVersion": "CreatePolarDBGDNValue",
+		},
 		"DBClusters": []interface{}{
 			map[string]interface{}{
 				"DBClusterId": "CreatePolarDBGDNValue",
@@ -339,7 +375,8 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 	dExisted, _ = schema.InternalMap(p["alicloud_polardb_global_database_network"].Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeGlobalDatabaseNetwork Response
-		"GDNDescription": "PutPolarDBGDNValue",
+		"GDNDescription":  "PutPolarDBGDNValue",
+		"ResourceGroupId": "CreatePolarDBGDNValue",
 		"DBClusters": []interface{}{
 			map[string]interface{}{
 				"DBClusterId": "CreatePolarDBGDNValue",
@@ -467,4 +504,125 @@ func TestUnitAlicloudPolarDBGlobalDatabaseNetwork(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
+}
+
+// lintignore: R001
+func TestUnitAlicloudPolarDBGlobalDatabaseNetworkUpdateGlobalDomainName(t *testing.T) {
+	p := Provider().ResourcesMap
+	schemaMap := p["alicloud_polardb_global_database_network"].Schema
+	d, _ := schema.InternalMap(schemaMap).Data(nil, nil)
+	d.MarkNewResource()
+	attributes := map[string]interface{}{
+		"db_cluster_id":             "PolarDBGDNId",
+		"description":               "PolarDBGDNDescription",
+		"enable_global_domain_name": true,
+		"gdn_version":               "1.0",
+		"resource_group_id":         "PolarDBGDNResourceGroupId",
+	}
+	for key, value := range attributes {
+		assert.Nil(t, d.Set(key, value))
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	attributesDiff := map[string]interface{}{
+		"enable_global_domain_name": false,
+	}
+	diff, err := newInstanceDiff("alicloud_polardb_global_database_network", attributes, attributesDiff, d.State())
+	if err != nil {
+		t.Error(err)
+	}
+	d, _ = schema.InternalMap(schemaMap).Data(d.State(), diff)
+	ReadMockResponse := map[string]interface{}{
+		"GDNStatus":       "active",
+		"GDNDescription":  "PolarDBGDNDescription",
+		"ResourceGroupId": "PolarDBGDNResourceGroupId",
+		"Labels": map[string]interface{}{
+			"GDNVersion": "1.0",
+		},
+		"DBClusters": []interface{}{
+			map[string]interface{}{
+				"DBClusterId": "PolarDBGDNId",
+			},
+		},
+	}
+	var capturedRequest map[string]interface{}
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "ModifyGlobalDatabaseNetwork" {
+			capturedRequest = body
+			return map[string]interface{}{}, nil
+		}
+		return ReadMockResponse, nil
+	})
+	defer patches.Reset()
+	err = resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d, rawClient)
+	assert.Nil(t, err)
+	assert.NotNil(t, capturedRequest)
+	value, ok := capturedRequest["EnableGlobalDomainName"]
+	assert.True(t, ok)
+	assert.Equal(t, false, value)
+}
+
+// lintignore: R001
+func TestUnitAlicloudPolarDBGlobalDatabaseNetworkUpdateResourceGroupId(t *testing.T) {
+	p := Provider().ResourcesMap
+	schemaMap := p["alicloud_polardb_global_database_network"].Schema
+	d, _ := schema.InternalMap(schemaMap).Data(nil, nil)
+	d.MarkNewResource()
+	attributes := map[string]interface{}{
+		"db_cluster_id":     "PolarDBGDNId",
+		"description":       "PolarDBGDNDescription",
+		"gdn_version":       "1.0",
+		"resource_group_id": "OldPolarDBGDNResourceGroupId",
+	}
+	for key, value := range attributes {
+		assert.Nil(t, d.Set(key, value))
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	attributesDiff := map[string]interface{}{
+		"resource_group_id": "NewPolarDBGDNResourceGroupId",
+	}
+	diff, err := newInstanceDiff("alicloud_polardb_global_database_network", attributes, attributesDiff, d.State())
+	if err != nil {
+		t.Error(err)
+	}
+	d, _ = schema.InternalMap(schemaMap).Data(d.State(), diff)
+	ReadMockResponse := map[string]interface{}{
+		"GDNStatus":       "active",
+		"GDNDescription":  "PolarDBGDNDescription",
+		"ResourceGroupId": "NewPolarDBGDNResourceGroupId",
+		"Labels": map[string]interface{}{
+			"GDNVersion": "1.0",
+		},
+		"DBClusters": []interface{}{
+			map[string]interface{}{
+				"DBClusterId": "PolarDBGDNId",
+			},
+		},
+	}
+	var capturedRequest map[string]interface{}
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		if *action == "ModifyGlobalDatabaseNetwork" {
+			capturedRequest = body
+			return map[string]interface{}{}, nil
+		}
+		return ReadMockResponse, nil
+	})
+	defer patches.Reset()
+	err = resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d, rawClient)
+	assert.Nil(t, err)
+	assert.NotNil(t, capturedRequest)
+	value, ok := capturedRequest["ResourceGroupId"]
+	assert.True(t, ok)
+	assert.Equal(t, "NewPolarDBGDNResourceGroupId", value)
+	_, domainNameSent := capturedRequest["EnableGlobalDomainName"]
+	assert.False(t, domainNameSent)
 }
