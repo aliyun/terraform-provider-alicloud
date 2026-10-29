@@ -1,4 +1,5 @@
-package alicloud
+// Package mns_test.
+package mns_test
 
 import (
 	"fmt"
@@ -7,8 +8,11 @@ import (
 	"testing"
 
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -20,7 +24,7 @@ func init() {
 }
 
 func testSweepMnsQueues(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -76,26 +80,26 @@ func testSweepMnsQueues(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMnsQueue_basic(t *testing.T) {
+func TestAccAliCloudMnsQueue_basic(t *testing.T) {
 	var v ali_mns.QueueAttribute
 	resourceId := "alicloud_mns_queue.default"
-	ra := resourceAttrInit(resourceId, mnsQueueMap)
+	ra := acctest.ResourceAttrInit(resourceId, mnsQueueMap)
 	serviceFunc := func() interface{} {
-		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return mns.NewMnsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsQueueConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceMnsQueueConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -184,26 +188,26 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMnsQueue_multi(t *testing.T) {
+func TestAccAliCloudMnsQueue_multi(t *testing.T) {
 	var v ali_mns.QueueAttribute
 	resourceId := "alicloud_mns_queue.default.4"
-	ra := resourceAttrInit(resourceId, mnsQueueMap)
+	ra := acctest.ResourceAttrInit(resourceId, mnsQueueMap)
 	serviceFunc := func() interface{} {
-		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return mns.NewMnsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMNSQueueConfig-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsQueueConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceMnsQueueConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -223,7 +227,7 @@ func resourceMnsQueueConfigDependence(name string) string {
 }
 
 var mnsQueueMap = map[string]string{
-	"name":                     CHECKSET,
+	"name":                     acctest.CHECKSET,
 	"delay_seconds":            "0",
 	"maximum_message_size":     "65536",
 	"message_retention_period": "345600",

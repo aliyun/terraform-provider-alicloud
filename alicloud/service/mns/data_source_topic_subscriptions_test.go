@@ -1,26 +1,28 @@
-package alicloud
+// Package mns_test.
+package mns_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudMnsTopicSubscriptionDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_mns_topic_subscriptions.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand),
 		dataSourceMnsTopicSubscriptionConfigDependence)
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"topic_name":  "${alicloud_mns_topic.default.name}",
 			"name_prefix": "${alicloud_mns_topic_subscription.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"topic_name":  "${alicloud_mns_topic.default.name}",
 			"name_prefix": "${alicloud_mns_topic_subscription.default.name}-fake",
 		}),
@@ -47,13 +49,13 @@ func TestAccAlicloudMnsTopicSubscriptionDataSource(t *testing.T) {
 		}
 	}
 
-	var mnsTopicSubscriptionCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existMnsTopicSubscriptionMapFunc,
-		fakeMapFunc:  fakeMnsTopicSubscriptionMapFunc,
+	var mnsTopicSubscriptionCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existMnsTopicSubscriptionMapFunc,
+		FakeMapFunc:  fakeMnsTopicSubscriptionMapFunc,
 	}
 
-	mnsTopicSubscriptionCheckInfo.dataSourceTestCheck(t, rand, allConf)
+	mnsTopicSubscriptionCheckInfo.DataSourceTestCheck(t, rand, allConf)
 }
 
 func dataSourceMnsTopicSubscriptionConfigDependence(name string) string {

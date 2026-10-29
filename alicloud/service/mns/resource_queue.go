@@ -1,8 +1,10 @@
-package alicloud
+package mns
 
 import (
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -84,24 +86,24 @@ func resourceAlicloudMNSQueueCreate(d *schema.ResourceData, meta interface{}) er
 		return nil, queueManager.CreateQueue(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeout), int32(pollingWaitSeconds), 3)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mns_queue", "CreateQueue", AliMnsERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mns_queue", "CreateQueue", errs.AliMnsERROR)
 	}
-	addDebug("CreateQueue", raw)
+	logs.AddDebug("CreateQueue", raw)
 	d.SetId(name)
 	return resourceAlicloudMNSQueueRead(d, meta)
 }
 
 func resourceAlicloudMNSQueueRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{client}
+	mnsService := NewMnsService(client)
 
 	object, err := mnsService.DescribeMnsQueue(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("name", object.QueueName)
@@ -147,16 +149,16 @@ func resourceAlicloudMNSQueueUpdate(d *schema.ResourceData, meta interface{}) er
 			return nil, queueManager.SetQueueAttributes(name, int32(delaySeconds), int32(maximumMessageSize), int32(messageRetentionPeriod), int32(visibilityTimeouts), int32(pollingWaitSeconds), 3)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetQueueAttributes", AliMnsERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "SetQueueAttributes", errs.AliMnsERROR)
 		}
-		addDebug("SetQueueAttributes", raw)
+		logs.AddDebug("SetQueueAttributes", raw)
 	}
 	return resourceAlicloudMNSQueueRead(d, meta)
 }
 
 func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{client}
+	mnsService := NewMnsService(client)
 	name := d.Id()
 	raw, err := client.WithMnsQueueManager(func(queueManager ali_mns.AliQueueManager) (interface{}, error) {
 		return nil, queueManager.DeleteQueue(name)
@@ -165,8 +167,8 @@ func resourceAlicloudMNSQueueDelete(d *schema.ResourceData, meta interface{}) er
 		if mnsService.QueueNotExistFunc(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteQueue", AliMnsERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteQueue", errs.AliMnsERROR)
 	}
-	addDebug("DeleteQueue", raw)
-	return WrapError(mnsService.WaitForMnsQueue(d.Id(), Deleted, DefaultTimeout))
+	logs.AddDebug("DeleteQueue", raw)
+	return errs.WrapError(mnsService.WaitForMnsQueue(d.Id(), Deleted, DefaultTimeout))
 }

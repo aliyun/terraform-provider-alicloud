@@ -864,10 +864,6 @@ func Provider() *schema.Provider {
 			"alicloud_mhub_apps":     dataSourceAlicloudMhubApps(),
 
 			// mns
-			"alicloud_mns_queues":              dataSourceAlicloudMNSQueues(),
-			"alicloud_mns_topics":              dataSourceAlicloudMNSTopics(),
-			"alicloud_mns_topic_subscriptions": dataSourceAlicloudMNSTopicSubscriptions(),
-			"alicloud_mns_service":             dataSourceAlicloudMnsService(),
 
 			// mongo
 			"alicloud_mongo_instances": dataSourceAliCloudMongoDBInstances(),
@@ -2218,10 +2214,6 @@ func Provider() *schema.Provider {
 			"alicloud_milvus_instance": resourceAliCloudMilvusInstance(),
 
 			// mns
-			"alicloud_mns_queue":              resourceAlicloudMNSQueue(),
-			"alicloud_mns_topic":              resourceAlicloudMNSTopic(),
-			"alicloud_mns_topic_subscription": resourceAlicloudMNSSubscription(),
-
 			// mongodb
 			"alicloud_mongodb_node":                             resourceAliCloudMongodbNode(),
 			"alicloud_mongodb_global_security_ip_group":         resourceAliCloudMongodbGlobalSecurityIPGroup(),

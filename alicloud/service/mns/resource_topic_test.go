@@ -1,4 +1,5 @@
-package alicloud
+// Package mns_test.
+package mns_test
 
 import (
 	"fmt"
@@ -7,8 +8,11 @@ import (
 	"testing"
 
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -20,7 +24,7 @@ func init() {
 }
 
 func testSweepMnsTopics(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -76,26 +80,26 @@ func testSweepMnsTopics(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMnsTopic_basic(t *testing.T) {
+func TestAccAliCloudMnsTopic_basic(t *testing.T) {
 	var v *ali_mns.TopicAttribute
 	resourceId := "alicloud_mns_topic.default"
-	ra := resourceAttrInit(resourceId, mnsTopicMap)
+	ra := acctest.ResourceAttrInit(resourceId, mnsTopicMap)
 	serviceFunc := func() interface{} {
-		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return mns.NewMnsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsTopicConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceMnsTopicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -148,26 +152,26 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMnsTopic_multi(t *testing.T) {
+func TestAccAliCloudMnsTopic_multi(t *testing.T) {
 	var v *ali_mns.TopicAttribute
 	resourceId := "alicloud_mns_topic.default.4"
-	ra := resourceAttrInit(resourceId, mnsTopicMap)
+	ra := acctest.ResourceAttrInit(resourceId, mnsTopicMap)
 	serviceFunc := func() interface{} {
-		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return mns.NewMnsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMNSTopicConfig-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsTopicConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceMnsTopicConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -187,7 +191,7 @@ func resourceMnsTopicConfigDependence(name string) string {
 }
 
 var mnsTopicMap = map[string]string{
-	"name":                 CHECKSET,
+	"name":                 acctest.CHECKSET,
 	"maximum_message_size": "65536",
 	"logging_enabled":      "false",
 }

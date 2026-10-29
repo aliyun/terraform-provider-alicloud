@@ -1,4 +1,4 @@
-package alicloud
+package mns
 
 import (
 	"strings"
@@ -6,10 +6,28 @@ import (
 
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+)
+
+// Status mirrors the root-package lifecycle status string used by the legacy
+// WaitFor helpers; it is retained locally so the migrated polling semantics stay
+// identical without importing the root alicloud package.
+type Status string
+
+const (
+	Deleted         = Status("Deleted")
+	DefaultTimeout  = 120
+	COLON_SEPARATED = ":"
 )
 
 type MnsService struct {
 	client *connectivity.AliyunClient
+}
+
+func NewMnsService(client *connectivity.AliyunClient) *MnsService {
+	return &MnsService{client: client}
 }
 
 func (s *MnsService) SubscriptionNotExistFunc(err error) bool {
@@ -29,14 +47,14 @@ func (s *MnsService) DescribeMnsQueue(id string) (response ali_mns.QueueAttribut
 	})
 	if err != nil {
 		if s.QueueNotExistFunc(err) {
-			return response, WrapErrorf(err, NotFoundMsg, AliMnsERROR)
+			return response, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliMnsERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetQueueAttributes", AliMnsERROR)
+		return response, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetQueueAttributes", errs.AliMnsERROR)
 	}
-	addDebug("GetQueueAttributes", raw)
+	logs.AddDebug("GetQueueAttributes", raw)
 	response, _ = raw.(ali_mns.QueueAttribute)
 	if response.QueueName == "" {
-		return response, WrapErrorf(NotFoundErr("MnsQueue", id), NotFoundMsg, ProviderERROR)
+		return response, errs.WrapErrorf(errs.NotFoundErr("MnsQueue", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return
 }
@@ -46,19 +64,19 @@ func (s *MnsService) WaitForMnsQueue(id string, status Status, timeout int) erro
 	for {
 		object, err := s.DescribeMnsQueue(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.QueueName == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.QueueName, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.QueueName, id, errs.ProviderERROR)
 		}
 	}
 }
@@ -70,14 +88,14 @@ func (s *MnsService) DescribeMnsTopic(id string) (*ali_mns.TopicAttribute, error
 	})
 	if err != nil {
 		if s.TopicNotExistFunc(err) {
-			return response, WrapErrorf(err, NotFoundMsg, AliMnsERROR)
+			return response, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliMnsERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetTopicAttributes", AliMnsERROR)
+		return response, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetTopicAttributes", errs.AliMnsERROR)
 	}
-	addDebug("GetTopicAttributes", raw)
+	logs.AddDebug("GetTopicAttributes", raw)
 	resp, _ := raw.(ali_mns.TopicAttribute)
 	if resp.TopicName == "" {
-		return response, WrapErrorf(NotFoundErr("MnsTopic", id), NotFoundMsg, ProviderERROR)
+		return response, errs.WrapErrorf(errs.NotFoundErr("MnsTopic", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return &resp, nil
 }
@@ -87,28 +105,28 @@ func (s *MnsService) WaitForMnsTopic(id string, status Status, timeout int) erro
 	for {
 		object, err := s.DescribeMnsTopic(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.TopicName == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.TopicName, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.TopicName, id, errs.ProviderERROR)
 		}
 	}
 }
 
 func (s *MnsService) DescribeMnsTopicSubscription(id string) (*ali_mns.SubscriptionAttribute, error) {
 	response := &ali_mns.SubscriptionAttribute{}
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return response, WrapError(err)
+		return response, errs.WrapError(err)
 	}
 	topicName, name := parts[0], parts[1]
 
@@ -117,15 +135,15 @@ func (s *MnsService) DescribeMnsTopicSubscription(id string) (*ali_mns.Subscript
 	})
 	if err != nil {
 		if s.TopicNotExistFunc(err) || s.SubscriptionNotExistFunc(err) {
-			return response, WrapErrorf(err, NotFoundMsg, AliMnsERROR)
+			return response, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliMnsERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, "GetSubscriptionAttributes", AliMnsERROR)
+		return response, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "GetSubscriptionAttributes", errs.AliMnsERROR)
 	}
-	addDebug("GetSubscriptionAttributes", raw)
+	logs.AddDebug("GetSubscriptionAttributes", raw)
 	resp, _ := raw.(ali_mns.SubscriptionAttribute)
 	response = &resp
 	if response.SubscriptionName == "" {
-		return response, WrapErrorf(NotFoundErr("MnsTopicSubscription", id), NotFoundMsg, ProviderERROR)
+		return response, errs.WrapErrorf(errs.NotFoundErr("MnsTopicSubscription", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return response, nil
 }
@@ -135,19 +153,19 @@ func (s *MnsService) WaitForMnsTopicSubscription(id string, status Status, timeo
 	for {
 		object, err := s.DescribeMnsTopicSubscription(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.TopicName+":"+object.SubscriptionName == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.SubscriptionName, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.SubscriptionName, id, errs.ProviderERROR)
 		}
 	}
 }

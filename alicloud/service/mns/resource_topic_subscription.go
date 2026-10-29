@@ -1,10 +1,13 @@
-package alicloud
+package mns
 
 import (
 	"fmt"
 
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -88,24 +91,24 @@ func resourceAlicloudMNSSubscriptionCreate(d *schema.ResourceData, meta interfac
 		return nil, subscriptionManager.Subscribe(name, subRequest)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mns_topic_subscription", "Subscribe", AliMnsERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mns_topic_subscription", "Subscribe", errs.AliMnsERROR)
 	}
-	addDebug("Subscribe", raw)
+	logs.AddDebug("Subscribe", raw)
 	d.SetId(fmt.Sprintf("%s%s%s", topicName, COLON_SEPARATED, name))
 	return resourceAlicloudMNSSubscriptionRead(d, meta)
 }
 
 func resourceAlicloudMNSSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{client}
+	mnsService := NewMnsService(client)
 
 	object, err := mnsService.DescribeMnsTopicSubscription(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("topic_name", object.TopicName)
 	d.Set("name", object.SubscriptionName)
@@ -119,9 +122,9 @@ func resourceAlicloudMNSSubscriptionRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudMNSSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("notify_strategy") {
 		client := meta.(*connectivity.AliyunClient)
-		parts, err := ParseResourceId(d.Id(), 2)
+		parts, err := helper.ParseResourceId(d.Id(), 2)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		topicName, name := parts[0], parts[1]
 		notifyStrategy := ali_mns.NotifyStrategyType(d.Get("notify_strategy").(string))
@@ -129,19 +132,19 @@ func resourceAlicloudMNSSubscriptionUpdate(d *schema.ResourceData, meta interfac
 			return nil, subscriptionManager.SetSubscriptionAttributes(name, notifyStrategy)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetSubscriptionAttributes", AliMnsERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "SetSubscriptionAttributes", errs.AliMnsERROR)
 		}
-		addDebug("SetSubscriptionAttributes", raw)
+		logs.AddDebug("SetSubscriptionAttributes", raw)
 	}
 	return resourceAlicloudMNSSubscriptionRead(d, meta)
 }
 
 func resourceAlicloudMNSSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
+	mnsService := NewMnsService(client)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	topicName, name := parts[0], parts[1]
 
@@ -152,8 +155,8 @@ func resourceAlicloudMNSSubscriptionDelete(d *schema.ResourceData, meta interfac
 		if mnsService.TopicNotExistFunc(err) || mnsService.SubscriptionNotExistFunc(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "Unsubscribe", AliMnsERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "Unsubscribe", errs.AliMnsERROR)
 	}
-	addDebug("Unsubscribe", raw)
-	return WrapError(mnsService.WaitForMnsTopicSubscription(d.Id(), Deleted, DefaultTimeout))
+	logs.AddDebug("Unsubscribe", raw)
+	return errs.WrapError(mnsService.WaitForMnsTopicSubscription(d.Id(), Deleted, DefaultTimeout))
 }
