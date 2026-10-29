@@ -1,70 +1,71 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVPCSnatEntriesDataSourceBasic(t *testing.T) {
-	rand := acctest.RandInt()
-	snatIpConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	snatIpConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}_fakeii"`,
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"status":        `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"status":        `"Deleting"`,
 		}),
 	}
 
-	idsConfig := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+	idsConfig := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}_fake"]`,
 		}),
 	}
 
-	sourceCidrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+	sourceCidrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
 			"source_cidr":   `"172.16.0.0/21"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
 			"source_cidr":   `"172.16.0.0/20"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"snat_ip":       `"${alicloud_snat_entry.default.snat_ip}"`,
 			"source_cidr":   `"172.16.0.0/21"`,
@@ -72,7 +73,7 @@ func TestAccAlicloudVPCSnatEntriesDataSourceBasic(t *testing.T) {
 			"status":        `"Available"`,
 			"ids":           `["${alicloud_snat_entry.default.snat_entry_id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
 			"snat_table_id": `"${alicloud_snat_entry.default.snat_table_id}"`,
 			"source_cidr":   `"172.16.0.0/21"`,
 			"name_regex":    `"${alicloud_snat_entry.default.snat_entry_name}_fake"`,
@@ -81,7 +82,7 @@ func TestAccAlicloudVPCSnatEntriesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
-	snatEntriesCheckInfo.dataSourceTestCheck(t, rand, snatIpConf, nameRegexConf, statusConf, idsConfig, sourceCidrConf, allConf)
+	snatEntriesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, natGatewayDataSourcePreCheck(t), snatIpConf, nameRegexConf, statusConf, idsConfig, sourceCidrConf, allConf)
 
 }
 
@@ -146,13 +147,13 @@ var existSnatEntriesMapFunc = func(rand int) map[string]string {
 		"ids.#":                       "1",
 		"names.#":                     "1",
 		"entries.#":                   "1",
-		"entries.0.id":                CHECKSET,
-		"entries.0.snat_ip":           CHECKSET,
+		"entries.0.id":                acctest.CHECKSET,
+		"entries.0.snat_ip":           acctest.CHECKSET,
 		"entries.0.status":            "Available",
 		"entries.0.source_cidr":       "172.16.0.0/21",
-		"entries.0.snat_entry_id":     CHECKSET,
+		"entries.0.snat_entry_id":     acctest.CHECKSET,
 		"entries.0.snat_entry_name":   fmt.Sprintf("tf-testAccForSnatEntriesDatasource%d", rand),
-		"entries.0.source_vswitch_id": CHECKSET,
+		"entries.0.source_vswitch_id": acctest.CHECKSET,
 	}
 }
 
@@ -164,8 +165,8 @@ var fakeSnatEntriesMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var snatEntriesCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_snat_entries.default",
-	existMapFunc: existSnatEntriesMapFunc,
-	fakeMapFunc:  fakeSnatEntriesMapFunc,
+var snatEntriesCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_snat_entries.default",
+	ExistMapFunc: existSnatEntriesMapFunc,
+	FakeMapFunc:  fakeSnatEntriesMapFunc,
 }

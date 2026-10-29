@@ -726,7 +726,6 @@ func Provider() *schema.Provider {
 			"alicloud_fnf_executions": dataSourceAlicloudFnFExecutions(),
 
 			// forward
-			"alicloud_forward_entries": dataSourceAlicloudForwardEntries(),
 
 			// ga
 			"alicloud_ga_accelerators":                               dataSourceAlicloudGaAccelerators(),
@@ -912,7 +911,6 @@ func Provider() *schema.Provider {
 			"alicloud_nas_data_flows":             dataSourceAlicloudNasDataFlows(),
 
 			// nat
-			"alicloud_nat_gateways": dataSourceAlicloudNatGateways(),
 
 			// network
 			"alicloud_network_interfaces": dataSourceAlicloudEcsNetworkInterfaces(),
@@ -1167,7 +1165,6 @@ func Provider() *schema.Provider {
 			"alicloud_snapshots": dataSourceAliCloudEcsSnapshots(),
 
 			// snat
-			"alicloud_snat_entries": dataSourceAlicloudSnatEntries(),
 
 			// ssl
 			"alicloud_ssl_certificates_service_companies":             dataSourceAliCloudSslCertificatesServiceCompanies(),
@@ -1219,8 +1216,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_ipam_ipam_pools":                     dataSourceAliCloudVpcIpamIpamPools(),
 			"alicloud_vpc_flow_logs":                           dataSourceAlicloudVpcFlowLogs(),
 			"alicloud_vpc_dhcp_options_sets":                   dataSourceAlicloudVpcDhcpOptionsSets(),
-			"alicloud_vpc_nat_ip_cidrs":                        dataSourceAlicloudVpcNatIpCidrs(),
-			"alicloud_vpc_nat_ips":                             dataSourceAlicloudVpcNatIps(),
 			"alicloud_vpc_traffic_mirror_filters":              dataSourceAlicloudVpcTrafficMirrorFilters(),
 			"alicloud_vpc_traffic_mirror_filter_egress_rules":  dataSourceAlicloudVpcTrafficMirrorFilterEgressRules(),
 			"alicloud_vpc_traffic_mirror_filter_ingress_rules": dataSourceAlicloudVpcTrafficMirrorFilterIngressRules(),
@@ -2027,7 +2022,6 @@ func Provider() *schema.Provider {
 			"alicloud_fnf_execution": resourceAlicloudFnFExecution(),
 
 			// forward
-			"alicloud_forward_entry": resourceAliCloudNatGatewayForwardEntry(),
 
 			// ga
 			"alicloud_ga_accelerator":                               resourceAliCloudGaAccelerator(),
@@ -2268,7 +2262,6 @@ func Provider() *schema.Provider {
 			"alicloud_nas_recycle_bin":           resourceAlicloudNasRecycleBin(),
 
 			// nat
-			"alicloud_nat_gateway": resourceAliCloudNatGateway(),
 
 			// network
 			"alicloud_network_interface":            resourceAliCloudEcsNetworkInterface(),
@@ -2644,7 +2637,6 @@ func Provider() *schema.Provider {
 			"alicloud_snapshot_policy": resourceAliCloudEcsAutoSnapshotPolicy(),
 
 			// snat
-			"alicloud_snat_entry": resourceAliCloudNATGatewaySnatEntry(),
 
 			// ssl
 			"alicloud_ssl_certificates_service_company":                resourceAliCloudSslCertificatesServiceCompany(),
@@ -2732,8 +2724,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_route_entry":                             resourceAliCloudVpcRouteEntry(),
 			"alicloud_vpc_flow_log":                                resourceAliCloudVpcFlowLog(),
 			"alicloud_vpc_dhcp_options_set":                        resourceAliCloudVpcDhcpOptionsSet(),
-			"alicloud_vpc_nat_ip_cidr":                             resourceAliCloudNatGatewayNatIpCidr(),
-			"alicloud_vpc_nat_ip":                                  resourceAliCloudNatGatewayNatIp(),
 			"alicloud_vpc_traffic_mirror_filter":                   resourceAliCloudVpcTrafficMirrorFilter(),
 			"alicloud_vpc_traffic_mirror_filter_egress_rule":       resourceAliCloudVpcTrafficMirrorFilterEgressRule(),
 			"alicloud_vpc_traffic_mirror_filter_ingress_rule":      resourceAliCloudVpcTrafficMirrorFilterIngressRule(),

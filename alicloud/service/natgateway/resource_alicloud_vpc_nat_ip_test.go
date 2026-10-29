@@ -1,4 +1,4 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
@@ -11,66 +11,68 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	natgateway "github.com/aliyun/terraform-provider-alicloud/alicloud/service/natgateway"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-// Test NatGateway NatIpCidr. >>> Resource test cases, automatically generated.
-// Case 全生命周期_NatIpCidr_1.0.0 12366
-func TestAccAliCloudNatGatewayNatIpCidr_basic12366(t *testing.T) {
+// Test NatGateway NatIp. >>> Resource test cases, automatically generated.
+// Case 全生命周期_NatIp 9590
+func TestAccAliCloudNatGatewayNatIp_basic9590(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_vpc_nat_ip_cidr.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayNatIpCidrMap12366)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNatGatewayNatIpCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	resourceId := "alicloud_vpc_nat_ip.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayNatIpMap9590)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNatGatewayNatIp")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccnatgateway%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayNatIpCidrBasicDependence12366)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayNatIpBasicDependence9590)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr":      "10.0.12.0/24",
-					"nat_ip_cidr_name": name,
-					"nat_gateway_id":   "${alicloud_nat_gateway.NATGateway.id}",
+					"nat_gateway_id": "${alicloud_nat_gateway.NATGateway.id}",
+					"nat_ip_cidr":    "${alicloud_vswitch.VSwitch.cidr_block}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr":      "10.0.12.0/24",
-						"nat_ip_cidr_name": name,
-						"nat_gateway_id":   CHECKSET,
+						"nat_gateway_id": acctest.CHECKSET,
+						"nat_ip_cidr":    acctest.CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr_name": name + "_update",
+					"nat_ip_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr_name": name + "_update",
+						"nat_ip_name": name + "_update",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr_description": "test-update",
+					"nat_ip_description": "test",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr_description": "test-update",
+						"nat_ip_description": "test",
 					}),
 				),
 			},
@@ -84,39 +86,42 @@ func TestAccAliCloudNatGatewayNatIpCidr_basic12366(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudNatGatewayNatIpCidr_basic12366_twin(t *testing.T) {
+func TestAccAliCloudNatGatewayNatIp_basic9590_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_vpc_nat_ip_cidr.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayNatIpCidrMap12366)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNatGatewayNatIpCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	resourceId := "alicloud_vpc_nat_ip.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayNatIpMap9590)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNatGatewayNatIp")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccnatgateway%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayNatIpCidrBasicDependence12366)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayNatIpBasicDependence9590)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr":             "10.0.12.0/24",
-					"nat_ip_cidr_description": "tf-test-natipcidr",
-					"dry_run":                 "false",
-					"nat_ip_cidr_name":        name,
-					"nat_gateway_id":          "${alicloud_nat_gateway.NATGateway.id}",
+					"dry_run":            "false",
+					"nat_ip_name":        name,
+					"nat_gateway_id":     "${alicloud_nat_gateway.NATGateway.id}",
+					"nat_ip_cidr":        "${alicloud_vswitch.VSwitch.cidr_block}",
+					"nat_ip":             "172.16.0.66",
+					"nat_ip_description": "tf",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr":             "10.0.12.0/24",
-						"nat_ip_cidr_description": "tf-test-natipcidr",
-						"nat_ip_cidr_name":        name,
-						"nat_gateway_id":          CHECKSET,
+						"nat_ip_name":        name,
+						"nat_gateway_id":     acctest.CHECKSET,
+						"nat_ip_cidr":        acctest.CHECKSET,
+						"nat_ip":             "172.16.0.66",
+						"nat_ip_description": "tf",
 					}),
 				),
 			},
@@ -130,98 +135,91 @@ func TestAccAliCloudNatGatewayNatIpCidr_basic12366_twin(t *testing.T) {
 	})
 }
 
-var AliCloudNatGatewayNatIpCidrMap12366 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+var AliCloudNatGatewayNatIpMap9590 = map[string]string{
+	"status":    acctest.CHECKSET,
+	"nat_ip_id": acctest.CHECKSET,
 }
 
-func AliCloudNatGatewayNatIpCidrBasicDependence12366(name string) string {
+func AliCloudNatGatewayNatIpBasicDependence9590(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
 resource "alicloud_vpc" "vpc" {
   cidr_block = "172.16.0.0/12"
-  vpc_name   = "tf-natipcidr-test-vpc"
+  vpc_name   = "tf-test-nat-ip"
 }
 
 resource "alicloud_vswitch" "VSwitch" {
   vpc_id       = alicloud_vpc.vpc.id
-  zone_id      = data.alicloud_zones.default.zones.0.id
+  zone_id      = "eu-central-1b"
   cidr_block   = "172.16.0.0/24"
-  vswitch_name = "tf-test-natipcidr-vsw"
+  vswitch_name = "tf-test-nat-ip-vsw"
 }
 
 resource "alicloud_nat_gateway" "NATGateway" {
-  nat_gateway_name   = "tf-test-natipcidr"
-  nat_type           = "Enhanced"
-  vpc_id             = alicloud_vpc.vpc.id
-  vswitch_id         = alicloud_vswitch.VSwitch.id
-  network_type       = "intranet"
-  payment_type       = "PayAsYouGo"
+  vpc_id           = alicloud_vpc.vpc.id
+  nat_gateway_name = var.name
+  nat_type         = "Enhanced"
+  vswitch_id       = alicloud_vswitch.VSwitch.id
+  network_type     = "intranet"
 }
 
 
 `, name)
 }
 
-// Test NatGateway NatIpCidr. <<< Resource test cases, automatically generated.
+// Test NatGateway NatIp. <<< Resource test cases, automatically generated.
 
-func TestAccAliCloudVPCNatIpCidr_basic0(t *testing.T) {
+func TestAccAliCloudNatGatewayNatIp_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_vpc_nat_ip_cidr.default"
-	ra := resourceAttrInit(resourceId, AliCloudVPCNatIpCidrMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNatGatewayNatIpCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcnatipcidr%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCNatIpCidrBasicDependence0)
+	resourceId := "alicloud_vpc_nat_ip.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayNatIpMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNatGatewayNatIp")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcnatip%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayNatIpBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr":      "192.168.0.0/16",
-					"nat_gateway_id":   "${alicloud_nat_gateway.default.id}",
-					"nat_ip_cidr_name": name,
+					"nat_ip_cidr":    "${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr}",
+					"nat_gateway_id": "${alicloud_nat_gateway.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr":      "192.168.0.0/16",
-						"nat_gateway_id":   CHECKSET,
-						"nat_ip_cidr_name": name,
+						"nat_ip_cidr":    acctest.CHECKSET,
+						"nat_gateway_id": acctest.CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr_description": name,
+					"nat_ip_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr_description": name,
+						"nat_ip_description": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr_name": name + "_update",
+					"nat_ip_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr_name": name + "_update",
+						"nat_ip_name": name,
 					}),
 				),
 			},
@@ -235,39 +233,41 @@ func TestAccAliCloudVPCNatIpCidr_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudVPCNatIpCidr_basic0_twin(t *testing.T) {
+func TestAccAliCloudNatGatewayNatIp_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_vpc_nat_ip_cidr.default"
-	ra := resourceAttrInit(resourceId, AliCloudVPCNatIpCidrMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNatGatewayNatIpCidr")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcnatipcidr%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCNatIpCidrBasicDependence0)
+	resourceId := "alicloud_vpc_nat_ip.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayNatIpMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNatGatewayNatIp")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcnatip%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayNatIpBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"nat_ip_cidr":             "192.168.0.0/16",
-					"nat_gateway_id":          "${alicloud_nat_gateway.default.id}",
-					"nat_ip_cidr_name":        name,
-					"nat_ip_cidr_description": name,
-					"dry_run":                 "false",
+					"nat_gateway_id":     "${alicloud_nat_gateway.default.id}",
+					"nat_ip_cidr":        "${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr}",
+					"nat_ip":             "192.168.0.36",
+					"nat_ip_description": name,
+					"nat_ip_name":        name,
+					"dry_run":            "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"nat_ip_cidr":             "192.168.0.0/16",
-						"nat_gateway_id":          CHECKSET,
-						"nat_ip_cidr_name":        name,
-						"nat_ip_cidr_description": name,
+						"nat_gateway_id":     acctest.CHECKSET,
+						"nat_ip_cidr":        acctest.CHECKSET,
+						"nat_ip":             "192.168.0.36",
+						"nat_ip_description": name,
+						"nat_ip_name":        name,
 					}),
 				),
 			},
@@ -281,12 +281,13 @@ func TestAccAliCloudVPCNatIpCidr_basic0_twin(t *testing.T) {
 	})
 }
 
-var AliCloudVPCNatIpCidrMap0 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+var AliCloudNatGatewayNatIpMap0 = map[string]string{
+	"nat_ip":    acctest.CHECKSET,
+	"nat_ip_id": acctest.CHECKSET,
+	"status":    acctest.CHECKSET,
 }
 
-func AliCloudVPCNatIpCidrBasicDependence0(name string) string {
+func AliCloudNatGatewayNatIpBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -309,28 +310,35 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_nat_gateway" "default" {
-  vpc_id               = alicloud_vpc.default.id
-  internet_charge_type = "PayByLcu"
-  nat_gateway_name     = var.name
-  nat_type             = "Enhanced"
-  vswitch_id           = alicloud_vswitch.default.id
-  network_type         = "intranet"
+  vpc_id           = alicloud_vpc.default.id
+  nat_gateway_name = var.name
+  nat_type         = "Enhanced"
+  vswitch_id       = alicloud_vswitch.default.id
+  network_type     = "intranet"
+}
+
+resource "alicloud_vpc_nat_ip_cidr" "default" {
+  nat_ip_cidr             = "192.168.0.0/16"
+  nat_gateway_id          = alicloud_nat_gateway.default.id
+  nat_ip_cidr_description = var.name
+  nat_ip_cidr_name        = var.name
 }
 `, name)
 }
 
 // lintignore: R001
-func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_vpc_nat_ip_cidr"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_vpc_nat_ip_cidr"].Schema).Data(nil, nil)
+func TestUnitAliCloudNatGatewayNatIp(t *testing.T) {
+	p := acctest.Provider.ResourcesMap
+	d, _ := schema.InternalMap(p["alicloud_vpc_nat_ip"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_vpc_nat_ip"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
-		"nat_ip_cidr":             "nat_ip_cidr",
-		"nat_gateway_id":          "MockNatGatewayId",
-		"nat_ip_cidr_description": "nat_ip_cidr_description",
-		"nat_ip_cidr_name":        "nat_ip_cidr_name",
-		"dry_run":                 false,
+		"nat_ip":             "nat_ip",
+		"nat_ip_cidr":        "nat_ip_cidr",
+		"nat_gateway_id":     "MockNatGatewayId",
+		"nat_ip_description": "nat_ip_description",
+		"nat_ip_name":        "nat_ip_name",
+		"dry_run":            false,
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -338,20 +346,22 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
-		"NatIpCidrs": []interface{}{
+		"NatIps": []interface{}{
 			map[string]interface{}{
-				"NatGatewayId":         "MockNatGatewayId",
-				"NatIpCidr":            "nat_ip_cidr",
-				"NatIpCidrDescription": "nat_ip_cidr_description",
-				"NatIpStatus":          "Available",
-				"NatIpCidrName":        "nat_ip_cidr_name",
+				"NatGatewayId":     "MockNatGatewayId",
+				"NatIp":            "nat_ip",
+				"NatIpId":          "MockNatIpId",
+				"NatIpCidr":        "nat_ip_cidr",
+				"NatIpDescription": "nat_ip_description",
+				"NatIpStatus":      "Available",
+				"NatIpName":        "nat_ip_name",
 			},
 		},
 	}
@@ -359,9 +369,9 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -371,15 +381,15 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
 			result := ReadMockResponse
-			result["NatIpCidrId"] = "MockNatIpCidrId"
+			result["NatIpId"] = "MockNatIpId"
 			return result, nil
 		},
 		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
@@ -394,9 +404,9 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			result := ReadMockResponse
 			return result, nil
 		},
-		"ReadListNatIpCidrsNotFound": func(errorCode string) (map[string]interface{}, error) {
+		"ReadListNatIpsNotFound": func(errorCode string) (map[string]interface{}, error) {
 			result := map[string]interface{}{
-				"NatIpCidrs": []interface{}{},
+				"NatIps": []interface{}{},
 			}
 			return result, nil
 		},
@@ -405,13 +415,13 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrCreate(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -426,9 +436,9 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 				noRetryFlag = false
 				return responseMock["NoRetryError"]("NonRetryableError")
 			}
-			return responseMock["CreateNormal"]("")
+			return responseMock["Normal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrCreate(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -445,7 +455,7 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrCreate(dCreate, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Create(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -463,32 +473,32 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrCreate(dCreate, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Create(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
 	// Set ID for Update and Delete Method
-	d.SetId(fmt.Sprint(d.Get("nat_gateway_id"), ":", "MockNatIpCidrId"))
+	d.SetId(fmt.Sprint(d.Get("nat_gateway_id"), ":", "MockNatIpId"))
 	// Update
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
 
-		err := resourceAliCloudNatGatewayNatIpCidrUpdate(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Update(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
-	t.Run("UpdateNatGatewayNatIpCidrsAbnormal", func(t *testing.T) {
+	t.Run("UpdateVpcNatIpAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"nat_ip_cidr_description", "nat_ip_cidr_name", "dry_run"} {
-			switch p["alicloud_vpc_nat_ip_cidr"].Schema[key].Type {
+		for _, key := range []string{"nat_ip_description", "nat_ip_name", "dry_run"} {
+			switch p["alicloud_vpc_nat_ip"].Schema[key].Type {
 			case schema.TypeString:
 				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
@@ -499,7 +509,7 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_vpc_nat_ip_cidr"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc_nat_ip"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -513,14 +523,14 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrUpdate(resourceData1, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
-	t.Run("UpdateNatGatewayNatIpCidrsNormal", func(t *testing.T) {
+	t.Run("UpdateVpcNatIpNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"nat_ip_cidr_description", "nat_ip_cidr_name", "dry_run"} {
-			switch p["alicloud_vpc_nat_ip_cidr"].Schema[key].Type {
+		for _, key := range []string{"nat_ip_description", "nat_ip_name", "dry_run"} {
+			switch p["alicloud_vpc_nat_ip"].Schema[key].Type {
 			case schema.TypeString:
 				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
@@ -531,7 +541,7 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_vpc_nat_ip_cidr"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(p["alicloud_vpc_nat_ip"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := false
 		noRetryFlag := false
@@ -545,7 +555,7 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrUpdate(resourceData1, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -554,13 +564,13 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrDelete(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -577,7 +587,7 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrDelete(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -594,29 +604,33 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrDelete(d, rawClient)
+		patcheDescribeVpcNatIp := gomonkey.ApplyMethod(reflect.TypeOf(&natgateway.NATGatewayServiceV2{}), "DescribeNatGatewayNatIp", func(*natgateway.NATGatewayServiceV2, string) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NoRetryError")
+		})
+		err := p["alicloud_vpc_nat_ip"].Delete(d, rawClient)
 		patches.Reset()
-		assert.Nil(t, err)
+		patcheDescribeVpcNatIp.Reset()
+		assert.NotNil(t, err)
 	})
 
 	//Read
-	t.Run("ReadListNatIpCidrsNotFound", func(t *testing.T) {
+	t.Run("ReadListNatIpsNotFound", func(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			NotFoundFlag := true
 			noRetryFlag := false
 			if NotFoundFlag {
-				return responseMock["ReadListNatIpCidrsNotFound"]("")
+				return responseMock["ReadListNatIpsNotFound"]("")
 			} else if noRetryFlag {
 				return responseMock["NoRetryError"]("NoRetryError")
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrRead(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
 
-	t.Run("ReadListNatIpCidrsAbnormal", func(t *testing.T) {
+	t.Run("ReadDescribeDescribeVpcNatIpAbnormal", func(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			retryFlag := false
 			noRetryFlag := true
@@ -627,7 +641,7 @@ func TestUnitAliCloudVPCNatIpCidr(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayNatIpCidrRead(d, rawClient)
+		err := p["alicloud_vpc_nat_ip"].Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

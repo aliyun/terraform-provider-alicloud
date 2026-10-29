@@ -1,4 +1,4 @@
-package alicloud
+package natgateway
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -60,7 +64,7 @@ func resourceAliCloudNatGatewayForwardEntry() *schema.Resource {
 			"ip_protocol": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"any", "tcp", "udp"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"any", "tcp", "udp"}, false),
 			},
 			"port_break": {
 				Type:     schema.TypeBool,
@@ -95,7 +99,7 @@ func resourceAliCloudNatGatewayForwardEntryCreate(d *schema.ResourceData, meta i
 		request["ForwardTableId"] = v
 	}
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["InternalIp"] = d.Get("internal_ip")
 	request["IpProtocol"] = d.Get("ip_protocol")
@@ -110,11 +114,11 @@ func resourceAliCloudNatGatewayForwardEntryCreate(d *schema.ResourceData, meta i
 		request["ForwardEntryName"] = v
 	}
 	request["ExternalPort"] = d.Get("external_port")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "TaskConflict", "OperationUnsupported.EipInBinding", "IncorrectStatus", "InvalidIp.NotInNatgw"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"OperationConflict", "TaskConflict", "OperationUnsupported.EipInBinding", "IncorrectStatus", "InvalidIp.NotInNatgw"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -122,18 +126,18 @@ func resourceAliCloudNatGatewayForwardEntryCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_forward_entry", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_forward_entry", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["ForwardTableId"], response["ForwardEntryId"]))
 
 	nATGatewayServiceV2 := NATGatewayServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudNatGatewayForwardEntryRead(d, meta)
@@ -149,12 +153,12 @@ func resourceAliCloudNatGatewayForwardEntryRead(d *schema.ResourceData, meta int
 
 	objectRaw, err := nATGatewayServiceV2.DescribeNatGatewayForwardEntry(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_forward_entry DescribeNatGatewayForwardEntry Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("external_ip", objectRaw["ExternalIp"])
@@ -190,7 +194,7 @@ func resourceAliCloudNatGatewayForwardEntryUpdate(d *schema.ResourceData, meta i
 	request["ForwardTableId"] = parts[0]
 	request["ForwardEntryId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("internal_ip") {
 		update = true
 	}
@@ -231,11 +235,11 @@ func resourceAliCloudNatGatewayForwardEntryUpdate(d *schema.ResourceData, meta i
 		}
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationUnsupported.EipInBinding", "IncorretForwardEntryStatus"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"OperationUnsupported.EipInBinding", "IncorretForwardEntryStatus"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -243,14 +247,14 @@ func resourceAliCloudNatGatewayForwardEntryUpdate(d *schema.ResourceData, meta i
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		nATGatewayServiceV2 := NATGatewayServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -273,13 +277,13 @@ func resourceAliCloudNatGatewayForwardEntryDelete(d *schema.ResourceData, meta i
 	request["ForwardTableId"] = parts[0]
 	request["ForwardEntryId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.NATGW", "OperationConflict", "UnknownError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"IncorrectStatus.NATGW", "OperationConflict", "UnknownError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -287,19 +291,19 @@ func resourceAliCloudNatGatewayForwardEntryDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	nATGatewayServiceV2 := NATGatewayServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nATGatewayServiceV2.NatGatewayForwardEntryStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

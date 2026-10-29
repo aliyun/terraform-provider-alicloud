@@ -1,4 +1,4 @@
-package alicloud
+package natgateway
 
 import (
 	"fmt"
@@ -6,6 +6,11 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -62,7 +67,7 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Available", "Converting", "Creating", "Deleting", "Modifying"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -245,14 +250,14 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = helper.PageSizeLarge
 	}
 	var objects []interface{}
 	var natGatewayNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		natGatewayNameRegex = r
 	}
@@ -271,16 +276,16 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	for {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nat_gateways", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_nat_gateways", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.NatGateways.NatGateway", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NatGateways.NatGateway", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.NatGateways.NatGateway", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -352,36 +357,36 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 		id := fmt.Sprint(object["NatGatewayId"])
 		getResp, err := vpcService.ListTagResources(id, "NATGATEWAY")
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		mapping["tags"] = tagsToMap(getResp)
+		mapping["tags"] = tags.TagsToMap(getResp)
 
 		ids = append(ids, fmt.Sprint(object["NatGatewayId"]))
 		names = append(names, object["Name"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("gateways", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["TotalCount"])
+	total_countVal, err := convert.FormatInt(response["TotalCount"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -85,6 +85,8 @@ func (s *VpcServiceV2) VpcPublicIpAddressPoolStateRefreshFunc(id string, field s
 
 // DescribeVpcPublicIpAddressPool >>> Encapsulated.
 
+// SetResourceTags is also mirrored in alicloud/service/natgateway/service.go; this
+// root copy is retained because it is shared by other VPC resources.
 // SetResourceTags <<< Encapsulated tag function for Vpc.
 func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {

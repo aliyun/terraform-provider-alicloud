@@ -1,11 +1,13 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	natgateway "github.com/aliyun/terraform-provider-alicloud/alicloud/service/natgateway"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudNATGatewaySnatEntry_basic8016(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNATGatewaySnatEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,9 +40,9 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip":       CHECKSET,
-						"snat_table_id": CHECKSET,
-						"source_cidr":   CHECKSET,
+						"snat_ip":       acctest.CHECKSET,
+						"snat_table_id": acctest.CHECKSET,
+						"source_cidr":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -80,7 +82,7 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip": CHECKSET,
+						"snat_ip": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -96,21 +98,21 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8016(t *testing.T) {
 func TestAccAliCloudNATGatewaySnatEntry_basic8016_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNATGatewaySnatEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,9 +124,9 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8016_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip":         CHECKSET,
-						"snat_table_id":   CHECKSET,
-						"source_cidr":     CHECKSET,
+						"snat_ip":         acctest.CHECKSET,
+						"snat_table_id":   acctest.CHECKSET,
+						"source_cidr":     acctest.CHECKSET,
 						"snat_entry_name": name,
 						"eip_affinity":    "1",
 					}),
@@ -143,21 +145,21 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8016_twin(t *testing.T) {
 func TestAccAliCloudNATGatewaySnatEntry_basic8018(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNATGatewaySnatEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -167,9 +169,9 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8018(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip":           CHECKSET,
-						"snat_table_id":     CHECKSET,
-						"source_vswitch_id": CHECKSET,
+						"snat_ip":           acctest.CHECKSET,
+						"snat_table_id":     acctest.CHECKSET,
+						"source_vswitch_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -209,7 +211,7 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8018(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip": CHECKSET,
+						"snat_ip": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -225,21 +227,21 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8018(t *testing.T) {
 func TestAccAliCloudNATGatewaySnatEntry_basic8018_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_snat_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNATGatewaySnatEntryMap8016)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNATGatewaySnatEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgatewaysnatentry%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNATGatewaySnatEntryBasicDependence8016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -251,9 +253,9 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8018_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"snat_ip":           CHECKSET,
-						"snat_table_id":     CHECKSET,
-						"source_vswitch_id": CHECKSET,
+						"snat_ip":           acctest.CHECKSET,
+						"snat_table_id":     acctest.CHECKSET,
+						"source_vswitch_id": acctest.CHECKSET,
 						"snat_entry_name":   name,
 						"eip_affinity":      "1",
 					}),
@@ -269,8 +271,8 @@ func TestAccAliCloudNATGatewaySnatEntry_basic8018_twin(t *testing.T) {
 }
 
 var AliCloudNATGatewaySnatEntryMap8016 = map[string]string{
-	"snat_entry_id": CHECKSET,
-	"status":        CHECKSET,
+	"snat_entry_id": acctest.CHECKSET,
+	"status":        acctest.CHECKSET,
 }
 
 func AliCloudNATGatewaySnatEntryBasicDependence8016(name string) string {

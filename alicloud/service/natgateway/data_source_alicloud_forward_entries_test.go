@@ -1,81 +1,82 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVPCForwardEntriesDataSourceBasic(t *testing.T) {
-	rand := acctest.RandInt()
-	forwardTableIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	forwardTableIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 		}),
-		//fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		//FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 		//	"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}_fake"`,
 		//}),
 	}
 
-	externalIpConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	externalIpConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"external_ip":      ` "${alicloud_forward_entry.default.external_ip}_fake" `,
 		}),
 	}
 
-	internalIpConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	internalIpConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}_fake"`,
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}" ]`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"ids":              `[ "${alicloud_forward_entry.default.forward_entry_id}_fake" ]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"name_regex":       `"${alicloud_forward_entry.default.name}_fake"`,
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"status":           `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"status":           `"Deleting"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
@@ -83,7 +84,7 @@ func TestAccAlicloudVPCForwardEntriesDataSourceBasic(t *testing.T) {
 			"name_regex":       `"${alicloud_forward_entry.default.name}"`,
 			"status":           `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
 			"forward_table_id": `"${alicloud_forward_entry.default.forward_table_id}"`,
 			"external_ip":      `"${alicloud_forward_entry.default.external_ip}"`,
 			"internal_ip":      `"${alicloud_forward_entry.default.internal_ip}"`,
@@ -92,7 +93,7 @@ func TestAccAlicloudVPCForwardEntriesDataSourceBasic(t *testing.T) {
 			"status":           `"Deleting"`,
 		}),
 	}
-	forwardEntriesCheckInfo.dataSourceTestCheck(t, rand, forwardTableIdConf, externalIpConf, internalIpConf, idsConf, nameRegexConf, statusConf, allConf)
+	forwardEntriesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, natGatewayDataSourcePreCheck(t), forwardTableIdConf, externalIpConf, internalIpConf, idsConf, nameRegexConf, statusConf, allConf)
 
 }
 
@@ -160,8 +161,8 @@ var existForwardEntriesMapFunc = func(rand int) map[string]string {
 		"ids.#":                   "1",
 		"names.#":                 "1",
 		"entries.#":               "1",
-		"entries.0.id":            CHECKSET,
-		"entries.0.external_ip":   CHECKSET,
+		"entries.0.id":            acctest.CHECKSET,
+		"entries.0.external_ip":   acctest.CHECKSET,
 		"entries.0.external_port": "80",
 		"entries.0.internal_ip":   "172.16.0.3",
 		"entries.0.internal_port": "8080",
@@ -178,8 +179,8 @@ var fakeForwardEntriesMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var forwardEntriesCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_forward_entries.default",
-	existMapFunc: existForwardEntriesMapFunc,
-	fakeMapFunc:  fakeForwardEntriesMapFunc,
+var forwardEntriesCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_forward_entries.default",
+	ExistMapFunc: existForwardEntriesMapFunc,
+	FakeMapFunc:  fakeForwardEntriesMapFunc,
 }

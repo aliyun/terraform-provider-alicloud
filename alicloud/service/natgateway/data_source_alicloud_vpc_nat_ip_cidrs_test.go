@@ -1,75 +1,76 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVPCNatIpCidrsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 1000)
+	rand := tfacctest.RandIntRange(1, 1000)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip_cidr.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip_cidr.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"name_regex":     `"${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"name_regex":     `"${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}_fake"`,
 		}),
 	}
 
-	natIpCidrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+	natIpCidrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"nat_ip_cidrs":   `["${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"nat_ip_cidrs":   `["8.8.8.8/24"]`,
 		}),
 	}
 
-	natIpCidrNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+	natIpCidrNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id":   `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"nat_ip_cidr_name": `["${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id":   `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"nat_ip_cidr_name": `["${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}_fake"]`,
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip_cidr.default.id}"]`,
 			"status":         `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip_cidr.default.id}_fake"]`,
 			"status":         `"Available"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id":   `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"ids":              `["${alicloud_vpc_nat_ip_cidr.default.id}"]`,
 			"name_regex":       `"${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}"`,
@@ -77,7 +78,7 @@ func TestAccAlicloudVPCNatIpCidrsDataSource(t *testing.T) {
 			"nat_ip_cidr_name": `["${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}"]`,
 			"status":           `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand, map[string]string{
 			"nat_gateway_id":   `"${alicloud_vpc_nat_ip_cidr.default.nat_gateway_id}"`,
 			"ids":              `["${alicloud_vpc_nat_ip_cidr.default.id}_fake"]`,
 			"name_regex":       `"${alicloud_vpc_nat_ip_cidr.default.nat_ip_cidr_name}_fake"`,
@@ -103,13 +104,13 @@ func TestAccAlicloudVPCNatIpCidrsDataSource(t *testing.T) {
 			"cidrs.#": "0",
 		}
 	}
-	var alicloudVpcNatIpCidrCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_vpc_nat_ip_cidrs.default",
-		existMapFunc: existDataAlicloudVpcNatIpCidrsSourceNameMapFunc,
-		fakeMapFunc:  fakeDataAlicloudVpcNatIpCidrsSourceNameMapFunc,
+	var alicloudVpcNatIpCidrCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_vpc_nat_ip_cidrs.default",
+		ExistMapFunc: existDataAlicloudVpcNatIpCidrsSourceNameMapFunc,
+		FakeMapFunc:  fakeDataAlicloudVpcNatIpCidrsSourceNameMapFunc,
 	}
 
-	alicloudVpcNatIpCidrCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, natIpCidrConf, natIpCidrNameConf, statusConf, allConf)
+	alicloudVpcNatIpCidrCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, natGatewayDataSourcePreCheck(t), idsConf, nameRegexConf, natIpCidrConf, natIpCidrNameConf, statusConf, allConf)
 }
 func testAccCheckAlicloudVpcNatIpCidrDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

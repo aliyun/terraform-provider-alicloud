@@ -1,4 +1,4 @@
-package alicloud
+package natgateway
 
 import (
 	"fmt"
@@ -8,6 +8,11 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -49,7 +54,7 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"PayByLcu", "PayBySpec"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayByLcu", "PayBySpec"}, false),
 			},
 			"nat_gateway_name": {
 				Type:          schema.TypeString,
@@ -68,14 +73,14 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Enhanced", "Normal"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Enhanced", "Normal"}, false),
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ForceNew:      true,
 				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc:  validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				ConflictsWith: []string{"instance_charge_type"},
 			},
 			"instance_charge_type": {
@@ -83,7 +88,7 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Optional:      true,
 				ForceNew:      true,
 				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ValidateFunc:  validators.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 				ConflictsWith: []string{"payment_type"},
 				Deprecated:    "Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.",
 			},
@@ -103,7 +108,7 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("internet_charge_type").(string) == "PayByLcu"
 				},
@@ -112,7 +117,7 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -134,13 +139,13 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"internet", "intranet"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"internet", "intranet"}, false),
 			},
 			"eip_bind_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"MULTI_BINDED", "NAT"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"MULTI_BINDED", "NAT"}, false),
 			},
 			"icmp_reply_enabled": {
 				Type:     schema.TypeBool,
@@ -180,7 +185,7 @@ func resourceAliCloudNatGateway() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"CrossAZ", "SingleAZ"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"CrossAZ", "SingleAZ"}, false),
 			},
 		},
 	}
@@ -264,7 +269,7 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 
 		accessModeJson, err := convertMaptoJsonString(accessModeMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["AccessMode"] = accessModeJson
@@ -274,12 +279,12 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		request["AvailabilityMode"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
-		request["ClientToken"] = buildClientToken("CreateNatGateway")
+		request["ClientToken"] = helper.BuildClientToken("CreateNatGateway")
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError", "IncorrectStatus.VSWITCH", "OperationConflict"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError", "IncorrectStatus.VSWITCH", "OperationConflict"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -287,17 +292,17 @@ func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nat_gateway", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_nat_gateway", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["NatGatewayId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudNatGatewayUpdate(d, meta)
@@ -309,12 +314,12 @@ func resourceAliCloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 
 	object, err := vpcService.DescribeNatGateway(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_nat_gateway vpcService.DescribeNatGateway Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("description", object["Description"])
@@ -335,9 +340,9 @@ func resourceAliCloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("eip_bind_mode", object["EipBindMode"])
 	d.Set("availability_mode", object["AvailabilityMode"])
 	//if object["InstanceChargeType"] == "PrePaid" {
-	//	period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
+	//	period, err := helper.ComputePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
 	//	if err != nil {
-	//		return WrapError(err)
+	//		return errs.WrapError(err)
 	//	}
 	//	d.Set("period", period)
 	//}
@@ -355,10 +360,10 @@ func resourceAliCloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 
 	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "NATGATEWAY")
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("tags", tags.TagsToMap(listTagResourcesObject))
 	d.Set("deletion_protection", object["DeletionProtection"])
 	d.Set("icmp_reply_enabled", object["IcmpReplyEnabled"])
 	d.Set("private_link_enabled", object["PrivateLinkEnabled"])
@@ -394,7 +399,7 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("tags") {
 		if err := vpcServiceV2.SetResourceTags(d, "NATGATEWAY"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -408,12 +413,12 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			"Type":             "NATGW",
 		}
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -421,10 +426,10 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
@@ -461,11 +466,11 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		action := "ModifyNatGatewayAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.NATGW"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectStatus.NATGW"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -473,15 +478,15 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
@@ -493,11 +498,11 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		request["RegionId"] = client.RegionId
 		request["Spec"] = d.Get("specification")
 		action := "ModifyNatGatewaySpec"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.NatGateway"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectStatus.NatGateway"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -505,15 +510,15 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
@@ -535,12 +540,12 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			updateNatGatewayNatTypeReq["DryRun"] = d.Get("dry_run")
 		}
 		action := "UpdateNatGatewayNatType"
-		updateNatGatewayNatTypeReq["ClientToken"] = buildClientToken("UpdateNatGatewayNatType")
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		updateNatGatewayNatTypeReq["ClientToken"] = helper.BuildClientToken("UpdateNatGatewayNatType")
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, updateNatGatewayNatTypeReq, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationFailed.NatGwRouteInMiddleStatus", "TaskConflict", "UnknownError"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"OperationFailed.NatGwRouteInMiddleStatus", "TaskConflict", "UnknownError"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -548,15 +553,15 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, updateNatGatewayNatTypeReq)
+		logs.AddDebug(action, response, updateNatGatewayNatTypeReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
@@ -568,7 +573,7 @@ func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
-		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+		return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	client := meta.(*connectivity.AliyunClient)
@@ -584,11 +589,11 @@ func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 		request["Force"] = v
 	}
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages", "DependencyViolation.EIPS", "OperationConflict"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages", "DependencyViolation.EIPS", "OperationConflict"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -596,18 +601,18 @@ func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "IncorrectStatus.NatGateway", "InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "IncorrectStatus.NatGateway", "InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

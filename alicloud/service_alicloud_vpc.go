@@ -16,39 +16,7 @@ type VpcService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *VpcService) DescribeNatGateway(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
-	client := s.client
-	action := "DescribeNatGateways"
-	request := map[string]interface{}{
-		"RegionId":     s.client.RegionId,
-		"NatGatewayId": id,
-	}
-	response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
-			err = WrapErrorf(NotFoundErr("NatGateway", id), NotFoundMsg, ProviderERROR)
-			return object, err
-		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
-	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$.NatGateways.NatGateway", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NatGateways.NatGateway", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("VPC", id), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["NatGatewayId"].(string) != id {
-			return object, WrapErrorf(NotFoundErr("VPC", id), NotFoundWithResponse, response)
-		}
-	}
-	object = v.([]interface{})[0].(map[string]interface{})
-	return object, nil
-}
-
+// DescribeNatGateway migrated to alicloud/service/natgateway/service.go (VpcService).
 func (s *VpcService) DescribeVpc(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
@@ -894,25 +862,7 @@ func (s *VpcService) HavipStateRefreshFunc(id string, failStates []string) retry
 	}
 }
 
-func (s *VpcService) NatGatewayStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeNatGateway(id)
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		for _, failState := range failStates {
-			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
-			}
-		}
-		return object, object["Status"].(string), nil
-	}
-}
+// NatGatewayStateRefreshFunc migrated to alicloud/service/natgateway/service.go (VpcService).
 
 func (s *VpcService) NetworkAclStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {

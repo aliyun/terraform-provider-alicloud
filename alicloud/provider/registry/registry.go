@@ -111,6 +111,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mscopensubscription"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/nas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/natgateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/nlb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oceanbasepro"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ons"
@@ -202,6 +203,7 @@ var servicePackages = []conns.ServicePackage{
 	cloudcontrol.ServicePackage(),
 	cloudfirewall.ServicePackage(),
 	cloudfw.ServicePackage(),
+	natgateway.ServicePackage(),
 	cloudphone.ServicePackage(),
 	cloudsso.ServicePackage(),
 	cms.ServicePackage(),
