@@ -70,6 +70,12 @@ func resourceAliCloudPolarDbParameterGroup() *schema.Resource {
 					},
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"name": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -118,6 +124,10 @@ func resourceAliCloudPolarDbParameterGroupCreate(d *schema.ResourceData, meta in
 
 	if v, ok := d.GetOk("parameter_group_name"); ok {
 		request["ParameterGroupName"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
