@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
@@ -27,6 +25,9 @@ const (
 	accessPointPolicyTypeName = "alicloud_oss_access_point_policy"
 	accessPointPolicyAction   = "/?accessPointPolicy"
 
+	accessPointPolicyProduct    = "Oss"
+	accessPointPolicyAPIVersion = "2019-05-17"
+
 	// accessPointPolicyTimeout bounds the retry envelope of the policy writes
 	// (Put and Delete); the read has its own one-minute budget.
 	accessPointPolicyTimeout = 5 * time.Minute
@@ -42,23 +43,8 @@ func NewAccessPointPolicyResource() resource.Resource {
 	return &accessPointPolicyResource{}
 }
 
-// accessPointPolicyClient is the OSS client primitive the resource calls; it
-// makes the wire requests replaceable in unit tests.
-type accessPointPolicyClient interface {
-	Do(apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, autoRetry bool) (map[string]interface{}, error)
-}
-
 type accessPointPolicyResource struct {
 	fwadapt.ResourceBase
-
-	client accessPointPolicyClient
-}
-
-func (r *accessPointPolicyResource) policyClient() accessPointPolicyClient {
-	if r.client != nil {
-		return r.client
-	}
-	return r.Client()
 }
 
 type accessPointPolicyResourceModel struct {
@@ -70,21 +56,6 @@ type accessPointPolicyResourceModel struct {
 
 func (r *accessPointPolicyResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = accessPointPolicyTypeName
-}
-
-// Configure takes the provider client through the standard Framework hook. The
-// Do-shaped seam is accepted here as well so lifecycle tests can drive the
-// resource through its public factory with a wire-level fake.
-func (r *accessPointPolicyResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*connectivity.AliyunClient); ok {
-		r.ResourceBase.Configure(ctx, resource.ConfigureRequest{ProviderData: client}, resp)
-		return
-	}
-	if api, ok := req.ProviderData.(accessPointPolicyClient); ok {
-		r.client = api
-		return
-	}
-	r.ResourceBase.Configure(ctx, req, resp)
 }
 
 func (r *accessPointPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -127,8 +98,7 @@ func (r *accessPointPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	bucket := plan.Bucket.ValueString()
 	accessPointName := plan.AccessPointName.ValueString()
-	client := r.policyClient()
-	if err := putAccessPointPolicy(client, bucket, accessPointName, plan.Policy.ValueString()); err != nil {
+	if err := r.putAccessPointPolicy(bucket, accessPointName, plan.Policy.ValueString()); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling PutAccessPointPolicy", accessPointPolicyTypeName),
 			errs.WrapErrorf(err, "Creating %s: calling PutAccessPointPolicy", accessPointPolicyTypeName).Error(),
@@ -153,7 +123,7 @@ func (r *accessPointPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	object, err := describeAccessPointPolicy(client, id)
+	object, err := r.describeAccessPointPolicy(id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetAccessPointPolicy", accessPointPolicyTypeName),
@@ -183,7 +153,7 @@ func (r *accessPointPolicyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	id := state.Id.ValueString()
-	object, err := describeAccessPointPolicy(r.policyClient(), id)
+	object, err := r.describeAccessPointPolicy(id)
 	if err != nil {
 		if errs.NotFoundError(err) {
 			resp.State.RemoveResource(ctx)
@@ -215,9 +185,8 @@ func (r *accessPointPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	client := r.policyClient()
 	if !plan.Policy.Equal(state.Policy) {
-		if err := putAccessPointPolicy(client, state.Bucket.ValueString(), state.AccessPointName.ValueString(), plan.Policy.ValueString()); err != nil {
+		if err := r.putAccessPointPolicy(state.Bucket.ValueString(), state.AccessPointName.ValueString(), plan.Policy.ValueString()); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Updating %s: calling PutAccessPointPolicy", accessPointPolicyTypeName),
 				errs.WrapErrorf(err, "Updating %s: calling PutAccessPointPolicy", accessPointPolicyTypeName).Error(),
@@ -226,7 +195,7 @@ func (r *accessPointPolicyResource) Update(ctx context.Context, req resource.Upd
 		}
 	}
 
-	object, err := describeAccessPointPolicy(client, state.Id.ValueString())
+	object, err := r.describeAccessPointPolicy(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetAccessPointPolicy", accessPointPolicyTypeName),
@@ -254,7 +223,7 @@ func (r *accessPointPolicyResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	err := deleteAccessPointPolicy(r.policyClient(), state.Bucket.ValueString(), state.AccessPointName.ValueString(), state.Id.ValueString())
+	err := r.deleteAccessPointPolicy(state.Bucket.ValueString(), state.AccessPointName.ValueString(), state.Id.ValueString())
 	if err != nil {
 		if errs.NotFoundError(err) || errs.IsExpectedErrors(err, []string{"NoSuchAccessPointPolicy", "NoSuchAccessPoint"}) {
 			return
@@ -271,54 +240,9 @@ func (r *accessPointPolicyResource) ImportState(ctx context.Context, req resourc
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// DescribeAccessPointPolicy fetches the policy document attached to an access
+// describeAccessPointPolicy fetches the policy document attached to an access
 // point. The id is the resource id: <bucket>:<access_point_name>.
-func DescribeAccessPointPolicy(client *connectivity.AliyunClient, id string) (map[string]interface{}, error) {
-	return describeAccessPointPolicy(client, id)
-}
-
-func parseAccessPointPolicyId(id string) (bucket, accessPointName string, err error) {
-	parts := strings.Split(id, ":")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", fmt.Errorf("invalid Resource Id %s. Expected bucket:access_point_name, got %s", id, id)
-	}
-	return parts[0], parts[1], nil
-}
-
-func accessPointPolicyQuery(accessPointName string) map[string]*string {
-	return map[string]*string{
-		"x-oss-access-point-name": helper.StringPointer(accessPointName),
-	}
-}
-
-func accessPointPolicyHostMap(bucket string) map[string]*string {
-	return map[string]*string{
-		"bucket": helper.StringPointer(bucket),
-	}
-}
-
-func putAccessPointPolicy(client accessPointPolicyClient, bucket, accessPointName, policy string) error {
-	query := accessPointPolicyQuery(accessPointName)
-	hostMap := accessPointPolicyHostMap(bucket)
-	var response map[string]interface{}
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err := retry.Retry(accessPointPolicyTimeout, func() *retry.RetryError {
-		var requestErr error
-		response, requestErr = client.Do("Oss", helper.JsonXmlParam("PUT", "2019-05-17", "PutAccessPointPolicy", accessPointPolicyAction), query, policy, nil, hostMap, false)
-		if requestErr != nil {
-			if helper.NeedRetry(requestErr) {
-				wait()
-				return retry.RetryableError(requestErr)
-			}
-			return retry.NonRetryableError(requestErr)
-		}
-		return nil
-	})
-	logs.AddDebug(accessPointPolicyAction, response, policy)
-	return err
-}
-
-func describeAccessPointPolicy(client accessPointPolicyClient, id string) (map[string]interface{}, error) {
+func (r *accessPointPolicyResource) describeAccessPointPolicy(id string) (map[string]interface{}, error) {
 	bucket, accessPointName, err := parseAccessPointPolicyId(id)
 	if err != nil {
 		return nil, errs.WrapError(err)
@@ -329,7 +253,7 @@ func describeAccessPointPolicy(client accessPointPolicyClient, id string) (map[s
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		var requestErr error
-		response, requestErr = client.Do("Oss", helper.XmlJsonParam("GET", "2019-05-17", "GetAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, true)
+		response, requestErr = r.Client().Do(accessPointPolicyProduct, helper.XmlJsonParam("GET", accessPointPolicyAPIVersion, "GetAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, true)
 		if requestErr != nil {
 			if helper.NeedRetry(requestErr) {
 				wait()
@@ -360,14 +284,55 @@ func describeAccessPointPolicy(client accessPointPolicyClient, id string) (map[s
 	return response, nil
 }
 
-func deleteAccessPointPolicy(client accessPointPolicyClient, bucket, accessPointName, id string) error {
+func parseAccessPointPolicyId(id string) (bucket, accessPointName string, err error) {
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid Resource Id %s. Expected bucket:access_point_name, got %s", id, id)
+	}
+	return parts[0], parts[1], nil
+}
+
+func accessPointPolicyQuery(accessPointName string) map[string]*string {
+	return map[string]*string{
+		"x-oss-access-point-name": helper.StringPointer(accessPointName),
+	}
+}
+
+func accessPointPolicyHostMap(bucket string) map[string]*string {
+	return map[string]*string{
+		"bucket": helper.StringPointer(bucket),
+	}
+}
+
+func (r *accessPointPolicyResource) putAccessPointPolicy(bucket, accessPointName, policy string) error {
 	query := accessPointPolicyQuery(accessPointName)
 	hostMap := accessPointPolicyHostMap(bucket)
 	var response map[string]interface{}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err := retry.Retry(accessPointPolicyTimeout, func() *retry.RetryError {
 		var requestErr error
-		response, requestErr = client.Do("Oss", helper.JsonXmlParam("DELETE", "2019-05-17", "DeleteAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, false)
+		response, requestErr = r.Client().Do(accessPointPolicyProduct, helper.JsonXmlParam("PUT", accessPointPolicyAPIVersion, "PutAccessPointPolicy", accessPointPolicyAction), query, policy, nil, hostMap, false)
+		if requestErr != nil {
+			if helper.NeedRetry(requestErr) {
+				wait()
+				return retry.RetryableError(requestErr)
+			}
+			return retry.NonRetryableError(requestErr)
+		}
+		return nil
+	})
+	logs.AddDebug(accessPointPolicyAction, response, policy)
+	return err
+}
+
+func (r *accessPointPolicyResource) deleteAccessPointPolicy(bucket, accessPointName, id string) error {
+	query := accessPointPolicyQuery(accessPointName)
+	hostMap := accessPointPolicyHostMap(bucket)
+	var response map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err := retry.Retry(accessPointPolicyTimeout, func() *retry.RetryError {
+		var requestErr error
+		response, requestErr = r.Client().Do(accessPointPolicyProduct, helper.JsonXmlParam("DELETE", accessPointPolicyAPIVersion, "DeleteAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, false)
 		if requestErr != nil {
 			// A policy operation can race the access point creation, as with the
 			// flat alicloud_oss_access_point resource; retry that conflict.
@@ -408,30 +373,23 @@ func accessPointPolicyStateFromId(object map[string]interface{}, id string) (acc
 }
 
 // jsonTemplateEquivalentModifier keeps the prior state value in the plan when
-// the planned policy differs from it only in JSON formatting (key order or
-// whitespace), so an equivalent document is not reported as a change.
+// the planned policy differs only in JSON formatting, so an equivalent
+// document is not reported as a change.
 type jsonTemplateEquivalentModifier struct{}
 
-func (jsonTemplateEquivalentModifier) Description(ctx context.Context) string {
-	return "Suppresses changes when both policy documents are semantically equivalent JSON."
+func (jsonTemplateEquivalentModifier) Description(context.Context) string {
+	return "Keeps the current value when the planned policy is an equivalent JSON document."
 }
 
-func (jsonTemplateEquivalentModifier) MarkdownDescription(ctx context.Context) string {
-	return jsonTemplateEquivalentModifier{}.Description(ctx)
+func (m jsonTemplateEquivalentModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
 }
 
 func (jsonTemplateEquivalentModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+	if req.PlanValue.IsUnknown() || req.PlanValue.IsNull() || req.StateValue.IsUnknown() || req.StateValue.IsNull() {
 		return
 	}
-	if req.PlanValue.IsUnknown() || req.StateValue.IsUnknown() || req.StateValue.IsNull() {
-		return
-	}
-	if req.PlanValue.Equal(req.StateValue) {
-		return
-	}
-	equivalent, err := helper.CompareJsonTemplateAreEquivalent(req.StateValue.ValueString(), req.PlanValue.ValueString())
-	if err == nil && equivalent {
+	if equal, err := helper.CompareJsonTemplateAreEquivalent(req.StateValue.ValueString(), req.PlanValue.ValueString()); err == nil && equal {
 		resp.PlanValue = req.StateValue
 	}
 }
