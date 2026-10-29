@@ -1026,9 +1026,6 @@ func Provider() *schema.Provider {
 
 			// tsdb
 
-			// video
-			"alicloud_video_surveillance_system_groups": dataSourceAlicloudVideoSurveillanceSystemGroups(),
-
 			// vod
 
 			// vpc
@@ -1067,9 +1064,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpn_pbr_route_entries":             dataSourceAlicloudVpnPbrRouteEntries(),
 			"alicloud_vpn_gateway_vpn_attachments":       dataSourceAliCloudVpnGatewayVpnAttachments(),
 			"alicloud_vpn_gateway_vco_routes":            dataSourceAlicloudVpnGatewayVcoRoutes(),
-
-			// vs
-			"alicloud_vs_service": dataSourceAlicloudVsService(),
 
 			// vswitches
 			"alicloud_vswitches": dataSourceAlicloudVswitches(),
@@ -2275,9 +2269,6 @@ func Provider() *schema.Provider {
 			"alicloud_threat_detection_instance":                           resourceAliCloudThreatDetectionInstance(),
 
 			// tsdb
-
-			// video
-			"alicloud_video_surveillance_system_group": resourceAlicloudVideoSurveillanceSystemGroup(),
 
 			// vod
 

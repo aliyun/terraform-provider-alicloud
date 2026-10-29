@@ -1,4 +1,4 @@
-package alicloud
+package videosurveillancesystem
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudVideoSurveillanceSystemGroups() *schema.Resource {
+func DataSourceVideoSurveillanceSystemGroups() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudVideoSurveillanceSystemGroupsRead,
+		Read: dataSourceVideoSurveillanceSystemGroupsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -142,7 +145,7 @@ func dataSourceAlicloudVideoSurveillanceSystemGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudVideoSurveillanceSystemGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceVideoSurveillanceSystemGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeGroups"
@@ -159,14 +162,14 @@ func dataSourceAlicloudVideoSurveillanceSystemGroupsRead(d *schema.ResourceData,
 	if v, ok := d.GetOk("status"); ok {
 		request["Status"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNum"] = 1
 	var objects []map[string]interface{}
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -183,11 +186,11 @@ func dataSourceAlicloudVideoSurveillanceSystemGroupsRead(d *schema.ResourceData,
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("vs", "2018-12-12", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -195,13 +198,13 @@ func dataSourceAlicloudVideoSurveillanceSystemGroupsRead(d *schema.ResourceData,
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_video_surveillance_system_groups", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_video_surveillance_system_groups", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Groups", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Groups", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -216,7 +219,7 @@ func dataSourceAlicloudVideoSurveillanceSystemGroupsRead(d *schema.ResourceData,
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1
@@ -253,18 +256,18 @@ func dataSourceAlicloudVideoSurveillanceSystemGroupsRead(d *schema.ResourceData,
 		names = append(names, object["Name"])
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
