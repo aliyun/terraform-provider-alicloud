@@ -764,12 +764,6 @@ func Provider() *schema.Provider {
 			"alicloud_mongodb_sharding_audit_filters":             dataSourceAlicloudMongodbShardingAuditFilters(),
 			"alicloud_mongodb_backups":                            dataSourceAliCloudMongodbBackups(),
 
-			// msc
-			"alicloud_msc_sub_contacts":                     dataSourceAlicloudMscSubContacts(),
-			"alicloud_msc_sub_subscriptions":                dataSourceAlicloudMscSubSubscriptions(),
-			"alicloud_msc_sub_webhooks":                     dataSourceAlicloudMscSubWebhooks(),
-			"alicloud_msc_sub_contact_verification_message": dataSourceAlicloudMscSubContactVerificationMessage(),
-
 			// mse
 
 			// nas
@@ -1886,11 +1880,6 @@ func Provider() *schema.Provider {
 			"alicloud_mongodb_sharding_network_public_address":  resourceAlicloudMongodbShardingNetworkPublicAddress(),
 			"alicloud_mongodb_sharding_network_private_address": resourceAliCloudMongodbShardingNetworkPrivateAddress(),
 			"alicloud_mongodb_backup":                           resourceAliCloudMongodbBackup(),
-
-			// msc
-			"alicloud_msc_sub_contact":      resourceAlicloudMscSubContact(),
-			"alicloud_msc_sub_subscription": resourceAlicloudMscSubSubscription(),
-			"alicloud_msc_sub_webhook":      resourceAlicloudMscSubWebhook(),
 
 			// mse
 

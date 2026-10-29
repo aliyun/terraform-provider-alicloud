@@ -1,28 +1,26 @@
-package alicloud
+package mscopensubscription_test
 
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudMscSubContactVerificationMessageeDataSource(t *testing.T) {
+func TestAccAliCloudMscSubContactVerificationMessageeDataSource(t *testing.T) {
 	resourceId := "data.alicloud_msc_sub_contact_verification_message.default"
-	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "NEED_REAL_MOBILE")
+			acctest.PreCheck(t)
+			acctest.PreCheckWithEnvVariable(t, "NEED_REAL_MOBILE")
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudMscSubContactVerificationMessageDataSource,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"id":     CHECKSET,
-						"status": "Success",
-					}),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttr(resourceId, "status", "Success"),
 				),
 			},
 		},

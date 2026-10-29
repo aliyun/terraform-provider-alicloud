@@ -1,4 +1,4 @@
-package alicloud
+package mscopensubscription
 
 import (
 	"fmt"
@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudMscSubSubscription() *schema.Resource {
+func ResourceSubscription() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMscSubSubscriptionCreate,
-		Read:   resourceAlicloudMscSubSubscriptionRead,
-		Update: resourceAlicloudMscSubSubscriptionUpdate,
-		Delete: resourceAlicloudMscSubSubscriptionDelete,
+		Create: resourceSubscriptionCreate,
+		Read:   resourceSubscriptionRead,
+		Update: resourceSubscriptionUpdate,
+		Delete: resourceSubscriptionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -74,7 +78,7 @@ func resourceAlicloudMscSubSubscription() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMscSubSubscriptionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSubscriptionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateSubscriptionItem"
@@ -82,11 +86,11 @@ func resourceAlicloudMscSubSubscriptionCreate(d *schema.ResourceData, meta inter
 	var err error
 	request["ItemName"] = d.Get("item_name")
 	request["Locale"] = "en"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -94,37 +98,37 @@ func resourceAlicloudMscSubSubscriptionCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_subscription", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_msc_sub_subscription", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	responseSubscriptionItem := make(map[string]interface{}, 0)
 	if v, ok := response["SubscriptionItem"].(map[string]interface{}); ok {
 		responseSubscriptionItem = v
 	}
 	if len(responseSubscriptionItem) == 0 {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_subscription", action, fmt.Sprintf("The item name %s does not support subscription.", request["ItemName"]))
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_msc_sub_subscription", action, fmt.Sprintf("The item name %s does not support subscription.", request["ItemName"]))
 	}
 	d.SetId(fmt.Sprint(responseSubscriptionItem["ItemId"]))
 
-	return resourceAlicloudMscSubSubscriptionUpdate(d, meta)
+	return resourceSubscriptionUpdate(d, meta)
 }
-func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSubscriptionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mscOpenSubscriptionService := MscOpenSubscriptionService{client}
-	object, err := mscOpenSubscriptionService.DescribeMscSubSubscription(d.Id())
+	mscOpenSubscriptionService := NewService(client)
+	object, err := mscOpenSubscriptionService.DescribeSubscription(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_msc_sub_subscription mscOpenSubscriptionService.DescribeMscSubSubscription Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_msc_sub_subscription mscOpenSubscriptionService.DescribeSubscription Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("channel", object["Channel"])
 
 	if contactIds, ok := object["ContactIds"]; ok && contactIds != nil {
-		contact_idsVal, err := convertJsonStringToStringList(contactIds)
+		contact_idsVal, err := convert.ConvertJsonStringToStringList(contactIds)
 		if err != nil {
 			return err
 		}
@@ -132,7 +136,7 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 	}
 	d.Set("description", object["Description"])
 	if v, ok := object["EmailStatus"]; ok {
-		email_statusVal, err := formatInt(v)
+		email_statusVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -140,21 +144,21 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 	}
 	d.Set("item_name", object["ItemName"])
 	if v, ok := object["PmsgStatus"]; ok {
-		pmsg_statusVal, err := formatInt(v)
+		pmsg_statusVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
 		d.Set("pmsg_status", pmsg_statusVal)
 	}
 	if v, ok := object["SmsStatus"]; ok {
-		sms_statusVal, err := formatInt(v)
+		sms_statusVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
 		d.Set("sms_status", sms_statusVal)
 	}
 	if v, ok := object["TtsStatus"]; ok {
-		tts_statusVal, err := formatInt(v)
+		tts_statusVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -162,14 +166,14 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 	}
 
 	if webhookIds, ok := object["WebhookIds"]; ok && webhookIds != nil {
-		webhook_idsVal, err := convertJsonStringToStringList(webhookIds)
+		webhook_idsVal, err := convert.ConvertJsonStringToStringList(webhookIds)
 		if err != nil {
 			return err
 		}
 		d.Set("webhook_ids", webhook_idsVal)
 	}
 	if v, ok := object["WebhookStatus"]; ok {
-		webhook_statusVal, err := formatInt(v)
+		webhook_statusVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -177,7 +181,7 @@ func resourceAlicloudMscSubSubscriptionRead(d *schema.ResourceData, meta interfa
 	}
 	return nil
 }
-func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSubscriptionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -218,7 +222,7 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 	if d.HasChange("contact_ids") {
 		update = true
 		if v, ok := d.GetOk("contact_ids"); ok {
-			request["ContactIds"] = convertListToJsonString(v.(*schema.Set).List())
+			request["ContactIds"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 		}
 	}
 	request["Locale"] = "en"
@@ -226,18 +230,18 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 	if d.HasChange("webhook_ids") {
 		update = true
 		if v, ok := d.GetOk("webhook_ids"); ok {
-			request["WebhookIds"] = convertListToJsonString(v.([]interface{}))
+			request["WebhookIds"] = convert.ConvertListToJsonString(v.([]interface{}))
 		}
 	}
 
 	if update {
 		action := "UpdateSubscriptionItem"
-		request["ClientToken"] = buildClientToken("UpdateSubscriptionItem")
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		request["ClientToken"] = helper.BuildClientToken("UpdateSubscriptionItem")
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -245,15 +249,15 @@ func resourceAlicloudMscSubSubscriptionUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudMscSubSubscriptionRead(d, meta)
+	return resourceSubscriptionRead(d, meta)
 }
-func resourceAlicloudMscSubSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudMscSubSubscription. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceSubscriptionDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceSubscription. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

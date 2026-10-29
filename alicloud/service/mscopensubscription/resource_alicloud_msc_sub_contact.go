@@ -1,4 +1,4 @@
-package alicloud
+package mscopensubscription
 
 import (
 	"fmt"
@@ -7,17 +7,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudMscSubContact() *schema.Resource {
+func ResourceContact() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMscSubContactCreate,
-		Read:   resourceAlicloudMscSubContactRead,
-		Update: resourceAlicloudMscSubContactUpdate,
-		Delete: resourceAlicloudMscSubContactDelete,
+		Create: resourceContactCreate,
+		Read:   resourceContactRead,
+		Update: resourceContactUpdate,
+		Delete: resourceContactDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -47,54 +51,54 @@ func resourceAlicloudMscSubContact() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceContactCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
 	request["ContactName"] = d.Get("contact_name")
 	request["Email"] = d.Get("email")
 	request["Mobile"] = d.Get("mobile")
 	request["Position"] = d.Get("position")
-	request["ClientToken"] = buildClientToken("CreateContact")
+	request["ClientToken"] = helper.BuildClientToken("CreateContact")
 	request["Locale"] = "en"
 	var response map[string]interface{}
 	var err error
 	action := "CreateContact"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_msc_sub_contact", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_msc_sub_contact", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	contactId, err := formatInt(response["ContactId"])
+	contactId, err := convert.FormatInt(response["ContactId"])
 	if err != nil {
 		return err
 	}
 	d.SetId(fmt.Sprint(contactId))
 
-	return resourceAlicloudMscSubContactRead(d, meta)
+	return resourceContactRead(d, meta)
 }
-func resourceAlicloudMscSubContactRead(d *schema.ResourceData, meta interface{}) error {
+func resourceContactRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mscOpenSubscriptionService := MscOpenSubscriptionService{client}
-	object, err := mscOpenSubscriptionService.DescribeMscSubContact(d.Id())
+	mscOpenSubscriptionService := NewService(client)
+	object, err := mscOpenSubscriptionService.DescribeContact(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_msc_sub_contact mscOpenSubscriptionService.DescribeMscSubContact Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_msc_sub_contact mscOpenSubscriptionService.DescribeContact Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("contact_name", object["ContactName"])
 	d.Set("email", object["Email"])
@@ -102,7 +106,7 @@ func resourceAlicloudMscSubContactRead(d *schema.ResourceData, meta interface{})
 	d.Set("position", convertMscSubContactPositionResponse(fmt.Sprint(object["Position"])))
 	return nil
 }
-func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceContactUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -125,27 +129,27 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 	request["Mobile"] = d.Get("mobile")
 	if update {
 		action := "UpdateContact"
-		request["ClientToken"] = buildClientToken("UpdateContact")
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		request["ClientToken"] = helper.BuildClientToken("UpdateContact")
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudMscSubContactRead(d, meta)
+	return resourceContactRead(d, meta)
 }
-func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceContactDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -154,24 +158,24 @@ func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{
 	}
 
 	action := "DeleteContact"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResourceNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
