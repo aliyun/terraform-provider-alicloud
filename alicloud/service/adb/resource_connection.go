@@ -1,4 +1,4 @@
-package alicloud
+package adb
 
 import (
 	"fmt"
@@ -6,18 +6,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
+	adbSdk "github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudAdbConnection() *schema.Resource {
+func ResourceAdbConnection() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAdbConnectionCreate,
-		Read:   resourceAlicloudAdbConnectionRead,
-		Delete: resourceAlicloudAdbConnectionDelete,
+		Create: ResourceAdbConnectionCreate,
+		Read:   ResourceAdbConnectionRead,
+		Delete: ResourceAdbConnectionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -51,7 +54,7 @@ func resourceAlicloudAdbConnection() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAdbConnectionCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbConnectionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	dbClusterId := d.Get("db_cluster_id").(string)
@@ -60,59 +63,59 @@ func resourceAlicloudAdbConnectionCreate(d *schema.ResourceData, meta interface{
 		prefix = fmt.Sprintf("%stf", dbClusterId)
 	}
 
-	request := adb.CreateAllocateClusterPublicConnectionRequest()
+	request := adbSdk.CreateAllocateClusterPublicConnectionRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = dbClusterId
 	request.ConnectionStringPrefix = prefix
 	var raw interface{}
 	var err error
 	err = retry.Retry(8*time.Minute, func() *retry.RetryError {
-		raw, err = client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+		raw, err = client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 			return adbClient.AllocateClusterPublicConnection(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
 				return retry.RetryableError(err)
 			}
 
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_adb_connection", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_adb_connection", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", dbClusterId, COLON_SEPARATED, request.ConnectionStringPrefix))
 
 	if err := adbService.WaitForAdbConnection(d.Id(), Available, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// wait instance running after allocating
 	if err := adbService.WaitForCluster(dbClusterId, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	return resourceAlicloudAdbConnectionRead(d, meta)
+	return ResourceAdbConnectionRead(d, meta)
 }
 
-func resourceAlicloudAdbConnectionRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbConnectionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	object, err := adbService.DescribeAdbConnection(d.Id())
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("db_cluster_id", parts[0])
 	d.Set("connection_prefix", parts[1])
@@ -123,36 +126,36 @@ func resourceAlicloudAdbConnectionRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAlicloudAdbConnectionDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 
 	split := strings.Split(d.Id(), COLON_SEPARATED)
-	request := adb.CreateReleaseClusterPublicConnectionRequest()
+	request := adbSdk.CreateReleaseClusterPublicConnectionRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = split[0]
 
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		var raw interface{}
-		raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+		raw, err := client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 			return adbClient.ReleaseClusterPublicConnection(request)
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
+			if errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return adbService.WaitForAdbConnection(d.Id(), Deleted, DefaultTimeoutMedium)
