@@ -1,40 +1,42 @@
-package alicloud
+package cdn_test
 
 import (
 	"fmt"
 	"strconv"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	alicdn "github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cdn"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -92,7 +94,7 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"parent_id":       CHECKSET,
+						"parent_id":       acctest.CHECKSET,
 						"function_args.#": "3",
 					}),
 				),
@@ -107,29 +109,29 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new_twin(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -155,7 +157,7 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new_twin(t *testing.T
 					testAccCheck(map[string]string{
 						"domain_name":     name,
 						"function_name":   "filetype_based_ttl_set",
-						"parent_id":       CHECKSET,
+						"parent_id":       acctest.CHECKSET,
 						"function_args.#": "3",
 					}),
 				),
@@ -170,29 +172,29 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new_twin(t *testing.T
 }
 
 func TestAccAliCloudCDNDomainConfig_ip_allow_list(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -223,29 +225,29 @@ func TestAccAliCloudCDNDomainConfig_ip_allow_list(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_referer_white_list(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -276,29 +278,29 @@ func TestAccAliCloudCDNDomainConfig_referer_white_list(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_referer_black_list(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -329,29 +331,29 @@ func TestAccAliCloudCDNDomainConfig_referer_black_list(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -390,30 +392,30 @@ func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_oss_auth(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := defaultRegionToTest + strconv.Itoa(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence2)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence2)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -445,29 +447,29 @@ func TestAccAliCloudCDNDomainConfig_oss_auth(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_ip_black_list(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -498,29 +500,29 @@ func TestAccAliCloudCDNDomainConfig_ip_black_list(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_ip_white_list(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -551,29 +553,29 @@ func TestAccAliCloudCDNDomainConfig_ip_white_list(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_error_page(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -608,29 +610,29 @@ func TestAccAliCloudCDNDomainConfig_error_page(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_set_req_host_header(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -661,29 +663,29 @@ func TestAccAliCloudCDNDomainConfig_set_req_host_header(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -714,29 +716,29 @@ func TestAccAliCloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_aliauth(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -771,29 +773,29 @@ func TestAccAliCloudCDNDomainConfig_aliauth(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_set_resp_header(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -828,29 +830,29 @@ func TestAccAliCloudCDNDomainConfig_set_resp_header(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_https_force(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -881,29 +883,29 @@ func TestAccAliCloudCDNDomainConfig_https_force(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_http_force(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -934,29 +936,29 @@ func TestAccAliCloudCDNDomainConfig_http_force(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_https_option(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -987,29 +989,29 @@ func TestAccAliCloudCDNDomainConfig_https_option(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_l2_oss_key(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1040,29 +1042,29 @@ func TestAccAliCloudCDNDomainConfig_l2_oss_key(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_forward_scheme(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1099,29 +1101,29 @@ func TestAccAliCloudCDNDomainConfig_forward_scheme(t *testing.T) {
 func SkipTestAccAliCloudCDNDomainConfig_green_manager(t *testing.T) {
 	// the function: green_manager has been deleted
 	t.Skip()
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1152,29 +1154,29 @@ func SkipTestAccAliCloudCDNDomainConfig_green_manager(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_tmd_signature(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1233,19 +1235,19 @@ func TestAccAliCloudCDNDomainConfig_tmd_signature(t *testing.T) {
 //	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 //
 //	resourceId := "alicloud_cdn_domain_config.default"
-//	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+//	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 //
 //	serviceFunc := func() interface{} {
 //		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 //	}
-//	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+//	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 //
-//	rac := resourceAttrCheckInit(rc, ra)
+//	rac := acctest.ResourceAttrCheckInit(rc, ra)
 //
-//	testAccCheck := rac.resourceAttrMapUpdateSet()
+//	testAccCheck := rac.ResourceAttrMapUpdateSet()
 //	rand := acctest.RandIntRange(1000000, 9999999)
 //	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-//	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+//	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 //		"arg_name":  "enable",
 //		"arg_value": "on",
 //	}))
@@ -1257,7 +1259,7 @@ func TestAccAliCloudCDNDomainConfig_tmd_signature(t *testing.T) {
 //		// module name
 //		IDRefreshName: resourceId,
 //		ProviderFactories: testAccProviderFactory,
-//		CheckDestroy:  rac.checkResourceDestroy(),
+//		CheckDestroy:  rac.CheckResourceDestroy(),
 //		Steps: []resource.TestStep{
 //			{
 //				Config: testAccConfig(map[string]interface{}{
@@ -1288,29 +1290,29 @@ func TestAccAliCloudCDNDomainConfig_tmd_signature(t *testing.T) {
 //}
 
 func TestAccAliCloudCDNDomainConfig_set_req_header(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1345,29 +1347,29 @@ func TestAccAliCloudCDNDomainConfig_set_req_header(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_range(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1398,29 +1400,29 @@ func TestAccAliCloudCDNDomainConfig_range(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_video_seek(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1451,29 +1453,29 @@ func TestAccAliCloudCDNDomainConfig_video_seek(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_https_tls_version(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1508,29 +1510,29 @@ func TestAccAliCloudCDNDomainConfig_https_tls_version(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_HSTS(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1565,29 +1567,29 @@ func TestAccAliCloudCDNDomainConfig_HSTS(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1622,29 +1624,29 @@ func TestAccAliCloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1679,29 +1681,29 @@ func TestAccAliCloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_gzip(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1732,29 +1734,29 @@ func TestAccAliCloudCDNDomainConfig_gzip(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_tesla(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1785,29 +1787,29 @@ func TestAccAliCloudCDNDomainConfig_tesla(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_https_origin_sni(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1842,29 +1844,29 @@ func TestAccAliCloudCDNDomainConfig_https_origin_sni(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_brotli(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1899,29 +1901,29 @@ func TestAccAliCloudCDNDomainConfig_brotli(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_ali_ua(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1956,29 +1958,29 @@ func TestAccAliCloudCDNDomainConfig_ali_ua(t *testing.T) {
 }
 
 func TestAccAliCloudCDNDomainConfig_host_redirect(t *testing.T) {
-	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+	var v *alicdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
-		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return cdn.NewCdnService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1997,13 +1999,17 @@ func TestAccAliCloudCDNDomainConfig_host_redirect(t *testing.T) {
 							"arg_name":  "flag",
 							"arg_value": "redirect",
 						},
+						{
+							"arg_name":  "sequence",
+							"arg_value": "1",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain_name":     name,
 						"function_name":   "host_redirect",
-						"function_args.#": "3",
+						"function_args.#": "4",
 					}),
 				),
 			},
@@ -2017,9 +2023,9 @@ func TestAccAliCloudCDNDomainConfig_host_redirect(t *testing.T) {
 }
 
 var AliCloudCDNDomainConfigMap0 = map[string]string{
-	"parent_id": CHECKSET,
-	"config_id": CHECKSET,
-	"status":    CHECKSET,
+	"parent_id": acctest.CHECKSET,
+	"config_id": acctest.CHECKSET,
+	"status":    acctest.CHECKSET,
 }
 
 func AliCloudCDNDomainConfigBasicDependence0(name string) string {
@@ -2060,6 +2066,10 @@ func AliCloudCDNDomainConfigBasicDependence1(name string) string {
   		function_args {
     		arg_name  = "rule"
     		arg_value = "{\"match\":{\"logic\":\"and\",\"criteria\":[{\"matchType\":\"clientipVer\",\"matchObject\":\"CONNECTING_IP\",\"matchOperator\":\"equals\",\"matchValue\":\"v6\",\"negate\":false}]},\"name\":\"example\",\"status\":\"enable\"}"
+  		}
+  		function_args {
+    		arg_name  = "sequence"
+    		arg_value = "1"
   		}
 	}
 `, name)

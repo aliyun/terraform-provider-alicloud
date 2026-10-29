@@ -1,15 +1,15 @@
-package alicloud
+package cdn_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudCDNRealTimeLogDeliveriesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCdnRealTimeLogDeliveriesDataSourceName(rand, map[string]string{
