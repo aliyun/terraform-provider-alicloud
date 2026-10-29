@@ -620,10 +620,8 @@ func Provider() *schema.Provider {
 			"alicloud_ehpc_clusters":      dataSourceAlicloudEhpcClusters(),
 
 			// eip
-			"alicloud_eip_addresses": dataSourceAlicloudEipAddresses(),
 
 			// eips
-			"alicloud_eips": dataSourceAlicloudEipAddresses(),
 
 			// elasticsearch
 
@@ -1782,10 +1780,6 @@ func Provider() *schema.Provider {
 			"alicloud_ehpc_cluster":      resourceAlicloudEhpcCluster(),
 
 			// eip
-			"alicloud_eip_segment_address": resourceAliCloudEipSegmentAddress(),
-			"alicloud_eip":                 resourceAliCloudEipAddress(),
-			"alicloud_eip_association":     resourceAliCloudEipAssociation(),
-			"alicloud_eip_address":         resourceAliCloudEipAddress(),
 
 			// elasticsearch
 

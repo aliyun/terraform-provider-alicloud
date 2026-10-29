@@ -1,11 +1,13 @@
-package alicloud
+package eip_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eip"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudEipSegmentAddress_basic3419(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_segment_address.default"
-	ra := resourceAttrInit(resourceId, AlicloudEipSegmentAddressMap3419)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEipSegmentAddressMap3419)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipSegmentAddress")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seipsegmentaddress%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEipSegmentAddressBasicDependence3419)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seipsegmentaddress%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEipSegmentAddressBasicDependence3419)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,7 +40,7 @@ func TestAccAliCloudEipSegmentAddress_basic3419(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"eip_mask":          "28",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -71,8 +73,8 @@ func TestAccAliCloudEipSegmentAddress_basic3419(t *testing.T) {
 }
 
 var AlicloudEipSegmentAddressMap3419 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudEipSegmentAddressBasicDependence3419(name string) string {
@@ -91,22 +93,22 @@ data "alicloud_resource_manager_resource_groups" "default"{
 func TestAccAliCloudEipSegmentAddress_basic3419_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_segment_address.default"
-	ra := resourceAttrInit(resourceId, AlicloudEipSegmentAddressMap3419)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEipSegmentAddressMap3419)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipSegmentAddress")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seipsegmentaddress%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEipSegmentAddressBasicDependence3419)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seipsegmentaddress%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEipSegmentAddressBasicDependence3419)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VpcDhcpOptionsSetSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.VpcDhcpOptionsSetSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

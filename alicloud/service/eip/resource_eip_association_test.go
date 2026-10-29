@@ -1,32 +1,34 @@
-package alicloud
+package eip_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eip"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudEipAssociation_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_association.default"
-	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEipAssociationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEipAssociationBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEipAssociationBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -35,8 +37,8 @@ func TestAccAliCloudEipAssociation_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allocation_id": CHECKSET,
-						"instance_id":   CHECKSET,
+						"allocation_id": acctest.CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -53,21 +55,21 @@ func TestAccAliCloudEipAssociation_basic0(t *testing.T) {
 func TestAccAliCloudEipAssociation_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_association.default"
-	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEipAssociationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEipAssociationBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEipAssociationBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -78,8 +80,8 @@ func TestAccAliCloudEipAssociation_basic0_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allocation_id": CHECKSET,
-						"instance_id":   CHECKSET,
+						"allocation_id": acctest.CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"instance_type": "EcsInstance",
 					}),
 				),
@@ -97,21 +99,21 @@ func TestAccAliCloudEipAssociation_basic0_twin(t *testing.T) {
 func TestAccAliCloudEipAssociation_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_association.default"
-	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEipAssociationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEipAssociationBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEipAssociationBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -121,8 +123,8 @@ func TestAccAliCloudEipAssociation_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allocation_id": CHECKSET,
-						"instance_id":   CHECKSET,
+						"allocation_id": acctest.CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"instance_type": "NetworkInterface",
 					}),
 				),
@@ -140,21 +142,21 @@ func TestAccAliCloudEipAssociation_basic1(t *testing.T) {
 func TestAccAliCloudEipAssociation_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_association.default"
-	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEipAssociationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEipAssociationBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEipAssociationBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -167,11 +169,11 @@ func TestAccAliCloudEipAssociation_basic1_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allocation_id":      CHECKSET,
-						"instance_id":        CHECKSET,
+						"allocation_id":      acctest.CHECKSET,
+						"instance_id":        acctest.CHECKSET,
 						"instance_type":      "NetworkInterface",
 						"mode":               "NAT",
-						"private_ip_address": CHECKSET,
+						"private_ip_address": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -198,21 +200,21 @@ func TestAccAliCloudEipAssociation_basic1_twin(t *testing.T) {
 func TestAccAliCloudEipAssociation_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_association.default"
-	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEipAssociationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEipAssociationBasicDependence2)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEipAssociationBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -224,10 +226,10 @@ func TestAccAliCloudEipAssociation_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allocation_id": CHECKSET,
-						"instance_id":   CHECKSET,
+						"allocation_id": acctest.CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"instance_type": "IpAddress",
-						"vpc_id":        CHECKSET,
+						"vpc_id":        acctest.CHECKSET,
 					}),
 				),
 			},
@@ -244,21 +246,21 @@ func TestAccAliCloudEipAssociation_basic2(t *testing.T) {
 func TestAccAliCloudEipAssociation_basic2_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_association.default"
-	ra := resourceAttrInit(resourceId, AliCloudEipAssociationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EipServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEipAssociationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eip.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEipAssociation")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEipAssociationBasicDependence2)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEipAssociation%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEipAssociationBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -271,10 +273,10 @@ func TestAccAliCloudEipAssociation_basic2_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allocation_id": CHECKSET,
-						"instance_id":   CHECKSET,
+						"allocation_id": acctest.CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"instance_type": "IpAddress",
-						"vpc_id":        CHECKSET,
+						"vpc_id":        acctest.CHECKSET,
 					}),
 				),
 			},
@@ -289,8 +291,8 @@ func TestAccAliCloudEipAssociation_basic2_twin(t *testing.T) {
 }
 
 var AliCloudEipAssociationMap0 = map[string]string{
-	"instance_type": CHECKSET,
-	"mode":          CHECKSET,
+	"instance_type": acctest.CHECKSET,
+	"mode":          acctest.CHECKSET,
 }
 
 func AliCloudEipAssociationBasicDependence0(name string) string {
@@ -300,12 +302,13 @@ func AliCloudEipAssociationBasicDependence0(name string) string {
 	}
 
 	data "alicloud_zones" "default" {
-  		available_disk_category     = "cloud_efficiency"
+  		available_disk_category     = "cloud_essd"
   		available_resource_creation = "VSwitch"
 	}
 
 	data "alicloud_instance_types" "default" {
   		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		system_disk_category = "cloud_essd"
 	}
 
 	data "alicloud_images" "default" {
@@ -343,7 +346,7 @@ func AliCloudEipAssociationBasicDependence0(name string) string {
   		security_groups      = alicloud_security_group.default.*.id
   		availability_zone    = data.alicloud_zones.default.zones.0.id
   		instance_charge_type = "PostPaid"
-  		system_disk_category = "cloud_efficiency"
+  		system_disk_category = "cloud_essd"
   		vswitch_id           = alicloud_vswitch.default.id
 	}
 `, name)

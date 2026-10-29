@@ -1,4 +1,4 @@
-package alicloud
+package eip
 
 import (
 	"fmt"
@@ -7,17 +7,84 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type EipServiceV2 struct {
+// timeType is the local mirror of the root package's shared TimeType so the
+// generated EIP code, which casts Month/Year to string, keeps compiling after
+// the move without depending on the root package.
+type timeType string
+
+const (
+	month timeType = "Month"
+	year  timeType = "Year"
+)
+
+type Service struct {
 	client *connectivity.AliyunClient
+}
+
+// NewService returns a new EIP service backed by the given client.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+// ListTagResources lists tags for a Vpc resource. It mirrors the VpcService
+// implementation so the EIP data source can resolve tags without depending on
+// the root package.
+func (s *Service) ListTagResources(id string, resourceType string) (object interface{}, err error) {
+	client := s.client
+	action := "ListTagResources"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ResourceType": resourceType,
+		"ResourceId.1": id,
+	}
+	tagResources := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources.TagResource", response)
+			if err != nil {
+				return retry.NonRetryableError(errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+			}
+			if v != nil {
+				tagResources = append(tagResources, v.([]interface{})...)
+			}
+			return nil
+		})
+		if err != nil {
+			err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+			return
+		}
+		if response["NextToken"] == nil {
+			break
+		}
+		request["NextToken"] = response["NextToken"]
+	}
+
+	return tagResources, nil
 }
 
 // DescribeEipAddress <<< Encapsulated get interface for Eip Address.
 
-func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeEipAddress(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -28,37 +95,37 @@ func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interfac
 	query["AllocationId"] = id
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.EipAddresses.EipAddress[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EipAddresses.EipAddress[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.EipAddresses.EipAddress[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Address", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Address", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
-func (s *EipServiceV2) DescribeDescribeHighDefinitionMonitorLogAttribute(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDescribeHighDefinitionMonitorLogAttribute(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -69,36 +136,36 @@ func (s *EipServiceV2) DescribeDescribeHighDefinitionMonitorLogAttribute(id stri
 	query["InstanceId"] = id
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *EipServiceV2) EipAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) EipAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipAddress(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -106,7 +173,7 @@ func (s *EipServiceV2) EipAddressStateRefreshFunc(id string, field string, failS
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -116,7 +183,7 @@ func (s *EipServiceV2) EipAddressStateRefreshFunc(id string, field string, failS
 // DescribeEipAddress >>> Encapsulated.
 
 // SetResourceTags <<< Encapsulated tag function for Eip.
-func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var err error
 		var action string
@@ -125,10 +192,10 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -143,21 +210,21 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -176,21 +243,21 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -203,7 +270,7 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 
 // DescribeEipSegmentAddress <<< Encapsulated get interface for Eip SegmentAddress.
 
-func (s *EipServiceV2) DescribeEipSegmentAddress(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeEipSegmentAddress(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -213,48 +280,48 @@ func (s *EipServiceV2) DescribeEipSegmentAddress(id string) (object map[string]i
 	query = make(map[string]interface{})
 	query["SegmentInstanceId"] = id
 	query["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.EipSegments.EipSegment[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EipSegments.EipSegment[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.EipSegments.EipSegment[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("SegmentAddress", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SegmentAddress", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *EipServiceV2) EipSegmentAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) EipSegmentAddressStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipSegmentAddress(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -262,7 +329,7 @@ func (s *EipServiceV2) EipSegmentAddressStateRefreshFunc(id string, field string
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -273,14 +340,14 @@ func (s *EipServiceV2) EipSegmentAddressStateRefreshFunc(id string, field string
 
 // DescribeEipAssociation <<< Encapsulated get interface for Eip Association.
 
-func (s *EipServiceV2) DescribeEipAssociation(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeEipAssociation(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "DescribeEipAddresses"
 	request = make(map[string]interface{})
@@ -288,32 +355,32 @@ func (s *EipServiceV2) DescribeEipAssociation(id string) (object map[string]inte
 	query["AllocationId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.EipAddresses.EipAddress[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EipAddresses.EipAddress[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.EipAddresses.EipAddress[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Association", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Association", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -324,17 +391,17 @@ func (s *EipServiceV2) DescribeEipAssociation(id string) (object map[string]inte
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("Association", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("Association", id), errs.NotFoundMsg, response)
 }
 
-func (s *EipServiceV2) EipAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) EipAssociationStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipAssociation(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -342,7 +409,7 @@ func (s *EipServiceV2) EipAssociationStateRefreshFunc(id string, field string, f
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

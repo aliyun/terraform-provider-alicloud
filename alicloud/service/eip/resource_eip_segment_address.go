@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package eip
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -41,17 +45,17 @@ func resourceAliCloudEipSegmentAddress() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"isp": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2", "BGP_FinanceCloud"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2", "BGP_FinanceCloud"}, false),
 			},
 			"netmode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"public"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"public"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -86,7 +90,7 @@ func resourceAliCloudEipSegmentAddressCreate(d *schema.ResourceData, meta interf
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("isp"); ok {
 		request["Isp"] = v
@@ -107,30 +111,30 @@ func resourceAliCloudEipSegmentAddressCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "IncorrectStatus", "SystemBusy", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "IncorrectStatus", "SystemBusy", "OperationConflict", "ServiceUnavailable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eip_segment_address", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eip_segment_address", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["EipSegmentInstanceId"]))
 
-	eipServiceV2 := EipServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Allocated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eipServiceV2.EipSegmentAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+	eipService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Allocated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eipService.EipSegmentAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudEipSegmentAddressRead(d, meta)
@@ -138,16 +142,16 @@ func resourceAliCloudEipSegmentAddressCreate(d *schema.ResourceData, meta interf
 
 func resourceAliCloudEipSegmentAddressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eipServiceV2 := EipServiceV2{client}
+	eipService := NewService(client)
 
-	objectRaw, err := eipServiceV2.DescribeEipSegmentAddress(d.Id())
+	objectRaw, err := eipService.DescribeEipSegmentAddress(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eip_segment_address DescribeEipSegmentAddress Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CreationTime"] != nil {
@@ -183,32 +187,32 @@ func resourceAliCloudEipSegmentAddressDelete(d *schema.ResourceData, meta interf
 	query["SegmentInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "IncorrectStatus", "IncorrectEipStatus", "OperationFailed.EipStatusInvalid", "OperationConflict", "TaskConflict.AssociateGlobalAccelerationInstance", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "IncorrectStatus", "IncorrectEipStatus", "OperationFailed.EipStatusInvalid", "OperationConflict", "TaskConflict.AssociateGlobalAccelerationInstance", "SystemBusy", "ServiceUnavailable"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	eipServiceV2 := EipServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eipServiceV2.EipSegmentAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+	eipService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eipService.EipSegmentAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
