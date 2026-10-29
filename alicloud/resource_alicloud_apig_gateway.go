@@ -2,12 +2,16 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -20,6 +24,12 @@ func resourceAliCloudApigGateway() *schema.Resource {
 		Delete: resourceAliCloudApigGatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		// BssOpenApi only holds renewal settings for prepaid instances, and both Read and
+		// Update stop at a charge type check, so a renewal configuration on any other
+		// payment type would otherwise be accepted and never applied.
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+			return checkApigGatewayRenewalPaymentType(diff.Get("payment_type").(string), apigGatewayRenewalAttributesInConfig(diff.GetRawConfig()))
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(11 * time.Minute),
@@ -183,6 +193,23 @@ func resourceAliCloudApigGateway() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
+			"renew_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"renewal_period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"M", "Y"}, false),
+			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -304,6 +331,37 @@ func resourceAliCloudApigGateway() *schema.Resource {
 			},
 		},
 	}
+}
+
+// apigGatewayRenewalAttributesInConfig reports the renewal attributes the
+// configuration itself sets. Values inherited from state are deliberately
+// excluded: the attributes are Optional+Computed, so every read of a Subscription
+// gateway populates them, and a plan that only changes payment_type must not be
+// rejected because of a value the configuration never asked for.
+func apigGatewayRenewalAttributesInConfig(rawConfig cty.Value) []string {
+	configured := make([]string, 0, 3)
+	if rawConfig == cty.NilVal || rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return configured
+	}
+	for _, name := range []string{"renew_period", "renewal_period_unit", "renewal_status"} {
+		value := rawConfig.GetAttr(name)
+		if !value.IsNull() && value.IsKnown() {
+			configured = append(configured, name)
+		}
+	}
+	return configured
+}
+
+// checkApigGatewayRenewalPaymentType rejects the renewal attributes for every
+// payment type that BssOpenApi does not expose renewal settings for. Without it a
+// non-Subscription configuration is accepted while Read never refreshes the
+// attributes and Update never calls SetRenewal, so the apply silently changes
+// nothing in the cloud.
+func checkApigGatewayRenewalPaymentType(paymentType string, configured []string) error {
+	if len(configured) == 0 || paymentType == "Subscription" {
+		return nil
+	}
+	return fmt.Errorf("%s can only be set when payment_type is Subscription, but payment_type is %q", strings.Join(configured, ", "), paymentType)
 }
 
 func resourceAliCloudApigGatewayCreate(d *schema.ResourceData, meta interface{}) error {
@@ -598,10 +656,48 @@ func resourceAliCloudApigGatewayRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
+	if d.Get("payment_type").(string) == "Subscription" {
+		renewalRaw, queryErr := apigServiceV2.DescribeGatewayQueryAvailableInstances(d)
+		if err := setApigGatewayRenewalState(d, renewalRaw, queryErr); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// setApigGatewayRenewalState writes the BssOpenApi renewal view into state. It must
+// return before touching any renewal attribute when the query failed, otherwise a
+// transient BssOpenApi failure would erase an already known renewal configuration.
+func setApigGatewayRenewalState(d *schema.ResourceData, renewalRaw map[string]interface{}, queryErr error) error {
+	if queryErr != nil {
+		return WrapError(queryErr)
+	}
+	if err := d.Set("renew_period", renewalRaw["RenewalDuration"]); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("renewal_period_unit", renewalRaw["RenewalDurationUnit"]); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("renewal_status", renewalRaw["RenewStatus"]); err != nil {
+		return WrapError(err)
+	}
 	return nil
 }
 
 func resourceAliCloudApigGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
+	// Repeating the plan-time check keeps the rejection ahead of every write API even
+	// when apply does not re-run CustomizeDiff. HasChange matches what the apply is
+	// about to write, so a renewal value that only exists in state is not rejected.
+	renewalChanged := make([]string, 0, 3)
+	for _, name := range []string{"renew_period", "renewal_period_unit", "renewal_status"} {
+		if d.HasChange(name) {
+			renewalChanged = append(renewalChanged, name)
+		}
+	}
+	if err := checkApigGatewayRenewalPaymentType(d.Get("payment_type").(string), renewalChanged); err != nil {
+		return WrapError(err)
+	}
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -683,6 +779,10 @@ func resourceAliCloudApigGatewayUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
+	if err := setApigGatewayRenewal(d, client); err != nil {
+		return err
+	}
+
 	if d.HasChange("tags") {
 		apigServiceV2 := ApigServiceV2{client}
 		if err := apigServiceV2.SetResourceTags(d, "gateway"); err != nil {
@@ -690,6 +790,97 @@ func resourceAliCloudApigGatewayUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 	return resourceAliCloudApigGatewayRead(d, meta)
+}
+
+// setApigGatewayRenewal applies the renewal attributes through the BssOpenApi
+// SetRenewal operation. The gateway charge type is read first because the renewal
+// settings only exist for prepaid instances: a change against any other charge type
+// is reported instead of being dropped, which would leave the configuration applied
+// without effect.
+func setApigGatewayRenewal(d *schema.ResourceData, client *connectivity.AliyunClient) error {
+	apigServiceV2 := ApigServiceV2{client}
+	objectRaw, err := apigServiceV2.DescribeApigGateway(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	chargeType := fmt.Sprint(convertApigGatewaydatachargeTypeResponse(objectRaw["chargeType"]))
+	enableSetRenewal := chargeType == "Subscription"
+	update := d.HasChange("renewal_status") || d.HasChange("renew_period") || d.HasChange("renewal_period_unit")
+	if update && !enableSetRenewal {
+		return WrapError(fmt.Errorf("renewal_status, renew_period and renewal_period_unit can only be managed for Subscription gateways, but gateway %s reports payment type %q", d.Id(), chargeType))
+	}
+
+	action := "SetRenewal"
+	request := make(map[string]interface{})
+	query := make(map[string]interface{})
+	query["InstanceIDs"] = d.Id()
+
+	if v, ok := d.GetOk("renewal_status"); ok {
+		query["RenewalStatus"] = v.(string)
+	} else if update {
+		if _, ok := d.GetOk("renew_period"); ok {
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is specified", "renewal_status", "renew_period"))
+		}
+		if _, ok := d.GetOk("renewal_period_unit"); ok {
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is specified", "renewal_status", "renewal_period_unit"))
+		}
+	}
+
+	if v, ok := d.GetOk("renew_period"); ok {
+		query["RenewalPeriod"] = strconv.Itoa(v.(int))
+	} else if update {
+		if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renew_period", "renewal_status", d.Get("renewal_status")))
+		}
+	}
+
+	if v, ok := d.GetOk("renewal_period_unit"); ok {
+		query["RenewalPeriodUnit"] = v.(string)
+	} else if update {
+		if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_period_unit", "renewal_status", d.Get("renewal_status")))
+		}
+	}
+
+	if !update {
+		return nil
+	}
+
+	var response map[string]interface{}
+	var endpoint string
+	request["ProductCode"] = "apigateway"
+	request["SubscriptionType"] = "Subscription"
+	renewalDeadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(time.Until(renewalDeadline), func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	// BssOpenApi may keep returning the previous renewal settings for a while
+	// after a successful SetRenewal, so wait until the requested values are
+	// visible instead of persisting a stale state.
+	convergeErr := waitForApigGatewayRenewalConvergence(d.Id(), query, time.Until(renewalDeadline), wait, func() (map[string]interface{}, error) {
+		return apigServiceV2.DescribeGatewayQueryAvailableInstancesByID(d.Id(), 30*time.Second)
+	})
+	if convergeErr != nil {
+		return WrapError(convergeErr)
+	}
+	return nil
 }
 
 func resourceAliCloudApigGatewayDelete(d *schema.ResourceData, meta interface{}) error {

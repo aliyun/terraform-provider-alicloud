@@ -218,6 +218,226 @@ func (s *ApigServiceV2) DescribeApigGateway(id string) (object map[string]interf
 	return v.(map[string]interface{}), nil
 }
 
+func (s *ApigServiceV2) DescribeGatewayQueryAvailableInstances(d *schema.ResourceData) (object map[string]interface{}, err error) {
+	return s.DescribeGatewayQueryAvailableInstancesByID(d.Id(), 1*time.Minute)
+}
+
+const (
+	// apigGatewayRenewalPageSize requests a whole page of BssOpenApi results; 300
+	// is the documented maximum for QueryAvailableInstances.
+	apigGatewayRenewalPageSize = 300
+)
+
+// DescribeGatewayQueryAvailableInstancesByID queries the billing attributes of one
+// instance from BssOpenApi. Every reported page is walked because the InstanceIDs
+// filter is not guaranteed to be honoured; the walk ends on an empty page or a
+// matching short page, and retryTimeout bounds it as a whole so no page count is
+// assumed. An empty or incomplete result is retried within retryTimeout because
+// BssOpenApi may not expose a freshly created instance yet, while a request error
+// is always returned as is instead of being reported as a missing instance.
+func (s *ApigServiceV2) DescribeGatewayQueryAvailableInstancesByID(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var instance map[string]interface{}
+	request := make(map[string]interface{})
+	query := make(map[string]interface{})
+	// InstanceIDs is kept as the cheap server-side filter, but the response is
+	// matched by InstanceID and every page is walked because the filter is not
+	// guaranteed to be honoured.
+	query["InstanceIDs"] = id
+	query["PageSize"] = apigGatewayRenewalPageSize
+
+	var endpoint string
+	request["ProductCode"] = "apigateway"
+	action := "QueryAvailableInstances"
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	// The walk is bounded by the caller's overall budget instead of an arbitrary
+	// page count, so a result set of any size is still searched completely.
+	deadline := time.Now().Add(retryTimeout)
+	err = retry.Retry(retryTimeout, func() *retry.RetryError {
+		var totalCount int
+		walked := 0
+		for page := 1; ; page++ {
+			query["PageNum"] = page
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+
+			var found bool
+			var entries []interface{}
+			var pageErr error
+			instance, entries, totalCount, found, pageErr = apigGatewayRenewalInstancePage(id, response)
+			if pageErr != nil {
+				wait()
+				return retry.RetryableError(pageErr)
+			}
+			if found {
+				return nil
+			}
+			walked += len(entries)
+			// An empty page is the contract-free end of the result set.
+			if len(entries) == 0 {
+				break
+			}
+			// TotalCount is only honoured once the walk has passed more than one
+			// page worth of results and the accumulated count matches it exactly,
+			// so a stale or bogus total can never cut the walk short.
+			if totalCount > apigGatewayRenewalPageSize && walked == totalCount && len(entries) < apigGatewayRenewalPageSize {
+				break
+			}
+			// A total that never ends must not keep the provider paging past the
+			// caller's budget.
+			if !time.Now().Before(deadline) {
+				wait()
+				return retry.RetryableError(fmt.Errorf("BssOpenApi QueryAvailableInstances response does not contain apig gateway %s within %d result(s) after %d page(s), stopped at the %s deadline", id, totalCount, page, retryTimeout))
+			}
+		}
+		wait()
+		return retry.RetryableError(fmt.Errorf("BssOpenApi QueryAvailableInstances response does not contain apig gateway %s within %d result(s)", id, totalCount))
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return instance, nil
+}
+
+// apigGatewayRenewalTotalCount reads the TotalCount of a QueryAvailableInstances
+// response. A missing or unparsable value is reported as 0 so the caller keeps
+// the single-page behaviour instead of failing the whole read.
+func apigGatewayRenewalTotalCount(response map[string]interface{}) int {
+	raw, err := jsonpath.Get("$.Data.TotalCount", response)
+	if err != nil || raw == nil {
+		return 0
+	}
+	switch value := raw.(type) {
+	case float64:
+		return int(value)
+	case int:
+		return value
+	case int64:
+		return int(value)
+	case json.Number:
+		// The SDK decodes response numbers with UseNumber, so TotalCount is a
+		// json.Number rather than a float64 when it comes from the real API.
+		total, convErr := value.Int64()
+		if convErr != nil {
+			return 0
+		}
+		return int(total)
+	case string:
+		total, convErr := strconv.Atoi(strings.TrimSpace(value))
+		if convErr != nil {
+			return 0
+		}
+		return total
+	}
+	return 0
+}
+
+// apigGatewayRenewalInstancePage extracts the target entry from one
+// QueryAvailableInstances page. found=false with err=nil means the page is
+// well-formed but does not contain the target, so the caller walks the next page.
+func apigGatewayRenewalInstancePage(id string, response map[string]interface{}) (instance map[string]interface{}, entries []interface{}, totalCount int, found bool, err error) {
+	if response == nil {
+		return nil, nil, 0, false, fmt.Errorf("empty response returned by the BssOpenApi QueryAvailableInstances API for apig gateway %s", id)
+	}
+	totalCount = apigGatewayRenewalTotalCount(response)
+
+	raw, err := jsonpath.Get("$.Data.InstanceList[*]", response)
+	if err != nil {
+		return nil, nil, totalCount, false, fmt.Errorf("failed to get attribute $.Data.InstanceList[*] for apig gateway %s: %s", id, err)
+	}
+	instances, ok := raw.([]interface{})
+	if !ok {
+		return nil, nil, totalCount, false, fmt.Errorf("unexpected BssOpenApi QueryAvailableInstances response for apig gateway %s: InstanceList is %v", id, raw)
+	}
+	for _, rawInstance := range instances {
+		entry, ok := rawInstance.(map[string]interface{})
+		if !ok {
+			return nil, instances, totalCount, false, fmt.Errorf("unexpected BssOpenApi QueryAvailableInstances instance entry for apig gateway %s: %v", id, rawInstance)
+		}
+		// The InstanceIDs filter is not guaranteed to be honoured, so the entry
+		// must match the gateway being refreshed instead of trusting list order.
+		if fmt.Sprint(entry["InstanceID"]) == id {
+			return entry, instances, totalCount, true, nil
+		}
+	}
+	return nil, instances, totalCount, false, nil
+}
+
+// apigGatewayRenewalInstance extracts the single instance entry of a BssOpenApi
+// QueryAvailableInstances response. Request errors take precedence over an empty
+// response and neither of them is reported as a missing instance.
+func apigGatewayRenewalInstance(id string, response map[string]interface{}, responseErr error) (map[string]interface{}, error) {
+	if responseErr != nil {
+		return nil, responseErr
+	}
+	instance, entries, _, found, err := apigGatewayRenewalInstancePage(id, response)
+	if err != nil {
+		return nil, err
+	}
+	if found {
+		return instance, nil
+	}
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("apig gateway %s is not visible in the BssOpenApi QueryAvailableInstances response yet", id)
+	}
+	return nil, fmt.Errorf("BssOpenApi QueryAvailableInstances response does not contain apig gateway %s: %v", id, entries)
+}
+
+// apigGatewayRenewalConverged reports whether the BssOpenApi view of the renewal
+// settings already matches the values requested by SetRenewal. Renewal duration
+// and its unit are only meaningful for AutoRenewal.
+func apigGatewayRenewalConverged(renewalRaw map[string]interface{}, expected map[string]interface{}) bool {
+	expectedStatus, ok := expected["RenewalStatus"]
+	if !ok {
+		return true
+	}
+	if fmt.Sprint(renewalRaw["RenewStatus"]) != fmt.Sprint(expectedStatus) {
+		return false
+	}
+	if fmt.Sprint(expectedStatus) != "AutoRenewal" {
+		return true
+	}
+	if expectedPeriod, ok := expected["RenewalPeriod"]; ok && fmt.Sprint(renewalRaw["RenewalDuration"]) != fmt.Sprint(expectedPeriod) {
+		return false
+	}
+	if expectedUnit, ok := expected["RenewalPeriodUnit"]; ok && fmt.Sprint(renewalRaw["RenewalDurationUnit"]) != fmt.Sprint(expectedUnit) {
+		return false
+	}
+	return true
+}
+
+func waitForApigGatewayRenewalConvergence(id string, expected map[string]interface{}, timeout time.Duration, wait func(), describe func() (map[string]interface{}, error)) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		renewalRaw, err := describe()
+		if err == nil && apigGatewayRenewalConverged(renewalRaw, expected) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			if err != nil {
+				return fmt.Errorf("timeout waiting for the renewal settings of apig gateway %s to converge: expected %v, but the last query failed: %w", id, expected, err)
+			}
+			return fmt.Errorf("timeout waiting for the renewal settings of apig gateway %s to converge: expected %v, but observed status %q, renewal duration %v, renewal duration unit %q", id, expected, renewalRaw["RenewStatus"], renewalRaw["RenewalDuration"], renewalRaw["RenewalDurationUnit"])
+		}
+		wait()
+	}
+}
+
 func (s *ApigServiceV2) ApigGatewayStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.ApigGatewayStateRefreshFuncWithApi(id, field, failStates, s.DescribeApigGateway)
 }
