@@ -1,4 +1,4 @@
-package alicloud
+package drds
 
 import (
 	"strconv"
@@ -7,6 +7,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -47,9 +50,9 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 				ForceNew:     true,
-				Default:      PostPaid,
+				Default:      "PostPaid",
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -110,55 +113,58 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	if (request.ZoneId == "" || request.VpcId == "") && request.VswitchId != "" {
-		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitch(request.VswitchId)
+		// VpcService.DescribeVSwitch reproduced locally as DrdsService.describeVSwitch;
+		// see service_alicloud_drds.go. VpcService has not been migrated to a leaf
+		// package, and the product package cannot import root alicloud or another
+		// product package, so the VSwitch lookup is reproduced using leaf packages.
+		vsw, err := drdsService.describeVSwitch(request.VswitchId)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.VpcId = vsw.VpcId
 		request.ZoneId = vsw.ZoneId
 	}
 
-	if request.PayType == string(PostPaid) {
+	if request.PayType == "PostPaid" {
 		request.PayType = "drdsPost"
 	}
-	if request.PayType == string(PrePaid) {
+	if request.PayType == "PrePaid" {
 		request.PayType = "drdsPre"
 	}
 
 	var response *drds.CreateDrdsInstanceResponse
-	wait := incrementalWait(3*time.Second, 2*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 2*time.Second)
 	err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		// currently, the ClientToken does not work and it need to update when retry
-		request.ClientToken = buildClientToken(request.GetActionName())
+		request.ClientToken = helper.BuildClientToken(request.GetActionName())
 		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 			return drdsClient.CreateDrdsInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*drds.CreateDrdsInstanceResponse)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_drds_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_drds_instance", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	idList := response.Data.DrdsInstanceIdList.DrdsInstanceIdList
 	if len(idList) != 1 {
-		return WrapError(Error("failed to get DRDS instance id and response. DrdsInstanceIdList is %#v", idList))
+		return errs.WrapError(errs.Error("failed to get DRDS instance id and response. DrdsInstanceIdList is %#v", idList))
 	}
 	d.SetId(idList[0])
 
 	// wait instance status change from DO_CREATE to RUN
-	stateConf := BuildStateConf([]string{"DO_CREATE"}, []string{"RUN"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{"DO_CREATE"}, []string{"RUN"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudDRDSInstanceUpdate(d, meta)
@@ -181,19 +187,19 @@ func resourceAliCloudDRDSInstanceUpdate(d *schema.ResourceData, meta interface{}
 			return drdsClient.ModifyDrdsInstanceDescription(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	//wait for update effected and instance status returning to run
 	if err := drdsService.WaitDrdsInstanceConfigEffect(
 		d.Id(), configItem, d.Timeout(schema.TimeoutUpdate)); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	stateConf := BuildStateConf([]string{}, []string{"RUN"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUN"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudDRDSInstanceRead(d, meta)
@@ -205,11 +211,11 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	object, err := drdsService.DescribeDrdsInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	data := object.Data
 	//other attribute not set,because these attribute from `data` can't  get
@@ -248,38 +254,38 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	request.RegionId = client.RegionId
 	request.DrdsInstanceId = d.Id()
 	var response *drds.RemoveDrdsInstanceResponse
-	wait := incrementalWait(3*time.Second, 2*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 2*time.Second)
 	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 			return drdsClient.RemoveDrdsInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ = raw.(*drds.RemoveDrdsInstanceResponse)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDrdsInstanceId.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDrdsInstanceId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if !response.Success {
-		return WrapError(Error("failed to delete instance timeout "+"and got an error: %#v", err))
+		return errs.WrapError(errs.Error("failed to delete instance timeout "+"and got an error: %#v", err))
 	}
 
 	//0 -> RUN, 1->DO_CREATE, 2->EXCEPTION, 3->EXPIRE, 4->DO_RELEASE, 5->RELEASE, 6->UPGRADE, 7->DOWNGRADE, 10->VersionUpgrade, 11->VersionRollback, 14->RESTART
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 3*time.Second, drdsService.DrdsInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err = stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }

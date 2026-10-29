@@ -1,10 +1,13 @@
-package alicloud
+package drds
 
 import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -115,7 +118,7 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 			if vv == nil {
 				continue
 			}
-			idsMap[Trim(vv.(string))] = Trim(vv.(string))
+			idsMap[helper.Trim(vv.(string))] = helper.Trim(vv.(string))
 		}
 	}
 
@@ -123,9 +126,9 @@ func dataSourceAlicloudDRDSInstancesRead(d *schema.ResourceData, meta interface{
 		return drdsClient.DescribeDrdsInstances(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_drds_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_drds_instances", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
 	for _, item := range response.Instances.Instance {
@@ -171,19 +174,19 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 		descriptions = append(descriptions, item.Description)
 		s = append(s, mapping)
 	}
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("descriptions", descriptions); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

@@ -494,8 +494,6 @@ func Provider() *schema.Provider {
 			"alicloud_dns_instances":       dataSourceAlicloudAlidnsInstances(),
 
 			// drds
-			"alicloud_drds_instances":          dataSourceAlicloudDRDSInstances(),
-			"alicloud_drds_polardbx_instances": dataSourceAliCloudDrdsPolardbxInstances(),
 
 			// dts
 			"alicloud_dts_subscription_jobs":    dataSourceAlicloudDtsSubscriptionJobs(),
@@ -1516,8 +1514,6 @@ func Provider() *schema.Provider {
 			"alicloud_dns_domain":            resourceAlicloudAlidnsDomain(),
 
 			// drds
-			"alicloud_drds_polardbx_instance": resourceAliCloudDrdsPolardbxInstance(),
-			"alicloud_drds_instance":          resourceAlicloudDRDSInstance(),
 
 			// dts
 			"alicloud_dts_job_monitor_rule":         resourceAlicloudDtsJobMonitorRule(),

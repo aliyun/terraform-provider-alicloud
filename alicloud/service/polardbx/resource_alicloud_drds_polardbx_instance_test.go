@@ -1,11 +1,13 @@
-package alicloud
+package polardbx_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardbx"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap4504)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap4504)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdrdspolardbxinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence4504)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdrdspolardbxinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence4504)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DRDSPolarDbxSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DRDSPolarDbxSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -47,8 +49,8 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":  "3azones",
-						"vpc_id":         CHECKSET,
-						"vswitch_id":     CHECKSET,
+						"vpc_id":         acctest.CHECKSET,
+						"vswitch_id":     acctest.CHECKSET,
 						"primary_zone":   "cn-hangzhou-h",
 						"secondary_zone": "cn-hangzhou-g",
 						"tertiary_zone":  "cn-hangzhou-k",
@@ -73,7 +75,7 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -83,7 +85,7 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -104,7 +106,7 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":     "3azones",
-						"vswitch_id":        CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
 						"primary_zone":      "cn-hangzhou-h",
 						"cn_node_count":     "3",
 						"dn_class":          "mysql.n4.medium.25",
@@ -112,8 +114,8 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 						"dn_node_count":     "3",
 						"secondary_zone":    "cn-hangzhou-g",
 						"tertiary_zone":     "cn-hangzhou-k",
-						"vpc_id":            CHECKSET,
-						"resource_group_id": CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -127,8 +129,8 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4504(t *testing.T) {
 }
 
 var AlicloudDrdsPolardbxInstanceMap4504 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudDrdsPolardbxInstanceBasicDependence4504(name string) string {
@@ -156,22 +158,22 @@ data "alicloud_vswitches" "default" {
 func TestAccAliCloudDrdsPolardbxInstance_basic12277(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12277)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12277)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdrds%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12277)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12277)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -191,17 +193,17 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12277(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":            "1azone",
-						"vswitch_id":               CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
 						"primary_zone":             "cn-beijing-f",
-						"cn_node_count":            CHECKSET,
+						"cn_node_count":            acctest.CHECKSET,
 						"dn_class":                 "mysql.x8.large.25",
 						"cn_class":                 "polarx.x8.large.2e",
-						"dn_node_count":            CHECKSET,
-						"vpc_id":                   CHECKSET,
+						"dn_node_count":            acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
 						"is_read_db_instance":      "false",
-						"primary_db_instance_name": CHECKSET,
-						"resource_group_id":        CHECKSET,
-						"engine_version":           CHECKSET,
+						"primary_db_instance_name": acctest.CHECKSET,
+						"resource_group_id":        acctest.CHECKSET,
+						"engine_version":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -226,9 +228,9 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12277(t *testing.T) {
 }
 
 var AlicloudDrdsPolardbxInstanceMap12277 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudDrdsPolardbxInstanceBasicDependence12277(name string) string {
@@ -256,22 +258,22 @@ data "alicloud_vswitches" "default" {
 func TestAccAliCloudDrdsPolardbxInstance_basic12278(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12278)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12278)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdrds%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12278)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12278)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -291,17 +293,17 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12278(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":            "1azone",
-						"vswitch_id":               CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
 						"primary_zone":             "cn-beijing-f",
-						"cn_node_count":            CHECKSET,
+						"cn_node_count":            acctest.CHECKSET,
 						"dn_class":                 "mysql.n4.xlarge.25",
 						"cn_class":                 "polarx.x4.xlarge.2e",
-						"dn_node_count":            CHECKSET,
-						"vpc_id":                   CHECKSET,
+						"dn_node_count":            acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
 						"is_read_db_instance":      "false",
-						"primary_db_instance_name": CHECKSET,
-						"resource_group_id":        CHECKSET,
-						"engine_version":           CHECKSET,
+						"primary_db_instance_name": acctest.CHECKSET,
+						"resource_group_id":        acctest.CHECKSET,
+						"engine_version":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -326,9 +328,9 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12278(t *testing.T) {
 }
 
 var AlicloudDrdsPolardbxInstanceMap12278 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudDrdsPolardbxInstanceBasicDependence12278(name string) string {
@@ -356,22 +358,22 @@ data "alicloud_vswitches" "default" {
 func TestAccAliCloudDrdsPolardbxInstance_basic12257(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12257)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12257)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdrds%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12257)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12257)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -394,19 +396,19 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12257(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":            "3azones",
-						"vswitch_id":               CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
 						"primary_zone":             "cn-beijing-f",
-						"cn_node_count":            CHECKSET,
+						"cn_node_count":            acctest.CHECKSET,
 						"dn_class":                 "mysql.n4.medium.25",
 						"cn_class":                 "polarx.x4.medium.2e",
-						"dn_node_count":            CHECKSET,
-						"vpc_id":                   CHECKSET,
+						"dn_node_count":            acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
 						"is_read_db_instance":      "false",
-						"primary_db_instance_name": CHECKSET,
-						"resource_group_id":        CHECKSET,
+						"primary_db_instance_name": acctest.CHECKSET,
+						"resource_group_id":        acctest.CHECKSET,
 						"secondary_zone":           "cn-beijing-k",
 						"tertiary_zone":            "cn-beijing-h",
-						"engine_version":           CHECKSET,
+						"engine_version":           acctest.CHECKSET,
 						"description":              "test57",
 					}),
 				),
@@ -429,7 +431,7 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12257(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -444,9 +446,9 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12257(t *testing.T) {
 }
 
 var AlicloudDrdsPolardbxInstanceMap12257 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudDrdsPolardbxInstanceBasicDependence12257(name string) string {
@@ -475,22 +477,22 @@ data "alicloud_vswitches" "default" {
 func TestAccAliCloudDrdsPolardbxInstance_basic12261(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12261)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap12261)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdrds%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12261)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence12261)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -511,17 +513,17 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12261(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":            "1azone",
-						"vswitch_id":               CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
 						"primary_zone":             "cn-beijing-f",
-						"cn_node_count":            CHECKSET,
+						"cn_node_count":            acctest.CHECKSET,
 						"dn_class":                 "mysql.n4.medium.25",
 						"cn_class":                 "polarx.x4.medium.2e",
-						"dn_node_count":            CHECKSET,
-						"vpc_id":                   CHECKSET,
+						"dn_node_count":            acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
 						"is_read_db_instance":      "false",
-						"primary_db_instance_name": CHECKSET,
-						"resource_group_id":        CHECKSET,
-						"engine_version":           CHECKSET,
+						"primary_db_instance_name": acctest.CHECKSET,
+						"resource_group_id":        acctest.CHECKSET,
+						"engine_version":           acctest.CHECKSET,
 						"description":              "test57",
 					}),
 				),
@@ -547,9 +549,9 @@ func TestAccAliCloudDrdsPolardbxInstance_basic12261(t *testing.T) {
 }
 
 var AlicloudDrdsPolardbxInstanceMap12261 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudDrdsPolardbxInstanceBasicDependence12261(name string) string {
@@ -578,22 +580,22 @@ data "alicloud_vswitches" "default" {
 func TestAccAliCloudDrdsPolardbxInstance_basic83815836(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap83815836)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap83815836)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdrds%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence83815836)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence83815836)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -610,14 +612,14 @@ func TestAccAliCloudDrdsPolardbxInstance_basic83815836(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"topology_type":  "1azone",
-						"vswitch_id":     CHECKSET,
+						"vswitch_id":     acctest.CHECKSET,
 						"primary_zone":   "cn-beijing-f",
-						"cn_node_count":  CHECKSET,
+						"cn_node_count":  acctest.CHECKSET,
 						"dn_class":       "mysql.n4.medium.25",
 						"cn_class":       "polarx.x4.medium.2e",
-						"dn_node_count":  CHECKSET,
-						"vpc_id":         CHECKSET,
-						"engine_version": CHECKSET,
+						"dn_node_count":  acctest.CHECKSET,
+						"vpc_id":         acctest.CHECKSET,
+						"engine_version": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -659,9 +661,9 @@ func TestAccAliCloudDrdsPolardbxInstance_basic83815836(t *testing.T) {
 }
 
 var AlicloudDrdsPolardbxInstanceMap83815836 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudDrdsPolardbxInstanceBasicDependence83815836(name string) string {
@@ -690,23 +692,23 @@ data "alicloud_vswitches" "default" {
 func TestAccAliCloudDrdsPolardbxInstance_basic83815836_cloudauto(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_drds_polardbx_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap83815836)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DrdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDrdsPolardbxInstanceMap83815836)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardbx.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDrdsPolardbxInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccdrds%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence83815836)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDrdsPolardbxInstanceBasicDependence83815836)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "ALICLOUD_TEST_DRDS_POLARDBX_CLOUDAUTO")
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithEnvVariable(t, "ALICLOUD_TEST_DRDS_POLARDBX_CLOUDAUTO")
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
