@@ -176,7 +176,25 @@ func NotFoundError(err error) bool {
 	}
 
 	if e, ok := err.(*tea.SDKError); ok {
-		return tea.IntValue(e.StatusCode) == 404 || regexp.MustCompile(NotFound).MatchString(tea.StringValue(e.Message))
+		// Classify by HTTP status and structured error Code, not by the
+		// human-readable Message. The previous Message-substring check
+		// (regexp "NotFound" on e.Message) read any error whose message
+		// happened to contain "NotFound" — a 403 APINotAuthorize, a 403
+		// with "404" in metadata, or a 500 InternalError — as
+		// resource-missing, which made Resource Read clear live state
+		// (d.SetId("")) and CheckDestroy report destruction complete.
+		// Product not-found codes carry a NotFound/NotExist token in Code
+		// (InvalidInstanceId.NotFound, ResourceNotFound, EntityNotExist.User,
+		// Forbidden.InstanceNotFound, Instance.Notfound), while
+		// auth/throttle/service codes do not. StatusCode==404 and Code=="404"
+		// cover the HTTP- and SDK-level not-found markers; Data is not
+		// consulted so a "404" buried in metadata cannot fake absence.
+		statusCode := tea.IntValue(e.StatusCode)
+		code := strings.ToLower(tea.StringValue(e.Code))
+		return statusCode == 404 ||
+			code == "404" ||
+			strings.Contains(code, "notfound") ||
+			strings.Contains(code, "notexist")
 	}
 
 	if e, ok := err.(*errors.ServerError); ok {
