@@ -1,33 +1,35 @@
-package alicloud
+package das_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/das"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudDasSqlLogConfig_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_das_sql_log_config.default"
-	ra := resourceAttrInit(resourceId, AliCloudDasSqlLogConfigMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDasSqlLogConfigMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return das.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDasSqlLogConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDasSqlLogConfig-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDasSqlLogConfigBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDasSqlLogConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,7 +41,7 @@ func TestAccAliCloudDasSqlLogConfig_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":    CHECKSET,
+						"instance_id":    acctest.CHECKSET,
 						"enable":         "true",
 						"request_enable": "true",
 						"retention":      "30",
@@ -82,7 +84,7 @@ func TestAccAliCloudDasSqlLogConfig_basic0(t *testing.T) {
 }
 
 var AliCloudDasSqlLogConfigMap0 = map[string]string{
-	"instance_id": CHECKSET,
+	"instance_id": acctest.CHECKSET,
 }
 
 func AliCloudDasSqlLogConfigBasicDependence0(name string) string {
@@ -121,6 +123,7 @@ func AliCloudDasSqlLogConfigBasicDependence0(name string) string {
   		db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   		vswitch_id    = alicloud_vswitch.default.id
   		description   = var.name
+  		encrypt_new_tables = "OFF"
 	}
 `, name)
 }

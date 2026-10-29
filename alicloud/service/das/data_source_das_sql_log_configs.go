@@ -1,16 +1,19 @@
-package alicloud
+package das
 
 import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudDasSqlLogConfigs() *schema.Resource {
+func DataSourceDasSqlLogConfigs() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudDasSqlLogConfigsRead,
+		Read: dataSourceDasSqlLogConfigsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -74,19 +77,19 @@ func dataSourceAliCloudDasSqlLogConfigs() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudDasSqlLogConfigsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDasSqlLogConfigsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dasServiceV2 := DasServiceV2{client}
+	dasService := NewService(client)
 
 	instanceId := d.Get("instance_id").(string)
 
-	objectRaw, err := dasServiceV2.DescribeDasSqlLogConfig(instanceId)
+	objectRaw, err := dasService.DescribeDasSqlLogConfig(instanceId)
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	dataRawObj, _ := jsonpath.Get("$.Data", objectRaw)
@@ -95,28 +98,28 @@ func dataSourceAliCloudDasSqlLogConfigsRead(d *schema.ResourceData, meta interfa
 		dataRaw = map[string]interface{}{}
 	}
 
-	enableVal, err := formatBool(dataRaw["SqlLogEnable"])
+	enableVal, err := convert.FormatBool(dataRaw["SqlLogEnable"])
 	if err != nil {
 		return err
 	}
-	request_enableVal, err := formatBool(dataRaw["RequestEnable"])
+	request_enableVal, err := convert.FormatBool(dataRaw["RequestEnable"])
 	if err != nil {
 		return err
 	}
-	retentionVal, err := formatInt(dataRaw["Retention"])
+	retentionVal, err := convert.FormatInt(dataRaw["Retention"])
 	if err != nil {
 		return err
 	}
-	hot_retentionVal, err := formatInt(dataRaw["HotRetention"])
+	hot_retentionVal, err := convert.FormatInt(dataRaw["HotRetention"])
 	if err != nil {
 		return err
 	}
-	cold_retentionVal, err := formatInt(dataRaw["ColdRetention"])
+	cold_retentionVal, err := convert.FormatInt(dataRaw["ColdRetention"])
 	if err != nil {
 		return err
 	}
 
-	sql_log_visible_timeVal, err := formatInt(dataRaw["SqlLogVisibleTime"])
+	sql_log_visible_timeVal, err := convert.FormatInt(dataRaw["SqlLogVisibleTime"])
 	if err != nil {
 		return err
 	}
@@ -132,20 +135,20 @@ func dataSourceAliCloudDasSqlLogConfigsRead(d *schema.ResourceData, meta interfa
 		"sql_log_visible_time": sql_log_visible_timeVal,
 	}
 
-	d.SetId(dataResourceIdHash([]string{instanceId}))
+	d.SetId(helper.DataResourceIdHash([]string{instanceId}))
 	if err := d.Set("instance_id", instanceId); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("ids", []string{instanceId}); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("configs", []map[string]interface{}{mapping}); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		if err := writeToFile(output.(string), []map[string]interface{}{mapping}); err != nil {
-			return WrapError(fmt.Errorf("writing output file: %w", err))
+		if err := helper.WriteToFile(output.(string), []map[string]interface{}{mapping}); err != nil {
+			return errs.WrapError(fmt.Errorf("writing output file: %w", err))
 		}
 	}
 

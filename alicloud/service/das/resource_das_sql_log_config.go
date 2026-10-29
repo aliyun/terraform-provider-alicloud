@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package das
 
 import (
 	"log"
@@ -7,16 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDasSqlLogConfig() *schema.Resource {
+func ResourceDasSqlLogConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDasSqlLogConfigCreate,
-		Read:   resourceAliCloudDasSqlLogConfigRead,
-		Update: resourceAliCloudDasSqlLogConfigUpdate,
-		Delete: resourceAliCloudDasSqlLogConfigDelete,
+		Create: resourceDasSqlLogConfigCreate,
+		Read:   resourceDasSqlLogConfigRead,
+		Update: resourceDasSqlLogConfigUpdate,
+		Delete: resourceDasSqlLogConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -71,7 +74,7 @@ func resourceAliCloudDasSqlLogConfig() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDasSqlLogConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDasSqlLogConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -97,11 +100,11 @@ func resourceAliCloudDasSqlLogConfigCreate(d *schema.ResourceData, meta interfac
 		request["HotRetention"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("DAS", "2020-01-16", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -109,28 +112,28 @@ func resourceAliCloudDasSqlLogConfigCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_das_sql_log_config", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_das_sql_log_config", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(instanceId)
 
-	return resourceAliCloudDasSqlLogConfigRead(d, meta)
+	return resourceDasSqlLogConfigRead(d, meta)
 }
 
-func resourceAliCloudDasSqlLogConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDasSqlLogConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dasServiceV2 := DasServiceV2{client}
+	dasService := NewService(client)
 
-	objectRaw, err := dasServiceV2.DescribeDasSqlLogConfig(d.Id())
+	objectRaw, err := dasService.DescribeDasSqlLogConfig(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_das_sql_log_config DescribeDasSqlLogConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	dataRawObj, _ := jsonpath.Get("$.Data", objectRaw)
@@ -151,7 +154,7 @@ func resourceAliCloudDasSqlLogConfigRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAliCloudDasSqlLogConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDasSqlLogConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -191,11 +194,11 @@ func resourceAliCloudDasSqlLogConfigUpdate(d *schema.ResourceData, meta interfac
 			request["HotRetention"] = v
 		}
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DAS", "2020-01-16", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -203,16 +206,16 @@ func resourceAliCloudDasSqlLogConfigUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDasSqlLogConfigRead(d, meta)
+	return resourceDasSqlLogConfigRead(d, meta)
 }
 
-func resourceAliCloudDasSqlLogConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDasSqlLogConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Sql Log Config. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

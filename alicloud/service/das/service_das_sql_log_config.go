@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package das
 
 import (
 	"fmt"
@@ -7,18 +7,15 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
-
-type DasServiceV2 struct {
-	client *connectivity.AliyunClient
-}
 
 // DescribeDasSqlLogConfig <<< Encapsulated get interface for Das SqlLogConfig.
 
-func (s *DasServiceV2) DescribeDasSqlLogConfig(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDasSqlLogConfig(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -29,12 +26,12 @@ func (s *DasServiceV2) DescribeDasSqlLogConfig(id string) (object map[string]int
 
 	action := "DescribeSqlLogConfig"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DAS", "2020-01-16", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -42,27 +39,27 @@ func (s *DasServiceV2) DescribeDasSqlLogConfig(id string) (object map[string]int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	code, _ := jsonpath.Get("$.Data", response)
-	if InArray(fmt.Sprint(code), []string{"-404"}) {
-		return object, WrapErrorf(NotFoundErr("SqlLogConfig", id), NotFoundMsg, response)
+	if helper.InArray(fmt.Sprint(code), []string{"-404"}) {
+		return object, errs.WrapErrorf(errs.NotFoundErr("SqlLogConfig", id), errs.NotFoundMsg, response)
 	}
 
 	return response, nil
 }
 
-func (s *DasServiceV2) DasSqlLogConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DasSqlLogConfigStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.DasSqlLogConfigStateRefreshFuncWithApi(id, field, failStates, s.DescribeDasSqlLogConfig)
 }
 
-func (s *DasServiceV2) DasSqlLogConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+func (s *Service) DasSqlLogConfigStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -76,7 +73,7 @@ func (s *DasServiceV2) DasSqlLogConfigStateRefreshFuncWithApi(id string, field s
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

@@ -1,33 +1,34 @@
-package alicloud
+package das_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDasSqlLogConfigDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	instanceIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudDasSqlLogConfigDataSourceConfig(rand, map[string]string{
+	instanceIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudDasSqlLogConfigDataSourceConfig(rand, map[string]string{
 			"instance_id": `"${alicloud_das_sql_log_config.default.instance_id}"`,
 		}),
 	}
 
-	DasSqlLogConfigCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, func() {
-		testAccPreCheck(t)
+	DasSqlLogConfigCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, func() {
+		acctest.PreCheck(t)
 	}, instanceIdConf)
 }
 
 var existDasSqlLogConfigMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"configs.#":               "1",
-		"configs.0.instance_id":   CHECKSET,
+		"configs.0.instance_id":   acctest.CHECKSET,
 		"configs.0.retention":     "30",
 		"configs.0.hot_retention": "7",
 		"ids.#":                   "1",
@@ -41,10 +42,10 @@ var fakeDasSqlLogConfigMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var DasSqlLogConfigCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_das_sql_log_configs.default",
-	existMapFunc: existDasSqlLogConfigMapFunc,
-	fakeMapFunc:  fakeDasSqlLogConfigMapFunc,
+var DasSqlLogConfigCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_das_sql_log_configs.default",
+	ExistMapFunc: existDasSqlLogConfigMapFunc,
+	FakeMapFunc:  fakeDasSqlLogConfigMapFunc,
 }
 
 func testAccCheckAliCloudDasSqlLogConfigDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -86,6 +87,7 @@ resource "alicloud_polardb_cluster" "default" {
   db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   vswitch_id    = alicloud_vswitch.default.id
   description   = var.name
+  encrypt_new_tables = "OFF"
 }
 
 resource "alicloud_das_sql_log_config" "default" {

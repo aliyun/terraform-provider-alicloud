@@ -444,7 +444,6 @@ func Provider() *schema.Provider {
 			"alicloud_cs_cluster_credential":             dataSourceAlicloudCSClusterCredential(),
 
 			// das
-			"alicloud_das_sql_log_configs": dataSourceAliCloudDasSqlLogConfigs(),
 
 			// data
 			"alicloud_data_works_service": dataSourceAlicloudDataWorksService(),
@@ -1534,8 +1533,6 @@ func Provider() *schema.Provider {
 			"alicloud_cs_autoscaling_config":         resourceAlicloudCSAutoscalingConfig(),
 
 			// das
-			"alicloud_das_sql_log_config": resourceAliCloudDasSqlLogConfig(),
-			"alicloud_das_switch_das_pro": resourceAlicloudDasSwitchDasPro(),
 
 			// data
 			"alicloud_data_works_di_alarm_rule":           resourceAliCloudDataWorksDiAlarmRule(),
