@@ -1,44 +1,45 @@
-package alicloud
+package mhub_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudMhubAppDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
+func TestAccAliCloudMhubAppDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_mhub_app.default.product_id}"`,
 			"ids":        `["${alicloud_mhub_app.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_mhub_app.default.product_id}"`,
 			"ids":        `["${alicloud_mhub_app.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_mhub_app.default.product_id}"`,
 			"name_regex": `"${alicloud_mhub_app.default.app_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_mhub_app.default.product_id}"`,
 			"name_regex": `"${alicloud_mhub_app.default.app_name}_fake"`,
 		}),
 	}
 
-	osTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
+	osTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_mhub_app.default.product_id}"`,
 			"os_type":    `"Android"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMhubAppDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_mhub_app.default.product_id}"`,
 			"os_type":    `"iOS"`,
 		}),
@@ -50,7 +51,7 @@ func TestAccAlicloudMhubAppDataSource(t *testing.T) {
 			"names.#":             "1",
 			"apps.#":              "1",
 			"apps.0.app_name":     fmt.Sprintf("tf_testaccmhub%d", rand),
-			"apps.0.app_key":      CHECKSET,
+			"apps.0.app_key":      acctest.CHECKSET,
 			"apps.0.industry_id":  "0",
 			"apps.0.package_name": "com.test.android",
 			"apps.0.type":         "Android",
@@ -64,18 +65,18 @@ func TestAccAlicloudMhubAppDataSource(t *testing.T) {
 		}
 	}
 
-	var AlicloudMhubAppCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_mhub_apps.default",
-		existMapFunc: existAlicloudMhubAppDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudMhubAppDataSourceNameMapFunc,
+	var AlicloudMhubAppCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_mhub_apps.default",
+		ExistMapFunc: existAlicloudMhubAppDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudMhubAppDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
 	}
 
-	AlicloudMhubAppCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, osTypeConf)
+	AlicloudMhubAppCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, osTypeConf)
 }
 func testAccCheckAlicloudMhubAppDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -85,7 +86,7 @@ func testAccCheckAlicloudMhubAppDataSourceName(rand int, attrMap map[string]stri
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf_testaccmhub%d"
 }
 
@@ -100,7 +101,7 @@ resource "alicloud_mhub_app" "default"{
   type = "Android"
 }
 
-data "alicloud_mhub_apps" "default" {	
+data "alicloud_mhub_apps" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
