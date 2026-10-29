@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"encoding/json"
@@ -10,16 +10,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDataWorksDiJob() *schema.Resource {
+func ResourceDiJob() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksDiJobCreate,
-		Read:   resourceAliCloudDataWorksDiJobRead,
-		Update: resourceAliCloudDataWorksDiJobUpdate,
-		Delete: resourceAliCloudDataWorksDiJobDelete,
+		Create: resourceDiJobCreate,
+		Read:   resourceDiJobRead,
+		Update: resourceDiJobUpdate,
+		Delete: resourceDiJobDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -289,7 +294,7 @@ func resourceAliCloudDataWorksDiJob() *schema.Resource {
 									"action": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"Include"}, false),
+										ValidateFunc: validators.StringInSlice([]string{"Include"}, false),
 									},
 									"expression": {
 										Type:     schema.TypeString,
@@ -298,7 +303,7 @@ func resourceAliCloudDataWorksDiJob() *schema.Resource {
 									"expression_type": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"Exact"}, false),
+										ValidateFunc: validators.StringInSlice([]string{"Exact"}, false),
 									},
 								},
 							},
@@ -334,7 +339,7 @@ func resourceAliCloudDataWorksDiJob() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiJobCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -346,26 +351,26 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	query["ProjectId"] = d.Get("project_id")
 	query["RegionId"] = client.RegionId
-	query["ClientToken"] = buildClientToken(action)
+	query["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("destination_data_source_type"); ok {
-		query["DestinationDataSourceType"] = StringPointer(v.(string))
+		query["DestinationDataSourceType"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
-		query["Description"] = StringPointer(v.(string))
+		query["Description"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("source_data_source_type"); ok {
-		query["SourceDataSourceType"] = StringPointer(v.(string))
+		query["SourceDataSourceType"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("job_name"); ok {
-		query["JobName"] = StringPointer(v.(string))
+		query["JobName"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("migration_type"); ok {
-		query["MigrationType"] = StringPointer(v.(string))
+		query["MigrationType"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("destination_data_source_settings"); ok {
@@ -378,7 +383,7 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 		}
 		destinationDataSourceSettingsMapsJson, err := json.Marshal(destinationDataSourceSettingsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["DestinationDataSourceSettings"] = string(destinationDataSourceSettingsMapsJson)
 	}
@@ -403,7 +408,7 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 		}
 		sourceDataSourceSettingsMapsJson, err := json.Marshal(sourceDataSourceSettingsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["SourceDataSourceSettings"] = string(sourceDataSourceSettingsMapsJson)
 	}
@@ -447,7 +452,7 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["ResourceSettings"] = string(objectDataLocalMapJson)
 	}
@@ -484,7 +489,7 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 		}
 		tableMappingsMapsJson, err := json.Marshal(tableMappingsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["TableMappings"] = string(tableMappingsMapsJson)
 	}
@@ -502,14 +507,14 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 		}
 		transformationRulesMapsJson, err := json.Marshal(transformationRulesMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["TransformationRules"] = string(transformationRulesMapsJson)
 	}
 
 	objectDataLocalMap1 := make(map[string]interface{})
 
-	if v := d.Get("job_settings"); !IsNil(v) {
+	if v := d.Get("job_settings"); !helper.IsNil(v) {
 		if v, ok := d.GetOk("job_settings"); ok {
 			localData7, err := jsonpath.Get("$[0].ddl_handling_settings", v)
 			if err != nil {
@@ -584,16 +589,16 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 
 		objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["JobSettings"] = string(objectDataLocalMap1Json)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -601,29 +606,29 @@ func resourceAliCloudDataWorksDiJobCreate(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_di_job", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_di_job", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", query["ProjectId"], response["DIJobId"]))
 
-	return resourceAliCloudDataWorksDiJobRead(d, meta)
+	return resourceDiJobRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDiJobRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDiJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksDiJob(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_di_job DescribeDataWorksDiJob Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Description"] != nil {
@@ -642,7 +647,7 @@ func resourceAliCloudDataWorksDiJobRead(d *schema.ResourceData, meta interface{}
 		d.Set("source_data_source_type", objectRaw["SourceDataSourceType"])
 	}
 	if objectRaw["DIJobId"] != nil {
-		di_job_idVal, err := formatInt(objectRaw["DIJobId"])
+		di_job_idVal, err := convert.FormatInt(objectRaw["DIJobId"])
 		if err != nil {
 			return err
 		}
@@ -886,7 +891,7 @@ func resourceAliCloudDataWorksDiJobRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -901,11 +906,11 @@ func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface
 	query["DIJobId"] = parts[1]
 	query["ProjectId"] = parts[0]
 	query["RegionId"] = client.RegionId
-	query["ClientToken"] = buildClientToken(action)
+	query["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("description") {
 		update = true
 		if v, ok := d.GetOk("description"); ok {
-			query["Description"] = StringPointer(v.(string))
+			query["Description"] = helper.StringPointer(v.(string))
 		}
 	}
 
@@ -944,7 +949,7 @@ func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface
 		}
 		tableMappingsMapsJson, err := json.Marshal(tableMappingsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["TableMappings"] = string(tableMappingsMapsJson)
 	}
@@ -1024,7 +1029,7 @@ func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface
 
 			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			query["JobSettings"] = string(objectDataLocalMapJson)
 		}
@@ -1045,7 +1050,7 @@ func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface
 			}
 			transformationRulesMapsJson, err := json.Marshal(transformationRulesMapsArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			query["TransformationRules"] = string(transformationRulesMapsJson)
 		}
@@ -1093,17 +1098,17 @@ func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface
 
 		objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["ResourceSettings"] = string(objectDataLocalMap1Json)
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1111,16 +1116,16 @@ func resourceAliCloudDataWorksDiJobUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDataWorksDiJobRead(d, meta)
+	return resourceDiJobRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDiJobDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDiJobDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -1134,12 +1139,12 @@ func resourceAliCloudDataWorksDiJobDelete(d *schema.ResourceData, meta interface
 	query["ProjectId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1147,13 +1152,13 @@ func resourceAliCloudDataWorksDiJobDelete(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"500130"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"500130"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

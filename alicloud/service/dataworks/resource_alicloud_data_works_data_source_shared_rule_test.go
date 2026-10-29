@@ -1,11 +1,13 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudDataWorksDataSourceSharedRule_basic8955(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_data_source_shared_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksDataSourceSharedRuleMap8955)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksDataSourceSharedRuleMap8955)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksDataSourceSharedRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDataSourceSharedRuleBasicDependence8955)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksDataSourceSharedRuleBasicDependence8955)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,8 +41,8 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8955(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"target_project_id": CHECKSET,
-						"data_source_id":    CHECKSET,
+						"target_project_id": acctest.CHECKSET,
+						"data_source_id":    acctest.CHECKSET,
 						"env_type":          "Prod",
 					}),
 				),
@@ -56,8 +58,8 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8955(t *testing.T) {
 }
 
 var AlicloudDataWorksDataSourceSharedRuleMap8955 = map[string]string{
-	"create_time":                CHECKSET,
-	"data_source_shared_rule_id": CHECKSET,
+	"create_time":                acctest.CHECKSET,
+	"data_source_shared_rule_id": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksDataSourceSharedRuleBasicDependence8955(name string) string {
@@ -96,22 +98,22 @@ resource "alicloud_data_works_data_source" "defaultvzu0wG" {
 func TestAccAliCloudDataWorksDataSourceSharedRule_basic8166(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_data_source_shared_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksDataSourceSharedRuleMap8166)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksDataSourceSharedRuleMap8166)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksDataSourceSharedRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDataSourceSharedRuleBasicDependence8166)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksDataSourceSharedRuleBasicDependence8166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -123,8 +125,8 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8166(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"shared_user":       "300803888805783368",
-						"target_project_id": CHECKSET,
-						"data_source_id":    CHECKSET,
+						"target_project_id": acctest.CHECKSET,
+						"data_source_id":    acctest.CHECKSET,
 						"env_type":          "Prod",
 					}),
 				),
@@ -140,8 +142,8 @@ func TestAccAliCloudDataWorksDataSourceSharedRule_basic8166(t *testing.T) {
 }
 
 var AlicloudDataWorksDataSourceSharedRuleMap8166 = map[string]string{
-	"create_time":                CHECKSET,
-	"data_source_shared_rule_id": CHECKSET,
+	"create_time":                acctest.CHECKSET,
+	"data_source_shared_rule_id": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksDataSourceSharedRuleBasicDependence8166(name string) string {

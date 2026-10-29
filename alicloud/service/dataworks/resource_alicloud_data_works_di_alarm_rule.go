@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"encoding/json"
@@ -11,16 +11,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDataWorksDiAlarmRule() *schema.Resource {
+func ResourceDiAlarmRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksDiAlarmRuleCreate,
-		Read:   resourceAliCloudDataWorksDiAlarmRuleRead,
-		Update: resourceAliCloudDataWorksDiAlarmRuleUpdate,
-		Delete: resourceAliCloudDataWorksDiAlarmRuleDelete,
+		Create: resourceDiAlarmRuleCreate,
+		Read:   resourceDiAlarmRuleRead,
+		Update: resourceDiAlarmRuleUpdate,
+		Delete: resourceDiAlarmRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -131,7 +134,7 @@ func resourceAliCloudDataWorksDiAlarmRule() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDataWorksDiAlarmRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiAlarmRuleCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -143,18 +146,18 @@ func resourceAliCloudDataWorksDiAlarmRuleCreate(d *schema.ResourceData, meta int
 	request = make(map[string]interface{})
 	query["DIJobId"] = d.Get("di_job_id")
 	query["RegionId"] = client.RegionId
-	query["ClientToken"] = StringPointer(buildClientToken(action))
+	query["ClientToken"] = helper.StringPointer(helper.BuildClientToken(action))
 
 	if v, ok := d.GetOk("description"); ok {
-		query["Description"] = StringPointer(v.(string))
+		query["Description"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("metric_type"); ok {
-		query["MetricType"] = StringPointer(v.(string))
+		query["MetricType"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("enabled"); ok {
-		query["Enabled"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["Enabled"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("trigger_conditions"); ok {
@@ -170,7 +173,7 @@ func resourceAliCloudDataWorksDiAlarmRuleCreate(d *schema.ResourceData, meta int
 		}
 		triggerConditionsMapsJson, err := json.Marshal(triggerConditionsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["TriggerConditions"] = string(triggerConditionsMapsJson)
 	}
@@ -223,20 +226,20 @@ func resourceAliCloudDataWorksDiAlarmRuleCreate(d *schema.ResourceData, meta int
 
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["NotificationSettings"] = string(objectDataLocalMapJson)
 	}
 
 	if v, ok := d.GetOk("di_alarm_rule_name"); ok {
-		query["Name"] = StringPointer(v.(string))
+		query["Name"] = helper.StringPointer(v.(string))
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -244,29 +247,29 @@ func resourceAliCloudDataWorksDiAlarmRuleCreate(d *schema.ResourceData, meta int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_di_alarm_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_di_alarm_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", query["DIJobId"], response["DIAlarmRuleId"]))
 
-	return resourceAliCloudDataWorksDiAlarmRuleRead(d, meta)
+	return resourceDiAlarmRuleRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDiAlarmRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDiAlarmRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksDiAlarmRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_di_alarm_rule DescribeDataWorksDiAlarmRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Description"] != nil {
@@ -368,7 +371,7 @@ func resourceAliCloudDataWorksDiAlarmRuleRead(d *schema.ResourceData, meta inter
 	return nil
 }
 
-func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiAlarmRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -383,11 +386,11 @@ func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta int
 	query["DIAlarmRuleId"] = parts[1]
 	query["DIJobId"] = parts[0]
 	query["RegionId"] = client.RegionId
-	query["ClientToken"] = buildClientToken(action)
+	query["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("description") {
 		update = true
 		if v, ok := d.GetOk("description"); ok {
-			query["Description"] = StringPointer(v.(string))
+			query["Description"] = helper.StringPointer(v.(string))
 		}
 	}
 
@@ -395,13 +398,13 @@ func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta int
 		update = true
 	}
 	if v, ok := d.GetOk("metric_type"); ok {
-		query["MetricType"] = StringPointer(v.(string))
+		query["MetricType"] = helper.StringPointer(v.(string))
 	}
 
 	if d.HasChange("enabled") {
 		update = true
 		if v, ok := d.GetOk("enabled"); ok {
-			query["Enabled"] = StringPointer(strconv.FormatBool(v.(bool)))
+			query["Enabled"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 		}
 	}
 
@@ -421,7 +424,7 @@ func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta int
 		}
 		triggerConditionsMapsJson, err := json.Marshal(triggerConditionsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["TriggerConditions"] = string(triggerConditionsMapsJson)
 	}
@@ -477,7 +480,7 @@ func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta int
 
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		query["NotificationSettings"] = string(objectDataLocalMapJson)
 	}
@@ -486,15 +489,15 @@ func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta int
 		update = true
 	}
 	if v, ok := d.GetOk("di_alarm_rule_name"); ok {
-		query["Name"] = StringPointer(v.(string))
+		query["Name"] = helper.StringPointer(v.(string))
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -502,16 +505,16 @@ func resourceAliCloudDataWorksDiAlarmRuleUpdate(d *schema.ResourceData, meta int
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDataWorksDiAlarmRuleRead(d, meta)
+	return resourceDiAlarmRuleRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDiAlarmRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDiAlarmRuleDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -525,12 +528,12 @@ func resourceAliCloudDataWorksDiAlarmRuleDelete(d *schema.ResourceData, meta int
 	query["DIJobId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -538,13 +541,13 @@ func resourceAliCloudDataWorksDiAlarmRuleDelete(d *schema.ResourceData, meta int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"500130"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"500130"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

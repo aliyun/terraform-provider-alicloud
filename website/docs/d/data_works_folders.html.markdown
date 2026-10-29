@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Data Works Folders of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.131.0+.
+-> **NOTE:** Available since v1.131.0.
 
 ## Example Usage
 
@@ -41,14 +41,14 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Folder IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `parent_folder_path` - (Required, ForceNew) The parent folder path.
-* `project_id` - (Optional, ForceNew, Available in v1.131.0+) The ID of the project.
-* `project_identifier` - (Optional, ForceNew) The project identifier.
+* `project_id` - (Required, ForceNew, Available in v1.131.0+) The ID of the project.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `folders` - A list of Data Works Folders. Each element contains the following attributes:
-	* `id` - The Folder ID.
-	* `folder_path` - Folder Path.
-	* `project_id` - The ID of the project.
+  * `folder_id` - The ID of the Folder.
+  * `id` - The Folder ID.
+  * `folder_path` - Folder Path.
+  * `project_id` - The ID of the project.

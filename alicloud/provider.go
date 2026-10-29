@@ -461,8 +461,6 @@ func Provider() *schema.Provider {
 			"alicloud_das_sql_log_configs": dataSourceAliCloudDasSqlLogConfigs(),
 
 			// data
-			"alicloud_data_works_service": dataSourceAlicloudDataWorksService(),
-			"alicloud_data_works_folders": dataSourceAlicloudDataWorksFolders(),
 
 			// database
 
@@ -470,7 +468,6 @@ func Provider() *schema.Provider {
 			"alicloud_datahub_service": dataSourceAlicloudDatahubService(),
 
 			// dataworks
-			"alicloud_dataworks_service": dataSourceAlicloudDataWorksService(),
 
 			// db
 			"alicloud_db_zones":                dataSourceAlicloudDBZones(),
@@ -1646,15 +1643,6 @@ func Provider() *schema.Provider {
 			"alicloud_das_switch_das_pro": resourceAlicloudDasSwitchDasPro(),
 
 			// data
-			"alicloud_data_works_di_alarm_rule":           resourceAliCloudDataWorksDiAlarmRule(),
-			"alicloud_data_works_di_job":                  resourceAliCloudDataWorksDiJob(),
-			"alicloud_data_works_dw_resource_group":       resourceAliCloudDataWorksDwResourceGroup(),
-			"alicloud_data_works_network":                 resourceAliCloudDataWorksNetwork(),
-			"alicloud_data_works_data_source_shared_rule": resourceAliCloudDataWorksDataSourceSharedRule(),
-			"alicloud_data_works_data_source":             resourceAliCloudDataWorksDataSource(),
-			"alicloud_data_works_project_member":          resourceAliCloudDataWorksProjectMember(),
-			"alicloud_data_works_project":                 resourceAliCloudDataWorksProject(),
-			"alicloud_data_works_folder":                  resourceAlicloudDataWorksFolder(),
 
 			// database
 

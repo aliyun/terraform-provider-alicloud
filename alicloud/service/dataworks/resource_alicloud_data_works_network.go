@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"fmt"
@@ -7,15 +7,18 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDataWorksNetwork() *schema.Resource {
+func ResourceNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksNetworkCreate,
-		Read:   resourceAliCloudDataWorksNetworkRead,
-		Delete: resourceAliCloudDataWorksNetworkDelete,
+		Create: resourceNetworkCreate,
+		Read:   resourceNetworkRead,
+		Delete: resourceNetworkDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -51,7 +54,7 @@ func resourceAliCloudDataWorksNetwork() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDataWorksNetworkCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -62,16 +65,16 @@ func resourceAliCloudDataWorksNetworkCreate(d *schema.ResourceData, meta interfa
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["VpcId"] = d.Get("vpc_id")
 	request["VswitchId"] = d.Get("vswitch_id")
 	request["ResourceGroupId"] = d.Get("dw_resource_group_id")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -79,29 +82,29 @@ func resourceAliCloudDataWorksNetworkCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_network", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_network", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAliCloudDataWorksNetworkRead(d, meta)
+	return resourceNetworkRead(d, meta)
 }
 
-func resourceAliCloudDataWorksNetworkRead(d *schema.ResourceData, meta interface{}) error {
+func resourceNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksNetwork(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_network DescribeDataWorksNetwork Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CreateTime"] != nil {
@@ -123,7 +126,7 @@ func resourceAliCloudDataWorksNetworkRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudDataWorksNetworkDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteNetwork"
@@ -135,12 +138,12 @@ func resourceAliCloudDataWorksNetworkDelete(d *schema.ResourceData, meta interfa
 	request["Id"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -148,13 +151,13 @@ func resourceAliCloudDataWorksNetworkDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

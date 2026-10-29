@@ -1,11 +1,13 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudDataWorksProject_basic8903(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksProjectMap8903)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksProjectMap8903)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksProjectBasicDependence8903)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksProjectBasicDependence8903)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -50,7 +52,7 @@ func TestAccAliCloudDataWorksProject_basic8903(t *testing.T) {
 						"display_name":            "tf_new_api_display",
 						"dev_role_disabled":       "true",
 						"dev_environment_enabled": "false",
-						"resource_group_id":       CHECKSET,
+						"resource_group_id":       acctest.CHECKSET,
 						"status":                  "Available",
 					}),
 				),
@@ -105,7 +107,7 @@ func TestAccAliCloudDataWorksProject_basic8903(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -157,13 +159,13 @@ func TestAccAliCloudDataWorksProject_basic8903(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},

@@ -1,4 +1,4 @@
-package alicloud
+package dataworks
 
 import (
 	"fmt"
@@ -7,17 +7,26 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type DataWorksServiceV2 struct {
+type Service struct {
 	client *connectivity.AliyunClient
+}
+
+// NewService is the exported constructor for the DataWorks service.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
 }
 
 // DescribeDataWorksProject <<< Encapsulated get interface for DataWorks Project.
 
-func (s *DataWorksServiceV2) DescribeDataWorksProject(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksProject(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -28,12 +37,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksProject(id string) (object map[str
 	query["Id"] = id
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002", "9990040003"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"9990020002", "9990040003"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -41,25 +50,25 @@ func (s *DataWorksServiceV2) DescribeDataWorksProject(id string) (object map[str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"1101080008", "9990040003"}) {
-			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"1101080008", "9990040003"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Project", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *DataWorksServiceV2) DataWorksProjectStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksProjectStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksProject(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -74,7 +83,7 @@ func (s *DataWorksServiceV2) DataWorksProjectStateRefreshFunc(id string, field s
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -84,7 +93,7 @@ func (s *DataWorksServiceV2) DataWorksProjectStateRefreshFunc(id string, field s
 // DescribeDataWorksProject >>> Encapsulated.
 
 // SetResourceTags <<< Encapsulated tag function for DataWorks.
-func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var err error
 		var action string
@@ -93,10 +102,10 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -110,11 +119,11 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -122,9 +131,9 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -142,11 +151,11 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 				request[fmt.Sprintf("Tag.%d.Value", count)] = value
 				count++
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -154,9 +163,9 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -169,14 +178,14 @@ func (s *DataWorksServiceV2) SetResourceTags(d *schema.ResourceData, resourceTyp
 
 // DescribeDataWorksProjectMember <<< Encapsulated get interface for DataWorks ProjectMember.
 
-func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksProjectMember(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetProjectMember"
 	request = make(map[string]interface{})
@@ -185,12 +194,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object m
 	request["UserId"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"9990020002"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"9990020002"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -198,32 +207,32 @@ func (s *DataWorksServiceV2) DescribeDataWorksProjectMember(id string) (object m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
 		// 400010 comes back with HTTP 403 once the queried UserId no longer belongs to the
 		// tenant of the workspace, which means the project member does not exist any more.
-		if IsExpectedErrors(err, []string{"1101080166", "400010"}) {
-			return object, WrapErrorf(NotFoundErr("ProjectMember", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"1101080166", "400010"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ProjectMember", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ProjectMember", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ProjectMember", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ProjectMember", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DataWorksServiceV2) DataWorksProjectMemberStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksProjectMemberStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksProjectMember(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -238,7 +247,7 @@ func (s *DataWorksServiceV2) DataWorksProjectMemberStateRefreshFunc(id string, f
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -249,14 +258,14 @@ func (s *DataWorksServiceV2) DataWorksProjectMemberStateRefreshFunc(id string, f
 
 // DescribeDataWorksDataSource <<< Encapsulated get interface for DataWorks DataSource.
 
-func (s *DataWorksServiceV2) DescribeDataWorksDataSource(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksDataSource(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetDataSource"
 	request = make(map[string]interface{})
@@ -264,12 +273,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSource(id string) (object map[
 	query["Id"] = parts[1]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -277,30 +286,30 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSource(id string) (object map[
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"1000010005"}) {
-			return object, WrapErrorf(NotFoundErr("DataSource", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"1000010005"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DataSource", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.DataSource", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DataSource", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DataSource", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DataWorksServiceV2) DataWorksDataSourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksDataSourceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksDataSource(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -315,7 +324,7 @@ func (s *DataWorksServiceV2) DataWorksDataSourceStateRefreshFunc(id string, fiel
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -326,14 +335,14 @@ func (s *DataWorksServiceV2) DataWorksDataSourceStateRefreshFunc(id string, fiel
 
 // DescribeDataWorksDataSourceSharedRule <<< Encapsulated get interface for DataWorks DataSourceSharedRule.
 
-func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksDataSourceSharedRule(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListDataSourceSharedRules"
 	request = make(map[string]interface{})
@@ -341,12 +350,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 	query["DataSourceId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -354,21 +363,21 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"1000011038", "1000010005"}) {
-			return object, WrapErrorf(NotFoundErr("DataSourceSharedRule", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"1000011038", "1000010005"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DataSourceSharedRule", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.DataSourceSharedRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DataSourceSharedRules[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DataSourceSharedRules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DataSourceSharedRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DataSourceSharedRule", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -382,17 +391,17 @@ func (s *DataWorksServiceV2) DescribeDataWorksDataSourceSharedRule(id string) (o
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("DataSourceSharedRule", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("DataSourceSharedRule", id), errs.NotFoundMsg, response)
 }
 
-func (s *DataWorksServiceV2) DataWorksDataSourceSharedRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksDataSourceSharedRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksDataSourceSharedRule(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -407,7 +416,7 @@ func (s *DataWorksServiceV2) DataWorksDataSourceSharedRuleStateRefreshFunc(id st
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -418,14 +427,14 @@ func (s *DataWorksServiceV2) DataWorksDataSourceSharedRuleStateRefreshFunc(id st
 
 // DescribeDataWorksDiAlarmRule <<< Encapsulated get interface for DataWorks DiAlarmRule.
 
-func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksDiAlarmRule(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "ListDIAlarmRules"
 	request = make(map[string]interface{})
@@ -434,12 +443,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map
 	query["JobId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -447,34 +456,34 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiAlarmRule(id string) (object map
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"500130"}) {
-			return object, WrapErrorf(NotFoundErr("DiAlarmRule", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"500130"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DiAlarmRule", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.PagingInfo.DIJobAlarmRules[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PagingInfo.DIJobAlarmRules[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.PagingInfo.DIJobAlarmRules[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("DiAlarmRule", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DiAlarmRule", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *DataWorksServiceV2) DataWorksDiAlarmRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksDiAlarmRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksDiAlarmRule(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -489,7 +498,7 @@ func (s *DataWorksServiceV2) DataWorksDiAlarmRuleStateRefreshFunc(id string, fie
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -500,14 +509,14 @@ func (s *DataWorksServiceV2) DataWorksDiAlarmRuleStateRefreshFunc(id string, fie
 
 // DescribeDataWorksDiJob <<< Encapsulated get interface for DataWorks DiJob.
 
-func (s *DataWorksServiceV2) DescribeDataWorksDiJob(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksDiJob(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetDIJob"
 	request = make(map[string]interface{})
@@ -516,12 +525,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiJob(id string) (object map[strin
 	query["ProjectId"] = parts[0]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -529,30 +538,30 @@ func (s *DataWorksServiceV2) DescribeDataWorksDiJob(id string) (object map[strin
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"500130"}) {
-			return object, WrapErrorf(NotFoundErr("DiJob", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"500130"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DiJob", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.PagingInfo", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PagingInfo", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.PagingInfo", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DataWorksServiceV2) DataWorksDiJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksDiJobStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksDiJob(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -567,7 +576,7 @@ func (s *DataWorksServiceV2) DataWorksDiJobStateRefreshFunc(id string, field str
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -578,7 +587,7 @@ func (s *DataWorksServiceV2) DataWorksDiJobStateRefreshFunc(id string, field str
 
 // DescribeDataWorksNetwork <<< Encapsulated get interface for DataWorks Network.
 
-func (s *DataWorksServiceV2) DescribeDataWorksNetwork(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksNetwork(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -589,12 +598,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksNetwork(id string) (object map[str
 	query["Id"] = id
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -602,32 +611,32 @@ func (s *DataWorksServiceV2) DescribeDataWorksNetwork(id string) (object map[str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Network", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Network", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Id"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("Network", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Network", id), errs.NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DataWorksServiceV2) DataWorksNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksNetwork(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -642,7 +651,7 @@ func (s *DataWorksServiceV2) DataWorksNetworkStateRefreshFunc(id string, field s
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -653,7 +662,7 @@ func (s *DataWorksServiceV2) DataWorksNetworkStateRefreshFunc(id string, field s
 
 // DescribeDataWorksDwResourceGroup <<< Encapsulated get interface for DataWorks DwResourceGroup.
 
-func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDataWorksDwResourceGroup(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -664,12 +673,12 @@ func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object
 	query["Id"] = id
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, nil)
 
-		if err != nil || IsExpectedErrors(err, []string{"9990040003"}) {
-			if NeedRetry(err) {
+		if err != nil || errs.IsExpectedErrors(err, []string{"9990040003"}) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -677,32 +686,32 @@ func (s *DataWorksServiceV2) DescribeDataWorksDwResourceGroup(id string) (object
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ResourceGroup", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("DwResourceGroup", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DwResourceGroup", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["Id"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("DwResourceGroup", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DwResourceGroup", id), errs.NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DataWorksServiceV2) DataWorksDwResourceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DataWorksDwResourceGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDataWorksDwResourceGroup(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -717,7 +726,7 @@ func (s *DataWorksServiceV2) DataWorksDwResourceGroupStateRefreshFunc(id string,
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
