@@ -1,22 +1,23 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDfsAccessRulesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsAccessRulesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsAccessRulesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_access_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsAccessRulesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsAccessRulesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_access_rule.default.id}_fake"]`,
 		}),
 	}
@@ -25,7 +26,7 @@ func TestAccAliCloudDfsAccessRulesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                   "1",
 			"rules.#":                 "1",
-			"rules.0.access_group_id": CHECKSET,
+			"rules.0.access_group_id": acctest.CHECKSET,
 			"rules.0.description":     fmt.Sprintf("tf-testAccAccessRule-%d", rand),
 			"rules.0.network_segment": "192.0.2.0/24",
 			"rules.0.priority":        "10",
@@ -38,12 +39,12 @@ func TestAccAliCloudDfsAccessRulesDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudDfsAccessRulesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dfs_access_rules.default",
-		existMapFunc: existAlicloudDfsAccessRulesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDfsAccessRulesDataSourceNameMapFunc,
+	var alicloudDfsAccessRulesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_dfs_access_rules.default",
+		ExistMapFunc: existAlicloudDfsAccessRulesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDfsAccessRulesDataSourceNameMapFunc,
 	}
-	alicloudDfsAccessRulesCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	alicloudDfsAccessRulesCheckInfo.DataSourceTestCheck(t, rand, idsConf)
 }
 func testAccCheckAlicloudDfsAccessRulesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

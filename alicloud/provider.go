@@ -465,13 +465,6 @@ func Provider() *schema.Provider {
 			"alicloud_ddoscoo_domain_resources": dataSourceAlicloudDdoscooDomainResources(),
 			"alicloud_ddoscoo_ports":            dataSourceAlicloudDdoscooPorts(),
 
-			// dfs
-			"alicloud_dfs_access_groups": dataSourceAlicloudDfsAccessGroups(),
-			"alicloud_dfs_file_systems":  dataSourceAlicloudDfsFileSystems(),
-			"alicloud_dfs_zones":         dataSourceAlicloudDfsZones(),
-			"alicloud_dfs_access_rules":  dataSourceAlicloudDfsAccessRules(),
-			"alicloud_dfs_mount_points":  dataSourceAlicloudDfsMountPoints(),
-
 			// direct
 			"alicloud_direct_mail_receiverses":        dataSourceAlicloudDirectMailReceiverses(),
 			"alicloud_direct_mail_domains":            dataSourceAliCloudDirectMailDomains(),
@@ -1515,13 +1508,6 @@ func Provider() *schema.Provider {
 			"alicloud_ddoscoo_scheduler_rule":             resourceAlicloudDdoscooSchedulerRule(),
 			"alicloud_ddoscoo_domain_resource":            resourceAliCloudDdosCooDomainResource(),
 			"alicloud_ddoscoo_port":                       resourceAliCloudDdosCooPort(),
-
-			// dfs
-			"alicloud_dfs_vsc_mount_point": resourceAliCloudDfsVscMountPoint(),
-			"alicloud_dfs_access_group":    resourceAliCloudDfsAccessGroup(),
-			"alicloud_dfs_file_system":     resourceAliCloudDfsFileSystem(),
-			"alicloud_dfs_access_rule":     resourceAliCloudDfsAccessRule(),
-			"alicloud_dfs_mount_point":     resourceAliCloudDfsMountPoint(),
 
 			// direct
 			"alicloud_direct_mail_receivers":         resourceAlicloudDirectMailReceivers(),

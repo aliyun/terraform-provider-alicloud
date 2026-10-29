@@ -1,39 +1,40 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDfsFileSystemsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_file_system.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_file_system.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_dfs_file_system.default.file_system_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_dfs_file_system.default.file_system_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_dfs_file_system.default.id}"]`,
 			"name_regex": `"${alicloud_dfs_file_system.default.file_system_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsFileSystemsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_dfs_file_system.default.id}_fake"]`,
 			"name_regex": `"${alicloud_dfs_file_system.default.file_system_name}_fake"`,
 		}),
@@ -57,15 +58,15 @@ func TestAccAliCloudDfsFileSystemsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudDfsFileSystemsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dfs_file_systems.default",
-		existMapFunc: existAlicloudDfsFileSystemsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDfsFileSystemsDataSourceNameMapFunc,
+	var alicloudDfsFileSystemsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_dfs_file_systems.default",
+		ExistMapFunc: existAlicloudDfsFileSystemsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDfsFileSystemsDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudDfsFileSystemsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudDfsFileSystemsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func testAccCheckAlicloudDfsFileSystemsDataSourceName(rand int, attrMap map[string]string) string {

@@ -1,4 +1,4 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
@@ -10,14 +10,19 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +37,7 @@ func init() {
 }
 
 func testSweepDFSFileSystem(region string) error {
-	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DfsSupportRegions)
+	rawClient, err := sweep.SharedClientForRegionWithBackendRegions(region, true, connectivity.DfsSupportRegions)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
@@ -48,11 +53,11 @@ func testSweepDFSFileSystem(region string) error {
 
 	action := "ListFileSystems"
 	var response map[string]interface{}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -104,9 +109,9 @@ func testSweepDFSFileSystem(region string) error {
 
 // lintignore: R001
 func TestUnitAliCloudDFSFileSystem(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(nil, nil)
+	resourceSchema := dfs.ResourceFileSystem()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"storage_type":                     "CreateFileSystemValue",
@@ -128,7 +133,7 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -154,30 +159,30 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dfs_file_system", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dfs_file_system", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsFileSystemCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -199,14 +204,14 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsFileSystemCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -220,12 +225,12 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsFileSystemUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyAccessGroup
@@ -236,11 +241,11 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 		"space_capacity":                   512,
 		"throughput_mode":                  "ModifyFileSystemValue",
 	}
-	diff, err := newInstanceDiff("alicloud_dfs_file_system", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_dfs_file_system", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetFileSystem Response
 		"FileSystem": map[string]interface{}{
@@ -269,14 +274,14 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsFileSystemUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -307,7 +312,7 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsFileSystemRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -319,12 +324,12 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsFileSystemDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidParameter.FileSystemNotFound"}
@@ -348,7 +353,7 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsFileSystemDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -364,22 +369,22 @@ func TestUnitAliCloudDFSFileSystem(t *testing.T) {
 func TestAccAliCloudDfsFileSystem_basic5910(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_file_system.default"
-	ra := resourceAttrInit(resourceId, AliCloudDfsFileSystemMap5910)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDfsFileSystemMap5910)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsFileSystem")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsFileSystemBasicDependence5910)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDfsFileSystemBasicDependence5910)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -419,8 +424,8 @@ func TestAccAliCloudDfsFileSystem_basic5910(t *testing.T) {
 }
 
 var AliCloudDfsFileSystemMap5910 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AliCloudDfsFileSystemBasicDependence5910(name string) string {
@@ -435,22 +440,22 @@ func AliCloudDfsFileSystemBasicDependence5910(name string) string {
 func TestAccAliCloudDfsFileSystem_basic5175(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_file_system.default"
-	ra := resourceAttrInit(resourceId, AliCloudDfsFileSystemMap5175)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDfsFileSystemMap5175)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsFileSystem")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsFileSystemBasicDependence5175)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDfsFileSystemBasicDependence5175)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -523,8 +528,8 @@ func TestAccAliCloudDfsFileSystem_basic5175(t *testing.T) {
 }
 
 var AliCloudDfsFileSystemMap5175 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AliCloudDfsFileSystemBasicDependence5175(name string) string {

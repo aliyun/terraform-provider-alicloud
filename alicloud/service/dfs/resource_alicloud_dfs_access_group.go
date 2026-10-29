@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package dfs. This file is generated automatically. Please do not modify it manually, thank you!
+package dfs
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDfsAccessGroup() *schema.Resource {
+func ResourceAccessGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDfsAccessGroupCreate,
-		Read:   resourceAliCloudDfsAccessGroupRead,
-		Update: resourceAliCloudDfsAccessGroupUpdate,
-		Delete: resourceAliCloudDfsAccessGroupDelete,
+		Create: resourceAccessGroupCreate,
+		Read:   resourceAccessGroupRead,
+		Update: resourceAccessGroupUpdate,
+		Delete: resourceAccessGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,13 +46,13 @@ func resourceAliCloudDfsAccessGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"VPC"}, true),
+				ValidateFunc: validators.StringInSlice([]string{"VPC"}, true),
 			},
 		},
 	}
 }
 
-func resourceAliCloudDfsAccessGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -65,42 +69,42 @@ func resourceAliCloudDfsAccessGroupCreate(d *schema.ResourceData, meta interface
 		request["Description"] = v
 	}
 	request["InputRegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_access_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dfs_access_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AccessGroupId"]))
 
-	return resourceAliCloudDfsAccessGroupRead(d, meta)
+	return resourceAccessGroupRead(d, meta)
 }
 
-func resourceAliCloudDfsAccessGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dfsServiceV2 := DfsServiceV2{client}
+	dfsServiceV2 := ServiceV2{client}
 
 	objectRaw, err := dfsServiceV2.DescribeDfsAccessGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dfs_access_group DescribeDfsAccessGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("access_group_name", objectRaw["AccessGroupName"])
@@ -111,7 +115,7 @@ func resourceAliCloudDfsAccessGroupRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAliCloudDfsAccessGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -133,29 +137,29 @@ func resourceAliCloudDfsAccessGroupUpdate(d *schema.ResourceData, meta interface
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDfsAccessGroupRead(d, meta)
+	return resourceAccessGroupRead(d, meta)
 }
 
-func resourceAliCloudDfsAccessGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAccessGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteAccessGroup"
@@ -167,26 +171,26 @@ func resourceAliCloudDfsAccessGroupDelete(d *schema.ResourceData, meta interface
 	query["AccessGroupId"] = d.Id()
 	request["InputRegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

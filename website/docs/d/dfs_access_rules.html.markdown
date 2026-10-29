@@ -7,11 +7,11 @@ description: |-
   Provides a list of Dfs Access Rules to the user.
 ---
 
-# alicloud\_dfs\_access\_rules
+# alicloud_dfs_access_rules
 
 This data source provides the Dfs Access Rules of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 
@@ -36,16 +36,16 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Access Rule IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `rules` - A list of Dfs Access Rules. Each element contains the following attributes:
-    * `access_group_id` - The resource ID of the Access Group.
-    * `access_rule_id` - The ID of the Access Rule.
-    * `create_time` - The created time of the Access Rule.
-    * `description` - The description of the Access Rule.
-    * `id` - The resource ID of Access Rule.
-    * `network_segment` - The NetworkSegment of the Access Rule.
-    * `priority` - The priority of the Access Rule.
-    * `rw_access_type` - RWAccessType of the Access Rule. Valid values: `RDONLY`, `RDWR`.
+  * `access_group_id` - The resource ID of the Access Group.
+  * `access_rule_id` - The ID of the Access Rule.
+  * `create_time` - The created time of the Access Rule.
+  * `description` - The description of the Access Rule.
+  * `id` - The resource ID of Access Rule.
+  * `network_segment` - The NetworkSegment of the Access Rule.
+  * `priority` - The priority of the Access Rule.
+  * `rw_access_type` - RWAccessType of the Access Rule. Valid values: `RDONLY`, `RDWR`.

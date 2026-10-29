@@ -1,11 +1,13 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_vsc_mount_point.default"
-	ra := resourceAttrInit(resourceId, AliCloudDfsVscMountPointMap5268)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDfsVscMountPointMap5268)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsVscMountPoint")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccdfsvscmountpoint%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,7 +39,7 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"file_system_id": CHECKSET,
+						"file_system_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -71,7 +73,7 @@ func TestAccAliCloudDfsVscMountPoint_basic5268(t *testing.T) {
 }
 
 var AliCloudDfsVscMountPointMap5268 = map[string]string{
-	"mount_point_id": CHECKSET,
+	"mount_point_id": acctest.CHECKSET,
 }
 
 func AliCloudDfsVscMountPointBasicDependence5268(name string) string {
@@ -96,22 +98,22 @@ func AliCloudDfsVscMountPointBasicDependence5268(name string) string {
 func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_vsc_mount_point.default"
-	ra := resourceAttrInit(resourceId, AliCloudDfsVscMountPointMap5268)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDfsVscMountPointMap5268)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsVscMountPoint")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccdfsvscmountpoint%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDfsVscMountPointBasicDependence5268)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -121,7 +123,7 @@ func TestAccAliCloudDfsVscMountPoint_basic5268_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"file_system_id": CHECKSET,
+						"file_system_id": acctest.CHECKSET,
 						"alias_prefix":   name,
 						"description":    name,
 					}),

@@ -1,4 +1,4 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
@@ -7,22 +7,27 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
 // lintignore: R001
 func TestUnitAliCloudDFSMountPoint(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(nil, nil)
+	resourceSchema := dfs.ResourceMountPoint()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"network_type":    "CreateMountPointValue",
@@ -42,7 +47,7 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -67,30 +72,30 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dfs_mount_point", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dfs_mount_point", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsMountPointCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -115,14 +120,14 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsMountPointCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -136,12 +141,12 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsMountPointUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyMountPoint
@@ -150,11 +155,11 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 		"description":     "ModifyMountPointValue",
 		"status":          "ModifyMountPointValue",
 	}
-	diff, err := newInstanceDiff("alicloud_dfs_mount_point", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_dfs_mount_point", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetMountPoint Response
 		"MountPoint": map[string]interface{}{
@@ -181,14 +186,14 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsMountPointUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -200,11 +205,11 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 	}
 
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_dfs_mount_point", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_dfs_mount_point", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -225,7 +230,7 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsMountPointRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -237,20 +242,20 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsMountPointDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_dfs_mount_point", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_dfs_mount_point", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidParameter.MountPointNotFound"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -272,7 +277,7 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsMountPointDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -288,22 +293,22 @@ func TestUnitAliCloudDFSMountPoint(t *testing.T) {
 func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_mount_point.default"
-	ra := resourceAttrInit(resourceId, AliCloudDfsMountPointMap5564)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDfsMountPointMap5564)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsMountPoint")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsmountpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsMountPointBasicDependence5564)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsmountpoint%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDfsMountPointBasicDependence5564)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -315,11 +320,11 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":          CHECKSET,
+						"vpc_id":          acctest.CHECKSET,
 						"network_type":    "VPC",
-						"vswitch_id":      CHECKSET,
-						"file_system_id":  CHECKSET,
-						"access_group_id": CHECKSET,
+						"vswitch_id":      acctest.CHECKSET,
+						"file_system_id":  acctest.CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -329,7 +334,7 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alias_prefix": CHECKSET,
+						"alias_prefix": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -359,7 +364,7 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_group_id": CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -389,7 +394,7 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_group_id": CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -419,7 +424,7 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_group_id": CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -446,13 +451,13 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":          CHECKSET,
+						"vpc_id":          acctest.CHECKSET,
 						"description":     "mountpoint RMC test case",
 						"network_type":    "VPC",
-						"vswitch_id":      CHECKSET,
-						"file_system_id":  CHECKSET,
-						"access_group_id": CHECKSET,
-						"alias_prefix":    CHECKSET,
+						"vswitch_id":      acctest.CHECKSET,
+						"file_system_id":  acctest.CHECKSET,
+						"access_group_id": acctest.CHECKSET,
+						"alias_prefix":    acctest.CHECKSET,
 						"status":          "Active",
 					}),
 				),
@@ -467,10 +472,10 @@ func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
 }
 
 var AliCloudDfsMountPointMap5564 = map[string]string{
-	"status":         CHECKSET,
-	"mount_point_id": CHECKSET,
-	"create_time":    CHECKSET,
-	"region_id":      CHECKSET,
+	"status":         acctest.CHECKSET,
+	"mount_point_id": acctest.CHECKSET,
+	"create_time":    acctest.CHECKSET,
+	"region_id":      acctest.CHECKSET,
 }
 
 func AliCloudDfsMountPointBasicDependence5564(name string) string {
@@ -526,22 +531,22 @@ resource "alicloud_dfs_file_system" "DefaultFs" {
 func TestAccAliCloudDfsMountPoint_basic5564_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_mount_point.default"
-	ra := resourceAttrInit(resourceId, AliCloudDfsMountPointMap5564)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDfsMountPointMap5564)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsMountPoint")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsmountpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDfsMountPointBasicDependence5564)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsmountpoint%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDfsMountPointBasicDependence5564)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -556,14 +561,14 @@ func TestAccAliCloudDfsMountPoint_basic5564_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":          CHECKSET,
+						"vpc_id":          acctest.CHECKSET,
 						"description":     "mountpoint RMC test case fix",
 						"network_type":    "VPC",
-						"vswitch_id":      CHECKSET,
-						"file_system_id":  CHECKSET,
-						"access_group_id": CHECKSET,
+						"vswitch_id":      acctest.CHECKSET,
+						"file_system_id":  acctest.CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 						"status":          "Inactive",
-						"alias_prefix":    CHECKSET,
+						"alias_prefix":    acctest.CHECKSET,
 					}),
 				),
 			},
