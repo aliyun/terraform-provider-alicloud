@@ -1,4 +1,4 @@
-package alicloud
+package mse
 
 import (
 	"fmt"
@@ -7,12 +7,15 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudMseZnode() *schema.Resource {
+func ResourceMseZnode() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudMseZnodeCreate,
 		Read:   resourceAlicloudMseZnodeRead,
@@ -65,11 +68,11 @@ func resourceAlicloudMseZnodeCreate(d *schema.ResourceData, meta interface{}) er
 		request["Data"] = v
 	}
 	request["Path"] = d.Get("path")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -77,12 +80,12 @@ func resourceAlicloudMseZnodeCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_znode", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mse_znode", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(request["ClusterId"], ":", request["Path"]))
@@ -91,19 +94,19 @@ func resourceAlicloudMseZnodeCreate(d *schema.ResourceData, meta interface{}) er
 }
 func resourceAlicloudMseZnodeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 	object, err := mseService.DescribeMseZnode(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mse_znode mseService.DescribeMseZnode Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("cluster_id", parts[0])
 	d.Set("path", object["Path"])
@@ -114,9 +117,9 @@ func resourceAlicloudMseZnodeUpdate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := map[string]interface{}{
 		"ClusterId": parts[0],
@@ -132,11 +135,11 @@ func resourceAlicloudMseZnodeUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	action := "UpdateZnode"
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -144,20 +147,20 @@ func resourceAlicloudMseZnodeUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return resourceAlicloudMseZnodeRead(d, meta)
 }
 func resourceAlicloudMseZnodeDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "DeleteZnode"
 	var response map[string]interface{}
@@ -169,11 +172,11 @@ func resourceAlicloudMseZnodeDelete(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("accept_language"); ok {
 		request["AcceptLanguage"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -181,9 +184,9 @@ func resourceAlicloudMseZnodeDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

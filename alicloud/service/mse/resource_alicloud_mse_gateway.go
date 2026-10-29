@@ -1,4 +1,4 @@
-package alicloud
+package mse
 
 import (
 	"encoding/json"
@@ -7,12 +7,17 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudMseGateway() *schema.Resource {
+func ResourceMseGateway() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudMseGatewayCreate,
 		Read:   resourceAlicloudMseGatewayRead,
@@ -78,7 +83,7 @@ func resourceAlicloudMseGateway() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"tags": tagsSchemaWithElements(),
+			"tags": tags.TagsSchemaWithElements(),
 			"delete_slb": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -158,15 +163,15 @@ func resourceAlicloudMseGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -174,44 +179,44 @@ func resourceAlicloudMseGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_gateway", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mse_gateway", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Code"]) != "200" || fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["GatewayUniqueId"]))
-	mseService := MseService{client}
-	stateConf := BuildStateConf([]string{}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, mseService.MseGatewayStateRefreshFunc(d.Id(), []string{}))
+	mseService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"2"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, mseService.MseGatewayStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAlicloudMseGatewayRead(d, meta)
 }
 func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 	object, err := mseService.DescribeMseGateway(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mse_gateway mseService.DescribeMseGateway Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("backup_vswitch_id", object["Vswitch2"])
 	d.Set("gateway_name", object["Name"])
-	replicaVal, err := formatInt(object["Replica"])
+	replicaVal, err := convert.FormatInt(object["Replica"])
 	if err != nil {
 		return err
 	}
 	d.Set("replica", replicaVal)
 	d.Set("spec", object["Spec"])
-	actualStatus, err := formatInt(object["Status"])
+	actualStatus, err := convert.FormatInt(object["Status"])
 	if err != nil {
 		return err
 	}
@@ -228,15 +233,15 @@ func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) er
 			log.Printf("[DEBUG] Resource alicloud_mse_gateway unmarshal MseTag failed: %s", err)
 		}
 	}
-	d.Set("tags", tagsToMap(tagMap))
+	d.Set("tags", tags.TagsToMap(tagMap))
 
 	slbListObject, err := mseService.ListGatewaySlb(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mse_gateway mseService.ListGatewaySlb Failed!!! %s", err)
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	slbList := slbListObject["SlbList"]
 
@@ -263,7 +268,7 @@ func resourceAlicloudMseGatewayRead(d *schema.ResourceData, meta interface{}) er
 }
 func resourceAlicloudMseGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mseService := MseService{client}
+	mseService := NewService(client)
 
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		action := "ChangeResourceGroup"
@@ -275,37 +280,37 @@ func resourceAlicloudMseGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		var response map[string]interface{}
 		var err error
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("mse", "2019-05-31", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 		// ChangeResourceGroup is accepted asynchronously; wait until GetGateway
 		// reports the new resource group, or the trailing Read persists a stale one.
 		targetGroupId := d.Get("resource_group_id").(string)
-		stateConf := BuildStateConf([]string{}, []string{targetGroupId}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, func() (interface{}, string, error) {
+		stateConf := helper.BuildStateConf([]string{}, []string{targetGroupId}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, func() (interface{}, string, error) {
 			object, err := mseService.DescribeMseGateway(d.Id())
 			if err != nil {
-				return nil, "", WrapError(err)
+				return nil, "", errs.WrapError(err)
 			}
 			return object, fmt.Sprint(object["ResourceGroupId"]), nil
 		})
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -319,11 +324,11 @@ func resourceAlicloudMseGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		var response map[string]interface{}
 		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -331,18 +336,18 @@ func resourceAlicloudMseGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
 	if d.HasChange("tags") {
 		if err := mseService.SetResourceTags(d, "GATEWAY"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -360,11 +365,11 @@ func resourceAlicloudMseGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOkExists("delete_slb"); ok {
 		request["DeleteSlb"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -372,20 +377,20 @@ func resourceAlicloudMseGatewayDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"404"}) {
+	if errs.IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"404"}) {
 		return nil
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	mseService := MseService{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, mseService.MseGatewayStateRefreshFunc(d.Id(), []string{}))
+	mseService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, mseService.MseGatewayStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }

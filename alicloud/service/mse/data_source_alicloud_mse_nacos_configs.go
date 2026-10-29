@@ -1,23 +1,28 @@
-package alicloud
+package mse
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudMseNacosConfigs() *schema.Resource {
+func DataSourceMseNacosConfigs() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudMseNacosConfigsRead,
 		Schema: map[string]*schema.Schema{
 			"accept_language": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"zh", "en"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -127,7 +132,7 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 		request["AcceptLanguage"] = v
 	}
 
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNum"] = 1
 
 	request["InstanceId"] = d.Get("instance_id")
@@ -174,11 +179,11 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("mse", "2019-05-31", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -186,13 +191,13 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_mse_nacos_configs", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_mse_nacos_configs", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Configurations", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Configurations", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Configurations", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -205,13 +210,13 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 				instanceId := request["InstanceId"].(string)
 				dataId := item["DataId"].(string)
 				group := item["Group"].(string)
-				if _, ok := idsMap[fmt.Sprint(EscapeColons(instanceId), ":", EscapeColons(namespaceId.(string)), ":", EscapeColons(dataId), ":", EscapeColons(group))]; !ok {
+				if _, ok := idsMap[fmt.Sprint(helper.EscapeColons(instanceId), ":", helper.EscapeColons(namespaceId.(string)), ":", helper.EscapeColons(dataId), ":", helper.EscapeColons(group))]; !ok {
 					continue
 				}
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNum"] = request["PageNum"].(int) + 1
@@ -234,7 +239,7 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 		instanceId := request["InstanceId"].(string)
 		dataId := object["DataId"].(string)
 		group := object["Group"].(string)
-		id := fmt.Sprint(EscapeColons(instanceId), ":", EscapeColons(namespaceId.(string)), ":", EscapeColons(dataId), ":", EscapeColons(group))
+		id := fmt.Sprint(helper.EscapeColons(instanceId), ":", helper.EscapeColons(namespaceId.(string)), ":", helper.EscapeColons(dataId), ":", helper.EscapeColons(group))
 		mapping["id"] = id
 
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
@@ -243,10 +248,10 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 			continue
 		}
 
-		mseService := MseService{client}
+		mseService := NewService(client)
 		getResp, err := mseService.DescribeMseNacosConfig(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["type"] = getResp["Type"]
 		mapping["tags"] = getResp["Tags"]
@@ -262,17 +267,17 @@ func dataSourceAlicloudMseNacosConfigsRead(d *schema.ResourceData, meta interfac
 
 	}
 	//标准代码
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("configs", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

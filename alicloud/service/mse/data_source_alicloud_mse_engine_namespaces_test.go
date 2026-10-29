@@ -1,21 +1,22 @@
-package alicloud
+package mse_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudMseEngineNamespacesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MSESupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_engine_namespace.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mse_engine_namespace.default.id}_fake"]`,
 		}),
 	}
@@ -26,11 +27,11 @@ func TestAccAliCloudMseEngineNamespacesDataSource(t *testing.T) {
 			"namespaces.0.namespace_desc":      "",
 			"namespaces.0.namespace_show_name": "public",
 			"namespaces.0.namespace_id":        "",
-			"namespaces.0.service_count":       CHECKSET,
-			"namespaces.0.quota":               CHECKSET,
-			"namespaces.0.type":                CHECKSET,
-			"namespaces.0.config_count":        CHECKSET,
-			"namespaces.0.id":                  CHECKSET,
+			"namespaces.0.service_count":       acctest.CHECKSET,
+			"namespaces.0.quota":               acctest.CHECKSET,
+			"namespaces.0.type":                acctest.CHECKSET,
+			"namespaces.0.config_count":        acctest.CHECKSET,
+			"namespaces.0.id":                  acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudMseEngineNamespacesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -38,16 +39,16 @@ func TestAccAliCloudMseEngineNamespacesDataSource(t *testing.T) {
 			"ids.#": "2",
 		}
 	}
-	var alicloudMseEngineNamespacesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_mse_engine_namespaces.default",
-		existMapFunc: existAlicloudMseEngineNamespacesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudMseEngineNamespacesDataSourceNameMapFunc,
+	var alicloudMseEngineNamespacesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_mse_engine_namespaces.default",
+		ExistMapFunc: existAlicloudMseEngineNamespacesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudMseEngineNamespacesDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudMseEngineNamespacesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	alicloudMseEngineNamespacesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
 func testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
