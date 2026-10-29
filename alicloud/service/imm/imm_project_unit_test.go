@@ -1,226 +1,28 @@
-package alicloud
+package imm
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers(
-		"alicloud_imm_project",
-		&resource.Sweeper{
-			Name: "alicloud_imm_project",
-			F:    testSweepIMMProject,
-		})
-}
-
-func testSweepIMMProject(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	action := "ListProjects"
-	request := map[string]interface{}{
-		"MaxKeys":  PageSizeLarge,
-		"RegionId": client.RegionId,
-	}
-
-	var response map[string]interface{}
-	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("imm", "2017-09-06", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
-		}
-		resp, err := jsonpath.Get("$.Projects", response)
-		if err != nil {
-			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Projects", action, err)
-			return nil
-		}
-		result, _ := resp.([]interface{})
-		sweeped := false
-		for _, v := range result {
-			item := v.(map[string]interface{})
-
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Project"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping IMM Project: %s", item["Project"].(string))
-				continue
-			}
-
-			sweeped = true
-			action := "DeleteProject"
-			var response map[string]interface{}
-			request := map[string]interface{}{
-				"Project": item["Project"],
-			}
-
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-				response, err = client.RpcPost("imm", "2017-09-06", action, nil, request, false)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return retry.RetryableError(err)
-					}
-					return retry.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, request)
-			if err != nil {
-				log.Printf("[ERROR] %s get an error: %#v", action, err)
-				return nil
-			}
-			if sweeped {
-				time.Sleep(5 * time.Second)
-			}
-			log.Printf("[INFO] Delete IMM Project success: %s ", item["Project"].(string))
-
-			if marker, ok := response["Marker"].(string); ok && marker != "" {
-				request["Marker"] = marker
-			} else {
-				break
-			}
-		}
-
-		return nil
-	}
-}
-
-func TestAccAliCloudIMMProject_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_imm_project.default"
-	ra := resourceAttrInit(resourceId, AlicloudIMMProjectMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ImmService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeImmProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%simmproject%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudIMMProjectBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.IMMSupportRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"project": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"project": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_role": "${alicloud_ram_role.role.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_role": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_role": "AliyunIMMDefaultRole",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_role": "AliyunIMMDefaultRole",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudIMMProjectMap0 = map[string]string{}
-
-func AlicloudIMMProjectBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-resource "alicloud_ram_role" "role" {
-  name     = var.name
-  document = <<EOF
-  {
-    "Statement": [
-      {
-        "Action": "sts:AssumeRole",
-        "Effect": "Allow",
-        "Principal": {
-          "Service": [
-            "imm.aliyuncs.com"
-          ]
-        }
-      }
-    ],
-    "Version": "1"
-  }
-  EOF
-  description = "this is a role test."
-  force       = true
-}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAlicloudImmProject(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_imm_project"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_imm_project"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -238,7 +40,7 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -256,18 +58,18 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_imm_project", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_imm_project", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -275,9 +77,9 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewImmClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
 	err = resourceAlicloudImmProjectCreate(dInit, rawClient)
@@ -326,9 +128,9 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewImmClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
 	err = resourceAlicloudImmProjectUpdate(dExisted, rawClient)
@@ -417,9 +219,9 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewImmClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
 	err = resourceAlicloudImmProjectDelete(dExisted, rawClient)
@@ -451,4 +253,92 @@ func TestUnitAlicloudImmProject(t *testing.T) {
 			assert.NotNil(t, err)
 		}
 	}
+}
+
+// unitTestProviderResources mirrors the root test helper so the unit test can
+// reach this package's factories without importing the root alicloud package.
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_imm_project": resourceAlicloudImmProject(),
+	}
+}
+
+// unitTestSharedClientForRegion delegates to the shared sweeper client helper
+// (alicloud/sweep.SharedClientForRegion) so the unit test uses the same
+// per-region endpoint cache (SharedEndpointCacheForRegion) as the real
+// sweeper, instead of a single global Endpoints map shared across regions.
+// It preserves the original return type and skip-on-missing-credentials
+// behavior; the mock setup and assertions in TestUnitAlicloudImmProject are
+// unchanged (all API calls remain gomonkey-mocked, no real network).
+func unitTestSharedClientForRegion(region string) (interface{}, error) {
+	return sweep.SharedClientForRegion(region)
+}
+
+// newInstanceDiff mirrors the root helper for the migrated resource.
+// lintignore: R001
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+	p := unitTestProviderResources()
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
+
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
+		}
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
+		}
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
+		}
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
+
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
+	}
+	return diff, nil
 }

@@ -688,9 +688,6 @@ func Provider() *schema.Provider {
 			// images
 			"alicloud_images": dataSourceAlicloudImages(),
 
-			// imm
-			"alicloud_imm_projects": dataSourceAlicloudImmProjects(),
-
 			// instance
 			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
 			"alicloud_instance_types":         dataSourceAliCloudInstanceTypes(),
@@ -1762,9 +1759,6 @@ func Provider() *schema.Provider {
 			"alicloud_image_copy":             resourceAliCloudImageCopy(),
 			"alicloud_image_import":           resourceAliCloudImageImport(),
 			"alicloud_image_share_permission": resourceAliCloudImageSharePermission(),
-
-			// imm
-			"alicloud_imm_project": resourceAlicloudImmProject(),
 
 			// instance
 			"alicloud_instance": resourceAliCloudInstance(),
