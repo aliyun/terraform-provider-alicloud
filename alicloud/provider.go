@@ -1669,9 +1669,7 @@ func Provider() *schema.Provider {
 
 			// dts
 			"alicloud_dts_job_monitor_rule":         resourceAlicloudDtsJobMonitorRule(),
-			"alicloud_dts_subscription_job":         resourceAliCloudDtsSubscriptionJob(),
 			"alicloud_dts_synchronization_instance": resourceAlicloudDtsSynchronizationInstance(),
-			"alicloud_dts_synchronization_job":      resourceAlicloudDtsSynchronizationJob(),
 			"alicloud_dts_consumer_channel":         resourceAlicloudDtsConsumerChannel(),
 			"alicloud_dts_instance":                 resourceAliCloudDtsInstance(),
 

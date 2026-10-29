@@ -1,6 +1,7 @@
-package alicloud
+package dts_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -9,10 +10,19 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -27,7 +37,7 @@ func init() {
 func testSweepDtsSubscriptionJob(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting AliCloud client.")
+		return errs.WrapErrorf(err, "Error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -40,16 +50,16 @@ func testSweepDtsSubscriptionJob(region string) error {
 	request["JobType"] = "SUBSCRIBE"
 	request["Region"] = region
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(2*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -57,14 +67,14 @@ func testSweepDtsSubscriptionJob(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] Failed to fetch Dts SubscriptionJobs: %s", WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dts_subscription_jobs", action, AlibabaCloudSdkGoERROR))
+			log.Printf("[ERROR] Failed to fetch Dts SubscriptionJobs: %s", errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_dts_subscription_jobs", action, errs.AlibabaCloudSdkGoERROR))
 			return nil
 		}
 		resp, err := jsonpath.Get("$.DtsJobList", response)
 		if err != nil {
-			log.Printf("[ERROR] Failed to parse Dts SubscriptionJobs: %s", WrapErrorf(err, FailedGetAttributeMsg, action, "$.DtsJobList", response))
+			log.Printf("[ERROR] Failed to parse Dts SubscriptionJobs: %s", errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DtsJobList", response))
 			return nil
 		}
 		result, _ := resp.([]interface{})
@@ -94,7 +104,7 @@ func testSweepDtsSubscriptionJob(region string) error {
 			}
 			log.Printf("[INFO] Delete Dts SubscriptionJob success: %s ", item["DtsJobName"].(string))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -109,11 +119,11 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	resourceId := "alicloud_dts_subscription_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSubscriptionJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSubscriptionJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSubscriptionJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	// The expected-error step removes a required argument through REMOVEKEY and
@@ -124,10 +134,11 @@ func TestAccAliCloudDTSSubscriptionJob_basic0(t *testing.T) {
 	testAccConfigPlaceholder := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		// TODO: there is an api bug that the API DescribeDtsJobDetail can get resource even if it has been deleted.
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -357,19 +368,20 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 	resourceId := "alicloud_dts_subscription_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSubscriptionJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSubscriptionJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSubscriptionJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		// TODO: there is an api bug that the API DescribeDtsJobDetail can get resource even if it has been deleted.
 		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -393,14 +405,22 @@ func TestAccAliCloudDTSSubscriptionJob_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dts_job_name":                       "tf-testAccCase",
-						"payment_type":                       "PayAsYouGo",
-						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             CHECKSET,
-						"source_endpoint_instance_type":      "RDS",
-						"source_endpoint_database_name":      "tfaccountpri_0",
-						"source_endpoint_user_name":          "tftestprivilege",
-						"source_endpoint_password":           "Test12345",
+						"dts_job_name":                  "tf-testAccCase",
+						"payment_type":                  "PayAsYouGo",
+						"source_endpoint_engine_name":   "MySQL",
+						"source_endpoint_region":        CHECKSET,
+						"source_endpoint_instance_type": "RDS",
+						"source_endpoint_database_name": "tfaccountpri_0",
+						"source_endpoint_user_name":     "tftestprivilege",
+						"source_endpoint_password":      "Test12345",
+						// source_endpoint_ssl is Optional+Computed. When the job is created
+						// without an explicit SSL configuration, Describe returns a
+						// recognized SslSolutionEnum that Read maps to a schema-legal SSL
+						// code ("0"/"1"), so the computed state is matched against the legal
+						// domain rather than a guessed value. basic0 covers the explicit
+						// enable/disable directions. The specific RPC value for this scenario
+						// is not asserted here.
+						"source_endpoint_ssl":                REGEXMATCH + "^[01]$",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
 						"tags.%":                             "2",
@@ -531,20 +551,21 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 	resourceId := "alicloud_dts_subscription_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSubscriptionJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSubscriptionJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSubscriptionJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssubscriptionjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSubscriptionJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -568,14 +589,22 @@ func TestAccAliCloudDTSSubscriptionJob_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dts_job_name":                       "tf-testAccCase",
-						"payment_type":                       "Subscription",
-						"source_endpoint_engine_name":        "MySQL",
-						"source_endpoint_region":             CHECKSET,
-						"source_endpoint_instance_type":      "RDS",
-						"source_endpoint_database_name":      "tfaccountpri_0",
-						"source_endpoint_user_name":          "tftestprivilege",
-						"source_endpoint_password":           "Test12345",
+						"dts_job_name":                  "tf-testAccCase",
+						"payment_type":                  "Subscription",
+						"source_endpoint_engine_name":   "MySQL",
+						"source_endpoint_region":        CHECKSET,
+						"source_endpoint_instance_type": "RDS",
+						"source_endpoint_database_name": "tfaccountpri_0",
+						"source_endpoint_user_name":     "tftestprivilege",
+						"source_endpoint_password":      "Test12345",
+						// source_endpoint_ssl is Optional+Computed. When the job is created
+						// without an explicit SSL configuration, Describe returns a
+						// recognized SslSolutionEnum that Read maps to a schema-legal SSL
+						// code ("0"/"1"), so the computed state is matched against the legal
+						// domain rather than a guessed value. basic0 covers the explicit
+						// enable/disable directions. The specific RPC value for this scenario
+						// is not asserted here.
+						"source_endpoint_ssl":                REGEXMATCH + "^[01]$",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
 						"tags.%":                             "2",
@@ -699,4 +728,76 @@ resource "alicloud_rds_account" "target_account" {
   account_password = "N1cetest"
 }
 `, name)
+}
+
+// TestUnitAlicloudDTSSubscriptionJobTagsRemovalDiff verifies the tags schema fix
+// (Optional without Computed) using the real SDK diff engine. With the previous
+// Computed variant, removing tags from config produced no diff (the SDK preserves
+// prior state, HasChange("tags")=false), so SetResourceTags/UntagResources was
+// skipped and tags were not cleared. With Optional (no Computed), removal must
+// produce a deletion diff so that HasChange("tags")=true drives the tags update.
+// This test asserts the schema-driven diff semantics; it does not itself assert
+// the live UntagResources RPC, which is exercised by the ACC basic1 Step5 path.
+func TestUnitAlicloudDTSSubscriptionJobTagsRemovalDiff(t *testing.T) {
+	p := acctest.Provider.ResourcesMap
+	r := p["alicloud_dts_subscription_job"]
+
+	// Schema semantics: tags must be Optional and NOT Computed so that removing
+	// tags from config produces a deletion diff instead of preserving prior state.
+	tagsSchema := r.Schema["tags"]
+	assert.True(t, tagsSchema.Optional, "tags must be Optional")
+	assert.False(t, tagsSchema.Computed, "tags must not be Computed so removal produces a deletion diff")
+
+	stateWithTwoTags := func() *sdktf.InstanceState {
+		return &sdktf.InstanceState{
+			ID: "dts_job_id",
+			Attributes: map[string]string{
+				"tags.%":       "2",
+				"tags.Created": "foo",
+				"tags.For":     "bar",
+			},
+		}
+	}
+
+	// Case 1: removing tags from config must produce a deletion diff.
+	t.Run("RemoveProducesDeletionDiff", func(t *testing.T) {
+		rc := sdktf.NewResourceConfigRaw(map[string]interface{}{})
+		diff, err := r.Diff(context.Background(), stateWithTwoTags(), rc, nil)
+		assert.Nil(t, err)
+		require.NotNil(t, diff)
+		d, ok := diff.Attributes["tags.%"]
+		require.True(t, ok, "tags.% must be in diff after removal")
+		assert.Equal(t, "2", d.Old)
+		assert.Equal(t, "0", d.New, "tags.% should drop to 0 (removed)")
+		rd, _ := schema.InternalMap(r.Schema).Data(stateWithTwoTags(), diff)
+		assert.True(t, rd.HasChange("tags"), "HasChange(tags) must be true on removal")
+	})
+
+	// Case 2: changing a tag value must still produce an update diff.
+	t.Run("UpdateValueProducesDiff", func(t *testing.T) {
+		rc := sdktf.NewResourceConfigRaw(map[string]interface{}{
+			"tags": map[string]interface{}{
+				"Created": "baz",
+				"For":     "bar",
+			},
+		})
+		diff, err := r.Diff(context.Background(), stateWithTwoTags(), rc, nil)
+		assert.Nil(t, err)
+		require.NotNil(t, diff)
+		rd, _ := schema.InternalMap(r.Schema).Data(stateWithTwoTags(), diff)
+		assert.True(t, rd.HasChange("tags"), "HasChange(tags) must be true on value update")
+	})
+
+	// Case 3: an explicit empty map must not inherit old tags -> deletion diff.
+	t.Run("EmptyMapDoesNotInheritOldTags", func(t *testing.T) {
+		rc := sdktf.NewResourceConfigRaw(map[string]interface{}{
+			"tags": map[string]interface{}{},
+		})
+		diff, err := r.Diff(context.Background(), stateWithTwoTags(), rc, nil)
+		assert.Nil(t, err)
+		require.NotNil(t, diff)
+		d, ok := diff.Attributes["tags.%"]
+		require.True(t, ok, "tags.% must be in diff for an explicit empty map")
+		assert.Equal(t, "0", d.New, "explicit empty map should remove old tags, not inherit them")
+	})
 }

@@ -1,4 +1,4 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
@@ -6,8 +6,10 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -17,11 +19,11 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 	synchronizationConfigValue := `[{\"module\":\"03\",\"name\":\"sink.batch.size.minimum\",\"value\":\"64\"},{\"module\":\"03\",\"name\":\"sink.task.number\",\"value\":\"4\"}]`
@@ -29,11 +31,12 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 	expectedSynchronizationConfigValue := `[{"module":"03","name":"sink.batch.size.minimum","value":"64"},{"module":"03","name":"sink.task.number","value":"4"}]`
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -167,7 +170,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -180,16 +183,16 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 // ends with an empty state and no destroy.
 func TestAccAliCloudDTSSynchronizationJob_createOnlyNegative(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy: func(*terraform.State) error {
 			return nil
 		},
@@ -222,23 +225,25 @@ func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		// The job keeps advancing from prechecking to synchronizing after the
 		// create wait releases, so two reads of this server-driven lifecycle value
 		// can disagree even though nothing in the configuration changed.
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		IDRefreshIgnore:          []string{"status"},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -296,20 +301,21 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssynchronizationjob%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -363,7 +369,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -386,20 +392,21 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccdtssyncjobssl%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobSslDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,7 +492,7 @@ func TestAccAliCloudDTSSynchronizationJob_ssl(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "instance_class"},
 			},
 		},
 	})
@@ -496,20 +503,21 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testaccdtssyncjobvpcnat%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobVpcNatDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			// The four VPC NAT vswitch attributes only exist on ConfigureDtsJob, so this step is
 			// what proves the request is accepted with them set — a rejected or misspelled
@@ -558,12 +566,11 @@ func TestAccAliCloudDTSSynchronizationJob_vpcNat(t *testing.T) {
 			},
 			// DTS does not return the vswitch ids on DescribeDtsJobDetail, so Read cannot set them
 			// and an imported job has them empty. They are ignored here for that reason, not
-			// because the values are expected to drift. The status is server driven and can still
-			// be in a precheck phase when the import refresh runs.
+			// because the values are expected to drift.
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"status", "delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id", "instance_class"},
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"delay_notice", "error_phone", "delay_rule_time", "error_notice", "delay_phone", "reserve", "destination_endpoint_password", "source_endpoint_password", "src_primary_vswitch_id", "src_secondary_vswitch_id", "dest_primary_vswitch_id", "dest_secondary_vswitch_id", "instance_class"},
 			},
 		},
 	})
@@ -1002,21 +1009,22 @@ func TestAccAliCloudDTSSynchronizationJob_instanceClassDowngrade(t *testing.T) {
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AliCloudDTSSynchronizationJobMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsSynchronizationJob")
+		return dts.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeSynchronizationJob")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sdtssyncjobdowngrade%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDTSSynchronizationJobBasicDependence0)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
