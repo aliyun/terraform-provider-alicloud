@@ -1,4 +1,4 @@
-package alicloud
+package imp_test
 
 import (
 	"fmt"
@@ -11,31 +11,37 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/imp"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
+// collection-order: bypass component_list -- pre-existing attribute outside this change (pure directory migration; schema unchanged, original flat layout carried no reorder coverage and was outside this gate's scope)
+func TestAccAliCloudIMPAppTemplate_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_imp_app_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudIMPAppTemplateMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ImpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeImpAppTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%simpapptemplate%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudIMPAppTemplateBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudIMPAppTemplateMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return imp.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeAppTemplate")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%simpapptemplate%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudIMPAppTemplateBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -88,7 +94,7 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 						},
 						{
 							"key":   "config.livePushDomain",
-							"value": "tf-testAcc-jdD4qhGOujVlYcCUqTD.com",
+							"value": "tf-testAcc-jdD4qhGOujVlYcCUqTDUumAV.com",
 						},
 						{
 							"key":   "config.multipleClientsLogin",
@@ -169,24 +175,31 @@ func TestAccAlicloudIMPAppTemplate_basic0(t *testing.T) {
 }
 
 var AlicloudIMPAppTemplateMap0 = map[string]string{
-	"component_list.#": CHECKSET,
-	"config_list.#":    CHECKSET,
-	"status":           CHECKSET,
+	"component_list.#": acctest.CHECKSET,
+	"config_list.#":    acctest.CHECKSET,
+	"status":           acctest.CHECKSET,
 }
 
 func AlicloudIMPAppTemplateBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
 `, name)
 }
 
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_imp_app_template": imp.ResourceAppTemplate(),
+	}
+}
+
 // lintignore: R001
 func TestUnitAlicloudImpAppTemplate(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(nil, nil)
+	p := unitTestProviderResources()
+	resourceSchema := p["alicloud_imp_app_template"]
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"app_template_name": "CreateAppTemplateValue",
@@ -204,7 +217,7 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -235,18 +248,18 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_imp_app_template", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_imp_app_template", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -254,12 +267,12 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewImpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudImpAppTemplateCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -286,14 +299,14 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudImpAppTemplateCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -307,23 +320,23 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewImpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudImpAppTemplateUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateAppTemplate
 	attributesDiff := map[string]interface{}{
 		"app_template_name": "UpdateAppTemplateValue",
 	}
-	diff, err := newInstanceDiff("alicloud_imp_app_template", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_imp_app_template", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetAppTemplate Response
 		"Result": map[string]interface{}{
@@ -348,14 +361,14 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudImpAppTemplateUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -374,11 +387,11 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 			},
 		},
 	}
-	diff, err = newInstanceDiff("alicloud_imp_app_template", attributes, attributesDiff, dExisted.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_imp_app_template", attributes, attributesDiff, dExisted.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Result": map[string]interface{}{
 			"ConfigList": []interface{}{
@@ -407,14 +420,14 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudImpAppTemplateUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_imp_app_template"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -446,7 +459,7 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudImpAppTemplateRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -459,12 +472,12 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewImpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudImpAppTemplateDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidAppTemplateId.App.NotFound"}
@@ -486,7 +499,7 @@ func TestUnitAlicloudImpAppTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudImpAppTemplateDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
