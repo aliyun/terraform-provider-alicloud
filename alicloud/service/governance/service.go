@@ -2,17 +2,24 @@
 // alicloud_governance_service_activation resource and then reduced by hand to the declarations that
 // resource executes, so regenerating it has to re-apply the same reduction. The timeout block comes
 // from alicloud/provider/fwutil, the retrying write wrapper from alicloud/helper; the state waits
-// and the response normalisation stay here.
+// and the response normalisation stay here. The SDKv2 Service struct and its Describe/state-refresh
+// methods for the account and baseline resources were folded in from alicloud/service_alicloud_governance_v2.go
+// when those resources migrated into this package; the shared client field and constructor follow the
+// same product-service convention as the other SDKv2 service packages.
 package governance
 
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -180,3 +187,144 @@ func serviceActivationFailureDetail(object map[string]interface{}) string {
 	}
 	return fmt.Sprintf(" (failure code: %q, failure message: %q)", code, message)
 }
+
+// Service carries the SDKv2 governance client for the account and baseline resources. It holds the
+// shared connectivity.AliyunClient; callers obtain it through NewService.
+type Service struct {
+	client *connectivity.AliyunClient
+}
+
+// NewService builds the SDKv2 governance service from the provider client.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+// DescribeGovernanceBaseline <<< Encapsulated get interface for Governance Baseline.
+
+func (s *Service) DescribeGovernanceBaseline(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetAccountFactoryBaseline"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["BaselineId"] = id
+	query["RegionId"] = client.RegionId
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidBaseline.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Baseline", id), errs.NotFoundMsg, response)
+		}
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *Service) GovernanceBaselineStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGovernanceBaseline(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeGovernanceBaseline >>> Encapsulated.
+
+// DescribeGovernanceAccount <<< Encapsulated get interface for Governance Account.
+
+func (s *Service) DescribeGovernanceAccount(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetEnrolledAccount"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountUid"] = id
+	request["RegionId"] = client.RegionId
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidBlueprint.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+
+func (s *Service) GovernanceAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGovernanceAccount(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeGovernanceAccount >>> Encapsulated.

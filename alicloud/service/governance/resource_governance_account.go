@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package governance. This file is generated automatically. Please do not modify it manually, thank you!
+package governance
 
 import (
 	"encoding/json"
@@ -10,16 +10,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudGovernanceAccount() *schema.Resource {
+func ResourceGovernanceAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudGovernanceAccountCreate,
-		Read:   resourceAliCloudGovernanceAccountRead,
-		Update: resourceAliCloudGovernanceAccountUpdate,
-		Delete: resourceAliCloudGovernanceAccountDelete,
+		Create: resourceGovernanceAccountCreate,
+		Read:   resourceGovernanceAccountRead,
+		Update: resourceGovernanceAccountUpdate,
+		Delete: resourceGovernanceAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -78,13 +83,13 @@ func resourceAliCloudGovernanceAccount() *schema.Resource {
 			"default_domain_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,49}[A-Za-z0-9_.].onaliyun.com$"), "The default_domain_name (with suffix) has a maximum length of 64 characters and must end with .onaliyun.com."),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,49}[A-Za-z0-9_.].onaliyun.com$"), "The default_domain_name (with suffix) has a maximum length of 64 characters and must end with .onaliyun.com."),
 			},
 		},
 	}
 }
 
-func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceAccountCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -116,7 +121,7 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 		}
 		tagMapsJson, err := json.Marshal(tagMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Tag"] = string(tagMapsJson)
 	}
@@ -139,11 +144,11 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 		baselineItemsMaps = append(baselineItemsMaps, baselineItem)
 	}
 	request["BaselineItems"] = baselineItemsMaps
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -151,35 +156,35 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_governance_account", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_governance_account", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AccountUid"]))
 
-	governanceServiceV2 := GovernanceServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Finished"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, governanceServiceV2.GovernanceAccountStateRefreshFunc(d.Id(), "Status", []string{"ScheduleFailed", "Failed"}))
+	service := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Finished"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, service.GovernanceAccountStateRefreshFunc(d.Id(), "Status", []string{"ScheduleFailed", "Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudGovernanceAccountRead(d, meta)
+	return resourceGovernanceAccountRead(d, meta)
 }
 
-func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	governanceServiceV2 := GovernanceServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := governanceServiceV2.DescribeGovernanceAccount(d.Id())
+	objectRaw, err := service.DescribeGovernanceAccount(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_governance_account DescribeGovernanceAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["BaselineId"] != nil {
@@ -189,7 +194,7 @@ func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interfac
 		d.Set("status", objectRaw["Status"])
 	}
 	if objectRaw["AccountUid"] != nil {
-		account_idVal, err := formatInt(objectRaw["AccountUid"])
+		account_idVal, err := convert.FormatInt(objectRaw["AccountUid"])
 		if err != nil {
 			return err
 		}
@@ -214,7 +219,7 @@ func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	accountIdValue, err := formatInt(d.Id())
+	accountIdValue, err := convert.FormatInt(d.Id())
 	if err != nil {
 		return err
 	}
@@ -223,7 +228,7 @@ func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -249,7 +254,7 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 			}
 			tagMapsJson, err := json.Marshal(tagMapsArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["Tag"] = string(tagMapsJson)
 		}
@@ -261,11 +266,11 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 	request["BaselineId"] = d.Get("baseline_id")
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("governance", "2021-01-20", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -273,21 +278,21 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		governanceServiceV2 := GovernanceServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Finished"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, governanceServiceV2.GovernanceAccountStateRefreshFunc(d.Id(), "Status", []string{"Failed", "ScheduleFailed"}))
+		service := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Finished"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, service.GovernanceAccountStateRefreshFunc(d.Id(), "Status", []string{"Failed", "ScheduleFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudGovernanceAccountRead(d, meta)
+	return resourceGovernanceAccountRead(d, meta)
 }
 
-func resourceAliCloudGovernanceAccountDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceGovernanceAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Account. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

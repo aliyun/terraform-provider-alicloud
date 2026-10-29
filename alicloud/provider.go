@@ -729,7 +729,6 @@ func Provider() *schema.Provider {
 			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":      dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 
 			// governance
-			"alicloud_governance_baselines": dataSourceAliCloudGovernanceBaselines(),
 
 			// gpdb
 			"alicloud_gpdb_data_backups":      dataSourceAliCloudGpdbDataBackups(),
@@ -1966,8 +1965,6 @@ func Provider() *schema.Provider {
 			"alicloud_ga_custom_routing_endpoint_traffic_policy":    resourceAliCloudGaCustomRoutingEndpointTrafficPolicy(),
 
 			// governance
-			"alicloud_governance_account":  resourceAliCloudGovernanceAccount(),
-			"alicloud_governance_baseline": resourceAliCloudGovernanceBaseline(),
 
 			// gpdb
 			"alicloud_gpdb_db_extension":           resourceAliCloudGpdbDbExtension(),
