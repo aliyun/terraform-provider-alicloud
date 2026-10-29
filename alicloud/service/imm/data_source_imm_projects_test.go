@@ -1,22 +1,23 @@
-package alicloud
+package imm_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudIMMProjectsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudIMMProjectsDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudIMMProjectDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudIMMProjectDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_imm_project.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudIMMProjectDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudIMMProjectDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_imm_project.default.id}_fake"]`,
 		}),
 	}
@@ -34,15 +35,15 @@ func TestAccAlicloudIMMProjectsDataSource(t *testing.T) {
 			"projects.#": "0",
 		}
 	}
-	var alicloudIMMProjectCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_imm_projects.default",
-		existMapFunc: existDataAlicloudIMMProjectsSourceNameMapFunc,
-		fakeMapFunc:  fakeDataAlicloudIMMProjectsSourceNameMapFunc,
+	var alicloudIMMProjectCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_imm_projects.default",
+		ExistMapFunc: existDataAlicloudIMMProjectsSourceNameMapFunc,
+		FakeMapFunc:  fakeDataAlicloudIMMProjectsSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.IMMSupportRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.IMMSupportRegions)
 	}
-	alicloudIMMProjectCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	alicloudIMMProjectCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
 func testAccCheckAlicloudIMMProjectDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -52,7 +53,7 @@ func testAccCheckAlicloudIMMProjectDataSourceName(rand int, attrMap map[string]s
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testAccIMMProject%d"
 }
 
@@ -61,7 +62,7 @@ resource "alicloud_imm_project" "default" {
 	project = var.name
 }
 
-data "alicloud_imm_projects" "default" {	
+data "alicloud_imm_projects" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
