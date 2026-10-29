@@ -1,62 +1,63 @@
-package alicloud
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOtsSecondaryIndexesDataSource_basic(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ots_secondary_indexes.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("testAcc%d", rand),
 		dataSourceOtsSecondaryIndexesConfigDependence)
 
-	instanceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	instanceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_secondary_index.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_secondary_index.default.id}-fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 			"name_regex":    "${alicloud_ots_secondary_index.default.index_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 			"name_regex":    "${alicloud_ots_secondary_index.default.index_name}-fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_secondary_index.default.id}"},
 			"name_regex":    "${alicloud_ots_secondary_index.default.index_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_secondary_index.default.instance_name}",
 			"table_name":    "${alicloud_ots_secondary_index.default.table_name}",
 			"ids":           []string{"${alicloud_ots_secondary_index.default.id}"},
@@ -67,10 +68,10 @@ func TestAccAlicloudOtsSecondaryIndexesDataSource_basic(t *testing.T) {
 	var existOtsTablesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"names.#":                 "1",
-			"names.0":                 CHECKSET,
+			"names.0":                 acctest.CHECKSET,
 			"indexes.#":               "1",
-			"indexes.0.table_name":    CHECKSET,
-			"indexes.0.instance_name": CHECKSET,
+			"indexes.0.table_name":    acctest.CHECKSET,
+			"indexes.0.instance_name": acctest.CHECKSET,
 
 			"indexes.0.primary_keys.#":    "2",
 			"indexes.0.defined_columns.#": "2",
@@ -84,16 +85,16 @@ func TestAccAlicloudOtsSecondaryIndexesDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var otsTablesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existOtsTablesMapFunc,
-		fakeMapFunc:  fakeOtsTablesMapFunc,
+	var otsTablesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existOtsTablesMapFunc,
+		FakeMapFunc:  fakeOtsTablesMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 	}
-	otsTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, idsConf, nameRegexConf, allConf)
+	otsTablesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceOtsSecondaryIndexesConfigDependence(name string) string {

@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"fmt"
@@ -6,11 +6,13 @@ import (
 
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOtsTunnels() *schema.Resource {
+func DataSourceOtsTunnels() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOtsTunnelsRead,
 
@@ -140,13 +142,13 @@ type OtsTunnelInfo struct {
 
 func dataSourceAlicloudOtsTunnelsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	instanceName := d.Get("instance_name").(string)
 	tableName := d.Get("table_name").(string)
 
 	object, err := otsService.ListOtsTunnels(instanceName, tableName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	idsMap := make(map[string]bool)
@@ -186,7 +188,7 @@ func dataSourceAlicloudOtsTunnelsRead(d *schema.ResourceData, meta interface{}) 
 		id := fmt.Sprintf("%s%s%s%s%s", instanceName, COLON_SEPARATED, tableName, COLON_SEPARATED, tunnelName)
 		object, err := otsService.DescribeOtsTunnel(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		allTunnelInfos = append(allTunnelInfos, &OtsTunnelInfo{
 			instanceName: instanceName,
@@ -241,22 +243,22 @@ func otsTunnelDescriptionAttributes(d *schema.ResourceData, tunnelInfos []*OtsTu
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("tunnels", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

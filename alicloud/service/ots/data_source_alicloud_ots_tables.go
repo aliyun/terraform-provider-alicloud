@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"fmt"
@@ -6,11 +6,13 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOtsTables() *schema.Resource {
+func DataSourceOtsTables() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOtsTablesRead,
 
@@ -118,12 +120,12 @@ type OtsTableInfo struct {
 
 func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	instanceName := d.Get("instance_name").(string)
 
 	object, err := otsService.ListOtsTable(instanceName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	idsMap := make(map[string]bool)
@@ -162,7 +164,7 @@ func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) e
 	for _, tableName := range filteredTableNames {
 		object, err := otsService.DescribeOtsTable(fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		allTableInfos = append(allTableInfos, OtsTableInfo{
 			instanceName:  instanceName,
@@ -179,7 +181,7 @@ func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) e
 
 func otsTablesDescriptionAttributes(d *schema.ResourceData, tableInfos []OtsTableInfo, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 
 	var ids []string
 	var names []string
@@ -206,7 +208,7 @@ func otsTablesDescriptionAttributes(d *schema.ResourceData, tableInfos []OtsTabl
 		for _, col := range table.definedColumn {
 			columnType, err := ConvertDefinedColumnType(col.ColumnType)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			viewCol := map[string]interface{}{
 				"name": col.Name,
@@ -221,22 +223,22 @@ func otsTablesDescriptionAttributes(d *schema.ResourceData, tableInfos []OtsTabl
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("tables", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

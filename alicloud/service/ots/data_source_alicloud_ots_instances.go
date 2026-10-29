@@ -1,14 +1,17 @@
-package alicloud
+package ots
 
 import (
 	"regexp"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOtsInstances() *schema.Resource {
+func DataSourceOtsInstances() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOtsInstancesRead,
 
@@ -25,7 +28,7 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringIsValidRegExp,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -110,11 +113,11 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 
 func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 
-	allInstanceNames, err := otsService.ListOtsInstance(PageSizeLarge)
+	allInstanceNames, err := otsService.ListOtsInstance(helper.PageSizeLarge)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", "ListOtsInstance", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_instances", "ListOtsInstance", errs.AlibabaCloudSdkGoERROR)
 	}
 
 	idsMap := make(map[string]bool)
@@ -152,7 +155,7 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	for _, instanceName := range filteredInstanceNames {
 		instanceInfo, err := otsService.DescribeOtsInstance(instanceName)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		allInstances = append(allInstances, instanceInfo)
 	}
@@ -162,7 +165,7 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("tags"); ok {
 		if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
 			for _, instance := range allInstances {
-				if tagsMapEqual(vmap, otsRestTagsToMap(instance.Tags)) {
+				if tags.TagsMapEqual(vmap, otsRestTagsToMap(instance.Tags)) {
 					filteredInstances = append(filteredInstances, instance)
 				}
 			}
@@ -201,22 +204,22 @@ func otsInstancesDecriptionAttributes(d *schema.ResourceData, instances []RestOt
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

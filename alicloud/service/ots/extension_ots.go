@@ -1,4 +1,31 @@
-package alicloud
+package ots
+
+import (
+	"fmt"
+	"regexp"
+)
+
+// Status mirrors the root-package alicloud.Status type so the OTS wait helpers
+// keep their original status comparisons after the split. It is intentionally a
+// local type: helper.Status does not exist in alicloud/helper.
+type Status string
+
+const (
+	Running        = Status("Running")
+	Deleting       = Status("Deleting")
+	DisabledStatus = Status("Disabled")
+	Deleted        = Status("Deleted")
+)
+
+// Local constants that have no leaf-package counterpart in alicloud/helper.
+// They are kept as plain integers to match the root-package definitions
+// (WaitFor* helpers receive timeout as an int and multiply by time.Second).
+const (
+	INT_MAX            = 2147483647
+	DefaultTimeout     = 120
+	DefaultLongTimeout = 1000
+	COLON_SEPARATED    = ":"
+)
 
 type PrimaryKeyTypeString string
 
@@ -190,6 +217,18 @@ const (
 	OtsSearchFieldSort      = SearchIndexSortFieldTypeString("FieldSort")
 )
 
+// otsRestTagsToMap mirrors the root-package helper so the OTS package can turn
+// a REST instance's tag list into the resource-data map without importing the
+// (not yet split) root alicloud package. Behavior is preserved verbatim.
+func otsRestTagsToMap(tags []RestOtsTagInfo) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.Key] = t.Value
+	}
+
+	return result
+}
+
 type RestOtsInstanceInfo struct {
 	InstanceStatus        string           `json:"InstanceStatus" xml:"InstanceStatus"`
 	InstanceSpecification string           `json:"InstanceSpecification" xml:"InstanceSpecification"`
@@ -215,4 +254,53 @@ type RestOtsQuota struct {
 type RestOtsTagInfo struct {
 	Key   string `json:"Key" xml:"Key"`
 	Value string `json:"Value" xml:"Value"`
+}
+
+// The instance name must be composed of a~z, A~Z, 0~9 and a hyphen (-),
+// the first character must be a letter and the last character cannot be a hyphen (-),
+// the legal length range is 3~16 bytes.
+func validateOTSInstanceName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9-]{1,14}[a-zA-Z0-9]$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the instance name must consist of a~z, A~Z, 0~9 and a hyphen (-), "+
+			"the first character must be a letter and the last character cannot be a hyphen (-), the legal length range is 3~16 bytes"))
+	}
+	return
+}
+
+// The table name must consist of a~z, A~Z, 0~9 and an underscore (_), the first character must be a letter or underscore (_),
+// the legal length range is 1~255 bytes.
+func validateOTSTableName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,254}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the table name must consist of a~z, A~Z, 0~9 and an underscore (_), "+
+			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
+	}
+	return
+}
+
+// The tunnel name must consist of a~z, A~Z, 0~9 and an underscore (_), the first character must be a letter or underscore (_),
+// the legal length range is 1~255 bytes.
+func validateOTSTunnelName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,254}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the tunnel name must consist of a~z, A~Z, 0~9 and an underscore (_), "+
+			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
+	}
+	return
+}
+
+// The index name must consist of a~z, A~Z, 0~9 and an underscore (_), the first character must be a letter or underscore (_),
+// the legal length range is 1~255 bytes.
+func validateOTSIndexName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,254}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the index name must consist of a~z, A~Z, 0~9 and an underscore (_), "+
+			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
+	}
+	return
 }

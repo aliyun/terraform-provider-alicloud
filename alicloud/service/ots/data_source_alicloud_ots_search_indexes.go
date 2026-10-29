@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"encoding/json"
@@ -6,11 +6,14 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOtsSearchIndexes() *schema.Resource {
+func DataSourceOtsSearchIndexes() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOtsSearchIndexesRead,
 
@@ -117,7 +120,7 @@ func parseSearchIndexDataSourceArgs(d *schema.ResourceData) *SearchIndexDataSour
 	}
 
 	if ids, ok := d.GetOk("ids"); ok && len(ids.([]interface{})) > 0 {
-		args.ids = Interface2StrSlice(ids.([]interface{}))
+		args.ids = convert.Interface2StrSlice(ids.([]interface{}))
 	}
 	if regx, ok := d.GetOk("name_regex"); ok && regx.(string) != "" {
 		args.nameRegex = regx.(string)
@@ -139,22 +142,22 @@ type SearchIndexDataSource struct {
 }
 
 func (s *SearchIndexDataSource) export(d *schema.ResourceData) error {
-	d.SetId(dataResourceIdHash(s.ids))
+	d.SetId(helper.DataResourceIdHash(s.ids))
 	if err := d.Set("indexes", s.indexes); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", s.names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", s.ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if filepath, ok := d.GetOk("output_file"); ok && filepath.(string) != "" {
-		err := writeToFile(filepath.(string), s.indexes)
+		err := helper.WriteToFile(filepath.(string), s.indexes)
 		if err != nil {
 			return err
 		}
@@ -166,24 +169,24 @@ func dataSourceAlicloudOtsSearchIndexesRead(d *schema.ResourceData, meta interfa
 	args := parseSearchIndexDataSourceArgs(d)
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	totalIndexes, err := otsService.ListOtsSearchIndex(args.instanceName, args.tableName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	filteredIndexes := args.doFilters(totalIndexes)
-	source, err := genSearchIndexDataSource(&otsService, filteredIndexes, args)
+	source, err := genSearchIndexDataSource(otsService, filteredIndexes, args)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := source.export(d); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	return nil
 }
 
-func genSearchIndexDataSource(otsService *OtsService, filteredIndexes []interface{}, args *SearchIndexDataSourceArgs) (*SearchIndexDataSource, error) {
+func genSearchIndexDataSource(otsService *Service, filteredIndexes []interface{}, args *SearchIndexDataSourceArgs) (*SearchIndexDataSource, error) {
 	size := len(filteredIndexes)
 	ids := make([]string, 0, size)
 	names := make([]string, 0, size)
@@ -195,16 +198,16 @@ func genSearchIndexDataSource(otsService *OtsService, filteredIndexes []interfac
 
 		indexResp, err := otsService.DescribeOtsSearchIndex(id)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		phase, err := ConvertSearchIndexSyncPhase(indexResp.SyncStat.SyncPhase)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 
 		b, err := json.MarshalIndent(indexResp.Schema, "", "  ")
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		schemaJSON := string(b)
 
@@ -248,7 +251,7 @@ func (args *SearchIndexDataSourceArgs) doFilters(total []*tablestore.IndexInfo) 
 	// add filter: index id
 	if args.ids != nil {
 		idFilter := &ValuesFilter{
-			allowedValues: Str2InterfaceSlice(args.ids),
+			allowedValues: convert.Str2InterfaceSlice(args.ids),
 			getSourceValue: func(sourceObj interface{}) interface{} {
 				idx := sourceObj.(*tablestore.IndexInfo)
 				// search index and search index can have same IndexName, so joined IndexType for index id

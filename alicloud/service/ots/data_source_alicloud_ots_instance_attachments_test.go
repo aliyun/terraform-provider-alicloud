@@ -1,32 +1,33 @@
-package alicloud
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOtsInstanceAttachmentsDataSourceBasic(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ots_instance_attachments.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("tf-testAcc%d", rand),
 		dataSourceOtsInstanceAttachmentsConfigDependence)
 
-	instanceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	instanceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_instance_attachment.foo.instance_name}",
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_instance_attachment.foo.instance_name}",
 			"name_regex":    "${alicloud_ots_instance_attachment.foo.vpc_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_name": "${alicloud_ots_instance_attachment.foo.instance_name}",
 			"name_regex":    "${alicloud_ots_instance_attachment.foo.vpc_name}-fake",
 		}),
@@ -37,15 +38,15 @@ func TestAccAlicloudOtsInstanceAttachmentsDataSourceBasic(t *testing.T) {
 			"names.#":                     "1",
 			"names.0":                     "testvpc",
 			"vpc_ids.#":                   "1",
-			"vpc_ids.0":                   CHECKSET,
+			"vpc_ids.0":                   acctest.CHECKSET,
 			"attachments.#":               "1",
 			"attachments.0.id":            fmt.Sprintf("tf-testAcc%d", rand),
-			"attachments.0.domain":        CHECKSET,
-			"attachments.0.endpoint":      CHECKSET,
-			"attachments.0.region":        CHECKSET,
+			"attachments.0.domain":        acctest.CHECKSET,
+			"attachments.0.endpoint":      acctest.CHECKSET,
+			"attachments.0.region":        acctest.CHECKSET,
 			"attachments.0.instance_name": fmt.Sprintf("tf-testAcc%d", rand),
 			"attachments.0.vpc_name":      "testvpc",
-			"attachments.0.vpc_id":        CHECKSET,
+			"attachments.0.vpc_id":        acctest.CHECKSET,
 		}
 	}
 
@@ -57,15 +58,15 @@ func TestAccAlicloudOtsInstanceAttachmentsDataSourceBasic(t *testing.T) {
 		}
 	}
 
-	var otsInstanceAttachmentsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existOtsInstanceAttachmentsMapFunc,
-		fakeMapFunc:  fakeOtsInstanceAttachmentsMapFunc,
+	var otsInstanceAttachmentsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existOtsInstanceAttachmentsMapFunc,
+		FakeMapFunc:  fakeOtsInstanceAttachmentsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 	}
-	otsInstanceAttachmentsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, allConf)
+	otsInstanceAttachmentsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, instanceNameConf, allConf)
 }
 
 func dataSourceOtsInstanceAttachmentsConfigDependence(name string) string {

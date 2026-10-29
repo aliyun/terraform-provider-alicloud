@@ -1,15 +1,17 @@
-package alicloud
+package ots
 
 import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOtsInstanceAttachments() *schema.Resource {
+func DataSourceOtsInstanceAttachments() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOtsInstanceAttachmentsRead,
 
@@ -82,11 +84,11 @@ func dataSourceAlicloudOtsInstanceAttachments() *schema.Resource {
 
 func dataSourceAlicloudOtsInstanceAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	instanceName := d.Get("instance_name").(string)
 	allVpcs, err := otsService.ListOtsInstanceVpc(instanceName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	var filteredVpcs []ots.VpcInfo
@@ -124,22 +126,22 @@ func otsAttachmentsDescriptionAttributes(d *schema.ResourceData, vpcInfos []ots.
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("attachments", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("vpc_ids", vpcIds); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

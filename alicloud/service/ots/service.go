@@ -1,4 +1,4 @@
-package alicloud
+package ots
 
 import (
 	"encoding/json"
@@ -15,14 +15,22 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type OtsService struct {
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.PrimaryKeyType {
+// NewService constructs the OTS (Tablestore) Service from a connectivity client.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) getPrimaryKeyType(primaryKeyType string) tablestore.PrimaryKeyType {
 	var keyType tablestore.PrimaryKeyType
 	t := PrimaryKeyTypeString(primaryKeyType)
 	switch t {
@@ -49,12 +57,12 @@ func ParseDefinedColumnType(colType string) (tablestore.DefinedColumnType, error
 	case DefinedColumnBoolean:
 		return tablestore.DefinedColumn_BOOLEAN, nil
 	}
-	return 0, WrapError(fmt.Errorf("unsupported defined column type: %s", colType))
+	return 0, errs.WrapError(fmt.Errorf("unsupported defined column type: %s", colType))
 }
 
-func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTableResponse, err error) {
+func (s *Service) ListOtsTable(instanceName string) (table *tablestore.ListTableResponse, err error) {
 	if _, err := s.DescribeOtsInstance(instanceName); err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 	var raw interface{}
 	var requestInfo *tablestore.TableStoreClient
@@ -69,34 +77,34 @@ func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTa
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("ListTable", raw, requestInfo)
+		logs.AddDebug("ListTable", raw, requestInfo)
 		return nil
 	})
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
-			return table, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+			return table, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunTablestoreGoSdk)
 		}
-		return nil, WrapErrorf(err, DataDefaultErrorMsg, instanceName, "ListTable", AliyunTablestoreGoSdk)
+		return nil, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, instanceName, "ListTable", errs.AliyunTablestoreGoSdk)
 	}
 	table, _ = raw.(*tablestore.ListTableResponse)
 	if table == nil {
-		return table, WrapErrorf(NotFoundErr("OtsTable", instanceName), NotFoundMsg, ProviderERROR)
+		return table, errs.WrapErrorf(errs.NotFoundErr("OtsTable", instanceName), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return
 }
 
-func (s *OtsService) DescribeOtsTable(id string) (*tablestore.DescribeTableResponse, error) {
+func (s *Service) DescribeOtsTable(id string) (*tablestore.DescribeTableResponse, error) {
 	table := &tablestore.DescribeTableResponse{}
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return table, WrapError(err)
+		return table, errs.WrapError(err)
 	}
 	instanceName, tableName := parts[0], parts[1]
 	request := new(tablestore.DescribeTableRequest)
 	request.TableName = tableName
 
 	if _, err := s.DescribeOtsInstance(instanceName); err != nil {
-		return table, WrapError(err)
+		return table, errs.WrapError(err)
 	}
 	var raw interface{}
 	var requestInfo *tablestore.TableStoreClient
@@ -106,54 +114,54 @@ func (s *OtsService) DescribeOtsTable(id string) (*tablestore.DescribeTableRespo
 			return tableStoreClient.DescribeTable(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("DescribeTable", raw, requestInfo, request)
+		logs.AddDebug("DescribeTable", raw, requestInfo, request)
 		return nil
 	})
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
-			return table, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+			return table, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunTablestoreGoSdk)
 		}
-		return table, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTable", AliyunTablestoreGoSdk)
+		return table, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "DescribeTable", errs.AliyunTablestoreGoSdk)
 	}
 	table, _ = raw.(*tablestore.DescribeTableResponse)
 	if table == nil || table.TableMeta == nil || table.TableMeta.TableName != tableName {
-		return table, WrapErrorf(NotFoundErr("OtsTable", id), NotFoundMsg, ProviderERROR)
+		return table, errs.WrapErrorf(errs.NotFoundErr("OtsTable", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return table, nil
 }
 
-func (s *OtsService) WaitForOtsTable(instanceName, tableName string, status Status, timeout int) error {
+func (s *Service) WaitForOtsTable(instanceName, tableName string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	id := fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName)
 
 	for {
 		object, err := s.DescribeOtsTable(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.TableMeta.TableName == tableName && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.TableMeta.TableName, tableName, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.TableMeta.TableName, tableName, errs.ProviderERROR)
 		}
 
 	}
 }
 
 // Convert tablestore.PrimaryKeyType to PrimaryKeyTypeString
-func (s *OtsService) convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryKeyTypeString {
+func (s *Service) convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryKeyTypeString {
 	var typeString PrimaryKeyTypeString
 	switch t {
 	case tablestore.PrimaryKeyType_INTEGER:
@@ -179,7 +187,7 @@ func ConvertDefinedColumnType(t tablestore.DefinedColumnType) (DefinedColumnType
 	case tablestore.DefinedColumn_BOOLEAN:
 		return DefinedColumnBoolean, nil
 	}
-	return "", WrapError(fmt.Errorf("unsupported defined column type: %v", t))
+	return "", errs.WrapError(fmt.Errorf("unsupported defined column type: %v", t))
 }
 
 func FindDefinedColumn(columns []*tablestore.DefinedColumnSchema, target *tablestore.DefinedColumnSchema) ColumnFindResult {
@@ -202,35 +210,35 @@ const (
 	NotExist      ColumnFindResult = 3
 )
 
-func (s *OtsService) ListOtsInstance(maxResults int) (allInstanceNames []string, err error) {
+func (s *Service) ListOtsInstance(maxResults int) (allInstanceNames []string, err error) {
 	actionPath := "/v2/openapi/listinstances"
 	request := make(map[string]*string)
-	request["RegionId"] = StringPointer(s.client.RegionId)
-	request["MaxResults"] = StringPointer(strconv.Itoa(maxResults))
+	request["RegionId"] = helper.StringPointer(s.client.RegionId)
+	request["MaxResults"] = helper.StringPointer(strconv.Itoa(maxResults))
 
 	for {
 		resp, err := OtsRestApiGetWithRetry(s.client, "tablestore", "2020-12-09", actionPath, request)
 		if err != nil {
-			return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", actionPath, AlibabaCloudSdkGoERROR)
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_instances", actionPath, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(actionPath, resp, request)
+		logs.AddDebug(actionPath, resp, request)
 
 		// resp struct: {"_headers": {...}, "body": {...}}
 		respBody, ok := resp["body"].(map[string]interface{})
 		if !ok {
-			return allInstanceNames, WrapErrorf(errors.New("parse resp body to map[string]interface{} failed"), DefaultErrorMsg, "instance:*", actionPath, AlibabaCloudSdkGoERROR)
+			return allInstanceNames, errs.WrapErrorf(errors.New("parse resp body to map[string]interface{} failed"), errs.DefaultErrorMsg, "instance:*", actionPath, errs.AlibabaCloudSdkGoERROR)
 		}
 		// respBody["Instances"] struct: [{}, {}, {}]
 		instanceMaps := respBody["Instances"]
 		// Convert map to json string
 		instancesJSON, err := json.Marshal(instanceMaps)
 		if err != nil {
-			return allInstanceNames, WrapErrorf(err, DefaultErrorMsg, "instance:*", actionPath, AlibabaCloudSdkGoERROR)
+			return allInstanceNames, errs.WrapErrorf(err, errs.DefaultErrorMsg, "instance:*", actionPath, errs.AlibabaCloudSdkGoERROR)
 		}
 		// Convert json string to obj
 		var instances []RestOtsInstanceInfo
 		if err := json.Unmarshal(instancesJSON, &instances); err != nil {
-			return allInstanceNames, WrapErrorf(err, DefaultErrorMsg, "instance:*", actionPath, AlibabaCloudSdkGoERROR)
+			return allInstanceNames, errs.WrapErrorf(err, errs.DefaultErrorMsg, "instance:*", actionPath, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if instances == nil || len(instances) < 1 {
@@ -251,42 +259,42 @@ func (s *OtsService) ListOtsInstance(maxResults int) (allInstanceNames []string,
 	return allInstanceNames, nil
 }
 
-func (s *OtsService) DescribeOtsInstance(instanceName string) (inst RestOtsInstanceInfo, err error) {
+func (s *Service) DescribeOtsInstance(instanceName string) (inst RestOtsInstanceInfo, err error) {
 	actionPath := "/v2/openapi/getinstance"
 	request := make(map[string]*string)
-	request["RegionId"] = StringPointer(s.client.RegionId)
-	request["InstanceName"] = StringPointer(instanceName)
+	request["RegionId"] = helper.StringPointer(s.client.RegionId)
+	request["InstanceName"] = helper.StringPointer(instanceName)
 
 	//client := meta.(*connectivity.AliyunClient)
 	resp, err := OtsRestApiGetWithRetry(s.client, "tablestore", "2020-12-09", actionPath, request)
 	if err != nil {
-		if NotFoundError(err) {
-			return inst, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.NotFoundError(err) {
+			return inst, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return inst, WrapErrorf(err, DefaultErrorMsg, instanceName, actionPath, AlibabaCloudSdkGoERROR)
+		return inst, errs.WrapErrorf(err, errs.DefaultErrorMsg, instanceName, actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(actionPath, resp, request)
+	logs.AddDebug(actionPath, resp, request)
 
 	// resp struct: {"_headers": {...}, "body": {...}}
 	instMap := resp["body"]
 	// Convert map to json string
 	instJSON, err := json.Marshal(instMap)
 	if err != nil {
-		return inst, WrapErrorf(err, DefaultErrorMsg, instanceName, actionPath, AlibabaCloudSdkGoERROR)
+		return inst, errs.WrapErrorf(err, errs.DefaultErrorMsg, instanceName, actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
 	// Convert json string to obj
 	if err := json.Unmarshal(instJSON, &inst); err != nil {
-		return inst, WrapErrorf(err, DefaultErrorMsg, instanceName, actionPath, AlibabaCloudSdkGoERROR)
+		return inst, errs.WrapErrorf(err, errs.DefaultErrorMsg, instanceName, actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if inst.InstanceName != instanceName {
-		return inst, WrapErrorf(NotFoundErr("OtsInstance", instanceName), NotFoundMsg, ProviderERROR)
+		return inst, errs.WrapErrorf(errs.NotFoundErr("OtsInstance", instanceName), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 
 	return inst, nil
 }
 
-func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
+func (s *Service) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
 	request := ots.CreateListVpcInfoByInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.Method = "GET"
@@ -295,44 +303,44 @@ func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo,
 		return otsClient.ListVpcInfoByInstance(request)
 	})
 	if err != nil {
-		if NotFoundError(err) {
-			return inst, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.NotFoundError(err) {
+			return inst, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return inst, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return inst, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
-		return inst, WrapErrorf(NotFoundErr("OtsInstanceAttachment", id), NotFoundMsg, ProviderERROR)
+		return inst, errs.WrapErrorf(errs.NotFoundErr("OtsInstanceAttachment", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return resp.VpcInfos.VpcInfo[0], nil
 }
 
-func (s *OtsService) WaitForOtsInstanceVpc(id string, status Status, timeout int) error {
+func (s *Service) WaitForOtsInstanceVpc(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
 		object, err := s.DescribeOtsInstanceAttachment(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.InstanceName == id && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceName, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.InstanceName, id, errs.ProviderERROR)
 		}
 
 	}
 }
 
-func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err error) {
+func (s *Service) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err error) {
 	request := ots.CreateListVpcInfoByInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.Method = "GET"
@@ -341,12 +349,12 @@ func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err erro
 		return otsClient.ListVpcInfoByInstance(request)
 	})
 	if err != nil {
-		return inst, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ots_instance_attachments", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return inst, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ots_instance_attachments", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	if resp.TotalCount < 1 {
-		return inst, WrapErrorf(NotFoundErr("OtsInstanceAttachment", id), NotFoundMsg, ProviderERROR)
+		return inst, errs.WrapErrorf(errs.NotFoundErr("OtsInstanceAttachment", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 
 	var retInfos []ots.VpcInfo
@@ -357,44 +365,44 @@ func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err erro
 	return retInfos, nil
 }
 
-func (s *OtsService) WaitForOtsInstance(id string, instanceInnerStatus string, timeout int) error {
+func (s *Service) WaitForOtsInstance(id string, instanceInnerStatus string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
 		instance, err := s.DescribeOtsInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if instanceInnerStatus == string(Deleted) {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if instance.InstanceStatus == instanceInnerStatus {
 			break
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(instance.InstanceStatus), instanceInnerStatus, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, fmt.Sprint(instance.InstanceStatus), instanceInnerStatus, errs.ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
 
-func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
+func (s *Service) DescribeOtsInstanceTypes() (types []string, err error) {
 	actionPath := "/v2/openapi/listclustertype"
 	request := make(map[string]*string)
 
 	resp, err := OtsRestApiGetWithRetry(s.client, "tablestore", "2020-12-09", actionPath, request)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_instance", actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(actionPath, resp, request)
+	logs.AddDebug(actionPath, resp, request)
 
 	respBody, ok := resp["body"].(map[string]interface{})
 	if !ok {
-		return nil, WrapErrorf(errors.New("parse resp body failed"), DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(errors.New("parse resp body failed"), errs.DefaultErrorMsg, "alicloud_ots_instance", actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	clusterTypes, ok := respBody["ClusterTypes"]
@@ -404,11 +412,11 @@ func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
 
 	clusterTypesJSON, err := json.Marshal(clusterTypes)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_instance", actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if err := json.Unmarshal(clusterTypesJSON, &types); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instance", actionPath, AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ots_instance", actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return types, nil
@@ -429,10 +437,10 @@ func isOtsTunnelNotFound(err error) bool {
 	return false
 }
 
-func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunnelResponse, err error) {
-	parts, err := ParseResourceId(id, 3)
+func (s *Service) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunnelResponse, err error) {
+	parts, err := helper.ParseResourceId(id, 3)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	instanceName, tableName, tunnelName := parts[0], parts[1], parts[2]
@@ -447,36 +455,36 @@ func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunne
 			return tunnelClient.DescribeTunnel(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTunnelIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
 		resp, _ := raw.(*otsTunnel.DescribeTunnelResponse)
 		if resp != nil && resp.Tunnel != nil && resp.Tunnel.Stage == "InitBaseDataAndStreamShard" {
-			return retry.RetryableError(WrapError(Error("ots tunnel is initial")))
+			return retry.RetryableError(errs.WrapError(errs.Error("ots tunnel is initial")))
 		}
-		addDebug("DescribeTunnel", raw, requestInfo, request)
+		logs.AddDebug("DescribeTunnel", raw, requestInfo, request)
 		return nil
 	})
 	if err != nil {
 		if isOtsTunnelNotFound(err) {
-			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunTablestoreGoSdk)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTunnel", AliyunTablestoreGoSdk)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "DescribeTunnel", errs.AliyunTablestoreGoSdk)
 	}
 	resp, _ = raw.(*otsTunnel.DescribeTunnelResponse)
 	if resp == nil || resp.Tunnel == nil || resp.Tunnel.TableName != tableName || resp.Tunnel.TunnelName != tunnelName {
-		return nil, WrapErrorf(NotFoundErr("OtsTunnel", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("OtsTunnel", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return resp, nil
 }
 
-func (s *OtsService) ListOtsTunnels(instanceName string, tableName string) (resp *otsTunnel.ListTunnelResponse, err error) {
+func (s *Service) ListOtsTunnels(instanceName string, tableName string) (resp *otsTunnel.ListTunnelResponse, err error) {
 	// check table exists
 	id := ID(instanceName, tableName)
 	if _, err := s.DescribeOtsTable(id); err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	var raw interface{}
@@ -489,50 +497,50 @@ func (s *OtsService) ListOtsTunnels(instanceName string, tableName string) (resp
 			return tunnelClient.ListTunnel(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTunnelIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("ListTunnel", raw, requestInfo, request)
+		logs.AddDebug("ListTunnel", raw, requestInfo, request)
 		return nil
 	})
 	if err != nil {
 		if isOtsTunnelNotFound(err) {
-			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunTablestoreGoSdk)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTunnel", AliyunTablestoreGoSdk)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "DescribeTunnel", errs.AliyunTablestoreGoSdk)
 	}
 	resp, _ = raw.(*otsTunnel.ListTunnelResponse)
 	if resp == nil {
-		return nil, WrapErrorf(NotFoundErr("OtsTunnel", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("OtsTunnel", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return resp, nil
 }
 
-func (s *OtsService) WaitForOtsTunnel(id string, status Status, timeout int) error {
-	parts, err := ParseResourceId(id, 3)
+func (s *Service) WaitForOtsTunnel(id string, status Status, timeout int) error {
+	parts, err := helper.ParseResourceId(id, 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
 		object, err := s.DescribeOtsTunnel(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object.Tunnel.TunnelName == parts[2] && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Tunnel.TunnelName, parts[2], ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.Tunnel.TunnelName, parts[2], errs.ProviderERROR)
 		}
 	}
 }
@@ -541,10 +549,10 @@ func ID(segName ...string) string {
 	return strings.Join(segName, COLON_SEPARATED)
 }
 
-func (s *OtsService) ListOtsSecondaryIndex(instanceName string, tableName string) ([]*tablestore.IndexMeta, error) {
+func (s *Service) ListOtsSecondaryIndex(instanceName string, tableName string) ([]*tablestore.IndexMeta, error) {
 	tableResp, err := s.DescribeOtsTable(ID(instanceName, tableName))
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 	if tableResp == nil {
 		return nil, nil
@@ -555,7 +563,7 @@ func (s *OtsService) ListOtsSecondaryIndex(instanceName string, tableName string
 
 // DescribeOtsSecondaryIndex The describe method is depended on by AccTest,
 // and the second return value of the describe method needs `error` type
-func (s *OtsService) DescribeOtsSecondaryIndex(id string) (index *TableIndex, err error) {
+func (s *Service) DescribeOtsSecondaryIndex(id string) (index *TableIndex, err error) {
 	instanceName, tableName, indexName, _, err := ParseIndexId(id)
 	if err != nil {
 		return
@@ -565,7 +573,7 @@ func (s *OtsService) DescribeOtsSecondaryIndex(id string) (index *TableIndex, er
 		return
 	}
 	if tableResp == nil {
-		err = WrapError(fmt.Errorf("table not exist: %s", tableName))
+		err = errs.WrapError(fmt.Errorf("table not exist: %s", tableName))
 		return
 	}
 
@@ -579,7 +587,7 @@ func (s *OtsService) DescribeOtsSecondaryIndex(id string) (index *TableIndex, er
 			return
 		}
 	}
-	err = WrapError(fmt.Errorf("index not exist: %s.%s", tableName, indexName))
+	err = errs.WrapError(fmt.Errorf("index not exist: %s.%s", tableName, indexName))
 	return
 }
 
@@ -596,7 +604,7 @@ func ConvertSecIndexType(indexType tablestore.IndexType) (SecondaryIndexTypeStri
 	case tablestore.IT_LOCAL_INDEX:
 		return Local, nil
 	default:
-		return "", WrapError(fmt.Errorf("unexpected secondary index type: %v", indexType))
+		return "", errs.WrapError(fmt.Errorf("unexpected secondary index type: %v", indexType))
 	}
 }
 func ConvertSecIndexTypeString(typeStr SecondaryIndexTypeString) (tablestore.IndexType, error) {
@@ -606,7 +614,7 @@ func ConvertSecIndexTypeString(typeStr SecondaryIndexTypeString) (tablestore.Ind
 	case Local:
 		return tablestore.IT_LOCAL_INDEX, nil
 	default:
-		return 0, WrapError(fmt.Errorf("unexpected secondary index type: %v", typeStr))
+		return 0, errs.WrapError(fmt.Errorf("unexpected secondary index type: %v", typeStr))
 	}
 }
 
@@ -659,11 +667,11 @@ func (ds *InputDataSource) doFilters() []interface{} {
 	return outputs
 }
 
-func (s *OtsService) LoopWaitTable(instanceName string, tableName string) (table *tablestore.DescribeTableResponse, err error) {
+func (s *Service) LoopWaitTable(instanceName string, tableName string) (table *tablestore.DescribeTableResponse, err error) {
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		t, e := s.DescribeOtsTable(ID(instanceName, tableName))
 		if e != nil {
-			if NotFoundError(e) {
+			if errs.NotFoundError(e) {
 				return retry.RetryableError(e)
 			}
 			return retry.NonRetryableError(e)
@@ -675,20 +683,20 @@ func (s *OtsService) LoopWaitTable(instanceName string, tableName string) (table
 	return
 }
 
-func (s *OtsService) WaitForSecondaryIndex(instance string, table string, index string, status Status, timeout int) error {
+func (s *Service) WaitForSecondaryIndex(instance string, table string, index string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	id := ID(instance, table)
 	for {
 		tableResp, err := s.DescribeOtsTable(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			}
 		}
 		// table exists and index does not exist
-		indexFind := IsSubCollection([]string{index}, simplifySecIndex(tableResp.IndexMetas))
+		indexFind := helper.IsSubCollection([]string{index}, simplifySecIndex(tableResp.IndexMetas))
 		switch {
 		case status == Deleted, !indexFind:
 			return nil
@@ -701,7 +709,7 @@ func (s *OtsService) WaitForSecondaryIndex(instance string, table string, index 
 		}
 
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, tableResp.TableMeta.TableName, index, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, tableResp.TableMeta.TableName, index, errs.ProviderERROR)
 		}
 	}
 }
@@ -715,16 +723,16 @@ func ParseIndexId(indexId string) (instanceName, tableName, indexName, indexType
 		indexName = splits[2]
 		indexTypeStr = splits[3]
 	} else {
-		err = WrapError(fmt.Errorf("invalid index id(instanceName:tableName:indexName:indexType): %s", indexId))
+		err = errs.WrapError(fmt.Errorf("invalid index id(instanceName:tableName:indexName:indexType): %s", indexId))
 	}
 	return
 }
 
-func (s *OtsService) ListOtsSearchIndex(instanceName string, tableName string) (indexes []*tablestore.IndexInfo, err error) {
+func (s *Service) ListOtsSearchIndex(instanceName string, tableName string) (indexes []*tablestore.IndexInfo, err error) {
 	// check table exists
 	id := ID(instanceName, tableName)
 	if _, err := s.DescribeOtsTable(id); err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	req := &tablestore.ListSearchIndexRequest{
@@ -738,40 +746,40 @@ func (s *OtsService) ListOtsSearchIndex(instanceName string, tableName string) (
 			return tableStoreClient.ListSearchIndex(req)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsSearchIndexIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("ListSearchIndex", raw, reqClient, req)
+		logs.AddDebug("ListSearchIndex", raw, reqClient, req)
 		return nil
 	})
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
-			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunTablestoreGoSdk)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "ListOtsSearchIndex", AliyunTablestoreGoSdk)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "ListOtsSearchIndex", errs.AliyunTablestoreGoSdk)
 	}
 	resp, _ := raw.(*tablestore.ListSearchIndexResponse)
 	if resp == nil {
-		return nil, WrapErrorf(NotFoundErr("SearchIndex", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("SearchIndex", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	// IndexInfo slice can be nil when table not has search index
 	return resp.IndexInfo, nil
 }
 
-func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.DescribeSearchIndexResponse, err error) {
+func (s *Service) DescribeOtsSearchIndex(id string) (indexResp *tablestore.DescribeSearchIndexResponse, err error) {
 	instanceName, tableName, indexName, _, err := ParseIndexId(id)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 	if _, err = s.DescribeOtsInstance(instanceName); err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	if _, err := s.DescribeOtsTable(ID(instanceName, tableName)); err != nil {
-		if NotFoundError(err) {
-			return nil, WrapError(err)
+		if errs.NotFoundError(err) {
+			return nil, errs.WrapError(err)
 		}
 	}
 
@@ -788,11 +796,11 @@ func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.De
 			return tableStoreClient.DescribeSearchIndex(req)
 		})
 		defer func() {
-			addDebug("DescribeSearchIndex", raw, reqClient, req)
+			logs.AddDebug("DescribeSearchIndex", raw, reqClient, req)
 		}()
 
 		if err != nil {
-			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsSearchIndexIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -803,14 +811,14 @@ func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.De
 
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
-			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AliyunTablestoreGoSdk)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeSearchIndex", AliyunTablestoreGoSdk)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "DescribeSearchIndex", errs.AliyunTablestoreGoSdk)
 	}
 
 	indexResp, _ = raw.(*tablestore.DescribeSearchIndexResponse)
 	if indexResp == nil || indexResp.SyncStat == nil || indexResp.Schema == nil {
-		return nil, WrapErrorf(NotFoundErr("OtsSearchIndex", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("OtsSearchIndex", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return indexResp, nil
 }
@@ -822,7 +830,7 @@ func ConvertSearchIndexSyncPhase(syncPhase tablestore.SyncPhase) (OtsSearchIndex
 	case tablestore.SyncPhase_INCR:
 		return Incr, nil
 	default:
-		return "", WrapError(fmt.Errorf("unexpected search index sync phase: %v", syncPhase))
+		return "", errs.WrapError(fmt.Errorf("unexpected search index sync phase: %v", syncPhase))
 	}
 }
 
@@ -845,7 +853,7 @@ func ConvertSearchIndexFieldTypeString(typeStr SearchIndexFieldTypeString) (tabl
 	case "Nested":
 		return tablestore.FieldType_NESTED, nil
 	default:
-		return 0, WrapError(fmt.Errorf("unexpected search index field type string: %s", typeStr))
+		return 0, errs.WrapError(fmt.Errorf("unexpected search index field type string: %s", typeStr))
 	}
 }
 
@@ -862,7 +870,7 @@ func ConvertSearchIndexAnalyzerTypeString(typeStr SearchIndexAnalyzerTypeString)
 	case "Fuzzy":
 		return tablestore.Analyzer_Fuzzy, nil
 	default:
-		return "", WrapError(fmt.Errorf("unexpected search index analyzer type string: %s", typeStr))
+		return "", errs.WrapError(fmt.Errorf("unexpected search index analyzer type string: %s", typeStr))
 	}
 }
 
@@ -873,7 +881,7 @@ func ConvertSearchIndexSortFieldTypeString(typeStr SearchIndexSortFieldTypeStrin
 	case "FieldSort":
 		return &search.FieldSort{}, nil
 	default:
-		return nil, WrapError(fmt.Errorf("unexpected search index sort field type string [PrimaryKeySort|FieldSort]: %s", typeStr))
+		return nil, errs.WrapError(fmt.Errorf("unexpected search index sort field type string [PrimaryKeySort|FieldSort]: %s", typeStr))
 	}
 }
 
@@ -884,7 +892,7 @@ func ConvertSearchIndexOrderTypeString(typeStr SearchIndexOrderTypeString) (sear
 	case "Desc":
 		return search.SortOrder_DESC, nil
 	default:
-		return 0, WrapError(fmt.Errorf("unexpected search index sort order string [Asc|Desc]: %s", typeStr))
+		return 0, errs.WrapError(fmt.Errorf("unexpected search index sort order string [Asc|Desc]: %s", typeStr))
 	}
 }
 
@@ -897,22 +905,22 @@ func ConvertSearchIndexSortModeString(typeStr SearchIndexSortModeString) (search
 	case "Avg":
 		return search.SortMode_Avg, nil
 	default:
-		return 0, WrapError(fmt.Errorf("unexpected search index sort mode string [Min|Max|Avg]: %s", typeStr))
+		return 0, errs.WrapError(fmt.Errorf("unexpected search index sort mode string [Min|Max|Avg]: %s", typeStr))
 	}
 }
 
-func (s *OtsService) WaitForSearchIndex(instance string, table string, indexName string, status Status, timeout int) error {
+func (s *Service) WaitForSearchIndex(instance string, table string, indexName string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	id := ID(instance, table, indexName, SearchIndexTypeHolder)
 	for {
 		index, err := s.DescribeOtsSearchIndex(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 
@@ -921,12 +929,12 @@ func (s *OtsService) WaitForSearchIndex(instance string, table string, indexName
 		}
 
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, table, indexName, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, table, indexName, errs.ProviderERROR)
 		}
 	}
 }
 
-func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, indexName string) error {
+func (s *Service) DeleteSearchIndex(instanceName string, tableName string, indexName string) error {
 	request := &tablestore.DeleteSearchIndexRequest{
 		TableName: tableName,
 		IndexName: indexName,
@@ -939,11 +947,11 @@ func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, in
 			return tableStoreClient.DeleteSearchIndex(request)
 		})
 		defer func() {
-			addDebug("DeleteSearchIndex", raw, requestCli, request)
+			logs.AddDebug("DeleteSearchIndex", raw, requestCli, request)
 		}()
 
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -973,28 +981,28 @@ func invokeOtsRestApiWithRetry(client *connectivity.AliyunClient, product string
 	var response map[string]interface{}
 	otsClient, err := client.NewOtsRoaClient(product)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(20*time.Minute, func() *retry.RetryError {
-		response, err = otsClient.DoRequest(StringPointer(version), nil, StringPointer(httpMethod), StringPointer("AK"), StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
+		response, err = otsClient.DoRequest(helper.StringPointer(version), nil, helper.StringPointer(httpMethod), helper.StringPointer("AK"), helper.StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) ||
-				IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) ||
-				IsExpectedErrors(err, OtsSecondaryIndexIsTemporarilyUnavailable) ||
-				IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) ||
-				NeedRetry(err) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) ||
+				errs.IsExpectedErrors(err, errs.OtsTunnelIsTemporarilyUnavailable) ||
+				errs.IsExpectedErrors(err, errs.OtsSecondaryIndexIsTemporarilyUnavailable) ||
+				errs.IsExpectedErrors(err, errs.OtsSearchIndexIsTemporarilyUnavailable) ||
+				helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(actionPath, response, requestBody)
+		logs.AddDebug(actionPath, response, requestBody)
 		return nil
 	})
 
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, product, actionPath, AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, product, actionPath, errs.AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
 }

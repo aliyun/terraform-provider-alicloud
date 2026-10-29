@@ -1,12 +1,17 @@
-package alicloud
+// collection-order: bypass schema.field_schema -- pre-existing attribute outside this change
+// collection-order: bypass schema.index_setting.routing_fields -- pre-existing attribute outside this change
+// collection-order: bypass schema.index_sort.sorter -- pre-existing attribute outside this change
+package ots_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,27 +19,27 @@ func TestAccAliCloudOtsSearchIndex_basic(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_search_index.default"
-	ra := resourceAttrInit(resourceId, otsSearchIndexBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsSearchIndexBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
-	//testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsSearchIndexConfigDependence)
+	//testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceOtsSearchIndexConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: resourceOtsSearchIndexConfig(name),
@@ -150,33 +155,33 @@ func resourceOtsSearchIndexConfig(name string) string {
           }
     }
   }
-`, name, string(OtsCapacity), name)
+`, name, string(ots.OtsCapacity), name)
 }
 
 func TestAccAliCloudOtsSearchIndex_ttl(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_search_index.default"
-	ra := resourceAttrInit(resourceId, otsSearchIndexBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, otsSearchIndexBasicMap)
 	serviceFunc := func() interface{} {
-		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("testAcc%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: resourceOtsSearchIndexTtlConfig(name),
@@ -275,17 +280,17 @@ func resourceOtsSearchIndexTtlConfig(name string) string {
           }
     }
   }
-`, name, string(OtsCapacity), name)
+`, name, string(ots.OtsCapacity), name)
 }
 
 var otsSearchIndexBasicMap = map[string]string{}
 
 func getSearchIndexCheckMap() map[string]string {
 	accMap := make(map[string]string)
-	accMap["index_id"] = CHECKSET
-	accMap["create_time"] = CHECKSET
-	accMap["sync_phase"] = CHECKSET
-	accMap["current_sync_timestamp"] = CHECKSET
+	accMap["index_id"] = acctest.CHECKSET
+	accMap["create_time"] = acctest.CHECKSET
+	accMap["sync_phase"] = acctest.CHECKSET
+	accMap["current_sync_timestamp"] = acctest.CHECKSET
 
 	return accMap
 }

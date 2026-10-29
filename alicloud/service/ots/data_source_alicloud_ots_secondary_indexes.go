@@ -1,15 +1,18 @@
-package alicloud
+package ots
 
 import (
 	"regexp"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOtsSecondaryIndexes() *schema.Resource {
+func DataSourceOtsSecondaryIndexes() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOtsSecondaryIndexesRead,
 
@@ -99,7 +102,7 @@ func parseSecIndexDataSourceArgs(d *schema.ResourceData) *SecIndexDataSourceArgs
 	}
 
 	if ids, ok := d.GetOk("ids"); ok && len(ids.([]interface{})) > 0 {
-		args.ids = Interface2StrSlice(ids.([]interface{}))
+		args.ids = convert.Interface2StrSlice(ids.([]interface{}))
 	}
 	if regx, ok := d.GetOk("name_regex"); ok && regx.(string) != "" {
 		args.nameRegex = regx.(string)
@@ -121,22 +124,22 @@ type SecIndexDataSource struct {
 }
 
 func (s *SecIndexDataSource) export(d *schema.ResourceData) error {
-	d.SetId(dataResourceIdHash(s.ids))
+	d.SetId(helper.DataResourceIdHash(s.ids))
 	if err := d.Set("indexes", s.indexes); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", s.names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", s.ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it.
 	if filepath, ok := d.GetOk("output_file"); ok && filepath.(string) != "" {
-		err := writeToFile(filepath.(string), s.indexes)
+		err := helper.WriteToFile(filepath.(string), s.indexes)
 		if err != nil {
 			return err
 		}
@@ -148,19 +151,19 @@ func dataSourceAlicloudOtsSecondaryIndexesRead(d *schema.ResourceData, meta inte
 	args := parseSecIndexDataSourceArgs(d)
 
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
+	otsService := NewService(client)
 	total, err := otsService.ListOtsSecondaryIndex(args.instanceName, args.tableName)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	filteredIndexes := args.doFilters(total)
 	source, err := genSecIndexDataSource(filteredIndexes, args)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := source.export(d); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	return nil
 }
@@ -175,7 +178,7 @@ func genSecIndexDataSource(filteredIndexes []interface{}, args *SecIndexDataSour
 		idxMeta := idx.(*tablestore.IndexMeta)
 		typeName, err := ConvertSecIndexType(idxMeta.IndexType)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		id := ID(args.instanceName, args.tableName, idxMeta.IndexName, string(typeName))
 
@@ -212,7 +215,7 @@ func (args *SecIndexDataSourceArgs) doFilters(total []*tablestore.IndexMeta) []i
 	// add filter: index id
 	if args.ids != nil {
 		idFilter := &ValuesFilter{
-			allowedValues: Str2InterfaceSlice(args.ids),
+			allowedValues: convert.Str2InterfaceSlice(args.ids),
 			getSourceValue: func(sourceObj interface{}) interface{} {
 				idx := sourceObj.(*tablestore.IndexMeta)
 				// secondary index and search index can have same IndexName, so joined IndexType for index id
