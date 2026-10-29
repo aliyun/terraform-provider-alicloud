@@ -1,11 +1,13 @@
-package alicloud
+package cloudphone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudphone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudCloudPhoneKeyPair_basic9935(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_key_pair.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudPhoneKeyPairMap9935)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudPhoneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudPhoneKeyPair")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCloudPhoneKeyPairMap9935)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cloudphone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKeyPair")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudphone%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudPhoneKeyPairBasicDependence9935)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCloudPhoneKeyPairBasicDependence9935)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -65,32 +67,12 @@ func TestAccAliCloudCloudPhoneKeyPair_basic9935(t *testing.T) {
 var AlicloudCloudPhoneKeyPairMap9935 = map[string]string{}
 
 func AlicloudCloudPhoneKeyPairBasicDependence9935(name string) string {
+	// key_pair is a standalone account-level resource (CreateKeyPair/ImportKeyPair);
+	// the generated policy/instance_group/instance fixture is unnecessary and caused
+	// policyUndeleteInstance destroy failures (residual instances bound to the policy).
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
-}
-
-resource "alicloud_cloud_phone_policy" "defaultjZ1gi0" {
-}
-
-resource "alicloud_cloud_phone_instance_group" "defaultYHMlTO" {
-  instance_group_spec = "acp.basic.small"
-  policy_group_id     = alicloud_cloud_phone_policy.defaultjZ1gi0.id
-  instance_group_name = "AutoCreateGroupName"
-  period              = "1"
-  number_of_instances = "1"
-  charge_type         = "PostPaid"
-  image_id            = "imgc-075cllfeuazh03tg9"
-  period_unit         = "Hour"
-  auto_renew          = false
-  amount              = "1"
-  auto_pay            = false
-  gpu_acceleration    = false
-}
-
-resource "alicloud_cloud_phone_instance" "defaulthdBep1" {
-  android_instance_group_id = alicloud_cloud_phone_instance_group.defaultYHMlTO.id
-  android_instance_name     = "CreateInstanceName"
 }
 
 
@@ -101,21 +83,21 @@ resource "alicloud_cloud_phone_instance" "defaulthdBep1" {
 func TestAccAliCloudCloudPhoneKeyPair_basic10198(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_key_pair.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudPhoneKeyPairMap10198)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudPhoneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudPhoneKeyPair")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCloudPhoneKeyPairMap10198)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cloudphone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKeyPair")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudphone%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudPhoneKeyPairBasicDependence10198)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCloudPhoneKeyPairBasicDependence10198)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -150,32 +132,12 @@ func TestAccAliCloudCloudPhoneKeyPair_basic10198(t *testing.T) {
 var AlicloudCloudPhoneKeyPairMap10198 = map[string]string{}
 
 func AlicloudCloudPhoneKeyPairBasicDependence10198(name string) string {
+	// key_pair is a standalone account-level resource (CreateKeyPair/ImportKeyPair);
+	// the generated policy/instance_group/instance fixture is unnecessary and caused
+	// policyUndeleteInstance destroy failures (residual instances bound to the policy).
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
-}
-
-resource "alicloud_cloud_phone_policy" "defaultjZ1gi0" {
-}
-
-resource "alicloud_cloud_phone_instance_group" "defaultYHMlTO" {
-  instance_group_spec = "acp.basic.small"
-  policy_group_id     = alicloud_cloud_phone_policy.defaultjZ1gi0.id
-  instance_group_name = "AutoCreateGroupName"
-  period              = "1"
-  number_of_instances = "1"
-  charge_type         = "PostPaid"
-  image_id            = "imgc-075cllfeuazh03tg9"
-  period_unit         = "Hour"
-  auto_renew          = false
-  amount              = "1"
-  auto_pay            = false
-  gpu_acceleration    = false
-}
-
-resource "alicloud_cloud_phone_instance" "defaulthdBep1" {
-  android_instance_group_id = alicloud_cloud_phone_instance_group.defaultYHMlTO.id
-  android_instance_name     = "CreateInstanceName"
 }
 
 

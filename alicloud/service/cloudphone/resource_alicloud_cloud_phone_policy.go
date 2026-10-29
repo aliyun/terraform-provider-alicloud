@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package cloudphone. This file is generated automatically. Please do not modify it manually, thank you!
+package cloudphone
 
 import (
 	"encoding/json"
@@ -10,16 +10,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudCloudPhonePolicy() *schema.Resource {
+func ResourcePolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCloudPhonePolicyCreate,
-		Read:   resourceAliCloudCloudPhonePolicyRead,
-		Update: resourceAliCloudCloudPhonePolicyUpdate,
-		Delete: resourceAliCloudCloudPhonePolicyDelete,
+		Create: resourcePolicyCreate,
+		Read:   resourcePolicyRead,
+		Update: resourcePolicyUpdate,
+		Delete: resourcePolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -33,19 +37,19 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
 			},
 			"clipboard": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"read", "write", "readwrite", "off"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"read", "write", "readwrite", "off"}, false),
 			},
 			"lock_resolution": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
 			},
 			"net_redirect_policy": {
 				Type:     schema.TypeList,
@@ -61,13 +65,13 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 						"port": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringMatch(regexp.MustCompile("^\\d+$"), "Transparent proxy port. The Port value range is 1\\~ 65535."),
+							ValidateFunc: validators.StringMatch(regexp.MustCompile("^\\d+$"), "Transparent proxy port. The Port value range is 1\\~ 65535."),
 						},
 						"net_redirect": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
 						},
 						"proxy_password": {
 							Type:     schema.TypeString,
@@ -76,18 +80,18 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 						"proxy_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"socks5"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"socks5"}, false),
 						},
 						"host_addr": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringMatch(regexp.MustCompile("^(\\d{0,3}\\.){3}\\d{0,3}$"), "The transparent proxy IP address. The format is IPv4 address."),
+							ValidateFunc: validators.StringMatch(regexp.MustCompile("^(\\d{0,3}\\.){3}\\d{0,3}$"), "The transparent proxy IP address. The format is IPv4 address."),
 						},
 						"custom_proxy": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"on", "off"}, false),
 						},
 					},
 				},
@@ -101,19 +105,19 @@ func resourceAliCloudCloudPhonePolicy() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntInSlice([]int{0, 640, 720, 940, 1280, 1920}),
+				ValidateFunc: validators.IntInSlice([]int{0, 640, 720, 940, 1280, 1920}),
 			},
 			"resolution_width": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntInSlice([]int{0, 480, 536, 720, 800, 1080}),
+				ValidateFunc: validators.IntInSlice([]int{0, 480, 536, 720, 800, 1080}),
 			},
 		},
 	}
 }
 
-func resourceAliCloudCloudPhonePolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourcePolicyCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -135,7 +139,7 @@ func resourceAliCloudCloudPhonePolicyCreate(d *schema.ResourceData, meta interfa
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("net_redirect_policy"); !IsNil(v) {
+	if v := d.Get("net_redirect_policy"); !helper.IsNil(v) {
 		hostAddr1, _ := jsonpath.Get("$[0].host_addr", v)
 		if hostAddr1 != nil && hostAddr1 != "" {
 			objectDataLocalMap["HostAddr"] = hostAddr1
@@ -167,7 +171,7 @@ func resourceAliCloudCloudPhonePolicyCreate(d *schema.ResourceData, meta interfa
 
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["NetRedirectPolicy"] = string(objectDataLocalMapJson)
 	}
@@ -181,11 +185,11 @@ func resourceAliCloudCloudPhonePolicyCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOkExists("resolution_height"); ok {
 		request["ResolutionHeight"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -193,29 +197,29 @@ func resourceAliCloudCloudPhonePolicyCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_phone_policy", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cloud_phone_policy", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["PolicyGroupId"]))
 
-	return resourceAliCloudCloudPhonePolicyRead(d, meta)
+	return resourcePolicyRead(d, meta)
 }
 
-func resourceAliCloudCloudPhonePolicyRead(d *schema.ResourceData, meta interface{}) error {
+func resourcePolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudPhoneServiceV2 := CloudPhoneServiceV2{client}
+	cloudPhoneService := NewService(client)
 
-	objectRaw, err := cloudPhoneServiceV2.DescribeCloudPhonePolicy(d.Id())
+	objectRaw, err := cloudPhoneService.DescribePolicy(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cloud_phone_policy DescribeCloudPhonePolicy Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloud_phone_policy DescribePolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("camera_redirect", objectRaw["CameraRedirect"])
@@ -249,7 +253,7 @@ func resourceAliCloudCloudPhonePolicyRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudCloudPhonePolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourcePolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -317,7 +321,7 @@ func resourceAliCloudCloudPhonePolicyUpdate(d *schema.ResourceData, meta interfa
 
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["NetRedirectPolicy"] = string(objectDataLocalMapJson)
 	}
@@ -341,11 +345,11 @@ func resourceAliCloudCloudPhonePolicyUpdate(d *schema.ResourceData, meta interfa
 		request["ResolutionHeight"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -353,16 +357,16 @@ func resourceAliCloudCloudPhonePolicyUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudCloudPhonePolicyRead(d, meta)
+	return resourcePolicyRead(d, meta)
 }
 
-func resourceAliCloudCloudPhonePolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourcePolicyDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePolicyGroup"
@@ -373,12 +377,12 @@ func resourceAliCloudCloudPhonePolicyDelete(d *schema.ResourceData, meta interfa
 	request = make(map[string]interface{})
 	request["PolicyGroupIds.1"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -386,13 +390,13 @@ func resourceAliCloudCloudPhonePolicyDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

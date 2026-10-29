@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package cloudphone. This file is generated automatically. Please do not modify it manually, thank you!
+package cloudphone
 
 import (
 	"fmt"
@@ -8,16 +8,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudCloudPhoneInstance() *schema.Resource {
+func ResourceInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCloudPhoneInstanceCreate,
-		Read:   resourceAliCloudCloudPhoneInstanceRead,
-		Update: resourceAliCloudCloudPhoneInstanceUpdate,
-		Delete: resourceAliCloudCloudPhoneInstanceDelete,
+		Create: resourceInstanceCreate,
+		Read:   resourceInstanceRead,
+		Update: resourceInstanceUpdate,
+		Delete: resourceInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,7 +43,7 @@ func resourceAliCloudCloudPhoneInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudCloudPhoneInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -54,11 +57,11 @@ func resourceAliCloudCloudPhoneInstanceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("android_instance_group_id"); ok {
 		request["InstanceGroupId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -66,30 +69,30 @@ func resourceAliCloudCloudPhoneInstanceCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_phone_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cloud_phone_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.InstanceModel[0].AndroidInstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	return resourceAliCloudCloudPhoneInstanceUpdate(d, meta)
+	return resourceInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudCloudPhoneInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudPhoneServiceV2 := CloudPhoneServiceV2{client}
+	cloudPhoneService := NewService(client)
 
-	objectRaw, err := cloudPhoneServiceV2.DescribeCloudPhoneInstance(d.Id())
+	objectRaw, err := cloudPhoneService.DescribeInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cloud_phone_instance DescribeCloudPhoneInstance Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloud_phone_instance DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("android_instance_group_id", objectRaw["AndroidInstanceGroupId"])
@@ -98,7 +101,7 @@ func resourceAliCloudCloudPhoneInstanceRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAliCloudCloudPhoneInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -118,11 +121,11 @@ func resourceAliCloudCloudPhoneInstanceUpdate(d *schema.ResourceData, meta inter
 		request["NewAndroidInstanceName"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -130,16 +133,16 @@ func resourceAliCloudCloudPhoneInstanceUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudCloudPhoneInstanceRead(d, meta)
+	return resourceInstanceRead(d, meta)
 }
 
-func resourceAliCloudCloudPhoneInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Instance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

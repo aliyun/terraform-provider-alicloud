@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package cloudphone. This file is generated automatically. Please do not modify it manually, thank you!
+package cloudphone
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudCloudPhoneImage() *schema.Resource {
+func ResourceImage() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudCloudPhoneImageCreate,
-		Read:   resourceAliCloudCloudPhoneImageRead,
-		Update: resourceAliCloudCloudPhoneImageUpdate,
-		Delete: resourceAliCloudCloudPhoneImageDelete,
+		Create: resourceImageCreate,
+		Read:   resourceImageRead,
+		Update: resourceImageUpdate,
+		Delete: resourceImageDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -42,7 +46,7 @@ func resourceAliCloudCloudPhoneImage() *schema.Resource {
 	}
 }
 
-func resourceAliCloudCloudPhoneImageCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceImageCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -53,15 +57,15 @@ func resourceAliCloudCloudPhoneImageCreate(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["InstanceId"] = d.Get("instance_id")
 	request["ImageName"] = d.Get("image_name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -69,35 +73,35 @@ func resourceAliCloudCloudPhoneImageCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_phone_image", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cloud_phone_image", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ImageId"]))
 
-	cloudPhoneServiceV2 := CloudPhoneServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"AVAILABLE"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, cloudPhoneServiceV2.CloudPhoneImageStateRefreshFunc(d.Id(), "Status", []string{"CREATE_FAILED"}))
+	cloudPhoneService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"AVAILABLE"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, cloudPhoneService.ImageStateRefreshFunc(d.Id(), "Status", []string{"CREATE_FAILED"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudCloudPhoneImageRead(d, meta)
+	return resourceImageRead(d, meta)
 }
 
-func resourceAliCloudCloudPhoneImageRead(d *schema.ResourceData, meta interface{}) error {
+func resourceImageRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudPhoneServiceV2 := CloudPhoneServiceV2{client}
+	cloudPhoneService := NewService(client)
 
-	objectRaw, err := cloudPhoneServiceV2.DescribeCloudPhoneImage(d.Id())
+	objectRaw, err := cloudPhoneService.DescribeImage(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cloud_phone_image DescribeCloudPhoneImage Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloud_phone_image DescribeImage Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("image_name", objectRaw["ImageName"])
@@ -106,7 +110,7 @@ func resourceAliCloudCloudPhoneImageRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAliCloudCloudPhoneImageUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -124,11 +128,11 @@ func resourceAliCloudCloudPhoneImageUpdate(d *schema.ResourceData, meta interfac
 	}
 	request["ImageName"] = d.Get("image_name")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -136,16 +140,16 @@ func resourceAliCloudCloudPhoneImageUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudCloudPhoneImageRead(d, meta)
+	return resourceImageRead(d, meta)
 }
 
-func resourceAliCloudCloudPhoneImageDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceImageDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteImages"
@@ -155,14 +159,14 @@ func resourceAliCloudCloudPhoneImageDelete(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 
-	request["ImageIds"], _ = convertArrayObjectToJsonString(expandSingletonToList(d.Id()))
+	request["ImageIds"], _ = convert.ConvertArrayObjectToJsonString(convert.ExpandSingletonToList(d.Id()))
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("eds-aic", "2023-09-30", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -170,13 +174,13 @@ func resourceAliCloudCloudPhoneImageDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

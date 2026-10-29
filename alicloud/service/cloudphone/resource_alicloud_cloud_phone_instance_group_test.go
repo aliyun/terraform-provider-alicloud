@@ -1,11 +1,13 @@
-package alicloud
+package cloudphone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudphone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudCloudPhoneInstanceGroup_basic10335(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_instance_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudPhoneInstanceGroupMap10335)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudPhoneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudPhoneInstanceGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCloudPhoneInstanceGroupMap10335)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cloudphone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstanceGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudphone%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudPhoneInstanceGroupBasicDependence10335)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCloudPhoneInstanceGroupBasicDependence10335)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -61,9 +63,9 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10335(t *testing.T) {
 						"amount":              "1",
 						"auto_pay":            "false",
 						"gpu_acceleration":    "false",
-						"policy_group_id":     CHECKSET,
-						"office_site_id":      CHECKSET,
-						"vswitch_id":          CHECKSET,
+						"policy_group_id":     acctest.CHECKSET,
+						"office_site_id":      acctest.CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
 					}),
 				),
 			},
@@ -88,7 +90,7 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10335(t *testing.T) {
 }
 
 var AlicloudCloudPhoneInstanceGroupMap10335 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudCloudPhoneInstanceGroupBasicDependence10335(name string) string {
@@ -149,22 +151,22 @@ resource "alicloud_ecd_simple_office_site" "defaultq0h9R9" {
 func TestAccAliCloudCloudPhoneInstanceGroup_basic10200(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_phone_instance_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudPhoneInstanceGroupMap10200)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudPhoneServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudPhoneInstanceGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudCloudPhoneInstanceGroupMap10200)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cloudphone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstanceGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacccloudphone%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudPhoneInstanceGroupBasicDependence10200)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudCloudPhoneInstanceGroupBasicDependence10200)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -195,8 +197,8 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10200(t *testing.T) {
 						"amount":              "1",
 						"auto_pay":            "false",
 						"gpu_acceleration":    "false",
-						"policy_group_id":     CHECKSET,
-						"office_site_id":      CHECKSET,
+						"policy_group_id":     acctest.CHECKSET,
+						"office_site_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -221,7 +223,7 @@ func TestAccAliCloudCloudPhoneInstanceGroup_basic10200(t *testing.T) {
 }
 
 var AlicloudCloudPhoneInstanceGroupMap10200 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudCloudPhoneInstanceGroupBasicDependence10200(name string) string {
