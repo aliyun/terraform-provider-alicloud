@@ -1,4 +1,4 @@
-package alicloud
+package lindorm
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudLindormInstances() *schema.Resource {
+func DataSourceLindormInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudLindormInstancesRead,
+		Read: dataSourceLindormInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -204,7 +208,7 @@ func dataSourceAlicloudLindormInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceLindormInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "GetLindormInstanceList"
@@ -215,14 +219,14 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("support_engine"); ok {
 		request["SupportEngine"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var instanceNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		instanceNameRegex = r
 	}
@@ -240,11 +244,11 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -252,13 +256,13 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_lindorm_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_lindorm_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.InstanceList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.InstanceList", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -276,7 +280,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -286,7 +290,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		engine_typeVal, err := formatInt(object["EngineType"])
+		engine_typeVal, err := convert.FormatInt(object["EngineType"])
 		if err != nil {
 			return err
 		}
@@ -312,19 +316,19 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 			continue
 		}
 		id := fmt.Sprint(object["InstanceId"])
-		hitsdbService := HitsdbService{client}
-		ipWhiteList, err := hitsdbService.GetInstanceIpWhiteList(id)
+		lindormService := NewService(client)
+		ipWhiteList, err := lindormService.GetInstanceIpWhiteList(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		mapping["ip_white_list"] = convertListToJsonString(ipWhiteList)
-		getResp1, err := hitsdbService.DescribeLindormInstance(id)
+		mapping["ip_white_list"] = convert.ConvertListToJsonString(ipWhiteList)
+		getResp1, err := lindormService.DescribeLindormInstance(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["auto_renew"] = getResp1["AutoRenew"]
 		if v, ok := getResp1["ColdStorage"]; ok {
-			coldStorage, err := formatInt(v)
+			coldStorage, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -337,12 +341,12 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		mapping["resource_owner_id"] = getResp1["AliUid"]
 		mapping["vswitch_id"] = getResp1["VswitchId"]
 
-		getResp2, err := hitsdbService.GetLindormInstanceEngineInfo(id)
+		getResp2, err := lindormService.GetLindormInstanceEngineInfo(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if v, ok := getResp2["FileEngineNodeCount"]; ok {
-			fileEngineNodeCount, err := formatInt(v)
+			fileEngineNodeCount, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -350,7 +354,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		mapping["file_engine_specification"] = getResp2["FileEngineSpecification"]
 		if v, ok := getResp2["LtsNodeCount"]; ok {
-			ltsNodeCount, err := formatInt(v)
+			ltsNodeCount, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -358,7 +362,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		mapping["lts_node_specification"] = getResp2["LtsNodeSpecification"]
 		if v, ok := getResp2["PhoenixNodeCount"]; ok {
-			phoenixNodeCount, err := formatInt(v)
+			phoenixNodeCount, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -366,7 +370,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		mapping["phoenix_node_specification"] = getResp2["PhoenixNodeSpecification"]
 		if v, ok := getResp2["SearchEngineNodeCount"]; ok {
-			searchEngineNodeCount, err := formatInt(v)
+			searchEngineNodeCount, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -374,7 +378,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		mapping["search_engine_specification"] = getResp2["SearchEngineSpecification"]
 		if v, ok := getResp2["TableEngineNodeCount"]; ok {
-			tableEngineNodeCount, err := formatInt(v)
+			tableEngineNodeCount, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -382,7 +386,7 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		}
 		mapping["table_engine_specification"] = getResp2["TableEngineSpecification"]
 		if v, ok := getResp2["TimeSeriesNodeCount"]; ok {
-			timeSeriesEngineNodeCount, err := formatInt(v)
+			timeSeriesEngineNodeCount, err := convert.FormatInt(v)
 			if err != nil {
 				return err
 			}
@@ -393,20 +397,20 @@ func dataSourceAlicloudLindormInstancesRead(d *schema.ResourceData, meta interfa
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

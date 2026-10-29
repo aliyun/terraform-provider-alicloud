@@ -104,6 +104,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/iot"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kvcachestore"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/lindorm"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/live"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/market"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
@@ -274,6 +275,7 @@ var servicePackages = []conns.ServicePackage{
 	hbr.ServicePackage(),
 	hitsdb.ServicePackage(),
 	hologram.ServicePackage(),
+	lindorm.ServicePackage(),
 	imm.ServicePackage(),
 	imp.ServicePackage(),
 	ims.ServicePackage(),

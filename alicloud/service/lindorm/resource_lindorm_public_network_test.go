@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package lindorm. This file is generated automatically. Please do not modify it manually, thank you!
+package lindorm_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/lindorm"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -16,21 +18,21 @@ import (
 func TestAccAliCloudLindormPublicNetwork_basic10782(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_public_network.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormPublicNetworkMap10782)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormPublicNetworkMap10782)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormPublicNetwork")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormPublicNetworkBasicDependence10782)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormPublicNetworkBasicDependence10782)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,7 +42,7 @@ func TestAccAliCloudLindormPublicNetwork_basic10782(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":           CHECKSET,
+						"instance_id":           acctest.CHECKSET,
 						"enable_public_network": "1",
 						"engine_type":           "lindorm",
 					}),
@@ -57,7 +59,7 @@ func TestAccAliCloudLindormPublicNetwork_basic10782(t *testing.T) {
 }
 
 var AlicloudLindormPublicNetworkMap10782 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudLindormPublicNetworkBasicDependence10782(name string) string {
@@ -108,21 +110,21 @@ resource "alicloud_lindorm_instance" "defaultQpsLKr" {
 func TestAccAliCloudLindormPublicNetwork_basic10758(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_public_network.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormPublicNetworkMap10758)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormPublicNetworkMap10758)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormPublicNetwork")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormPublicNetworkBasicDependence10758)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormPublicNetworkBasicDependence10758)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -132,7 +134,7 @@ func TestAccAliCloudLindormPublicNetwork_basic10758(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":           CHECKSET,
+						"instance_id":           acctest.CHECKSET,
 						"enable_public_network": "1",
 						"engine_type":           "lindorm",
 					}),
@@ -149,7 +151,7 @@ func TestAccAliCloudLindormPublicNetwork_basic10758(t *testing.T) {
 }
 
 var AlicloudLindormPublicNetworkMap10758 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudLindormPublicNetworkBasicDependence10758(name string) string {

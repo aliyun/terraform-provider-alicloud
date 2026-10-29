@@ -734,9 +734,6 @@ func Provider() *schema.Provider {
 			"alicloud_kvstore_connections":      dataSourceAlicloudKvstoreConnections(),
 			"alicloud_kvstore_accounts":         dataSourceAlicloudKvstoreAccounts(),
 
-			// lindorm
-			"alicloud_lindorm_instances": dataSourceAlicloudLindormInstances(),
-
 			// log
 			"alicloud_log_alert_resource": dataSourceAlicloudLogAlertResource(),
 			"alicloud_log_service":        dataSourceAlicloudLogService(),
@@ -1858,11 +1855,6 @@ func Provider() *schema.Provider {
 
 			// launch
 			"alicloud_launch_template": resourceAliCloudEcsLaunchTemplate(),
-
-			// lindorm
-			"alicloud_lindorm_instance_v2":    resourceAliCloudLindormInstanceV2(),
-			"alicloud_lindorm_public_network": resourceAliCloudLindormPublicNetwork(),
-			"alicloud_lindorm_instance":       resourceAliCloudLindormInstance(),
 
 			// live
 
