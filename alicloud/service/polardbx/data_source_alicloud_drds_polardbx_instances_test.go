@@ -1,56 +1,57 @@
-package alicloud
+package polardbx_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDrdsPolardbxInstancesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_drds_polardbx_instances.default"
 	name := fmt.Sprintf("tfaccdrdsds%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceDrdsPolardbxInstancesConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceDrdsPolardbxInstancesConfigDependence)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_drds_polardbx_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_drds_polardbx_instance.default.id}-fake"},
 		}),
 	}
 
-	descriptionRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	descriptionRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_drds_polardbx_instance.default.description}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_drds_polardbx_instance.default.description}-fake",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_drds_polardbx_instance.default.id}"},
 			"status": "Running",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_drds_polardbx_instance.default.id}"},
 			"status": "Deleting",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_drds_polardbx_instance.default.id}"},
 			"description_regex": "${alicloud_drds_polardbx_instance.default.description}",
 			"status":            "Running",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":               []string{"${alicloud_drds_polardbx_instance.default.id}"},
 			"description_regex": "${alicloud_drds_polardbx_instance.default.description}-fake",
 			"status":            "Running",
@@ -61,21 +62,21 @@ func TestAccAliCloudDrdsPolardbxInstancesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                            "1",
 			"descriptions.#":                   "1",
-			"ids.0":                            CHECKSET,
+			"ids.0":                            acctest.CHECKSET,
 			"instances.#":                      "1",
-			"instances.0.id":                   CHECKSET,
-			"instances.0.polardbx_instance_id": CHECKSET,
+			"instances.0.id":                   acctest.CHECKSET,
+			"instances.0.polardbx_instance_id": acctest.CHECKSET,
 			"instances.0.description":          strings.ToLower(name),
-			"instances.0.cn_class":             CHECKSET,
-			"instances.0.dn_class":             CHECKSET,
-			"instances.0.cn_node_count":        CHECKSET,
-			"instances.0.dn_node_count":        CHECKSET,
-			"instances.0.topology_type":        CHECKSET,
+			"instances.0.cn_class":             acctest.CHECKSET,
+			"instances.0.dn_class":             acctest.CHECKSET,
+			"instances.0.cn_node_count":        acctest.CHECKSET,
+			"instances.0.dn_node_count":        acctest.CHECKSET,
+			"instances.0.topology_type":        acctest.CHECKSET,
 			"instances.0.status":               "Running",
-			"instances.0.primary_zone":         CHECKSET,
-			"instances.0.vpc_id":               CHECKSET,
-			"instances.0.create_time":          CHECKSET,
-			"instances.0.region_id":            CHECKSET,
+			"instances.0.primary_zone":         acctest.CHECKSET,
+			"instances.0.vpc_id":               acctest.CHECKSET,
+			"instances.0.create_time":          acctest.CHECKSET,
+			"instances.0.region_id":            acctest.CHECKSET,
 		}
 	}
 
@@ -87,17 +88,17 @@ func TestAccAliCloudDrdsPolardbxInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var checkInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existMapFunc,
-		fakeMapFunc:  fakeMapFunc,
+	var checkInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existMapFunc,
+		FakeMapFunc:  fakeMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 	}
 
-	checkInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, descriptionRegexConf, statusConf, allConf)
+	checkInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, descriptionRegexConf, statusConf, allConf)
 }
 
 func dataSourceDrdsPolardbxInstancesConfigDependence(name string) string {

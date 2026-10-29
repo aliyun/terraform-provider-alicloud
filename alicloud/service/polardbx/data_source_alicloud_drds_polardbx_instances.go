@@ -1,4 +1,4 @@
-package alicloud
+package polardbx
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -168,14 +172,14 @@ func dataSourceAliCloudDrdsPolardbxInstancesRead(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = helper.PageSizeLarge
 	}
 
 	var descriptionRegex *regexp.Regexp
 	if v, ok := d.GetOk("description_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		descriptionRegex = r
 	}
@@ -201,16 +205,16 @@ func dataSourceAliCloudDrdsPolardbxInstancesRead(d *schema.ResourceData, meta in
 	for {
 		response, err = client.RpcPost("polardbx", "2020-02-02", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_drds_polardbx_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_drds_polardbx_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.DBInstances", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DBInstances", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DBInstances", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -273,25 +277,25 @@ func dataSourceAliCloudDrdsPolardbxInstancesRead(d *schema.ResourceData, meta in
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("descriptions", descriptions); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["TotalNumber"])
+	total_countVal, err := convert.FormatInt(response["TotalNumber"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
