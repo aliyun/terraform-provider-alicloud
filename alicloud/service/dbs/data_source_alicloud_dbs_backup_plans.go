@@ -1,4 +1,4 @@
-package alicloud
+package dbs
 
 import (
 	"fmt"
@@ -7,12 +7,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDbsBackupPlans() *schema.Resource {
+func DataSourceDbsBackupPlans() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudDbsBackupPlansRead,
 		Schema: map[string]*schema.Schema{
@@ -52,7 +56,7 @@ func dataSourceAlicloudDbsBackupPlans() *schema.Resource {
 			"page_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  PageSizeLarge,
+				Default:  helper.PageSizeLarge,
 			},
 			"plans": {
 				Type:     schema.TypeList,
@@ -188,14 +192,14 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 		request["BackupPlanName"] = v
 	}
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNum"] = 0
 	var objects []map[string]interface{}
 	var backupPlanNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		backupPlanNameRegex = r
 	}
@@ -213,11 +217,11 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -225,18 +229,18 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidParameterValid"}) {
+			if errs.IsExpectedErrors(err, []string{"InvalidParameterValid"}) {
 				d.SetId("DescribeBackupPlanList")
 				d.Set("ids", []string{})
 				return nil
 			}
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dbs_backup_plans", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_dbs_backup_plans", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Items.BackupPlanDetail", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.BackupPlanDetail", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Items.BackupPlanDetail", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -264,16 +268,16 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		backup_retention_periodVal, err := formatInt(object["BackupRetentionPeriod"])
+		backup_retention_periodVal, err := convert.FormatInt(object["BackupRetentionPeriod"])
 		if err != nil {
 			return err
 		}
 
-		duplication_archive_periodVal, err := formatInt(object["DuplicationArchivePeriod"])
+		duplication_archive_periodVal, err := convert.FormatInt(object["DuplicationArchivePeriod"])
 		if err != nil {
 			return err
 		}
-		duplication_infrequent_access_periodVal, err := formatInt(object["DuplicationInfrequentAccessPeriod"])
+		duplication_infrequent_access_periodVal, err := convert.FormatInt(object["DuplicationInfrequentAccessPeriod"])
 		if err != nil {
 			return err
 		}
@@ -314,29 +318,29 @@ func dataSourceAlicloudDbsBackupPlansRead(d *schema.ResourceData, meta interface
 			continue
 		}
 		id := fmt.Sprint(object["BackupPlanId"])
-		dbsService := DbsService{client}
+		dbsService := NewService(client)
 		getResp, err := dbsService.DescribeBackupPlanBilling(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["payment_type"] = convertDbsBackupPlanPaymentTypeResponse(getResp["BuyChargeType"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("plans", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

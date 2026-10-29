@@ -1,4 +1,4 @@
-package alicloud
+package dbs
 
 import (
 	"fmt"
@@ -6,371 +6,161 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers(
-		"alicloud_dbs_backup_plan",
-		&resource.Sweeper{
-			Name: "alicloud_dbs_backup_plan",
-			F:    testSweepDbsBackupPlan,
-		})
+var unitTestEndpoints sync.Map
+var unitTestSignVersion sync.Map
+
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_dbs_backup_plan": ResourceDbsBackupPlan(),
+	}
 }
 
-func testSweepDbsBackupPlan(region string) error {
+// unitTestSharedClientForRegion mirrors the root test helper so the unit test
+// can be skipped when no cloud credentials are configured.
+func unitTestSharedClientForRegion(region string) (interface{}, error) {
+	var accessKey, secretKey, securityToken string
+	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_ACCESS_KEY")
+	}
 
-	rawClient, err := sharedClientForRegion(region)
+	if secretKey = os.Getenv("ALICLOUD_SECRET_KEY"); secretKey == "" {
+		return nil, fmt.Errorf("empty ALICLOUD_SECRET_KEY")
+	}
+
+	securityToken = os.Getenv("ALICLOUD_SECURITY_TOKEN")
+
+	conf := connectivity.Config{
+		Region:      connectivity.Region(region),
+		RegionId:    region,
+		AccessKey:   accessKey,
+		SecretKey:   secretKey,
+		Protocol:    "HTTPS",
+		Endpoints:   &unitTestEndpoints,
+		SignVersion: &unitTestSignVersion,
+	}
+	if securityToken != "" {
+		conf.SecurityToken = securityToken
+	}
+	accountId := os.Getenv("ALICLOUD_ACCOUNT_ID")
+	if accountId == "" {
+		accountId = os.Getenv("ALIBABA_CLOUD_ACCOUNT_ID")
+	}
+	if accountId != "" {
+		conf.AccountId = accountId
+	}
+	accountType := os.Getenv("ALICLOUD_ACCOUNT_TYPE")
+	if accountType == "" {
+		accountType = os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")
+	}
+	if accountType != "" {
+		conf.AccountType = accountType
+	}
+	credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+	if v := strings.TrimSpace(securityToken); v != "" {
+		credentialConfig.SetType("sts").SetSecurityToken(v)
+	}
+	credential, err := credentials.NewCredential(credentialConfig)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return nil, err
 	}
-	aliyunClient := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
+	conf.Credential = credential
+
+	client, err := conf.Client()
+	if err != nil {
+		return nil, err
 	}
-	action := "DescribeBackupPlanList"
-	request := map[string]interface{}{}
-	request["RegionId"] = aliyunClient.RegionId
 
-	request["PageSize"] = PageSizeLarge
-	request["PageNum"] = 0
+	return client, nil
+}
 
-	var response map[string]interface{}
-	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-			response, err = aliyunClient.RpcPost("Dbs", "2019-03-06", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
+// newInstanceDiff mirrors the root helper for the migrated resource.
+// lintignore: R001
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+	p := unitTestProviderResources()
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
-			return nil
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
 
-		resp, err := jsonpath.Get("$.Items.BackupPlanDetail", response)
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
 		if err != nil {
-			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.Items.BackupPlanDetail", action, err)
-			return nil
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
+	}
 
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["BackupPlanName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping Dbs Backup Plan: %s", item["BackupPlanName"].(string))
-				continue
-			}
-			action := "ReleaseBackupPlan"
-			request := map[string]interface{}{
-				"BackupPlanId": item["BackupPlanId"],
-			}
-			_, err = aliyunClient.RpcPost("Dbs", "2019-03-06", action, nil, request, false)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete Dbs Backup Plan (%s): %s", item["BackupPlanName"].(string), err)
-			}
-			log.Printf("[INFO] Delete Dbs Backup Plan success: %s ", item["BackupPlanName"].(string))
 		}
-		if len(result) < PageSizeLarge {
-			break
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
 		}
-		request["PageNum"] = request["PageNum"].(int) + 1
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
+		}
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
+
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
 	}
-	return nil
-}
-
-func TestAccAliCloudDBSBackupPlan_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dbs_backup_plan.default"
-	ra := resourceAttrInit(resourceId, AlicloudDBSBackupPlanMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDbsBackupPlan")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdbsbackupplan%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDBSBackupPlanBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"backup_plan_name":              "${var.name}",
-					"payment_type":                  "PayAsYouGo",
-					"instance_class":                "xlarge",
-					"backup_method":                 "logical",
-					"database_type":                 "MySQL",
-					"database_region":               "${data.alicloud_regions.default.regions.0.id}",
-					"storage_region":                "${data.alicloud_regions.default.regions.0.id}",
-					"instance_type":                 "RDS",
-					"source_endpoint_instance_type": "RDS",
-					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"source_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
-					"source_endpoint_instance_id":   "${alicloud_db_instance.default.id}",
-					"source_endpoint_user_name":     "${alicloud_db_account_privilege.default.account_name}",
-					"source_endpoint_password":      "${alicloud_rds_account.default.account_password}",
-					"backup_objects":                `[{\"DBName\":\"${alicloud_db_database.default.name}\"}]`,
-					"backup_period":                 "Monday",
-					"backup_start_time":             "14:22",
-					"backup_storage_type":           "system",
-					"backup_retention_period":       "740",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_plan_name":        name,
-						"payment_type":            "PayAsYouGo",
-						"instance_class":          "xlarge",
-						"backup_method":           "logical",
-						"database_type":           "MySQL",
-						"database_region":         CHECKSET,
-						"storage_region":          CHECKSET,
-						"instance_type":           "RDS",
-						"backup_retention_period": "740",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"source_endpoint_password", "resource_group_id", "period", "database_region", "backup_strategy_type", "source_endpoint_port", "instance_type", "backup_speed_limit", "backup_log_interval_seconds", "source_endpoint_ip", "used_time", "backup_rate_limit", "storage_region"},
-			},
-		},
-	})
-}
-
-var AlicloudDBSBackupPlanMap0 = map[string]string{
-	"source_endpoint_port":                 NOSET,
-	"payment_type":                         CHECKSET,
-	"backup_period":                        CHECKSET,
-	"backup_plan_name":                     CHECKSET,
-	"backup_storage_type":                  CHECKSET,
-	"enable_backup_log":                    CHECKSET,
-	"instance_type":                        NOSET,
-	"backup_objects":                       CHECKSET,
-	"backup_speed_limit":                   NOSET,
-	"backup_start_time":                    CHECKSET,
-	"duplication_infrequent_access_period": CHECKSET,
-	"source_endpoint_user_name":            CHECKSET,
-	"backup_log_interval_seconds":          NOSET,
-	"source_endpoint_ip":                   NOSET,
-	"source_endpoint_instance_id":          CHECKSET,
-	"used_time":                            NOSET,
-	"backup_rate_limit":                    NOSET,
-	"backup_retention_period":              CHECKSET,
-	"duplication_archive_period":           CHECKSET,
-	"storage_region":                       NOSET,
-	"database_region":                      NOSET,
-	"period":                               NOSET,
-	"status":                               CHECKSET,
-	"backup_strategy_type":                 NOSET,
-	"source_endpoint_instance_type":        CHECKSET,
-	"source_endpoint_region":               CHECKSET,
-}
-
-func AlicloudDBSBackupPlanBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
-}
-
-data "alicloud_regions" "default" {
-  current = true
-}
-
-data "alicloud_zones" "default" {
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.2.id
-}
-
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_db_instance" "default" {
-  engine           = "MySQL"
-  engine_version   = "8.0"
-  instance_type    = "rds.mysql.s1.small"
-  instance_storage = "10"
-  vswitch_id       = data.alicloud_vswitches.default.ids.0
-  instance_name    = var.name
-}
-
-resource "alicloud_db_database" "default" {
-  instance_id = alicloud_db_instance.default.id
-  name        = "tftestdatabase"
-}
-resource "alicloud_rds_account" "default" {
-  db_instance_id   = alicloud_db_instance.default.id
-  account_name     = "tftestnormal000"
-  account_password = "Test12345"
-}
-resource "alicloud_db_account_privilege" "default" {
-  instance_id  = alicloud_db_instance.default.id
-  account_name = alicloud_rds_account.default.account_name
-  privilege    = "ReadWrite"
-  db_names     = [alicloud_db_database.default.name]
-}
-`, name)
-}
-
-func TestAccAliCloudDBSBackupPlan_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dbs_backup_plan.default"
-	ra := resourceAttrInit(resourceId, AlicloudDBSBackupPlanMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDbsBackupPlan")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdbsbackupplan%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDBSBackupPlanBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"backup_plan_name":              "${var.name}",
-					"payment_type":                  "PayAsYouGo",
-					"instance_class":                "xlarge",
-					"backup_method":                 "logical",
-					"database_type":                 "MySQL",
-					"database_region":               "${data.alicloud_regions.default.regions.0.id}",
-					"storage_region":                "${data.alicloud_regions.default.regions.0.id}",
-					"instance_type":                 "RDS",
-					"source_endpoint_instance_type": "RDS",
-					"source_endpoint_region":        "${data.alicloud_regions.default.regions.0.id}",
-					"source_endpoint_instance_id":   "${alicloud_db_instance.default.id}",
-					"source_endpoint_user_name":     "${alicloud_db_account_privilege.default.account_name}",
-					"source_endpoint_password":      "${alicloud_rds_account.default.account_password}",
-					"backup_objects":                `[{\"DBName\":\"${alicloud_db_database.default.name}\"}]`,
-					"backup_period":                 "Monday",
-					"backup_start_time":             "14:22",
-					"backup_storage_type":           "system",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_plan_name": name,
-						"payment_type":     "PayAsYouGo",
-						"instance_class":   "xlarge",
-						"backup_method":    "logical",
-						"database_type":    "MySQL",
-						"database_region":  CHECKSET,
-						"storage_region":   CHECKSET,
-						"instance_type":    "RDS",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "pause",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "pause",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "running",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "running",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"source_endpoint_password", "source_endpoint_port", "instance_type", "backup_speed_limit", "source_endpoint_ip", "used_time", "backup_log_interval_seconds", "backup_rate_limit", "storage_region", "database_region", "period", "backup_strategy_type"},
-			},
-		},
-	})
-}
-
-var AlicloudDBSBackupPlanMap1 = map[string]string{
-	"backup_rate_limit":                    NOSET,
-	"backup_retention_period":              CHECKSET,
-	"duplication_archive_period":           CHECKSET,
-	"storage_region":                       NOSET,
-	"database_region":                      NOSET,
-	"period":                               NOSET,
-	"status":                               CHECKSET,
-	"backup_strategy_type":                 NOSET,
-	"source_endpoint_instance_type":        CHECKSET,
-	"source_endpoint_region":               CHECKSET,
-	"source_endpoint_port":                 NOSET,
-	"payment_type":                         CHECKSET,
-	"backup_period":                        CHECKSET,
-	"backup_plan_name":                     CHECKSET,
-	"backup_storage_type":                  CHECKSET,
-	"enable_backup_log":                    CHECKSET,
-	"instance_type":                        NOSET,
-	"backup_objects":                       CHECKSET,
-	"backup_speed_limit":                   NOSET,
-	"backup_start_time":                    CHECKSET,
-	"duplication_infrequent_access_period": CHECKSET,
-	"source_endpoint_user_name":            CHECKSET,
-	"backup_log_interval_seconds":          NOSET,
-	"source_endpoint_ip":                   NOSET,
-	"source_endpoint_instance_id":          CHECKSET,
-	"used_time":                            NOSET,
+	return diff, nil
 }
 
 // lintignore: R001
 func TestUnitAccAlicloudDbsBackupPlan(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_dbs_backup_plan"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dbs_backup_plan"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -423,7 +213,7 @@ func TestUnitAccAlicloudDbsBackupPlan(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -476,27 +266,27 @@ func TestUnitAccAlicloudDbsBackupPlan(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dbs_backup_plan", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dbs_backup_plan", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -547,9 +337,9 @@ func TestUnitAccAlicloudDbsBackupPlan(t *testing.T) {
 	// Update pause
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -722,9 +512,9 @@ func TestUnitAccAlicloudDbsBackupPlan(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCbsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
