@@ -1139,9 +1139,8 @@ func Provider() *schema.Provider {
 			"alicloud_vswitches": dataSourceAlicloudVswitches(),
 
 			// waf
-			"alicloud_waf_domains":      dataSourceAlicloudWafDomains(),
-			"alicloud_waf_instances":    dataSourceAlicloudWafInstances(),
-			"alicloud_waf_certificates": dataSourceAlicloudWafCertificates(),
+			// alicloud_waf_* resources and data sources are registered via
+			// service/waf.ServicePackage() in provider/registry/registry.go.
 
 			// wafv3
 			"alicloud_wafv3_address_books": dataSourceAliCloudWafv3AddressBooks(),
@@ -2476,10 +2475,8 @@ func Provider() *schema.Provider {
 			"alicloud_vswitch": resourceAliCloudVpcVswitch(),
 
 			// waf
-			"alicloud_waf_domain":            resourceAlicloudWafDomain(),
-			"alicloud_waf_instance":          resourceAlicloudWafInstance(),
-			"alicloud_waf_certificate":       resourceAlicloudWafCertificate(),
-			"alicloud_waf_protection_module": resourceAlicloudWafProtectionModule(),
+			// alicloud_waf_* resources and data sources are registered via
+			// service/waf.ServicePackage() in provider/registry/registry.go.
 
 			// wafv3
 			"alicloud_wafv3_address_book":           resourceAliCloudWafv3AddressBook(),

@@ -1,4 +1,4 @@
-package alicloud
+package waf_test
 
 import (
 	"fmt"
@@ -7,8 +7,11 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/waf"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -20,9 +23,9 @@ func init() {
 }
 
 func testSweepWafDomains(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := wafTestClientForRegion(region)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -42,7 +45,7 @@ func testSweepWafDomains(region string) error {
 	}
 	resp, err := jsonpath.Get("$.InstanceInfos", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceInfos", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.InstanceInfos", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -98,32 +101,31 @@ func testSweepWafDomains(region string) error {
 
 func TestAccAliCloudWafDomain(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 
 	resourceId := "alicloud_waf_domain.domain"
-	ra := resourceAttrInit(resourceId, wafDomainBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, wafDomainBasicMap)
 
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return waf.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceWafDomainDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceWafDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain_name":       name,
-					"domain":            name,
 					"instance_id":       "${data.alicloud_waf_instances.default.ids.0}",
 					"is_access_product": "Off",
 					"source_ips":        []string{"1.1.1.1"},
@@ -148,8 +150,9 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"domain_name":       name,
 						"domain":            name,
-						"instance_id":       CHECKSET,
+						"instance_id":       acctest.CHECKSET,
 						"is_access_product": "Off",
 						"source_ips.#":      "1",
 						"cluster_type":      "PhysicalCluster",
@@ -160,7 +163,7 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 						"https_redirect":    "Off",
 						"load_balancing":    "IpHash",
 						"log_headers.#":     "2",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -263,7 +266,7 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_headers": REMOVEKEY,
+					"log_headers": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -332,7 +335,7 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":            name,
-						"instance_id":       CHECKSET,
+						"instance_id":       acctest.CHECKSET,
 						"cluster_type":      "PhysicalCluster",
 						"connection_time":   "30",
 						"http2_port.#":      "1",
@@ -346,7 +349,7 @@ func TestAccAliCloudWafDomain(t *testing.T) {
 						"read_time":         "140",
 						"source_ips.#":      "1",
 						"write_time":        "800",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
