@@ -1,4 +1,4 @@
-package alicloud
+package cassandra
 
 import (
 	"fmt"
@@ -9,11 +9,16 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudCassandraCluster() *schema.Resource {
+func ResourceCassandraCluster() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCassandraClusterCreate,
 		Read:   resourceAlicloudCassandraClusterRead,
@@ -134,14 +139,14 @@ func resourceAlicloudCassandraCluster() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
 func resourceAlicloudCassandraClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cassandraService := CassandraService{client}
+	cassandraService := Service{client}
 
 	request := cassandra.CreateCreateClusterRequest()
 	if v, ok := d.GetOkExists("auto_renew"); ok {
@@ -178,14 +183,13 @@ func resourceAlicloudCassandraClusterCreate(d *schema.ResourceData, meta interfa
 	request.RegionId = client.RegionId
 	request.VswitchId = d.Get("vswitch_id").(string)
 	request.ZoneId = d.Get("zone_id").(string)
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	vswitchId := helper.Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
-		vpcService := VpcService{client}
 		request.VswitchId = vswitchId
 		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
+		vsw, err := cassandraService.describeVSwitch(vswitchId)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		if request.ZoneId == "" {
@@ -197,29 +201,29 @@ func resourceAlicloudCassandraClusterCreate(d *schema.ResourceData, meta interfa
 		return cassandraClient.CreateCluster(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cassandra_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cassandra_cluster", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	logs.AddDebug(request.GetActionName(), raw)
 	response, _ := raw.(*cassandra.CreateClusterResponse)
 	d.SetId(fmt.Sprintf("%v", response.ClusterId))
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 8*time.Minute, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 8*time.Minute, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAlicloudCassandraClusterUpdate(d, meta)
 }
 func resourceAlicloudCassandraClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cassandraService := CassandraService{client}
+	cassandraService := Service{client}
 	object, err := cassandraService.DescribeCassandraCluster(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cassandra_cluster cassandraService.DescribeCassandraCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("cluster_name", object.ClusterName)
@@ -231,7 +235,7 @@ func resourceAlicloudCassandraClusterRead(d *schema.ResourceData, meta interface
 	d.Set("tags", cassandraService.tagsToMap(object.Tags.Tag))
 	firstDc, err := cassandraService.DescribeClusterDataCenter(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("zone_id", firstDc.ZoneId)
 	d.Set("vswitch_id", firstDc.VswitchId)
@@ -255,19 +259,19 @@ func resourceAlicloudCassandraClusterRead(d *schema.ResourceData, meta interface
 	d.Set("security_groups", nil)
 	ipWhitelist, err := cassandraService.DescribeIpWhitelist(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("ip_white", strings.Join(ipWhitelist.IpList.IP, ","))
 	securityGroups, err := cassandraService.DescribeSecurityGroups(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if len(securityGroups.SecurityGroupIds.SecurityGroupId) > 0 {
 		d.Set("security_groups", securityGroups.SecurityGroupIds.SecurityGroupId)
 	}
 	endPoints, err := cassandraService.DescribeCassandraEndpoints(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	for _, contactPoint := range endPoints.ContactPoints.ContactPoint {
 		if d.Get("zone_id").(string) == contactPoint.DataCenterId && len(contactPoint.PublicAddresses.PublicAddress) > 0 {
@@ -280,11 +284,11 @@ func resourceAlicloudCassandraClusterRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cassandraService := CassandraService{client}
+	cassandraService := Service{client}
 	d.Partial(true)
 
 	if err := cassandraService.setInstanceTags(d); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if d.HasChange("ip_white") {
 		modifyIpWhitelistGroupReq := cassandra.CreateModifyIpWhitelistGroupRequest()
@@ -295,9 +299,9 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifyIpWhitelistGroup(modifyIpWhitelistGroupReq)
 		})
-		addDebug(modifyIpWhitelistGroupReq.GetActionName(), raw)
+		logs.AddDebug(modifyIpWhitelistGroupReq.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyIpWhitelistGroupReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), modifyIpWhitelistGroupReq.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	if d.HasChange("security_groups") {
@@ -305,7 +309,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		modifySecurityGroupsReq.ClusterId = d.Id()
 		securityGroups := d.Get("security_groups").([]interface{})
 		if securityGroups != nil && len(securityGroups) > 0 {
-			security_groups := strings.Join(expandStringList(securityGroups), ",")
+			security_groups := strings.Join(convert.ExpandStringList(securityGroups), ",")
 			modifySecurityGroupsReq.SecurityGroupIds = security_groups
 		} else {
 			modifySecurityGroupsReq.SecurityGroupIds = " "
@@ -313,13 +317,13 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifySecurityGroups(modifySecurityGroupsReq)
 		})
-		addDebug(modifySecurityGroupsReq.GetActionName(), raw)
+		logs.AddDebug(modifySecurityGroupsReq.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySecurityGroupsReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), modifySecurityGroupsReq.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	if d.HasChange("enable_public") {
@@ -330,13 +334,13 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 			raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 				return cassandraClient.AllocatePublicContactPoints(request)
 			})
-			addDebug(request.GetActionName(), raw)
+			logs.AddDebug(request.GetActionName(), raw)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"AllocatePubConnFailed"}))
+			stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"AllocatePubConnFailed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		} else {
 			request := cassandra.CreateReleasePublicContactPointsRequest()
@@ -345,13 +349,13 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 			raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 				return cassandraClient.ReleasePublicContactPoints(request)
 			})
-			addDebug(request.GetActionName(), raw)
+			logs.AddDebug(request.GetActionName(), raw)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ReleasePubConnFailed"}))
+			stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ReleasePubConnFailed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 	}
@@ -363,9 +367,9 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifyInstanceMaintainTime(modifyInstanceMaintainTimeReq)
 		})
-		addDebug(modifyInstanceMaintainTimeReq.GetActionName(), raw)
+		logs.AddDebug(modifyInstanceMaintainTimeReq.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceMaintainTimeReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), modifyInstanceMaintainTimeReq.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	if d.IsNewResource() {
@@ -379,9 +383,9 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifyCluster(request)
 		})
-		addDebug(request.GetActionName(), raw)
+		logs.AddDebug(request.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	if d.HasChange("data_center_name") {
@@ -392,9 +396,9 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifyDataCenter(request)
 		})
-		addDebug(request.GetActionName(), raw)
+		logs.AddDebug(request.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update := false
@@ -409,13 +413,13 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifyInstanceType(modifyInstanceTypeReq)
 		})
-		addDebug(modifyInstanceTypeReq.GetActionName(), raw)
+		logs.AddDebug(modifyInstanceTypeReq.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceTypeReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), modifyInstanceTypeReq.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ModifyInstanceTypeFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ModifyInstanceTypeFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -430,13 +434,13 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ResizeDiskSize(resizeDiskSizeReq)
 		})
-		addDebug(resizeDiskSizeReq.GetActionName(), raw)
+		logs.AddDebug(resizeDiskSizeReq.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), resizeDiskSizeReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), resizeDiskSizeReq.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ResizeDiskSizeFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ResizeDiskSizeFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -451,13 +455,13 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ResizeNodeCount(resizeNodeCountReq)
 		})
-		addDebug(resizeNodeCountReq.GetActionName(), raw)
+		logs.AddDebug(resizeNodeCountReq.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), resizeNodeCountReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), resizeNodeCountReq.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ResizeNodeCountFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"ResizeNodeCountFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	if d.HasChange("password") {
@@ -468,9 +472,9 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 			return cassandraClient.ModifyAccountPassword(request)
 		})
-		addDebug(request.GetActionName(), raw)
+		logs.AddDebug(request.GetActionName(), raw)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
@@ -483,15 +487,15 @@ func resourceAlicloudCassandraClusterDelete(d *schema.ResourceData, meta interfa
 	raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 		return cassandraClient.DeleteCluster(request)
 	})
-	addDebug(request.GetActionName(), raw)
+	logs.AddDebug(request.GetActionName(), raw)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	cassandraService := CassandraService{client}
-	stateConf := BuildStateConf([]string{"Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"DeleteFailed"}))
+	cassandraService := Service{client}
+	stateConf := helper.BuildStateConf([]string{"Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cassandraService.CassandraClusterStateRefreshFunc(d.Id(), []string{"DeleteFailed"}))
 	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	return errs.WrapError(err)
 }

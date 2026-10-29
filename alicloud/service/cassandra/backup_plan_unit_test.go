@@ -1,10 +1,10 @@
-package alicloud
+package cassandra
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -12,168 +12,100 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudCassandraBackupPlan_basic0(t *testing.T) {
-	// Cassandra has been offline
-	t.Skip("Cassandra has been offline")
-	var v map[string]interface{}
-	resourceId := "alicloud_cassandra_backup_plan.default"
-	ra := resourceAttrInit(resourceId, AlicloudCassandraBackupPlanMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CassandraService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCassandraBackupPlan")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scassandrabackupplan%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCassandraBackupPlanBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"data_center_id": "${alicloud_cassandra_cluster.default.zone_id}",
-					"cluster_id":     "${alicloud_cassandra_cluster.default.id}",
-					"backup_time":    "00:10Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"data_center_id": CHECKSET,
-						"cluster_id":     CHECKSET,
-						"backup_time":    "00:10Z",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"active": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"active": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"backup_period": "Tuesday",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_period": "Tuesday",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"backup_time": "00:30Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_time": "00:30Z",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"retention_period": "7",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"retention_period": "7",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"active":           "false",
-					"backup_period":    "Monday",
-					"backup_time":      "00:10Z",
-					"retention_period": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"active":           "false",
-						"backup_period":    "Monday",
-						"backup_time":      "00:10Z",
-						"retention_period": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+// unitTestProviderResources supplies the schema the migrated tests inspect;
+// the root alicloud package cannot be imported here.
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_cassandra_backup_plan": ResourceCassandraBackupPlan(),
+	}
 }
 
-var AlicloudCassandraBackupPlanMap0 = map[string]string{
-
-	"retention_period": CHECKSET,
-	"backup_period":    CHECKSET,
-	"data_center_id":   CHECKSET,
-	"cluster_id":       CHECKSET,
-	"backup_time":      "00:10Z",
-	"active":           CHECKSET,
+// unitTestSharedClientForRegion mirrors the root test helper so the unit test
+// can be skipped when no cloud credentials are configured.
+func unitTestSharedClientForRegion(region string) (interface{}, error) {
+	return sweep.SharedClientForRegion(region)
 }
 
-func AlicloudCassandraBackupPlanBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-		variable "name" {
-		  default = "%s"
+// newInstanceDiff mirrors the root helper for the migrated resource.
+// lintignore: R001
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+	p := unitTestProviderResources()
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
 
-		data "alicloud_cassandra_zones" "default" {
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
-		
-		data "alicloud_vpcs" "default" {
-		  name_regex = "default-NODELETING"
+	}
+
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
 		}
-		
-		data "alicloud_vswitches" "default_1" {
-		  vpc_id = data.alicloud_vpcs.default.ids[0]
-		  zone_id = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)+(-1)].id
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
 		}
-		
-		resource "alicloud_vswitch" "this_1" {
-		  count = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
-		  vswitch_name = var.name
-		  vpc_id = data.alicloud_vpcs.default.ids.0
-		  zone_id = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)+(-1)].id
-		  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
 		}
-		resource "alicloud_cassandra_cluster" "default" {
-		  cluster_name = var.name
-		  data_center_name = var.name
-		  auto_renew = "false"
-		  instance_type = "cassandra.c.large"
-		  major_version = "3.11"
-		  node_count = "2"
-		  pay_type = "PayAsYouGo"
-		  vswitch_id = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : alicloud_vswitch.this_1[0].id
-		  disk_size = "160"
-		  disk_type = "cloud_ssd"
-		  maintain_start_time = "18:00Z"
-		  maintain_end_time = "20:00Z"
-		  ip_white = "127.0.0.1"
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
 		}
-	`, name)
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
+
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
+	}
+	return diff, nil
 }
 
 // lintignore: R001
 func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cassandra_backup_plan"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -195,7 +127,7 @@ func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -221,18 +153,18 @@ func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_cassandra_backup_plan", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_cassandra_backup_plan", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -240,9 +172,9 @@ func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -292,9 +224,9 @@ func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -402,9 +334,9 @@ func TestUnitAlicloudCassandraBackupPlan(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewCdsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
