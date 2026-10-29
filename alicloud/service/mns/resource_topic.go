@@ -1,8 +1,10 @@
-package alicloud
+package mns
 
 import (
 	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -50,23 +52,23 @@ func resourceAlicloudMNSTopicCreate(d *schema.ResourceData, meta interface{}) er
 		return nil, topicManager.CreateTopic(name, int32(maximumMessageSize), loggingEnabled)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mns_topic", "CreateTopic", AliMnsERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mns_topic", "CreateTopic", errs.AliMnsERROR)
 	}
-	addDebug("CreateTopic", raw)
+	logs.AddDebug("CreateTopic", raw)
 	d.SetId(name)
 	return resourceAlicloudMNSTopicRead(d, meta)
 }
 
 func resourceAlicloudMNSTopicRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{client}
+	mnsService := NewMnsService(client)
 	object, err := mnsService.DescribeMnsTopic(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("name", object.TopicName)
 	d.Set("maximum_message_size", object.MaxMessageSize)
@@ -92,16 +94,16 @@ func resourceAlicloudMNSTopicUpdate(d *schema.ResourceData, meta interface{}) er
 			return nil, topicManager.SetTopicAttributes(d.Id(), int32(maximumMessageSize), loggingEnabled)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetTopicAttributes", AliMnsERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "SetTopicAttributes", errs.AliMnsERROR)
 		}
-		addDebug("SetTopicAttributes", raw)
+		logs.AddDebug("SetTopicAttributes", raw)
 	}
 	return resourceAlicloudMNSTopicRead(d, meta)
 }
 
 func resourceAlicloudMNSTopicDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	mnsService := MnsService{client}
+	mnsService := NewMnsService(client)
 	raw, err := client.WithMnsTopicManager(func(topicManager ali_mns.AliTopicManager) (interface{}, error) {
 		return nil, topicManager.DeleteTopic(d.Id())
 	})
@@ -110,9 +112,9 @@ func resourceAlicloudMNSTopicDelete(d *schema.ResourceData, meta interface{}) er
 		if mnsService.TopicNotExistFunc(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteTopic", AliMnsERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteTopic", errs.AliMnsERROR)
 	}
-	addDebug("DeleteTopic", raw)
+	logs.AddDebug("DeleteTopic", raw)
 
-	return WrapError(mnsService.WaitForMnsTopic(d.Id(), Deleted, DefaultTimeout))
+	return errs.WrapError(mnsService.WaitForMnsTopic(d.Id(), Deleted, DefaultTimeout))
 }

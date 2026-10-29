@@ -1,25 +1,27 @@
-package alicloud
+// Package mns_test.
+package mns_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudMnsQueueDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_mns_queues.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
 		fmt.Sprintf("tf-testAccMNSQueue-%d", rand),
 		dataSourceMnsQueueConfigDependence)
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_prefix": "${alicloud_mns_queue.queue.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_prefix": "${alicloud_mns_queue.queue.name}-fake",
 		}),
 	}
@@ -46,13 +48,13 @@ func TestAccAlicloudMnsQueueDataSource(t *testing.T) {
 		}
 	}
 
-	var mnsQueueCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existMnsQueueMapFunc,
-		fakeMapFunc:  fakeMnsQueueMapFunc,
+	var mnsQueueCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existMnsQueueMapFunc,
+		FakeMapFunc:  fakeMnsQueueMapFunc,
 	}
 
-	mnsQueueCheckInfo.dataSourceTestCheck(t, rand, allConf)
+	mnsQueueCheckInfo.DataSourceTestCheck(t, rand, allConf)
 }
 
 func dataSourceMnsQueueConfigDependence(name string) string {
