@@ -52,6 +52,20 @@ var (
 		"total_count": {},
 		"max_results": {},
 	}
+	// Attribute-phase modifiers are matched only inside a CLOSED parenthesized
+	// modifier group whose members are modifier tokens — "(Optional)",
+	// "(Required, ForceNew)" — not free-form prose. attributeFieldRegex
+	// captures the whole description tail in words[2], so a plain Contains
+	// would mistake prose like "Optional metadata returned by the service."
+	// or "Required for subsequent API calls." for a modifier, and the prior
+	// \([^)]*\b<modifier>\b would also match an unclosed "(Optional" or a
+	// prose parenthesis like "(Required for subsequent API calls)" /
+	// "(Optional metadata returned by the service)". The group regex requires
+	// a closing ")" and only modifier tokens (Optional/Required/ForceNew/
+	// Deprecated, comma-separated) inside, so prose and unclosed parens are
+	// rejected; multi-token groups and Deprecated's legacy Contains behavior
+	// are preserved.
+	attrModifierGroupRe = regexp.MustCompile(`\(\s*(?:Optional|Required|ForceNew|Deprecated)(?:\s*,\s*(?:Optional|Required|ForceNew|Deprecated))*\s*\)`)
 )
 
 type ResourceAttribute struct {
@@ -397,6 +411,28 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 			result.Name = rootName + "." + words[1]
 		} else {
 			result.Name = words[1]
+		}
+		// Attribute-phase docs embed the modifier inside a CLOSED parenthesized
+		// modifier group (e.g. "- (Optional) The tag ..."). attributeFieldRegex
+		// captures the whole description tail in words[2], unlike
+		// argumentsFieldRegex whose second capture group is the modifier group
+		// itself. A plain Contains on words[2] would therefore treat free-form
+		// prose like "Optional metadata returned by the service." or "Required
+		// for subsequent API calls." as modifiers, and an unclosed "(Optional"
+		// or a prose parenthesis like "(Required for subsequent API calls)" /
+		// "(Optional metadata returned by the service)" would also be wrong.
+		// Match only a closed modifier group whose members are modifier tokens;
+		// Deprecated keeps its legacy Contains behavior.
+		for _, group := range attrModifierGroupRe.FindAllString(words[2], -1) {
+			if strings.Contains(group, "Optional") {
+				result.Optional = "true"
+			}
+			if strings.Contains(group, "Required") {
+				result.Required = "true"
+			}
+			if strings.Contains(group, "ForceNew") {
+				result.ForceNew = true
+			}
 		}
 		if strings.Contains(words[2], "Deprecated") {
 			result.Deprecated = "Deprecated since"
