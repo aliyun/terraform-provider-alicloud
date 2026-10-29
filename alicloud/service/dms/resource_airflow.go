@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package dms. This file is generated automatically. Please do not modify it manually, thank you!
+package dms
 
 import (
 	"fmt"
@@ -9,16 +9,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDmsAirflow() *schema.Resource {
+func ResourceAirflow() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDmsAirflowCreate,
-		Read:   resourceAliCloudDmsAirflowRead,
-		Update: resourceAliCloudDmsAirflowUpdate,
-		Delete: resourceAliCloudDmsAirflowDelete,
+		Create: resourceAirflowCreate,
+		Read:   resourceAirflowRead,
+		Update: resourceAirflowUpdate,
+		Delete: resourceAirflowDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -107,7 +110,7 @@ func resourceAliCloudDmsAirflow() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDmsAirflowCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAirflowCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -121,7 +124,7 @@ func resourceAliCloudDmsAirflowCreate(d *schema.ResourceData, meta interface{}) 
 		request["WorkspaceId"] = v
 	}
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["WorkerServerlessReplicas"] = d.Get("worker_serverless_replicas")
 	request["Description"] = d.Get("description")
@@ -145,11 +148,11 @@ func resourceAliCloudDmsAirflowCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("dags_dir"); ok {
 		request["DagsDir"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dms", "2025-04-14", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -157,31 +160,31 @@ func resourceAliCloudDmsAirflowCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dms_airflow", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dms_airflow", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	RootWorkspaceIdVar, _ := jsonpath.Get("$.Root.WorkspaceId", response)
 	RootAirflowIdVar, _ := jsonpath.Get("$.Root.AirflowId", response)
 	d.SetId(fmt.Sprintf("%v:%v", RootWorkspaceIdVar, RootAirflowIdVar))
 
-	return resourceAliCloudDmsAirflowRead(d, meta)
+	return resourceAirflowRead(d, meta)
 }
 
-func resourceAliCloudDmsAirflowRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAirflowRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dmsServiceV2 := DmsServiceV2{client}
+	dmsService := NewService(client)
 
-	objectRaw, err := dmsServiceV2.DescribeDmsAirflow(d.Id())
+	objectRaw, err := dmsService.DescribeAirflow(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dms_airflow DescribeDmsAirflow Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dms_airflow DescribeAirflow Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("airflow_name", objectRaw["AirflowName"])
@@ -205,7 +208,7 @@ func resourceAliCloudDmsAirflowRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceAliCloudDmsAirflowUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAirflowUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -220,7 +223,7 @@ func resourceAliCloudDmsAirflowUpdate(d *schema.ResourceData, meta interface{}) 
 	request["WorkspaceId"] = parts[0]
 	request["AirflowId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("startup_file") {
 		update = true
 		request["StartupFile"] = d.Get("startup_file")
@@ -258,11 +261,11 @@ func resourceAliCloudDmsAirflowUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dms", "2025-04-14", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"DMS.AIRFLOW.InternalError"}) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"DMS.AIRFLOW.InternalError"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -270,16 +273,16 @@ func resourceAliCloudDmsAirflowUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDmsAirflowRead(d, meta)
+	return resourceAirflowRead(d, meta)
 }
 
-func resourceAliCloudDmsAirflowDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAirflowDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -292,15 +295,15 @@ func resourceAliCloudDmsAirflowDelete(d *schema.ResourceData, meta interface{}) 
 	request["WorkspaceId"] = parts[0]
 	request["AirflowId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dms", "2025-04-14", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -308,13 +311,13 @@ func resourceAliCloudDmsAirflowDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidAirflow.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidAirflow.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
