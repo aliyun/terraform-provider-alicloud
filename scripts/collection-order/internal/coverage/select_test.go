@@ -42,9 +42,11 @@ func TestSelection(t *testing.T) {
 		}
 	})
 	t.Run("deleted resource", func(t *testing.T) {
-		got, err := Select([]string{"alicloud/resource_alicloud_example.go"}, old, map[string]string{}, map[string][]byte{}, func(string) ([]byte, error) { return src, nil })
-		if err != nil || len(got) != 0 {
-			t.Fatal(got, err)
+		// A flat file registered in before whose type name is no longer in
+		// after is a real public registration deletion, not a relocation: it
+		// fails closed so a deletion cannot be waived as a move.
+		if _, err := Select([]string{"alicloud/resource_alicloud_example.go"}, old, map[string]string{}, map[string][]byte{}, func(string) ([]byte, error) { return src, nil }); err == nil {
+			t.Fatal("expected registered-resource deletion failure")
 		}
 	})
 }
@@ -121,6 +123,75 @@ func TestSplitSelection(t *testing.T) {
 		got, err := Select([]string{implPath}, before, map[string]string{}, map[string][]byte{}, func(string) ([]byte, error) { return impl, nil })
 		if err != nil || len(got) != 0 {
 			t.Fatal(got, err)
+		}
+	})
+}
+
+// TestUnitFlatDeletionClassification covers the flat-layout deletion cases the
+// collection-order gate must distinguish after a product split moves flat
+// files into service packages. The type name — not the factory name, which a
+// split move renames and package-qualifies — is the stable link between a
+// deleted flat file and the registry. The TestUnit prefix makes
+// ci-check-quick's changed-unit-tests stage execute these regressions.
+func TestUnitFlatDeletionClassification(t *testing.T) {
+	// #11402 model: alicloud_havip and alicloud_vpc_ha_vip are public aliases
+	// that at the flat layout both point to resourceAliCloudVpcHaVip (declared
+	// in resource_alicloud_vpc_ha_vip.go). A dead, never-registered
+	// resourceAlicloudHavip (typoed "Alicloud", not "AliCloud") lives in the
+	// resource_alicloud_havip.go file whose name matches the alias — exactly
+	// the file a type-name path guess would pick.
+	before := map[string]string{
+		"alicloud_havip":      "resourceAliCloudVpcHaVip",
+		"alicloud_vpc_ha_vip": "resourceAliCloudVpcHaVip",
+	}
+	// After the split both aliases are still registered, under the renamed,
+	// package-qualified factory.
+	after := map[string]string{
+		"alicloud_havip":      "vpc.ResourceAliCloudVpcHaVip",
+		"alicloud_vpc_ha_vip": "vpc.ResourceAliCloudVpcHaVip",
+	}
+	deadFactory := []byte(`package alicloud; func resourceAlicloudHavip() {}`)
+	realFactory := []byte(`package alicloud; func resourceAliCloudVpcHaVip() {}`)
+	deadFile := "alicloud/resource_alicloud_havip.go"
+	realFile := "alicloud/resource_alicloud_vpc_ha_vip.go"
+
+	// AC5: the dead factory's file (declares resourceAlicloudHavip, never a
+	// before value) moved with the split must not be flagged as a
+	// registered-resource deletion.
+	t.Run("dead factory relocation is not a deletion", func(t *testing.T) {
+		got, err := Select([]string{deadFile}, before, after, map[string][]byte{}, func(string) ([]byte, error) { return deadFactory, nil })
+		if err != nil || len(got) != 0 {
+			t.Fatalf("expected no error and no selection; got %v, %v", got, err)
+		}
+	})
+
+	// A registered implementation moved with an export rename: the deleted
+	// flat file declares the bare baseline factory, whose type name is still
+	// in after under the qualified renamed factory. The moved (split) file
+	// carries selection; the deleted flat file is benign.
+	t.Run("factory rename move is not a deletion", func(t *testing.T) {
+		got, err := Select([]string{realFile}, before, after, map[string][]byte{}, func(string) ([]byte, error) { return realFactory, nil })
+		if err != nil || len(got) != 0 {
+			t.Fatalf("expected no error and no selection; got %v, %v", got, err)
+		}
+	})
+
+	// AC6: a constructor registered in before whose type name is no longer in
+	// after is a real public registration deletion, even though the
+	// implementation file is also gone — it cannot be waived as a relocation.
+	t.Run("real registration deletion fails", func(t *testing.T) {
+		removedAfter := map[string]string{"alicloud_vpc_ha_vip": "vpc.ResourceAliCloudVpcHaVip"}
+		if _, err := Select([]string{realFile}, before, removedAfter, map[string][]byte{}, func(string) ([]byte, error) { return realFactory, nil }); err == nil {
+			t.Fatal("expected registered-resource deletion failure")
+		}
+	})
+
+	// AC7: a deleted flat file whose base content cannot be read still fails
+	// closed; the oldSource error is not swallowed.
+	t.Run("missing old source fails", func(t *testing.T) {
+		missing := func(string) ([]byte, error) { return nil, fmt.Errorf("missing") }
+		if _, err := Select([]string{realFile}, before, after, map[string][]byte{}, missing); err == nil {
+			t.Fatal("expected oldSource resolution failure")
 		}
 	})
 }

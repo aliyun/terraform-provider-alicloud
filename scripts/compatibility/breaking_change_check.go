@@ -186,43 +186,52 @@ func checkSingleResource(fullName string) bool {
 
 // checkBreakingChange checks breaking changes for one implementation file
 // between two git revisions. fullTypeName (e.g. "alicloud_cloudauth_face_config")
-// together with legacyStem ("resource_" or "data_source_") locates the
-// pre-split flat-layout file: a split-layout file that is new at oldRevision
-// is usually a moved entity, not a new one, and must be compared against its
-// legacy path. An empty legacyStem means the kind has no flat-layout history
-// (ephemerals, actions and list resources were born in the split layout).
+// together with legacyStem ("resource_" or "data_source_") resolves the
+// pre-split flat-layout implementation: a split-layout file that is new at
+// oldRevision is usually a moved entity, not a new one, and is compared
+// against the file that declared the factory registered for this type and kind
+// at oldRevision — not a path guessed from the type name, which can pick a
+// dead, never-registered factory sharing the alias's name (alicloud_havip's
+// registered factory resourceAliCloudVpcHaVip lives in
+// resource_alicloud_vpc_ha_vip.go, while the same-named
+// resource_alicloud_havip.go holds the unregistered resourceAlicloudHavip with
+// a different retry set). An empty legacyStem means the kind has no flat-layout
+// history (ephemerals, actions and list resources were born in the split layout)
+// and is treated as a new entity. Unresolvable, ambiguous or
+// registered-but-undeclared factories fail closed rather than guess a file.
 func checkBreakingChange(filePath, fullTypeName, legacyStem, oldRevision, newRevision string) bool {
 	// Get file content from git for both versions
 	oldContent, err := getFileContentFromGit(filePath, oldRevision)
 	if err != nil {
 		// Check if this is a new file (doesn't exist in old revision)
 		if isFileNew(filePath, oldRevision) {
-			// A split-layout migration leaves the old content at the
-			// flat-layout path; compare against that before treating the
-			// entity as new.
-			if fullTypeName != "" && legacyStem != "" {
-				legacyPath := "alicloud/" + legacyStem + fullTypeName + ".go"
-				if !isFileNew(legacyPath, oldRevision) {
-					legacyContent, lerr := getFileContentFromGit(legacyPath, oldRevision)
-					if lerr != nil {
-						log.Warningf("Cannot get old version of %s: %v", legacyPath, lerr)
-						return false
-					}
-					newContent, nerr := getFileContentFromGit(filePath, newRevision)
-					if nerr != nil {
-						log.Warningf("Cannot get new version of %s: %v", filePath, nerr)
-						return false
-					}
+			// A split-layout file new at the baseline is usually a moved
+			// entity, not a new one. Its baseline implementation is not at a
+			// path guessed from the type name: alicloud_havip's registered
+			// factory resourceAliCloudVpcHaVip lives in
+			// resource_alicloud_vpc_ha_vip.go, while the same-named
+			// resource_alicloud_havip.go holds a dead, never-registered
+			// resourceAlicloudHavip with a different retry set. Resolve the
+			// factory registered for this type and kind at the baseline, then
+			// follow it to its single declaring file before comparing.
+			newContent, nerr := getFileContentFromGit(filePath, newRevision)
+			if nerr != nil {
+				log.Warningf("Cannot get new version of %s: %v", filePath, nerr)
+				return false
+			}
+			if kind, ok := legacyKind(legacyStem); ok {
+				legacyPath, legacyContent, rerr := resolveLegacyImplGit(fullTypeName, kind, oldRevision)
+				if rerr != nil {
+					log.Warningf("Cannot resolve legacy implementation for %s: %v", fullTypeName, rerr)
+					return false
+				}
+				if legacyPath != "" {
 					return compareBreakingChange(legacyContent, newContent)
 				}
 			}
+			// No factory registered for this type at the baseline, or the
+			// kind has no flat-layout history: a genuinely new entity.
 			log.Infof("This is a new file, checking for new entity requirements...")
-			// For new entities, we need to check if any fields are required
-			newContent, err := getFileContentFromGit(filePath, newRevision)
-			if err != nil {
-				log.Warningf("Cannot get new version of %s: %v", filePath, err)
-				return false
-			}
 			return checkNewEntityRequiredFields(newContent)
 		}
 		log.Warningf("Cannot get old version of %s: %v", filePath, err)
