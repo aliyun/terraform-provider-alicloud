@@ -2660,9 +2660,7 @@ func Provider() *schema.Provider {
 			"alicloud_ssl_certificates_service_pca_cert_sync":          resourceAliCloudSslCertificatesServicePcaCertSync(),
 			"alicloud_ssl_certificates_service_certificate":            resourceAliCloudSslCertificatesServiceCertificate(),
 
-			// star
-			"alicloud_star_rocks_node_group": resourceAliCloudStarRocksNodeGroup(),
-			"alicloud_star_rocks_instance":   resourceAliCloudStarRocksInstance(),
+			// star: alicloud_star_rocks_* migrated to alicloud/service/starrocks; see starrocks.ServicePackage().
 
 			// subnet
 			// "alicloud_subnet" aims to match aws usage habit.

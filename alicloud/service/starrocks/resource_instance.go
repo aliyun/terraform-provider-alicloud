@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package starrocks. This file is generated automatically. Please do not modify it manually, thank you!
+package starrocks
 
 import (
 	"fmt"
@@ -8,16 +8,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudStarRocksInstance() *schema.Resource {
+func ResourceInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudStarRocksInstanceCreate,
-		Read:   resourceAliCloudStarRocksInstanceRead,
-		Update: resourceAliCloudStarRocksInstanceUpdate,
-		Delete: resourceAliCloudStarRocksInstanceDelete,
+		Create: resourceInstanceCreate,
+		Read:   resourceInstanceRead,
+		Update: resourceInstanceUpdate,
+		Delete: resourceInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -248,7 +252,7 @@ func resourceAliCloudStarRocksInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"version": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -282,7 +286,7 @@ func resourceAliCloudStarRocksInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudStarRocksInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -294,7 +298,7 @@ func resourceAliCloudStarRocksInstanceCreate(d *schema.ResourceData, meta interf
 	var err error
 	request = make(map[string]interface{})
 
-	request["clientToken"] = buildClientToken(action)
+	request["clientToken"] = helper.BuildClientToken(action)
 
 	request["RegionId"] = client.RegionId
 	request["InstanceName"] = d.Get("instance_name")
@@ -366,7 +370,7 @@ func resourceAliCloudStarRocksInstanceCreate(d *schema.ResourceData, meta interf
 	}
 	request["ZoneId"] = d.Get("cluster_zone_id")
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
@@ -401,11 +405,11 @@ func resourceAliCloudStarRocksInstanceCreate(d *schema.ResourceData, meta interf
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -413,36 +417,36 @@ func resourceAliCloudStarRocksInstanceCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_star_rocks_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_star_rocks_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	starRocksServiceV2 := StarRocksServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, starRocksServiceV2.StarRocksInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+	starrocksService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, starrocksService.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudStarRocksInstanceUpdate(d, meta)
+	return resourceInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudStarRocksInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	starRocksServiceV2 := StarRocksServiceV2{client}
+	starrocksService := NewService(client)
 
-	objectRaw, err := starRocksServiceV2.DescribeStarRocksInstance(d.Id())
+	objectRaw, err := starrocksService.DescribeInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_star_rocks_instance DescribeStarRocksInstance Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_star_rocks_instance DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["BeginTime"])
@@ -459,7 +463,7 @@ func resourceAliCloudStarRocksInstanceRead(d *schema.ResourceData, meta interfac
 	d.Set("vpc_id", objectRaw["VpcId"])
 
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 	vSwitchesRaw := objectRaw["VSwitches"]
 	vswitchesMaps := make([]map[string]interface{}, 0)
 	if vSwitchesRaw != nil {
@@ -479,7 +483,7 @@ func resourceAliCloudStarRocksInstanceRead(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceAliCloudStarRocksInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -493,22 +497,22 @@ func resourceAliCloudStarRocksInstanceUpdate(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(d.Id())
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(d.Id())
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("instance_name") {
 		update = true
 	}
 	if v, ok := d.GetOk("instance_name"); ok {
-		query["ClusterName"] = StringPointer(v.(string))
+		query["ClusterName"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -516,9 +520,9 @@ func resourceAliCloudStarRocksInstanceUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -526,24 +530,24 @@ func resourceAliCloudStarRocksInstanceUpdate(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(d.Id())
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(d.Id())
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("resource_group_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		query["NewResourceGroupId"] = StringPointer(v.(string))
+		query["NewResourceGroupId"] = helper.StringPointer(v.(string))
 	}
 
-	query["ResourceType"] = StringPointer("instance")
+	query["ResourceType"] = helper.StringPointer("instance")
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -551,23 +555,23 @@ func resourceAliCloudStarRocksInstanceUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		if err := starRocksServiceV2.SetResourceTags(d, "instance"); err != nil {
-			return WrapError(err)
+		starrocksService := NewService(client)
+		if err := starrocksService.SetResourceTags(d, "instance"); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudStarRocksInstanceRead(d, meta)
+	return resourceInstanceRead(d, meta)
 }
 
-func resourceAliCloudStarRocksInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := fmt.Sprintf("/webapi/cluster/release")
@@ -577,16 +581,16 @@ func resourceAliCloudStarRocksInstanceDelete(d *schema.ResourceData, meta interf
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(d.Id())
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(d.Id())
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -594,19 +598,19 @@ func resourceAliCloudStarRocksInstanceDelete(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	starRocksServiceV2 := StarRocksServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 20*time.Second, starRocksServiceV2.StarRocksInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+	starrocksService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 20*time.Second, starrocksService.InstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
