@@ -18,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// collection-order: bypass template_id_list -- pre-existing attribute outside this change (PR adds force_encryption, does not modify template_id_list)
+
 func init() {
 	resource.AddTestSweepers("alicloud_db_instance", &resource.Sweeper{
 		Name: "alicloud_db_instance",
@@ -1611,6 +1613,30 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action":       "Open",
+					"force_encryption": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action":       "Open",
+						"force_encryption": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action":       "Close",
+					"force_encryption": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action":       "Close",
+						"force_encryption": "0",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -1832,6 +1858,25 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 					"instance_type": REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile("Missing required argument"),
+			},
+			{
+				// Restore a destroy-valid config after the preceding ExpectError
+				// step: re-add instance_type (Required) and drop the placeholder
+				// force/node_id/server_cert/server_key it introduced, so the
+				// post-test destroy does not fail with
+				// "Missing required argument: instance_type".
+				Config: testAccConfig(map[string]interface{}{
+					"force":         REMOVEKEY,
+					"node_id":       REMOVEKEY,
+					"server_cert":   REMOVEKEY,
+					"server_key":    REMOVEKEY,
+					"instance_type": "pg.x8.medium.2c",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": CHECKSET,
+					}),
+				),
 			},
 		},
 	})
@@ -2211,20 +2256,6 @@ resource "alicloud_security_group" "default" {
 	count = 2
 	name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-data "alicloud_kms_instances" "default" {
-}
-
-data "alicloud_kms_service" "default" {
-  enable = "On"
-}
-
-resource "alicloud_kms_key" "default" {
-  description = var.name
-  pending_window_in_days  = 7
-  status               = "Enabled"
-  dkms_instance_id        = data.alicloud_kms_instances.default.ids.0
 }
 `, name)
 }

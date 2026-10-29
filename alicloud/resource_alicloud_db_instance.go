@@ -692,7 +692,9 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				ValidateFunc: IntInSlice([]int{0, 1}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					engine := d.Get("engine").(string)
-					return engine != "MySQL" && engine != "SQLServer"
+					// ForceEncryption is supported by MySQL, PostgreSQL and SQL Server.
+					// Suppress the diff for engines that do not support it.
+					return engine != "MySQL" && engine != "PostgreSQL" && engine != "SQLServer"
 				},
 			},
 			"ssl_certificate": {
@@ -1614,7 +1616,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
-		if engine := d.Get("engine").(string); engine == "MySQL" || engine == "SQLServer" {
+		if engine := d.Get("engine").(string); engine == "MySQL" || engine == "PostgreSQL" || engine == "SQLServer" {
 			if v, ok := d.GetOkExists("force_encryption"); ok {
 				request["ForceEncryption"] = v.(int)
 			}
