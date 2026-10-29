@@ -26,7 +26,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cbwp"
@@ -154,6 +153,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sls"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sslcertificateservice"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/starrocks"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/swasopen"
@@ -200,7 +200,7 @@ var servicePackages = []conns.ServicePackage{
 	bpstudio.ServicePackage(),
 	brainindustrial.ServicePackage(),
 	bssopenapi.ServicePackage(),
-	cas.ServicePackage(),
+	sslcertificateservice.ServicePackage(),
 	cassandra.ServicePackage(),
 	cbn.ServicePackage(),
 	cbwp.ServicePackage(),

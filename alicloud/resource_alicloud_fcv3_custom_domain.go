@@ -7,6 +7,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sslcertificateservice"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -395,7 +396,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 		// Service (CAS) certificate referenced by certificate_id and assemble
 		// the FC certConfig. The resolved private key is never persisted to
 		// state (see resourceAliCloudFcv3CustomDomainRead).
-		sslCertService := SslCertificatesServiceServiceV2{client}
+		sslCertService := sslcertificateservice.NewSslCertificatesServiceServiceV2(client)
 		certDetail, err := sslCertService.DescribeSslCertificatesServiceCertificate(certId.(string))
 		if err != nil {
 			return WrapError(err)
@@ -894,7 +895,7 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 		certConfig := make(map[string]interface{})
 
 		if certId, ok := d.GetOk("certificate_id"); ok {
-			sslCertService := SslCertificatesServiceServiceV2{client}
+			sslCertService := sslcertificateservice.NewSslCertificatesServiceServiceV2(client)
 			certDetail, err := sslCertService.DescribeSslCertificatesServiceCertificate(certId.(string))
 			if err != nil {
 				return WrapError(err)

@@ -274,9 +274,6 @@ func Provider() *schema.Provider {
 			// caller
 			"alicloud_caller_identity": dataSourceAlicloudCallerIdentity(),
 
-			// cas
-			"alicloud_cas_certificates": dataSourceAliCloudSslCertificatesServiceCertificates(),
-
 			// cassandra
 			"alicloud_cassandra_clusters":     dataSourceAlicloudCassandraClusters(),
 			"alicloud_cassandra_data_centers": dataSourceAlicloudCassandraDataCenters(),
@@ -1032,13 +1029,8 @@ func Provider() *schema.Provider {
 			// snat
 
 			// ssl
-			"alicloud_ssl_certificates_service_companies":             dataSourceAliCloudSslCertificatesServiceCompanies(),
-			"alicloud_ssl_certificates_service_contacts":              dataSourceAliCloudSslCertificatesServiceContacts(),
-			"alicloud_ssl_certificates_service_instances":             dataSourceAliCloudSslCertificatesServiceInstances(),
-			"alicloud_ssl_certificates_service_instance_certificates": dataSourceAliCloudSslCertificatesServiceInstanceCertificates(),
-			"alicloud_ssl_vpn_servers":                                dataSourceAlicloudSslVpnServers(),
-			"alicloud_ssl_vpn_client_certs":                           dataSourceAlicloudSslVpnClientCerts(),
-			"alicloud_ssl_certificates_service_certificates":          dataSourceAliCloudSslCertificatesServiceCertificates(),
+			"alicloud_ssl_vpn_servers":      dataSourceAlicloudSslVpnServers(),
+			"alicloud_ssl_vpn_client_certs": dataSourceAlicloudSslVpnClientCerts(),
 
 			// tag
 
@@ -1256,9 +1248,6 @@ func Provider() *schema.Provider {
 			"alicloud_bastionhost_host_account_share_key_attachment":        resourceAlicloudBastionhostHostAccountShareKeyAttachment(),
 
 			// brain
-
-			// cas
-			"alicloud_cas_certificate": resourceAliCloudSslCertificatesServiceCertificate(),
 
 			// cassandra
 			"alicloud_cassandra_cluster":     resourceAlicloudCassandraCluster(),
@@ -2309,18 +2298,8 @@ func Provider() *schema.Provider {
 			// snat
 
 			// ssl
-			"alicloud_ssl_certificates_service_company":                resourceAliCloudSslCertificatesServiceCompany(),
-			"alicloud_ssl_certificates_service_contact":                resourceAliCloudSslCertificatesServiceContact(),
-			"alicloud_ssl_certificates_service_instance":               resourceAliCloudSslCertificatesServiceInstance(),
-			"alicloud_ssl_certificates_service_certificate_apply":      resourceAliCloudSslCertificatesServiceCertificateApply(),
-			"alicloud_ssl_certificates_service_certificate_validation": resourceAliCloudSslCertificatesServiceCertificateValidation(),
-			"alicloud_ssl_certificates_service_instance_certificate":   resourceAliCloudSslCertificatesServiceInstanceCertificate(),
-			"alicloud_ssl_certificates_service_pca_cert":               resourceAliCloudSslCertificatesServicePcaCert(),
-			"alicloud_ssl_certificates_service_pca_certificate":        resourceAliCloudSslCertificatesServicePcaCertificate(),
-			"alicloud_ssl_vpn_server":                                  resourceAliyunSslVpnServer(),
-			"alicloud_ssl_vpn_client_cert":                             resourceAliyunSslVpnClientCert(),
-			"alicloud_ssl_certificates_service_pca_cert_sync":          resourceAliCloudSslCertificatesServicePcaCertSync(),
-			"alicloud_ssl_certificates_service_certificate":            resourceAliCloudSslCertificatesServiceCertificate(),
+			"alicloud_ssl_vpn_server":      resourceAliyunSslVpnServer(),
+			"alicloud_ssl_vpn_client_cert": resourceAliyunSslVpnClientCert(),
 
 			// star: alicloud_star_rocks_* migrated to alicloud/service/starrocks; see starrocks.ServicePackage().
 
