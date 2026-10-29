@@ -1,4 +1,4 @@
-package alicloud
+package yundundbaudit
 
 import (
 	"context"
@@ -9,13 +9,21 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
 )
 
-type DbauditService struct {
+type Service struct {
 	client *connectivity.AliyunClient
+}
+
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
 }
 
 type PolicyRequired struct {
@@ -53,31 +61,31 @@ var policyRequired = []PolicyRequired{
 	},
 }
 
-func (s *DbauditService) DescribeYundunDbauditInstance(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeYundunDbauditInstance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstanceAttribute"
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	return response["InstanceAttribute"].(map[string]interface{}), nil
 }
 
-func (s *DbauditService) StartDbauditInstance(instanceId string, vSwitchId string) (err error) {
+func (s *Service) StartDbauditInstance(instanceId string, vSwitchId string) (err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "StartInstance"
@@ -85,23 +93,23 @@ func (s *DbauditService) StartDbauditInstance(instanceId string, vSwitchId strin
 		"InstanceId": instanceId,
 		"VswitchId":  vSwitchId,
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
-	return WrapError(err)
+	return errs.WrapError(err)
 }
 
-func (s *DbauditService) UpdateDbauditInstanceDescription(instanceId string, description string) (err error) {
+func (s *Service) UpdateDbauditInstanceDescription(instanceId string, description string) (err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "ModifyInstanceAttribute"
@@ -109,23 +117,23 @@ func (s *DbauditService) UpdateDbauditInstanceDescription(instanceId string, des
 		"InstanceId":  instanceId,
 		"Description": description,
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
-	return WrapError(err)
+	return errs.WrapError(err)
 }
 
-func (s *DbauditService) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData) error {
+func (s *Service) UpdateInstanceSpec(schemaName string, specName string, d *schema.ResourceData) error {
 	client := s.client
 	action := "ModifyInstance"
 	var response map[string]interface{}
@@ -134,7 +142,7 @@ func (s *DbauditService) UpdateInstanceSpec(schemaName string, specName string, 
 	query := make(map[string]interface{})
 	request := map[string]interface{}{
 		"InstanceId":       d.Id(),
-		"ClientToken":      buildClientToken(action),
+		"ClientToken":      helper.BuildClientToken(action),
 		"ProductCode":      "dbaudit",
 		"SubscriptionType": "Subscription",
 		"ModifyType":       "Upgrade",
@@ -146,42 +154,42 @@ func (s *DbauditService) UpdateInstanceSpec(schemaName string, specName string, 
 		},
 	}
 	request["Parameter"] = parameterMapList
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.RetryContext(context.Background(), d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, query, request, true, endpoint)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
-	return WrapError(err)
+	return errs.WrapError(err)
 }
 
-func (s *DbauditService) DbauditInstanceRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DbauditInstanceRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeYundunDbauditInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil if nothing matched
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		currentStatus := object["InstanceStatus"].(string)
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 
@@ -189,7 +197,7 @@ func (s *DbauditService) DbauditInstanceRefreshFunc(id string, failStates []stri
 	}
 }
 
-func (s *DbauditService) createRole() error {
+func (s *Service) createRole() error {
 	createRoleRequest := ram.CreateCreateRoleRequest()
 	createRoleRequest.RoleName = RoleName
 	createRoleRequest.Description = RoleDefaultDescription
@@ -198,13 +206,13 @@ func (s *DbauditService) createRole() error {
 		return ramClient.CreateRole(createRoleRequest)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, RoleName, createRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, RoleName, createRoleRequest.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(createRoleRequest.GetActionName(), raw, createRoleRequest.RpcRequest, createRoleRequest)
+	logs.AddDebug(createRoleRequest.GetActionName(), raw, createRoleRequest.RpcRequest, createRoleRequest)
 	return nil
 }
 
-func (s *DbauditService) attachPolicy(policyToBeAttached []PolicyRequired) error {
+func (s *Service) attachPolicy(policyToBeAttached []PolicyRequired) error {
 	log.Printf("DEBUG attachPolicy policyRequred %v", policyToBeAttached)
 	attachPolicyRequest := ram.CreateAttachPolicyToRoleRequest()
 	for _, policy := range policyToBeAttached {
@@ -216,30 +224,30 @@ func (s *DbauditService) attachPolicy(policyToBeAttached []PolicyRequired) error
 			return ramClient.AttachPolicyToRole(attachPolicyRequest)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, RoleName, attachPolicyRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, RoleName, attachPolicyRequest.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		if response, err := raw.(*ram.AttachPolicyToRoleResponse); !err || !response.IsSuccess() {
 			log.Printf("AttachPolicyToRoleError [%v]", response)
 			return errors.New("attach policy to role failed")
 		}
-		addDebug(attachPolicyRequest.GetActionName(), raw, attachPolicyRequest.RpcRequest, attachPolicyRequest)
+		logs.AddDebug(attachPolicyRequest.GetActionName(), raw, attachPolicyRequest.RpcRequest, attachPolicyRequest)
 
 	}
 	return nil
 }
 
-func (s *DbauditService) ProcessRolePolicy() error {
+func (s *Service) ProcessRolePolicy() error {
 	getRoleRequest := ram.CreateGetRoleRequest()
 	getRoleRequest.RoleName = RoleName
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetRole(getRoleRequest)
 	})
 	log.Printf("DEBUG ProcessRolePolicy create role %v", raw.(*ram.GetRoleResponse))
-	addDebug(getRoleRequest.GetActionName(), raw, getRoleRequest.RpcRequest, getRoleRequest)
+	logs.AddDebug(getRoleRequest.GetActionName(), raw, getRoleRequest.RpcRequest, getRoleRequest)
 	response, _ := raw.(*ram.GetRoleResponse)
 	if err != nil || response == nil || response.Role.RoleName != RoleName {
 		if err := s.createRole(); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	listPolicyForRoleRequest := ram.CreateListPoliciesForRoleRequest()
@@ -247,9 +255,9 @@ func (s *DbauditService) ProcessRolePolicy() error {
 	raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.ListPoliciesForRole(listPolicyForRoleRequest)
 	})
-	addDebug(listPolicyForRoleRequest.GetActionName(), raw, listPolicyForRoleRequest.RpcRequest, listPolicyForRoleRequest)
+	logs.AddDebug(listPolicyForRoleRequest.GetActionName(), raw, listPolicyForRoleRequest.RpcRequest, listPolicyForRoleRequest)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, RoleName, listPolicyForRoleRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, RoleName, listPolicyForRoleRequest.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	var policyToAttach []PolicyRequired
 	if response, _ := raw.(*ram.ListPoliciesForRoleResponse); response != nil && response.IsSuccess() {
@@ -273,7 +281,7 @@ func (s *DbauditService) ProcessRolePolicy() error {
 	return nil
 }
 
-func (s *DbauditService) DescribeTags(id string, resourceType string) (object interface{}, err error) {
+func (s *Service) DescribeTags(id string, resourceType string) (object interface{}, err error) {
 	client := s.client
 	action := "ListTagResources"
 	request := map[string]interface{}{
@@ -285,20 +293,20 @@ func (s *DbauditService) DescribeTags(id string, resourceType string) (object in
 	var response map[string]interface{}
 
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
 			if err != nil {
-				return retry.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
+				return retry.NonRetryableError(errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
 			if v != nil {
 				tags = append(tags, v.([]interface{})...)
@@ -306,7 +314,7 @@ func (s *DbauditService) DescribeTags(id string, resourceType string) (object in
 			return nil
 		})
 		if err != nil {
-			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 			return
 		}
 		if response["NextToken"] == nil {
@@ -317,7 +325,7 @@ func (s *DbauditService) DescribeTags(id string, resourceType string) (object in
 	return tags, nil
 }
 
-func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType string) (err error) {
+func (s *Service) setInstanceTags(d *schema.ResourceData, resourceType string) (err error) {
 	if d.HasChange("tags") {
 		var err error
 		var action string
@@ -325,10 +333,10 @@ func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType st
 		var request map[string]interface{}
 		var response map[string]interface{}
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -342,11 +350,11 @@ func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType st
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -354,9 +362,9 @@ func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType st
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -374,11 +382,11 @@ func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType st
 				count++
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -386,9 +394,9 @@ func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType st
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -397,7 +405,7 @@ func (s *DbauditService) setInstanceTags(d *schema.ResourceData, resourceType st
 	return nil
 }
 
-func (s *DbauditService) UpdateResourceGroup(resourceId, resourceGroupId string) (err error) {
+func (s *Service) UpdateResourceGroup(resourceId, resourceGroupId string) (err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "MoveResourceGroup"
@@ -407,17 +415,17 @@ func (s *DbauditService) UpdateResourceGroup(resourceId, resourceGroupId string)
 		"ResourceGroupId": resourceGroupId,
 		"ResourceType":    "ALIYUN::DBAUDIT::INSTANCE",
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Yundun-dbaudit", "2018-10-29", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	return err

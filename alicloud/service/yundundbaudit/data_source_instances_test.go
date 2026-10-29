@@ -1,46 +1,47 @@
-package alicloud
+package yundundbaudit_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_yundun_dbaudit_instance.default"
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, fmt.Sprintf("tf_testAcc%d", rand),
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, fmt.Sprintf("tf_testAcc%d", rand),
 		dataSourceYundunDbauditInstanceConfigDependency)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}-fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}-fake",
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
 			"tags": map[string]interface{}{
 				"Created": "TF",
 			},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_yundun_dbaudit_instance.default.id}-fake"},
 			"tags": map[string]interface{}{
 				"Created": "TF-fake",
@@ -48,15 +49,15 @@ func TestAccAliCloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}",
 			"ids":               []string{"${alicloud_yundun_dbaudit_instance.default.id}"},
 			"tags": map[string]interface{}{
 				"For": "acceptance test",
 			},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"description_regex": "${alicloud_yundun_dbaudit_instance.default.description}-fake",
 			"ids":               []string{"${alicloud_yundun_dbaudit_instance.default.id}-fake"},
 			"tags": map[string]interface{}{
@@ -69,15 +70,15 @@ func TestAccAliCloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 		return map[string]string{
 			"ids.#":                             "1",
 			"descriptions.#":                    "1",
-			"ids.0":                             CHECKSET,
+			"ids.0":                             acctest.CHECKSET,
 			"descriptions.0":                    fmt.Sprintf("tf_testAcc%d", rand),
 			"instances.#":                       "1",
 			"instances.0.description":           fmt.Sprintf("tf_testAcc%d", rand),
 			"instances.0.license_code":          "alpha.professional",
-			"instances.0.user_vswitch_id":       CHECKSET,
+			"instances.0.user_vswitch_id":       acctest.CHECKSET,
 			"instances.0.public_network_access": "false",
-			"instances.0.private_domain":        CHECKSET,
-			"instances.0.instance_status":       CHECKSET,
+			"instances.0.private_domain":        acctest.CHECKSET,
+			"instances.0.instance_status":       acctest.CHECKSET,
 		}
 	}
 	var fakeYundunDbauditInstanceMapFunc = func(rand int) map[string]string {
@@ -86,20 +87,20 @@ func TestAccAliCloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 			"descriptions.#": "0",
 		}
 	}
-	var yundunDbauditInstanceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_yundun_dbaudit_instance.default",
-		existMapFunc: existYundunDbauditInstanceMapFunc,
-		fakeMapFunc:  fakeYundunDbauditInstanceMapFunc,
+	var yundunDbauditInstanceCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_yundun_dbaudit_instance.default",
+		ExistMapFunc: existYundunDbauditInstanceMapFunc,
+		FakeMapFunc:  fakeYundunDbauditInstanceMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckPrePaidResources(t)
-		testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
-		testAccPreCheckWithAccountSiteType(t, DomesticSite)
+		acctest.PreCheck(t)
+		acctest.PreCheckPrePaidResources(t)
+		acctest.PreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
+		acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
 	}
 
-	yundunDbauditInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, tagsConf, allConf)
+	yundunDbauditInstanceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, tagsConf, allConf)
 
 }
 
@@ -124,7 +125,7 @@ data "alicloud_vswitches" "default" {
 	vpc_id  = data.alicloud_vpcs.default.ids.0
 	zone_id = data.alicloud_zones.default.zones.0.id
 }
-			
+
 resource "alicloud_yundun_dbaudit_instance" "default" {
 	description       = "${var.name}"
 	plan_code         = "alpha.professional"

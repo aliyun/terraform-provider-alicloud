@@ -1246,7 +1246,6 @@ func Provider() *schema.Provider {
 			"alicloud_wafv3_domains":       dataSourceAliCloudWafv3Domains(),
 
 			// yundun
-			"alicloud_yundun_dbaudit_instance":      dataSourceAlicloudDbauditInstances(),
 			"alicloud_yundun_bastionhost_instances": dataSourceAlicloudBastionhostInstances(),
 
 			// zones
@@ -2718,7 +2717,6 @@ func Provider() *schema.Provider {
 			"alicloud_wafv3_domain":                 resourceAliCloudWafv3Domain(),
 
 			// yundun
-			"alicloud_yundun_dbaudit_instance":     resourceAlicloudDbauditInstance(),
 			"alicloud_yundun_bastionhost_instance": resourceAliCloudBastionhostInstance(),
 		},
 	}

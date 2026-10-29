@@ -1,4 +1,4 @@
-package alicloud
+package yundundbaudit_test
 
 import (
 	"fmt"
@@ -9,8 +9,14 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundundbaudit"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -22,22 +28,22 @@ func init() {
 }
 
 func testSweepDbauditInstances(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.YundunDbauditSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, true, connectivity.YundunDbauditSupportedRegions) {
 		log.Printf("[INFO] Skipping Dbaudit Instance unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	raw_client, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	client := rawClient.(*connectivity.AliyunClient)
+	client := raw_client.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
 	request := yundun_dbaudit.CreateDescribeInstancesRequest()
-	request.PageSize = requests.NewInteger(PageSizeSmall)
+	request.PageSize = requests.NewInteger(helper.PageSizeSmall)
 	request.CurrentPage = requests.NewInteger(1)
 	var instances []yundun_dbaudit.Instance
 
@@ -46,10 +52,10 @@ func testSweepDbauditInstances(region string) error {
 			return dbauditClient.DescribeInstances(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 
-		addDebug(request.GetActionName(), raw)
+		logs.AddDebug(request.GetActionName(), raw)
 		response, _ := raw.(*yundun_dbaudit.DescribeInstancesResponse)
 		if len(response.Instances) < 1 {
 			break
@@ -57,17 +63,17 @@ func testSweepDbauditInstances(region string) error {
 
 		instances = append(instances, response.Instances...)
 
-		if len(response.Instances) < PageSizeSmall {
+		if len(response.Instances) < helper.PageSizeSmall {
 			break
 		}
 
 		currentPageNo := request.CurrentPage
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_yundun_dbaudit", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 
-		if page, err := getNextpageNumber(currentPageNo); err != nil {
-			return WrapError(err)
+		if page, err := helper.GetNextpageNumber(currentPageNo); err != nil {
+			return errs.WrapError(err)
 		} else {
 			request.CurrentPage = page
 		}
@@ -76,7 +82,7 @@ func testSweepDbauditInstances(region string) error {
 	for _, v := range instances {
 		name := v.Description
 		skip := true
-		if !sweepAll() {
+		if !sweep.SweepAll() {
 			for _, prefix := range prefixes {
 				if name != "" && strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 					skip = false
@@ -115,28 +121,28 @@ func testSweepDbauditInstances(region string) error {
 func TestAccAliCloudYundunDbauditInstance_basic(t *testing.T) {
 	var v yundun_dbaudit.Instance
 	resourceId := "alicloud_yundun_dbaudit_instance.default"
-	ra := resourceAttrInit(resourceId, dbauditInstanceBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, dbauditInstanceBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &DbauditService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return yundundbaudit.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
 
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDbauditInstanceDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDbauditInstanceDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
-			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -184,7 +190,7 @@ func TestAccAliCloudYundunDbauditInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -222,14 +228,14 @@ func TestAccAliCloudYundunDbauditInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
-						"tags.Updated": REMOVEKEY,
+						"tags.%":       acctest.REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
+						"tags.Updated": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -252,7 +258,7 @@ func resourceDbauditInstanceDependence(name string) string {
 data "alicloud_zones" "default" {
 		available_resource_creation = "VSwitch"
   }
-	
+
 data "alicloud_resource_manager_resource_groups" "default"{
 	status="OK"
 }
@@ -273,8 +279,8 @@ data "alicloud_resource_manager_resource_groups" "default"{
 }
 
 var dbauditInstanceBasicMap = map[string]string{
-	"description": CHECKSET,
+	"description": acctest.CHECKSET,
 	"plan_code":   "alpha.professional",
 	"period":      "1",
-	"vswitch_id":  CHECKSET,
+	"vswitch_id":  acctest.CHECKSET,
 }
