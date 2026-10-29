@@ -667,16 +667,6 @@ func Provider() *schema.Provider {
 			"alicloud_esa_lists":                      dataSourceAliCloudEsaLists(),
 			"alicloud_esa_sites":                      dataSourceAliCloudEsaSites(),
 
-			// ess
-			"alicloud_ess_alarms":                     dataSourceAlicloudEssAlarms(),
-			"alicloud_ess_eci_scaling_configurations": dataSourceAlicloudEssEciScalingConfigurations(),
-			"alicloud_ess_notifications":              dataSourceAlicloudEssNotifications(),
-			"alicloud_ess_scaling_groups":             dataSourceAliCloudEssScalingGroups(),
-			"alicloud_ess_scaling_rules":              dataSourceAliCloudEssScalingRules(),
-			"alicloud_ess_scaling_configurations":     dataSourceAlicloudEssScalingConfigurations(),
-			"alicloud_ess_lifecycle_hooks":            dataSourceAlicloudEssLifecycleHooks(),
-			"alicloud_ess_scheduled_tasks":            dataSourceAlicloudEssScheduledTasks(),
-
 			// event
 			"alicloud_event_bridge_service":       dataSourceAlicloudEventBridgeService(),
 			"alicloud_event_bridge_event_buses":   dataSourceAlicloudEventBridgeEventBuses(),
@@ -1914,23 +1904,6 @@ func Provider() *schema.Provider {
 			"alicloud_esa_record":                                          resourceAliCloudEsaRecord(),
 			"alicloud_esa_rate_plan_instance":                              resourceAliCloudEsaRatePlanInstance(),
 			"alicloud_esa_site":                                            resourceAliCloudEsaSite(),
-
-			// ess
-			"alicloud_ess_scaling_group":               resourceAlicloudEssScalingGroup(),
-			"alicloud_ess_eci_scaling_configuration":   resourceAlicloudEssEciScalingConfiguration(),
-			"alicloud_ess_scaling_configuration":       resourceAlicloudEssScalingConfiguration(),
-			"alicloud_ess_instance_refresh":            resourceAlicloudEssInstanceRefresh(),
-			"alicloud_ess_scaling_rule":                resourceAlicloudEssScalingRule(),
-			"alicloud_ess_schedule":                    resourceAlicloudEssScheduledTask(),
-			"alicloud_ess_scheduled_task":              resourceAlicloudEssScheduledTask(),
-			"alicloud_ess_attachment":                  resourceAlicloudEssAttachment(),
-			"alicloud_ess_suspend_process":             resourceAlicloudEssSuspendProcess(),
-			"alicloud_ess_lifecycle_hook":              resourceAlicloudEssLifecycleHook(),
-			"alicloud_ess_notification":                resourceAlicloudEssNotification(),
-			"alicloud_ess_alarm":                       resourceAlicloudEssAlarm(),
-			"alicloud_ess_scalinggroup_vserver_groups": resourceAlicloudEssScalingGroupVserverGroups(),
-			"alicloud_ess_alb_server_group_attachment": resourceAlicloudEssAlbServerGroupAttachment(),
-			"alicloud_ess_server_group_attachment":     resourceAliCloudEssServerGroupAttachment(),
 
 			// event
 			"alicloud_event_bridge_event_source_v2":     resourceAliCloudEventBridgeEventSourceV2(),
