@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ddos Bgp Ips to the user.
 ---
 
-# alicloud\_ddos\_bgp\_ips
+# alicloud_ddosbgp_ips
 
 This data source provides the Ddos Bgp Ips of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.180.0+.
+-> **NOTE:** Available since v1.180.0.
 
 ## Example Usage
 
@@ -39,13 +39,13 @@ The following arguments are supported:
   - normal: indicates normal (not attacked).
   - hole_begin: indicates that you are in a black hole state.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ips` - A list of Ddos Bgp Ips. Each element contains the following attributes:
-	* `id` - The ID of the Ip. The value formats as `<instance_id>:<ip>`.
-	* `instance_id` - The ID of the native protection enterprise instance to be operated.
-	* `ip` - The IP address.
-	* `product` - The type of cloud asset to which the IP address belongs.
-	* `status` - The current state of the IP address.
+  * `id` - The ID of the Ip. The value formats as `<instance_id>:<ip>`.
+  * `instance_id` - The ID of the native protection enterprise instance to be operated.
+  * `ip` - The IP address.
+  * `product` - The type of cloud asset to which the IP address belongs.
+  * `status` - The current state of the IP address.

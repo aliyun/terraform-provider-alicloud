@@ -446,10 +446,6 @@ func Provider() *schema.Provider {
 			"alicloud_dcdn_kv_account":   dataSourceAlicloudDcdnKvAccount(),
 			"alicloud_dcdn_waf_rules":    dataSourceAlicloudDcdnWafRules(),
 
-			// ddosbgp
-			"alicloud_ddosbgp_instances": dataSourceAlicloudDdosbgpInstances(),
-			"alicloud_ddosbgp_ips":       dataSourceAlicloudDdosbgpIps(),
-
 			// ddoscoo
 			"alicloud_ddoscoo_instances":        dataSourceAlicloudDdoscooInstances(),
 			"alicloud_ddoscoo_domain_resources": dataSourceAlicloudDdoscooDomainResources(),
@@ -1441,13 +1437,6 @@ func Provider() *schema.Provider {
 			"alicloud_dcdn_kv":                           resourceAlicloudDcdnKv(),
 			"alicloud_dcdn_waf_rule":                     resourceAlicloudDcdnWafRule(),
 			"alicloud_dcdn_er":                           resourceAlicloudDcdnEr(),
-
-			// ddos
-			"alicloud_ddos_bgp_policy": resourceAliCloudDdosBgpPolicy(),
-
-			// ddosbgp
-			"alicloud_ddosbgp_instance": resourceAliCloudDdosBgpInstance(),
-			"alicloud_ddosbgp_ip":       resourceAliCloudDdosBgpIp(),
 
 			// ddoscoo
 			"alicloud_ddoscoo_web_cc_rule":                resourceAliCloudDdosCooWebCcRule(),

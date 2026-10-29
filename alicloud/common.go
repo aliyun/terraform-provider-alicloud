@@ -223,13 +223,6 @@ const (
 	SafetyMode = "safety"
 )
 
-type DdosbgpInsatnceType string
-
-const (
-	Enterprise   = DdosbgpInsatnceType("Enterprise")
-	Professional = DdosbgpInsatnceType("Professional")
-)
-
 type DdosbgpInstanceIpType string
 
 const (
