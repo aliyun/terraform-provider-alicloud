@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package starrocks. This file is generated automatically. Please do not modify it manually, thank you!
+package starrocks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/starrocks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudStarRocksNodeGroup_basic11601(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_star_rocks_node_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudStarRocksNodeGroupMap11601)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &StarRocksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeStarRocksNodeGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudStarRocksNodeGroupMap11601)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNodeGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudStarRocksNodeGroupBasicDependence11601)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudStarRocksNodeGroupBasicDependence11601)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -54,10 +56,10 @@ func TestAccAliCloudStarRocksNodeGroup_basic11601(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":                 "test_desc",
 						"node_group_name":             name,
-						"instance_id":                 CHECKSET,
+						"instance_id":                 acctest.CHECKSET,
 						"spec_type":                   "standard",
 						"storage_performance_level":   "pl1",
-						"pricing_cycle":               CHECKSET,
+						"pricing_cycle":               acctest.CHECKSET,
 						"auto_renew":                  "false",
 						"storage_size":                "200",
 						"duration":                    "1",
@@ -79,7 +81,7 @@ func TestAccAliCloudStarRocksNodeGroup_basic11601(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cu":                  "16",
-						"promotion_option_no": CHECKSET,
+						"promotion_option_no": acctest.CHECKSET,
 						"fast_mode":           "false",
 					}),
 				),
@@ -143,10 +145,10 @@ func TestAccAliCloudStarRocksNodeGroup_basic11601(t *testing.T) {
 }
 
 var AlicloudStarRocksNodeGroupMap11601 = map[string]string{
-	"status":        CHECKSET,
-	"create_time":   CHECKSET,
-	"node_group_id": CHECKSET,
-	"region_id":     CHECKSET,
+	"status":        acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"node_group_id": acctest.CHECKSET,
+	"region_id":     acctest.CHECKSET,
 }
 
 func AlicloudStarRocksNodeGroupBasicDependence11601(name string) string {
@@ -190,7 +192,7 @@ resource "alicloud_star_rocks_instance" "defaultvjnpM0" {
   version                 = "3.3"
   run_mode                = "shared_data"
   package_type            = "official"
-  oss_accessing_role_name = "AliyunEMRStarRocksAccessingOSSRolecn"
+  oss_accessing_role_name = "AliyunEMRStarRocksAccessingOSSRole"
   admin_password          = "1qaz@QAZ"
   backend_node_groups {
     cu                        = "8"
@@ -211,22 +213,22 @@ resource "alicloud_star_rocks_instance" "defaultvjnpM0" {
 func TestAccAliCloudStarRocksNodeGroup_basic11074(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_star_rocks_node_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudStarRocksNodeGroupMap11074)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &StarRocksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeStarRocksNodeGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudStarRocksNodeGroupMap11074)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNodeGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudStarRocksNodeGroupBasicDependence11074)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudStarRocksNodeGroupBasicDependence11074)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -250,10 +252,10 @@ func TestAccAliCloudStarRocksNodeGroup_basic11074(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":                 "test_desc",
 						"node_group_name":             name,
-						"instance_id":                 CHECKSET,
+						"instance_id":                 acctest.CHECKSET,
 						"spec_type":                   "standard",
 						"storage_performance_level":   "pl1",
-						"pricing_cycle":               CHECKSET,
+						"pricing_cycle":               acctest.CHECKSET,
 						"auto_renew":                  "false",
 						"storage_size":                "200",
 						"duration":                    "1",
@@ -275,7 +277,7 @@ func TestAccAliCloudStarRocksNodeGroup_basic11074(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cu":                  "16",
-						"promotion_option_no": CHECKSET,
+						"promotion_option_no": acctest.CHECKSET,
 						"fast_mode":           "false",
 					}),
 				),
@@ -331,10 +333,10 @@ func TestAccAliCloudStarRocksNodeGroup_basic11074(t *testing.T) {
 }
 
 var AlicloudStarRocksNodeGroupMap11074 = map[string]string{
-	"status":        CHECKSET,
-	"create_time":   CHECKSET,
-	"node_group_id": CHECKSET,
-	"region_id":     CHECKSET,
+	"status":        acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"node_group_id": acctest.CHECKSET,
+	"region_id":     acctest.CHECKSET,
 }
 
 func AlicloudStarRocksNodeGroupBasicDependence11074(name string) string {

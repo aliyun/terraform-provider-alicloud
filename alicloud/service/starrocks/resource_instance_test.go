@@ -1,36 +1,51 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package starrocks. This file is generated automatically. Please do not modify it manually, thank you!
+package starrocks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/starrocks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// The following multi-member TypeList attributes of alicloud_star_rocks_instance
+// have no convergent reorder acceptance coverage. This is pre-existing stock
+// debt: the flat-layout alicloud/resource_alicloud_star_rocks_instance_test.go
+// (from which this file was mechanically migrated) carried no reorder test for
+// them either, and this PR relocates the sources verbatim without changing the
+// resource schema. Per scripts/collection-order/README.md ("Bypassing stock
+// attributes"), they are marked as known stock debt outside this change rather
+// than having reorder cloud-ACC added to a mechanical-migration PR.
+// collection-order: bypass backend_node_groups -- pre-existing uncovered TypeList; no reorder coverage in the flat-layout original before this mechanical migration, stock debt outside this change
+// collection-order: bypass frontend_node_groups -- pre-existing uncovered TypeList; no reorder coverage in the flat-layout original before this mechanical migration, stock debt outside this change
+// collection-order: bypass observer_node_groups -- pre-existing uncovered TypeList; no reorder coverage in the flat-layout original before this mechanical migration, stock debt outside this change
+// collection-order: bypass vswitches -- pre-existing uncovered TypeList; no reorder coverage in the flat-layout original before this mechanical migration, stock debt outside this change
 
 // Test StarRocks Instance. >>> Resource test cases, automatically generated.
 // Case Instance 11073
 func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_star_rocks_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudStarRocksInstanceMap11073)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &StarRocksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeStarRocksInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudStarRocksInstanceMap11073)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccstarrocks%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudStarRocksInstanceBasicDependence11073)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudStarRocksInstanceBasicDependence11073)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -103,17 +118,17 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 						"cluster_zone_id":         "cn-hangzhou-i",
 						"duration":                "1",
 						"pay_type":                "postPaid",
-						"vpc_id":                  CHECKSET,
-						"version":                 CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
+						"version":                 acctest.CHECKSET,
 						"run_mode":                "shared_data",
 						"package_type":            "official",
 						"admin_password":          "1qaz@QAZ",
 						"oss_accessing_role_name": "AliyunEMRStarRocksAccessingOSSRole",
 						"pricing_cycle":           "Month",
-						"kms_key_id":              CHECKSET,
-						"promotion_option_no":     CHECKSET,
+						"kms_key_id":              acctest.CHECKSET,
+						"promotion_option_no":     acctest.CHECKSET,
 						"encrypted":               "false",
-						"resource_group_id":       CHECKSET,
+						"resource_group_id":       acctest.CHECKSET,
 						"observer_node_groups.#":  "1",
 					}),
 				),
@@ -140,7 +155,7 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -188,13 +203,13 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -209,9 +224,9 @@ func TestAccAliCloudStarRocksInstance_basic11073(t *testing.T) {
 }
 
 var AlicloudStarRocksInstanceMap11073 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudStarRocksInstanceBasicDependence11073(name string) string {
@@ -241,22 +256,22 @@ resource "alicloud_vswitch" "default106DkE" {
 func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_star_rocks_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudStarRocksInstanceMap11101)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &StarRocksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeStarRocksInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudStarRocksInstanceMap11101)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccstarrocks%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudStarRocksInstanceBasicDependence11101)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudStarRocksInstanceBasicDependence11101)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -329,17 +344,17 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 						"cluster_zone_id":         "cn-hangzhou-i",
 						"duration":                "1",
 						"pay_type":                "postPaid",
-						"vpc_id":                  CHECKSET,
-						"version":                 CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
+						"version":                 acctest.CHECKSET,
 						"run_mode":                "shared_data",
 						"package_type":            "official",
 						"admin_password":          "1qaz@QAZ",
 						"oss_accessing_role_name": "AliyunEMRStarRocksAccessingOSSRole",
 						"pricing_cycle":           "Month",
-						"kms_key_id":              CHECKSET,
-						"promotion_option_no":     CHECKSET,
+						"kms_key_id":              acctest.CHECKSET,
+						"promotion_option_no":     acctest.CHECKSET,
 						"encrypted":               "false",
-						"resource_group_id":       CHECKSET,
+						"resource_group_id":       acctest.CHECKSET,
 						"observer_node_groups.#":  "1",
 					}),
 				),
@@ -366,7 +381,7 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -414,13 +429,13 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -435,9 +450,9 @@ func TestAccAliCloudStarRocksInstance_basic11101(t *testing.T) {
 }
 
 var AlicloudStarRocksInstanceMap11101 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudStarRocksInstanceBasicDependence11101(name string) string {
@@ -467,22 +482,22 @@ resource "alicloud_vswitch" "default106DkE" {
 func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_star_rocks_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudStarRocksInstanceMap11093)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &StarRocksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeStarRocksInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudStarRocksInstanceMap11093)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return starrocks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccstarrocks%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudStarRocksInstanceBasicDependence11093)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudStarRocksInstanceBasicDependence11093)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -539,8 +554,8 @@ func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 						"cluster_zone_id":         "cn-hangzhou-i",
 						"duration":                "1",
 						"pay_type":                "postPaid",
-						"vpc_id":                  CHECKSET,
-						"version":                 CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
+						"version":                 acctest.CHECKSET,
 						"run_mode":                "shared_data",
 						"package_type":            "official",
 						"admin_password":          "1qaz@QAZ",
@@ -591,13 +606,13 @@ func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -612,9 +627,9 @@ func TestAccAliCloudStarRocksInstance_basic11093(t *testing.T) {
 }
 
 var AlicloudStarRocksInstanceMap11093 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AlicloudStarRocksInstanceBasicDependence11093(name string) string {

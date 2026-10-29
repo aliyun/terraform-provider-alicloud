@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package starrocks. This file is generated automatically. Please do not modify it manually, thank you!
+package starrocks
 
 import (
 	"fmt"
@@ -10,16 +10,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudStarRocksNodeGroup() *schema.Resource {
+func ResourceNodeGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudStarRocksNodeGroupCreate,
-		Read:   resourceAliCloudStarRocksNodeGroupRead,
-		Update: resourceAliCloudStarRocksNodeGroupUpdate,
-		Delete: resourceAliCloudStarRocksNodeGroupDelete,
+		Create: resourceNodeGroupCreate,
+		Read:   resourceNodeGroupRead,
+		Update: resourceNodeGroupUpdate,
+		Delete: resourceNodeGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -119,7 +122,7 @@ func resourceAliCloudStarRocksNodeGroup() *schema.Resource {
 	}
 }
 
-func resourceAliCloudStarRocksNodeGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceNodeGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -133,7 +136,7 @@ func resourceAliCloudStarRocksNodeGroupCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("instance_id"); ok {
 		request["instanceId"] = v
 	}
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 
 	if v, ok := d.GetOk("pay_type"); ok {
 		request["payType"] = v
@@ -178,11 +181,11 @@ func resourceAliCloudStarRocksNodeGroupCreate(d *schema.ResourceData, meta inter
 		request["promotionOptionNo"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -190,36 +193,36 @@ func resourceAliCloudStarRocksNodeGroupCreate(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_star_rocks_node_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_star_rocks_node_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	DataNodeGroupIdVar, _ := jsonpath.Get("$.Data.NodeGroupId", response)
 	d.SetId(fmt.Sprintf("%v:%v", request["instanceId"], DataNodeGroupIdVar))
 
-	starRocksServiceV2 := StarRocksServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+	starrocksService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudStarRocksNodeGroupRead(d, meta)
+	return resourceNodeGroupRead(d, meta)
 }
 
-func resourceAliCloudStarRocksNodeGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceNodeGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	starRocksServiceV2 := StarRocksServiceV2{client}
+	starrocksService := NewService(client)
 
-	objectRaw, err := starRocksServiceV2.DescribeStarRocksNodeGroup(d.Id())
+	objectRaw, err := starrocksService.DescribeNodeGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_star_rocks_node_group DescribeStarRocksNodeGroup Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_star_rocks_node_group DescribeNodeGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["BeginTime"])
@@ -241,7 +244,7 @@ func resourceAliCloudStarRocksNodeGroupRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceNodeGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -256,31 +259,31 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("cu") {
 		update = true
 	}
 	if v, ok := d.GetOk("cu"); ok {
-		query["Target"] = StringPointer(strconv.Itoa(v.(int)))
+		query["Target"] = helper.StringPointer(strconv.Itoa(v.(int)))
 	}
 
 	if v, ok := d.GetOk("fast_mode"); ok {
-		query["FastMode"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["FastMode"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
-		query["PromotionOptionNo"] = StringPointer(v.(string))
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -288,14 +291,14 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		starrocksService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -304,31 +307,31 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("disk_number") {
 		update = true
 	}
 	if v, ok := d.GetOk("disk_number"); ok {
-		query["Target"] = StringPointer(strconv.Itoa(v.(int)))
+		query["Target"] = helper.StringPointer(strconv.Itoa(v.(int)))
 	}
 
 	if v, ok := d.GetOk("fast_mode"); ok {
-		query["FastMode"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["FastMode"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
-		query["PromotionOptionNo"] = StringPointer(v.(string))
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -336,14 +339,14 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		starrocksService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -352,27 +355,27 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("storage_size") {
 		update = true
 	}
 	if v, ok := d.GetOk("storage_size"); ok {
-		query["Target"] = StringPointer(strconv.Itoa(v.(int)))
+		query["Target"] = helper.StringPointer(strconv.Itoa(v.(int)))
 	}
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
-		query["PromotionOptionNo"] = StringPointer(v.(string))
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -380,14 +383,14 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		starrocksService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -396,27 +399,27 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("storage_performance_level") {
 		update = true
 	}
 	if v, ok := d.GetOk("storage_performance_level"); ok {
-		query["Target"] = StringPointer(v.(string))
+		query["Target"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
-		query["PromotionOptionNo"] = StringPointer(v.(string))
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -424,14 +427,14 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		starrocksService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -440,27 +443,27 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("resident_node_number") {
 		update = true
 	}
 	if v, ok := d.GetOk("resident_node_number"); ok {
-		query["Target"] = StringPointer(strconv.Itoa(v.(int)))
+		query["Target"] = helper.StringPointer(strconv.Itoa(v.(int)))
 	}
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
-		query["PromotionOptionNo"] = StringPointer(v.(string))
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -468,14 +471,14 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		starrocksService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -484,31 +487,31 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("spec_type") {
 		update = true
 	}
 	if v, ok := d.GetOk("spec_type"); ok {
-		query["TargetSpecType"] = StringPointer(v.(string))
+		query["TargetSpecType"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("fast_mode"); ok {
-		query["FastMode"] = StringPointer(strconv.FormatBool(v.(bool)))
+		query["FastMode"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
-		query["PromotionOptionNo"] = StringPointer(v.(string))
+		query["PromotionOptionNo"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -516,22 +519,22 @@ func resourceAliCloudStarRocksNodeGroupUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		starRocksServiceV2 := StarRocksServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		starrocksService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudStarRocksNodeGroupRead(d, meta)
+	return resourceNodeGroupRead(d, meta)
 }
 
-func resourceAliCloudStarRocksNodeGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceNodeGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -542,16 +545,16 @@ func resourceAliCloudStarRocksNodeGroupDelete(d *schema.ResourceData, meta inter
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["InstanceId"] = StringPointer(parts[0])
-	query["NodeGroupId"] = StringPointer(parts[1])
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["InstanceId"] = helper.StringPointer(parts[0])
+	query["NodeGroupId"] = helper.StringPointer(parts[1])
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -559,19 +562,19 @@ func resourceAliCloudStarRocksNodeGroupDelete(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	starRocksServiceV2 := StarRocksServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 20*time.Second, starRocksServiceV2.StarRocksNodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+	starrocksService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 20*time.Second, starrocksService.NodeGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
