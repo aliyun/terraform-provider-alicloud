@@ -1,33 +1,35 @@
-package alicloud
+package videosurveillancesystem_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/videosurveillancesystem"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudVideoSurveillanceSystemGroup_basic0(t *testing.T) {
+func TestAccAliCloudVideoSurveillanceSystemGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_video_surveillance_system_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudVideoSurveillanceSystemGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVideoSurveillanceSystemGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return videosurveillancesystem.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVideoSurveillanceSystemGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%sVsGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVideoSurveillanceSystemGroupBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sVsGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVideoSurveillanceSystemGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SurveillanceSystemSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.SurveillanceSystemSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -150,7 +152,7 @@ func TestAccAlicloudVideoSurveillanceSystemGroup_basic0(t *testing.T) {
 var AlicloudVideoSurveillanceSystemGroupMap0 = map[string]string{}
 
 func AlicloudVideoSurveillanceSystemGroupBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }

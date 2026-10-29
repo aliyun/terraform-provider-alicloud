@@ -1,24 +1,25 @@
-package alicloud
+package videosurveillancesystem_test
 
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudVsServiceDataSource(t *testing.T) {
-	defer checkoutAccount(t, false)
-	checkoutAccount(t, true)
+func TestAccAliCloudVsServiceDataSource(t *testing.T) {
+	defer acctest.CheckoutAccount(t, false)
+	acctest.CheckoutAccount(t, true)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudVsServiceDataSource,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_vs_service.current"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_vs_service.current"),
 					resource.TestCheckResourceAttrSet("data.alicloud_vs_service.current", "id"),
 					resource.TestCheckResourceAttr("data.alicloud_vs_service.current", "status", "Opened"),
 				),

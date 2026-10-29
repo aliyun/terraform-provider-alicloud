@@ -161,11 +161,11 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tsdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ververica"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/videosurveillancesystem"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vod"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcipam"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcpeer"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/waf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundunbastionhost"
@@ -340,7 +340,7 @@ var servicePackages = []conns.ServicePackage{
 	vpc.ServicePackage(),
 	vpcipam.ServicePackage(),
 	vpcpeer.ServicePackage(),
-	vs.ServicePackage(),
+	videosurveillancesystem.ServicePackage(),
 	waf.ServicePackage(),
 	wafopenapi.ServicePackage(),
 	yundunbastionhost.ServicePackage(),
