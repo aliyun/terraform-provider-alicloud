@@ -82,13 +82,6 @@ func resourceAlicloudImmProjectRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("project", d.Id())
-	if v, ok := object["CU"]; ok && fmt.Sprint(v) != "0" {
-		compute_unitVal, err := formatInt(v)
-		if err != nil {
-			return err
-		}
-		d.Set("compute_unit", compute_unitVal)
-	}
 	d.Set("service_role", object["ServiceRole"])
 
 	return nil
