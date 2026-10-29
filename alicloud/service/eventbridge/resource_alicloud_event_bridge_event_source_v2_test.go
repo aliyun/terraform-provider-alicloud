@@ -1,35 +1,49 @@
-package alicloud
+package eventbridge_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eventbridge"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// The following TypeList attributes are pre-existing stock fields of
+// alicloud_event_bridge_event_source_v2 migrated as-is from the root alicloud
+// package; this migration does not add or change their schema. Convergent
+// reorder acceptance coverage is tracked separately and is outside this
+// migration change, so they are marked as known stock debt per
+// scripts/collection-order/README.md.
+// collection-order: bypass source_http_event_parameters.ip -- pre-existing attribute outside this migration change
+// collection-order: bypass source_http_event_parameters.method -- pre-existing attribute outside this migration change
+// collection-order: bypass source_http_event_parameters.referer -- pre-existing attribute outside this migration change
+// collection-order: bypass source_oss_event_parameters.event_types -- pre-existing attribute outside this migration change
+// collection-order: bypass source_oss_event_parameters.match_rules -- pre-existing attribute outside this migration change
 
 // Test EventBridge EventSource. >>> Resource test cases, automatically generated.
 // Case test-event-http 11700
 func TestAccAliCloudEventBridgeEventSourceV2_basic11700(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11700)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11700)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11700)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11700)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,7 +52,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -98,7 +112,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -109,23 +123,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11700_referer_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11700)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11700)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11700)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11700)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -144,7 +158,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700_referer_twin(t *testing.
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":                 CHECKSET,
+						"event_bus_name":                 acctest.CHECKSET,
 						"event_source_name":              name,
 						"source_http_event_parameters.#": "1",
 						"description":                    name,
@@ -152,7 +166,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700_referer_twin(t *testing.
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -163,23 +177,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700_referer_twin(t *testing.
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11700_ip_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11700)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11700)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11700)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11700)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -198,7 +212,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700_ip_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":                 CHECKSET,
+						"event_bus_name":                 acctest.CHECKSET,
 						"event_source_name":              name,
 						"source_http_event_parameters.#": "1",
 						"description":                    name,
@@ -206,7 +220,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11700_ip_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -232,23 +246,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11700(name string) string {
 // Case test-event-kafka 11692
 func TestAccAliCloudEventBridgeEventSourceV2_basic11692(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11692)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11692)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11692)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11692)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -257,7 +271,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11692(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -305,7 +319,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11692(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -316,23 +330,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11692(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11692_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11692)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11692)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11692)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11692)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -356,7 +370,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11692_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":            CHECKSET,
+						"event_bus_name":            acctest.CHECKSET,
 						"event_source_name":         name,
 						"source_kafka_parameters.#": "1",
 						"description":               name,
@@ -364,7 +378,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11692_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -402,23 +416,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11692(name string) string {
 // Case test-event-source-mns 11678
 func TestAccAliCloudEventBridgeEventSourceV2_basic11678(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11678)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11678)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11678)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11678)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -427,7 +441,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11678(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -469,7 +483,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11678(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -480,23 +494,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11678(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11678_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11678)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11678)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11678)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11678)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -514,7 +528,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11678_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":          CHECKSET,
+						"event_bus_name":          acctest.CHECKSET,
 						"event_source_name":       name,
 						"source_mns_parameters.#": "1",
 						"description":             name,
@@ -522,7 +536,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11678_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -552,23 +566,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11678(name string) string {
 // Case test-event-rabbitmq 11691
 func TestAccAliCloudEventBridgeEventSourceV2_basic11691(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11691)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11691)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11691)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11691)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -577,7 +591,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11691(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -620,7 +634,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11691(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -631,23 +645,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11691(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11691_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11691)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11691)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11691)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11691)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -666,7 +680,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11691_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":                CHECKSET,
+						"event_bus_name":                acctest.CHECKSET,
 						"event_source_name":             name,
 						"source_rabbit_mq_parameters.#": "1",
 						"description":                   name,
@@ -674,7 +688,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11691_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -716,23 +730,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11691(name string) string {
 // Case test-event-rocketmq 11693
 func TestAccAliCloudEventBridgeEventSourceV2_basic11693(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11693)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11693)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11693)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11693)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -741,7 +755,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11693(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -796,7 +810,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11693(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -807,23 +821,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11693(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11693_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11693)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11693)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11693)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11693)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -854,7 +868,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11693_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":               CHECKSET,
+						"event_bus_name":               acctest.CHECKSET,
 						"event_source_name":            name,
 						"source_rocketmq_parameters.#": "1",
 						"description":                  name,
@@ -862,7 +876,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11693_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -888,23 +902,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11693(name string) string {
 // Case test-event-sls 11694
 func TestAccAliCloudEventBridgeEventSourceV2_basic11694(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11694)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11694)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11694)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11694)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -913,7 +927,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11694(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -939,7 +953,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11694(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -950,23 +964,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11694(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11694_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11694)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11694)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11694)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11694)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -985,7 +999,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11694_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":          CHECKSET,
+						"event_bus_name":          acctest.CHECKSET,
 						"event_source_name":       name,
 						"source_sls_parameters.#": "1",
 						"description":             name,
@@ -993,7 +1007,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11694_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -1055,23 +1069,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11694(name string) string {
 // Case test-event-Scheduled 11695
 func TestAccAliCloudEventBridgeEventSourceV2_basic11695(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11695)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11695)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11695)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11695)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1080,7 +1094,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11695(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
+						"event_bus_name":    acctest.CHECKSET,
 						"event_source_name": name,
 					}),
 				),
@@ -1122,7 +1136,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11695(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -1133,23 +1147,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11695(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11695_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11695)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11695)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11695)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11695)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1167,7 +1181,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11695_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":                      CHECKSET,
+						"event_bus_name":                      acctest.CHECKSET,
 						"event_source_name":                   name,
 						"source_scheduled_event_parameters.#": "1",
 						"description":                         name,
@@ -1175,7 +1189,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11695_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -1201,23 +1215,23 @@ func AliCloudEventBridgeEventSourceV2BasicDependence11695(name string) string {
 // Case test-event-oss 11707
 func TestAccAliCloudEventBridgeEventSourceV2_basic11707(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11707)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11707)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11707)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11707)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1243,7 +1257,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11707(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":                CHECKSET,
+						"event_bus_name":                acctest.CHECKSET,
 						"event_source_name":             name,
 						"source_oss_event_parameters.#": "1",
 					}),
@@ -1308,7 +1322,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11707(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},
@@ -1319,23 +1333,23 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11707(t *testing.T) {
 
 func TestAccAliCloudEventBridgeEventSourceV2_basic11707_twin(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source_v2.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceV2Map11707)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_source_v2.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventSourceV2Map11707)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacceventbridge%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11707)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeEventSourceV2BasicDependence11707)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1375,7 +1389,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11707_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"event_bus_name":                CHECKSET,
+						"event_bus_name":                acctest.CHECKSET,
 						"event_source_name":             name,
 						"source_oss_event_parameters.#": "1",
 						"description":                   name,
@@ -1383,7 +1397,7 @@ func TestAccAliCloudEventBridgeEventSourceV2_basic11707_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            ResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"linked_external_source"},

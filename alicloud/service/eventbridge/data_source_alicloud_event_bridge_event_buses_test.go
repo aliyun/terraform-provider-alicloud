@@ -1,47 +1,48 @@
-package alicloud
+package eventbridge_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudEventBridgeEventBusesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_event_bridge_event_bus.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_event_bridge_event_bus.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_event_bridge_event_bus.default.event_bus_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_event_bridge_event_bus.default.event_bus_name}_fake"`,
 		}),
 	}
-	namePrefixConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+	namePrefixConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"name_prefix": `"${alicloud_event_bridge_event_bus.default.event_bus_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"name_prefix": `"${alicloud_event_bridge_event_bus.default.event_bus_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_event_bridge_event_bus.default.id}"]`,
 			"name_regex":  `"${alicloud_event_bridge_event_bus.default.event_bus_name}"`,
 			"name_prefix": `"tf-testAcc"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand, map[string]string{
 			"ids":         `["${alicloud_event_bridge_event_bus.default.id}_fake"]`,
 			"name_regex":  `"${alicloud_event_bridge_event_bus.default.event_bus_name}_fake"`,
 			"name_prefix": `"tf-testAcc_fake"`,
@@ -62,15 +63,15 @@ func TestAccAlicloudEventBridgeEventBusesDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudEventBridgeEventBusesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_event_bridge_event_buses.default",
-		existMapFunc: existAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+	var alicloudEventBridgeEventBusesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_event_bridge_event_buses.default",
+		ExistMapFunc: existAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
 	}
-	alicloudEventBridgeEventBusesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, namePrefixConf, nameRegexConf, allConf)
+	alicloudEventBridgeEventBusesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, namePrefixConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudEventBridgeEventBusesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"fmt"
@@ -6,11 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEventBridgeRule() *schema.Resource {
+func ResourceEventBridgeRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEventBridgeRuleCreate,
 		Read:   resourceAliCloudEventBridgeRuleRead,
@@ -47,7 +52,7 @@ func resourceAliCloudEventBridgeRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"ENABLE", "DISABLE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ENABLE", "DISABLE"}, false),
 			},
 			"targets": {
 				Type:     schema.TypeList,
@@ -62,7 +67,7 @@ func resourceAliCloudEventBridgeRule() *schema.Resource {
 						"type": {
 							Type:     schema.TypeString,
 							Required: true,
-							ValidateFunc: StringInSlice([]string{
+							ValidateFunc: validators.StringInSlice([]string{
 								"acs.alikafka",
 								"acs.api.destination",
 								"acs.arms.loki",
@@ -97,7 +102,7 @@ func resourceAliCloudEventBridgeRule() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"BACKOFF_RETRY", "EXPONENTIAL_DECAY_RETRY"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"BACKOFF_RETRY", "EXPONENTIAL_DECAY_RETRY"}, false),
 						},
 						// lintignore: S018
 						"dead_letter_queue": {
@@ -125,7 +130,7 @@ func resourceAliCloudEventBridgeRule() *schema.Resource {
 									"form": {
 										Type:         schema.TypeString,
 										Required:     true,
-										ValidateFunc: StringInSlice([]string{"ORIGINAL", "TEMPLATE", "JSONPATH", "CONSTANT"}, false),
+										ValidateFunc: validators.StringInSlice([]string{"ORIGINAL", "TEMPLATE", "JSONPATH", "CONSTANT"}, false),
 									},
 									"template": {
 										Type:     schema.TypeString,
@@ -220,17 +225,17 @@ func resourceAliCloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 		targetsMaps = append(targetsMaps, targetsMap)
 	}
 
-	targetsMapsJson, err := convertArrayObjectToJsonString(targetsMaps)
+	targetsMapsJson, err := convert.ConvertArrayObjectToJsonString(targetsMaps)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request["EventTargets"] = targetsMapsJson
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -238,14 +243,14 @@ func resourceAliCloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_event_bridge_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["EventBusName"], request["RuleName"]))
@@ -259,12 +264,12 @@ func resourceAliCloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 
 	object, err := eventBridgeService.DescribeEventBridgeRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_event_bridge_rule eventBridgeService.DescribeEventBridgeRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("event_bus_name", object["EventBusName"])
@@ -351,9 +356,9 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	d.Partial(true)
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	update := false
@@ -376,11 +381,11 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "UpdateRule"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -388,14 +393,14 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 	}
@@ -469,20 +474,20 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 		targetsMaps = append(targetsMaps, targetsMap)
 	}
 
-	targetsMapsJson, err := convertArrayObjectToJsonString(targetsMaps)
+	targetsMapsJson, err := convert.ConvertArrayObjectToJsonString(targetsMaps)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	putTargetsReq["Targets"] = targetsMapsJson
 
 	if update {
 		action := "PutTargets"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, putTargetsReq, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -490,14 +495,14 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, putTargetsReq)
+		logs.AddDebug(action, response, putTargetsReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 	}
@@ -505,7 +510,7 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("status") {
 		object, err := eventBridgeService.DescribeEventBridgeRule(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("status").(string)
@@ -517,11 +522,11 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				}
 
 				action := "DisableRule"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 					response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -529,19 +534,19 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 				if fmt.Sprint(response["Code"]) != "Success" {
-					return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+					return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 				}
 
-				stateConf := BuildStateConf([]string{}, []string{"DISABLE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"DISABLE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 
@@ -552,11 +557,11 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				}
 
 				action := "EnableRule"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 					response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -564,19 +569,19 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 				if fmt.Sprint(response["Code"]) != "Success" {
-					return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+					return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 				}
 
-				stateConf := BuildStateConf([]string{}, []string{"ENABLE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"ENABLE"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 
@@ -596,9 +601,9 @@ func resourceAliCloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 
 	var err error
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request := map[string]interface{}{
@@ -606,11 +611,11 @@ func resourceAliCloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 		"RuleName":     parts[1],
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -618,21 +623,21 @@ func resourceAliCloudEventBridgeRuleDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventRuleNotExisted"}) {
+	if errs.IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventRuleNotExisted"}) {
 		return nil
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eventBridgeService.EventBridgeRuleStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

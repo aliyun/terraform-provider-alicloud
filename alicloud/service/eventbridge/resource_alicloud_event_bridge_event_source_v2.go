@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"encoding/json"
@@ -8,11 +8,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEventBridgeEventSourceV2() *schema.Resource {
+func ResourceEventBridgeEventSourceV2() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEventBridgeEventSourceV2Create,
 		Read:   resourceAliCloudEventBridgeEventSourceV2Read,
@@ -368,7 +372,7 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 	sourceHttpEventParameters := make(map[string]interface{})
 
-	if v := d.Get("source_http_event_parameters"); !IsNil(v) {
+	if v := d.Get("source_http_event_parameters"); !helper.IsNil(v) {
 		ip1, _ := jsonpath.Get("$[0].ip", v)
 		if ip1 != nil && ip1 != "" {
 			sourceHttpEventParameters["Ip"] = ip1
@@ -392,14 +396,14 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceHttpEventParametersJson, err := json.Marshal(sourceHttpEventParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceHttpEventParameters"] = string(sourceHttpEventParametersJson)
 	}
 
 	sourceKafkaParameters := make(map[string]interface{})
 
-	if v := d.Get("source_kafka_parameters"); !IsNil(v) {
+	if v := d.Get("source_kafka_parameters"); !helper.IsNil(v) {
 		vpcId1, _ := jsonpath.Get("$[0].vpc_id", v)
 		if vpcId1 != nil && vpcId1 != "" {
 			sourceKafkaParameters["VpcId"] = vpcId1
@@ -439,14 +443,14 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceKafkaParametersJson, err := json.Marshal(sourceKafkaParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceKafkaParameters"] = string(sourceKafkaParametersJson)
 	}
 
 	sourceRabbitMQParameters := make(map[string]interface{})
 
-	if v := d.Get("source_rabbit_mq_parameters"); !IsNil(v) {
+	if v := d.Get("source_rabbit_mq_parameters"); !helper.IsNil(v) {
 		virtualHostName1, _ := jsonpath.Get("$[0].virtual_host_name", v)
 		if virtualHostName1 != nil && virtualHostName1 != "" {
 			sourceRabbitMQParameters["VirtualHostName"] = virtualHostName1
@@ -466,14 +470,14 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceRabbitMQParametersJson, err := json.Marshal(sourceRabbitMQParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceRabbitMQParameters"] = string(sourceRabbitMQParametersJson)
 	}
 
 	sourceMNSParameters := make(map[string]interface{})
 
-	if v := d.Get("source_mns_parameters"); !IsNil(v) {
+	if v := d.Get("source_mns_parameters"); !helper.IsNil(v) {
 		isBase64Decode1, _ := jsonpath.Get("$[0].is_base64_decode", v)
 		if isBase64Decode1 != nil && isBase64Decode1 != "" {
 			sourceMNSParameters["IsBase64Decode"] = isBase64Decode1
@@ -489,14 +493,14 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceMNSParametersJson, err := json.Marshal(sourceMNSParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceMNSParameters"] = string(sourceMNSParametersJson)
 	}
 
 	sourceRocketMQParameters := make(map[string]interface{})
 
-	if v := d.Get("source_rocketmq_parameters"); !IsNil(v) {
+	if v := d.Get("source_rocketmq_parameters"); !helper.IsNil(v) {
 		instanceNetwork1, _ := jsonpath.Get("$[0].instance_network", v)
 		if instanceNetwork1 != nil && instanceNetwork1 != "" {
 			sourceRocketMQParameters["InstanceNetwork"] = instanceNetwork1
@@ -564,21 +568,21 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceRocketMQParametersJson, err := json.Marshal(sourceRocketMQParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceRocketMQParameters"] = string(sourceRocketMQParametersJson)
 	}
 
 	sourceOSSEventParameters := make(map[string]interface{})
 
-	if v := d.Get("source_oss_event_parameters"); !IsNil(v) {
+	if v := d.Get("source_oss_event_parameters"); !helper.IsNil(v) {
 		if v, ok := d.GetOk("source_oss_event_parameters"); ok {
 			localData, err := jsonpath.Get("$[0].match_rules", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([][]map[string]interface{}, 0)
-			for _, outerList := range convertToInterfaceArray(localData) {
+			for _, outerList := range convert.ConvertToInterfaceArray(localData) {
 				innerList := make([]map[string]interface{}, 0)
 				for _, innerItem := range outerList.([]interface{}) {
 					dataLoopTmp := make(map[string]interface{})
@@ -610,14 +614,14 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceOSSEventParametersJson, err := json.Marshal(sourceOSSEventParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceOSSEventParameters"] = string(sourceOSSEventParametersJson)
 	}
 
 	sourceScheduledEventParameters := make(map[string]interface{})
 
-	if v := d.Get("source_scheduled_event_parameters"); !IsNil(v) {
+	if v := d.Get("source_scheduled_event_parameters"); !helper.IsNil(v) {
 		schedule1, _ := jsonpath.Get("$[0].schedule", v)
 		if schedule1 != nil && schedule1 != "" {
 			sourceScheduledEventParameters["Schedule"] = schedule1
@@ -633,7 +637,7 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceScheduledEventParametersJson, err := json.Marshal(sourceScheduledEventParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceScheduledEventParameters"] = string(sourceScheduledEventParametersJson)
 	}
@@ -641,7 +645,7 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 	request["EventBusName"] = d.Get("event_bus_name")
 	sourceSLSParameters := make(map[string]interface{})
 
-	if v := d.Get("source_sls_parameters"); !IsNil(v) {
+	if v := d.Get("source_sls_parameters"); !helper.IsNil(v) {
 		logStore1, _ := jsonpath.Get("$[0].log_store", v)
 		if logStore1 != nil && logStore1 != "" {
 			sourceSLSParameters["LogStore"] = logStore1
@@ -661,7 +665,7 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 
 		sourceSLSParametersJson, err := json.Marshal(sourceSLSParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceSLSParameters"] = string(sourceSLSParametersJson)
 	}
@@ -672,11 +676,11 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 	if v, ok := d.GetOkExists("linked_external_source"); ok {
 		request["LinkedExternalSource"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -684,10 +688,10 @@ func resourceAliCloudEventBridgeEventSourceV2Create(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_event_source_v2", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_event_bridge_event_source_v2", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["EventSourceName"]))
@@ -701,12 +705,12 @@ func resourceAliCloudEventBridgeEventSourceV2Read(d *schema.ResourceData, meta i
 
 	objectRaw, err := eventBridgeServiceV2.DescribeEventBridgeEventSource(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_source_v2 DescribeEventBridgeEventSource Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("description", objectRaw["Description"])
@@ -725,31 +729,31 @@ func resourceAliCloudEventBridgeEventSourceV2Read(d *schema.ResourceData, meta i
 
 		ipRaw := make([]interface{}, 0)
 		if sourceHttpEventParametersRaw["Ip"] != nil {
-			ipRaw = convertToInterfaceArray(sourceHttpEventParametersRaw["Ip"])
+			ipRaw = convert.ConvertToInterfaceArray(sourceHttpEventParametersRaw["Ip"])
 		}
 
 		sourceHttpEventParametersMap["ip"] = ipRaw
 		methodRaw := make([]interface{}, 0)
 		if sourceHttpEventParametersRaw["Method"] != nil {
-			methodRaw = convertToInterfaceArray(sourceHttpEventParametersRaw["Method"])
+			methodRaw = convert.ConvertToInterfaceArray(sourceHttpEventParametersRaw["Method"])
 		}
 
 		sourceHttpEventParametersMap["method"] = methodRaw
 		publicWebHookUrlRaw := make([]interface{}, 0)
 		if sourceHttpEventParametersRaw["PublicWebHookUrl"] != nil {
-			publicWebHookUrlRaw = convertToInterfaceArray(sourceHttpEventParametersRaw["PublicWebHookUrl"])
+			publicWebHookUrlRaw = convert.ConvertToInterfaceArray(sourceHttpEventParametersRaw["PublicWebHookUrl"])
 		}
 
 		sourceHttpEventParametersMap["public_web_hook_url"] = publicWebHookUrlRaw
 		refererRaw := make([]interface{}, 0)
 		if sourceHttpEventParametersRaw["Referer"] != nil {
-			refererRaw = convertToInterfaceArray(sourceHttpEventParametersRaw["Referer"])
+			refererRaw = convert.ConvertToInterfaceArray(sourceHttpEventParametersRaw["Referer"])
 		}
 
 		sourceHttpEventParametersMap["referer"] = refererRaw
 		vpcWebHookUrlRaw := make([]interface{}, 0)
 		if sourceHttpEventParametersRaw["VpcWebHookUrl"] != nil {
-			vpcWebHookUrlRaw = convertToInterfaceArray(sourceHttpEventParametersRaw["VpcWebHookUrl"])
+			vpcWebHookUrlRaw = convert.ConvertToInterfaceArray(sourceHttpEventParametersRaw["VpcWebHookUrl"])
 		}
 
 		sourceHttpEventParametersMap["vpc_web_hook_url"] = vpcWebHookUrlRaw
@@ -807,7 +811,7 @@ func resourceAliCloudEventBridgeEventSourceV2Read(d *schema.ResourceData, meta i
 
 		eventTypesRaw := make([]interface{}, 0)
 		if sourceOSSEventParametersRaw["EventTypes"] != nil {
-			eventTypesRaw = convertToInterfaceArray(sourceOSSEventParametersRaw["EventTypes"])
+			eventTypesRaw = convert.ConvertToInterfaceArray(sourceOSSEventParametersRaw["EventTypes"])
 		}
 
 		sourceOSSEventParametersMap["event_types"] = eventTypesRaw
@@ -964,7 +968,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceHttpEventParametersJson, err := json.Marshal(sourceHttpEventParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceHttpEventParameters"] = string(sourceHttpEventParametersJson)
 	}
@@ -1014,7 +1018,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceKafkaParametersJson, err := json.Marshal(sourceKafkaParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceKafkaParameters"] = string(sourceKafkaParametersJson)
 	}
@@ -1044,7 +1048,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceRabbitMQParametersJson, err := json.Marshal(sourceRabbitMQParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceRabbitMQParameters"] = string(sourceRabbitMQParametersJson)
 	}
@@ -1070,7 +1074,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceMNSParametersJson, err := json.Marshal(sourceMNSParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceMNSParameters"] = string(sourceMNSParametersJson)
 	}
@@ -1148,7 +1152,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceRocketMQParametersJson, err := json.Marshal(sourceRocketMQParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceRocketMQParameters"] = string(sourceRocketMQParametersJson)
 	}
@@ -1158,14 +1162,14 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 	}
 	sourceOSSEventParameters := make(map[string]interface{})
 
-	if v := d.Get("source_oss_event_parameters"); !IsNil(v) {
+	if v := d.Get("source_oss_event_parameters"); !helper.IsNil(v) {
 		if v, ok := d.GetOk("source_oss_event_parameters"); ok {
 			localData, err := jsonpath.Get("$[0].match_rules", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([][]map[string]interface{}, 0)
-			for _, outerList := range convertToInterfaceArray(localData) {
+			for _, outerList := range convert.ConvertToInterfaceArray(localData) {
 				innerList := make([]map[string]interface{}, 0)
 				for _, innerItem := range outerList.([]interface{}) {
 					dataLoopTmp := make(map[string]interface{})
@@ -1197,7 +1201,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceOSSEventParametersJson, err := json.Marshal(sourceOSSEventParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceOSSEventParameters"] = string(sourceOSSEventParametersJson)
 	}
@@ -1223,7 +1227,7 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 
 		sourceScheduledEventParametersJson, err := json.Marshal(sourceScheduledEventParameters)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SourceScheduledEventParameters"] = string(sourceScheduledEventParametersJson)
 	}
@@ -1239,11 +1243,11 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 		request["LinkedExternalSource"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1251,9 +1255,9 @@ func resourceAliCloudEventBridgeEventSourceV2Update(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1272,11 +1276,11 @@ func resourceAliCloudEventBridgeEventSourceV2Delete(d *schema.ResourceData, meta
 	request["EventSourceName"] = d.Id()
 
 	request["EventBusName"] = d.Get("event_bus_name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1284,13 +1288,13 @@ func resourceAliCloudEventBridgeEventSourceV2Delete(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"encoding/json"
@@ -9,12 +9,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudEventBridgeEventStreaming() *schema.Resource {
+func ResourceEventBridgeEventStreaming() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEventBridgeEventStreamingCreate,
 		Read:   resourceAliCloudEventBridgeEventStreamingRead,
@@ -74,9 +79,9 @@ func resourceAliCloudEventBridgeEventStreaming() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"RUNNING", "PAUSED"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"RUNNING", "PAUSED"}, false),
 			},
-			"tags": tagsSchemaWithElements(),
+			"tags": tags.TagsSchemaWithElements(),
 		},
 	}
 }
@@ -104,11 +109,11 @@ func resourceAliCloudEventBridgeEventStreamingCreate(d *schema.ResourceData, met
 		request["Transforms"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -116,14 +121,14 @@ func resourceAliCloudEventBridgeEventStreamingCreate(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_event_streaming", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_event_bridge_event_streaming", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(request["EventStreamingName"]))
@@ -132,12 +137,12 @@ func resourceAliCloudEventBridgeEventStreamingCreate(d *schema.ResourceData, met
 	// backend, so tags are always applied through TagResources after creation.
 	if _, ok := d.GetOk("tags"); ok {
 		if err := eventBridgeService.SetResourceTags(d, "eventstreaming"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if err := eventBridgeService.updateEventBridgeEventStreamingStatus(d, d.Timeout(schema.TimeoutCreate)); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return resourceAliCloudEventBridgeEventStreamingRead(d, meta)
@@ -149,12 +154,12 @@ func resourceAliCloudEventBridgeEventStreamingRead(d *schema.ResourceData, meta 
 
 	object, err := eventBridgeService.DescribeEventBridgeEventStreaming(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_streaming eventBridgeService.DescribeEventBridgeEventStreaming Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("event_streaming_name", object["EventStreamingName"])
@@ -163,45 +168,45 @@ func resourceAliCloudEventBridgeEventStreamingRead(d *schema.ResourceData, meta 
 
 	source, ok, err := eventBridgeEventStreamingJsonAttribute(object["Source"])
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	} else if ok {
 		d.Set("source", source)
 	}
 
 	filterPattern, ok, err := eventBridgeEventStreamingJsonAttribute(object["FilterPattern"])
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	} else if ok {
 		d.Set("filter_pattern", filterPattern)
 	}
 
 	sink, ok, err := eventBridgeEventStreamingJsonAttribute(object["Sink"])
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	} else if ok {
 		d.Set("sink", sink)
 	}
 
 	runOptions, ok, err := eventBridgeEventStreamingJsonAttribute(object["RunOptions"])
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	} else if ok {
 		d.Set("run_options", runOptions)
 	}
 
 	transforms, ok, err := eventBridgeEventStreamingJsonAttribute(object["Transforms"])
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	} else if ok {
 		d.Set("transforms", transforms)
 	}
 
 	objectRaw, err := eventBridgeService.DescribeEventBridgeEventStreamingTags(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
@@ -241,11 +246,11 @@ func resourceAliCloudEventBridgeEventStreamingUpdate(d *schema.ResourceData, met
 
 	if update {
 		action := "UpdateEventStreaming"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -253,26 +258,26 @@ func resourceAliCloudEventBridgeEventStreamingUpdate(d *schema.ResourceData, met
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 
 	if d.HasChange("status") {
 		if err := eventBridgeService.updateEventBridgeEventStreamingStatus(d, d.Timeout(schema.TimeoutUpdate)); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if d.HasChange("tags") {
 		if err := eventBridgeService.SetResourceTags(d, "eventstreaming"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
@@ -290,11 +295,11 @@ func resourceAliCloudEventBridgeEventStreamingDelete(d *schema.ResourceData, met
 		"EventStreamingName": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -302,18 +307,18 @@ func resourceAliCloudEventBridgeEventStreamingDelete(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) || IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventStreamingNotExisted"}) {
+		if errs.NotFoundError(err) || errs.IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventStreamingNotExisted"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eventBridgeService.EventBridgeEventStreamingStateRefreshFunc(d.Id(), "$.Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, eventBridgeService.EventBridgeEventStreamingStateRefreshFunc(d.Id(), "$.Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

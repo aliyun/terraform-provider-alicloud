@@ -1,33 +1,35 @@
-package alicloud
+package eventbridge_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eventbridge"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudEventBridgeApiDestination_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EventBridgeConnectionSupportRegions)
-	resourceId := "alicloud_event_bridge_api_destination.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeApiDestinationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EventBridgeConnectionSupportRegions)
+	ResourceId := "alicloud_event_bridge_api_destination.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeApiDestinationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeApiDestination")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgeapidestination%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeApiDestinationBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seventbridgeapidestination%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeApiDestinationBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -42,7 +44,7 @@ func TestAccAliCloudEventBridgeApiDestination_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_name":       CHECKSET,
+						"connection_name":       acctest.CHECKSET,
 						"api_destination_name":  name,
 						"http_api_parameters.#": "1",
 					}),
@@ -74,7 +76,7 @@ func TestAccAliCloudEventBridgeApiDestination_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				ResourceName:      ResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -84,23 +86,23 @@ func TestAccAliCloudEventBridgeApiDestination_basic0(t *testing.T) {
 
 func TestAccAliCloudEventBridgeApiDestination_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EventBridgeConnectionSupportRegions)
-	resourceId := "alicloud_event_bridge_api_destination.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeApiDestinationMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EventBridgeConnectionSupportRegions)
+	ResourceId := "alicloud_event_bridge_api_destination.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeApiDestinationMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeApiDestination")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgeapidestination%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeApiDestinationBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seventbridgeapidestination%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, AliCloudEventBridgeApiDestinationBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -116,7 +118,7 @@ func TestAccAliCloudEventBridgeApiDestination_basic0_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_name":       CHECKSET,
+						"connection_name":       acctest.CHECKSET,
 						"api_destination_name":  name,
 						"description":           "test-api-destination-connection",
 						"http_api_parameters.#": "1",
@@ -124,7 +126,7 @@ func TestAccAliCloudEventBridgeApiDestination_basic0_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				ResourceName:      ResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -133,7 +135,7 @@ func TestAccAliCloudEventBridgeApiDestination_basic0_twin(t *testing.T) {
 }
 
 var AliCloudEventBridgeApiDestinationMap0 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AliCloudEventBridgeApiDestinationBasicDependence0(name string) string {

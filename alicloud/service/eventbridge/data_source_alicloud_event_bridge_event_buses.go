@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEventBridgeEventSources() *schema.Resource {
+func DataSourceEventBridgeEventBuses() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEventBridgeEventSourcesRead,
+		Read: dataSourceAlicloudEventBridgeEventBusesRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -32,15 +35,27 @@ func dataSourceAlicloudEventBridgeEventSources() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
+			"event_bus_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"name_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"sources": {
+			"buses": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"description": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -49,24 +64,7 @@ func dataSourceAlicloudEventBridgeEventSources() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"event_source_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						// lintignore: S006
-						"external_source_config": {
-							Type:     schema.TypeMap,
-							Computed: true,
-						},
-						"external_source_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"linked_external_source": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"type": {
+						"event_bus_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -77,21 +75,29 @@ func dataSourceAlicloudEventBridgeEventSources() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEventBridgeEventSourcesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudEventBridgeEventBusesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "ListUserDefinedEventSources"
+	action := "ListEventBuses"
 	request := make(map[string]interface{})
-	request["Limit"] = PageSizeLarge
-
+	request["Limit"] = helper.PageSizeLarge
+	if v, ok := d.GetOk("event_bus_type"); ok {
+		request["EventBusType"] = v
+	}
+	if v, ok := d.GetOk("limit"); ok {
+		request["Limit"] = v
+	}
+	if v, ok := d.GetOk("name_prefix"); ok {
+		request["NamePrefix"] = v
+	}
 	var objects []map[string]interface{}
-	var eventSourceNameRegex *regexp.Regexp
+	var eventBusNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		eventSourceNameRegex = r
+		eventBusNameRegex = r
 	}
 
 	idsMap := make(map[string]string)
@@ -106,11 +112,11 @@ func dataSourceAlicloudEventBridgeEventSourcesRead(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -118,24 +124,25 @@ func dataSourceAlicloudEventBridgeEventSourcesRead(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_event_sources", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_event_bridge_event_buses", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		resp, err := jsonpath.Get("$.Data.EventSourceList", response)
+
+		resp, err := jsonpath.Get("$.Data.EventBuses", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data.EventBuses", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if eventSourceNameRegex != nil {
-				if !eventSourceNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+			if eventBusNameRegex != nil {
+				if !eventBusNameRegex.MatchString(fmt.Sprint(item["EventBusName"])) {
 					continue
 				}
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["Name"])]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["EventBusName"])]; !ok {
 					continue
 				}
 			}
@@ -152,33 +159,30 @@ func dataSourceAlicloudEventBridgeEventSourcesRead(d *schema.ResourceData, meta 
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"description":            object["Description"],
-			"id":                     fmt.Sprint(object["Name"]),
-			"event_source_name":      fmt.Sprint(object["Name"]),
-			"external_source_config": object["ExternalSourceConfig"],
-			"external_source_type":   object["ExternalSourceType"],
-			"linked_external_source": object["LinkedExternalSource"],
-			"type":                   object["Type"],
+			"create_time":    fmt.Sprint(object["CreateTimestamp"]),
+			"description":    object["Description"],
+			"id":             fmt.Sprint(object["EventBusName"]),
+			"event_bus_name": fmt.Sprint(object["EventBusName"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, object["Name"])
+		names = append(names, object["EventBusName"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	if err := d.Set("sources", s); err != nil {
-		return WrapError(err)
+	if err := d.Set("buses", s); err != nil {
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
