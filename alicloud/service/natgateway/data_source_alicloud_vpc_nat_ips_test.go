@@ -1,89 +1,90 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudVPCNatIpsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 1000)
+	rand := tfacctest.RandIntRange(1, 1000)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"name_regex":     `"${alicloud_vpc_nat_ip.default.nat_ip_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"name_regex":     `"${alicloud_vpc_nat_ip.default.nat_ip_name}_fake"`,
 		}),
 	}
 
-	natIpCidrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	natIpCidrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"nat_ip_cidr":    `"${alicloud_vpc_nat_ip.default.nat_ip_cidr}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"nat_ip_cidr":    `"8.8.8.8/24"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}_fake"]`,
 		}),
 	}
 
-	natIpNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	natIpNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 			"nat_ip_name":    `["${alicloud_vpc_nat_ip.default.nat_ip_name}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}_fake"]`,
 			"nat_ip_name":    `["${alicloud_vpc_nat_ip.default.nat_ip_name}_fake"]`,
 		}),
 	}
-	natIpIdsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	natIpIdsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 			"nat_ip_ids":     `["${alicloud_vpc_nat_ip.default.nat_ip_id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}_fake"]`,
 			"nat_ip_ids":     `["${alicloud_vpc_nat_ip.default.nat_ip_id}_fake"]`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 			"status":         `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 			"status":         `"Deleting"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}"]`,
 			"nat_ip_name":    `["${alicloud_vpc_nat_ip.default.nat_ip_name}"]`,
@@ -92,7 +93,7 @@ func TestAccAlicloudVPCNatIpsDataSource(t *testing.T) {
 			"nat_ip_cidr":    `"${alicloud_vpc_nat_ip.default.nat_ip_cidr}"`,
 			"status":         `"Available"`,
 		}),
-		fakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudVpcNatIpDataSourceName(rand, map[string]string{
 			"nat_gateway_id": `"${alicloud_vpc_nat_ip.default.nat_gateway_id}"`,
 			"ids":            `["${alicloud_vpc_nat_ip.default.id}_fake"]`,
 			"nat_ip_name":    `["${alicloud_vpc_nat_ip.default.nat_ip_name}_fake"]`,
@@ -119,13 +120,13 @@ func TestAccAlicloudVPCNatIpsDataSource(t *testing.T) {
 			"ips.#":   "0",
 		}
 	}
-	var alicloudVpcNatIpCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_vpc_nat_ips.default",
-		existMapFunc: existDataAlicloudVpcNatIpsSourceNameMapFunc,
-		fakeMapFunc:  fakeDataAlicloudVpcNatIpsSourceNameMapFunc,
+	var alicloudVpcNatIpCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_vpc_nat_ips.default",
+		ExistMapFunc: existDataAlicloudVpcNatIpsSourceNameMapFunc,
+		FakeMapFunc:  fakeDataAlicloudVpcNatIpsSourceNameMapFunc,
 	}
 
-	alicloudVpcNatIpCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, natIpCidrConf, natIpNameConf, natIpIdsConf, statusConf, allConf)
+	alicloudVpcNatIpCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, natGatewayDataSourcePreCheck(t), idsConf, nameRegexConf, natIpCidrConf, natIpNameConf, natIpIdsConf, statusConf, allConf)
 }
 func testAccCheckAlicloudVpcNatIpDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

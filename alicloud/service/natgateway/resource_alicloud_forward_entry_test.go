@@ -1,8 +1,7 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -11,17 +10,19 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	natgateway "github.com/aliyun/terraform-provider-alicloud/alicloud/service/natgateway"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
 // lintignore: R001
 func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := acctest.Provider.ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
@@ -40,13 +41,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 		err = d.Set(key, value)
 		assert.Nil(t, err)
 	}
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
+	rawClient := unitTestMockClient(t)
 	ReadMockResponse := map[string]interface{}{
 		"ForwardTableEntries": map[string]interface{}{
 			"ForwardTableEntry": []interface{}{
@@ -69,9 +64,9 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -81,9 +76,9 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -115,15 +110,15 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 	}
 	// Create
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudNatGatewayForwardEntryCreate(d, rawClient)
+		err := p["alicloud_forward_entry"].Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -140,7 +135,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryCreate(d, rawClient)
+		err := p["alicloud_forward_entry"].Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -157,7 +152,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryCreate(dCreate, rawClient)
+		err := p["alicloud_forward_entry"].Create(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -175,7 +170,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryCreate(dCreate, rawClient)
+		err := p["alicloud_forward_entry"].Create(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -184,16 +179,15 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 	d.SetId(fmt.Sprint("MockForwardTableId", ":", "MockForwardEntryId"))
 	// Update
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-
-		err := resourceAliCloudNatGatewayForwardEntryUpdate(d, rawClient)
+		err := p["alicloud_forward_entry"].Update(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -225,7 +219,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryUpdate(resourceData1, rawClient)
+		err := p["alicloud_forward_entry"].Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -258,7 +252,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryUpdate(resourceData1, rawClient)
+		err := p["alicloud_forward_entry"].Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -278,22 +272,22 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryUpdate(resourceData1, rawClient)
+		err := p["alicloud_forward_entry"].Update(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
 
 	// Delete
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
-		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewVpcClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudNatGatewayForwardEntryDelete(d, rawClient)
+		err := p["alicloud_forward_entry"].Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -310,7 +304,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryDelete(d, rawClient)
+		err := p["alicloud_forward_entry"].Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -327,12 +321,15 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		patcheDescribeForwardEntry := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeForwardEntry", func(*VpcService, string) (map[string]interface{}, error) {
-			return responseMock["RetryError"]("InvalidForwardEntryId.NotFound")
+		// DeleteMockNormal keeps assert.NotNil: the post-Delete Describe query is mocked to
+		// return a non-retryable, non-NotFound error, so the state refresh fast-exits via the
+		// real error return path (refresh -> WaitForState -> Delete WrapErrorf) without polling.
+		patcheDescribeForwardEntry := gomonkey.ApplyMethod(reflect.TypeOf(&natgateway.NATGatewayServiceV2{}), "DescribeNatGatewayForwardEntry", func(*natgateway.NATGatewayServiceV2, string) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NonRetryableError")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryDelete(d, rawClient)
-		patches.Reset()
+		err := p["alicloud_forward_entry"].Delete(d, rawClient)
 		patcheDescribeForwardEntry.Reset()
+		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
@@ -351,7 +348,11 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryDelete(resourceData1, rawClient)
+		patcheDescribeForwardEntry := gomonkey.ApplyMethod(reflect.TypeOf(&natgateway.NATGatewayServiceV2{}), "DescribeNatGatewayForwardEntry", func(*natgateway.NATGatewayServiceV2, string) (map[string]interface{}, error) {
+			return responseMock["RetryError"]("InvalidForwardEntryId.NotFound")
+		})
+		err := p["alicloud_forward_entry"].Delete(resourceData1, rawClient)
+		patcheDescribeForwardEntry.Reset()
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -368,7 +369,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryRead(d, rawClient)
+		err := p["alicloud_forward_entry"].Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -384,7 +385,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryRead(d, rawClient)
+		err := p["alicloud_forward_entry"].Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
@@ -402,7 +403,7 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudNatGatewayForwardEntryRead(resourceData1, rawClient)
+		err := p["alicloud_forward_entry"].Read(resourceData1, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -414,21 +415,22 @@ func TestUnitAliCloudVPCForwardEntry(t *testing.T) {
 func TestAccAliCloudNatGatewayForwardEntry_basic9600(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGatewayForwardEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccnatgateway%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -443,11 +445,11 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9600(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"external_port":      "80",
-						"external_ip":        CHECKSET,
+						"external_ip":        acctest.CHECKSET,
 						"ip_protocol":        "tcp",
 						"internal_port":      "8080",
 						"internal_ip":        "172.16.0.115",
-						"forward_table_id":   CHECKSET,
+						"forward_table_id":   acctest.CHECKSET,
 						"forward_entry_name": name,
 					}),
 				),
@@ -458,7 +460,7 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9600(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"external_ip": CHECKSET,
+						"external_ip": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -533,21 +535,22 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9600(t *testing.T) {
 func TestAccAliCloudNatGatewayForwardEntry_basic9600_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGatewayForwardEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccnatgateway%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -563,11 +566,11 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9600_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"external_port":      "80",
-						"external_ip":        CHECKSET,
+						"external_ip":        acctest.CHECKSET,
 						"ip_protocol":        "tcp",
 						"internal_port":      "8080",
 						"internal_ip":        "172.16.0.115",
-						"forward_table_id":   CHECKSET,
+						"forward_table_id":   acctest.CHECKSET,
 						"forward_entry_name": name,
 					}),
 				),
@@ -586,21 +589,22 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9600_twin(t *testing.T) {
 func TestAccAliCloudNatGatewayForwardEntry_basic9602(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGatewayForwardEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccnatgateway%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -615,11 +619,11 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9602(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"external_port":    "80",
-						"external_ip":      CHECKSET,
+						"external_ip":      acctest.CHECKSET,
 						"ip_protocol":      "tcp",
 						"internal_port":    "8080",
 						"internal_ip":      "172.16.0.115",
-						"forward_table_id": CHECKSET,
+						"forward_table_id": acctest.CHECKSET,
 						"name":             name,
 					}),
 				),
@@ -630,7 +634,7 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9602(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"external_ip": CHECKSET,
+						"external_ip": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -705,21 +709,22 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9602(t *testing.T) {
 func TestAccAliCloudNatGatewayForwardEntry_basic9602_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_forward_entry.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NATGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayForwardEntryMap9600)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewNATGatewayServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGatewayForwardEntry")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccnatgateway%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayForwardEntryBasicDependence9600)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -735,11 +740,11 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9602_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"external_port":    "80",
-						"external_ip":      CHECKSET,
+						"external_ip":      acctest.CHECKSET,
 						"ip_protocol":      "tcp",
 						"internal_port":    "8080",
 						"internal_ip":      "172.16.0.115",
-						"forward_table_id": CHECKSET,
+						"forward_table_id": acctest.CHECKSET,
 						"name":             name,
 					}),
 				),
@@ -755,8 +760,8 @@ func TestAccAliCloudNatGatewayForwardEntry_basic9602_twin(t *testing.T) {
 }
 
 var AliCloudNatGatewayForwardEntryMap9600 = map[string]string{
-	"status":           CHECKSET,
-	"forward_entry_id": CHECKSET,
+	"status":           acctest.CHECKSET,
+	"forward_entry_id": acctest.CHECKSET,
 }
 
 func AliCloudNatGatewayForwardEntryBasicDependence9600(name string) string {

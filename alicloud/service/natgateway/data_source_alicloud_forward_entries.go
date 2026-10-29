@@ -1,4 +1,4 @@
-package alicloud
+package natgateway
 
 import (
 	"fmt"
@@ -6,6 +6,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -145,14 +148,14 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 		request["IpProtocol"] = v
 	}
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var forwardEntryNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		forwardEntryNameRegex = r
 	}
@@ -172,13 +175,13 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 	for {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_forward_entries", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_forward_entries", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.ForwardTableEntries.ForwardTableEntry", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ForwardTableEntries.ForwardTableEntry", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ForwardTableEntries.ForwardTableEntry", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -198,7 +201,7 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -224,20 +227,20 @@ func dataSourceAlicloudForwardEntriesRead(d *schema.ResourceData, meta interface
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("entries", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

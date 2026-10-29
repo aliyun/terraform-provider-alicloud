@@ -1,4 +1,4 @@
-package alicloud
+package natgateway
 
 import (
 	"fmt"
@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -80,7 +83,7 @@ func resourceAliCloudNatGatewayNatIpCreate(d *schema.ResourceData, meta interfac
 		request["NatGatewayId"] = v
 	}
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("nat_ip_name"); ok {
 		request["NatIpName"] = v
@@ -95,11 +98,11 @@ func resourceAliCloudNatGatewayNatIpCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("nat_ip_description"); ok {
 		request["NatIpDescription"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.NatGateway"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.NatGateway"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -107,18 +110,18 @@ func resourceAliCloudNatGatewayNatIpCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_nat_ip", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vpc_nat_ip", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["NatGatewayId"], response["NatIpId"]))
 
 	nATGatewayServiceV2 := NATGatewayServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nATGatewayServiceV2.NatGatewayNatIpStateRefreshFunc(d.Id(), "NatIpStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nATGatewayServiceV2.NatGatewayNatIpStateRefreshFunc(d.Id(), "NatIpStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudNatGatewayNatIpRead(d, meta)
@@ -130,12 +133,12 @@ func resourceAliCloudNatGatewayNatIpRead(d *schema.ResourceData, meta interface{
 
 	objectRaw, err := nATGatewayServiceV2.DescribeNatGatewayNatIp(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_vpc_nat_ip DescribeNatGatewayNatIp Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("nat_ip", objectRaw["NatIp"])
@@ -163,7 +166,7 @@ func resourceAliCloudNatGatewayNatIpUpdate(d *schema.ResourceData, meta interfac
 	query = make(map[string]interface{})
 	request["NatIpId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("nat_ip_name") {
 		update = true
 		request["NatIpName"] = d.Get("nat_ip_name")
@@ -178,11 +181,11 @@ func resourceAliCloudNatGatewayNatIpUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -190,9 +193,9 @@ func resourceAliCloudNatGatewayNatIpUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -212,16 +215,16 @@ func resourceAliCloudNatGatewayNatIpDelete(d *schema.ResourceData, meta interfac
 	request["NatGatewayId"] = parts[0]
 	request["NatIpId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.NatGateway"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.NatGateway"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -229,19 +232,19 @@ func resourceAliCloudNatGatewayNatIpDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	nATGatewayServiceV2 := NATGatewayServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nATGatewayServiceV2.NatGatewayNatIpStateRefreshFunc(d.Id(), "NatIpStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nATGatewayServiceV2.NatGatewayNatIpStateRefreshFunc(d.Id(), "NatIpStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

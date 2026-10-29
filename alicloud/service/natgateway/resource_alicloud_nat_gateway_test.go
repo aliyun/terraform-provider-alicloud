@@ -1,4 +1,4 @@
-package alicloud
+package natgateway_test
 
 import (
 	"fmt"
@@ -9,9 +9,14 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	natgateway "github.com/aliyun/terraform-provider-alicloud/alicloud/service/natgateway"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -27,7 +32,7 @@ func init() {
 }
 
 func testSweepNatGateways(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
@@ -45,10 +50,9 @@ func testSweepNatGateways(region string) error {
 	request := map[string]interface{}{
 		"RegionId": client.RegionId,
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	natGatewayIds := make([]string, 0)
-	service := VpcService{client}
 	for {
 		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
 		if err != nil {
@@ -57,7 +61,7 @@ func testSweepNatGateways(region string) error {
 
 		resp, err := jsonpath.Get("$.NatGateways.NatGateway", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NatGateways.NatGateway", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.NatGateways.NatGateway", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -65,17 +69,11 @@ func testSweepNatGateways(region string) error {
 			name := fmt.Sprint(item["Name"])
 			id := fmt.Sprint(item["NatGatewayId"])
 			skip := true
-			if !sweepAll() {
+			if !sweep.SweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 						skip = false
 						break
-					}
-				}
-				// If a nat gateway name is not set successfully, it should be fetched by vpc name and deleted.
-				if skip {
-					if need, err := service.needSweepVpc(fmt.Sprint(item["VpcId"]), ""); err == nil {
-						skip = !need
 					}
 				}
 				if skip {
@@ -85,7 +83,7 @@ func testSweepNatGateways(region string) error {
 			}
 			natGatewayIds = append(natGatewayIds, id)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -98,11 +96,11 @@ func testSweepNatGateways(region string) error {
 			"NatGatewayId": id,
 			"RegionId":     client.RegionId,
 		}
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			_, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"DependencyViolation.BandwidthPackages"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -120,22 +118,22 @@ func testSweepNatGateways(region string) error {
 func TestAccAliCloudNatGateway_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -147,10 +145,10 @@ func TestAccAliCloudNatGateway_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":           CHECKSET,
+						"vpc_id":           acctest.CHECKSET,
 						"nat_gateway_name": name,
 						"nat_type":         "Enhanced",
-						"vswitch_id":       CHECKSET,
+						"vswitch_id":       acctest.CHECKSET,
 						"eip_bind_mode":    "MULTI_BINDED",
 					}),
 				),
@@ -191,7 +189,7 @@ func TestAccAliCloudNatGateway_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"nat_type":   "Enhanced",
-						"vswitch_id": CHECKSET,
+						"vswitch_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -286,22 +284,22 @@ func TestAccAliCloudNatGateway_basic(t *testing.T) {
 func TestAccAliCloudNatGateway_NetworkType(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -321,12 +319,12 @@ func TestAccAliCloudNatGateway_NetworkType(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
 						"nat_gateway_name":     name,
 						"nat_type":             "Enhanced",
 						"network_type":         "intranet",
 						"internet_charge_type": "PayByLcu",
-						"vswitch_id":           CHECKSET,
+						"vswitch_id":           acctest.CHECKSET,
 						"private_link_enabled": "true",
 						"access_mode.#":        "1",
 					}),
@@ -345,22 +343,22 @@ func TestAccAliCloudNatGateway_NetworkType(t *testing.T) {
 func TestAccAliCloudNatGateway_AvailabilityMode(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				// availability_mode is set to CrossAZ (cross-zone DR), which is also the
@@ -376,10 +374,10 @@ func TestAccAliCloudNatGateway_AvailabilityMode(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":            CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
 						"nat_gateway_name":  name,
 						"nat_type":          "Enhanced",
-						"vswitch_id":        CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
 						"availability_mode": "CrossAZ",
 						"force":             "true",
 					}),
@@ -412,21 +410,21 @@ func TestAccAliCloudNatGateway_AvailabilityModeSingleAZ(t *testing.T) {
 		t.Skipf("Skipping: set ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1 to run single-zone NAT on an entitled account")
 	}
 	// Override the default credential env so every code path that reads
-	// ALICLOUD_ACCESS_KEY (testAccPreCheck, SDK client init) uses the
+	// ALICLOUD_ACCESS_KEY (acctest.PreCheck, SDK client init) uses the
 	// single-zone-NAT-entitled account.
 	os.Setenv("ALICLOUD_ACCESS_KEY", ak1)
 	os.Setenv("ALICLOUD_SECRET_KEY", sk1)
 
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
 	// Explicit provider credentials so the default ALICLOUD_ACCESS_KEY cannot
 	// override the single-zone-NAT-entitled account pinned by ALICLOUD_ACCESS_KEY_1.
 	singleZoneNatDependence := func(n string) string {
@@ -439,14 +437,14 @@ func TestAccAliCloudNatGateway_AvailabilityModeSingleAZ(t *testing.T) {
 %s
 `, ak1, sk1, AliCloudNatGatewayBasicDependence0(n))
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, singleZoneNatDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, singleZoneNatDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -459,10 +457,10 @@ func TestAccAliCloudNatGateway_AvailabilityModeSingleAZ(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":            CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
 						"nat_gateway_name":  name,
 						"nat_type":          "Enhanced",
-						"vswitch_id":        CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
 						"availability_mode": "SingleAZ",
 						"force":             "true",
 					}),
@@ -481,22 +479,22 @@ func TestAccAliCloudNatGateway_AvailabilityModeSingleAZ(t *testing.T) {
 func TestAccAliCloudNatGateway_PayByLcu(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -509,11 +507,11 @@ func TestAccAliCloudNatGateway_PayByLcu(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
 						"nat_gateway_name":     name,
 						"internet_charge_type": "PayByLcu",
 						"nat_type":             "Enhanced",
-						"vswitch_id":           CHECKSET,
+						"vswitch_id":           acctest.CHECKSET,
 						"icmp_reply_enabled":   "false",
 					}),
 				),
@@ -607,23 +605,23 @@ func TestAccAliCloudNatGateway_basic1(t *testing.T) {
 	t.Skipf("The PrePaid Nat Gateway has not supported any more.")
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap2)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap2)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithTime(t, []int{1})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -640,13 +638,13 @@ func TestAccAliCloudNatGateway_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
 						"name":                 name,
 						"nat_type":             "Enhanced",
-						"vswitch_id":           CHECKSET,
+						"vswitch_id":           acctest.CHECKSET,
 						"description":          name,
 						"network_type":         "internet",
-						"payment_type":         CHECKSET,
+						"payment_type":         acctest.CHECKSET,
 						"internet_charge_type": "PayBySpec",
 						"specification":        "Middle",
 					}),
@@ -676,23 +674,23 @@ func TestAccAliCloudNatGateway_basic2(t *testing.T) {
 	t.Skipf("The PrePaid Nat Gateway has not supported any more.")
 	var v map[string]interface{}
 	resourceId := "alicloud_nat_gateway.default"
-	ra := resourceAttrInit(resourceId, AliCloudNatGatewayMap2)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudNatGatewayMap2)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return natgateway.NewVpcService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeNatGateway")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%snatgateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudNatGatewayBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snatgateway%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudNatGatewayBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
-			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithTime(t, []int{1})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -709,13 +707,13 @@ func TestAccAliCloudNatGateway_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
 						"name":                 name,
 						"nat_type":             "Enhanced",
-						"vswitch_id":           CHECKSET,
+						"vswitch_id":           acctest.CHECKSET,
 						"description":          name,
 						"network_type":         "internet",
-						"instance_charge_type": CHECKSET,
+						"instance_charge_type": acctest.CHECKSET,
 						"internet_charge_type": "PayBySpec",
 						"specification":        "Middle",
 					}),
@@ -733,14 +731,14 @@ func TestAccAliCloudNatGateway_basic2(t *testing.T) {
 
 var AliCloudNatGatewayMap0 = map[string]string{
 	"description":          "",
-	"dry_run":              NOSET,
-	"force":                NOSET,
-	"forward_table_ids":    CHECKSET,
+	"dry_run":              acctest.NOSET,
+	"force":                acctest.NOSET,
+	"forward_table_ids":    acctest.CHECKSET,
 	"internet_charge_type": "PayByLcu",
 	"nat_type":             "Normal",
 	"payment_type":         "PayAsYouGo",
-	"period":               NOSET,
-	"snat_table_ids":       CHECKSET,
+	"period":               acctest.NOSET,
+	"snat_table_ids":       acctest.CHECKSET,
 	"specification":        "",
 	"status":               "Available",
 	"tags.%":               "0",
@@ -774,26 +772,26 @@ func AliCloudNatGatewayBasicDependence0(name string) string {
 
 var AliCloudNatGatewayMap1 = map[string]string{
 	"description":         "",
-	"dry_run":             NOSET,
-	"force":               NOSET,
-	"forward_table_ids":   CHECKSET,
+	"dry_run":             acctest.NOSET,
+	"force":               acctest.NOSET,
+	"forward_table_ids":   acctest.CHECKSET,
 	"nat_type":            "Enhanced",
 	"payment_type":        "PayAsYouGo",
-	"period":              NOSET,
-	"snat_table_ids":      CHECKSET,
+	"period":              acctest.NOSET,
+	"snat_table_ids":      acctest.CHECKSET,
 	"status":              "Available",
 	"tags.%":              "0",
 	"deletion_protection": "false",
 }
 
 var AliCloudNatGatewayMap2 = map[string]string{
-	"description":         CHECKSET,
-	"dry_run":             NOSET,
-	"force":               NOSET,
-	"forward_table_ids":   CHECKSET,
-	"nat_type":            CHECKSET,
-	"payment_type":        CHECKSET,
-	"snat_table_ids":      CHECKSET,
+	"description":         acctest.CHECKSET,
+	"dry_run":             acctest.NOSET,
+	"force":               acctest.NOSET,
+	"forward_table_ids":   acctest.CHECKSET,
+	"nat_type":            acctest.CHECKSET,
+	"payment_type":        acctest.CHECKSET,
+	"snat_table_ids":      acctest.CHECKSET,
 	"status":              "Available",
 	"tags.%":              "0",
 	"vswitch_id":          "",
