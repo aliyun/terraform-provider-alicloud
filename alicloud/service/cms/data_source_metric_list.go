@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
@@ -30,13 +29,6 @@ const (
 	metricListRetryTimeout  = 5 * time.Minute
 )
 
-// metricListClient is the request primitive of the data source. The data
-// source itself owns paging, state and output_file handling; tests inject a
-// fake through Configure to count requests without reaching the cloud.
-type metricListClient interface {
-	RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error)
-}
-
 var (
 	_ datasource.DataSource              = (*metricListDataSource)(nil)
 	_ datasource.DataSourceWithConfigure = (*metricListDataSource)(nil)
@@ -48,7 +40,6 @@ func NewMetricListDataSource() datasource.DataSource {
 
 type metricListDataSource struct {
 	fwadapt.DataSourceBase
-	client metricListClient
 }
 
 type metricListModel struct {
@@ -151,25 +142,6 @@ func (d *metricListDataSource) Schema(ctx context.Context, req datasource.Schema
 	}
 }
 
-func (d *metricListDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*connectivity.AliyunClient); ok {
-		d.DataSourceBase.Configure(ctx, datasource.ConfigureRequest{ProviderData: client}, resp)
-		return
-	}
-	if api, ok := req.ProviderData.(metricListClient); ok {
-		d.client = api
-		return
-	}
-	d.DataSourceBase.Configure(ctx, req, resp)
-}
-
-func (d *metricListDataSource) metricListClient() metricListClient {
-	if d.client != nil {
-		return d.client
-	}
-	return d.Client()
-}
-
 func (d *metricListDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state metricListModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
@@ -177,19 +149,10 @@ func (d *metricListDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	api := d.metricListClient()
-	if api == nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Reading %s", metricListTypeName),
-			"The provider client was not injected into the data source. Please report this issue to the provider developers.",
-		)
-		return
-	}
-
 	request := map[string]interface{}{
 		"MetricName": state.MetricName.ValueString(),
 		"Namespace":  state.MetricNamespace.ValueString(),
-		"Length":     int(metricListDefaultLength),
+		"Length":     metricListDefaultLength,
 	}
 	setMetricListRequestString(request, "Dimensions", state.Dimensions)
 	setMetricListRequestString(request, "StartTime", state.StartTime)
@@ -210,7 +173,7 @@ func (d *metricListDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	for {
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err := retry.Retry(metricListRetryTimeout, func() *retry.RetryError {
-			callResponse, callErr = api.RpcPost(metricListProduct, metricListAPIVersion, metricListAction, nil, request, false)
+			callResponse, callErr = d.Client().RpcPost(metricListProduct, metricListAPIVersion, metricListAction, nil, request, false)
 			if callErr != nil {
 				// Only transient failures are retried: timeouts, throttling,
 				// 5xx and InternalError. A 400/403/404 (including the 10002
