@@ -1,4 +1,4 @@
-package alicloud
+package privatelink
 
 import (
 	"fmt"
@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudPrivateLinkVpcEndpointZone() *schema.Resource {
+func ResourceVpcEndpointZone() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudPrivateLinkVpcEndpointZoneCreate,
 		Read:   resourceAliCloudPrivateLinkVpcEndpointZoneRead,
@@ -77,7 +80,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 	request["EndpointId"] = d.Get("endpoint_id")
 	request["ZoneId"] = d.Get("zone_id")
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("eni_ip"); ok {
 		request["ip"] = v
@@ -87,18 +90,18 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 		request["DryRun"] = v
 	}
 	if request["ZoneId"] == "" {
-		vpcService := VpcService{client}
+		vpcService := NewService(client)
 		vsw, err := vpcService.DescribeVswitch(request["VSwitchId"].(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["ZoneId"] = vsw["ZoneId"]
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -106,18 +109,18 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zone", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zone", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["EndpointId"], request["ZoneId"]))
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Wait", "Connected"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Wait", "Connected"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudPrivateLinkVpcEndpointZoneRead(d, meta)
@@ -129,12 +132,12 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneRead(d *schema.ResourceData, meta
 
 	objectRaw, err := privateLinkServiceV2.DescribePrivateLinkVpcEndpointZone(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_privatelink_vpc_endpoint_zone DescribePrivateLinkVpcEndpointZone Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["EniIp"] != nil {
@@ -177,15 +180,15 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 	request["EndpointId"] = parts[0]
 	request["ZoneId"] = parts[1]
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Privatelink", "2020-04-15", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
 			// EndpointAssociatedRouteTargetGroup is retryable on destroy: a
@@ -195,7 +198,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 			// association clearance is eventually consistent. Retry until the
 			// association clears, otherwise the dangling association makes the
 			// zone destroy fail non-deterministically.
-			if IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied", "EndpointAssociatedRouteTargetGroup"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"EndpointLocked", "ConcurrentCallNotSupported", "EndpointConnectionOperationDenied", "EndpointOperationDenied", "EndpointAssociatedRouteTargetGroup"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -203,19 +206,19 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointZoneNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"EndpointZoneNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	privateLinkServiceV2 := PrivateLinkServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneId", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
