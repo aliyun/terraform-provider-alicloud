@@ -610,10 +610,6 @@ func Provider() *schema.Provider {
 			"alicloud_edas_clusters":      dataSourceAlicloudEdasClusters(),
 			"alicloud_edas_namespaces":    dataSourceAlicloudEdasNamespaces(),
 
-			// eflo
-			"alicloud_eflo_vpds":    dataSourceAlicloudEfloVpds(),
-			"alicloud_eflo_subnets": dataSourceAlicloudEfloSubnets(),
-
 			// ehpc
 			"alicloud_ehpc_users":         dataSourceAliCloudEhpcUsers(),
 			"alicloud_ehpc_job_templates": dataSourceAlicloudEhpcJobTemplates(),
@@ -1758,22 +1754,6 @@ func Provider() *schema.Provider {
 			"alicloud_edas_k8s_application":             resourceAlicloudEdasK8sApplication(),
 			"alicloud_edas_k8s_slb_attachment":          resourceAlicloudEdasK8sSlbAttachment(),
 			"alicloud_edas_namespace":                   resourceAlicloudEdasNamespace(),
-
-			// eflo
-			"alicloud_eflo_hyper_node":               resourceAliCloudEfloHyperNode(),
-			"alicloud_eflo_vpd_grant_rule":           resourceAliCloudEfloVpdGrantRule(),
-			"alicloud_eflo_er":                       resourceAliCloudEfloEr(),
-			"alicloud_eflo_node_group_attachment":    resourceAliCloudEfloNodeGroupAttachment(),
-			"alicloud_eflo_vsc":                      resourceAliCloudEfloVsc(),
-			"alicloud_eflo_experiment_plan":          resourceAliCloudEfloExperimentPlan(),
-			"alicloud_eflo_resource":                 resourceAliCloudEfloResource(),
-			"alicloud_eflo_experiment_plan_template": resourceAliCloudEfloExperimentPlanTemplate(),
-			"alicloud_eflo_invocation":               resourceAliCloudEfloInvocation(),
-			"alicloud_eflo_cluster":                  resourceAliCloudEfloCluster(),
-			"alicloud_eflo_node_group":               resourceAliCloudEfloNodeGroup(),
-			"alicloud_eflo_node":                     resourceAliCloudEfloNode(),
-			"alicloud_eflo_vpd":                      resourceAliCloudEfloVpd(),
-			"alicloud_eflo_subnet":                   resourceAlicloudEfloSubnet(),
 
 			// ehpc
 			"alicloud_ehpc_user":         resourceAliCloudEhpcUser(),

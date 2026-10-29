@@ -1,0 +1,136 @@
+package eflo_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eflo"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Case 1
+func TestAccAliCloudEfloSubnet_basic2581(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EfloSupportRegions)
+	resourceId := "alicloud_eflo_subnet.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEfloSubnetMap2581)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eflo.NewEfloService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEfloSubnet")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccEfloSubnet%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEfloSubnetBasicDependence2581)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"subnet_name": "${var.name}",
+					"zone_id":     "${data.alicloud_zones.default.zones.0.id}",
+					"cidr":        "10.0.0.0/16",
+					"vpd_id":      "${alicloud_eflo_vpd.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"subnet_name": name,
+						"zone_id":     acctest.CHECKSET,
+						"cidr":        "10.0.0.0/16",
+						"vpd_id":      acctest.CHECKSET,
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"subnet_name": "${var.name}_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"subnet_name": name + "_update",
+					}),
+				),
+			}, {
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEfloSubnet_basic2582(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EfloSupportRegions)
+	resourceId := "alicloud_eflo_subnet.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEfloSubnetMap2581)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eflo.NewEfloService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEfloSubnet")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccEfloSubnet%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEfloSubnetBasicDependence2581)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"subnet_name": "${var.name}",
+					"zone_id":     "${data.alicloud_zones.default.zones.0.id}",
+					"cidr":        "10.0.0.0/16",
+					"type":        "OOB",
+					"vpd_id":      "${alicloud_eflo_vpd.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"subnet_name": name,
+						"zone_id":     acctest.CHECKSET,
+						"cidr":        "10.0.0.0/16",
+						"type":        "OOB",
+						"vpd_id":      acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudEfloSubnetMap2581 = map[string]string{}
+
+func AlicloudEfloSubnetBasicDependence2581(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_eflo_vpd" "default" {
+  cidr      = "10.0.0.0/8"
+  vpd_name  = var.name
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+}
+
+`, name)
+}
