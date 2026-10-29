@@ -761,15 +761,6 @@ func Provider() *schema.Provider {
 			"alicloud_key_pairs": dataSourceAliCloudEcsKeyPairs(),
 
 			// kms
-			"alicloud_kms_instances":       dataSourceAliCloudKmsInstances(),
-			"alicloud_kms_keys":            dataSourceAlicloudKmsKeys(),
-			"alicloud_kms_ciphertext":      dataSourceAlicloudKmsCiphertext(),
-			"alicloud_kms_plaintext":       dataSourceAlicloudKmsPlaintext(),
-			"alicloud_kms_aliases":         dataSourceAlicloudKmsAliases(),
-			"alicloud_kms_service":         dataSourceAlicloudKmsService(),
-			"alicloud_kms_key_versions":    dataSourceAlicloudKmsKeyVersions(),
-			"alicloud_kms_secrets":         dataSourceAlicloudKmsSecrets(),
-			"alicloud_kms_secret_versions": dataSourceAlicloudKmsSecretVersions(),
 
 			// kvstore
 			"alicloud_kvstore_instances":        dataSourceAlicloudKvstoreInstances(),
@@ -1954,17 +1945,6 @@ func Provider() *schema.Provider {
 			"alicloud_key_pair_attachment": resourceAliCloudEcsKeyPairAttachment(),
 
 			// kms
-			"alicloud_kms_value_added_service":      resourceAliCloudKmsValueAddedService(),
-			"alicloud_kms_application_access_point": resourceAliCloudKmsApplicationAccessPoint(),
-			"alicloud_kms_client_key":               resourceAliCloudKmsClientKey(),
-			"alicloud_kms_policy":                   resourceAliCloudKmsPolicy(),
-			"alicloud_kms_network_rule":             resourceAliCloudKmsNetworkRule(),
-			"alicloud_kms_instance":                 resourceAliCloudKmsInstance(),
-			"alicloud_kms_key":                      resourceAliCloudKmsKey(),
-			"alicloud_kms_ciphertext":               resourceAlicloudKmsCiphertext(),
-			"alicloud_kms_secret":                   resourceAliCloudKmsSecret(),
-			"alicloud_kms_alias":                    resourceAlicloudKmsAlias(),
-			"alicloud_kms_key_version":              resourceAlicloudKmsKeyVersion(),
 
 			// kvstore
 			"alicloud_kvstore_instance":         resourceAliCloudKvstoreInstance(),
