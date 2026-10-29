@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func init() {
@@ -185,7 +186,7 @@ func TestAccAliCloudPolarDbParameterGroup_basic11763(t *testing.T) {
 	}, "DescribePolarDbParameterGroup")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tfacctest.RandIntRange(1, 999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacc%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPolarDbParameterGroupBasicDependence11763)
 	resource.Test(t, resource.TestCase{
@@ -252,3 +253,168 @@ variable "name" {
 }
 
 // Test PolarDb ParameterGroup. <<< Resource test cases, automatically generated.
+
+// checkPolarDbParameterGroupInResourceGroup proves that the parameter template
+// really landed in the requested resource group. Read never returns
+// resource_group_id, so the value in state is only an echo of the
+// configuration; listing the resource group through the ResourceGroupId
+// filter of DescribeParameterGroups is the decisive check.
+func checkPolarDbParameterGroupInResourceGroup(resourceId, resourceGroupResourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		rg, ok := s.RootModule().Resources[resourceGroupResourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceGroupResourceId)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		action := "DescribeParameterGroups"
+		request := map[string]interface{}{
+			"RegionId":        client.RegionId,
+			"ResourceGroupId": rg.Primary.ID,
+		}
+		var response map[string]interface{}
+		var err error
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("polardb", "2017-08-01", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_polardb_parameter_group", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.ParameterGroups", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ParameterGroups", response)
+		}
+		for _, v := range resp.([]interface{}) {
+			item := v.(map[string]interface{})
+			if fmt.Sprint(item["ParameterGroupId"]) == rs.Primary.ID {
+				return nil
+			}
+		}
+		return fmt.Errorf("parameter group %s is not returned when listing resource group %s, it was probably created in the default resource group", rs.Primary.ID, rg.Primary.ID)
+	}
+}
+
+func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
+	var v map[string]interface{}
+	var firstParameterGroupId string
+	resourceId := "alicloud_polardb_parameter_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPolarDbParameterGroupResourceGroupIdMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribePolarDbParameterGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPolarDbParameterGroupResourceGroupIdDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_version":           "8.0",
+					"parameter_group_name": name,
+					"db_type":              "MySQL",
+					"parameters": []map[string]interface{}{
+						{
+							"param_name":  "wait_timeout",
+							"param_value": "86400",
+						},
+					},
+					"description": "tf_testAcc",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_version":           "8.0",
+						"parameter_group_name": name,
+						"db_type":              "MySQL",
+						"parameters.#":         "1",
+						"description":          "tf_testAcc",
+					}),
+					func(s *terraform.State) error {
+						firstParameterGroupId = s.RootModule().Resources[resourceId].Primary.ID
+						if firstParameterGroupId == "" {
+							return fmt.Errorf("parameter group ID is empty after creation")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_version":           "8.0",
+					"parameter_group_name": name,
+					"db_type":              "MySQL",
+					"parameters": []map[string]interface{}{
+						{
+							"param_name":  "wait_timeout",
+							"param_value": "86400",
+						},
+					},
+					"description":       "tf_testAcc",
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_version":           "8.0",
+						"parameter_group_name": name,
+						"db_type":              "MySQL",
+						"parameters.#":         "1",
+						"description":          "tf_testAcc",
+						"resource_group_id":    CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default", "id"),
+					checkPolarDbParameterGroupInResourceGroup(resourceId, "alicloud_resource_manager_resource_group.default"),
+					func(s *terraform.State) error {
+						secondParameterGroupId := s.RootModule().Resources[resourceId].Primary.ID
+						if secondParameterGroupId == firstParameterGroupId {
+							return fmt.Errorf("adding resource_group_id should have replaced the parameter group, but the ID stayed %q", secondParameterGroupId)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+		},
+	})
+}
+
+var AlicloudPolarDbParameterGroupResourceGroupIdMap = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudPolarDbParameterGroupResourceGroupIdDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "default" {
+  resource_group_name = replace(var.name, "_", "-")
+  display_name        = var.name
+}
+`, name)
+}
