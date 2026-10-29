@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Amqp Virtual Hosts of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.126.0+.
+-> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
@@ -45,12 +45,12 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Virtual Host name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Virtual Host names.
 * `hosts` - A list of Amqp Virtual Hosts. Each element contains the following attributes:
-	* `id` - The ID of the Virtual Host.
-	* `instance_id` - InstanceId.
-	* `virtual_host_name` - VirtualHostName.
+  * `id` - The ID of the Virtual Host.
+  * `instance_id` - InstanceId.
+  * `virtual_host_name` - VirtualHostName.
