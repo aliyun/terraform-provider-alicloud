@@ -1,4 +1,4 @@
-package alicloud
+package market
 
 import (
 	"regexp"
@@ -8,13 +8,16 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudProducts() *schema.Resource {
+func DataSourceProducts() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudProductsRead,
+		Read: dataSourceProductsRead,
 
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
@@ -139,7 +142,7 @@ func dataSourceAlicloudProducts() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceProductsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := market.CreateDescribeProductsRequest()
 	request.RegionId = client.RegionId
@@ -184,7 +187,7 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 	suggestedPrice, suggestedPriceOk := d.GetOkExists("suggested_price")
 
 	request.Filter = &productsFilter
-	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageSize = requests.NewInteger(helper.PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	var allProduct []market.ProductItem
 	for {
@@ -192,9 +195,9 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 			return marketClient.DescribeProducts(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_market_products", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_market_products", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*market.DescribeProductsResponse)
 
 		if len(response.ProductItems.ProductItem) < 1 {
@@ -227,13 +230,13 @@ func dataSourceAlicloudProductsRead(d *schema.ResourceData, meta interface{}) er
 			allProduct = append(allProduct, item)
 		}
 
-		if len(response.ProductItems.ProductItem) < PageSizeLarge {
+		if len(response.ProductItems.ProductItem) < helper.PageSizeLarge {
 			break
 		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		page, err := helper.GetNextpageNumber(request.PageNumber)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.PageNumber = page
 	}
@@ -267,7 +270,7 @@ func productsDescriptionAttributes(d *schema.ResourceData, allProduct []market.P
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("products", s); err != nil {
 		return err
 	}
@@ -277,7 +280,7 @@ func productsDescriptionAttributes(d *schema.ResourceData, allProduct []market.P
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

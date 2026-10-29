@@ -1,4 +1,4 @@
-package alicloud
+package market
 
 import (
 	"encoding/json"
@@ -7,15 +7,18 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudMarketOrder() *schema.Resource {
+func ResourceOrder() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMarketOrderCreate,
-		Read:   resourceAlicloudMarketOrderRead,
-		Delete: resourceAlicloudMarketOrderDelete,
+		Create: resourceOrderCreate,
+		Read:   resourceOrderRead,
+		Delete: resourceOrderDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -74,41 +77,41 @@ func resourceAlicloudMarketOrder() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMarketOrderCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceOrderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request, err := buildAliyunMarketOrderArgs(d, meta)
+	request, err := buildOrderArgs(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request.RegionId = client.RegionId
 	raw, err := client.WithMarketClient(func(marketClient *market.Client) (interface{}, error) {
 		return marketClient.CreateOrder(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_market_order", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_market_order", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	response, _ := raw.(*market.CreateOrderResponse)
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	d.SetId(response.OrderId)
-	return resourceAlicloudMarketOrderRead(d, meta)
+	return resourceOrderRead(d, meta)
 }
 
-func resourceAlicloudMarketOrderRead(d *schema.ResourceData, meta interface{}) error {
+func resourceOrderRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	marketService := MarketService{client}
+	marketService := NewMarketService(client)
 
 	object, err := marketService.DescribeMarketOrder(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	err = d.Set("product_code", object.ProductCode)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	orderPayType := "PostPaid"
 	if strings.Split(object.ProductSkuCode, "-")[1] == "prepay" {
@@ -116,21 +119,21 @@ func resourceAlicloudMarketOrderRead(d *schema.ResourceData, meta interface{}) e
 	}
 	err = d.Set("pay_type", orderPayType)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	err = d.Set("quantity", object.Quantity)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
 }
 
-func resourceAlicloudMarketOrderDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceOrderDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func buildAliyunMarketOrderArgs(d *schema.ResourceData, meta interface{}) (*market.CreateOrderRequest, error) {
+func buildOrderArgs(d *schema.ResourceData, meta interface{}) (*market.CreateOrderRequest, error) {
 	packageVersion := d.Get("package_version").(string)
 	couponId := ""
 	if v, ok := d.GetOk("coupon_id"); ok {
@@ -157,8 +160,9 @@ func buildAliyunMarketOrderArgs(d *schema.ResourceData, meta interface{}) (*mark
     "quantity": %d,	
     "skuCode": "%s"  
 	}`, componentsJson, couponId, duration, pricingCycle, productCode, quantity, skuCode)
+
 	request := market.CreateCreateOrderRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
+	request.ClientToken = helper.BuildClientToken(request.GetActionName())
 	request.OrderType = "INSTANCE_BUY"
 	request.PaymentType = "AUTO"
 	request.Commodity = commodity

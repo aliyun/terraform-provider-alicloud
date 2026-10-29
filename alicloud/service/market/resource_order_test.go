@@ -1,32 +1,34 @@
-package alicloud
+package market_test
 
 import (
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/market"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	marketsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/market"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // lintignore: AT001
-func TestAccAlicloudMarketOrder_basic(t *testing.T) {
+func TestAccAliCloudMarketOrder_basic(t *testing.T) {
 	var v *market.DescribeOrderResponse
 	resourceId := "alicloud_market_order.default"
-	ra := resourceAttrInit(resourceId, marketOrderMap)
+	ra := acctest.ResourceAttrInit(resourceId, marketOrderMap)
 	serviceFunc := func() interface{} {
-		return &MarketService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return marketsvc.NewMarketService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", resourceMarketOrderDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, "", resourceMarketOrderDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,6 +39,7 @@ func TestAccAlicloudMarketOrder_basic(t *testing.T) {
 					"pricing_cycle":   "Month",
 					"package_version": "yuncode2713600001",
 					"coupon_id":       "",
+					"components":      map[string]interface{}{"package_version": "yuncode2713600001"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

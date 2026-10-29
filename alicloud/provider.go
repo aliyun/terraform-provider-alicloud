@@ -764,8 +764,6 @@ func Provider() *schema.Provider {
 			"alicloud_log_stores":         dataSourceAlicloudLogStores(),
 
 			// market
-			"alicloud_market_product":  dataSourceAlicloudProduct(),
-			"alicloud_market_products": dataSourceAlicloudProducts(),
 
 			// maxcompute
 			"alicloud_maxcompute_service":  dataSourceAlicloudMaxcomputeService(),
@@ -1943,7 +1941,6 @@ func Provider() *schema.Provider {
 			"alicloud_logtail_attachment": resourceAlicloudLogtailAttachment(),
 
 			// market
-			"alicloud_market_order": resourceAlicloudMarketOrder(),
 
 			// max
 			"alicloud_max_compute_tenant_role_user_attachment": resourceAliCloudMaxComputeTenantRoleUserAttachment(),

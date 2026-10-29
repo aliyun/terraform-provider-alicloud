@@ -11,11 +11,11 @@ description: |-
 
 This data source provides the Market product item details of Alibaba Cloud.
 
--> **NOTE:** Available in 1.69.0+
+-> **NOTE:** Available since v1.69.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_market_product" "default" {
   product_code = "cmapi022206"
 }
@@ -38,7 +38,7 @@ output "first_product_package_version" {
 The following arguments are supported:
 
 * `product_code` - (Required) The product code of the market product.
-* `available_region` - (Available in 1.71.1+) A available region id used to filter market place Ecs images.
+* `available_region` - (Optional, Available in 1.71.1+) A available region id used to filter market place Ecs images.
 
 ## Attributes Reference
 
