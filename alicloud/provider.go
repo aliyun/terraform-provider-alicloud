@@ -229,16 +229,6 @@ func Provider() *schema.Provider {
 			"alicloud_api_gateway_plugins":     dataSourceAlicloudApiGatewayPlugins(),
 
 			// apig
-			"alicloud_apig_secrets":            dataSourceAliCloudApigSecrets(),
-			"alicloud_apig_policies":           dataSourceAliCloudApigPolicies(),
-			"alicloud_apig_sources":            dataSourceAliCloudApigSources(),
-			"alicloud_apig_ai_model_providers": dataSourceAliCloudApigAiModelProviders(),
-			"alicloud_apig_services":           dataSourceAliCloudApigServices(),
-			"alicloud_apig_gateways":           dataSourceAliCloudApigGateways(),
-			"alicloud_apig_plugins":            dataSourceAliCloudApigPlugins(),
-			"alicloud_apig_domains":            dataSourceAliCloudApigDomains(),
-			"alicloud_apig_routes":             dataSourceAliCloudApigRoutes(),
-			"alicloud_apig_plugin_classes":     dataSourceAliCloudApigPluginClasses(),
 
 			// arms
 			"alicloud_arms_addon_releases":         dataSourceAliCloudArmsAddonReleases(),
@@ -1154,18 +1144,6 @@ func Provider() *schema.Provider {
 			"alicloud_api_gateway_plugin_attachment":       resourceAlicloudApiGatewayPluginAttachment(),
 
 			// apig
-			"alicloud_apig_secret":            resourceAliCloudApigSecret(),
-			"alicloud_apig_policy":            resourceAliCloudApigPolicy(),
-			"alicloud_apig_source":            resourceAliCloudApigSource(),
-			"alicloud_apig_ai_model_provider": resourceAliCloudApigAiModelProvider(),
-			"alicloud_apig_service":           resourceAliCloudApigService(),
-			"alicloud_apig_plugin":            resourceAliCloudApigPlugin(),
-			"alicloud_apig_plugin_class":      resourceAliCloudApigPluginClass(),
-			"alicloud_apig_domain":            resourceAliCloudApigDomain(),
-			"alicloud_apig_route":             resourceAliCloudApigRoute(),
-			"alicloud_apig_environment":       resourceAliCloudApigEnvironment(),
-			"alicloud_apig_gateway":           resourceAliCloudApigGateway(),
-			"alicloud_apig_http_api":          resourceAliCloudApigHttpApi(),
 
 			// arms
 			"alicloud_arms_synthetic_task":        resourceAliCloudArmsSyntheticTask(),
