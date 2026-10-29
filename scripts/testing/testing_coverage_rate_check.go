@@ -420,8 +420,9 @@ func getTestCaseAttr(filePath string, resourceName string,
 			}
 			if inConfig {
 				// Config block ends at Check: OR at any other well-known step
-				// sentinel (ExpectError, ExpectNonEmptyPlan, Destroy, etc.)
-				// so steps that validate expected errors close cleanly.
+				// sentinel (ExpectError, ExpectNonEmptyPlan, PlanOnly, Destroy,
+				// etc.) so steps that validate expected errors or plan-only
+				// behavior close cleanly instead of merging into the next Config.
 				isCheck := checkRegex.MatchString(text)
 				isSentinel := !isCheck && stepEndSentinelRegex.MatchString(text)
 				if isCheck || isSentinel {
@@ -749,10 +750,15 @@ var (
 	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")
 	configRegex       = regexp.MustCompile("(^[\t]*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
-	// Steps that assert an expected error instead of a Check func still need
-	// to close the Config-capture state machine. Matches lines such as
-	// `ExpectError: regexp.MustCompile(...)` or `ExpectNonEmptyPlan: true`.
-	stepEndSentinelRegex = regexp.MustCompile(`(^[\t]*)(ExpectError|ExpectNonEmptyPlan|PreventDiskCleanup|Destroy|ImportState):`)
+	// Steps that end the Config-capture state machine without a Check func.
+	// They still need to close the capture so a following Config step is
+	// segmented independently instead of being merged into the current one.
+	// Matches lines such as `ExpectError: regexp.MustCompile(...)`,
+	// `ExpectNonEmptyPlan: true` or `PlanOnly: true`. Without PlanOnly here,
+	// a PlanOnly step merges with the next Config step and triggers a false
+	// bracket/JSON syntax error (the step-boundary `},`/`{` tokens become
+	// part of the captured config body).
+	stepEndSentinelRegex = regexp.MustCompile(`(^[\t]*)(ExpectError|ExpectNonEmptyPlan|PreventDiskCleanup|Destroy|ImportState|PlanOnly):`)
 	ignoreRegex          = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
 	hasNumRegex          = regexp.MustCompile(`[0-9]+`)
 	attrRegex            = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
