@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -7,11 +7,14 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudRealtimeComputeSqlFiles() *schema.Resource {
+func DataSourceRealtimeComputeSqlFiles() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAliCloudRealtimeComputeSqlFileRead,
 		Schema: map[string]*schema.Schema{
@@ -111,24 +114,24 @@ func dataSourceAliCloudRealtimeComputeSqlFileRead(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	header = make(map[string]*string)
-	header["workspace"] = StringPointer(d.Get("workspace").(string))
+	header["workspace"] = helper.StringPointer(d.Get("workspace").(string))
 	request["namespace"] = d.Get("namespace")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutRead), func() *retry.RetryError {
 		response, err = client.RoaGet("ververica", "2022-07-18", action, query, header, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	resp, _ := jsonpath.Get("$.data[*]", response)
@@ -167,17 +170,17 @@ func dataSourceAliCloudRealtimeComputeSqlFileRead(d *schema.ResourceData, meta i
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("files", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

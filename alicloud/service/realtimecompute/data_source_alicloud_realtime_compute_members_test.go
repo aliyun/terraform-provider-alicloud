@@ -1,26 +1,27 @@
-package alicloud
+package realtimecompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudRealtimeComputeMembersDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_realtime_compute_members.default"
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceRealtimeComputeMembersConfig)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceRealtimeComputeMembersConfig)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"namespace":   "${alicloud_realtime_compute_member.default.namespace}",
 			"resource_id": "${alicloud_realtime_compute_member.default.resource_id}",
 			"ids":         []string{"${alicloud_realtime_compute_member.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"namespace":   "${alicloud_realtime_compute_member.default.namespace}",
 			"resource_id": "${alicloud_realtime_compute_member.default.resource_id}",
 			"ids":         []string{"${alicloud_realtime_compute_member.default.id}_fake"},
@@ -31,11 +32,11 @@ func TestAccAliCloudRealtimeComputeMembersDataSource_basic0(t *testing.T) {
 		return map[string]string{
 			"ids.#":                 "1",
 			"members.#":             "1",
-			"members.0.id":          CHECKSET,
-			"members.0.resource_id": CHECKSET,
-			"members.0.namespace":   CHECKSET,
-			"members.0.member":      CHECKSET,
-			"members.0.role":        CHECKSET,
+			"members.0.id":          acctest.CHECKSET,
+			"members.0.resource_id": acctest.CHECKSET,
+			"members.0.namespace":   acctest.CHECKSET,
+			"members.0.member":      acctest.CHECKSET,
+			"members.0.role":        acctest.CHECKSET,
 		}
 	}
 
@@ -46,17 +47,17 @@ func TestAccAliCloudRealtimeComputeMembersDataSource_basic0(t *testing.T) {
 		}
 	}
 
-	var aliCloudRealtimeComputeMembersInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_realtime_compute_members.default",
-		existMapFunc: existAliCloudRealtimeComputeMembersMapFunc,
-		fakeMapFunc:  fakeAliCloudRealtimeComputeMembersMapFunc,
+	var aliCloudRealtimeComputeMembersInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_realtime_compute_members.default",
+		ExistMapFunc: existAliCloudRealtimeComputeMembersMapFunc,
+		FakeMapFunc:  fakeAliCloudRealtimeComputeMembersMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
-	aliCloudRealtimeComputeMembersInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	aliCloudRealtimeComputeMembersInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
 
 func dataSourceRealtimeComputeMembersConfig(name string) string {

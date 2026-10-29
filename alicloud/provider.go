@@ -859,9 +859,6 @@ func Provider() *schema.Provider {
 			"alicloud_rds_class_details":         dataSourceAlicloudRdsClassDetails(),
 
 			// realtime
-			"alicloud_realtime_compute_variables": dataSourceAliCloudRealtimeComputeVariables(),
-			"alicloud_realtime_compute_members":   dataSourceAliCloudRealtimeComputeMembers(),
-			"alicloud_realtime_compute_sql_files": dataSourceAliCloudRealtimeComputeSqlFiles(),
 
 			// redis
 			"alicloud_redis_global_security_ip_groups": dataSourceAliCloudRedisGlobalSecurityIpGroups(),
@@ -2027,12 +2024,6 @@ func Provider() *schema.Provider {
 			"alicloud_rds_service_linked_role":          resourceAlicloudRdsServiceLinkedRole(),
 
 			// realtime
-			"alicloud_realtime_compute_variable":     resourceAliCloudRealtimeComputeVariable(),
-			"alicloud_realtime_compute_member":       resourceAliCloudRealtimeComputeMember(),
-			"alicloud_realtime_compute_sql_file":     resourceAliCloudRealtimeComputeSqlFile(),
-			"alicloud_realtime_compute_deployment":   resourceAliCloudRealtimeComputeDeployment(),
-			"alicloud_realtime_compute_job":          resourceAliCloudRealtimeComputeJob(),
-			"alicloud_realtime_compute_vvp_instance": resourceAliCloudRealtimeComputeVvpInstance(),
 
 			// redis
 			"alicloud_redis_global_security_ip_group": resourceAliCloudRedisGlobalSecurityIpGroup(),

@@ -1,33 +1,40 @@
-package alicloud
+package realtimecompute_test
+
+// local_variables is pre-existing stock carried verbatim from the flat
+// alicloud/ layout by this product migration; the move does not add or change
+// it, so convergent reorder coverage is known stock debt.
+// collection-order: bypass local_variables -- pre-existing attribute outside this change
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudRealtimeComputeJob_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeJobMap11874)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeJobMap11874)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeJobBasicDependence11874)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeJobBasicDependence11874)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -44,8 +51,8 @@ func TestAccAliCloudRealtimeComputeJob_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_queue_name": "default-queue",
-						"resource_id":         CHECKSET,
-						"namespace":           CHECKSET,
+						"resource_id":         acctest.CHECKSET,
+						"namespace":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -84,22 +91,22 @@ func TestAccAliCloudRealtimeComputeJob_basic0(t *testing.T) {
 func TestAccAliCloudRealtimeComputeJob_basic11874(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeJobMap11874)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeJobMap11874)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeJobBasicDependence11874)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeJobBasicDependence11874)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -123,9 +130,9 @@ func TestAccAliCloudRealtimeComputeJob_basic11874(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_queue_name": "default-queue",
-						"resource_id":         CHECKSET,
+						"resource_id":         acctest.CHECKSET,
 						"local_variables.#":   "1",
-						"namespace":           CHECKSET,
+						"namespace":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -162,7 +169,7 @@ func TestAccAliCloudRealtimeComputeJob_basic11874(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeJobMap11874 = map[string]string{
-	"status.#": CHECKSET,
+	"status.#": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeJobBasicDependence11874(name string) string {

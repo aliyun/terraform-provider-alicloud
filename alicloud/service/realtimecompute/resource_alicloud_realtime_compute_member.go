@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package realtimecompute. This file is generated automatically. Please do not modify it manually, thank you!
+package realtimecompute
 
 import (
 	"fmt"
@@ -10,11 +10,15 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRealtimeComputeMember() *schema.Resource {
+func ResourceRealtimeComputeMember() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudRealtimeComputeMemberCreate,
 		Read:   resourceAliCloudRealtimeComputeMemberRead,
@@ -47,7 +51,7 @@ func resourceAliCloudRealtimeComputeMember() *schema.Resource {
 			"role": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"viewer", "owner", "editor"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"viewer", "owner", "editor"}, false),
 			},
 		},
 	}
@@ -66,7 +70,7 @@ func resourceAliCloudRealtimeComputeMemberCreate(d *schema.ResourceData, meta in
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(d.Get("resource_id").(string))
+	header["workspace"] = helper.StringPointer(d.Get("resource_id").(string))
 	if v, ok := d.GetOk("member"); ok {
 		request["member"] = v
 	}
@@ -75,11 +79,11 @@ func resourceAliCloudRealtimeComputeMemberCreate(d *schema.ResourceData, meta in
 		request["role"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("ververica", "2022-07-18", action, query, header, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -87,14 +91,14 @@ func resourceAliCloudRealtimeComputeMemberCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, " alicloud_realtime_compute_member", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, " alicloud_realtime_compute_member", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	dataMemberVar, _ := jsonpath.Get("$.data.member", response)
@@ -105,16 +109,16 @@ func resourceAliCloudRealtimeComputeMemberCreate(d *schema.ResourceData, meta in
 
 func resourceAliCloudRealtimeComputeMemberRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	realtimeComputeServiceV2 := RealtimeComputeServiceV2{client}
+	realtimeComputeServiceV2 := Service{client}
 
 	objectRaw, err := realtimeComputeServiceV2.DescribeRealtimeComputeMember(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource  alicloud_realtime_compute_member DescribeRealtimecomputemember Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("role", objectRaw["role"])
@@ -144,7 +148,7 @@ func resourceAliCloudRealtimeComputeMemberUpdate(d *schema.ResourceData, meta in
 	query = make(map[string]*string)
 	header = make(map[string]*string)
 	body = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 	request["member"] = parts[2]
 
 	if d.HasChange("role") {
@@ -155,11 +159,11 @@ func resourceAliCloudRealtimeComputeMemberUpdate(d *schema.ResourceData, meta in
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("ververica", "2022-07-18", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -167,9 +171,9 @@ func resourceAliCloudRealtimeComputeMemberUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -189,13 +193,13 @@ func resourceAliCloudRealtimeComputeMemberDelete(d *schema.ResourceData, meta in
 	query := make(map[string]*string)
 	var err error
 	request = make(map[string]interface{})
-	header["workspace"] = StringPointer(parts[0])
+	header["workspace"] = helper.StringPointer(parts[0])
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("ververica", "2022-07-18", action, query, header, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -203,13 +207,13 @@ func resourceAliCloudRealtimeComputeMemberDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"990301"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"990301"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

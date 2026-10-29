@@ -1,33 +1,35 @@
-package alicloud
+package realtimecompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudRealtimeComputeVariable_basic11188(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_variable.default"
-	ra := resourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeVariable")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,8 +41,8 @@ func TestAccAliCloudRealtimeComputeVariable_basic11188(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"workspace": CHECKSET,
-						"namespace": CHECKSET,
+						"workspace": acctest.CHECKSET,
+						"namespace": acctest.CHECKSET,
 						"name":      name,
 						"kind":      "Clear",
 						"value":     "YourPassword123!",
@@ -80,22 +82,22 @@ func TestAccAliCloudRealtimeComputeVariable_basic11188(t *testing.T) {
 func TestAccAliCloudRealtimeComputeVariable_basic11188_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_variable.default"
-	ra := resourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeVariable")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -108,8 +110,8 @@ func TestAccAliCloudRealtimeComputeVariable_basic11188_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"workspace":   CHECKSET,
-						"namespace":   CHECKSET,
+						"workspace":   acctest.CHECKSET,
+						"namespace":   acctest.CHECKSET,
 						"name":        name,
 						"kind":        "Clear",
 						"value":       "YourPassword123!",
@@ -130,22 +132,22 @@ func TestAccAliCloudRealtimeComputeVariable_basic11188_twin(t *testing.T) {
 func TestAccAliCloudRealtimeComputeVariable_basic11190(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_variable.default"
-	ra := resourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeVariable")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -157,11 +159,11 @@ func TestAccAliCloudRealtimeComputeVariable_basic11190(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"workspace": CHECKSET,
-						"namespace": CHECKSET,
+						"workspace": acctest.CHECKSET,
+						"namespace": acctest.CHECKSET,
 						"name":      name,
 						"kind":      "Encrypted",
-						"value":     CHECKSET,
+						"value":     acctest.CHECKSET,
 					}),
 				),
 			},
@@ -171,7 +173,7 @@ func TestAccAliCloudRealtimeComputeVariable_basic11190(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"value": CHECKSET,
+						"value": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -198,22 +200,22 @@ func TestAccAliCloudRealtimeComputeVariable_basic11190(t *testing.T) {
 func TestAccAliCloudRealtimeComputeVariable_basic11190_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_variable.default"
-	ra := resourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudRealtimeComputeVariableMap11188)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeVariable")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudRealtimeComputeVariableBasicDependence11188)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -226,11 +228,11 @@ func TestAccAliCloudRealtimeComputeVariable_basic11190_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"workspace":   CHECKSET,
-						"namespace":   CHECKSET,
+						"workspace":   acctest.CHECKSET,
+						"namespace":   acctest.CHECKSET,
 						"name":        name,
 						"kind":        "Encrypted",
-						"value":       CHECKSET,
+						"value":       acctest.CHECKSET,
 						"description": name,
 					}),
 				),

@@ -1,12 +1,23 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package realtimecompute_test
+
+// The following TypeList attributes are pre-existing stock carried verbatim
+// from the flat alicloud/ layout by this product migration; the move does not
+// add or change them, so convergent reorder coverage is known stock debt.
+// collection-order: bypass artifact.jar_artifact.additional_dependencies -- pre-existing attribute outside this change
+// collection-order: bypass artifact.python_artifact.additional_dependencies -- pre-existing attribute outside this change
+// collection-order: bypass artifact.python_artifact.additional_python_archives -- pre-existing attribute outside this change
+// collection-order: bypass artifact.python_artifact.additional_python_libraries -- pre-existing attribute outside this change
+// collection-order: bypass artifact.sql_artifact.additional_dependencies -- pre-existing attribute outside this change
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +26,22 @@ import (
 func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11896)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11896)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11896)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11896)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,8 +133,8 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 						"engine_version":    "vvr-8.0.11-flink-1.17",
 						"local_variables.#": "1",
 						"execution_mode":    "STREAMING",
-						"namespace":         CHECKSET,
-						"resource_id":       CHECKSET,
+						"namespace":         acctest.CHECKSET,
+						"resource_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -256,7 +267,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11896(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11896 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11896(name string) string {
@@ -307,22 +318,22 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11895)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11895)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11895)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11895)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -414,8 +425,8 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 						"engine_version":    "vvr-8.0.11-flink-1.17",
 						"local_variables.#": "1",
 						"execution_mode":    "STREAMING",
-						"namespace":         CHECKSET,
-						"resource_id":       CHECKSET,
+						"namespace":         acctest.CHECKSET,
+						"resource_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -547,7 +558,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11895(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11895 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11895(name string) string {
@@ -598,22 +609,22 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 func TestAccAliCloudRealtimeComputeDeployment_basic11872(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11872)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11872)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11872)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11872)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -713,7 +724,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11872(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11872 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11872(name string) string {
@@ -764,22 +775,22 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 func TestAccAliCloudRealtimeComputeDeployment_basic11873(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11873)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11873)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11873)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11873)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -873,7 +884,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11873(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11873 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11873(name string) string {
@@ -924,22 +935,22 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 func TestAccAliCloudRealtimeComputeDeployment_basic11870(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11870)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11870)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11870)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11870)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1039,7 +1050,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11870(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11870 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11870(name string) string {
@@ -1090,22 +1101,22 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 func TestAccAliCloudRealtimeComputeDeployment_basic11871(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11871)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11871)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11871)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11871)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1232,7 +1243,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11871(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11871 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11871(name string) string {
@@ -1283,22 +1294,22 @@ resource "alicloud_realtime_compute_vvp_instance" "create_VvpInstance" {
 func TestAccAliCloudRealtimeComputeDeployment_basic11869(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_realtime_compute_deployment.default"
-	ra := resourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11869)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RealtimeComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRealtimeComputeDeploymentMap11869)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return realtimecompute.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRealtimeComputeDeployment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccrealtimecompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11869)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRealtimeComputeDeploymentBasicDependence11869)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1444,7 +1455,7 @@ func TestAccAliCloudRealtimeComputeDeployment_basic11869(t *testing.T) {
 }
 
 var AlicloudRealtimeComputeDeploymentMap11869 = map[string]string{
-	"deployment_id": CHECKSET,
+	"deployment_id": acctest.CHECKSET,
 }
 
 func AlicloudRealtimeComputeDeploymentBasicDependence11869(name string) string {

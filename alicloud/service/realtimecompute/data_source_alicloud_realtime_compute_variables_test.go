@@ -1,53 +1,54 @@
-package alicloud
+package realtimecompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudRealtimeComputeVariablesDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_realtime_compute_variables.default"
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceRealtimeComputeVariablesConfig)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceRealtimeComputeVariablesConfig)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"workspace": "${alicloud_realtime_compute_variable.default.workspace}",
 			"namespace": "${alicloud_realtime_compute_variable.default.namespace}",
 			"ids":       []string{"${alicloud_realtime_compute_variable.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"workspace": "${alicloud_realtime_compute_variable.default.workspace}",
 			"namespace": "${alicloud_realtime_compute_variable.default.namespace}",
 			"ids":       []string{"${alicloud_realtime_compute_variable.default.id}_fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"workspace":  "${alicloud_realtime_compute_variable.default.workspace}",
 			"namespace":  "${alicloud_realtime_compute_variable.default.namespace}",
 			"name_regex": "${alicloud_realtime_compute_variable.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"workspace":  "${alicloud_realtime_compute_variable.default.workspace}",
 			"namespace":  "${alicloud_realtime_compute_variable.default.namespace}",
 			"name_regex": "${alicloud_realtime_compute_variable.default.name}_fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"workspace":  "${alicloud_realtime_compute_variable.default.workspace}",
 			"namespace":  "${alicloud_realtime_compute_variable.default.namespace}",
 			"ids":        []string{"${alicloud_realtime_compute_variable.default.id}"},
 			"name_regex": "${alicloud_realtime_compute_variable.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"workspace":  "${alicloud_realtime_compute_variable.default.workspace}",
 			"namespace":  "${alicloud_realtime_compute_variable.default.namespace}",
 			"ids":        []string{"${alicloud_realtime_compute_variable.default.id}_fake"},
@@ -60,13 +61,13 @@ func TestAccAliCloudRealtimeComputeVariablesDataSource_basic0(t *testing.T) {
 			"ids.#":                   "1",
 			"names.#":                 "1",
 			"variables.#":             "1",
-			"variables.0.id":          CHECKSET,
-			"variables.0.workspace":   CHECKSET,
-			"variables.0.namespace":   CHECKSET,
-			"variables.0.name":        CHECKSET,
-			"variables.0.kind":        CHECKSET,
-			"variables.0.value":       CHECKSET,
-			"variables.0.description": CHECKSET,
+			"variables.0.id":          acctest.CHECKSET,
+			"variables.0.workspace":   acctest.CHECKSET,
+			"variables.0.namespace":   acctest.CHECKSET,
+			"variables.0.name":        acctest.CHECKSET,
+			"variables.0.kind":        acctest.CHECKSET,
+			"variables.0.value":       acctest.CHECKSET,
+			"variables.0.description": acctest.CHECKSET,
 		}
 	}
 
@@ -78,17 +79,17 @@ func TestAccAliCloudRealtimeComputeVariablesDataSource_basic0(t *testing.T) {
 		}
 	}
 
-	var aliCloudRealtimeComputeVariablesInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_realtime_compute_variables.default",
-		existMapFunc: existAliCloudRealtimeComputeVariablesMapFunc,
-		fakeMapFunc:  fakeAliCloudRealtimeComputeVariablesMapFunc,
+	var aliCloudRealtimeComputeVariablesInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_realtime_compute_variables.default",
+		ExistMapFunc: existAliCloudRealtimeComputeVariablesMapFunc,
+		FakeMapFunc:  fakeAliCloudRealtimeComputeVariablesMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
-	aliCloudRealtimeComputeVariablesInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	aliCloudRealtimeComputeVariablesInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceRealtimeComputeVariablesConfig(name string) string {
