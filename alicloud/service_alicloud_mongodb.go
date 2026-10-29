@@ -805,7 +805,11 @@ func (s *MongoDBService) ResetAccountPassword(d *schema.ResourceData, password s
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			// OperationDenied.DBInstanceStatus is returned (HTTP 403) when the instance is in a
+			// transitional status (e.g. creating/changing); the password reset should wait for the
+			// instance to become ready instead of failing apply immediately. Aligns with the
+			// RDS/PolarDB pattern and the same MongoDB service retry blocks above (node add/delete).
+			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
