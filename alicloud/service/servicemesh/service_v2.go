@@ -1,4 +1,4 @@
-package alicloud
+package servicemesh
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -26,31 +30,31 @@ func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = id
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"StatusForbidden", "403", "503", "500", "ServiceMesh.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("ServiceMesh", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"StatusForbidden", "403", "503", "500", "ServiceMesh.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ServiceMesh", id), errs.NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.ServiceMesh", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ServiceMesh", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ServiceMesh", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -65,26 +69,26 @@ func (s *ServiceMeshServiceV2) DescribeDescribeKialiConfiguration(id string) (ob
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = id
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"403", "503", "500"}) {
-			return object, WrapErrorf(NotFoundErr("ServiceMesh", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"403", "503", "500"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ServiceMesh", id), errs.NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -101,23 +105,23 @@ func (s *ServiceMeshServiceV2) DescribeListTagResources(id string) (object map[s
 	query["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "servicemesh"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -133,26 +137,26 @@ func (s *ServiceMeshServiceV2) DescribeDescribeServiceMeshKubeconfig(id string) 
 	query["ServiceMeshId"] = id
 
 	request["PrivateIpAddress"] = "true"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"StatusForbidden", "403", "500"}) {
-			return object, WrapErrorf(NotFoundErr("ServiceMesh", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"StatusForbidden", "403", "500"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ServiceMesh", id), errs.NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -162,10 +166,10 @@ func (s *ServiceMeshServiceV2) ServiceMeshServiceMeshStateRefreshFunc(id string,
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeServiceMeshServiceMesh(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -173,7 +177,7 @@ func (s *ServiceMeshServiceV2) ServiceMeshServiceMeshStateRefreshFunc(id string,
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -192,10 +196,10 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -210,21 +214,21 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -243,21 +247,21 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 				count++
 			}
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("servicemesh", "2020-01-11", action, query, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}

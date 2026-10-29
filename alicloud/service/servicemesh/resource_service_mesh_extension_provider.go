@@ -1,21 +1,24 @@
-package alicloud
+package servicemesh
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudServiceMeshExtensionProvider() *schema.Resource {
+func ResourceServiceMeshExtensionProvider() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudServiceMeshExtensionProviderCreate,
-		Read:   resourceAlicloudServiceMeshExtensionProviderRead,
-		Update: resourceAlicloudServiceMeshExtensionProviderUpdate,
-		Delete: resourceAlicloudServiceMeshExtensionProviderDelete,
+		Create: resourceServiceMeshExtensionProviderCreate,
+		Read:   resourceServiceMeshExtensionProviderRead,
+		Update: resourceServiceMeshExtensionProviderUpdate,
+		Delete: resourceServiceMeshExtensionProviderDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -49,7 +52,7 @@ func resourceAlicloudServiceMeshExtensionProvider() *schema.Resource {
 	}
 }
 
-func resourceAlicloudServiceMeshExtensionProviderCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshExtensionProviderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateExtensionProvider"
@@ -61,11 +64,11 @@ func resourceAlicloudServiceMeshExtensionProviderCreate(d *schema.ResourceData, 
 	request["Name"] = d.Get("extension_provider_name")
 	request["Config"] = d.Get("config")
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -73,32 +76,32 @@ func resourceAlicloudServiceMeshExtensionProviderCreate(d *schema.ResourceData, 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_mesh_extension_provider", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_service_mesh_extension_provider", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v:%v", request["ServiceMeshId"], request["Type"], request["Name"]))
 
-	return resourceAlicloudServiceMeshExtensionProviderRead(d, meta)
+	return resourceServiceMeshExtensionProviderRead(d, meta)
 }
 
-func resourceAlicloudServiceMeshExtensionProviderRead(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshExtensionProviderRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	servicemeshService := ServicemeshService{client}
 	object, err := servicemeshService.DescribeServiceMeshExtensionProvider(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("service_mesh_id", parts[0])
@@ -109,13 +112,13 @@ func resourceAlicloudServiceMeshExtensionProviderRead(d *schema.ResourceData, me
 	return nil
 }
 
-func resourceAlicloudServiceMeshExtensionProviderUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshExtensionProviderUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	update := false
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := map[string]interface{}{
 		"ServiceMeshId": parts[0],
@@ -132,11 +135,11 @@ func resourceAlicloudServiceMeshExtensionProviderUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "UpdateExtensionProvider"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -144,26 +147,26 @@ func resourceAlicloudServiceMeshExtensionProviderUpdate(d *schema.ResourceData, 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
 
-	return resourceAlicloudServiceMeshExtensionProviderRead(d, meta)
+	return resourceServiceMeshExtensionProviderRead(d, meta)
 }
 
-func resourceAlicloudServiceMeshExtensionProviderDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshExtensionProviderDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteExtensionProvider"
 	var response map[string]interface{}
 	var err error
 
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := map[string]interface{}{
 		"ServiceMeshId": parts[0],
@@ -171,11 +174,11 @@ func resourceAlicloudServiceMeshExtensionProviderDelete(d *schema.ResourceData, 
 		"Name":          parts[2],
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -183,13 +186,13 @@ func resourceAlicloudServiceMeshExtensionProviderDelete(d *schema.ResourceData, 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

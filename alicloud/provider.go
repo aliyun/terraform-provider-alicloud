@@ -1067,9 +1067,6 @@ func Provider() *schema.Provider {
 			"alicloud_selectdb_db_instances": dataSourceAlicloudSelectDBDbInstances(),
 
 			// service
-			"alicloud_service_mesh_service_meshes":      dataSourceAlicloudServiceMeshServiceMeshes(),
-			"alicloud_service_mesh_versions":            dataSourceAlicloudServiceMeshVersions(),
-			"alicloud_service_mesh_extension_providers": dataSourceAlicloudServiceMeshExtensionProviders(),
 
 			// simple
 			"alicloud_simple_application_server_instances":      dataSourceAlicloudSimpleApplicationServerInstances(),
@@ -2448,9 +2445,6 @@ func Provider() *schema.Provider {
 			"alicloud_selectdb_db_instance": resourceAliCloudSelectDBDbInstance(),
 
 			// service
-			"alicloud_service_mesh_service_mesh":       resourceAliCloudServiceMeshServiceMesh(),
-			"alicloud_service_mesh_user_permission":    resourceAliCloudServiceMeshUserPermission(),
-			"alicloud_service_mesh_extension_provider": resourceAlicloudServiceMeshExtensionProvider(),
 
 			// simple
 			"alicloud_simple_application_server_disk":          resourceAliCloudSimpleApplicationServerDisk(),

@@ -1,7 +1,6 @@
-package alicloud
+package servicemesh
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -11,177 +10,15 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudServiceMeshUserPermission_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_service_mesh_user_permission.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshUserPermissionMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeUserPermissions")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshUserPermissionBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"sub_account_user_id": "${alicloud_ram_user.default.id}",
-					"permissions": []map[string]interface{}{
-						{
-							"role_name":       "istio-ops",
-							"service_mesh_id": "${alicloud_service_mesh_service_mesh.default1.id}",
-							"role_type":       "custom",
-							"is_custom":       "true",
-						},
-					},
-				}),
-
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"permissions.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"permissions": []map[string]interface{}{
-						{
-							"role_name":       "istio-admin",
-							"service_mesh_id": "${alicloud_service_mesh_service_mesh.default1.id}",
-							"role_type":       "custom",
-							"is_custom":       "true",
-							"is_ram_role":     "false",
-						},
-					},
-				}),
-
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"permissions.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"permissions": []map[string]interface{}{
-						{
-							"role_name":       "istio-readonly",
-							"service_mesh_id": "${alicloud_service_mesh_service_mesh.default2.id}",
-							"role_type":       "custom",
-							"is_custom":       "true",
-							"is_ram_role":     "false",
-						},
-					},
-				}),
-
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"permissions.#": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"permissions.role_type", "permissions.is_custom"},
-			},
-		},
-	})
-}
-
-var AlicloudServiceMeshUserPermissionMap0 = map[string]string{}
-
-func AlicloudServiceMeshUserPermissionBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-variable "service_mesh_name"{
-  default = "%s"
-}
-data "alicloud_service_mesh_versions" "default" {
-	edition = "Default"
-}
-data "alicloud_zones" "default" {
-	available_resource_creation = "VSwitch"
-}
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-
-resource "alicloud_vpc" "default" {
-	count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-}
-
-resource "alicloud_vswitch" "default" {
-	count      = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	vpc_id     = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-	cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-	zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_ram_user" "default" {
-  name = var.name
-}
-
-resource "alicloud_service_mesh_service_mesh" "default1" {
-	service_mesh_name = var.name
-    edition = "Default"
-    cluster_spec = "standard"
-    version = data.alicloud_service_mesh_versions.default.versions.0.version
-	network {
-		vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-		vswitche_list = [length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id]
-	}
-	load_balancer {
-		pilot_public_eip = false
-		api_server_public_eip = false
-	}
-}
-
-resource "alicloud_service_mesh_service_mesh" "default2" {
-	service_mesh_name = "${var.name}-2"
-    edition = "Default"
-    cluster_spec = "standard"
-    version = data.alicloud_service_mesh_versions.default.versions.0.version
-	network {
-		vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-		vswitche_list = [length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id]
-	}
-	load_balancer {
-		pilot_public_eip = false
-		api_server_public_eip = false
-	}
-}
-
-
-
-`, name, fmt.Sprintf("%s%d", name, acctest.RandIntRange(1, 999)))
-}
-
 // lintignore: R001
 func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_service_mesh_user_permission"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_service_mesh_user_permission"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -207,7 +44,7 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -229,15 +66,15 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -246,12 +83,12 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 	t.Run("Create", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewServicemeshClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:    tea.String("loadEndpoint error"),
+				Data:    tea.String("loadEndpoint error"),
+				Message: tea.String("loadEndpoint error"),
 			}
 		})
-		err := resourceAliCloudServiceMeshUserPermissionCreate(dInit, rawClient)
+		err := resourceServiceMeshUserPermissionCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		ReadMockResponseDiff = map[string]interface{}{}
@@ -274,7 +111,7 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAliCloudServiceMeshUserPermissionCreate(dInit, rawClient)
+			err := resourceServiceMeshUserPermissionCreate(dInit, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":
@@ -296,12 +133,12 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 	t.Run("Update", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewServicemeshClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:    String("loadEndpoint error"),
-				Data:    String("loadEndpoint error"),
-				Message: String("loadEndpoint error"),
+				Code:    tea.String("loadEndpoint error"),
+				Data:    tea.String("loadEndpoint error"),
+				Message: tea.String("loadEndpoint error"),
 			}
 		})
-		err := resourceAliCloudServiceMeshUserPermissionUpdate(dExisted, rawClient)
+		err := resourceServiceMeshUserPermissionUpdate(dExisted, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 		attributesDiff := map[string]interface{}{
@@ -350,7 +187,7 @@ func TestUnitAlicloudServiceMeshUserPermission(t *testing.T) {
 				}
 				return ReadMockResponse, nil
 			})
-			err := resourceAliCloudServiceMeshUserPermissionUpdate(dExisted, rawClient)
+			err := resourceServiceMeshUserPermissionUpdate(dExisted, rawClient)
 			patches.Reset()
 			switch errorCode {
 			case "NonRetryableError":

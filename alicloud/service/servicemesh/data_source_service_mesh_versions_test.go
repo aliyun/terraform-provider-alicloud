@@ -1,15 +1,16 @@
-package alicloud
+package servicemesh_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudServiceMeshVersionsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 1000)
+func TestAccAliCloudServiceMeshVersionsDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1, 1000)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudServiceMeshVersionsDataSourceName(rand, map[string]string{
@@ -35,8 +36,8 @@ func TestAccAlicloudServiceMeshVersionsDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":              "1",
 			"versions.#":         "1",
-			"versions.0.id":      CHECKSET,
-			"versions.0.version": CHECKSET,
+			"versions.0.id":      acctest.CHECKSET,
+			"versions.0.version": acctest.CHECKSET,
 			"versions.0.edition": "Default",
 		}
 	}

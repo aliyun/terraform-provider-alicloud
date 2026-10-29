@@ -1,4 +1,4 @@
-package alicloud
+package servicemesh
 
 import (
 	"encoding/json"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudServiceMeshUserPermission() *schema.Resource {
+func ResourceServiceMeshUserPermission() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudServiceMeshUserPermissionCreate,
-		Read:   resourceAliCloudServiceMeshUserPermissionRead,
-		Update: resourceAliCloudServiceMeshUserPermissionUpdate,
-		Delete: resourceAliCloudServiceMeshUserPermissionDelete,
+		Create: resourceServiceMeshUserPermissionCreate,
+		Read:   resourceServiceMeshUserPermissionRead,
+		Update: resourceServiceMeshUserPermissionUpdate,
+		Delete: resourceServiceMeshUserPermissionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -71,7 +74,7 @@ func resourceAliCloudServiceMeshUserPermission() *schema.Resource {
 	}
 }
 
-func resourceAliCloudServiceMeshUserPermissionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshUserPermissionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "GrantUserPermissions"
@@ -103,14 +106,14 @@ func resourceAliCloudServiceMeshUserPermissionCreate(d *schema.ResourceData, met
 	}
 	raw, err := json.Marshal(userSlice)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["Permissions"] = string(raw)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.Grant.NotRunning"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InvalidOperation.Grant.NotRunning"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -118,20 +121,20 @@ func resourceAliCloudServiceMeshUserPermissionCreate(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_mesh_user_permission", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_service_mesh_user_permission", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(d.Get("sub_account_user_id")))
-	return resourceAliCloudServiceMeshUserPermissionRead(d, meta)
+	return resourceServiceMeshUserPermissionRead(d, meta)
 }
-func resourceAliCloudServiceMeshUserPermissionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshUserPermissionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	servicemeshService := ServicemeshService{client}
 	object, err := servicemeshService.DescribeUserPermissions(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	permissionSli := make([]interface{}, 0)
 	for _, raw := range object["Permissions"].([]interface{}) {
@@ -169,7 +172,7 @@ func resourceAliCloudServiceMeshUserPermissionRead(d *schema.ResourceData, meta 
 	d.Set("sub_account_user_id", d.Id())
 	return nil
 }
-func resourceAliCloudServiceMeshUserPermissionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshUserPermissionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	d.Partial(true)
@@ -206,16 +209,16 @@ func resourceAliCloudServiceMeshUserPermissionUpdate(d *schema.ResourceData, met
 	}
 	raw, err := json.Marshal(userSlice)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["Permissions"] = string(raw)
 	if update {
 		action := "GrantUserPermissions"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.Grant.NotRunning"}) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InvalidOperation.Grant.NotRunning"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -223,16 +226,16 @@ func resourceAliCloudServiceMeshUserPermissionUpdate(d *schema.ResourceData, met
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
 
-	return resourceAliCloudServiceMeshUserPermissionRead(d, meta)
+	return resourceServiceMeshUserPermissionRead(d, meta)
 }
-func resourceAliCloudServiceMeshUserPermissionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceServiceMeshUserPermissionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	var err error
@@ -243,16 +246,16 @@ func resourceAliCloudServiceMeshUserPermissionDelete(d *schema.ResourceData, met
 	userSlice := make([]interface{}, 0)
 	raw, err := json.Marshal(userSlice)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["Permissions"] = string(raw)
 
 	action := "GrantUserPermissions"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("servicemesh", "2020-01-11", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.Grant.NotRunning"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InvalidOperation.Grant.NotRunning"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -260,9 +263,9 @@ func resourceAliCloudServiceMeshUserPermissionDelete(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
