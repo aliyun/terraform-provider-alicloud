@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package lindorm. This file is generated automatically. Please do not modify it manually, thank you!
+package lindorm
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudLindormPublicNetwork() *schema.Resource {
+func ResourceLindormPublicNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudLindormPublicNetworkCreate,
-		Read:   resourceAliCloudLindormPublicNetworkRead,
-		Update: resourceAliCloudLindormPublicNetworkUpdate,
-		Delete: resourceAliCloudLindormPublicNetworkDelete,
+		Create: resourceLindormPublicNetworkCreate,
+		Read:   resourceLindormPublicNetworkRead,
+		Update: resourceLindormPublicNetworkUpdate,
+		Delete: resourceLindormPublicNetworkDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -29,7 +33,7 @@ func resourceAliCloudLindormPublicNetwork() *schema.Resource {
 			"enable_public_network": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 1),
+				ValidateFunc: validators.IntBetween(0, 1),
 			},
 			"engine_type": {
 				Type:     schema.TypeString,
@@ -48,7 +52,7 @@ func resourceAliCloudLindormPublicNetwork() *schema.Resource {
 	}
 }
 
-func resourceAliCloudLindormPublicNetworkCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormPublicNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -65,11 +69,11 @@ func resourceAliCloudLindormPublicNetworkCreate(d *schema.ResourceData, meta int
 
 	request["ActionType"] = d.Get("enable_public_network")
 	request["EngineType"] = d.Get("engine_type")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -77,43 +81,43 @@ func resourceAliCloudLindormPublicNetworkCreate(d *schema.ResourceData, meta int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_lindorm_public_network", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_lindorm_public_network", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["InstanceId"]))
 
-	lindormServiceV2 := LindormServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, lindormServiceV2.LindormPublicNetworkStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+	lindormService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, lindormService.LindormPublicNetworkStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudLindormPublicNetworkRead(d, meta)
+	return resourceLindormPublicNetworkRead(d, meta)
 }
 
-func resourceAliCloudLindormPublicNetworkRead(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormPublicNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	lindormServiceV2 := LindormServiceV2{client}
+	lindormService := NewService(client)
 
-	objectRaw, err := lindormServiceV2.DescribeLindormPublicNetwork(d.Id())
+	objectRaw, err := lindormService.DescribeLindormPublicNetwork(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_lindorm_public_network DescribeLindormPublicNetwork Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("status", objectRaw["InstanceStatus"])
 	d.Set("instance_id", objectRaw["InstanceId"])
 
-	objectRaw, err = lindormServiceV2.DescribePublicNetworkGetLindormInstanceEngineList(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	objectRaw, err = lindormService.DescribePublicNetworkGetLindormInstanceEngineList(d.Id())
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_id", objectRaw["InstanceId"])
@@ -123,12 +127,12 @@ func resourceAliCloudLindormPublicNetworkRead(d *schema.ResourceData, meta inter
 	return nil
 }
 
-func resourceAliCloudLindormPublicNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormPublicNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] Cannot update resource Alicloud Resource Public Network.")
 	return nil
 }
 
-func resourceAliCloudLindormPublicNetworkDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormPublicNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Public Network. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

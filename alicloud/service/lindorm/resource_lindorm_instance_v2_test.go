@@ -1,12 +1,16 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package lindorm. This file is generated automatically. Please do not modify it manually, thank you!
+package lindorm_test
+
+// collection-order: bypass white_ip_list -- pre-existing TypeList (Available since v1.266.0) outside this split-layout migration; schema unchanged by this PR; v2 ACC baseline blocked by eu-central-1 SALE_VALIDATE cloud defect
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/lindorm"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +19,22 @@ import (
 func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11876)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11876)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormInstanceV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11876)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormInstanceV2BasicDependence11876)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -61,9 +65,9 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 						"cloud_storage_size": "320",
 						"zone_id":            "cn-beijing-l",
 						"cloud_storage_type": "PerformanceStorage",
-						"arch_version":       CHECKSET,
-						"vswitch_id":         CHECKSET,
-						"vpc_id":             CHECKSET,
+						"arch_version":       acctest.CHECKSET,
+						"vswitch_id":         acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"instance_alias":     "preTest-modify-ips",
 						"payment_type":       "POSTPAY",
 					}),
@@ -114,7 +118,7 @@ func TestAccAliCloudLindormInstanceV2_basic11876(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11876 = map[string]string{
-	"region_id": CHECKSET,
+	"region_id": acctest.CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11876(name string) string {
@@ -141,22 +145,22 @@ resource "alicloud_vswitch" "default9rq7dN" {
 func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11753)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11753)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormInstanceV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11753)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormInstanceV2BasicDependence11753)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -188,15 +192,15 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":       "1",
-						"arch_version":        CHECKSET,
-						"vswitch_id":          CHECKSET,
-						"vpc_id":              CHECKSET,
+						"arch_version":        acctest.CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
+						"vpc_id":              acctest.CHECKSET,
 						"instance_alias":      "preTest",
 						"payment_type":        "PREPAY",
 						"zone_id":             "cn-beijing-l",
 						"pricing_cycle":       "Month",
 						"duration":            "1",
-						"auto_renew_duration": CHECKSET,
+						"auto_renew_duration": acctest.CHECKSET,
 						"auto_renewal":        "false",
 					}),
 				),
@@ -226,7 +230,7 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 						"engine_list.#":       "1",
 						"instance_alias":      "preTest-cx",
 						"payment_type":        "POSTPAY",
-						"deletion_protection": CHECKSET,
+						"deletion_protection": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -241,7 +245,7 @@ func TestAccAliCloudLindormInstanceV2_basic11753(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11753 = map[string]string{
-	"region_id": CHECKSET,
+	"region_id": acctest.CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11753(name string) string {
@@ -268,22 +272,22 @@ resource "alicloud_vswitch" "defaultcEoant" {
 func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11176)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11176)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormInstanceV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11176)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormInstanceV2BasicDependence11176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -323,12 +327,12 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 						"primary_zone_id":    "cn-beijing-h",
 						"zone_id":            "cn-beijing-h",
 						"cloud_storage_type": "PerformanceStorage",
-						"arch_version":       CHECKSET,
-						"vswitch_id":         CHECKSET,
-						"standby_vswitch_id": CHECKSET,
-						"primary_vswitch_id": CHECKSET,
-						"arbiter_vswitch_id": CHECKSET,
-						"vpc_id":             CHECKSET,
+						"arch_version":       acctest.CHECKSET,
+						"vswitch_id":         acctest.CHECKSET,
+						"standby_vswitch_id": acctest.CHECKSET,
+						"primary_vswitch_id": acctest.CHECKSET,
+						"arbiter_vswitch_id": acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"instance_alias":     "preTest-MZ",
 						"payment_type":       "POSTPAY",
 						"arbiter_zone_id":    "cn-beijing-j",
@@ -359,7 +363,7 @@ func TestAccAliCloudLindormInstanceV2_basic11176(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11176 = map[string]string{
-	"region_id": CHECKSET,
+	"region_id": acctest.CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11176(name string) string {
@@ -398,22 +402,22 @@ resource "alicloud_vswitch" "defaultTAbr2pJ" {
 func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11191)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11191)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormInstanceV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11191)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormInstanceV2BasicDependence11191)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -444,9 +448,9 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 						"cloud_storage_size": "320",
 						"zone_id":            "cn-beijing-l",
 						"cloud_storage_type": "PerformanceStorage",
-						"arch_version":       CHECKSET,
-						"vswitch_id":         CHECKSET,
-						"vpc_id":             CHECKSET,
+						"arch_version":       acctest.CHECKSET,
+						"vswitch_id":         acctest.CHECKSET,
+						"vpc_id":             acctest.CHECKSET,
 						"instance_alias":     "preTest-upgrade-spec",
 						"payment_type":       "POSTPAY",
 					}),
@@ -486,7 +490,7 @@ func TestAccAliCloudLindormInstanceV2_basic11191(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11191 = map[string]string{
-	"region_id": CHECKSET,
+	"region_id": acctest.CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11191(name string) string {
@@ -513,22 +517,22 @@ resource "alicloud_vswitch" "default9rq7dN" {
 func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance_v2.default"
-	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11034)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &LindormServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudLindormInstanceV2Map11034)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return lindorm.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeLindormInstanceV2")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacclindorm%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceV2BasicDependence11034)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudLindormInstanceV2BasicDependence11034)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -540,7 +544,6 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 									"node_count":          "2",
 									"node_spec":           "lindorm.g.2xlarge",
 									"resource_group_name": "chixiao-rg-test",
-									"node_disk_type":      "cloud_essd",
 									"node_disk_size":      "200",
 								},
 							},
@@ -556,9 +559,9 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_list.#":  "1",
-						"arch_version":   CHECKSET,
-						"vswitch_id":     CHECKSET,
-						"vpc_id":         CHECKSET,
+						"arch_version":   acctest.CHECKSET,
+						"vswitch_id":     acctest.CHECKSET,
+						"vpc_id":         acctest.CHECKSET,
 						"instance_alias": "preTest",
 						"payment_type":   "POSTPAY",
 						"zone_id":        "cn-beijing-l",
@@ -576,7 +579,6 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 									"node_spec":           "lindorm.g.2xlarge",
 									"resource_group_name": "chixiao-rg-test",
 									"node_disk_size":      "400",
-									"node_disk_type":      "cloud_essd",
 								},
 							},
 						},
@@ -602,6 +604,32 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 									"node_count":          "4",
 									"node_spec":           "lindorm.g.2xlarge",
 									"resource_group_name": "chixiao-rg-test",
+									"node_disk_size":      "400",
+								},
+							},
+						},
+					},
+					"instance_alias":      "preTest-cx",
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_list.#":       "1",
+						"instance_alias":      "preTest-cx",
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_list": []map[string]interface{}{
+						{
+							"engine_type": "TSDB",
+							"node_group": []map[string]interface{}{
+								{
+									"node_count":          "4",
+									"node_spec":           "lindorm.g.2xlarge",
+									"resource_group_name": "cx-rg-spec",
 									"node_disk_size":      "400",
 									"node_disk_type":      "cloud_essd",
 								},
@@ -640,7 +668,7 @@ func TestAccAliCloudLindormInstanceV2_basic11034(t *testing.T) {
 }
 
 var AlicloudLindormInstanceV2Map11034 = map[string]string{
-	"region_id": CHECKSET,
+	"region_id": acctest.CHECKSET,
 }
 
 func AlicloudLindormInstanceV2BasicDependence11034(name string) string {

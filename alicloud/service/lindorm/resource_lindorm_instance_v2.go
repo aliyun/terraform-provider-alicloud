@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package lindorm. This file is generated automatically. Please do not modify it manually, thank you!
+package lindorm
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudLindormInstanceV2() *schema.Resource {
+func ResourceLindormInstanceV2() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudLindormInstanceV2Create,
-		Read:   resourceAliCloudLindormInstanceV2Read,
-		Update: resourceAliCloudLindormInstanceV2Update,
-		Delete: resourceAliCloudLindormInstanceV2Delete,
+		Create: resourceLindormInstanceV2Create,
+		Read:   resourceLindormInstanceV2Read,
+		Update: resourceLindormInstanceV2Update,
+		Delete: resourceLindormInstanceV2Delete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -234,7 +238,7 @@ func resourceAliCloudLindormInstanceV2() *schema.Resource {
 	}
 }
 
-func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormInstanceV2Create(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -245,19 +249,19 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("duration"); ok {
 		request["Duration"] = v
 	}
 	if v, ok := d.GetOk("engine_list"); ok {
 		engineListMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["node_group"]
-			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+			for _, dataLoop1 := range convert.ConvertToInterfaceArray(localData1) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
 				dataLoop1Map := make(map[string]interface{})
 				dataLoop1Map["ResourceGroupName"] = dataLoop1Tmp["resource_group_name"]
@@ -315,11 +319,11 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 	}
 	request["VSwitchId"] = d.Get("vswitch_id")
 	request["ZoneId"] = d.Get("zone_id")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -327,35 +331,35 @@ func resourceAliCloudLindormInstanceV2Create(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_lindorm_instance_v2", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_lindorm_instance_v2", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 
-	lindormServiceV2 := LindormServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
+	lindormService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, lindormService.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudLindormInstanceV2Update(d, meta)
+	return resourceLindormInstanceV2Update(d, meta)
 }
 
-func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormInstanceV2Read(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	lindormServiceV2 := LindormServiceV2{client}
+	lindormService := NewService(client)
 
-	objectRaw, err := lindormServiceV2.DescribeLindormInstanceV2(d.Id())
+	objectRaw, err := lindormService.DescribeLindormInstanceV2(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_lindorm_instance_v2 DescribeLindormInstanceV2 Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("arbiter_vswitch_id", objectRaw["ArbiterVSwitchId"])
@@ -378,7 +382,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 	engineListRaw := objectRaw["EngineList"]
 	engineListMaps := make([]map[string]interface{}, 0)
 	if engineListRaw != nil {
-		for _, engineListChildRaw := range convertToInterfaceArray(engineListRaw) {
+		for _, engineListChildRaw := range convert.ConvertToInterfaceArray(engineListRaw) {
 			engineListMap := make(map[string]interface{})
 			engineListChildRaw := engineListChildRaw.(map[string]interface{})
 			engineListMap["engine_type"] = engineListChildRaw["Engine"]
@@ -389,7 +393,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 			connectAddressListRaw := engineListChildRaw["ConnectAddressList"]
 			connectAddressListMaps := make([]map[string]interface{}, 0)
 			if connectAddressListRaw != nil {
-				for _, connectAddressListChildRaw := range convertToInterfaceArray(connectAddressListRaw) {
+				for _, connectAddressListChildRaw := range convert.ConvertToInterfaceArray(connectAddressListRaw) {
 					connectAddressListMap := make(map[string]interface{})
 					connectAddressListChildRaw := connectAddressListChildRaw.(map[string]interface{})
 					connectAddressListMap["address"] = connectAddressListChildRaw["Address"]
@@ -403,7 +407,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 			nodeGroupRaw := engineListChildRaw["NodeGroup"]
 			nodeGroupMaps := make([]map[string]interface{}, 0)
 			if nodeGroupRaw != nil {
-				for _, nodeGroupChildRaw := range convertToInterfaceArray(nodeGroupRaw) {
+				for _, nodeGroupChildRaw := range convert.ConvertToInterfaceArray(nodeGroupRaw) {
 					nodeGroupMap := make(map[string]interface{})
 					nodeGroupChildRaw := nodeGroupChildRaw.(map[string]interface{})
 					nodeGroupMap["category"] = nodeGroupChildRaw["Category"]
@@ -431,7 +435,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 	whiteIpListRaw := objectRaw["WhiteIpList"]
 	whiteIpListMaps := make([]map[string]interface{}, 0)
 	if whiteIpListRaw != nil {
-		for _, whiteIpListChildRaw := range convertToInterfaceArray(whiteIpListRaw) {
+		for _, whiteIpListChildRaw := range convert.ConvertToInterfaceArray(whiteIpListRaw) {
 			whiteIpListMap := make(map[string]interface{})
 			whiteIpListChildRaw := whiteIpListChildRaw.(map[string]interface{})
 			whiteIpListMap["group_name"] = whiteIpListChildRaw["GroupName"]
@@ -447,7 +451,7 @@ func resourceAliCloudLindormInstanceV2Read(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormInstanceV2Update(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -471,11 +475,11 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -483,9 +487,9 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -494,18 +498,18 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("engine_list") {
 		update = true
 	}
 	if v, ok := d.GetOk("engine_list"); ok || d.HasChange("engine_list") {
 		engineListMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["node_group"]
-			for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+			for _, dataLoop1 := range convert.ConvertToInterfaceArray(localData1) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
 				dataLoop1Map := make(map[string]interface{})
 				dataLoop1Map["NodeDiskSize"] = dataLoop1Tmp["node_disk_size"]
@@ -536,11 +540,11 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"LindormErrorCode.OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"LindormErrorCode.OperationDenied.OrderProcessing"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -548,14 +552,14 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		lindormServiceV2 := LindormServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
+		lindormService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, lindormService.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -571,11 +575,11 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	request["PayType"] = d.Get("payment_type")
 	request["PricingCycle"] = d.Get("pricing_cycle")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -583,14 +587,14 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		lindormServiceV2 := LindormServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
+		lindormService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, lindormService.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -604,7 +608,7 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("white_ip_list"); ok || d.HasChange("white_ip_list") {
 		whiteIpGroupListMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["WhiteIpList"] = dataLoopTmp["ip_list"]
@@ -615,11 +619,11 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -627,17 +631,17 @@ func resourceAliCloudLindormInstanceV2Update(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudLindormInstanceV2Read(d, meta)
+	return resourceLindormInstanceV2Read(d, meta)
 }
 
-func resourceAliCloudLindormInstanceV2Delete(d *schema.ResourceData, meta interface{}) error {
+func resourceLindormInstanceV2Delete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "ReleaseLindormV2Instance"
@@ -650,11 +654,11 @@ func resourceAliCloudLindormInstanceV2Delete(d *schema.ResourceData, meta interf
 	request["RegionId"] = client.RegionId
 
 	request["Immediately"] = "true"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -662,19 +666,19 @@ func resourceAliCloudLindormInstanceV2Delete(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsDeleted"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"Instance.IsDeleted"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	lindormServiceV2 := LindormServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, lindormServiceV2.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
+	lindormService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, lindormService.LindormInstanceV2StateRefreshFunc(d.Id(), "$.InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

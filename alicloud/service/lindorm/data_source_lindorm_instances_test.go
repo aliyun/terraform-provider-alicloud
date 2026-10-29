@@ -1,70 +1,71 @@
-package alicloud
+package lindorm_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudLindormInstancesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	queryStrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+func TestAccAliCloudLindormInstancesDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	queryStrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_lindorm_instance.default.id}"]`,
 			"query_str": `"${alicloud_lindorm_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_lindorm_instance.default.id}_fake"]`,
 			"query_str": `"${alicloud_lindorm_instance.default.instance_name}_fake"`,
 		}),
 	}
-	supportEngineStrConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+	supportEngineStrConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_lindorm_instance.default.id}"]`,
 			"support_engine": `"4"`,
 		}),
-		fakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_lindorm_instance.default.id}_fake"]`,
 			"support_engine": `"4"`,
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_lindorm_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_lindorm_instance.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_lindorm_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_lindorm_instance.default.instance_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_lindorm_instance.default.id}"]`,
 			"status": `"ACTIVATION"`,
 		}),
-		fakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_lindorm_instance.default.id}"]`,
 			"status": `"CREATING"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_lindorm_instance.default.id}"]`,
 			"name_regex":     `"${alicloud_lindorm_instance.default.instance_name}"`,
 			"status":         `"ACTIVATION"`,
 			"support_engine": `"4"`,
 			"query_str":      `"${alicloud_lindorm_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudLindormInstancesDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_lindorm_instance.default.id}_fake"]`,
 			"name_regex":     `"${alicloud_lindorm_instance.default.instance_name}_fake"`,
 			"status":         `"CREATING"`,
@@ -86,12 +87,12 @@ func TestAccAlicloudLindormInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var alicloudLindormInstancesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_lindorm_instances.default",
-		existMapFunc: existAlicloudLindormInstancesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudLindormInstancesDataSourceNameMapFunc,
+	var alicloudLindormInstancesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_lindorm_instances.default",
+		ExistMapFunc: existAlicloudLindormInstancesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudLindormInstancesDataSourceNameMapFunc,
 	}
-	alicloudLindormInstancesCheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, nameRegexConf, supportEngineStrConf, queryStrConf, allConf)
+	alicloudLindormInstancesCheckInfo.DataSourceTestCheck(t, rand, idsConf, statusConf, nameRegexConf, supportEngineStrConf, queryStrConf, allConf)
 }
 func testAccCheckAlicloudLindormInstancesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

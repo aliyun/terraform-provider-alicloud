@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package lindorm. This file is generated automatically. Please do not modify it manually, thank you!
+package lindorm
 
 import (
 	"fmt"
@@ -7,17 +7,15 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type LindormServiceV2 struct {
-	client *connectivity.AliyunClient
-}
-
 // DescribeLindormPublicNetwork <<< Encapsulated get interface for Lindorm PublicNetwork.
 
-func (s *LindormServiceV2) DescribeLindormPublicNetwork(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeLindormPublicNetwork(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -28,12 +26,12 @@ func (s *LindormServiceV2) DescribeLindormPublicNetwork(id string) (object map[s
 	request["RegionId"] = client.RegionId
 	action := "GetLindormInstance"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -41,17 +39,17 @@ func (s *LindormServiceV2) DescribeLindormPublicNetwork(id string) (object map[s
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) {
-			return object, WrapErrorf(NotFoundErr("PublicNetwork", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Instance.IsNotValid"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("PublicNetwork", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
-func (s *LindormServiceV2) DescribePublicNetworkGetLindormInstanceEngineList(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribePublicNetworkGetLindormInstanceEngineList(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -62,12 +60,12 @@ func (s *LindormServiceV2) DescribePublicNetworkGetLindormInstanceEngineList(id 
 	request["RegionId"] = client.RegionId
 	action := "GetLindormInstanceEngineList"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -75,25 +73,25 @@ func (s *LindormServiceV2) DescribePublicNetworkGetLindormInstanceEngineList(id 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) {
-			return object, WrapErrorf(NotFoundErr("PublicNetwork", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Instance.IsNotValid"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("PublicNetwork", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *LindormServiceV2) LindormPublicNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) LindormPublicNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeLindormPublicNetwork(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -108,7 +106,7 @@ func (s *LindormServiceV2) LindormPublicNetworkStateRefreshFunc(id string, field
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -119,7 +117,7 @@ func (s *LindormServiceV2) LindormPublicNetworkStateRefreshFunc(id string, field
 
 // DescribeLindormInstanceV2 <<< Encapsulated get interface for Lindorm InstanceV2.
 
-func (s *LindormServiceV2) DescribeLindormInstanceV2(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeLindormInstanceV2(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -130,12 +128,12 @@ func (s *LindormServiceV2) DescribeLindormInstanceV2(id string) (object map[stri
 	request["RegionId"] = client.RegionId
 	action := "GetLindormV2InstanceDetails"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -143,29 +141,29 @@ func (s *LindormServiceV2) DescribeLindormInstanceV2(id string) (object map[stri
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.IsDeleted"}) {
-			return object, WrapErrorf(NotFoundErr("InstanceV2", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Instance.IsDeleted"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("InstanceV2", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 
-func (s *LindormServiceV2) LindormInstanceV2StateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) LindormInstanceV2StateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return s.LindormInstanceV2StateRefreshFuncWithApi(id, field, failStates, s.DescribeLindormInstanceV2)
 }
 
-func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+func (s *Service) LindormInstanceV2StateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -179,7 +177,7 @@ func (s *LindormServiceV2) LindormInstanceV2StateRefreshFuncWithApi(id string, f
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
