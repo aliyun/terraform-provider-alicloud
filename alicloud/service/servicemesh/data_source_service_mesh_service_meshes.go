@@ -1,4 +1,4 @@
-package alicloud
+package servicemesh
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
+func DataSourceServiceMeshServiceMeshes() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudServiceMeshServiceMeshesRead,
+		Read: dataSourceServiceMeshServiceMeshesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -416,7 +419,7 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceServiceMeshServiceMeshesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	serviceMeshServiceV2 := ServiceMeshServiceV2{client}
 
@@ -427,7 +430,7 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		serviceMeshNameRegex = r
 	}
@@ -444,11 +447,11 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("servicemesh", "2020-01-11", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -456,13 +459,13 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.ServiceMeshes", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ServiceMeshes", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ServiceMeshes", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -508,7 +511,7 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 		servicemeshService := ServicemeshService{client}
 		getResp, err := servicemeshService.DescribeServiceMeshServiceMesh(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		endpointsSli := make([]map[string]interface{}, 0)
 		if endpoints, ok := getResp["Endpoints"]; ok {
@@ -695,7 +698,7 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("servicemesh", "2020-01-11", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -703,9 +706,9 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err = jsonpath.Get("$.Version", response)
 		if v, ok := resp.(map[string]interface{}); ok {
@@ -718,7 +721,7 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("servicemesh", "2020-01-11", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -726,9 +729,9 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_versions", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_service_mesh_versions", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err = jsonpath.Get("$", response)
 		if v, ok := resp.(map[string]interface{}); ok {
@@ -737,7 +740,7 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 
 		response, err = serviceMeshServiceV2.DescribeDescribeServiceMeshKubeconfig(id)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err = jsonpath.Get("$", response)
 		if v, ok := resp.(map[string]interface{}); ok {
@@ -747,20 +750,20 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("meshes", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

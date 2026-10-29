@@ -1,4 +1,4 @@
-package alicloud
+package servicemesh_test
 
 import (
 	"fmt"
@@ -11,9 +11,15 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/alibabacloud-go/tea/tea"
 	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/servicemesh"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -27,7 +33,7 @@ func init() {
 }
 
 func testSweepServiceMeshServiceMesh(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -45,11 +51,11 @@ func testSweepServiceMeshServiceMesh(region string) error {
 	request := map[string]interface{}{}
 
 	var response map[string]interface{}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcGet("servicemesh", "2020-01-11", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -57,7 +63,7 @@ func testSweepServiceMeshServiceMesh(region string) error {
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
 		log.Printf("[ERROR] %s get an error: %#v", action, err)
 		return nil
@@ -98,22 +104,22 @@ func testSweepServiceMeshServiceMesh(region string) error {
 func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sservicemeshdefault%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -217,7 +223,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": CHECKSET,
+						"version": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -401,9 +407,19 @@ func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 		name_regex = "^default-NODELETING$"
 	}
 
+	resource "alicloud_vpc" "default" {
+		count = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
+	}
+
 	data "alicloud_vswitches" "default" {
-		vpc_id  = data.alicloud_vpcs.default.ids.0
-		zone_id = data.alicloud_zones.default.zones.0.id
+		vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+	}
+
+	resource "alicloud_vswitch" "default" {
+		count      = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+		vpc_id     = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+		cidr_block = cidrsubnet(length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.vpcs[0].cidr_block : alicloud_vpc.default[0].cidr_block, 8, 2)
+		zone_id    = data.alicloud_zones.default.zones.0.id
 	}
 
 	resource "alicloud_log_project" "default_1" {
@@ -417,8 +433,8 @@ func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 	}
 
 	locals {
-		vswitch_id    = data.alicloud_vswitches.default.ids.0
-		vpc_id        = data.alicloud_vpcs.default.ids.0
+		vswitch_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id
+		vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
 		log_project_1 = alicloud_log_project.default_1.name
 		log_project_2 = alicloud_log_project.default_2.name
 		version_1     = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
@@ -429,24 +445,24 @@ func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 
 func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sservicemeshstandard%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -552,7 +568,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_ids": REMOVEKEY,
+					"cluster_ids": acctest.REMOVEKEY,
 				}),
 
 				Check: resource.ComposeTestCheckFunc(
@@ -588,23 +604,23 @@ func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 
 func TestAccAliCloudServiceMeshServiceMesh_basic2(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc-servicemesh%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -706,7 +722,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_ids": REMOVEKEY,
+					"cluster_ids": acctest.REMOVEKEY,
 				}),
 
 				Check: resource.ComposeTestCheckFunc(
@@ -741,23 +757,23 @@ func TestAccAliCloudServiceMeshServiceMesh_basic2(t *testing.T) {
 }
 func TestAccAliCloudServiceMeshServiceMesh_basic3(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sservicemeshultimate%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -859,7 +875,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic3(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_ids": REMOVEKEY,
+					"cluster_ids": acctest.REMOVEKEY,
 				}),
 
 				Check: resource.ComposeTestCheckFunc(
@@ -1058,22 +1074,22 @@ func AlicloudServiceMeshServiceMeshBasicDependence2(name string) string {
 func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence3)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence3)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1390,24 +1406,24 @@ func AlicloudServiceMeshServiceMeshBasicDependence3(name string) string {
 
 func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sservicemeshstandard%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence2)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1520,7 +1536,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_ids":           REMOVEKEY,
+					"cluster_ids":           acctest.REMOVEKEY,
 					"customized_prometheus": "true",
 					"prometheus_url":        "https://out.prometheus.url",
 					"mesh_config": []map[string]interface{}{
@@ -1650,13 +1666,13 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -1672,24 +1688,24 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 
 func TestAccAliCloudServiceMeshServiceMesh_basic6(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc%sservicemeshstandard%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence6)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence6)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1767,23 +1783,23 @@ func AlicloudServiceMeshServiceMeshBasicDependence6(name string) string {
 
 func TestAccAliCloudServiceMeshServiceMesh_basic7(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc-servicemesh%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1950,7 +1966,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic7(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_ids": REMOVEKEY,
+					"cluster_ids": acctest.REMOVEKEY,
 				}),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
@@ -1971,23 +1987,23 @@ func TestAccAliCloudServiceMeshServiceMesh_basic7(t *testing.T) {
 
 func TestAccAliCloudServiceMeshServiceMesh_basic8(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeServiceMeshServiceMesh")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
 	name := fmt.Sprintf("tf-testacc-servicemesh%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2150,7 +2166,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic8(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_ids": REMOVEKEY,
+					"cluster_ids": acctest.REMOVEKEY,
 				}),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
@@ -2166,6 +2182,355 @@ func TestAccAliCloudServiceMeshServiceMesh_basic8(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force", "customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+// AlicloudServiceMeshServiceMeshClusterIdsOrderDependence provides two genuinely
+// independent ACK managed Kubernetes clusters (default + second) with two node
+// pools (default on the first cluster, second on the second cluster) so that
+// alicloud_cs_kubernetes_node_pool.default.cluster_id and
+// alicloud_cs_kubernetes_node_pool.second.cluster_id resolve to two distinct
+// clusters within the same VPC. It only declares the resources referenced by
+// the cluster_ids order coverage case.
+func AlicloudServiceMeshServiceMeshClusterIdsOrderDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_service_mesh_versions" "default" {
+		edition = "Default"
+	}
+
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name   = var.name
+		cidr_block = "10.4.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+		vswitch_name = var.name
+		cidr_block   = "10.4.0.0/24"
+		vpc_id       = alicloud_vpc.default.id
+		zone_id      = data.alicloud_zones.default.zones.3.id
+	}
+
+	resource "alicloud_cs_managed_kubernetes" "default" {
+		name_prefix          = "tf-test-asm-clusterids"
+		cluster_spec         = "ack.pro.small"
+		worker_vswitch_ids   = [alicloud_vswitch.default.id]
+		new_nat_gateway      = true
+		pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+		service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+		slb_internet_enabled = true
+	}
+
+	resource "alicloud_cs_managed_kubernetes" "second" {
+		name_prefix          = "tf-test-asm-clusterids2"
+		cluster_spec         = "ack.pro.small"
+		worker_vswitch_ids   = [alicloud_vswitch.default.id]
+		new_nat_gateway      = true
+		pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
+		service_cidr         = cidrsubnet("172.16.0.0/16", 4, 8)
+		slb_internet_enabled = true
+	}
+
+	resource "alicloud_key_pair" "default" {
+		key_pair_name = var.name
+	}
+
+	data "alicloud_instance_types" "default" {
+		availability_zone    = alicloud_vswitch.default.zone_id
+		kubernetes_node_role = "Worker"
+	}
+
+	resource "alicloud_cs_kubernetes_node_pool" "default" {
+		name                 = "desired_size"
+		cluster_id           = alicloud_cs_managed_kubernetes.default.id
+		vswitch_ids          = [alicloud_vswitch.default.id]
+		instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+		system_disk_category = "cloud_efficiency"
+		system_disk_size     = 40
+		key_name             = alicloud_key_pair.default.key_name
+		desired_size         = 2
+	}
+
+	resource "alicloud_cs_kubernetes_node_pool" "second" {
+		name                 = "desired_size"
+		cluster_id           = alicloud_cs_managed_kubernetes.second.id
+		vswitch_ids          = [alicloud_vswitch.default.id]
+		instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+		system_disk_category = "cloud_efficiency"
+		system_disk_size     = 40
+		key_name             = alicloud_key_pair.default.key_name
+		desired_size         = 2
+	}
+
+	locals {
+		vswitch_id = alicloud_vswitch.default.id
+		vpc_id     = alicloud_vpc.default.id
+		version_1  = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
+		version_2  = reverse(data.alicloud_service_mesh_versions.default.versions).1.version
+	}
+`, name)
+}
+
+// AlicloudServiceMeshServiceMeshVswitcheListOrderDependence provides two distinct
+// vSwitches (default + second) within the same VPC so that local.vswitch_id and
+// local.vswitch_id_2 resolve to two distinct vSwitches. It only declares the
+// resources referenced by the network.vswitche_list order coverage case and does
+// not create ACK clusters, keeping the fixture strictly necessary.
+func AlicloudServiceMeshServiceMeshVswitcheListOrderDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_service_mesh_versions" "default" {
+		edition = "Default"
+	}
+
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+
+	resource "alicloud_vpc" "default" {
+		vpc_name   = var.name
+		cidr_block = "10.4.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+		vswitch_name = var.name
+		cidr_block   = "10.4.0.0/24"
+		vpc_id       = alicloud_vpc.default.id
+		zone_id      = data.alicloud_zones.default.zones.3.id
+	}
+
+	resource "alicloud_vswitch" "second" {
+		vswitch_name = "${var.name}-2"
+		cidr_block   = "10.4.1.0/24"
+		vpc_id       = alicloud_vpc.default.id
+		zone_id      = data.alicloud_zones.default.zones.3.id
+	}
+
+	locals {
+		vswitch_id   = alicloud_vswitch.default.id
+		vswitch_id_2 = alicloud_vswitch.second.id
+		vpc_id       = alicloud_vpc.default.id
+		version_1    = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
+		version_2    = reverse(data.alicloud_service_mesh_versions.default.versions).1.version
+	}
+`, name)
+}
+
+// TestAccAliCloudServiceMeshServiceMesh_clusterIdsOrder establishes convergent
+// reorder coverage for the multi-member cluster_ids TypeList: an apply of the
+// original member order followed by a convergent apply with the members
+// reordered (two distinct clusters).
+func TestAccAliCloudServiceMeshServiceMesh_clusterIdsOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServiceMeshServiceMesh")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemeshclusteridsorder%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshClusterIdsOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Default",
+					"version":           "${local.version_2}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"cluster_ids": []string{
+						"${alicloud_cs_kubernetes_node_pool.default.cluster_id}",
+						"${alicloud_cs_kubernetes_node_pool.second.cluster_id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_ids": []string{
+						"${alicloud_cs_kubernetes_node_pool.second.cluster_id}",
+						"${alicloud_cs_kubernetes_node_pool.default.cluster_id}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_ids.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudServiceMeshServiceMesh_vswitcheListOrder establishes convergent
+// reorder coverage for the multi-member network.vswitche_list TypeList: an apply
+// of the original member order followed by a convergent apply with the vSwitches
+// reordered (two distinct vSwitches).
+func TestAccAliCloudServiceMeshServiceMesh_vswitcheListOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServiceMeshServiceMesh")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemeshvswitchelistorder%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshVswitcheListOrderDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Default",
+					"version":           "${local.version_2}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}", "${local.vswitch_id_2}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network.0.vswitche_list.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id_2}", "${local.vswitch_id}"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network.0.vswitche_list.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudServiceMeshServiceMesh_openIdConfigScopesOrder establishes
+// convergent reorder coverage for the multi-member
+// mesh_config.kiali.open_id_config.scopes TypeList: an apply of the original
+// member order followed by a convergent apply with the OIDC scopes reordered
+// (two distinct scopes).
+func TestAccAliCloudServiceMeshServiceMesh_openIdConfigScopesOrder(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return servicemesh.NewServicemeshService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServiceMeshServiceMesh")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemeshopenidconfigscopesorder%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Default",
+					"version":           "${local.version_2}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"open_id_config": []map[string]interface{}{
+										{
+											"scopes": []string{"openid", "profile"},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mesh_config.0.kiali.0.open_id_config.0.scopes.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"open_id_config": []map[string]interface{}{
+										{
+											"scopes": []string{"profile", "openid"},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mesh_config.0.kiali.0.open_id_config.0.scopes.#": "2",
+					}),
+				),
 			},
 		},
 	})
@@ -2205,7 +2570,7 @@ func nativeVpcASMAPI(client *connectivity.AliyunClient, region string) vpcASMAPI
 // cleanup after VPC/cluster ownership verification. Ordinary deletion is unchanged.
 func nativeVpcASMDelete(rpc vpcSweepRPC, id string) (map[string]interface{}, error) {
 	request := map[string]interface{}{"ServiceMeshId": id}
-	if sweepAll() {
+	if sweep.SweepAll() {
 		request["Force"] = true
 	}
 	return rpc("servicemesh", "2020-01-11", "DeleteServiceMesh", nil, request, true)
@@ -2240,7 +2605,7 @@ func trackVpcACKOwnership(region, vpcID string, api vpcACKAPI) (vpcACKAPI, func(
 
 func asmExactCode(err error, code string) bool {
 	for {
-		if e, ok := err.(*ComplexError); ok {
+		if e, ok := err.(*errs.ComplexError); ok {
 			err = e.Cause
 			continue
 		}

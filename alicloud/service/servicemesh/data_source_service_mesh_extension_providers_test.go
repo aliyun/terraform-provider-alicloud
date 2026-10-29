@@ -1,15 +1,16 @@
-package alicloud
+package servicemesh_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudServiceMeshExtensionProvidersDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudServiceMeshExtensionProvidersDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudServiceMeshExtensionProvidersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_service_mesh_extension_provider.default.id}"]`,
@@ -41,8 +42,8 @@ func TestAccAlicloudServiceMeshExtensionProvidersDataSource(t *testing.T) {
 			"ids.#":                               "1",
 			"names.#":                             "1",
 			"providers.#":                         "1",
-			"providers.0.id":                      CHECKSET,
-			"providers.0.service_mesh_id":         CHECKSET,
+			"providers.0.id":                      acctest.CHECKSET,
+			"providers.0.service_mesh_id":         acctest.CHECKSET,
 			"providers.0.extension_provider_name": "httpextauth-tf-example",
 			"providers.0.type":                    "httpextauth",
 			"providers.0.config":                  "{\"headersToDownstreamOnDeny\":[\"content-type\",\"set-cookie\"],\"headersToUpstreamOnAllow\":[\"authorization\",\"cookie\",\"path\",\"x-auth-request-access-token\",\"x-forwarded-access-token\"],\"includeRequestHeadersInCheck\":[\"cookie\",\"x-forward-access-token\"],\"oidc\":{\"clientID\":\"qweqweqwewqeqwe\",\"clientSecret\":\"asdasdasdasdsadas\",\"cookieExpire\":\"1000\",\"cookieRefresh\":\"500\",\"cookieSecret\":\"scxzcxzcxzcxzcxz\",\"issuerURI\":\"qweqwewqeqweqweqwe\",\"redirectDomain\":\"www.alicloud-provider.cn\",\"redirectProtocol\":\"http\",\"scopes\":[\"profile\"]},\"port\":4180,\"service\":\"oauth2proxy-httpextauth-tf-example.istio-system.svc.cluster.local\",\"timeout\":\"10s\"}",
