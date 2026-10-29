@@ -94,7 +94,7 @@ func resourceAlicloudEcdUserCreate(d *schema.ResourceData, meta interface{}) err
 	d.SetId(fmt.Sprint(requestUsers["EndUserId"]))
 	edsUserService := EdsUserService{client}
 
-	stateConf := BuildStateConf([]string{}, []string{"Unlocked", "Locked"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edsUserService.EcdUserStateRefreshFunc(d.Id()))
+	stateConf := BuildStateConf([]string{"Pending"}, []string{"Unlocked", "Locked"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, edsUserService.EcdUserStateRefreshFunc(d.Id()))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

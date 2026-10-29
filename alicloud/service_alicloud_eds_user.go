@@ -18,69 +18,64 @@ func (s *EdsUserService) DescribeEcdUser(id string) (object map[string]interface
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeUsers"
+	// Filter by EndUserIds so DescribeUsers returns only the requested user
+	// instead of paging through the whole list and matching EndUserId in Go.
+	// The list traversal used to miss a freshly created user until it became
+	// visible in the full list, which made Create's waiter time out with
+	// "couldn't find resource".
 	request := map[string]interface{}{
-		"MaxResults": PageSizeLarge,
+		"EndUserIds": []string{id},
 	}
-	idExist := false
-	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, true)
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		}
-		v, err := jsonpath.Get("$.Users", response)
-		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users", response)
-		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
-		}
-		for _, v := range v.([]interface{}) {
-			if fmt.Sprint(v.(map[string]interface{})["EndUserId"]) == id {
-				idExist = true
-				return v.(map[string]interface{}), nil
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
 			}
+			return retry.NonRetryableError(err)
 		}
-
-		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
-			request["NextToken"] = nextToken
-		} else {
-			break
-		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if !idExist {
+	v, err := jsonpath.Get("$.Users", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Users", response)
+	}
+	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 	}
-	return
+	for _, user := range v.([]interface{}) {
+		if fmt.Sprint(user.(map[string]interface{})["EndUserId"]) == id {
+			return user.(map[string]interface{}), nil
+		}
+	}
+	return object, WrapErrorf(NotFoundErr("ECD", id), NotFoundWithResponse, response)
 }
 
 func (s *EdsUserService) EcdUserStateRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEcdUser(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// A freshly created user is not always visible to DescribeUsers
+				// immediately. Return a pending state instead of an empty one so
+				// the waiter keeps retrying until the user becomes visible, rather
+				// than failing with "couldn't find resource" before the create
+				// timeout elapses.
+				return nil, "Pending", nil
+			}
+			return nil, "", WrapError(err)
+		}
 		statusCode, formatErr := formatInt(object["Status"])
 		if formatErr != nil {
 			return nil, "", formatErr
 		}
 		status := convertEcdUserStatusResponse(strconv.Itoa(statusCode))
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
 		return object, status, nil
 	}
 }
