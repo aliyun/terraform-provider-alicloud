@@ -14,6 +14,9 @@ import (
 
 const (
 	ramAccessKeyEphemeralTypeName = "alicloud_ram_access_key"
+
+	ramAccessKeyProduct    = "Ram"
+	ramAccessKeyAPIVersion = "2015-05-01"
 	// Private state key under which Open stashes the data Close needs to revoke
 	// the access key. CloseRequest carries Private but not Result, so the data
 	// Open writes to Result for the Terraform configuration cannot be read back
@@ -26,14 +29,6 @@ var (
 	_ ephemeral.EphemeralResourceWithConfigure = &ramAccessKeyEphemeral{}
 )
 
-// NewRamAccessKeyEphemeralResource returns an ephemeral resource that issues a
-// RAM access key for the duration of its reference and revokes it when the
-// reference closes. The secret never lands in the Terraform state file: callers
-// consume access_key_id / access_key_secret from the ephemeral output within
-// the same Terraform operation, for example by configuring an aliased provider
-// with them. Once the reference ends, Close deletes the access key so no
-// residual credential remains; credentials that must outlive the operation
-// belong to the managed alicloud_ram_access_key resource instead.
 func NewRamAccessKeyEphemeralResource() ephemeral.EphemeralResource {
 	return &ramAccessKeyEphemeral{}
 }
@@ -100,7 +95,7 @@ func (e *ramAccessKeyEphemeral) Open(ctx context.Context, req ephemeral.OpenRequ
 		request["UserName"] = config.UserName.ValueString()
 	}
 
-	response, err := createRamAccessKey(e.Client(), request)
+	response, err := e.Client().RpcPost(ramAccessKeyProduct, ramAccessKeyAPIVersion, action, nil, request, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: calling %s", ramAccessKeyEphemeralTypeName, action),
@@ -192,7 +187,7 @@ func (e *ramAccessKeyEphemeral) Close(ctx context.Context, req ephemeral.CloseRe
 		return
 	}
 
-	if err := deleteRamAccessKey(e.Client(), cleanup); err != nil {
+	if err := e.deleteRamAccessKey(cleanup); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Closing %s: calling %s", ramAccessKeyEphemeralTypeName, action),
 			errs.WrapErrorf(err, "Closing %s: calling %s", ramAccessKeyEphemeralTypeName, action).Error(),
@@ -200,21 +195,7 @@ func (e *ramAccessKeyEphemeral) Close(ctx context.Context, req ephemeral.CloseRe
 	}
 }
 
-// ramAccessKeyClient is the subset of the Aliyun client the ephemeral resource
-// depends on. The narrow interface keeps creation, revocation and retry
-// behavior unit-testable without cloud calls.
-type ramAccessKeyClient interface {
-	RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error)
-}
-
-func createRamAccessKey(client ramAccessKeyClient, request map[string]interface{}) (map[string]interface{}, error) {
-	// CreateAccessKey has no idempotency token, so a retried request can issue a
-	// second access key that nothing revokes. Never let the runtime retry it;
-	// the caller surfaces the ambiguous outcome to the operator instead.
-	return client.RpcPost("Ram", "2015-05-01", "CreateAccessKey", nil, request, false)
-}
-
-func deleteRamAccessKey(client ramAccessKeyClient, cleanup ramAccessKeyCleanup) error {
+func (e *ramAccessKeyEphemeral) deleteRamAccessKey(cleanup ramAccessKeyCleanup) error {
 	if cleanup.AccessKeyId == "" {
 		return nil
 	}
@@ -226,7 +207,7 @@ func deleteRamAccessKey(client ramAccessKeyClient, cleanup ramAccessKeyCleanup) 
 		request["UserName"] = cleanup.UserName
 	}
 
-	if _, err := client.RpcPost("Ram", "2015-05-01", "DeleteAccessKey", nil, request, true); err != nil {
+	if _, err := e.Client().RpcPost(ramAccessKeyProduct, ramAccessKeyAPIVersion, "DeleteAccessKey", nil, request, true); err != nil {
 		// The access key may already be gone (deleted out-of-band, or by a prior
 		// Close). Such cases are not failures: the goal of Close — no residual
 		// credential — is met.

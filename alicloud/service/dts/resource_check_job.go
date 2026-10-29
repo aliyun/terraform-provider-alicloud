@@ -28,6 +28,9 @@ import (
 const (
 	checkJobTypeName = "alicloud_dts_check_job"
 
+	checkJobProduct    = "Dts"
+	checkJobAPIVersion = "2020-01-01"
+
 	// terraform-plugin-framework has no user-configurable resource timeouts, so
 	// the envelopes the SDKv2 implementation derived from d.Timeout are fixed
 	// here: 20 minutes for create (purchase, configure and the first status
@@ -668,7 +671,7 @@ func (r *checkJobResource) Delete(ctx context.Context, req resource.DeleteReques
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(checkJobDeleteTimeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Dts", "2020-01-01", "DeleteDtsJob", nil, request, false)
+		response, err = r.Client().RpcPost(checkJobProduct, checkJobAPIVersion, "DeleteDtsJob", nil, request, false)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
 				return nil
@@ -705,7 +708,7 @@ func (r *checkJobResource) deleteByInstanceId(dtsInstanceId string, timeout time
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(timeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Dts", "2020-01-01", "DeleteDtsJob", nil, request, false)
+		response, err = r.Client().RpcPost(checkJobProduct, checkJobAPIVersion, "DeleteDtsJob", nil, request, false)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
 				return nil
@@ -794,7 +797,7 @@ func (r *checkJobResource) post(action string, request map[string]interface{}, t
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(timeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		response, err = r.Client().RpcPost(checkJobProduct, checkJobAPIVersion, action, nil, request, false)
 		if err != nil {
 			if (len(expectedErrors) > 0 && errs.IsExpectedErrors(err, expectedErrors)) || helper.NeedRetry(err) {
 				wait()
