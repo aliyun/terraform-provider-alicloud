@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package dfs. This file is generated automatically. Please do not modify it manually, thank you!
+package dfs
 
 import (
 	"fmt"
@@ -7,16 +7,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDfsFileSystem() *schema.Resource {
+func ResourceFileSystem() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDfsFileSystemCreate,
-		Read:   resourceAliCloudDfsFileSystemRead,
-		Update: resourceAliCloudDfsFileSystemUpdate,
-		Delete: resourceAliCloudDfsFileSystemDelete,
+		Create: resourceFileSystemCreate,
+		Read:   resourceFileSystemRead,
+		Update: resourceFileSystemUpdate,
+		Delete: resourceFileSystemDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -33,7 +38,7 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 			"data_redundancy_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"LRS", "ZRS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"LRS", "ZRS"}, false),
 			},
 			"dedicated_cluster_id": {
 				Type:     schema.TypeString,
@@ -55,12 +60,12 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"HDFS", "PANGU"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"HDFS", "PANGU"}, false),
 			},
 			"provisioned_throughput_in_mi_bps": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 1024),
+				ValidateFunc: validators.IntBetween(0, 1024),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("throughput_mode"); ok && v.(string) == "Provisioned" {
 						return false
@@ -84,13 +89,13 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"STANDARD", "PERFORMANCE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"STANDARD", "PERFORMANCE"}, false),
 			},
 			"throughput_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Standard", "Provisioned"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Standard", "Provisioned"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -101,7 +106,7 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFileSystemCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -141,11 +146,11 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("dedicated_cluster_id"); ok {
 		request["DedicatedClusterId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -153,36 +158,36 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_file_system", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dfs_file_system", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["FileSystemId"]))
 
-	return resourceAliCloudDfsFileSystemRead(d, meta)
+	return resourceFileSystemRead(d, meta)
 }
 
-func resourceAliCloudDfsFileSystemRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFileSystemRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dfsServiceV2 := DfsServiceV2{client}
+	dfsServiceV2 := ServiceV2{client}
 
 	objectRaw, err := dfsServiceV2.DescribeDfsFileSystem(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dfs_file_system DescribeDfsFileSystem Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("file_system_name", objectRaw["FileSystemName"])
 	d.Set("protocol_type", objectRaw["ProtocolType"])
-	provisioned_throughput_in_mi_bpsVal, err := formatInt(objectRaw["ProvisionedThroughputInMiBps"])
+	provisioned_throughput_in_mi_bpsVal, err := convert.FormatInt(objectRaw["ProvisionedThroughputInMiBps"])
 	if err != nil {
 		return err
 	}
@@ -196,7 +201,7 @@ func resourceAliCloudDfsFileSystemRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceFileSystemUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -237,11 +242,11 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"FileSystem.ModifyThroughputModeTooFrequent"}) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"FileSystem.ModifyThroughputModeTooFrequent"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -249,16 +254,16 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDfsFileSystemRead(d, meta)
+	return resourceFileSystemRead(d, meta)
 }
 
-func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceFileSystemDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteFileSystem"
@@ -270,12 +275,12 @@ func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{
 	request["FileSystemId"] = d.Id()
 	request["InputRegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -283,13 +288,13 @@ func resourceAliCloudDfsFileSystemDelete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

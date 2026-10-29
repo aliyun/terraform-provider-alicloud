@@ -1,4 +1,5 @@
-package alicloud
+// Package dfs. This file is generated automatically. Please do not modify it manually, thank you!
+package dfs
 
 import (
 	"fmt"
@@ -7,16 +8,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDfsVscMountPoint() *schema.Resource {
+func ResourceMountPoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDfsVscMountPointCreate,
-		Read:   resourceAliCloudDfsVscMountPointRead,
-		Update: resourceAliCloudDfsVscMountPointUpdate,
-		Delete: resourceAliCloudDfsVscMountPointDelete,
+		Create: resourceMountPointCreate,
+		Read:   resourceMountPointRead,
+		Update: resourceMountPointUpdate,
+		Delete: resourceMountPointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,9 +30,17 @@ func resourceAliCloudDfsVscMountPoint() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"access_group_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
 			"alias_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -39,74 +51,63 @@ func resourceAliCloudDfsVscMountPoint() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"instances": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"instance_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"vscs": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"vsc_id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"vsc_type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"vsc_status": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
 			"mount_point_id": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"network_type": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAliCloudDfsVscMountPointCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceMountPointCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreateVscMountPoint"
+	action := "CreateMountPoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	if v, ok := d.GetOk("file_system_id"); ok {
-		request["FileSystemId"] = v
-	}
+	request["FileSystemId"] = d.Get("file_system_id")
 	request["InputRegionId"] = client.RegionId
 
+	request["AccessGroupId"] = d.Get("access_group_id")
+	request["NetworkType"] = d.Get("network_type")
+	request["VpcId"] = d.Get("vpc_id")
+	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -114,63 +115,41 @@ func resourceAliCloudDfsVscMountPointCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_vsc_mount_point", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dfs_mount_point", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["FileSystemId"], response["MountPointId"]))
 
-	return resourceAliCloudDfsVscMountPointUpdate(d, meta)
+	return resourceMountPointUpdate(d, meta)
 }
 
-func resourceAliCloudDfsVscMountPointRead(d *schema.ResourceData, meta interface{}) error {
+func resourceMountPointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dfsServiceV2 := DfsServiceV2{client}
+	dfsServiceV2 := ServiceV2{client}
 
-	objectRaw, err := dfsServiceV2.DescribeDfsVscMountPoint(d.Id())
+	objectRaw, err := dfsServiceV2.DescribeDfsMountPoint(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dfs_vsc_mount_point DescribeDfsVscMountPoint Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dfs_mount_point DescribeDfsMountPoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
+	d.Set("access_group_id", objectRaw["AccessGroupId"])
+	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
+	d.Set("network_type", objectRaw["NetworkType"])
+	d.Set("region_id", objectRaw["RegionId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("file_system_id", objectRaw["FileSystemId"])
 	d.Set("mount_point_id", objectRaw["MountPointId"])
-
-	instancesRaw := objectRaw["Instances"]
-	instancesMaps := make([]map[string]interface{}, 0)
-	if instancesRaw != nil {
-		for _, instancesChildRaw := range instancesRaw.([]interface{}) {
-			instancesMap := make(map[string]interface{})
-			instancesChildRaw := instancesChildRaw.(map[string]interface{})
-			instancesMap["instance_id"] = instancesChildRaw["InstanceId"]
-			instancesMap["status"] = instancesChildRaw["Status"]
-
-			vscsRaw := instancesChildRaw["Vscs"]
-			vscsMaps := make([]map[string]interface{}, 0)
-			if vscsRaw != nil {
-				for _, vscsChildRaw := range vscsRaw.([]interface{}) {
-					vscsMap := make(map[string]interface{})
-					vscsChildRaw := vscsChildRaw.(map[string]interface{})
-					vscsMap["vsc_id"] = vscsChildRaw["VscId"]
-					vscsMap["vsc_status"] = vscsChildRaw["VscStatus"]
-					vscsMap["vsc_type"] = vscsChildRaw["VscType"]
-
-					vscsMaps = append(vscsMaps, vscsMap)
-				}
-			}
-			instancesMap["vscs"] = vscsMaps
-			instancesMaps = append(instancesMaps, instancesMap)
-		}
-	}
-	if err := d.Set("instances", instancesMaps); err != nil {
-		return err
-	}
 
 	if objectRaw["MountPointAlias"] != nil {
 		if fmt.Sprint(objectRaw["MountPointAlias"]) != "" {
@@ -179,13 +158,10 @@ func resourceAliCloudDfsVscMountPointRead(d *schema.ResourceData, meta interface
 		}
 	}
 
-	parts := strings.Split(d.Id(), ":")
-	d.Set("file_system_id", parts[0])
-
 	return nil
 }
 
-func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceMountPointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -195,7 +171,7 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 
 	var err error
 	parts := strings.Split(d.Id(), ":")
-	action := "BindVscMountPointAlias"
+	action := "BindMountPointAlias"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["MountPointId"] = parts[1]
@@ -204,13 +180,15 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("alias_prefix") {
 		update = true
 	}
-	request["AliasPrefix"] = d.Get("alias_prefix")
+	if v, ok := d.GetOk("alias_prefix"); ok {
+		request["AliasPrefix"] = v
+	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -218,14 +196,14 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
+
 	update = false
-	parts = strings.Split(d.Id(), ":")
-	action = "ModifyVscMountPoint"
+	action = "ModifyMountPoint"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["MountPointId"] = parts[1]
@@ -236,12 +214,21 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 		request["Description"] = d.Get("description")
 	}
 
+	if !d.IsNewResource() && d.HasChange("access_group_id") {
+		update = true
+	}
+	request["AccessGroupId"] = d.Get("access_group_id")
+	if d.HasChange("status") {
+		update = true
+		request["Status"] = d.Get("status")
+	}
+
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -249,21 +236,21 @@ func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudDfsVscMountPointRead(d, meta)
+	return resourceMountPointRead(d, meta)
 }
 
-func resourceAliCloudDfsVscMountPointDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceMountPointDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
-	action := "DeleteVscMountPoint"
+	action := "DeleteMountPoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -273,12 +260,12 @@ func resourceAliCloudDfsVscMountPointDelete(d *schema.ResourceData, meta interfa
 	request["FileSystemId"] = parts[0]
 	request["InputRegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -286,13 +273,13 @@ func resourceAliCloudDfsVscMountPointDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

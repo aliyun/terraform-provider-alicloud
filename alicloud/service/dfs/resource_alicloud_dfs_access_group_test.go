@@ -1,4 +1,4 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
@@ -10,14 +10,19 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +35,7 @@ func init() {
 }
 
 func testSweepDFSAccessGroup(region string) error {
-	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DfsSupportRegions)
+	rawClient, err := sweep.SharedClientForRegionWithBackendRegions(region, true, connectivity.DfsSupportRegions)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -46,11 +51,11 @@ func testSweepDFSAccessGroup(region string) error {
 
 	action := "ListAccessGroups"
 	var response map[string]interface{}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -103,22 +108,22 @@ func testSweepDFSAccessGroup(region string) error {
 func TestAccAliCloudDfsAccessGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudDFSAccessGroupMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDFSAccessGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsAccessGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDFSAccessGroupBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDFSAccessGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DfsSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DfsSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -189,9 +194,9 @@ variable "name" {
 
 // lintignore: R001
 func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dfs_access_group"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dfs_access_group"].Schema).Data(nil, nil)
+	resourceSchema := dfs.ResourceAccessGroup()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"network_type":      "CreateAccessGroupValue",
@@ -208,7 +213,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -229,30 +234,30 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dfs_access_group", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dfs_access_group", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsAccessGroupCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -274,14 +279,14 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessGroupCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_access_group"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -295,12 +300,12 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsAccessGroupUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyAccessGroup
@@ -308,11 +313,11 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 		"access_group_name": "ModifyAccessGroupValue",
 		"description":       "ModifyAccessGroupValue",
 	}
-	diff, err := newInstanceDiff("alicloud_dfs_access_group", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_dfs_access_group", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_access_group"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetAccessGroup Response
 		"AccessGroup": map[string]interface{}{
@@ -338,14 +343,14 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessGroupUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_access_group"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -376,7 +381,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessGroupRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -388,12 +393,12 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsAccessGroupDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidParameter.AccessGroupNotFound"}
@@ -417,7 +422,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessGroupDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -433,21 +438,21 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 func TestAccAliCloudDfsAccessGroup_basic5176(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudDfsAccessGroupMap5176)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDfsAccessGroupMap5176)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsAccessGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessGroupBasicDependence5176)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDfsAccessGroupBasicDependence5176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -516,7 +521,7 @@ func TestAccAliCloudDfsAccessGroup_basic5176(t *testing.T) {
 }
 
 var AlicloudDfsAccessGroupMap5176 = map[string]string{
-	"create_time": CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudDfsAccessGroupBasicDependence5176(name string) string {
@@ -533,21 +538,21 @@ variable "name" {
 func TestAccAliCloudDfsAccessGroup_basic5176_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudDfsAccessGroupMap5176)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDfsAccessGroupMap5176)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsAccessGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessGroupBasicDependence5176)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDfsAccessGroupBasicDependence5176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

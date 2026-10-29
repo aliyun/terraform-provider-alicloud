@@ -1,4 +1,4 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
@@ -7,13 +7,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/agiledragon/gomonkey/v2"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,22 +26,22 @@ import (
 func TestAccAliCloudDfsAccessRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_rule.default"
-	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudDFSAccessRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDFSAccessRuleMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsAccessRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDFSAccessRuleBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDFSAccessRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -49,7 +54,7 @@ func TestAccAliCloudDfsAccessRule_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"network_segment": "192.0.2.0/24",
-						"access_group_id": CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 						"description":     name,
 						"rw_access_type":  "RDWR",
 						"priority":        "10",
@@ -128,9 +133,9 @@ resource "alicloud_dfs_access_group" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudDFSAccessRule(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(nil, nil)
+	resourceSchema := dfs.ResourceAccessRule()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"network_segment": "CreateAccessRuleValue",
@@ -149,7 +154,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -173,30 +178,30 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dfs_access_rule", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dfs_access_rule", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsAccessRuleCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -218,14 +223,14 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessRuleCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -239,12 +244,12 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsAccessRuleUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyAccessGroup
@@ -253,11 +258,11 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 		"description":    "ModifyAccessRuleValue",
 		"rw_access_type": "ModifyAccessRuleValue",
 	}
-	diff, err := newInstanceDiff("alicloud_dfs_access_rule", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_dfs_access_rule", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetAccessRule Response
 		"AccessRule": map[string]interface{}{
@@ -284,14 +289,14 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessRuleUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -302,11 +307,11 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 		}
 	}
 
-	diff, err = newInstanceDiff("alicloud_dfs_access_rule", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_dfs_access_rule", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -327,7 +332,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessRuleRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -339,20 +344,20 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAlidfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    tea.String("loadEndpoint error"),
+			Data:    tea.String("loadEndpoint error"),
+			Message: tea.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAliCloudDfsAccessRuleDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_dfs_access_rule", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_dfs_access_rule", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidParameter.AccessRuleNotFound"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -374,7 +379,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudDfsAccessRuleDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -390,21 +395,21 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 func TestAccAliCloudDfsAccessRule_basic5561(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDfsAccessRuleMap5561)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDfsAccessRuleMap5561)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsAccessRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessRuleBasicDependence5561)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDfsAccessRuleBasicDependence5561)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -417,8 +422,8 @@ func TestAccAliCloudDfsAccessRule_basic5561(t *testing.T) {
 					testAccCheck(map[string]string{
 						"rw_access_type":  "RDWR",
 						"priority":        "1",
-						"network_segment": CHECKSET,
-						"access_group_id": CHECKSET,
+						"network_segment": acctest.CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -475,8 +480,8 @@ func TestAccAliCloudDfsAccessRule_basic5561(t *testing.T) {
 						"description":     "AccessRule RMC test case ",
 						"rw_access_type":  "RDWR",
 						"priority":        "1",
-						"network_segment": CHECKSET,
-						"access_group_id": CHECKSET,
+						"network_segment": acctest.CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -491,8 +496,8 @@ func TestAccAliCloudDfsAccessRule_basic5561(t *testing.T) {
 }
 
 var AlicloudDfsAccessRuleMap5561 = map[string]string{
-	"create_time":    CHECKSET,
-	"access_rule_id": CHECKSET,
+	"create_time":    acctest.CHECKSET,
+	"access_rule_id": acctest.CHECKSET,
 }
 
 func AlicloudDfsAccessRuleBasicDependence5561(name string) string {
@@ -516,21 +521,21 @@ resource "alicloud_dfs_access_group" "DefaultAccessGroupRMC" {
 func TestAccAliCloudDfsAccessRule_basic5561_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDfsAccessRuleMap5561)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDfsAccessRuleMap5561)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDfsAccessRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessRuleBasicDependence5561)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDfsAccessRuleBasicDependence5561)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -545,8 +550,8 @@ func TestAccAliCloudDfsAccessRule_basic5561_twin(t *testing.T) {
 						"description":     "AccessRule RMC test case fix",
 						"rw_access_type":  "RDONLY",
 						"priority":        "2",
-						"network_segment": CHECKSET,
-						"access_group_id": CHECKSET,
+						"network_segment": acctest.CHECKSET,
+						"access_group_id": acctest.CHECKSET,
 					}),
 				),
 			},

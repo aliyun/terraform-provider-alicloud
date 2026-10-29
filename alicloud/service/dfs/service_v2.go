@@ -1,4 +1,4 @@
-package alicloud
+package dfs
 
 import (
 	"fmt"
@@ -7,17 +7,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type DfsServiceV2 struct {
+type ServiceV2 struct {
 	client *connectivity.AliyunClient
 }
 
 // DescribeDfsAccessGroup <<< Encapsulated get interface for Dfs AccessGroup.
 
-func (s *DfsServiceV2) DescribeDfsAccessGroup(id string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeDfsAccessGroup(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -28,45 +31,45 @@ func (s *DfsServiceV2) DescribeDfsAccessGroup(id string) (object map[string]inte
 	query["AccessGroupId"] = id
 	request["InputRegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("AccessGroup", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.AccessGroupNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("AccessGroup", id), errs.NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.AccessGroup", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessGroup", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.AccessGroup", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsAccessGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DfsAccessGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsAccessGroup(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -74,7 +77,7 @@ func (s *DfsServiceV2) DfsAccessGroupStateRefreshFunc(id string, field string, f
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -84,14 +87,14 @@ func (s *DfsServiceV2) DfsAccessGroupStateRefreshFunc(id string, field string, f
 // DescribeDfsAccessGroup >>> Encapsulated.
 // DescribeDfsAccessRule <<< Encapsulated get interface for Dfs AccessRule.
 
-func (s *DfsServiceV2) DescribeDfsAccessRule(id string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeDfsAccessRule(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	action := "GetAccessRule"
 	request = make(map[string]interface{})
@@ -100,45 +103,45 @@ func (s *DfsServiceV2) DescribeDfsAccessRule(id string) (object map[string]inter
 	query["AccessRuleId"] = parts[1]
 	query["InputRegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.AccessRuleNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("AccessRule", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.AccessRuleNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("AccessRule", id), errs.NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		logs.AddDebug(action, response, request)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.AccessRule", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessRule", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.AccessRule", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsAccessRule(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -146,7 +149,7 @@ func (s *DfsServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, fa
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -157,7 +160,7 @@ func (s *DfsServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, fa
 
 // DescribeDfsFileSystem <<< Encapsulated get interface for Dfs FileSystem.
 
-func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeDfsFileSystem(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -168,12 +171,12 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 	request["InputRegionId"] = client.RegionId
 	action := "GetFileSystem"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -181,30 +184,30 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("FileSystem", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("FileSystem", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.FileSystem", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FileSystem", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.FileSystem", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsFileSystem(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -219,7 +222,7 @@ func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, fa
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -230,14 +233,14 @@ func (s *DfsServiceV2) DfsFileSystemStateRefreshFunc(id string, field string, fa
 
 // DescribeDfsMountPoint <<< Encapsulated get interface for Dfs MountPoint.
 
-func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeDfsMountPoint(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -246,12 +249,12 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 	request["InputRegionId"] = client.RegionId
 	action := "GetMountPoint"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -259,30 +262,30 @@ func (s *DfsServiceV2) DescribeDfsMountPoint(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.MountPointNotFound", "InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("MountPoint", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidParameter.MountPointNotFound", "InvalidParameter.FileSystemNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("MountPoint", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.MountPoint", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.MountPoint", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.MountPoint", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DfsServiceV2) DfsMountPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DfsMountPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsMountPoint(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -302,7 +305,7 @@ func (s *DfsServiceV2) DfsMountPointStateRefreshFunc(id string, field string, fa
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -313,14 +316,14 @@ func (s *DfsServiceV2) DfsMountPointStateRefreshFunc(id string, field string, fa
 
 // DescribeDfsVscMountPoint <<< Encapsulated get interface for Dfs VscMountPoint.
 
-func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -328,12 +331,12 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 	request["InputRegionId"] = client.RegionId
 	action := "DescribeVscMountPoints"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DFS", "2018-06-20", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -341,21 +344,21 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"VscMountPoint.NotFound", "InvalidParameter.FileSystemNotFound"}) {
-			return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"VscMountPoint.NotFound", "InvalidParameter.FileSystemNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("VscMountPoint", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.MountPoints[*]", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.MountPoints[*]", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.MountPoints[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("VscMountPoint", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -366,17 +369,17 @@ func (s *DfsServiceV2) DescribeDfsVscMountPoint(id string) (object map[string]in
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("VscMountPoint", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("VscMountPoint", id), errs.NotFoundMsg, response)
 }
 
-func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDfsVscMountPoint(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -396,7 +399,7 @@ func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string,
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -404,3 +407,9 @@ func (s *DfsServiceV2) DfsVscMountPointStateRefreshFunc(id string, field string,
 }
 
 // DescribeDfsVscMountPoint >>> Encapsulated.
+
+// NewServiceV2 is the exported constructor for the encapsulated DFS service;
+// the client field stays unexported so external acceptance tests use this entry.
+func NewServiceV2(client *connectivity.AliyunClient) *ServiceV2 {
+	return &ServiceV2{client: client}
+}

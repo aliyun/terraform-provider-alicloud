@@ -1,38 +1,39 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDfsAccessGroupsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_access_group.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_access_group.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_dfs_access_group.default.access_group_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_dfs_access_group.default.access_group_name}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_dfs_access_group.default.id}"]`,
 			"name_regex": `"${alicloud_dfs_access_group.default.access_group_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_dfs_access_group.default.id}_fake"]`,
 			"name_regex": `"${alicloud_dfs_access_group.default.access_group_name}_fake"`,
 		}),
@@ -52,15 +53,15 @@ func TestAccAliCloudDfsAccessGroupsDataSource(t *testing.T) {
 			"groups.#": "0",
 		}
 	}
-	var AlicloudDfsAccsessGroupsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dfs_access_groups.default",
-		existMapFunc: existAlicloudDfsAccsessGroupsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDfsAccsessGroupsDataSourceNameMapFunc,
+	var AlicloudDfsAccsessGroupsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_dfs_access_groups.default",
+		ExistMapFunc: existAlicloudDfsAccsessGroupsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDfsAccsessGroupsDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.DfsSupportRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.DfsSupportRegions)
 	}
-	AlicloudDfsAccsessGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	AlicloudDfsAccsessGroupsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudDfsAccsessGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

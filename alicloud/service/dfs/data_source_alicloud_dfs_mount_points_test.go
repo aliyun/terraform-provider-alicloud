@@ -1,41 +1,42 @@
-package alicloud
+package dfs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudDfsMountPointsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_mount_point.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dfs_mount_point.default.id}_fake"]`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_dfs_mount_point.default.id}"]`,
 			"status": `"Active"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_dfs_mount_point.default.id}"]`,
 			"status": `"Inactive"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_dfs_mount_point.default.id}"]`,
 			"status": `"Active"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDfsMountPointsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_dfs_mount_point.default.id}_fake"]`,
 			"status": `"Inactive"`,
 		}),
@@ -45,9 +46,9 @@ func TestAccAliCloudDfsMountPointsDataSource(t *testing.T) {
 			"ids.#":                   "1",
 			"points.#":                "1",
 			"points.0.description":    fmt.Sprintf("tf-testAccMountPoint-%d", rand),
-			"points.0.file_system_id": CHECKSET,
+			"points.0.file_system_id": acctest.CHECKSET,
 			"points.0.network_type":   "VPC",
-			"points.0.vswitch_id":     CHECKSET,
+			"points.0.vswitch_id":     acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudDfsMountPointsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -56,15 +57,15 @@ func TestAccAliCloudDfsMountPointsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudDfsMountPointsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dfs_mount_points.default",
-		existMapFunc: existAlicloudDfsMountPointsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDfsMountPointsDataSourceNameMapFunc,
+	var alicloudDfsMountPointsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_dfs_mount_points.default",
+		ExistMapFunc: existAlicloudDfsMountPointsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDfsMountPointsDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudDfsMountPointsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, allConf)
+	alicloudDfsMountPointsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, allConf)
 }
 func testAccCheckAlicloudDfsMountPointsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
