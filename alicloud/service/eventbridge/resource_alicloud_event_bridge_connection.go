@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"fmt"
@@ -6,11 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEventBridgeConnection() *schema.Resource {
+func ResourceEventBridgeConnection() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEventBridgeConnectionCreate,
 		Read:   resourceAliCloudEventBridgeConnectionRead,
@@ -43,7 +48,7 @@ func resourceAliCloudEventBridgeConnection() *schema.Resource {
 						"network_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"PublicNetwork", "PrivateNetwork"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"PublicNetwork", "PrivateNetwork"}, false),
 						},
 						"vpc_id": {
 							Type:     schema.TypeString,
@@ -69,7 +74,7 @@ func resourceAliCloudEventBridgeConnection() *schema.Resource {
 						"authorization_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"API_KEY_AUTH", "BASIC_AUTH", "OAUTH_AUTH"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"API_KEY_AUTH", "BASIC_AUTH", "OAUTH_AUTH"}, false),
 						},
 						"api_key_auth_parameters": {
 							Type:     schema.TypeList,
@@ -132,7 +137,7 @@ func resourceAliCloudEventBridgeConnection() *schema.Resource {
 									"http_method": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"GET", "POST", "HEAD", "DELETE", "PUT", "PATCH"}, false),
+										ValidateFunc: validators.StringInSlice([]string{"GET", "POST", "HEAD", "DELETE", "PUT", "PATCH"}, false),
 									},
 									"client_parameters": {
 										Type:     schema.TypeList,
@@ -268,9 +273,9 @@ func resourceAliCloudEventBridgeConnectionCreate(d *schema.ResourceData, meta in
 		}
 	}
 
-	networkParametersJson, err := convertMaptoJsonString(networkParametersMap)
+	networkParametersJson, err := convert.ConvertMaptoJsonString(networkParametersMap)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request["NetworkParameters"] = networkParametersJson
@@ -435,19 +440,19 @@ func resourceAliCloudEventBridgeConnectionCreate(d *schema.ResourceData, meta in
 			}
 		}
 
-		authParametersJson, err := convertMaptoJsonString(authParametersMap)
+		authParametersJson, err := convert.ConvertMaptoJsonString(authParametersMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["AuthParameters"] = authParametersJson
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -455,14 +460,14 @@ func resourceAliCloudEventBridgeConnectionCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_event_bridge_connection", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_event_bridge_connection", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if resp, err := jsonpath.Get("$.Data", response); err != nil || resp == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_event_bridge_connection")
+		return errs.WrapErrorf(err, errs.IdMsg, "alicloud_event_bridge_connection")
 	} else {
 		connectionName := resp.(map[string]interface{})["ConnectionName"]
 		d.SetId(fmt.Sprint(connectionName))
@@ -477,11 +482,11 @@ func resourceAliCloudEventBridgeConnectionRead(d *schema.ResourceData, meta inte
 
 	object, err := eventBridgeServiceV2.DescribeEventBridgeConnection(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("connection_name", object["ConnectionName"])
@@ -737,9 +742,9 @@ func resourceAliCloudEventBridgeConnectionUpdate(d *schema.ResourceData, meta in
 			}
 		}
 
-		networkParametersJson, err := convertMaptoJsonString(networkParametersMap)
+		networkParametersJson, err := convert.ConvertMaptoJsonString(networkParametersMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["NetworkParameters"] = networkParametersJson
@@ -908,9 +913,9 @@ func resourceAliCloudEventBridgeConnectionUpdate(d *schema.ResourceData, meta in
 			}
 		}
 
-		authParametersJson, err := convertMaptoJsonString(authParametersMap)
+		authParametersJson, err := convert.ConvertMaptoJsonString(authParametersMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["AuthParameters"] = authParametersJson
@@ -918,11 +923,11 @@ func resourceAliCloudEventBridgeConnectionUpdate(d *schema.ResourceData, meta in
 
 	if update {
 		action := "UpdateConnection"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -930,10 +935,10 @@ func resourceAliCloudEventBridgeConnectionUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -948,11 +953,11 @@ func resourceAliCloudEventBridgeConnectionDelete(d *schema.ResourceData, meta in
 	request := map[string]interface{}{
 		"ConnectionName": d.Id(),
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -960,10 +965,10 @@ func resourceAliCloudEventBridgeConnectionDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

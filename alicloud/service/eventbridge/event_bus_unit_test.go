@@ -1,222 +1,110 @@
-package alicloud
+package eventbridge
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers(
-		"alicloud_event_bridge_event_bus",
-		&resource.Sweeper{
-			Name:         "alicloud_event_bridge_event_bus",
-			F:            testSweepEventBridgeEventBus,
-			Dependencies: []string{"alicloud_event_bridge_event_source"},
-		})
+// unitTestProviderResources supplies the schema the migrated tests inspect;
+// the root alicloud package cannot be imported here because it would form an
+// import cycle (root registers this package).
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_event_bridge_event_bus":           ResourceEventBridgeEventBus(),
+		"alicloud_event_bridge_event_source":        ResourceEventBridgeEventSource(),
+		"alicloud_event_bridge_service_linked_role": ResourceEventBridgeServiceLinkedRole(),
+	}
 }
 
-func testSweepEventBridgeEventBus(region string) error {
-	prefixes := []string{
-		"tf-testacc",
-	}
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	request := make(map[string]interface{})
-	action := "ListEventBuses"
-	request["Limit"] = PageSizeLarge
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
+// newInstanceDiff is copied from the root alicloud/common.go helper so the
+// internal TestUnit tests can compute a terraform InstanceDiff without crossing
+// the package boundary. Qualifies root-local aliases to leaf-package exports.
+// lintignore: R001
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+	p := unitTestProviderResources()
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
 		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
 		}
-		return nil
-	})
-	if err != nil {
-		log.Println(WrapError(fmt.Errorf("ListEventBuses failed, response: %v", response)))
-		return nil
 	}
-	resp, err := jsonpath.Get("$.Data.EventBuses", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.EventBuses", response)
+	for key, value := range attributesDiff {
+		attributes[key] = value
 	}
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		eventBusName := fmt.Sprint(item["EventBusName"])
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				if strings.Contains(strings.ToLower(eventBusName), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping EventBridge Bus: %s", eventBusName)
-				continue
-			}
-		}
 
-		action = "ListRules"
-		request = map[string]interface{}{
-			"Limit":        PageSizeLarge,
-			"EventBusName": eventBusName,
-		}
-		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
 		if err != nil {
-			log.Println(WrapError(fmt.Errorf("ListRules failed, response: %v", response)))
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
+		}
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
 			continue
 		}
-		resp, _ = jsonpath.Get("$.Data.Rules", response)
-		ruleResult, _ := resp.([]interface{})
-		for _, v := range ruleResult {
-			ruleName := v.(map[string]interface{})["RuleName"]
-			log.Printf("[INFO] Deleting EventBridge Rule: %s", ruleName)
-			action = "DeleteRule"
-			request = map[string]interface{}{
-				"RuleName":     ruleName,
-				"EventBusName": eventBusName,
-			}
-			err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-				response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return retry.RetryableError(err)
-					}
-					return retry.NonRetryableError(err)
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
 				}
-				return nil
-			})
-			if err != nil {
-				log.Printf("\n[ERROR] Deleting EventBridge rule %s failed. Response: %v. Error: %v.", ruleName, response, err)
 			}
 		}
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
 
-		log.Printf("[INFO] Deleting EventBridge Bus: %s", eventBusName)
-		action = "DeleteEventBus"
-		request = map[string]interface{}{
-			"EventBusName": eventBusName,
-		}
-		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
 				}
-				return retry.NonRetryableError(err)
 			}
-			return nil
-		})
-		if err != nil {
-			log.Printf("\n[ERROR] Deleting EventBridge bus %s failed. Response: %v. Error: %v.", eventBusName, response, err)
+			objectKey = ""
 		}
 	}
-	return nil
-}
-
-func TestAccAliCloudEventBridgeEventBus_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_bus.default"
-	ra := resourceAttrInit(resourceId, AlicloudEventBridgeEventBusMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeEventBus")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgeeventbus%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEventBridgeEventBusBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
-		},
-
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"event_bus_name": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"event_bus_name": name,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
-var AlicloudEventBridgeEventBusMap0 = map[string]string{
-	"description":    "",
-	"event_bus_name": CHECKSET,
-}
-
-func AlicloudEventBridgeEventBusBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
-`, name)
+	return diff, nil
 }
 
 // lintignore: R001
 func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_event_bus"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_event_bus"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -234,7 +122,7 @@ func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -254,18 +142,18 @@ func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_event_bridge_event_bus", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_event_bridge_event_bus", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -273,9 +161,9 @@ func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -326,9 +214,9 @@ func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -420,9 +308,9 @@ func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

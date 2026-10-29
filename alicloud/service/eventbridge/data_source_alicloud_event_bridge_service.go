@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"fmt"
@@ -6,12 +6,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEventBridgeService() *schema.Resource {
+func DataSourceEventBridgeService() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEventBridgeServiceRead,
 
@@ -48,15 +51,15 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 	if client.IsInternationalAccount() {
 		request["ProductType"] = "eventbridge_post_public_intl"
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "eventbridge_post_public_intl"
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
@@ -65,19 +68,19 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
+		if errs.IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
 			d.SetId("EventBridgeServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_event_bridge_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	action = "GetEventBridgeStatus"
 	timeout := time.Now().Add(10 * time.Minute)
 	for {
-		wait = incrementalWait(3*time.Second, 3*time.Second)
+		wait = helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, nil, true)
 			if err != nil {
@@ -86,13 +89,13 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_event_bridge_service", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Data.Components", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Components", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Data.Components", response)
 		}
 		result, _ := resp.([]interface{})
 		up := true
@@ -106,7 +109,7 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 			break
 		}
 		if time.Now().After(timeout) {
-			return WrapError(fmt.Errorf("waiting for EventBridge status to be down timeout. Last response:%s", response))
+			return errs.WrapError(fmt.Errorf("waiting for EventBridge status to be down timeout. Last response:%s", response))
 		}
 	}
 

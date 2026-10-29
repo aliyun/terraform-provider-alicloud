@@ -1,7 +1,6 @@
-package alicloud
+package eventbridge
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -12,60 +11,16 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudEventBridgeServiceLinkedRole_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_service_linked_role.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeServiceLinkedRoleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeServiceLinkedRole")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AliCloudEventBridgeServiceLinkedRoleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"product_name": "AliyunServiceRoleForEventBridgeSourceRocketMQ",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"product_name": "AliyunServiceRoleForEventBridgeSourceRocketMQ",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AliCloudEventBridgeServiceLinkedRoleMap0 = map[string]string{}
-
-func AliCloudEventBridgeServiceLinkedRoleBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
-  		default = "%s"
-	}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -82,7 +37,7 @@ func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -102,18 +57,18 @@ func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_event_bridge_service_linked_role", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_event_bridge_service_linked_role", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -121,9 +76,9 @@ func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -205,9 +160,9 @@ func TestUnitAliCloudEventBridgeServiceLinkedRole(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

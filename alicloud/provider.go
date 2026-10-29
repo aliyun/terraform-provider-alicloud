@@ -623,10 +623,6 @@ func Provider() *schema.Provider {
 			"alicloud_ess_scheduled_tasks":            dataSourceAlicloudEssScheduledTasks(),
 
 			// event
-			"alicloud_event_bridge_service":       dataSourceAlicloudEventBridgeService(),
-			"alicloud_event_bridge_event_buses":   dataSourceAlicloudEventBridgeEventBuses(),
-			"alicloud_event_bridge_rules":         dataSourceAlicloudEventBridgeRules(),
-			"alicloud_event_bridge_event_sources": dataSourceAlicloudEventBridgeEventSources(),
 
 			// express
 			"alicloud_express_connect_access_points":                dataSourceAlicloudExpressConnectAccessPoints(),
@@ -1748,15 +1744,6 @@ func Provider() *schema.Provider {
 			"alicloud_ess_server_group_attachment":     resourceAliCloudEssServerGroupAttachment(),
 
 			// event
-			"alicloud_event_bridge_event_source_v2":     resourceAliCloudEventBridgeEventSourceV2(),
-			"alicloud_event_bridge_event_streaming":     resourceAliCloudEventBridgeEventStreaming(),
-			"alicloud_event_bridge_event_bus":           resourceAlicloudEventBridgeEventBus(),
-			"alicloud_event_bridge_slr":                 resourceAliCloudEventBridgeServiceLinkedRole(),
-			"alicloud_event_bridge_rule":                resourceAliCloudEventBridgeRule(),
-			"alicloud_event_bridge_event_source":        resourceAliCloudEventBridgeEventSource(),
-			"alicloud_event_bridge_service_linked_role": resourceAliCloudEventBridgeServiceLinkedRole(),
-			"alicloud_event_bridge_connection":          resourceAliCloudEventBridgeConnection(),
-			"alicloud_event_bridge_api_destination":     resourceAliCloudEventBridgeApiDestination(),
 
 			// express
 			"alicloud_express_connect_traffic_qos_rule":            resourceAliCloudExpressConnectTrafficQosRule(),

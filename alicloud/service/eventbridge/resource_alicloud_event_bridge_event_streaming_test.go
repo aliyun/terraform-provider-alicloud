@@ -1,12 +1,14 @@
-package alicloud
+package eventbridge_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eventbridge"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -25,7 +27,7 @@ func TestAccAliCloudEventBridgeEventStreaming_regionPreCheck(t *testing.T) {
 }
 
 func testAccEventBridgeEventStreamingRegion(t *testing.T) string {
-	testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
+	acctest.PreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
 	return os.Getenv("ALICLOUD_REGION")
 }
 
@@ -34,24 +36,24 @@ func testAccEventBridgeEventStreamingRegion(t *testing.T) string {
 func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 	var v map[string]interface{}
 	region := testAccEventBridgeEventStreamingRegion(t)
-	resourceId := "alicloud_event_bridge_event_streaming.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventStreamingMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_streaming.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventStreamingMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventStreaming")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%seventstreaming%d", region, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, func(name string) string {
 		return AliCloudEventBridgeEventStreamingBasicDependence0(name, region)
 	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -66,10 +68,10 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"event_streaming_name": name,
 						"filter_pattern":       `{}`,
-						"source":               CHECKSET,
-						"sink":                 CHECKSET,
-						"run_options":          CHECKSET,
-						"transforms":           CHECKSET,
+						"source":               acctest.CHECKSET,
+						"sink":                 acctest.CHECKSET,
+						"run_options":          acctest.CHECKSET,
+						"transforms":           acctest.CHECKSET,
 					}),
 				),
 			},
@@ -85,7 +87,7 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": REMOVEKEY,
+					"description": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -100,8 +102,8 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"source":         CHECKSET,
-						"filter_pattern": CHECKSET,
+						"source":         acctest.CHECKSET,
+						"filter_pattern": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -112,8 +114,8 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"sink":        CHECKSET,
-						"run_options": CHECKSET,
+						"sink":        acctest.CHECKSET,
+						"run_options": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -123,7 +125,7 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"transforms": CHECKSET,
+						"transforms": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -186,24 +188,24 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "1",
-						"tags.created": REMOVEKEY,
+						"tags.created": acctest.REMOVEKEY,
 						"tags.purpose": "Test",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.purpose": REMOVEKEY,
+						"tags.purpose": acctest.REMOVEKEY,
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				ResourceName:      ResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -216,24 +218,24 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0(t *testing.T) {
 func TestAccAliCloudEventBridgeEventStreaming_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	region := testAccEventBridgeEventStreamingRegion(t)
-	resourceId := "alicloud_event_bridge_event_streaming.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventStreamingMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventBridgeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ResourceId := "alicloud_event_bridge_event_streaming.default"
+	ra := acctest.ResourceAttrInit(ResourceId, AliCloudEventBridgeEventStreamingMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(ResourceId, &v, func() interface{} {
+		return eventbridge.NewEventBridgeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEventBridgeEventStreaming")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%seventstreaming%d", region, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
+	testAccConfig := acctest.ResourceTestAccConfig(ResourceId, name, func(name string) string {
 		return AliCloudEventBridgeEventStreamingBasicDependence0(name, region)
 	})
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -255,17 +257,17 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0_twin(t *testing.T) {
 						"event_streaming_name": name,
 						"description":          name,
 						"filter_pattern":       `{}`,
-						"source":               CHECKSET,
-						"sink":                 CHECKSET,
-						"run_options":          CHECKSET,
-						"transforms":           CHECKSET,
+						"source":               acctest.CHECKSET,
+						"sink":                 acctest.CHECKSET,
+						"run_options":          acctest.CHECKSET,
+						"transforms":           acctest.CHECKSET,
 						"status":               "RUNNING",
 						"tags.%":               "2",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				ResourceName:      ResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -274,7 +276,7 @@ func TestAccAliCloudEventBridgeEventStreaming_basic0_twin(t *testing.T) {
 }
 
 var AliCloudEventBridgeEventStreamingMap0 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AliCloudEventBridgeEventStreamingBasicDependence0(name, region string) string {

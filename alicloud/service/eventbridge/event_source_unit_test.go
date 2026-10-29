@@ -1,263 +1,26 @@
-package alicloud
+package eventbridge
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	resource.AddTestSweepers(
-		"alicloud_event_bridge_event_source",
-		&resource.Sweeper{
-			Name: "alicloud_event_bridge_event_source",
-			F:    testSweepEventBridgeEventSource,
-		})
-}
-
-func testSweepEventBridgeEventSource(region string) error {
-	prefixes := []string{
-		"tf-testacc",
-	}
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "Error getting AliCloud client.")
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	action := "ListUserDefinedEventSources"
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
-		"Limit":    PageSizeLarge,
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapError(fmt.Errorf("ListUserDefinedEventSources failed. Response: %v. Error: %v", response, err))
-	}
-	resp, err := jsonpath.Get("$.Data.EventSourceList", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.EventSourceList", response)
-	}
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				EventBusName := ""
-				if val, exist := item["Name"]; exist {
-					EventBusName = val.(string)
-				}
-				if strings.Contains(strings.ToLower(EventBusName), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping EventBridge Source: %s", item["Name"])
-				continue
-			}
-		}
-		log.Printf("[INFO] Deleting EventBridge Source: %s", item["Name"])
-		action = "DeleteEventSource"
-		request = map[string]interface{}{
-			"EventSourceName": item["Name"],
-		}
-		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-			response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, true)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		if err != nil {
-			log.Printf("\n[ERROR] Deleting EventBridge source %s failed. Response: %v. Error: %v.", item["Name"], response, err)
-		}
-	}
-	return nil
-}
-
-func TestAccAliCloudEventBridgeEventSource_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgeeventsource%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"event_bus_name":    "${alicloud_event_bridge_event_bus.default.event_bus_name}",
-					"event_source_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"event_bus_name":    CHECKSET,
-						"event_source_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"external_source_type": "MNS",
-					"external_source_config": map[string]interface{}{
-						"QueueName": "${alicloud_mns_queue.default.name}",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"external_source_type":             "MNS",
-						"external_source_config.%":         "1",
-						"external_source_config.QueueName": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"linked_external_source": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"linked_external_source": "true",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"linked_external_source"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudEventBridgeEventSource_basic0_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_event_bridge_event_source.default"
-	ra := resourceAttrInit(resourceId, AliCloudEventBridgeEventSourceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EventbridgeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEventBridgeEventSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%seventbridgeeventsource%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEventBridgeEventSourceBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EventBridgeSupportRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"event_bus_name":       "${alicloud_event_bridge_event_bus.default.event_bus_name}",
-					"event_source_name":    name,
-					"external_source_type": "MNS",
-					"external_source_config": map[string]interface{}{
-						"QueueName": "${alicloud_mns_queue.default.name}",
-					},
-					"description":            name,
-					"linked_external_source": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"event_bus_name":                   CHECKSET,
-						"event_source_name":                name,
-						"external_source_type":             "MNS",
-						"external_source_config.%":         "1",
-						"external_source_config.QueueName": name,
-						"description":                      name,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"linked_external_source"},
-			},
-		},
-	})
-}
-
-var AliCloudEventBridgeEventSourceMap0 = map[string]string{}
-
-func AliCloudEventBridgeEventSourceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-	variable "name" {
-  		default = "%s"
-	}
-
-	resource "alicloud_event_bridge_event_bus" "default" {
-  		event_bus_name = var.name
-	}
-
-	resource "alicloud_mns_queue" "default" {
-  		name = var.name
-	}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAliCloudEventBridgeEventSource(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_event_source"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_event_source"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -281,7 +44,7 @@ func TestUnitAliCloudEventBridgeEventSource(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -312,18 +75,18 @@ func TestUnitAliCloudEventBridgeEventSource(t *testing.T) {
 
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_event_bridge_event_source", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_event_bridge_event_source", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -331,9 +94,9 @@ func TestUnitAliCloudEventBridgeEventSource(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -381,9 +144,9 @@ func TestUnitAliCloudEventBridgeEventSource(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -492,9 +255,9 @@ func TestUnitAliCloudEventBridgeEventSource(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEventbridgeClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

@@ -1,4 +1,4 @@
-package alicloud
+package eventbridge
 
 import (
 	"fmt"
@@ -6,11 +6,14 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEventBridgeServiceLinkedRole() *schema.Resource {
+func ResourceEventBridgeServiceLinkedRole() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEventBridgeServiceLinkedRoleCreate,
 		Read:   resourceAliCloudEventBridgeServiceLinkedRoleRead,
@@ -41,11 +44,11 @@ func resourceAliCloudEventBridgeServiceLinkedRoleCreate(d *schema.ResourceData, 
 
 	request["ProductName"] = d.Get("product_name")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("eventbridge", "2020-04-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -53,21 +56,21 @@ func resourceAliCloudEventBridgeServiceLinkedRoleCreate(d *schema.ResourceData, 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service_linked_role", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_event_bridge_service_linked_role", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("CreateServiceLinkedRoleForProduct failed, response: %v", response))
+		return errs.WrapError(fmt.Errorf("CreateServiceLinkedRoleForProduct failed, response: %v", response))
 	}
 
 	d.SetId(fmt.Sprint(request["ProductName"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eventbridgeService.CheckRoleForProductRefreshFunc(d.Id(), []string{"false"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eventbridgeService.CheckRoleForProductRefreshFunc(d.Id(), []string{"false"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudEventBridgeServiceLinkedRoleRead(d, meta)
@@ -79,12 +82,12 @@ func resourceAliCloudEventBridgeServiceLinkedRoleRead(d *schema.ResourceData, me
 
 	object, err := eventbridgeService.DescribeEventBridgeServiceLinkedRole(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_bus eventbridgeService.DescribeEventBridgeServiceLinkedRole Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("product_name", object["StsRoleName"])
@@ -102,11 +105,11 @@ func resourceAliCloudEventBridgeServiceLinkedRoleDelete(d *schema.ResourceData, 
 		"RoleName": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 0*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 0*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, request, nil, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -114,13 +117,13 @@ func resourceAliCloudEventBridgeServiceLinkedRoleDelete(d *schema.ResourceData, 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
+		if errs.IsExpectedErrors(err, []string{"EntityNotExist.Role"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
