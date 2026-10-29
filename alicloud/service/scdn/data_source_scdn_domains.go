@@ -1,4 +1,4 @@
-package alicloud
+package scdn
 
 import (
 	"fmt"
@@ -7,14 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudScdnDomains() *schema.Resource {
+func DataSourceScdnDomains() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudScdnDomainsRead,
+		Read: dataSourceScdnDomainsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -146,7 +149,7 @@ func dataSourceAlicloudScdnDomains() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceScdnDomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeScdnUserDomains"
@@ -157,14 +160,14 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("status"); ok {
 		request["DomainStatus"] = v
 	}
-	request["PageSize"] = PageSizeXLarge
+	request["PageSize"] = helper.PageSizeXLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 	var domainNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		domainNameRegex = r
 	}
@@ -181,11 +184,11 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -193,13 +196,13 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_scdn_domains", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_scdn_domains", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Domains.PageData", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains.PageData", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Domains.PageData", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -214,7 +217,7 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -240,10 +243,10 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 			continue
 		}
 		id := fmt.Sprint(object["DomainName"])
-		scdnService := ScdnService{client}
+		scdnService := NewService(client)
 		getResp1, err := scdnService.DescribeScdnDomainCertificateInfo(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		if certInfosMap, ok := getResp1["CertInfos"].(map[string]interface{}); ok && certInfosMap != nil {
@@ -263,7 +266,7 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 		}
 		getResp4, err := scdnService.DescribeScdnDomain(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if v, ok := getResp4["Sources"].(map[string]interface{})["Source"].([]interface{}); ok {
 			source := make([]map[string]interface{}, 0)
@@ -285,20 +288,20 @@ func dataSourceAlicloudScdnDomainsRead(d *schema.ResourceData, meta interface{})
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("domains", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

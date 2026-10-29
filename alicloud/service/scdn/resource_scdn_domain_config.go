@@ -1,4 +1,4 @@
-package alicloud
+package scdn
 
 import (
 	"encoding/json"
@@ -6,17 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudScdnDomainConfig() *schema.Resource {
+func ResourceScdnDomainConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudScdnDomainConfigCreate,
-		Read:   resourceAlicloudScdnDomainConfigRead,
-		Update: resourceAlicloudScdnDomainConfigUpdate,
-		Delete: resourceAlicloudScdnDomainConfigDelete,
+		Create: resourceScdnDomainConfigCreate,
+		Read:   resourceScdnDomainConfigRead,
+		Update: resourceScdnDomainConfigUpdate,
+		Delete: resourceScdnDomainConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -61,9 +64,9 @@ func resourceAlicloudScdnDomainConfig() *schema.Resource {
 	}
 }
 
-func resourceAlicloudScdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceScdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	scdnService := ScdnService{client}
+	scdnService := NewService(client)
 	var response map[string]interface{}
 	action := "BatchSetScdnDomainConfigs"
 	request := make(map[string]interface{})
@@ -86,49 +89,49 @@ func resourceAlicloudScdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 	bytconfig, _ := json.Marshal(config)
 	request["DomainNames"] = d.Get("domain_name").(string)
 	request["Functions"] = string(bytconfig)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_scdn_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_scdn_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprintf("%s:%s:%s", request["DomainNames"], d.Get("function_name"), ""))
 
 	object, err := scdnService.DescribeScdnDomainConfig(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.SetId(fmt.Sprintf("%s:%s:%s", request["DomainNames"], object["FunctionName"], object["ConfigId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 2*time.Second, scdnService.ScdnDomainConfigStateRefreshFunc(d.Id(), []string{"failed"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 2*time.Second, scdnService.ScdnDomainConfigStateRefreshFunc(d.Id(), []string{"failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudScdnDomainConfigRead(d, meta)
+	return resourceScdnDomainConfigRead(d, meta)
 }
 
-func resourceAlicloudScdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceScdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	scdnService := &ScdnService{client: client}
+	scdnService := NewService(client)
 
 	object, err := scdnService.DescribeScdnDomainConfig(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	functionArgMaps := make([]map[string]interface{}, 0)
 
@@ -139,9 +142,9 @@ func resourceAlicloudScdnDomainConfigRead(d *schema.ResourceData, meta interface
 		functionArgMap["arg_value"] = functionArgItem["ArgValue"]
 		functionArgMaps = append(functionArgMaps, functionArgMap)
 	}
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("config_id", parts[2])
 	d.Set("domain_name", parts[0])
@@ -152,16 +155,16 @@ func resourceAlicloudScdnDomainConfigRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAlicloudScdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceScdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	scdnService := ScdnService{client}
+	scdnService := NewService(client)
 	var response map[string]interface{}
 	if d.HasChange("function_args") {
 		action := "BatchSetScdnDomainConfigs"
 		request := make(map[string]interface{})
-		parts, err := ParseResourceId(d.Id(), 3)
+		parts, err := helper.ParseResourceId(d.Id(), 3)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		config := make([]map[string]interface{}, 1)
@@ -182,64 +185,64 @@ func resourceAlicloudScdnDomainConfigUpdate(d *schema.ResourceData, meta interfa
 		bytconfig, _ := json.Marshal(config)
 		request["DomainNames"] = parts[0]
 		request["Functions"] = string(bytconfig)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 2*time.Second, scdnService.ScdnDomainConfigStateRefreshFunc(d.Id(), []string{"failed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 2*time.Second, scdnService.ScdnDomainConfigStateRefreshFunc(d.Id(), []string{"failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	return resourceAlicloudScdnDomainConfigRead(d, meta)
+	return resourceScdnDomainConfigRead(d, meta)
 }
 
-func resourceAlicloudScdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceScdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	scdnService := ScdnService{client}
+	scdnService := NewService(client)
 	var response map[string]interface{}
 	action := "DeleteScdnSpecificConfig"
 	var err error
-	parts, err := ParseResourceId(d.Id(), 3)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := make(map[string]interface{})
 	request["ConfigId"] = parts[2]
 	request["DomainName"] = parts[0]
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("scdn", "2017-11-15", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Second, scdnService.ScdnDomainConfigStateRefreshFunc(d.Id(), []string{"failed"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Second, scdnService.ScdnDomainConfigStateRefreshFunc(d.Id(), []string{"failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
