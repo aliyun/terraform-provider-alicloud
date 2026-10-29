@@ -1,4 +1,4 @@
-package alicloud
+package hbase
 
 import (
 	"fmt"
@@ -9,7 +9,11 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -30,11 +34,33 @@ const (
 	Hb_HBASE_COLD_EXPANDING = "HBASE_COLD_EXPANDING"
 )
 
-type HBaseService struct {
+// PayType is the charge type used by the HBase resources and data sources.
+type PayType string
+
+const (
+	PostPaid PayType = "PostPaid"
+	PrePaid  PayType = "PrePaid"
+	Prepaid  PayType = "Prepaid"
+)
+
+// localHostIp is the default ip white list value returned when no group is
+// configured, matching the legacy root-package behaviour.
+const localHostIp = "127.0.0.1"
+
+// Service wraps the HBase API calls used by the resources and data sources
+// of this package.
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *HBaseService) setInstanceTags(d *schema.ResourceData) error {
+// NewService is the exported constructor: the client field stays unexported,
+// so callers outside the package (including the flat layout's acceptance
+// tests) build values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) setInstanceTags(d *schema.ResourceData) error {
 	oraw, nraw := d.GetChange("tags")
 	o := oraw.(map[string]interface{})
 	n := nraw.(map[string]interface{})
@@ -54,9 +80,9 @@ func (s *HBaseService) setInstanceTags(d *schema.ResourceData) error {
 			return hbaseClient.UnTagResources(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if len(create) > 0 {
@@ -68,15 +94,15 @@ func (s *HBaseService) setInstanceTags(d *schema.ResourceData) error {
 			return hbaseClient.TagResources(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return nil
 }
 
-func (s *HBaseService) diffTags(oldTags, newTags []hbase.TagResourcesTag) ([]hbase.TagResourcesTag, []hbase.TagResourcesTag) {
+func (s *Service) diffTags(oldTags, newTags []hbase.TagResourcesTag) ([]hbase.TagResourcesTag, []hbase.TagResourcesTag) {
 	// First, we're creating everything we have
 	create := make(map[string]interface{})
 	for _, t := range newTags {
@@ -96,7 +122,7 @@ func (s *HBaseService) diffTags(oldTags, newTags []hbase.TagResourcesTag) ([]hba
 	return s.tagsFromMap(create), remove
 }
 
-func (s *HBaseService) tagsFromMap(m map[string]interface{}) []hbase.TagResourcesTag {
+func (s *Service) tagsFromMap(m map[string]interface{}) []hbase.TagResourcesTag {
 	result := make([]hbase.TagResourcesTag, 0, len(m))
 	for k, v := range m {
 		result = append(result, hbase.TagResourcesTag{
@@ -108,7 +134,7 @@ func (s *HBaseService) tagsFromMap(m map[string]interface{}) []hbase.TagResource
 	return result
 }
 
-func (s *HBaseService) tagsToMap(tags []hbase.Tag) map[string]string {
+func (s *Service) tagsToMap(tags []hbase.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTag(t) {
@@ -118,7 +144,7 @@ func (s *HBaseService) tagsToMap(tags []hbase.Tag) map[string]string {
 	return result
 }
 
-func (s *HBaseService) ignoreTag(t hbase.Tag) bool {
+func (s *Service) ignoreTag(t hbase.Tag) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
@@ -131,7 +157,7 @@ func (s *HBaseService) ignoreTag(t hbase.Tag) bool {
 	return false
 }
 
-func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeHBaseInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeInstance"
@@ -140,11 +166,11 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]inter
 		"RegionId":  s.client.RegionId,
 		"ClusterId": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("HBase", "2019-01-01", action, query, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -152,23 +178,23 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, query)
+	logs.AddDebug(action, response, query)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Hbase:Instance", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		if errs.IsExpectedErrors(err, []string{"Instance.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Hbase:Instance", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
 }
 
 // pop has limit, support next.
-func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.DescribeIpWhitelistResponse, err error) {
+func (s *Service) DescribeIpWhitelist(id string) (instance hbase.DescribeIpWhitelistResponse, err error) {
 	request := hbase.CreateDescribeIpWhitelistRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -177,16 +203,16 @@ func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.DescribeIp
 	})
 	response, _ := raw.(*hbase.DescribeIpWhitelistResponse)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
-			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"Instance.NotFound"}) {
+			return instance, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return instance, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return *response, nil
 }
 
-func (s *HBaseService) DescribeSecurityGroups(id string) (object hbase.DescribeSecurityGroupsResponse, err error) {
+func (s *Service) DescribeSecurityGroups(id string) (object hbase.DescribeSecurityGroupsResponse, err error) {
 	request := hbase.CreateDescribeSecurityGroupsRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -195,35 +221,35 @@ func (s *HBaseService) DescribeSecurityGroups(id string) (object hbase.DescribeS
 		return client.DescribeSecurityGroups(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*hbase.DescribeSecurityGroupsResponse)
 	return *response, nil
 }
 
-func (s *HBaseService) HBaseClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) HBaseClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeHBaseInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
-				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
 
-func (s *HBaseService) ModifyClusterDeletionProtection(clusterId string, protection bool) error {
+func (s *Service) ModifyClusterDeletionProtection(clusterId string, protection bool) error {
 	request := hbase.CreateModifyClusterDeletionProtectionRequest()
 	request.ClusterId = clusterId
 	request.Protection = requests.NewBoolean(protection)
@@ -231,13 +257,13 @@ func (s *HBaseService) ModifyClusterDeletionProtection(clusterId string, protect
 		return client.ModifyClusterDeletionProtection(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, clusterId+" modifyClusterDeletionProtection failed")
+		return errs.WrapErrorf(err, clusterId+" modifyClusterDeletionProtection failed")
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }
 
-func (s *HBaseService) DescribeEndpoints(id string) (object hbase.DescribeEndpointsResponse, err error) {
+func (s *Service) DescribeEndpoints(id string) (object hbase.DescribeEndpointsResponse, err error) {
 	request := hbase.CreateDescribeEndpointsRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -246,15 +272,15 @@ func (s *HBaseService) DescribeEndpoints(id string) (object hbase.DescribeEndpoi
 		return client.DescribeEndpoints(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*hbase.DescribeEndpointsResponse)
 	return *response, nil
 }
 
-func (s *HBaseService) DescribeClusterConnection(id string) (object hbase.DescribeClusterConnectionResponse, err error) {
+func (s *Service) DescribeClusterConnection(id string) (object hbase.DescribeClusterConnectionResponse, err error) {
 	request := hbase.CreateDescribeClusterConnectionRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -263,10 +289,41 @@ func (s *HBaseService) DescribeClusterConnection(id string) (object hbase.Descri
 		return client.DescribeClusterConnection(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*hbase.DescribeClusterConnectionResponse)
 	return *response, nil
+}
+
+// DescribeVSwitch resolves the zone and VPC of a vswitch, replacing the
+// legacy root-package VpcService.DescribeVSwitch call used during instance
+// creation. It is kept behaviour-equivalent: NotFound is surfaced as a
+// wrapped NotFound error.
+func (s *Service) DescribeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+	request := vpc.CreateDescribeVSwitchAttributesRequest()
+	request.RegionId = s.client.RegionId
+	request.VSwitchId = id
+
+	invoker := helper.NewInvoker()
+	err = invoker.Run(func() error {
+		raw, e := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVSwitchAttributes(request)
+		})
+		if e != nil {
+			if errs.IsExpectedErrors(e, []string{"InvalidVswitchID.NotFound"}) {
+				return errs.WrapErrorf(e, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
+			}
+			return errs.WrapErrorf(e, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
+		if response.VSwitchId != id {
+			return errs.WrapErrorf(errs.NotFoundErr("vswitch", id), errs.NotFoundMsg, errs.ProviderERROR)
+		}
+		v = *response
+		return nil
+	})
+	return
 }

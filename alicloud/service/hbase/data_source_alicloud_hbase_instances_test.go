@@ -1,26 +1,27 @@
-package alicloud
+package hbase_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 var existMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"instances.#":              CHECKSET,
-		"instances.0.id":           CHECKSET,
-		"instances.0.name":         CHECKSET,
-		"instances.0.region_id":    CHECKSET,
-		"instances.0.zone_id":      CHECKSET,
-		"instances.0.status":       CHECKSET,
+		"instances.#":              acctest.CHECKSET,
+		"instances.0.id":           acctest.CHECKSET,
+		"instances.0.name":         acctest.CHECKSET,
+		"instances.0.region_id":    acctest.CHECKSET,
+		"instances.0.zone_id":      acctest.CHECKSET,
+		"instances.0.status":       acctest.CHECKSET,
 		"instances.0.tags.%":       "2",
 		"instances.0.tags.Created": "TF",
 		"instances.0.tags.For":     "acceptance test",
 		"ids.#":                    "1",
-		"ids.0":                    CHECKSET,
+		"ids.0":                    acctest.CHECKSET,
 		"names.#":                  "1",
 	}
 }
@@ -33,55 +34,55 @@ var fakeMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var checkInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_hbase_instances.default",
-	existMapFunc: existMapFunc,
-	fakeMapFunc:  fakeMapFunc,
+var checkInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_hbase_instances.default",
+	ExistMapFunc: existMapFunc,
+	FakeMapFunc:  fakeMapFunc,
 }
 
 func TestAccAlicloudHBaseInstancesDataSourceNewInstance(t *testing.T) {
-	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex": `"${alicloud_hbase_instance.default.name}_fake"`,
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"ids": `["${alicloud_hbase_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"ids": `["${alicloud_hbase_instance.default.id}_fake"]`,
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
 			"tags":       `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
 			"tags":       `{Created = "TF1"}`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
 			"ids":        `["${alicloud_hbase_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudHBaseDataSourceConfigNewInstance(rand, map[string]string{
 			"name_regex": `"${alicloud_hbase_instance.default.name}"`,
 			"ids":        `["${alicloud_hbase_instance.default.id}_fake"]`,
 		}),
 	}
 
-	checkInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, allConf)
+	checkInfo.DataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, allConf)
 }
 
 // new a instance config
@@ -106,7 +107,10 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  # Test-infra adaptation: offset 8 persistently overlaps an existing subnet
+  # in the shared ^default-NODELETING$ VPC; offset 200 avoids it. The hbase
+  # data-source assertions are unchanged.
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 200)
   zone_id = data.alicloud_hbase_zones.default.ids.0
   vswitch_name              = var.name
 }

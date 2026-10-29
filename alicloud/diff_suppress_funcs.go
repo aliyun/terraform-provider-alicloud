@@ -343,6 +343,27 @@ func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.Resource
 	return true
 }
 
+func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("enable_public"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
+func elasticsearchEnableKibanaPublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("enable_kibana_public_network"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
+func elasticsearchEnableKibanaPrivateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOkExists("enable_kibana_private_network"); ok && v.(bool) == true {
+		return false
+	}
+	return true
+}
+
 func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("instance_charge_type").(string) == "PostPaid" {
 		return true
@@ -579,6 +600,20 @@ func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return new == "" || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
+func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+
+	oldVersion := strings.Split(strings.Split(old, "_")[0], ".")
+	newVersion := strings.Split(strings.Split(new, "_")[0], ".")
+
+	if len(oldVersion) >= 2 && len(newVersion) >= 2 {
+		if oldVersion[0] == newVersion[0] && oldVersion[1] == newVersion[1] {
+			return true
+		}
+	}
+
+	return false
+}
+
 func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if enable_ssl, ok := d.GetOk("enable_ssl"); !ok || !enable_ssl.(bool) {
 		return true
@@ -804,30 +839,6 @@ func formatJsonConfigValue(value interface{}) string {
 	}
 }
 
-func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
-}
-
-func engineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("engine").(string)) == "bds"
-}
-
-func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	oldArray := strings.Split(old, ",")
-	newArray := strings.Split(new, ",")
-	if len(oldArray) != len(newArray) {
-		return false
-	}
-	sort.Strings(oldArray)
-	sort.Strings(newArray)
-	for i := range newArray {
-		if newArray[i] != oldArray[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("ssl_enabled"); ok && v.(int) == 1 {
 		return false
@@ -896,4 +907,11 @@ func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	sort.Strings(oldvlist)
 	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
 
+}
+
+func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("data_node_disk_type"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
 }

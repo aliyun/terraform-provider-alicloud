@@ -1,16 +1,19 @@
-package alicloud
+package hbase
 
 import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudHBaseInstanceTypes() *schema.Resource {
+func DataSourceHBaseInstanceTypes() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudHBaseInstanceTypesRead,
 
@@ -147,7 +150,7 @@ func dataSourceAlicloudHBaseInstanceTypes() *schema.Resource {
 func dataSourceAlicloudHBaseInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
 	response, err := describeAvaiableResource(d, meta)
 	if err != nil {
-		return WrapErrorf(err, "describeAvaiableResource failed")
+		return errs.WrapErrorf(err, "describeAvaiableResource failed")
 	}
 
 	var ids []string
@@ -211,22 +214,22 @@ func dataSourceAlicloudHBaseInstanceTypesRead(d *schema.ResourceData, meta inter
 		ids = append(ids, v.(string))
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("types", types); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("master_instance_types", masterInstanceTypes); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("core_instance_types", coreInstanceTypes); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	result := map[string]interface{}{
@@ -236,7 +239,7 @@ func dataSourceAlicloudHBaseInstanceTypesRead(d *schema.ResourceData, meta inter
 	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		_ = writeToFile(output.(string), result)
+		_ = helper.WriteToFile(output.(string), result)
 	}
 	return nil
 }
@@ -274,11 +277,11 @@ func describeAvaiableResource(d *schema.ResourceData, meta interface{}) (result 
 
 	response, _ := raw.(*hbase.DescribeAvailableResourceResponse)
 	if err != nil {
-		return result, WrapErrorf(err, DefaultErrorMsg, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return result, errs.WrapErrorf(err, errs.DefaultErrorMsg, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	if response == nil {
-		return result, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_hbase_instance_types", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return result, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_hbase_instance_types", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	return *response, nil
 }

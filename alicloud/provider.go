@@ -746,9 +746,6 @@ func Provider() *schema.Provider {
 			"alicloud_havips": dataSourceAlicloudHavips(),
 
 			// hbase
-			"alicloud_hbase_instances":      dataSourceAlicloudHBaseInstances(),
-			"alicloud_hbase_zones":          dataSourceAlicloudHBaseZones(),
-			"alicloud_hbase_instance_types": dataSourceAlicloudHBaseInstanceTypes(),
 
 			// hbr
 			"alicloud_hbr_udm_snapshots":             dataSourceAliCloudHbrUdmSnapshots(),
@@ -1994,7 +1991,6 @@ func Provider() *schema.Provider {
 			"alicloud_havip_attachment": resourceAliCloudVpcHaVipAttachment(),
 
 			// hbase
-			"alicloud_hbase_instance": resourceAlicloudHBaseInstance(),
 
 			// hbr
 			"alicloud_hbr_cross_account":      resourceAliCloudHbrCrossAccount(),

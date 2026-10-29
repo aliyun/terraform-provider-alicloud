@@ -1,4 +1,4 @@
-package alicloud
+package hbase
 
 import (
 	"fmt"
@@ -6,10 +6,13 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudHBaseZones() *schema.Resource {
+func DataSourceHBaseZones() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudHBaseZonesRead,
 
@@ -49,12 +52,12 @@ func dataSourceAlicloudHBaseZonesRead(d *schema.ResourceData, meta interface{}) 
 		return hbaseClient.DescribeRegions(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_hbase_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_hbase_zones", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	regions, _ := raw.(*hbase.DescribeRegionsResponse)
 	if len(regions.Regions.Region) <= 0 {
-		return WrapError(fmt.Errorf("[ERROR] There is no available region for HBase."))
+		return errs.WrapError(fmt.Errorf("[ERROR] There is no available region for HBase."))
 	}
 	for _, r := range regions.Regions.Region {
 		for _, zonid := range r.Zones.Zone {
@@ -72,15 +75,15 @@ func dataSourceAlicloudHBaseZonesRead(d *schema.ResourceData, meta interface{}) 
 		mapping := map[string]interface{}{"id": zoneId}
 		s = append(s, mapping)
 	}
-	d.SetId(dataResourceIdHash(zoneIds))
+	d.SetId(helper.DataResourceIdHash(zoneIds))
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("ids", zoneIds); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }
