@@ -620,26 +620,7 @@ func Provider() *schema.Provider {
 			// forward
 
 			// ga
-			"alicloud_ga_accelerators":                               dataSourceAlicloudGaAccelerators(),
-			"alicloud_ga_listeners":                                  dataSourceAlicloudGaListeners(),
-			"alicloud_ga_bandwidth_packages":                         dataSourceAlicloudGaBandwidthPackages(),
-			"alicloud_ga_endpoint_groups":                            dataSourceAliCloudGaEndpointGroups(),
-			"alicloud_ga_ip_sets":                                    dataSourceAlicloudGaIpSets(),
-			"alicloud_ga_forwarding_rules":                           dataSourceAlicloudGaForwardingRules(),
-			"alicloud_ga_acls":                                       dataSourceAlicloudGaAcls(),
-			"alicloud_ga_additional_certificates":                    dataSourceAlicloudGaAdditionalCertificates(),
-			"alicloud_ga_accelerator_spare_ip_attachments":           dataSourceAlicloudGaAcceleratorSpareIpAttachments(),
-			"alicloud_ga_basic_accelerators":                         dataSourceAliCloudGaBasicAccelerators(),
-			"alicloud_ga_basic_accelerate_ips":                       dataSourceAlicloudGaBasicAccelerateIps(),
-			"alicloud_ga_basic_endpoints":                            dataSourceAlicloudGaBasicEndpoints(),
-			"alicloud_ga_basic_accelerate_ip_endpoint_relations":     dataSourceAlicloudGaBasicAccelerateIpEndpointRelations(),
-			"alicloud_ga_domains":                                    dataSourceAlicloudGaDomains(),
-			"alicloud_ga_custom_routing_endpoint_groups":             dataSourceAlicloudGaCustomRoutingEndpointGroups(),
-			"alicloud_ga_custom_routing_endpoint_group_destinations": dataSourceAlicloudGaCustomRoutingEndpointGroupDestinations(),
-			"alicloud_ga_custom_routing_endpoints":                   dataSourceAlicloudGaCustomRoutingEndpoints(),
-			"alicloud_ga_custom_routing_endpoint_traffic_policies":   dataSourceAliCloudGaCustomRoutingEndpointTrafficPolicies(),
-			"alicloud_ga_custom_routing_port_mappings":               dataSourceAlicloudGaCustomRoutingPortMappings(),
-			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":      dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
+			// ga types are registered via service/ga.ServicePackage().
 
 			// governance
 
@@ -1663,30 +1644,7 @@ func Provider() *schema.Provider {
 			// forward
 
 			// ga
-			"alicloud_ga_accelerator":                               resourceAliCloudGaAccelerator(),
-			"alicloud_ga_listener":                                  resourceAliCloudGaListener(),
-			"alicloud_ga_bandwidth_package":                         resourceAliCloudGaBandwidthPackage(),
-			"alicloud_ga_endpoint_group":                            resourceAliCloudGaEndpointGroup(),
-			"alicloud_ga_bandwidth_package_attachment":              resourceAliCloudGaBandwidthPackageAttachment(),
-			"alicloud_ga_ip_set":                                    resourceAliCloudGaIpSet(),
-			"alicloud_ga_forwarding_rule":                           resourceAliCloudGaForwardingRule(),
-			"alicloud_ga_acl":                                       resourceAliCloudGaAcl(),
-			"alicloud_ga_acl_attachment":                            resourceAliCloudGaAclAttachment(),
-			"alicloud_ga_additional_certificate":                    resourceAliCloudGaAdditionalCertificate(),
-			"alicloud_ga_accelerator_spare_ip_attachment":           resourceAlicloudGaAcceleratorSpareIpAttachment(),
-			"alicloud_ga_access_log":                                resourceAlicloudGaAccessLog(),
-			"alicloud_ga_acl_entry_attachment":                      resourceAliCloudGaAclEntryAttachment(),
-			"alicloud_ga_basic_accelerator":                         resourceAliCloudGaBasicAccelerator(),
-			"alicloud_ga_basic_endpoint_group":                      resourceAliCloudGaBasicEndpointGroup(),
-			"alicloud_ga_basic_ip_set":                              resourceAliCloudGaBasicIpSet(),
-			"alicloud_ga_basic_accelerate_ip":                       resourceAliCloudGaBasicAccelerateIp(),
-			"alicloud_ga_basic_endpoint":                            resourceAliCloudGaBasicEndpoint(),
-			"alicloud_ga_basic_accelerate_ip_endpoint_relation":     resourceAlicloudGaBasicAccelerateIpEndpointRelation(),
-			"alicloud_ga_domain":                                    resourceAlicloudGaDomain(),
-			"alicloud_ga_custom_routing_endpoint_group":             resourceAliCloudGaCustomRoutingEndpointGroup(),
-			"alicloud_ga_custom_routing_endpoint_group_destination": resourceAliCloudGaCustomRoutingEndpointGroupDestination(),
-			"alicloud_ga_custom_routing_endpoint":                   resourceAliCloudGaCustomRoutingEndpoint(),
-			"alicloud_ga_custom_routing_endpoint_traffic_policy":    resourceAliCloudGaCustomRoutingEndpointTrafficPolicy(),
+			// ga types are registered via service/ga.ServicePackage().
 
 			// governance
 
