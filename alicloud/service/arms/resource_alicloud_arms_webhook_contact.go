@@ -170,7 +170,7 @@ func (r *webhookContactResource) Create(ctx context.Context, req resource.Create
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.RetryContext(ctx, webhookContactTimeout, func() *retry.RetryError {
 		var callErr error
-		response, callErr = r.Client().RpcPost("ARMS", "2019-08-08", action, nil, request, true)
+		response, callErr = r.Meta().RpcPost("ARMS", "2019-08-08", action, nil, request, true)
 		if callErr != nil {
 			if helper.NeedRetry(callErr) {
 				wait()
@@ -206,7 +206,7 @@ func (r *webhookContactResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	object, err := NewService(r.Client()).DescribeWebhookContactContext(ctx, id)
+	object, err := NewService(r.Meta()).DescribeWebhookContactContext(ctx, id)
 	if err != nil {
 		// Keep the created ID in state so the contact stays trackable even when
 		// the read-back fails; Terraform marks the resource as tainted.
@@ -255,7 +255,7 @@ func (r *webhookContactResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	object, err := NewService(r.Client()).DescribeWebhookContactContext(ctx, id)
+	object, err := NewService(r.Meta()).DescribeWebhookContactContext(ctx, id)
 	if err != nil {
 		if errs.IsProviderNotFound(err) {
 			resp.State.RemoveResource(ctx)
@@ -291,7 +291,7 @@ func (r *webhookContactResource) Delete(ctx context.Context, req resource.Delete
 	}
 
 	id := state.Id.ValueString()
-	if err := NewService(r.Client()).DeleteWebhookContactContext(ctx, id); err != nil {
+	if err := NewService(r.Meta()).DeleteWebhookContactContext(ctx, id); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s: calling DeleteWebhookContact", webhookContactTypeName),
 			errs.WrapErrorf(err, errs.DefaultErrorMsg, id, "DeleteWebhookContact", errs.AlibabaCloudSdkGoERROR).Error(),

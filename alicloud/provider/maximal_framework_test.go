@@ -61,7 +61,7 @@ var (
 	_ resource.ResourceWithUpgradeIdentity  = (*maximalFrameworkResource)(nil)
 	_ resource.ResourceWithImportState      = (*maximalFrameworkResource)(nil)
 	_ resource.ResourceWithIdentity         = (*maximalFrameworkResource)(nil)
-	_ fwadapt.WithClient                    = (*maximalFrameworkResource)(nil)
+	_ fwadapt.WithMeta                      = (*maximalFrameworkResource)(nil)
 )
 
 func newMaximalFrameworkResource(log *hookLog) *maximalFrameworkResource {
@@ -137,7 +137,7 @@ func (r *maximalFrameworkResource) Delete(ctx context.Context, req resource.Dele
 
 func (r *maximalFrameworkResource) recordCRUD(op string) {
 	r.log.record(op)
-	if r.Client() != nil {
+	if r.Meta() != nil {
 		r.log.record(op + "/client")
 	}
 }
@@ -268,7 +268,7 @@ var (
 	_ datasource.DataSourceWithConfigure        = (*maximalFrameworkDataSource)(nil)
 	_ datasource.DataSourceWithConfigValidators = (*maximalFrameworkDataSource)(nil)
 	_ datasource.DataSourceWithValidateConfig   = (*maximalFrameworkDataSource)(nil)
-	_ fwadapt.WithClient                        = (*maximalFrameworkDataSource)(nil)
+	_ fwadapt.WithMeta                          = (*maximalFrameworkDataSource)(nil)
 )
 
 func newMaximalFrameworkDataSource(log *hookLog) *maximalFrameworkDataSource {
@@ -291,7 +291,7 @@ func (d *maximalFrameworkDataSource) Schema(ctx context.Context, req datasource.
 
 func (d *maximalFrameworkDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	d.log.record("Read")
-	if d.Client() != nil {
+	if d.Meta() != nil {
 		d.log.record("Read/client")
 	}
 	if req.Config.Raw.IsNull() {

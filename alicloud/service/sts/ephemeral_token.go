@@ -111,7 +111,7 @@ func (e *stsTokenEphemeral) Open(ctx context.Context, req ephemeral.OpenRequest,
 		request["ExternalId"] = config.ExternalId.ValueString()
 	}
 
-	response, err := e.Client().RpcPost("Sts", "2015-04-01", action, nil, request, true)
+	response, err := e.Meta().RpcPost("Sts", "2015-04-01", action, nil, request, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: calling %s", stsTokenEphemeralTypeName, action),

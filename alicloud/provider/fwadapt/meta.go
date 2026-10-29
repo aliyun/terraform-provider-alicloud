@@ -13,46 +13,48 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// WithClient makes "this resource can receive a client" assertable at
+// WithMeta makes "this resource can receive the provider meta" assertable at
 // registration; a field would not be.
-type WithClient interface {
-	Client() *connectivity.AliyunClient
+type WithMeta interface {
+	Meta() *connectivity.AliyunClient
 }
 
-type injectedClient struct {
-	client *connectivity.AliyunClient
+// withMeta carries the provider meta: the configured provider state, of which
+// the API client is what the resource sees today.
+type withMeta struct {
+	meta *connectivity.AliyunClient
 }
 
 // A resource declaring its own Configure must call this one from it, or the
-// promoted method is shadowed and the client never arrives.
+// promoted method is shadowed and the meta never arrives.
 type ResourceBase struct {
-	injectedClient
+	withMeta
 }
 
 type DataSourceBase struct {
-	injectedClient
+	withMeta
 }
 
-// These three have no wrapper yet, so clientNotInjected does not cover them: a
-// shadowed Configure stays invisible until Client() returns nil.
+// These three have no wrapper yet, so metaNotInjected does not cover them: a
+// shadowed Configure stays invisible until Meta() returns nil.
 type EphemeralResourceBase struct {
-	injectedClient
+	withMeta
 }
 
 type ListResourceBase struct {
-	injectedClient
+	withMeta
 }
 
 type ActionBase struct {
-	injectedClient
+	withMeta
 }
 
 var (
-	_ WithClient = (*ResourceBase)(nil)
-	_ WithClient = (*DataSourceBase)(nil)
-	_ WithClient = (*EphemeralResourceBase)(nil)
-	_ WithClient = (*ListResourceBase)(nil)
-	_ WithClient = (*ActionBase)(nil)
+	_ WithMeta = (*ResourceBase)(nil)
+	_ WithMeta = (*DataSourceBase)(nil)
+	_ WithMeta = (*EphemeralResourceBase)(nil)
+	_ WithMeta = (*ListResourceBase)(nil)
+	_ WithMeta = (*ActionBase)(nil)
 	_ interface {
 		Configure(context.Context, resource.ConfigureRequest, *resource.ConfigureResponse)
 	} = (*ResourceBase)(nil)
@@ -71,74 +73,77 @@ var (
 )
 
 // The pointer receiver matters: a factory returning a value then fails the
-// registration guard instead of keeping a nil client forever.
-func (w *injectedClient) Client() *connectivity.AliyunClient { return w.client }
+// registration guard instead of keeping a nil meta forever.
+func (w *withMeta) Meta() *connectivity.AliyunClient { return w.meta }
 
 func (b *ResourceBase) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	client, diags := clientFromProviderData(req.ProviderData)
+	meta, diags := metaFromProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	if client != nil {
-		b.client = client
+	if meta != nil {
+		b.meta = meta
 	}
 }
 
 func (b *DataSourceBase) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	client, diags := clientFromProviderData(req.ProviderData)
+	meta, diags := metaFromProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	if client != nil {
-		b.client = client
+	if meta != nil {
+		b.meta = meta
 	}
 }
 
 func (b *EphemeralResourceBase) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
-	client, diags := clientFromProviderData(req.ProviderData)
+	meta, diags := metaFromProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	if client != nil {
-		b.client = client
+	if meta != nil {
+		b.meta = meta
 	}
 }
 
 func (b *ListResourceBase) Configure(ctx context.Context, req list.ConfigureRequest, resp *list.ConfigureResponse) {
-	client, diags := clientFromProviderData(req.ProviderData)
+	meta, diags := metaFromProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	if client != nil {
-		b.client = client
+	if meta != nil {
+		b.meta = meta
 	}
 }
 
 func (b *ActionBase) Configure(ctx context.Context, req action.ConfigureRequest, resp *action.ConfigureResponse) {
-	client, diags := clientFromProviderData(req.ProviderData)
+	meta, diags := metaFromProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
-	if client != nil {
-		b.client = client
+	if meta != nil {
+		b.meta = meta
 	}
 }
 
-// Reports a resource that came out of Configure with no client although one was on
-// offer. A nil providerData is normal; an existing error is more specific.
-func clientNotInjected(name string, inner interface{}, providerData interface{}, existing diag.Diagnostics) diag.Diagnostics {
+// Reports a resource that came out of Configure with no provider meta although
+// one was on offer. A nil providerData is normal; an existing error is more
+// specific.
+func metaNotInjected(name string, inner interface{}, providerData interface{}, existing diag.Diagnostics) diag.Diagnostics {
 	if providerData == nil || existing.HasError() {
 		return nil
 	}
-	carrier, ok := inner.(WithClient)
-	if !ok || carrier.Client() != nil {
+	carrier, ok := inner.(WithMeta)
+	if !ok || carrier.Meta() != nil {
 		return nil
 	}
 	return diag.Diagnostics{
 		diag.NewErrorDiagnostic(
-			"Provider Client Not Injected",
-			fmt.Sprintf("%s (%T) ended Configure without a provider client. This happens when a resource declares its own "+
+			"Provider Meta Not Injected",
+			fmt.Sprintf("%s (%T) ended Configure without the provider meta. This happens when a resource declares its own "+
 				"Configure and does not call the embedded fwadapt base's. Please report this issue to the provider developers.",
 				name, inner),
 		),
 	}
 }
 
-func clientFromProviderData(providerData interface{}) (*connectivity.AliyunClient, diag.Diagnostics) {
+// The provider hands every framework kind the same meta today, the configured
+// *connectivity.AliyunClient.
+func metaFromProviderData(providerData interface{}) (*connectivity.AliyunClient, diag.Diagnostics) {
 	if providerData == nil {
 		return nil, nil
 	}
-	client, ok := providerData.(*connectivity.AliyunClient)
+	meta, ok := providerData.(*connectivity.AliyunClient)
 	if !ok {
 		return nil, diag.Diagnostics{
 			diag.NewErrorDiagnostic(
@@ -147,5 +152,5 @@ func clientFromProviderData(providerData interface{}) (*connectivity.AliyunClien
 			),
 		}
 	}
-	return client, nil
+	return meta, nil
 }

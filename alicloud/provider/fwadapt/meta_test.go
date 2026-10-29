@@ -18,30 +18,30 @@ type stubResourceEmbeddingBase struct{ ResourceBase }
 
 type stubDataSourceEmbeddingBase struct{ DataSourceBase }
 
-func TestResourceBaseConfigureInjectsClient(t *testing.T) {
+func TestResourceBaseConfigureInjectsMeta(t *testing.T) {
 	r := &stubResourceEmbeddingBase{}
 	client := &connectivity.AliyunClient{}
 
 	var resp resource.ConfigureResponse
 	r.Configure(context.Background(), resource.ConfigureRequest{ProviderData: client}, &resp)
 
-	if r.Client() != client {
-		t.Fatal("Configure did not inject the client")
+	if r.Meta() != client {
+		t.Fatal("Configure did not inject the meta")
 	}
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("unexpected diags: %v", resp.Diagnostics)
 	}
 }
 
-func TestDataSourceBaseConfigureInjectsClient(t *testing.T) {
+func TestDataSourceBaseConfigureInjectsMeta(t *testing.T) {
 	ds := &stubDataSourceEmbeddingBase{}
 	client := &connectivity.AliyunClient{}
 
 	var resp datasource.ConfigureResponse
 	ds.Configure(context.Background(), datasource.ConfigureRequest{ProviderData: client}, &resp)
 
-	if ds.Client() != client {
-		t.Fatal("Configure did not inject the client")
+	if ds.Meta() != client {
+		t.Fatal("Configure did not inject the meta")
 	}
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("unexpected diags: %v", resp.Diagnostics)
@@ -54,8 +54,8 @@ func TestResourceBaseConfigureNilProviderData(t *testing.T) {
 	var resp resource.ConfigureResponse
 	r.Configure(context.Background(), resource.ConfigureRequest{ProviderData: nil}, &resp)
 
-	if r.Client() != nil {
-		t.Fatal("nil ProviderData must not set a client")
+	if r.Meta() != nil {
+		t.Fatal("nil ProviderData must not set the meta")
 	}
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("unexpected diags: %v", resp.Diagnostics)
@@ -68,8 +68,8 @@ func TestResourceBaseConfigureWrongProviderDataType(t *testing.T) {
 	var resp resource.ConfigureResponse
 	r.Configure(context.Background(), resource.ConfigureRequest{ProviderData: "not a client"}, &resp)
 
-	if r.Client() != nil {
-		t.Fatal("wrong ProviderData type must not set a client")
+	if r.Meta() != nil {
+		t.Fatal("wrong ProviderData type must not set the meta")
 	}
 	if !resp.Diagnostics.HasError() {
 		t.Fatal("expected error diag for wrong ProviderData type")
@@ -85,15 +85,15 @@ func TestBasesPromoteConfigure(t *testing.T) {
 	} = &stubDataSourceEmbeddingBase{}
 }
 
-func TestBasesImplementWithClient(t *testing.T) {
-	var _ WithClient = &stubResourceEmbeddingBase{}
-	var _ WithClient = &stubDataSourceEmbeddingBase{}
+func TestBasesImplementWithMeta(t *testing.T) {
+	var _ WithMeta = &stubResourceEmbeddingBase{}
+	var _ WithMeta = &stubDataSourceEmbeddingBase{}
 
-	if _, ok := interface{}(stubResourceEmbeddingBase{}).(WithClient); ok {
-		t.Error("a value satisfies WithClient: the registration guard would pass a value-returning factory whose Configure never runs")
+	if _, ok := interface{}(stubResourceEmbeddingBase{}).(WithMeta); ok {
+		t.Error("a value satisfies WithMeta: the registration guard would pass a value-returning factory whose Configure never runs")
 	}
-	if _, ok := interface{}(stubDataSourceEmbeddingBase{}).(WithClient); ok {
-		t.Error("a value satisfies WithClient: the registration guard would pass a value-returning factory whose Configure never runs")
+	if _, ok := interface{}(stubDataSourceEmbeddingBase{}).(WithMeta); ok {
+		t.Error("a value satisfies WithMeta: the registration guard would pass a value-returning factory whose Configure never runs")
 	}
 }
 
@@ -114,7 +114,7 @@ func TestRemainingBasesConfigure(t *testing.T) {
 				e := &stubEphemeralEmbeddingBase{}
 				var resp ephemeral.ConfigureResponse
 				e.Configure(context.Background(), ephemeral.ConfigureRequest{ProviderData: providerData}, &resp)
-				return e.Client(), resp.Diagnostics
+				return e.Meta(), resp.Diagnostics
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func TestRemainingBasesConfigure(t *testing.T) {
 				l := &stubListEmbeddingBase{}
 				var resp list.ConfigureResponse
 				l.Configure(context.Background(), list.ConfigureRequest{ProviderData: providerData}, &resp)
-				return l.Client(), resp.Diagnostics
+				return l.Meta(), resp.Diagnostics
 			},
 		},
 		{
@@ -132,17 +132,17 @@ func TestRemainingBasesConfigure(t *testing.T) {
 				a := &stubActionEmbeddingBase{}
 				var resp action.ConfigureResponse
 				a.Configure(context.Background(), action.ConfigureRequest{ProviderData: providerData}, &resp)
-				return a.Client(), resp.Diagnostics
+				return a.Meta(), resp.Diagnostics
 			},
 		},
 	}
 
 	client := &connectivity.AliyunClient{}
 	for _, tc := range cases {
-		t.Run(tc.name+" injects the client", func(t *testing.T) {
+		t.Run(tc.name+" injects the meta", func(t *testing.T) {
 			got, diags := tc.configure(client)
 			if got != client {
-				t.Fatal("Configure did not inject the client")
+				t.Fatal("Configure did not inject the meta")
 			}
 			if diags.HasError() {
 				t.Fatalf("unexpected diags: %v", diags)
@@ -152,7 +152,7 @@ func TestRemainingBasesConfigure(t *testing.T) {
 		t.Run(tc.name+" tolerates nil provider data", func(t *testing.T) {
 			got, diags := tc.configure(nil)
 			if got != nil {
-				t.Fatal("nil ProviderData must not set a client")
+				t.Fatal("nil ProviderData must not set the meta")
 			}
 			if diags.HasError() {
 				t.Fatalf("unexpected diags: %v", diags)
@@ -162,7 +162,7 @@ func TestRemainingBasesConfigure(t *testing.T) {
 		t.Run(tc.name+" reports a wrong provider data type", func(t *testing.T) {
 			got, diags := tc.configure("not a client")
 			if got != nil {
-				t.Fatal("wrong ProviderData type must not set a client")
+				t.Fatal("wrong ProviderData type must not set the meta")
 			}
 			if !diags.HasError() {
 				t.Fatal("expected error diag for wrong ProviderData type")
@@ -173,10 +173,10 @@ func TestRemainingBasesConfigure(t *testing.T) {
 
 type notACarrier struct{}
 
-func TestClientNotInjected(t *testing.T) {
+func TestMetaNotInjected(t *testing.T) {
 	client := &connectivity.AliyunClient{}
 	injected := &stubResourceEmbeddingBase{}
-	injected.client = client
+	injected.meta = client
 
 	cases := []struct {
 		name         string
@@ -186,13 +186,13 @@ func TestClientNotInjected(t *testing.T) {
 		wantError    bool
 	}{
 		{
-			name:         "shadowed Configure left the client nil",
+			name:         "shadowed Configure left the meta nil",
 			inner:        &stubResourceEmbeddingBase{},
 			providerData: client,
 			wantError:    true,
 		},
 		{
-			name:         "client arrived",
+			name:         "meta arrived",
 			inner:        injected,
 			providerData: client,
 		},
@@ -217,7 +217,7 @@ func TestClientNotInjected(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := clientNotInjected("alicloud_unit_test", tc.inner, tc.providerData, tc.existing)
+			got := metaNotInjected("alicloud_unit_test", tc.inner, tc.providerData, tc.existing)
 			if got.HasError() != tc.wantError {
 				t.Fatalf("HasError() = %t, want %t (diags: %v)", got.HasError(), tc.wantError, got)
 			}
