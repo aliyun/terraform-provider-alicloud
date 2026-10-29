@@ -62,11 +62,11 @@ func (a *pcaCertSyncAction) Invoke(ctx context.Context, req action.InvokeRequest
 		return
 	}
 
-	client := a.Client()
+	client := a.Meta()
 	if client == nil {
 		resp.Diagnostics.AddError(
-			"Provider Client Not Injected",
-			"The alicloud_ssl_certificates_service_pca_cert_sync action ended Configure without a provider client. Please report this issue to the provider developers.",
+			"Provider Meta Not Injected",
+			"The alicloud_ssl_certificates_service_pca_cert_sync action ended Configure without the provider meta. Please report this issue to the provider developers.",
 		)
 		return
 	}

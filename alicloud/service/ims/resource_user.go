@@ -165,7 +165,7 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 		request["Comments"] = plan.Comments.ValueString()
 	}
 
-	response, err := r.Client().RpcPost("Ims", "2019-08-15", "CreateUser", nil, request, true)
+	response, err := r.Meta().RpcPost("Ims", "2019-08-15", "CreateUser", nil, request, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling CreateUser", userTypeName),
@@ -184,7 +184,7 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	object, err := getUser(r.Client(), userId)
+	object, err := getUser(r.Meta(), userId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetUser", userTypeName),
@@ -209,7 +209,7 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	object, err := getUser(r.Client(), state.Id.ValueString())
+	object, err := getUser(r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetUser", userTypeName),
@@ -254,7 +254,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	if len(request) > 1 {
-		if _, err := r.Client().RpcPost("Ims", "2019-08-15", "UpdateUser", nil, request, true); err != nil {
+		if _, err := r.Meta().RpcPost("Ims", "2019-08-15", "UpdateUser", nil, request, true); err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Updating %s: calling UpdateUser", userTypeName),
 				errs.WrapErrorf(err, "Updating %s: calling UpdateUser", userTypeName).Error(),
@@ -263,7 +263,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		}
 	}
 
-	object, err := getUser(r.Client(), state.Id.ValueString())
+	object, err := getUser(r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetUser", userTypeName),
@@ -285,7 +285,7 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	_, err := r.Client().RpcPost("Ims", "2019-08-15", "DeleteUser", nil, map[string]interface{}{
+	_, err := r.Meta().RpcPost("Ims", "2019-08-15", "DeleteUser", nil, map[string]interface{}{
 		"UserId": state.Id.ValueString(),
 	}, true)
 	if err != nil && !isUserNotExist(err) {

@@ -1,5 +1,5 @@
 // Package fwadapt adapts the interceptor chain to Framework resources and data
-// sources, and injects the client into them (see client.go).
+// sources, and injects the provider meta into them (see meta.go).
 //
 // The Framework detects optional capabilities by type-asserting the registered
 // resource, so the wrapper's method set decides which capabilities the resource
@@ -98,7 +98,7 @@ func (w *wrappedResource) Configure(ctx context.Context, req resource.ConfigureR
 	if c, ok := w.inner.(resource.ResourceWithConfigure); ok {
 		c.Configure(ctx, req, resp)
 	}
-	resp.Diagnostics.Append(clientNotInjected(w.name, w.inner, req.ProviderData, resp.Diagnostics)...)
+	resp.Diagnostics.Append(metaNotInjected(w.name, w.inner, req.ProviderData, resp.Diagnostics)...)
 }
 
 func (w *wrappedResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
@@ -221,7 +221,7 @@ func (w *wrappedDataSource) Configure(ctx context.Context, req datasource.Config
 	if c, ok := w.inner.(datasource.DataSourceWithConfigure); ok {
 		c.Configure(ctx, req, resp)
 	}
-	resp.Diagnostics.Append(clientNotInjected(w.name, w.inner, req.ProviderData, resp.Diagnostics)...)
+	resp.Diagnostics.Append(metaNotInjected(w.name, w.inner, req.ProviderData, resp.Diagnostics)...)
 }
 
 func (w *wrappedDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {

@@ -21,22 +21,22 @@ func (observer) Before(context.Context, intercept.Call) error { return nil }
 
 func (observer) After(_ context.Context, _ intercept.Call, err error) error { return err }
 
-func TestAppendUnlessClientCapable(t *testing.T) {
-	if got := appendUnlessClientCapable(nil, "data source", "alicloud_unit_test", "DataSourceBase", &carrier{}); got != nil {
+func TestAppendUnlessMetaCapable(t *testing.T) {
+	if got := appendUnlessMetaCapable(nil, "data source", "alicloud_unit_test", "DataSourceBase", &carrier{}); got != nil {
 		t.Fatalf("a pointer to an embedder must pass the guard, got %v", got)
 	}
 
-	problems := appendUnlessClientCapable(nil, "data source", "alicloud_unit_test", "DataSourceBase", carrier{})
+	problems := appendUnlessMetaCapable(nil, "data source", "alicloud_unit_test", "DataSourceBase", carrier{})
 	if len(problems) != 1 {
 		t.Fatalf("a value must fail the guard, got %d problems: %v", len(problems), problems)
 	}
 
-	problems = appendUnlessClientCapable(problems, "resource", "alicloud_unit_test_two", "ResourceBase", &notCarrier{})
+	problems = appendUnlessMetaCapable(problems, "resource", "alicloud_unit_test_two", "ResourceBase", &notCarrier{})
 	if len(problems) != 2 {
 		t.Fatalf("got %d problems, want 2 (the guard accumulates rather than stopping at the first)", len(problems))
 	}
 
-	for _, want := range []string{"alicloud_unit_test_two", "fwadapt.ResourceBase", "return a pointer"} {
+	for _, want := range []string{"alicloud_unit_test_two", "fwadapt.ResourceBase", "fwadapt.WithMeta", "return a pointer"} {
 		if !strings.Contains(problems[1], want) {
 			t.Errorf("problem %q does not mention %q", problems[1], want)
 		}
@@ -62,7 +62,7 @@ func TestAppendIfInterceptorsDropped(t *testing.T) {
 		}
 	}
 
-	problems = appendUnlessClientCapable(problems, "action", "alicloud_unit_test_two", "ActionBase", &notCarrier{})
+	problems = appendUnlessMetaCapable(problems, "action", "alicloud_unit_test_two", "ActionBase", &notCarrier{})
 	if len(problems) != 2 {
 		t.Fatalf("got %d problems, want 2 (the two guards accumulate into one list)", len(problems))
 	}

@@ -173,7 +173,7 @@ func (d *metricListDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	for {
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err := retry.Retry(metricListRetryTimeout, func() *retry.RetryError {
-			callResponse, callErr = d.Client().RpcPost(metricListProduct, metricListAPIVersion, metricListAction, nil, request, false)
+			callResponse, callErr = d.Meta().RpcPost(metricListProduct, metricListAPIVersion, metricListAction, nil, request, false)
 			if callErr != nil {
 				// Only transient failures are retried: timeouts, throttling,
 				// 5xx and InternalError. A 400/403/404 (including the 10002

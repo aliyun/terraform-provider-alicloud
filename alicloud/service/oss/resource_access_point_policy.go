@@ -253,7 +253,7 @@ func (r *accessPointPolicyResource) describeAccessPointPolicy(id string) (map[st
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		var requestErr error
-		response, requestErr = r.Client().Do(accessPointPolicyProduct, helper.XmlJsonParam("GET", accessPointPolicyAPIVersion, "GetAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, true)
+		response, requestErr = r.Meta().Do(accessPointPolicyProduct, helper.XmlJsonParam("GET", accessPointPolicyAPIVersion, "GetAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, true)
 		if requestErr != nil {
 			if helper.NeedRetry(requestErr) {
 				wait()
@@ -311,7 +311,7 @@ func (r *accessPointPolicyResource) putAccessPointPolicy(bucket, accessPointName
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err := retry.Retry(accessPointPolicyTimeout, func() *retry.RetryError {
 		var requestErr error
-		response, requestErr = r.Client().Do(accessPointPolicyProduct, helper.JsonXmlParam("PUT", accessPointPolicyAPIVersion, "PutAccessPointPolicy", accessPointPolicyAction), query, policy, nil, hostMap, false)
+		response, requestErr = r.Meta().Do(accessPointPolicyProduct, helper.JsonXmlParam("PUT", accessPointPolicyAPIVersion, "PutAccessPointPolicy", accessPointPolicyAction), query, policy, nil, hostMap, false)
 		if requestErr != nil {
 			if helper.NeedRetry(requestErr) {
 				wait()
@@ -332,7 +332,7 @@ func (r *accessPointPolicyResource) deleteAccessPointPolicy(bucket, accessPointN
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err := retry.Retry(accessPointPolicyTimeout, func() *retry.RetryError {
 		var requestErr error
-		response, requestErr = r.Client().Do(accessPointPolicyProduct, helper.JsonXmlParam("DELETE", accessPointPolicyAPIVersion, "DeleteAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, false)
+		response, requestErr = r.Meta().Do(accessPointPolicyProduct, helper.JsonXmlParam("DELETE", accessPointPolicyAPIVersion, "DeleteAccessPointPolicy", accessPointPolicyAction), query, nil, nil, hostMap, false)
 		if requestErr != nil {
 			// A policy operation can race the access point creation, as with the
 			// flat alicloud_oss_access_point resource; retry that conflict.

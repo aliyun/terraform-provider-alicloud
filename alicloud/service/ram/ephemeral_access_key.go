@@ -95,7 +95,7 @@ func (e *ramAccessKeyEphemeral) Open(ctx context.Context, req ephemeral.OpenRequ
 		request["UserName"] = config.UserName.ValueString()
 	}
 
-	response, err := e.Client().RpcPost(ramAccessKeyProduct, ramAccessKeyAPIVersion, action, nil, request, false)
+	response, err := e.Meta().RpcPost(ramAccessKeyProduct, ramAccessKeyAPIVersion, action, nil, request, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Opening %s: calling %s", ramAccessKeyEphemeralTypeName, action),
@@ -207,7 +207,7 @@ func (e *ramAccessKeyEphemeral) deleteRamAccessKey(cleanup ramAccessKeyCleanup) 
 		request["UserName"] = cleanup.UserName
 	}
 
-	if _, err := e.Client().RpcPost(ramAccessKeyProduct, ramAccessKeyAPIVersion, "DeleteAccessKey", nil, request, true); err != nil {
+	if _, err := e.Meta().RpcPost(ramAccessKeyProduct, ramAccessKeyAPIVersion, "DeleteAccessKey", nil, request, true); err != nil {
 		// The access key may already be gone (deleted out-of-band, or by a prior
 		// Close). Such cases are not failures: the goal of Close — no residual
 		// credential — is met.
