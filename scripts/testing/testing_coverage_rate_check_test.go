@@ -2,8 +2,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	mapset "github.com/deckarep/golang-set"
@@ -150,4 +152,162 @@ func setAttrs(d interface{ Set(string, interface{}) }) {
 			t.Fatalf("unregistered another_force_new in ImportStateVerifyIgnore should remain illegal; checkAttributeSet returned PASS")
 		}
 	})
+}
+
+// writeImplStub writes a minimal impl fixture that calls d.Set for each root
+// attribute name, so neverReadBackAttributes reports those roots as read back
+// (not neverReadBack). The stub need not compile; neverReadBackAttributes only
+// string-scans the source for `d.Set("<root>"`.
+func writeImplStub(t *testing.T, roots ...string) string {
+	t.Helper()
+	implPath := filepath.Join(t.TempDir(), "resource_alicloud_coverage_gate_test.go")
+	var b strings.Builder
+	b.WriteString("// stub impl fixture for coverage gate tests\npackage coveragegate\n\n")
+	b.WriteString("func setAttrs(d interface{ Set(string, interface{}) }) {\n")
+	for _, r := range roots {
+		fmt.Fprintf(&b, "\td.Set(%q, \"v\")\n", r)
+	}
+	b.WriteString("}\n")
+	if err := os.WriteFile(implPath, []byte(b.String()), 0o644); err != nil {
+		t.Fatalf("write impl fixture: %v", err)
+	}
+	return implPath
+}
+
+// TestUnitStripNumericIndexPartsForCoverage proves the index-stripping helper
+// used by the coverage fix drops only purely-numeric path segments. Single
+// digits (0/1), multi-digit (10/99) and nested indices are removed; field
+// names that merely contain digits (zone_id, ipv6_address) are preserved.
+func TestUnitStripNumericIndexPartsForCoverage(t *testing.T) {
+	cases := map[string]string{
+		"db_cluster_ip_array.0.white_list_type": "db_cluster_ip_array.white_list_type",
+		"db_cluster_ip_array.1.white_list_type": "db_cluster_ip_array.white_list_type",
+		"a.10.b.0.c":                            "a.b.c",
+		"x.99.y":                                "x.y",
+		"nic.ipv6.0.addr":                       "nic.ipv6.addr",
+		// Field names containing digits are NOT indices and must be kept.
+		"zone_id":            "zone_id",
+		"nic.ipv6_address":   "nic.ipv6_address",
+		"vpc_id.0.subnet_id": "vpc_id.subnet_id",
+	}
+	for in, want := range cases {
+		if got := stripNumericIndexParts(in); got != want {
+			t.Errorf("stripNumericIndexParts(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// TestUnitNormalizeIgnoreSetStripsIndices proves the normalized ignore set
+// deduplicates indexed entries to their schema-path form while leaving
+// non-indexed entries unchanged.
+func TestUnitNormalizeIgnoreSetStripsIndices(t *testing.T) {
+	got := normalizeIgnoreSet(setOf(
+		"db_cluster_ip_array.0.white_list_type",
+		"db_cluster_ip_array.1.white_list_type",
+		"end_date",
+	))
+	if got.Cardinality() != 2 || !got.Contains("db_cluster_ip_array.white_list_type") || !got.Contains("end_date") {
+		t.Fatalf("expected {db_cluster_ip_array.white_list_type, end_date}, got %v", got.ToSlice())
+	}
+}
+
+// TestUnitIndexedImportIgnoreNotFalselyReportedUnmodified — AC1 end-to-end
+// through the REAL production gate checkAttributeSet. Reproduces the reported
+// PolarDB DBCluster shape: a leaf attribute (db_cluster_ip_array.white_list_type)
+// is in the modification-coverage schema set but NOT exercised by any test
+// config (testModifySet empty), and the only ImportStateVerifyIgnore entries
+// are the real indexed runtime paths (.0./.1.). Before the fix the indexed
+// ignores never matched the schema-path modification key, so the leaf stayed
+// in the diff and the coverage rate was falsely 98.48% / FAIL. With index
+// normalization the indexed ignores deduct the schema-path leaf and the gate
+// returns true without requiring a schema-only string the SDK cannot match.
+func TestUnitIndexedImportIgnoreNotFalselyReportedUnmodified(t *testing.T) {
+	implPath := writeImplStub(t, "db_cluster_ip_array")
+	schemaAllSet := setOf("db_cluster_ip_array", "db_cluster_ip_array.white_list_type")
+	schemaMustSet := setOf("db_cluster_ip_array.white_list_type")
+	schemaModifySet := setOf("db_cluster_ip_array.white_list_type")
+	schemaForceNewSet := mapset.NewSet()
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("db_cluster_ip_array.white_list_type")
+	testModifySet := mapset.NewSet()
+	testIgnoreSet := setOf("db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.white_list_type")
+
+	got := checkAttributeSet("polardb_dbcluster", "resource",
+		schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+		schemaForceNewSet, schemaAllSet, testIgnoreSet, schemaDeprecatedSet, implPath)
+	if !got {
+		t.Fatalf("indexed ImportStateVerifyIgnore should deduct the schema-path leaf; checkAttributeSet returned FAIL (false unmodified report)")
+	}
+}
+
+// TestUnitNonIgnoredUnmodifiedFieldStillFailsCoverage — AC3: a genuinely
+// unmodified, NON-ignored field still fails the coverage gate. The indexed
+// ignore deducts only its own schema-path leaf; a sibling leaf that has no
+// test modification and is not ignored must remain in the diff.
+func TestUnitNonIgnoredUnmodifiedFieldStillFailsCoverage(t *testing.T) {
+	implPath := writeImplStub(t, "db_cluster_ip_array")
+	schemaAllSet := setOf("db_cluster_ip_array", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.other_type")
+	schemaMustSet := setOf("db_cluster_ip_array.white_list_type", "db_cluster_ip_array.other_type")
+	schemaModifySet := setOf("db_cluster_ip_array.white_list_type", "db_cluster_ip_array.other_type")
+	schemaForceNewSet := mapset.NewSet()
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("db_cluster_ip_array.white_list_type", "db_cluster_ip_array.other_type")
+	testModifySet := mapset.NewSet()
+	// Only white_list_type is ignored (indexed); other_type is not ignored and
+	// not modified, so it must stay uncovered.
+	testIgnoreSet := setOf("db_cluster_ip_array.0.white_list_type")
+
+	got := checkAttributeSet("polardb_dbcluster", "resource",
+		schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+		schemaForceNewSet, schemaAllSet, testIgnoreSet, schemaDeprecatedSet, implPath)
+	if got {
+		t.Fatalf("non-ignored unmodified field (db_cluster_ip_array.other_type) must fail the coverage gate; checkAttributeSet returned PASS")
+	}
+}
+
+// TestUnitIllegalIndexedImportIgnoreStillFails — AC3: an ImportStateVerifyIgnore
+// entry whose schema-path form is not part of the active schema is illegal and
+// still fails the gate (isIgnoreLegal=false). Normalization does not legalize
+// ignores that map to no real attribute.
+func TestUnitIllegalIndexedImportIgnoreStillFails(t *testing.T) {
+	implPath := writeImplStub(t, "real_attr")
+	schemaAllSet := setOf("real_attr")
+	schemaMustSet := setOf("real_attr")
+	schemaModifySet := setOf("real_attr")
+	schemaForceNewSet := mapset.NewSet()
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("real_attr")
+	testModifySet := setOf("real_attr")
+	// nonexistent_field.foo is not in the schema → illegal ignore.
+	testIgnoreSet := setOf("nonexistent_field.0.foo")
+
+	got := checkAttributeSet("coverage_gate_fixture", "resource",
+		schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+		schemaForceNewSet, schemaAllSet, testIgnoreSet, schemaDeprecatedSet, implPath)
+	if got {
+		t.Fatalf("illegal ImportStateVerifyIgnore entry mapping to no schema attribute must fail; checkAttributeSet returned PASS")
+	}
+}
+
+// TestUnitNestedMultiDigitIndexedIgnoreCovered — AC2: multi-digit and nested
+// indexed ignore paths normalize to their schema-path form and deduct the
+// matching modification keys, giving a consistent coverage conclusion.
+func TestUnitNestedMultiDigitIndexedIgnoreCovered(t *testing.T) {
+	implPath := writeImplStub(t, "a", "x")
+	schemaAllSet := setOf("a", "a.b", "a.b.c", "x", "x.y")
+	schemaMustSet := setOf("a.b.c", "x.y")
+	schemaModifySet := setOf("a.b.c", "x.y")
+	schemaForceNewSet := mapset.NewSet()
+	schemaDeprecatedSet := mapset.NewSet()
+	testMustSet := setOf("a.b.c", "x.y")
+	testModifySet := mapset.NewSet()
+	// Multi-digit (10, 99) and nested (a.10.b.0.c) indices normalize to a.b.c / x.y.
+	testIgnoreSet := setOf("a.10.b.0.c", "x.99.y")
+
+	got := checkAttributeSet("coverage_gate_fixture", "resource",
+		schemaMustSet, testMustSet, schemaModifySet, testModifySet,
+		schemaForceNewSet, schemaAllSet, testIgnoreSet, schemaDeprecatedSet, implPath)
+	if !got {
+		t.Fatalf("multi-digit/nested indexed ignores should normalize and deduct schema-path leaves; checkAttributeSet returned FAIL")
+	}
 }

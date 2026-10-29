@@ -742,6 +742,34 @@ func addCoverageKey(set *mapset.Set, key string) {
 	}
 }
 
+// normalizeIgnoreSet returns a copy of ignoreSet with each entry's numeric
+// index segments stripped via stripNumericIndexParts. Runtime
+// ImportStateVerifyIgnore entries keep their indexed form in the test source
+// because the SDK matches them with HasPrefix against real state paths that
+// carry the indices (e.g. "db_cluster_ip_array.0.white_list_type"). The
+// coverage script, however, diffs ignore entries against schema-path
+// modification keys (e.g. "db_cluster_ip_array.white_list_type") produced by
+// addCoverageKey, which already strips numeric indices. Without this
+// normalization the indexed ignore entries never matched their schema-path
+// counterparts, so legitimately-ignored leaf attributes stayed in the
+// modification-coverage diff and were falsely reported as unmodified.
+//
+// Normalization only aligns paths for the script's own set diff; it does not
+// add container/ancestor or sibling paths, so it cannot widen the exemption
+// beyond what the test explicitly listed in ImportStateVerifyIgnore.
+func normalizeIgnoreSet(ignoreSet mapset.Set) mapset.Set {
+	normalized := mapset.NewSet()
+	for _, v := range ignoreSet.ToSlice() {
+		s, ok := v.(string)
+		if !ok {
+			normalized.Add(v)
+			continue
+		}
+		normalized.Add(stripNumericIndexParts(s))
+	}
+	return normalized
+}
+
 var (
 	commentedRegex    = regexp.MustCompile("^[\t]*//")
 	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
@@ -1033,7 +1061,17 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		redundantAttrFinalStr, _ := json.Marshal(redundantAttrFinal)
 		log.Errorf("resource %s attributes %v should not in ImportStateVerifyIgnore array", resourceName, string(redundantAttrFinalStr))
 	}
-	schemaModifySet = schemaModifySet.Difference(testIgnoreSet)
+	// Normalize ImportStateVerifyIgnore entries by stripping numeric index
+	// segments (reusing stripNumericIndexParts) so indexed runtime paths
+	// (e.g. "db_cluster_ip_array.0.white_list_type") align with the schema-path
+	// modification keys (e.g. "db_cluster_ip_array.white_list_type") produced by
+	// addCoverageKey. The original testIgnoreSet stays verbatim in the test
+	// source for the SDK's HasPrefix import matching; this normalized copy is
+	// only for the modification-coverage diff and does not widen the exemption
+	// (no container/sibling paths are added), so genuinely-unmodified,
+	// non-ignored fields still fail the coverage gate below.
+	normalizedIgnoreSet := normalizeIgnoreSet(testIgnoreSet)
+	schemaModifySet = schemaModifySet.Difference(normalizedIgnoreSet)
 
 	// Get immutable attributes from documentation
 	immutableAttrs := getImmutableAttributesFromDoc(resourceName, fileType)
