@@ -53,11 +53,21 @@ resource "alicloud_polardb_cluster" "default" {
   pay_type      = "PostPaid"
   vswitch_id    = alicloud_vswitch.default.id
   description   = "terraform-example"
+  # Pin the TDE default explicitly so the configuration stays converged.
+  encrypt_new_tables = "OFF"
+}
+
+resource "alicloud_polardb_account" "default" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = "terraform_example"
+  account_password = "Example1234"
 }
 
 resource "alicloud_polardb_database" "default" {
-  db_cluster_id = alicloud_polardb_cluster.default.id
-  db_name       = "terraform-example"
+  db_cluster_id     = alicloud_polardb_cluster.default.id
+  db_name           = "terraform-example"
+  account_name      = alicloud_polardb_account.default.account_name
+  account_privilege = "ReadWrite"
 }
 ```
 
@@ -67,6 +77,9 @@ resource "alicloud_polardb_database" "default" {
 
 The following arguments are supported:
 * `account_name` - (Optional) The name of the account that is authorized to access the database. **NOTE:** From version 1.265.0, `account_name` can be modified. However, only PolarDB for PostgreSQL (Compatible with Oracle) and PolarDB for PostgreSQL cluster can be modified.
+* `account_privilege` - (Optional, ForceNew, String, Available since v2.2.0) The privilege that is granted to the account specified by `account_name` on the database. Valid values: `ReadWrite`, `ReadOnly`, `DMLOnly`, `DDLOnly` and `ReadIndex`. If you do not specify this parameter, the API default value `ReadWrite` is used.
+
+  -> **NOTE:** `account_name` must be set when `account_privilege` is configured, because the privilege is only applied to the specified account. The privilege is applied when the database is created, so changing it forces a new database. The privilege that is currently granted to the account is read back from the database list and stored in the state. For PolarDB for PostgreSQL and PolarDB for PostgreSQL (Compatible with Oracle) clusters (the `PostgreSQL` and `Oracle` engines) the privilege value of the database owner is not returned by the API; the configured value is kept instead. For the same reason the value cannot be recovered on import for these engines: keeping `account_privilege` in the configuration after importing such a database plans a replacement of that database. When the database is imported, the account is not known from the configuration, so the first account returned by the API is used for `account_name`, together with the privilege that the API reports for it (if any).
 * `character_set_name` - (Optional, ForceNew) The character set that is used by the cluster. For more information, see [Character set tables](https://www.alibabacloud.com/help/en/doc-detail/99716.html).
 * `collate` - (Optional, Available since v1.265.0) The language that defines the collation rules in the database.
 
@@ -85,6 +98,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<db_name>`.
 * `status` - (Available since v1.265.0) The state of the database.
+* `engine` - (String, Available since v2.2.0) The database engine of the cluster, such as MySQL, PostgreSQL, or Oracle.
 
 ## Timeouts
 
