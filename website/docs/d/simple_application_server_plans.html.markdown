@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Simple Application Server Plans of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
@@ -36,24 +36,24 @@ output "simple_application_server_plan_id_1" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Instance Plan IDs.
-* `bandwidth` - The peak bandwidth. Unit: Mbit/s.
-* `core` - The number of CPU cores.
-* `disk_size` - The size of the enhanced SSD (ESSD). Unit: GB.
-* `flow` - The monthly data transfer quota. Unit: GB.
-* `memory` - The memory size. Unit: GB.
-* `platform` - (Available in v1.161.0) The platform of Plan supported. Valid values: ["Linux", "Windows"].
+* `bandwidth` - (Optional) The peak bandwidth. Unit: Mbit/s.
+* `core` - (Optional) The number of CPU cores.
+* `disk_size` - (Optional) The size of the enhanced SSD (ESSD). Unit: GB.
+* `flow` - (Optional) The monthly data transfer quota. Unit: GB.
+* `memory` - (Optional) The memory size. Unit: GB.
+* `platform` - (Optional) Available in v1.161.0. The platform of Plan supported. Valid values: ["Linux", "Windows"].
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `plans` - A list of Simple Application Server Plans. Each element contains the following attributes:
-	* `bandwidth` - The peak bandwidth. Unit: Mbit/s.
-	* `core` - The number of CPU cores.
-	* `disk_size` - The size of the enhanced SSD (ESSD). Unit: GB.
-	* `flow` - The monthly data transfer quota. Unit: GB.
-	* `id` - The ID of the Instance Plan.
-	* `plan_id` - The ID of the Instance Plan.
-	* `memory` - The memory size. Unit: GB.
-	* `support_platform` - (Available in v1.161.0) The platform of Plan supported.
+  * `bandwidth` - The peak bandwidth. Unit: Mbit/s.
+  * `core` - The number of CPU cores.
+  * `disk_size` - The size of the enhanced SSD (ESSD). Unit: GB.
+  * `flow` - The monthly data transfer quota. Unit: GB.
+  * `id` - The ID of the Instance Plan.
+  * `plan_id` - The ID of the Instance Plan.
+  * `memory` - The memory size. Unit: GB.
+  * `support_platform` - (Available in v1.161.0) The platform of Plan supported.

@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package swasopen. This file is generated automatically. Please do not modify it manually, thank you!
+package swasopen
 
 import (
 	"fmt"
@@ -10,6 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 )
 
 type SimpleApplicationServerServiceV2 struct {
@@ -25,16 +29,16 @@ func (s *SimpleApplicationServerServiceV2) DescribeSimpleApplicationServerDisk(i
 	var query map[string]interface{}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["DiskIds"] = expandSingletonToList(id)
+	request["DiskIds"] = convert.ExpandSingletonToList(id)
 	request["RegionId"] = client.RegionId
 	action := "ListDisks"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -42,23 +46,23 @@ func (s *SimpleApplicationServerServiceV2) DescribeSimpleApplicationServerDisk(i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Disks[*]", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Disk", id), errs.NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Disk", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["DiskId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Disk", id), errs.NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -72,10 +76,10 @@ func (s *SimpleApplicationServerServiceV2) SimpleApplicationServerDiskStateRefre
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -89,7 +93,7 @@ func (s *SimpleApplicationServerServiceV2) SimpleApplicationServerDiskStateRefre
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil

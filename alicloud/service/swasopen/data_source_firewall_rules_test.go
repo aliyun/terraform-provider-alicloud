@@ -1,26 +1,27 @@
-package alicloud
+package swasopen_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_simple_application_server_firewall_rules.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.SWASSupportRegions)
 	name := fmt.Sprintf("tf-testacc-swasfirewallrule-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerFirewallRulesDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerFirewallRulesDependence)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_simple_application_server_firewall_rule.default.instance_id}",
 			"ids":         []string{"${alicloud_simple_application_server_firewall_rule.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id": "${alicloud_simple_application_server_firewall_rule.default.instance_id}",
 			"ids":         []string{"${alicloud_simple_application_server_firewall_rule.default.id}-fake"},
 		}),
@@ -28,11 +29,11 @@ func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T)
 	var existSimpleApplicationServerFirewallRuleMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                    "1",
-			"ids.0":                    CHECKSET,
+			"ids.0":                    acctest.CHECKSET,
 			"rules.#":                  "1",
-			"rules.0.id":               CHECKSET,
-			"rules.0.firewall_rule_id": CHECKSET,
-			"rules.0.instance_id":      CHECKSET,
+			"rules.0.id":               acctest.CHECKSET,
+			"rules.0.firewall_rule_id": acctest.CHECKSET,
+			"rules.0.instance_id":      acctest.CHECKSET,
 			"rules.0.port":             "9999",
 			"rules.0.rule_protocol":    "Tcp",
 			"rules.0.remark":           name,
@@ -46,18 +47,18 @@ func TestAccAlicloudSimpleApplicationServerFirewallRulesDataSource(t *testing.T)
 		}
 	}
 
-	var SimpleApplicationServerFirewallRuleCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existSimpleApplicationServerFirewallRuleMapFunc,
-		fakeMapFunc:  fakeSimpleApplicationServerFirewallRuleMapFunc,
+	var SimpleApplicationServerFirewallRuleCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existSimpleApplicationServerFirewallRuleMapFunc,
+		FakeMapFunc:  fakeSimpleApplicationServerFirewallRuleMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckPrePaidResources(t)
-		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckPrePaidResources(t)
+		acctest.PreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 	}
-	SimpleApplicationServerFirewallRuleCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
+	SimpleApplicationServerFirewallRuleCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf)
 }
 
 func dataSourceSimpleApplicationServerFirewallRulesDependence(name string) string {

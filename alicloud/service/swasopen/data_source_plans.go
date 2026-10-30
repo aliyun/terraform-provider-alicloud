@@ -1,4 +1,4 @@
-package alicloud
+package swasopen
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
+func DataSourcePlans() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudSimpleApplicationServerPlansRead,
+		Read: dataSourcePlansRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -95,7 +99,7 @@ func dataSourceAlicloudSimpleApplicationServerPlans() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourcePlansRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListPlans"
@@ -121,11 +125,11 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -133,13 +137,13 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_simple_application_server_plans", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_simple_application_server_plans", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.Plans", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Plans", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Plans", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -151,7 +155,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		}
 
 		if bandwidthOk && bandwidth.(int) != 0 {
-			bandwidthVal, bandwidthErr := formatInt(item["Bandwidth"])
+			bandwidthVal, bandwidthErr := convert.FormatInt(item["Bandwidth"])
 			if bandwidthErr != nil {
 				return bandwidthErr
 			}
@@ -161,7 +165,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		}
 
 		if coreOk && core.(int) != 0 {
-			coreVal, coreErr := formatInt(item["Core"])
+			coreVal, coreErr := convert.FormatInt(item["Core"])
 			if coreErr != nil {
 				return coreErr
 			}
@@ -171,7 +175,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		}
 
 		if diskSizeOk && diskSize.(int) != 0 {
-			diskSizeVal, diskSizeErr := formatInt(item["DiskSize"])
+			diskSizeVal, diskSizeErr := convert.FormatInt(item["DiskSize"])
 			if diskSizeErr != nil {
 				return diskSizeErr
 			}
@@ -181,7 +185,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		}
 
 		if memoryOk && memory.(float64) != 0 {
-			memoryVal, memoryErr := formatFloat64(item["Memory"])
+			memoryVal, memoryErr := convert.FormatFloat64(item["Memory"])
 			if memoryErr != nil {
 				return memoryErr
 			}
@@ -191,7 +195,7 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		}
 
 		if flowOk && flow.(int) != 0 {
-			flowVal, flowErr := formatInt(item["Flow"])
+			flowVal, flowErr := convert.FormatInt(item["Flow"])
 			if flowErr != nil {
 				return flowErr
 			}
@@ -210,24 +214,24 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		bandwidthVal, err := formatInt(object["Bandwidth"])
+		bandwidthVal, err := convert.FormatInt(object["Bandwidth"])
 		if err != nil {
 			return err
 		}
-		coreVal, err := formatInt(object["Core"])
+		coreVal, err := convert.FormatInt(object["Core"])
 		if err != nil {
 			return err
 		}
-		disk_sizeVal, err := formatInt(object["DiskSize"])
+		disk_sizeVal, err := convert.FormatInt(object["DiskSize"])
 		if err != nil {
 			return err
 		}
-		flowVal, err := formatInt(object["Flow"])
+		flowVal, err := convert.FormatInt(object["Flow"])
 		if err != nil {
 			return err
 		}
 
-		memoryVal, err := formatFloat64(object["Memory"])
+		memoryVal, err := convert.FormatFloat64(object["Memory"])
 		if err != nil {
 			return err
 		}
@@ -245,16 +249,16 @@ func dataSourceAlicloudSimpleApplicationServerPlansRead(d *schema.ResourceData, 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("plans", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
