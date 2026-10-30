@@ -651,23 +651,6 @@ func Provider() *schema.Provider {
 			// hbase
 
 			// hbr
-			"alicloud_hbr_udm_snapshots":             dataSourceAliCloudHbrUdmSnapshots(),
-			"alicloud_hbr_vaults":                    dataSourceAlicloudHbrVaults(),
-			"alicloud_hbr_ecs_backup_plans":          dataSourceAlicloudHbrEcsBackupPlans(),
-			"alicloud_hbr_nas_backup_plans":          dataSourceAlicloudHbrNasBackupPlans(),
-			"alicloud_hbr_oss_backup_plans":          dataSourceAlicloudHbrOssBackupPlans(),
-			"alicloud_hbr_ecs_backup_clients":        dataSourceAlicloudHbrEcsBackupClients(),
-			"alicloud_hbr_snapshots":                 dataSourceAlicloudHbrSnapshots(),
-			"alicloud_hbr_restore_jobs":              dataSourceAlicloudHbrRestoreJobs(),
-			"alicloud_hbr_backup_jobs":               dataSourceAlicloudHbrBackupJobs(),
-			"alicloud_hbr_server_backup_plans":       dataSourceAlicloudHbrServerBackupPlans(),
-			"alicloud_hbr_replication_vault_regions": dataSourceAlicloudHbrReplicationVaultRegions(),
-			"alicloud_hbr_ots_backup_plans":          dataSourceAlicloudHbrOtsBackupPlans(),
-			"alicloud_hbr_ots_snapshots":             dataSourceAlicloudHbrOtsSnapshots(),
-			"alicloud_hbr_hana_instances":            dataSourceAlicloudHbrHanaInstances(),
-			"alicloud_hbr_hana_backup_plans":         dataSourceAlicloudHbrHanaBackupPlans(),
-			"alicloud_hbr_service":                   dataSourceAlicloudHbrService(),
-			"alicloud_hbr_hana_backup_clients":       dataSourceAlicloudHbrHanaBackupClients(),
 
 			// images
 			"alicloud_images": dataSourceAlicloudImages(),
@@ -1696,21 +1679,6 @@ func Provider() *schema.Provider {
 			// hbase
 
 			// hbr
-			"alicloud_hbr_cross_account":      resourceAliCloudHbrCrossAccount(),
-			"alicloud_hbr_policy_binding":     resourceAliCloudHbrPolicyBinding(),
-			"alicloud_hbr_policy":             resourceAliCloudHbrPolicy(),
-			"alicloud_hbr_vault":              resourceAliCloudHbrVault(),
-			"alicloud_hbr_ecs_backup_plan":    resourceAlicloudHbrEcsBackupPlan(),
-			"alicloud_hbr_nas_backup_plan":    resourceAlicloudHbrNasBackupPlan(),
-			"alicloud_hbr_oss_backup_plan":    resourceAlicloudHbrOssBackupPlan(),
-			"alicloud_hbr_ecs_backup_client":  resourceAlicloudHbrEcsBackupClient(),
-			"alicloud_hbr_restore_job":        resourceAlicloudHbrRestoreJob(),
-			"alicloud_hbr_server_backup_plan": resourceAlicloudHbrServerBackupPlan(),
-			"alicloud_hbr_replication_vault":  resourceAliCloudHbrReplicationVault(),
-			"alicloud_hbr_ots_backup_plan":    resourceAlicloudHbrOtsBackupPlan(),
-			"alicloud_hbr_hana_instance":      resourceAlicloudHbrHanaInstance(),
-			"alicloud_hbr_hana_backup_plan":   resourceAlicloudHbrHanaBackupPlan(),
-			"alicloud_hbr_hana_backup_client": resourceAlicloudHbrHanaBackupClient(),
 
 			// image
 			"alicloud_image":                  resourceAliCloudEcsImage(),

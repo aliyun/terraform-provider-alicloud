@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Hbr Ots Snapshots of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.164.0+.
+-> **NOTE:** Available since v1.164.0.
 
 ## Example Usage
 
@@ -26,11 +26,12 @@ data "alicloud_hbr_ots_snapshots" "snapshots" {
 
 The following arguments are supported:
 
-* `start_time` - (Optional, ForceNew)  The start time of the backup. This value must be a UNIX timestamp. Unit: milliseconds.
-* `end_time` - (Optional, ForceNew)  The end time of the backup. This value must be a UNIX timestamp. Unit: milliseconds
+* `ids` - (Optional, Computed) A list of Ots Snapshot IDs.
+* `start_time` - (Optional)  The start time of the backup. This value must be a UNIX timestamp. Unit: milliseconds.
+* `end_time` - (Optional)  The end time of the backup. This value must be a UNIX timestamp. Unit: milliseconds
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

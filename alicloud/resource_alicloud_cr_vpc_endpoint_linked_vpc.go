@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/hbr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -136,7 +137,7 @@ func resourceAlicloudCrVpcEndpointLinkedVpcRead(d *schema.ResourceData, meta int
 
 func resourceAlicloudCrVpcEndpointLinkedVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudHbrHanaBackupClientRead(d, meta)
+	return hbr.ResourceHanaBackupClientRead(d, meta)
 }
 
 func resourceAlicloudCrVpcEndpointLinkedVpcDelete(d *schema.ResourceData, meta interface{}) error {
