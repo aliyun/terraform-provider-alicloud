@@ -606,9 +606,7 @@ func Provider() *schema.Provider {
 			"alicloud_fc_zones":          dataSourceAlicloudFcZones(),
 			"alicloud_fc_service":        dataSourceAlicloudFcService(),
 
-			// fcv3
-			"alicloud_fcv3_functions": dataSourceAliCloudFcv3Functions(),
-			"alicloud_fcv3_triggers":  dataSourceAliCloudFcv3Triggers(),
+			// fcv3 (migrated to alicloud/service/fcv3; registered via registry)
 
 			// file
 			"alicloud_file_crc64_checksum": dataSourceAlicloudFileCRC64Checksum(),
@@ -1636,17 +1634,7 @@ func Provider() *schema.Provider {
 			"alicloud_fc_function_async_invoke_config": resourceAlicloudFCFunctionAsyncInvokeConfig(),
 			"alicloud_fc_layer_version":                resourceAlicloudFcLayerVersion(),
 
-			// fcv3
-			"alicloud_fcv3_vpc_binding":         resourceAliCloudFcv3VpcBinding(),
-			"alicloud_fcv3_layer_version":       resourceAliCloudFcv3LayerVersion(),
-			"alicloud_fcv3_provision_config":    resourceAliCloudFcv3ProvisionConfig(),
-			"alicloud_fcv3_function_version":    resourceAliCloudFcv3FunctionVersion(),
-			"alicloud_fcv3_trigger":             resourceAliCloudFcv3Trigger(),
-			"alicloud_fcv3_concurrency_config":  resourceAliCloudFcv3ConcurrencyConfig(),
-			"alicloud_fcv3_async_invoke_config": resourceAliCloudFcv3AsyncInvokeConfig(),
-			"alicloud_fcv3_alias":               resourceAliCloudFcv3Alias(),
-			"alicloud_fcv3_custom_domain":       resourceAliCloudFcv3CustomDomain(),
-			"alicloud_fcv3_function":            resourceAliCloudFcv3Function(),
+			// fcv3 (migrated to alicloud/service/fcv3; registered via registry)
 
 			// forward
 

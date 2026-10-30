@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -9,16 +9,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3LayerVersion() *schema.Resource {
+func ResourceLayerVersion() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3LayerVersionCreate,
-		Read:   resourceAliCloudFcv3LayerVersionRead,
-		Update: resourceAliCloudFcv3LayerVersionUpdate,
-		Delete: resourceAliCloudFcv3LayerVersionDelete,
+		Create: resourceLayerVersionCreate,
+		Read:   resourceLayerVersionRead,
+		Update: resourceLayerVersionUpdate,
+		Delete: resourceLayerVersionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -31,7 +35,7 @@ func resourceAliCloudFcv3LayerVersion() *schema.Resource {
 			"acl": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"1", "0"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"1", "0"}, false),
 			},
 			"code": {
 				Type:     schema.TypeList,
@@ -110,7 +114,7 @@ func resourceAliCloudFcv3LayerVersion() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3LayerVersionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceLayerVersionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -125,7 +129,7 @@ func resourceAliCloudFcv3LayerVersionCreate(d *schema.ResourceData, meta interfa
 
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("code"); !IsNil(v) {
+	if v := d.Get("code"); !helper.IsNil(v) {
 		checksum1, _ := jsonpath.Get("$[0].checksum", d.Get("code"))
 		if checksum1 != nil && checksum1 != "" {
 			objectDataLocalMap["checksum"] = checksum1
@@ -158,11 +162,11 @@ func resourceAliCloudFcv3LayerVersionCreate(d *schema.ResourceData, meta interfa
 		request["license"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -170,29 +174,29 @@ func resourceAliCloudFcv3LayerVersionCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_layer_version", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_layer_version", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", response["layerName"], response["version"]))
 
-	return resourceAliCloudFcv3LayerVersionUpdate(d, meta)
+	return resourceLayerVersionUpdate(d, meta)
 }
 
-func resourceAliCloudFcv3LayerVersionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceLayerVersionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3LayerVersion(d.Id())
+	objectRaw, err := service.DescribeLayerVersion(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_layer_version DescribeFcv3LayerVersion Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_layer_version DescribeLayerVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["acl"] != nil {
@@ -230,7 +234,7 @@ func resourceAliCloudFcv3LayerVersionRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudFcv3LayerVersionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceLayerVersionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -248,24 +252,24 @@ func resourceAliCloudFcv3LayerVersionUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("public") {
 		update = true
 		if v, ok := d.GetOk("public"); ok {
-			query["public"] = StringPointer(v.(string))
+			query["public"] = helper.StringPointer(v.(string))
 		}
 	}
 
 	if d.HasChange("acl") {
 		update = true
 		if v, ok := d.GetOk("acl"); ok {
-			query["acl"] = StringPointer(v.(string))
+			query["acl"] = helper.StringPointer(v.(string))
 		}
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -273,16 +277,16 @@ func resourceAliCloudFcv3LayerVersionUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudFcv3LayerVersionRead(d, meta)
+	return resourceLayerVersionRead(d, meta)
 }
 
-func resourceAliCloudFcv3LayerVersionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceLayerVersionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -295,12 +299,12 @@ func resourceAliCloudFcv3LayerVersionDelete(d *schema.ResourceData, meta interfa
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -308,13 +312,13 @@ func resourceAliCloudFcv3LayerVersionDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"LayerNotFound", "LayerVersionNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"LayerNotFound", "LayerVersionNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
