@@ -1,18 +1,25 @@
-package alicloud
+package hbase
 
 import (
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudHBaseInstance() *schema.Resource {
+func ResourceHBaseInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudHBaseInstanceCreate,
 		Read:   resourceAlicloudHBaseInstanceRead,
@@ -72,7 +79,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_essd_pl0", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", ""}, false),
+				ValidateFunc:     validators.StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_essd_pl0", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", ""}, false),
 				DiffSuppressFunc: engineDiffSuppressFunc,
 			},
 			"core_disk_size": {
@@ -133,7 +140,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"account": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -228,24 +235,23 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 
 func checkParams(request *hbase.CreateClusterRequest) error {
 	if request.Engine == "bds" && request.VSwitchId == "" {
-		return WrapError(Error("bds is not support classic"))
+		return errs.WrapError(errs.Error("bds is not support classic"))
 	}
 	return nil
 }
 
-func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.CreateClusterRequest, error) {
+func (s *Service) buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.CreateClusterRequest, error) {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 	request := hbase.CreateCreateClusterRequest()
-	request.ClusterName = Trim(d.Get("name").(string))
+	request.ClusterName = helper.Trim(d.Get("name").(string))
 	request.RegionId = string(client.Region)
-	request.ZoneId = Trim(d.Get("zone_id").(string))
-	request.Engine = Trim(d.Get("engine").(string))
-	request.EngineVersion = Trim(d.Get("engine_version").(string))
-	request.MasterInstanceType = Trim(d.Get("master_instance_type").(string))
-	request.CoreInstanceType = Trim(d.Get("core_instance_type").(string))
+	request.ZoneId = helper.Trim(d.Get("zone_id").(string))
+	request.Engine = helper.Trim(d.Get("engine").(string))
+	request.EngineVersion = helper.Trim(d.Get("engine_version").(string))
+	request.MasterInstanceType = helper.Trim(d.Get("master_instance_type").(string))
+	request.CoreInstanceType = helper.Trim(d.Get("core_instance_type").(string))
 	request.NodeCount = requests.NewInteger(d.Get("core_instance_quantity").(int))
-	request.DiskType = Trim(d.Get("core_disk_type").(string))
+	request.DiskType = helper.Trim(d.Get("core_disk_type").(string))
 	request.DiskSize = requests.NewInteger(d.Get("core_disk_size").(int))
 	request.PayType = convertHbaseInstancePayTypeRequest(d.Get("pay_type")).(string)
 	if v, ok := d.GetOk("duration"); ok {
@@ -272,20 +278,20 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 
 	if (request.ZoneId == "" || request.VpcId == "") && request.VSwitchId != "" {
 		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVSwitch(request.VSwitchId)
+		vsw, err := s.DescribeVSwitch(request.VSwitchId)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 
 		if request.ZoneId == "" {
 			request.ZoneId = vsw.ZoneId
-		} else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
+		} else if strings.Contains(request.ZoneId, helper.MultiIzSymbol) {
 			zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
 			if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-				return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
+				return nil, errs.WrapError(errs.Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
 			}
 		} else if request.ZoneId != vsw.ZoneId {
-			return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
+			return nil, errs.WrapError(errs.Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
 		}
 
 		if request.VpcId == "" {
@@ -294,7 +300,7 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	}
 
 	if d.Get("cold_storage_size").(int) < 0 {
-		return nil, WrapError(Error("cold_storage_size=%s is invalid", d.Get("cold_storage_size")))
+		return nil, errs.WrapError(errs.Error("cold_storage_size=%s is invalid", d.Get("cold_storage_size")))
 	}
 	request.ColdStorageSize = requests.NewInteger(d.Get("cold_storage_size").(int))
 
@@ -304,11 +310,11 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 
 func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hBaseService := HBaseService{client}
+	hBaseService := NewService(client)
 
-	request, err := buildHBaseCreateRequest(d, meta)
+	request, err := hBaseService.buildHBaseCreateRequest(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	raw, err := client.WithHbaseClient(func(client *hbase.Client) (interface{}, error) {
@@ -316,18 +322,18 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_hbase_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_hbase_instance", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*hbase.CreateClusterResponse)
 
 	d.SetId(response.ClusterId)
 
-	stateConf := BuildStateConf([]string{Hb_LAUNCHING, Hb_CREATING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutCreate),
+	stateConf := helper.BuildStateConf([]string{Hb_LAUNCHING, Hb_CREATING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutCreate),
 		5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_CREATE_FAILED}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return resourceAlicloudHBaseInstanceUpdate(d, meta)
@@ -335,15 +341,15 @@ func resourceAlicloudHBaseInstanceCreate(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hbaseService := HBaseService{client}
+	hbaseService := NewService(client)
 
 	instance, err := hbaseService.DescribeHBaseInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("name", instance["InstanceName"])
@@ -354,11 +360,11 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("master_instance_quantity", instance["MasterNodeCount"])
 	d.Set("core_instance_type", instance["CoreInstanceType"])
 	d.Set("core_instance_quantity", instance["CoreNodeCount"])
-	coreDiskSize, err := formatInt(instance["CoreDiskCount"])
+	coreDiskSize, err := convert.FormatInt(instance["CoreDiskCount"])
 	if err != nil {
 		return err
 	}
-	instanceCoreDiskSize, err := formatInt(instance["CoreDiskSize"])
+	instanceCoreDiskSize, err := convert.FormatInt(instance["CoreDiskSize"])
 	if err != nil {
 		return err
 	}
@@ -369,9 +375,9 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	if instance["PayType"] == string(Prepaid) {
 		time.Sleep(20)
 		instance, err := hbaseService.DescribeHBaseInstance(d.Id())
-		period, err := computePeriodByUnit(instance["CreatedTimeUTC"], instance["ExpireTimeUTC"], d.Get("duration").(int), "Month")
+		period, err := helper.ComputePeriodByUnit(instance["CreatedTimeUTC"], instance["ExpireTimeUTC"], d.Get("duration").(int), "Month")
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		d.Set("duration", period)
 	}
@@ -383,13 +389,13 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	d.Set("maintain_start_time", instance["MaintainStartTime"])
 	d.Set("maintain_end_time", instance["MaintainEndTime"])
 	d.Set("deletion_protection", instance["IsDeletionProtection"])
-	d.Set("tags", tagsToMap(instance["Tags"]))
+	d.Set("tags", tags.TagsToMap(instance["Tags"]))
 
 	ipWhitelist, err := hbaseService.DescribeIpWhitelist(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	ipWhite := LOCAL_HOST_IP
+	ipWhite := localHostIp
 	for _, value := range ipWhitelist.Groups.Group {
 		if value.GroupName == "default" {
 			ipWhite = strings.Join(value.IpList.Ip, ",")
@@ -399,13 +405,13 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 
 	securityGroups, err := hbaseService.DescribeSecurityGroups(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("security_groups", securityGroups.SecurityGroupIds.SecurityGroupId)
 
 	conns, err := hbaseService.DescribeClusterConnection(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// UiProxyConnAddrInfo
 	var uiConnAddrs []map[string]interface{}
@@ -443,12 +449,12 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 
 func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hBaseService := HBaseService{client}
+	hBaseService := NewService(client)
 	d.Partial(true)
 	if d.HasChange("pay_type") {
 		object, err := hBaseService.DescribeHBaseInstance(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		target := strings.ToLower(d.Get("pay_type").(string))
 		if strings.ToLower(object["PayType"].(string)) != target {
@@ -465,14 +471,14 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 				return hbaseClient.ConvertInstance(request)
 			})
-			addDebug(request.GetActionName(), raw)
+			logs.AddDebug(request.GetActionName(), raw)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+			stateConf := helper.BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 				2*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 	}
@@ -486,9 +492,9 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.ModifyIpWhitelist(request)
 		})
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -497,21 +503,21 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		request.ClusterId = d.Id()
 		securityGroups := d.Get("security_groups").(*schema.Set).List()
 		if securityGroups != nil && len(securityGroups) > 0 {
-			request.SecurityGroupIds = strings.Join(expandStringList(securityGroups), ",")
+			request.SecurityGroupIds = strings.Join(convert.ExpandStringList(securityGroups), ",")
 		} else {
 			request.SecurityGroupIds = " "
 		}
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.ModifySecurityGroups(request)
 		})
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := helper.BuildStateConf([]string{}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			5*time.Second, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -525,19 +531,19 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return client.ModifyInstanceMaintainTime(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.HasChange("deletion_protection") {
 		if err := hBaseService.ModifyClusterDeletionProtection(d.Id(), d.Get("deletion_protection").(bool)); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if err := hBaseService.setInstanceTags(d); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if d.HasChange("account") || d.HasChange("password") {
@@ -550,9 +556,9 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return client.ModifyUIAccountPassword(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.IsNewResource() {
@@ -569,9 +575,9 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return client.ModifyInstanceName(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.HasChange("core_instance_quantity") {
@@ -583,16 +589,16 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return client.ResizeNodeCount(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_NODE_RESIZING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := helper.BuildStateConf([]string{Hb_NODE_RESIZING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_NODE_RESIZING_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.HasChange("master_instance_type") || d.HasChange("core_instance_type") {
@@ -615,16 +621,16 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 				return client.ModifyInstanceType(request)
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
 			// Cumbersome operation，async call, wait for state change
 			// wait instance status is running after modifying
-			stateConf := BuildStateConf([]string{Hb_LEVEL_MODIFY}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+			stateConf := helper.BuildStateConf([]string{Hb_LEVEL_MODIFY}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 				5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_LEVEL_MODIFY_FAILED}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 	}
 
@@ -637,16 +643,16 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return client.ResizeDiskSize(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_DISK_RESIZING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := helper.BuildStateConf([]string{Hb_DISK_RESIZING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			2*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if d.HasChange("cold_storage_size") {
@@ -658,16 +664,16 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return client.ResizeColdStorageSize(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_HBASE_COLD_EXPANDING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := helper.BuildStateConf([]string{Hb_HBASE_COLD_EXPANDING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			10*time.Second, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	d.Partial(false)
@@ -676,7 +682,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hbaseService := HBaseService{client}
+	hbaseService := NewService(client)
 
 	request := hbase.CreateDeleteInstanceRequest()
 	request.ClusterId = d.Id()
@@ -684,32 +690,32 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 		request.ImmediateDeleteFlag = requests.NewBoolean(v.(bool))
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err := retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
 			return hbaseClient.DeleteInstance(request)
 		})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"Instance.InvalidStatus"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"Instance.InvalidStatus"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"Instance.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{Hb_DELETING}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, hbaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{Hb_DELETING}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, hbaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	return errs.WrapError(err)
 }
 
 func convertHbaseInstancePayTypeRequest(source interface{}) interface{} {
@@ -730,4 +736,31 @@ func convertHbaseInstancePayTypeResponse(source interface{}) interface{} {
 		return "PostPaid"
 	}
 	return source
+}
+
+// engineDiffSuppressFunc suppresses disk diffs when the engine is "bds".
+func engineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("engine").(string)) == "bds"
+}
+
+// payTypePostPaidDiffSuppressFunc suppresses diffs that only apply under PostPaid.
+func payTypePostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(d.Get("pay_type").(string)) == "postpaid"
+}
+
+// whiteIpListDiffSuppressFunc suppresses ip_white diffs that are just re-orderings.
+func whiteIpListDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	oldArray := strings.Split(old, ",")
+	newArray := strings.Split(new, ",")
+	if len(oldArray) != len(newArray) {
+		return false
+	}
+	sort.Strings(oldArray)
+	sort.Strings(newArray)
+	for i := range newArray {
+		if newArray[i] != oldArray[i] {
+			return false
+		}
+	}
+	return true
 }

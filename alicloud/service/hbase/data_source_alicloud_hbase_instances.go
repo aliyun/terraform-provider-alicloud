@@ -1,4 +1,4 @@
-package alicloud
+package hbase
 
 import (
 	"regexp"
@@ -6,10 +6,14 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudHBaseInstances() *schema.Resource {
+func DataSourceHBaseInstances() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudHBaseInstancesRead,
 
@@ -32,7 +36,7 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -127,7 +131,7 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 							Type:     schema.TypeBool,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": tags.TagsSchema(),
 					},
 				},
 			},
@@ -137,7 +141,7 @@ func dataSourceAlicloudHBaseInstances() *schema.Resource {
 
 func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	hbaseService := HBaseService{client}
+	hbaseService := NewService(client)
 
 	request := hbase.CreateDescribeInstancesRequest()
 	request.RegionId = client.RegionId
@@ -180,9 +184,9 @@ func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface
 		})
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_hbase_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_hbase_instances", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response, _ := raw.(*hbase.DescribeInstancesResponse)
 		if len(response.Instances.Instance) < 1 {
 			break
@@ -203,13 +207,13 @@ func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface
 			dbi = append(dbi, item)
 		}
 
-		if len(response.Instances.Instance) < PageSizeLarge {
+		if len(response.Instances.Instance) < helper.PageSizeLarge {
 			break
 		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		page, err := helper.GetNextpageNumber(request.PageNumber)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.PageNumber = page
 	}
@@ -248,24 +252,24 @@ func dataSourceAlicloudHBaseInstancesRead(d *schema.ResourceData, meta interface
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		err := writeToFile(output.(string), s)
+		err := helper.WriteToFile(output.(string), s)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	return nil

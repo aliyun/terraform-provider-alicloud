@@ -1,4 +1,4 @@
-package alicloud
+package hbase_test
 
 import (
 	"fmt"
@@ -7,10 +7,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	hbaseSvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/hbase"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -22,7 +28,7 @@ func init() {
 }
 
 func testSweepHBaseInstances(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -36,7 +42,7 @@ func testSweepHBaseInstances(region string) error {
 	var insts []hbase.Instance
 	req := hbase.CreateDescribeInstancesRequest()
 	req.RegionId = client.RegionId
-	req.PageSize = requests.NewInteger(PageSizeLarge)
+	req.PageSize = requests.NewInteger(helper.PageSizeLarge)
 	req.PageNumber = requests.NewInteger(1)
 	for {
 		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
@@ -51,11 +57,11 @@ func testSweepHBaseInstances(region string) error {
 		}
 		insts = append(insts, resp.Instances.Instance...)
 
-		if len(resp.Instances.Instance) < PageSizeLarge {
+		if len(resp.Instances.Instance) < helper.PageSizeLarge {
 			break
 		}
 
-		page, err := getNextpageNumber(req.PageNumber)
+		page, err := helper.GetNextpageNumber(req.PageNumber)
 		if err != nil {
 			return err
 		}
@@ -63,21 +69,20 @@ func testSweepHBaseInstances(region string) error {
 	}
 
 	sweeped := false
-	vpcService := VpcService{client}
 	for _, v := range insts {
 		name := v.InstanceName
 		id := v.InstanceId
 		skip := true
-		if !sweepAll() {
+		if !sweep.SweepAll() {
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 					skip = false
 					break
 				}
 			}
-			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			// If an hbase instance name is set by other service, it should be fetched by vpc name and deleted.
 			if skip {
-				if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+				if need, err := needSweepHBaseVpc(client, v.VpcId); err == nil {
 					skip = !need
 				}
 
@@ -104,7 +109,7 @@ func testSweepHBaseInstances(region string) error {
 			return hbaseClient.DeleteInstance(req2)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete Hbase Instance (%s (%s)): %s", name, id, err)
+			log.Printf("[ERROR] Failed to delete HBase Instance (%s (%s)): %s", name, id, err)
 		} else {
 			sweeped = true
 		}
@@ -114,6 +119,46 @@ func testSweepHBaseInstances(region string) error {
 		time.Sleep(30 * time.Second)
 	}
 	return nil
+}
+
+// needSweepHBaseVpc replicates the flat suite's VpcService.needSweepVpc behavior
+// for the vpcId-only path used by the hbase instance sweeper: it sweeps the
+// instance when its VPC was created by an acceptance test (name prefix
+// tf-testacc / tf_testacc).
+func needSweepHBaseVpc(client *connectivity.AliyunClient, vpcId string) (bool, error) {
+	if vpcId == "" {
+		return false, nil
+	}
+	action := "DescribeVpcs"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"VpcId":    vpcId,
+	}
+	response, err := client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.VpcNotFound", "InvalidVpcID.NotFound"}) {
+			return false, nil
+		}
+		return false, errs.WrapErrorf(err, errs.DefaultErrorMsg, vpcId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Vpcs.Vpc", response)
+	if err != nil {
+		return false, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, vpcId, "$.Vpcs.Vpc", response)
+	}
+	items, _ := v.([]interface{})
+	if len(items) < 1 {
+		return false, nil
+	}
+	object, _ := items[0].(map[string]interface{})
+	if fmt.Sprint(object["VpcId"]) != vpcId {
+		return false, nil
+	}
+	name := strings.ToLower(fmt.Sprint(object["VpcName"]))
+	if strings.HasPrefix(name, "tf-testacc") || strings.HasPrefix(name, "tf_testacc") {
+		log.Printf("[DEBUG] Need to sweep the VPC (%v (%v)).", object["VpcId"], object["VpcName"])
+		return true, nil
+	}
+	return false, nil
 }
 
 func AlicloudHbaseBasicDependence(name string) string {
@@ -132,7 +177,12 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  # Test-infra adaptation: the flat-suite baseline used cidrsubnet offset 8,
+  # which persistently overlaps an existing subnet in the shared
+  # ^default-NODELETING$ VPC (InvalidCidrBlock.Overlapped) and blocks the
+  # whole lifecycle ACC. Offset 200 picks a high /24 segment unlikely to be
+  # allocated; hbase lifecycle assertions are unchanged.
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 200)
   zone_id = data.alicloud_hbase_zones.default.ids.0
   vswitch_name              = var.name
 }
@@ -151,22 +201,22 @@ resource "alicloud_security_group" "default" {
 func TestAccAliCloudHBaseInstanceVpc(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbase_instance.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &HBaseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return hbaseSvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeHBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbaseBasicDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudHbaseBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -193,21 +243,21 @@ func TestAccAliCloudHBaseInstanceVpc(t *testing.T) {
 						"engine_version":           "2.0",
 						"core_instance_type":       "hbase.sn2.2xlarge",
 						"core_disk_type":           "cloud_ssd",
-						"vswitch_id":               CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
 						"immediate_delete_flag":    "true",
 						"core_instance_quantity":   "2",
 						"cold_storage_size":        "800",
 						"deletion_protection":      "true",
-						"zone_id":                  CHECKSET,
-						"master_instance_quantity": CHECKSET,
-						"maintain_start_time":      CHECKSET,
-						"maintain_end_time":        CHECKSET,
+						"zone_id":                  acctest.CHECKSET,
+						"master_instance_quantity": acctest.CHECKSET,
+						"maintain_start_time":      acctest.CHECKSET,
+						"maintain_end_time":        acctest.CHECKSET,
 						"pay_type":                 "PostPaid",
 						"ip_white":                 "192.168.0.1",
 						"security_groups.#":        "0",
-						"ui_proxy_conn_addrs.#":    CHECKSET,
-						"zk_conn_addrs.#":          CHECKSET,
-						"slb_conn_addrs.#":         CHECKSET,
+						"ui_proxy_conn_addrs.#":    acctest.CHECKSET,
+						"zk_conn_addrs.#":          acctest.CHECKSET,
+						"slb_conn_addrs.#":         acctest.CHECKSET,
 					}),
 				),
 			},
@@ -417,22 +467,22 @@ func TestAccAliCloudHBaseInstanceVpc(t *testing.T) {
 func TestAccAliCloudHBaseInstance_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbase_instance.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &HBaseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return hbaseSvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeHBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbaseBasicDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudHbaseBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -455,22 +505,22 @@ func TestAccAliCloudHBaseInstance_VpcId(t *testing.T) {
 						"engine_version":           "2.0",
 						"core_instance_type":       "hbase.sn1.2xlarge",
 						"core_disk_type":           "cloud_ssd",
-						"vswitch_id":               CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
 						"immediate_delete_flag":    "true",
 						"core_instance_quantity":   "2",
 						"cold_storage_size":        "800",
 						"deletion_protection":      "true",
-						"zone_id":                  CHECKSET,
-						"master_instance_quantity": CHECKSET,
-						"maintain_start_time":      CHECKSET,
-						"maintain_end_time":        CHECKSET,
+						"zone_id":                  acctest.CHECKSET,
+						"master_instance_quantity": acctest.CHECKSET,
+						"maintain_start_time":      acctest.CHECKSET,
+						"maintain_end_time":        acctest.CHECKSET,
 						"pay_type":                 "PostPaid",
 						"ip_white":                 "192.168.0.1",
 						"security_groups.#":        "0",
-						"ui_proxy_conn_addrs.#":    CHECKSET,
-						"zk_conn_addrs.#":          CHECKSET,
-						"slb_conn_addrs.#":         CHECKSET,
-						"vpc_id":                   CHECKSET,
+						"ui_proxy_conn_addrs.#":    acctest.CHECKSET,
+						"zk_conn_addrs.#":          acctest.CHECKSET,
+						"slb_conn_addrs.#":         acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
 					}),
 				),
 			},
