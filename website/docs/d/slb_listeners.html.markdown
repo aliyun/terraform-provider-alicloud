@@ -7,15 +7,17 @@ description: |-
     Provides a list of server load balancer listeners to the user.
 ---
 
-# alicloud\_slb_listeners
+# alicloud_slb_listeners
 
 This data source provides the listeners related to a server load balancer of the current Alibaba Cloud user.
 
+-> **NOTE:** Available since v1.15.0
+
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = "tf-testAccSlbListenertcp"
+  load_balancer_name = "tf-exampleSlbListenerTcp"
 }
 resource "alicloud_slb_listener" "tcp" {
   load_balancer_id          = alicloud_slb_load_balancer.default.id
@@ -87,6 +89,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `health_check_http_code` - HTTP status codes indicating that the health check is normal. It can contain several comma-separated values such as "http_2xx,http_3xx". Only available when the protocol is `http`, `https` or `tcp` (in this case health_check_type must be `http`).
   * `gzip` - Indicate whether Gzip compression is enabled or not. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
   * `ssl_certificate_id` - ID of the server certificate. Only available when the protocol is `https`.
+  * `server_certificate_id` - ID of the server certificate. Only available when the protocol is `https`.
   * `ca_certificate_id` - ID of the CA certificate (only required when two-way authentication is used). Only available when the protocol is `https`.
   * `x_forwarded_for` - Indicate whether the HTTP header field "X-Forwarded-For" is added or not; it allows the backend server to know about the user's IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.
   * `x_forwarded_for_slb_ip` - Indicate whether the HTTP header field "X-Forwarded-For_SLBIP" is added or not; it allows the backend server to know about the SLB IP address. Possible values are `on` and `off`. Only available when the protocol is `http` or `https`.

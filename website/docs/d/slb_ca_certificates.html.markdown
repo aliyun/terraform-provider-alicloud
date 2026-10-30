@@ -6,9 +6,11 @@ sidebar_current: "docs-alicloud-datasource-slb-ca-certificates"
 description: |-
     Provides a list of slb CA certificates.
 ---
-# alicloud\_slb_ca_certificates
+# alicloud_slb_ca_certificates
 
 This data source provides the CA certificate list.
+
+-> **NOTE:** Available since v1.22.0.
 
 ## Example Usage
 
@@ -28,7 +30,7 @@ The following arguments are supported:
 * `ids` - (Optional) A list of ca certificates IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by ca certificate name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew, Available in 1.60.0+) The Id of resource group which ca certificates belongs.
+* `resource_group_id` - (Optional, Available in 1.60.0+) The Id of resource group which ca certificates belongs.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
@@ -49,5 +51,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `tags` - (Available in v1.66.0+) A mapping of tags to assign to the resource.
   * `ca_certificate_id` - (Available in v1.123.1+) CA certificate ID.
   * `name` - (Deprecated from v1.123.1) Deprecated and replace by `ca_certificate_name`.
-  * `created_time` - (Removed from v1.123.1) CA certificate created time.
-  * `region_id` - (Removed from v1.123.1) The region Id of CA certificate.

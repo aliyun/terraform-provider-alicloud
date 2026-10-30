@@ -4,10 +4,10 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_acl"
 sidebar_current: "docs-alicloud-resource-slb-acl"
 description: |-
-  Provides a Load Banlancer Access Control List resource.
+  Provides a Load Balancer Access Control List resource.
 ---
 
-# alicloud\_slb\_acl
+# alicloud_slb_acl
 
 An access control list contains multiple IP addresses or CIDR blocks.
 The access control list can help you to define multiple instance listening dimension,
@@ -32,6 +32,8 @@ when you create a listener or change access control configuration after a listen
 For information about slb and how to use it, see [What is Server Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
 
 For information about acl and how to use it, see [Configure an access control list](https://www.alibabacloud.com/help/doc-detail/70015.htm).
+
+-> **NOTE:** Available since v1.20.0.
 
 
 ## Example Usage
@@ -58,11 +60,11 @@ The following arguments are supported:
 
 * `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
-* `entry_list` - (Deprecated from v1.162.0 ) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
+* `entry_list` - (Deprecated from v1.162.0) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. See [`entry_list`](#entry_list) below. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, ForceNew, Available in v1.67.0+) Resource group ID.
 
-## Entry Block
+### `entry_list`
 
 The entry mapping supports the following:
 

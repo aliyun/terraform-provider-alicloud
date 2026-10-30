@@ -7,11 +7,11 @@ description: |-
   Provides an Application Load Balancer Backend Server resource.
 ---
 
-# alicloud\_slb\_backend\_server
+# alicloud_slb_backend_server
 
 Add a group of backend servers (ECS or ENI instance) to the Server Load Balancer or remove them from it.
 
--> **NOTE:** Available in 1.53.0+
+-> **NOTE:** Available since v1.53.0+
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ Add a group of backend servers (ECS or ENI instance) to the Server Load Balancer
 
 // alicloud_slb_backend_server
 variable "slb_backend_server_name" {
-  default = "slbbackendservertest"
+  default = "tf-slb-backend-server"
 }
 
 data "alicloud_zones" "backend_server" {
@@ -103,16 +103,16 @@ resource "alicloud_slb_backend_server" "backend_server" {
 
 The following arguments are supported:
 
-* `load_balancer_id` - (Required) ID of the load balancer.
-* `backend_servers` - (Optional) A list of instances to added backend server in the SLB. It contains three sub-fields as `Block server` follows.
+* `load_balancer_id` - (Required, ForceNew) ID of the load balancer.
+* `backend_servers` - (Optional) A list of instances to added backend server in the SLB. It contains three sub-fields as `Block server` follows. See [`backend_servers`](#backend_servers) below.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
-## Block servers
+### `backend_servers`
 
 The servers mapping supports the following:
 
 * `server_id` - (Required) A list backend server ID (ECS instance ID).
-* `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. 
+* `weight` - (Required) Weight of the backend server. Valid value range: [0-100].
 * `type` - (Optional) Type of the backend server. Valid value `ecs`, `eni`, `eci`. Default to `ecs`. **NOTE:** From 1.170.0+, The `eci` is valid. 
 * `server_ip` - (Optional, Computed, Available in 1.93.0+) ServerIp of the backend server. This parameter can be specified when the type is `eni`. `ecs` type currently does not support adding `server_ip` parameter.
 

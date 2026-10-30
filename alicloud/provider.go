@@ -929,24 +929,6 @@ func Provider() *schema.Provider {
 			"alicloud_simple_application_server_snapshots":      dataSourceAlicloudSimpleApplicationServerSnapshots(),
 			"alicloud_simple_application_server_custom_images":  dataSourceAlicloudSimpleApplicationServerCustomImages(),
 
-			// slb
-			"alicloud_slb_attachments":                dataSourceAlicloudSlbAttachments(),
-			"alicloud_slb_backend_servers":            dataSourceAlicloudSlbBackendServers(),
-			"alicloud_slb_listeners":                  dataSourceAlicloudSlbListeners(),
-			"alicloud_slb_rules":                      dataSourceAlicloudSlbRules(),
-			"alicloud_slb_server_groups":              dataSourceAlicloudSlbServerGroups(),
-			"alicloud_slb_master_slave_server_groups": dataSourceAlicloudSlbMasterSlaveServerGroups(),
-			"alicloud_slb_acls":                       dataSourceAlicloudSlbAcls(),
-			"alicloud_slb_server_certificates":        dataSourceAlicloudSlbServerCertificates(),
-			"alicloud_slb_ca_certificates":            dataSourceAlicloudSlbCaCertificates(),
-			"alicloud_slb_domain_extensions":          dataSourceAlicloudSlbDomainExtensions(),
-			"alicloud_slb_zones":                      dataSourceAlicloudSlbZones(),
-			"alicloud_slb_load_balancers":             dataSourceAlicloudSlbLoadBalancers(),
-			"alicloud_slb_tls_cipher_policies":        dataSourceAlicloudSlbTlsCipherPolicies(),
-
-			// slbs
-			"alicloud_slbs": dataSourceAlicloudSlbLoadBalancers(),
-
 			// sls
 			"alicloud_sls_indexs":          dataSourceAliCloudSlsIndexs(),
 			"alicloud_sls_machine_groups":  dataSourceAliCloudSlsMachineGroups(),
@@ -2108,23 +2090,6 @@ func Provider() *schema.Provider {
 			"alicloud_simple_application_server_firewall_rule": resourceAlicloudSimpleApplicationServerFirewallRule(),
 			"alicloud_simple_application_server_snapshot":      resourceAlicloudSimpleApplicationServerSnapshot(),
 			"alicloud_simple_application_server_custom_image":  resourceAlicloudSimpleApplicationServerCustomImage(),
-
-			// slb
-			"alicloud_slb":                                resourceAlicloudSlbLoadBalancer(),
-			"alicloud_slb_listener":                       resourceAliCloudSlbListener(),
-			"alicloud_slb_attachment":                     resourceAliyunSlbAttachment(),
-			"alicloud_slb_backend_server":                 resourceAliyunSlbBackendServer(),
-			"alicloud_slb_domain_extension":               resourceAlicloudSlbDomainExtension(),
-			"alicloud_slb_server_group":                   resourceAliyunSlbServerGroup(),
-			"alicloud_slb_master_slave_server_group":      resourceAliyunSlbMasterSlaveServerGroup(),
-			"alicloud_slb_rule":                           resourceAliyunSlbRule(),
-			"alicloud_slb_acl":                            resourceAlicloudSlbAcl(),
-			"alicloud_slb_ca_certificate":                 resourceAlicloudSlbCaCertificate(),
-			"alicloud_slb_server_certificate":             resourceAlicloudSlbServerCertificate(),
-			"alicloud_slb_load_balancer":                  resourceAlicloudSlbLoadBalancer(),
-			"alicloud_slb_tls_cipher_policy":              resourceAlicloudSlbTlsCipherPolicy(),
-			"alicloud_slb_acl_entry_attachment":           resourceAlicloudSlbAclEntryAttachment(),
-			"alicloud_slb_server_group_server_attachment": resourceAliCloudSlbServerGroupServerAttachment(),
 
 			// sls
 			"alicloud_sls_logtail_pipeline_config": resourceAliCloudSlsLogtailPipelineConfig(),
