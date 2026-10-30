@@ -1,12 +1,16 @@
-package alicloud
+package selectdb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/selectdb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -18,7 +22,7 @@ func init() {
 }
 
 func testSweepSelectDBDbInstance(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
@@ -28,10 +32,10 @@ func testSweepSelectDBDbInstance(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	selectDBService := SelectDBService{client}
-	instanceResp, err := selectDBService.DescribeSelectDBDbInstances("", nil)
+	selectDBService := selectdb.NewService(client)
+	instanceResp, err := selectDBService.DescribeDbInstances("", nil)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instances", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_instances", errs.AlibabaCloudSdkGoERROR)
 	}
 
 	var objects []map[string]interface{}
@@ -39,7 +43,7 @@ func testSweepSelectDBDbInstance(region string) error {
 	for _, item := range instanceResp {
 		name := item["Description"].(string)
 		skip := true
-		if !sweepAll() {
+		if !sweep.SweepAll() {
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(name, prefix) {
 					skip = false
@@ -54,9 +58,9 @@ func testSweepSelectDBDbInstance(region string) error {
 	}
 
 	for _, id := range objects {
-		_, err := selectDBService.DeleteSelectDBInstance(id["DBInstanceId"].(string))
+		_, err := selectDBService.DeleteInstance(id["DBInstanceId"].(string))
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instances", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_instances", errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	return nil
@@ -65,30 +69,30 @@ func testSweepSelectDBDbInstance(region string) error {
 func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_selectdb_db_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudSelectDBDbInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SelectDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSelectDBDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sselectdbdbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSelectDBDbInstanceBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSelectDBDbInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return selectdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDbInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sselectdbdbinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSelectDBDbInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class":       "selectdb.xlarge",
+					"db_instance_class":       "selectdb.g.2xlarge",
 					"db_instance_description": name,
 					"cache_size":              "200",
 					"payment_type":            "PayAsYouGo",
-					"engine_minor_version":    "4.0.3",
+					"engine_minor_version":    "4.0",
 					"zone_id":                 "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vpc_id":                  "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
 					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
@@ -101,13 +105,13 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_class":           "selectdb.xlarge",
+						"db_instance_class":           "selectdb.g.2xlarge",
 						"cache_size":                  "200",
 						"payment_type":                "PayAsYouGo",
-						"engine_minor_version":        "4.0.3",
-						"zone_id":                     CHECKSET,
-						"vpc_id":                      CHECKSET,
-						"vswitch_id":                  CHECKSET,
+						"engine_minor_version":        "4.0",
+						"zone_id":                     acctest.CHECKSET,
+						"vpc_id":                      acctest.CHECKSET,
+						"vswitch_id":                  acctest.CHECKSET,
 						"desired_security_ip_lists.#": "1",
 						"security_ip_lists.#":         "2",
 					}),
@@ -187,11 +191,11 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_minor_version": "4.0.11",
+					"engine_minor_version": "4.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_minor_version": "4.0.11",
+						"engine_minor_version": "4.1",
 					}),
 				),
 			},
@@ -242,29 +246,29 @@ func TestAccAliCloudSelectDBDbInstance_basic_info_upgrade_major_version(t *testi
 func TestAccAliCloudSelectDBDbInstance_basic_payment_modify_upgrade_minor_version(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_selectdb_db_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudSelectDBDbInstanceMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SelectDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSelectDBDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sselectdbdbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSelectDBDbInstanceBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSelectDBDbInstanceMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return selectdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDbInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sselectdbdbinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSelectDBDbInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class":       "selectdb.xlarge",
+					"db_instance_class":       "selectdb.g.2xlarge",
 					"db_instance_description": name,
 					"cache_size":              "200",
-					"engine_minor_version":    "4.0.3",
+					"engine_minor_version":    "4.0",
 					"admin_pass":              "test_123",
 					"payment_type":            "Subscription",
 					"period":                  "Month",
@@ -275,14 +279,14 @@ func TestAccAliCloudSelectDBDbInstance_basic_payment_modify_upgrade_minor_versio
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_class": "selectdb.xlarge",
+						"db_instance_class": "selectdb.g.2xlarge",
 						"cache_size":        "200",
 						"payment_type":      "Subscription",
 						"period":            "Month",
 						"period_time":       "1",
-						"zone_id":           CHECKSET,
-						"vpc_id":            CHECKSET,
-						"vswitch_id":        CHECKSET,
+						"zone_id":           acctest.CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
 					}),
 				),
 			},
@@ -298,11 +302,11 @@ func TestAccAliCloudSelectDBDbInstance_basic_payment_modify_upgrade_minor_versio
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_minor_version": "4.0.11",
+					"engine_minor_version": "4.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_minor_version": "4.0.11",
+						"engine_minor_version": "4.1",
 					}),
 				),
 			},
@@ -330,29 +334,29 @@ func TestAccAliCloudSelectDBDbInstance_basic_payment_modify_upgrade_minor_versio
 func TestAccAliCloudSelectDBDbInstance_deprecated_upgrade_minor_version(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_selectdb_db_instance.default"
-	ra := resourceAttrInit(resourceId, AliCloudSelectDBDbInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SelectDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSelectDBDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sselectdbdbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSelectDBDbInstanceBasicDependence0)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSelectDBDbInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return selectdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDbInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sselectdbdbinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSelectDBDbInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_class":             "selectdb.xlarge",
+					"db_instance_class":             "selectdb.g.2xlarge",
 					"db_instance_description":       name,
 					"cache_size":                    "200",
-					"upgraded_engine_minor_version": "4.0.3",
+					"upgraded_engine_minor_version": "4.0",
 					"admin_pass":                    "test_123",
 					"payment_type":                  "PayAsYouGo",
 					"zone_id":                       "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
@@ -361,23 +365,23 @@ func TestAccAliCloudSelectDBDbInstance_deprecated_upgrade_minor_version(t *testi
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_class":             "selectdb.xlarge",
+						"db_instance_class":             "selectdb.g.2xlarge",
 						"cache_size":                    "200",
-						"upgraded_engine_minor_version": "4.0.3",
+						"upgraded_engine_minor_version": "4.0",
 						"payment_type":                  "PayAsYouGo",
-						"zone_id":                       CHECKSET,
-						"vpc_id":                        CHECKSET,
-						"vswitch_id":                    CHECKSET,
+						"zone_id":                       acctest.CHECKSET,
+						"vpc_id":                        acctest.CHECKSET,
+						"vswitch_id":                    acctest.CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgraded_engine_minor_version": "4.0.11",
+					"upgraded_engine_minor_version": "4.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"upgraded_engine_minor_version": "4.0.11",
+						"upgraded_engine_minor_version": "4.1",
 					}),
 				),
 			},
@@ -393,23 +397,23 @@ func TestAccAliCloudSelectDBDbInstance_deprecated_upgrade_minor_version(t *testi
 }
 
 var AliCloudSelectDBDbInstanceMap0 = map[string]string{
-	"db_instance_class": CHECKSET,
-	"cache_size":        CHECKSET,
-	"payment_type":      CHECKSET,
-	"zone_id":           CHECKSET,
-	"vpc_id":            CHECKSET,
-	"vswitch_id":        CHECKSET,
+	"db_instance_class": acctest.CHECKSET,
+	"cache_size":        acctest.CHECKSET,
+	"payment_type":      acctest.CHECKSET,
+	"zone_id":           acctest.CHECKSET,
+	"vpc_id":            acctest.CHECKSET,
+	"vswitch_id":        acctest.CHECKSET,
 }
 
 var AliCloudSelectDBDbInstanceMap1 = map[string]string{
-	"db_instance_class": CHECKSET,
-	"cache_size":        CHECKSET,
-	"payment_type":      CHECKSET,
-	"period":            CHECKSET,
-	"period_time":       CHECKSET,
-	"zone_id":           CHECKSET,
-	"vpc_id":            CHECKSET,
-	"vswitch_id":        CHECKSET,
+	"db_instance_class": acctest.CHECKSET,
+	"cache_size":        acctest.CHECKSET,
+	"payment_type":      acctest.CHECKSET,
+	"period":            acctest.CHECKSET,
+	"period_time":       acctest.CHECKSET,
+	"zone_id":           acctest.CHECKSET,
+	"vpc_id":            acctest.CHECKSET,
+	"vswitch_id":        acctest.CHECKSET,
 }
 
 func AliCloudSelectDBDbInstanceBasicDependence0(name string) string {
