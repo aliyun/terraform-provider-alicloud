@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Oos State Configurations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -33,23 +33,23 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `tags` - (Optional, Computed) The tag of the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `configurations` - A list of Oos State Configurations. Each element contains the following attributes:
-    * `configure_mode` - The configuration mode.
-    * `create_time` - The creation time.
-    * `update_time` - The time when the configuration is updated.
-    * `description` - The description.
-    * `id` - The ID of the State Configuration.
-    * `parameters` - The parameters.
-    * `resource_group_id` - The ID of the resource group.
-    * `schedule_expression` - The schedule expression.
-    * `schedule_type` - The schedule type.
-    * `state_configuration_id` - The ID of the final state configuration.
-    * `tags` - The tag of the resource.
-    * `targets` - The target resource.
-    * `template_id` - The ID of the template.
-    * `template_name` - The name of the template.
-    * `template_version` - The version of the template.
+  * `configure_mode` - The configuration mode.
+  * `create_time` - The creation time.
+  * `update_time` - The time when the configuration is updated.
+  * `description` - The description.
+  * `id` - The ID of the State Configuration.
+  * `parameters` - The parameters.
+  * `resource_group_id` - The ID of the resource group.
+  * `schedule_expression` - The schedule expression.
+  * `schedule_type` - The schedule type.
+  * `state_configuration_id` - The ID of the final state configuration.
+  * `tags` - The tag of the resource.
+  * `targets` - The target resource.
+  * `template_id` - The ID of the template.
+  * `template_name` - The name of the template.
+  * `template_version` - The version of the template.

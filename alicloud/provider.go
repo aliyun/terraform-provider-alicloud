@@ -764,14 +764,6 @@ func Provider() *schema.Provider {
 			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
 
 			// oos
-			"alicloud_oos_templates":            dataSourceAlicloudOosTemplates(),
-			"alicloud_oos_executions":           dataSourceAlicloudOosExecutions(),
-			"alicloud_oos_applications":         dataSourceAlicloudOosApplications(),
-			"alicloud_oos_application_groups":   dataSourceAlicloudOosApplicationGroups(),
-			"alicloud_oos_patch_baselines":      dataSourceAlicloudOosPatchBaselines(),
-			"alicloud_oos_parameters":           dataSourceAliCloudOosParameters(),
-			"alicloud_oos_state_configurations": dataSourceAlicloudOosStateConfigurations(),
-			"alicloud_oos_secret_parameters":    dataSourceAliCloudOosSecretParameters(),
 
 			// oss
 			"alicloud_oss_bucket_inventories": dataSourceAliCloudOssBucketInventories(),
@@ -1852,16 +1844,6 @@ func Provider() *schema.Provider {
 			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
 
 			// oos
-			"alicloud_oos_template":               resourceAlicloudOosTemplate(),
-			"alicloud_oos_execution":              resourceAlicloudOosExecution(),
-			"alicloud_oos_application":            resourceAlicloudOosApplication(),
-			"alicloud_oos_application_group":      resourceAlicloudOosApplicationGroup(),
-			"alicloud_oos_patch_baseline":         resourceAliCloudOosPatchBaseline(),
-			"alicloud_oos_service_setting":        resourceAlicloudOosServiceSetting(),
-			"alicloud_oos_parameter":              resourceAlicloudOosParameter(),
-			"alicloud_oos_state_configuration":    resourceAlicloudOosStateConfiguration(),
-			"alicloud_oos_secret_parameter":       resourceAliCloudOosSecretParameter(),
-			"alicloud_oos_default_patch_baseline": resourceAlicloudOosDefaultPatchBaseline(),
 
 			// oss
 			"alicloud_oss_bucket_inventory":                  resourceAliCloudOssBucketInventory(),
