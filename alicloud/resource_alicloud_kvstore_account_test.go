@@ -2,13 +2,151 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_kvstore_account", &resource.Sweeper{
+		Name: "alicloud_kvstore_account",
+		F:    testSweepKvstoreAccounts,
+	})
+}
+
+// testSweepKvstoreAccounts sweeps KVStore (Redis) account sub-resources.
+// Accounts are a sub-resource of a KVStore instance, so we enumerate instances
+// first, then DescribeAccounts per instance and delete each non-system account.
+func testSweepKvstoreAccounts(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	// 1. List all KVStore instances (Redis + Memcache) so we can enumerate accounts per instance.
+	listAction := "DescribeInstances"
+	listReq := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"PageSize":   PageSizeXLarge,
+		"PageNumber": 1,
+	}
+	instanceIds := make([]string, 0)
+	for _, instanceType := range []string{string(KVStoreRedis), string(KVStoreMemcache)} {
+		listReq["InstanceType"] = instanceType
+		for {
+			response, err := client.RpcPost("R-kvstore", "2015-01-01", listAction, nil, listReq, true)
+			if err != nil {
+				log.Printf("[ERROR] Failed to list KVStore instances for account sweep: %s", err)
+				return nil
+			}
+			resp, err := jsonpath.Get("$.Instances.KVStoreInstance", response)
+			if err != nil {
+				return WrapErrorf(err, FailedGetAttributeMsg, listAction, "$.Instances.KVStoreInstance", response)
+			}
+			result, _ := resp.([]interface{})
+			for _, v := range result {
+				item, ok := v.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				instanceName := fmt.Sprint(item["InstanceName"])
+				if protectedSweepVpcName(instanceName) {
+					log.Printf("[INFO] Skipping KVStore Instance accounts (NODELETING): %s (%s)", instanceName, item["InstanceId"])
+					continue
+				}
+				if !sweepAll() {
+					match := false
+					for _, prefix := range prefixes {
+						if strings.HasPrefix(strings.ToLower(instanceName), strings.ToLower(prefix)) {
+							match = true
+							break
+						}
+					}
+					if !match {
+						continue
+					}
+				}
+				instanceIds = append(instanceIds, fmt.Sprint(item["InstanceId"]))
+			}
+			if len(result) < PageSizeXLarge {
+				break
+			}
+			listReq["PageNumber"] = listReq["PageNumber"].(int) + 1
+		}
+	}
+
+	// 2. For each qualifying instance, list accounts and delete each (skip system/built-in accounts).
+	for _, instanceId := range instanceIds {
+		accReq := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": instanceId,
+		}
+		accResp, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeAccounts", nil, accReq, true)
+		if err != nil {
+			log.Printf("[ERROR] Failed to DescribeAccounts for instance %s: %s", instanceId, err)
+			continue
+		}
+		accsObj, err := jsonpath.Get("$.Accounts.Account", accResp)
+		if err != nil {
+			log.Printf("[ERROR] Failed to parse accounts for instance %s: %s", instanceId, err)
+			continue
+		}
+		accList, _ := accsObj.([]interface{})
+		for _, a := range accList {
+			acc, ok := a.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			accName := fmt.Sprint(acc["AccountName"])
+			// Skip built-in/system accounts — the cloud does not allow deleting them.
+			if accType := fmt.Sprint(acc["AccountType"]); accType == "System" || accType == "Super" {
+				log.Printf("[INFO] Skipping system KVStore account on instance %s: %s (%s)", instanceId, accName, accType)
+				continue
+			}
+			if protectedSweepVpcName(accName) {
+				log.Printf("[INFO] Skipping KVStore account (NODELETING): %s:%s", instanceId, accName)
+				continue
+			}
+			log.Printf("[INFO] Deleting KVStore Account: %s:%s", instanceId, accName)
+			delReq := map[string]interface{}{
+				"RegionId":    client.RegionId,
+				"InstanceId":  instanceId,
+				"AccountName": accName,
+			}
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				_, err = client.RpcPost("R-kvstore", "2015-01-01", "DeleteAccount", nil, delReq, false)
+				if err != nil {
+					if IsExpectedErrors(err, []string{"InvalidAccountName.NotFound", "InvalidInstanceId.NotFound"}) {
+						return nil
+					}
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete KVStore Account %s:%s: %s", instanceId, accName, err)
+			}
+		}
+	}
+	return nil
+}
 
 func TestAccAliCloudKvstoreAccount_basic(t *testing.T) {
 	var v r_kvstore.Account
