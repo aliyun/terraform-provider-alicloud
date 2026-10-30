@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	osssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -918,7 +919,7 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return osssvc.NewOssService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 

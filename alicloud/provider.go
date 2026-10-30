@@ -929,11 +929,6 @@ func Provider() *schema.Provider {
 			"alicloud_open_search_app_groups": dataSourceAlicloudOpenSearchAppGroups(),
 
 			// oss
-			"alicloud_oss_bucket_inventories": dataSourceAliCloudOssBucketInventories(),
-			"alicloud_oss_service":            dataSourceAlicloudOssService(),
-			"alicloud_oss_bucket_objects":     dataSourceAlicloudOssBucketObjects(),
-			"alicloud_oss_buckets":            dataSourceAlicloudOssBuckets(),
-
 			// ots
 			"alicloud_ots_service":              dataSourceAlicloudOtsService(),
 			"alicloud_ots_instances":            dataSourceAlicloudOtsInstances(),
@@ -2255,36 +2250,6 @@ func Provider() *schema.Provider {
 			"alicloud_open_search_app_group": resourceAlicloudOpenSearchAppGroup(),
 
 			// oss
-			"alicloud_oss_bucket_inventory":                  resourceAliCloudOssBucketInventory(),
-			"alicloud_oss_bucket_object_worm_configuration":  resourceAliCloudOssBucketObjectWormConfiguration(),
-			"alicloud_oss_bucket_overwrite_config":           resourceAliCloudOssBucketOverwriteConfig(),
-			"alicloud_oss_bucket_archive_direct_read":        resourceAliCloudOssBucketArchiveDirectRead(),
-			"alicloud_oss_bucket_response_header":            resourceAliCloudOssBucketResponseHeader(),
-			"alicloud_oss_bucket_style":                      resourceAliCloudOssBucketStyle(),
-			"alicloud_oss_bucket_worm":                       resourceAliCloudOssBucketWorm(),
-			"alicloud_oss_bucket_website":                    resourceAliCloudOssBucketWebsite(),
-			"alicloud_oss_bucket_cname_token":                resourceAliCloudOssBucketCnameToken(),
-			"alicloud_oss_bucket_cname":                      resourceAliCloudOssBucketCname(),
-			"alicloud_oss_bucket_public_access_block":        resourceAliCloudOssBucketPublicAccessBlock(),
-			"alicloud_oss_account_public_access_block":       resourceAliCloudOssAccountPublicAccessBlock(),
-			"alicloud_oss_bucket_data_redundancy_transition": resourceAliCloudOssBucketDataRedundancyTransition(),
-			"alicloud_oss_bucket_meta_query":                 resourceAliCloudOssBucketMetaQuery(),
-			"alicloud_oss_bucket_access_monitor":             resourceAliCloudOssBucketAccessMonitor(),
-			"alicloud_oss_bucket_user_defined_log_fields":    resourceAliCloudOssBucketUserDefinedLogFields(),
-			"alicloud_oss_bucket_transfer_acceleration":      resourceAliCloudOssBucketTransferAcceleration(),
-			"alicloud_oss_bucket_cors":                       resourceAliCloudOssBucketCors(),
-			"alicloud_oss_bucket_server_side_encryption":     resourceAliCloudOssBucketServerSideEncryption(),
-			"alicloud_oss_bucket_logging":                    resourceAliCloudOssBucketLogging(),
-			"alicloud_oss_bucket_request_payment":            resourceAliCloudOssBucketRequestPayment(),
-			"alicloud_oss_bucket_versioning":                 resourceAliCloudOssBucketVersioning(),
-			"alicloud_oss_bucket_policy":                     resourceAliCloudOssBucketPolicy(),
-			"alicloud_oss_bucket_https_config":               resourceAliCloudOssBucketHttpsConfig(),
-			"alicloud_oss_bucket_referer":                    resourceAliCloudOssBucketReferer(),
-			"alicloud_oss_bucket_acl":                        resourceAliCloudOssBucketAcl(),
-			"alicloud_oss_bucket":                            resourceAlicloudOssBucket(),
-			"alicloud_oss_bucket_object":                     resourceAlicloudOssBucketObject(),
-			"alicloud_oss_bucket_replication":                resourceAlicloudOssBucketReplication(),
-
 			// ots
 			"alicloud_ots_table":               resourceAlicloudOtsTable(),
 			"alicloud_ots_instance":            resourceAlicloudOtsInstance(),
