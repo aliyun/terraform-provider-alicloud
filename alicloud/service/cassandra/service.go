@@ -1,4 +1,4 @@
-package alicloud
+package cassandra
 
 import (
 	"fmt"
@@ -9,16 +9,25 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type CassandraService struct {
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *CassandraService) DescribeCassandraCluster(id string) (object cassandra.Cluster, err error) {
+// NewService constructs the Cassandra Service from a connectivity client.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) DescribeCassandraCluster(id string) (object cassandra.Cluster, err error) {
 	cluster := cassandra.Cluster{}
 	request := cassandra.CreateDescribeClusterRequest()
 	request.RegionId = s.client.RegionId
@@ -29,40 +38,40 @@ func (s *CassandraService) DescribeCassandraCluster(id string) (object cassandra
 		return cassandraClient.DescribeCluster(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			return cluster, WrapErrorf(NotFoundErr("Cassandra", id), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+			return cluster, errs.WrapErrorf(errs.NotFoundErr("Cassandra", id), errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return cluster, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return cluster, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeClusterResponse)
 	return response.Cluster, nil
 }
 
-func (s *CassandraService) CassandraClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) CassandraClusterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCassandraCluster(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+				return object, object.Status, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, object.Status))
 			}
 		}
 		return object, object.Status, nil
 	}
 }
 
-func (s *CassandraService) DescribeCassandraDataCenter(id string) (object cassandra.DescribeDataCenterResponse, err error) {
-	parts, err := ParseResourceId(id, 2)
+func (s *Service) DescribeCassandraDataCenter(id string) (object cassandra.DescribeDataCenterResponse, err error) {
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
+		err = errs.WrapError(err)
 		return
 	}
 	request := cassandra.CreateDescribeDataCenterRequest()
@@ -74,39 +83,39 @@ func (s *CassandraService) DescribeCassandraDataCenter(id string) (object cassan
 		return cassandraClient.DescribeDataCenter(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			err = WrapErrorf(NotFoundErr("CassandraDataCenter", id), NotFoundMsg, ProviderERROR)
+		if errs.IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+			err = errs.WrapErrorf(errs.NotFoundErr("CassandraDataCenter", id), errs.NotFoundMsg, errs.ProviderERROR)
 			return
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeDataCenterResponse)
 	return *response, nil
 }
 
-func (s *CassandraService) CassandraDataCenterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) CassandraDataCenterStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCassandraDataCenter(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+				return object, object.Status, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, object.Status))
 			}
 		}
 		return object, object.Status, nil
 	}
 }
 
-func (s *CassandraService) DescribeIpWhitelist(id string) (object cassandra.DescribeIpWhitelistResponse, err error) {
+func (s *Service) DescribeIpWhitelist(id string) (object cassandra.DescribeIpWhitelistResponse, err error) {
 	request := cassandra.CreateDescribeIpWhitelistRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -115,15 +124,15 @@ func (s *CassandraService) DescribeIpWhitelist(id string) (object cassandra.Desc
 		return cassandraClient.DescribeIpWhitelist(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeIpWhitelistResponse)
 	return *response, nil
 }
 
-func (s *CassandraService) DescribeClusterDataCenter(id string) (object cassandra.DataCenter, err error) {
+func (s *Service) DescribeClusterDataCenter(id string) (object cassandra.DataCenter, err error) {
 	request := cassandra.CreateDescribeDataCentersRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -132,10 +141,10 @@ func (s *CassandraService) DescribeClusterDataCenter(id string) (object cassandr
 		return cassandraClient.DescribeDataCenters(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeDataCentersResponse)
 	for _, dc := range response.DataCenters.DataCenter {
 		if dc.CommodityInstance == id {
@@ -145,7 +154,7 @@ func (s *CassandraService) DescribeClusterDataCenter(id string) (object cassandr
 	return
 }
 
-func (s *CassandraService) DescribeSecurityGroups(id string) (object cassandra.DescribeSecurityGroupsResponse, err error) {
+func (s *Service) DescribeSecurityGroups(id string) (object cassandra.DescribeSecurityGroupsResponse, err error) {
 	request := cassandra.CreateDescribeSecurityGroupsRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -154,15 +163,15 @@ func (s *CassandraService) DescribeSecurityGroups(id string) (object cassandra.D
 		return cassandraClient.DescribeSecurityGroups(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeSecurityGroupsResponse)
 	return *response, nil
 }
 
-func (s *CassandraService) DescribeCassandraEndpoints(id string) (object cassandra.DescribeContactPointsResponse, err error) {
+func (s *Service) DescribeCassandraEndpoints(id string) (object cassandra.DescribeContactPointsResponse, err error) {
 	parts := strings.Split(id, ":")
 	request := cassandra.CreateDescribeContactPointsRequest()
 	request.RegionId = s.client.RegionId
@@ -172,15 +181,15 @@ func (s *CassandraService) DescribeCassandraEndpoints(id string) (object cassand
 		return cassandraClient.DescribeContactPoints(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeContactPointsResponse)
 	return *response, nil
 }
 
-func (s *CassandraService) setInstanceTags(d *schema.ResourceData) error {
+func (s *Service) setInstanceTags(d *schema.ResourceData) error {
 	if !d.HasChange("tags") {
 		return nil
 	}
@@ -203,9 +212,9 @@ func (s *CassandraService) setInstanceTags(d *schema.ResourceData) error {
 			return cassandraClient.UnTagResources(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	if len(create) > 0 {
@@ -217,15 +226,15 @@ func (s *CassandraService) setInstanceTags(d *schema.ResourceData) error {
 			return cassandraClient.TagResources(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return nil
 }
 
-func (s *CassandraService) diffTags(oldTags, newTags []cassandra.TagResourcesTag) ([]cassandra.TagResourcesTag, []cassandra.TagResourcesTag) {
+func (s *Service) diffTags(oldTags, newTags []cassandra.TagResourcesTag) ([]cassandra.TagResourcesTag, []cassandra.TagResourcesTag) {
 	// First, we're creating everything we have
 	create := make(map[string]interface{})
 	for _, t := range newTags {
@@ -245,7 +254,7 @@ func (s *CassandraService) diffTags(oldTags, newTags []cassandra.TagResourcesTag
 	return s.tagsFromMap(create), remove
 }
 
-func (s *CassandraService) tagsFromMap(m map[string]interface{}) []cassandra.TagResourcesTag {
+func (s *Service) tagsFromMap(m map[string]interface{}) []cassandra.TagResourcesTag {
 	result := make([]cassandra.TagResourcesTag, 0, len(m))
 	for k, v := range m {
 		result = append(result, cassandra.TagResourcesTag{
@@ -257,7 +266,7 @@ func (s *CassandraService) tagsFromMap(m map[string]interface{}) []cassandra.Tag
 	return result
 }
 
-func (s *CassandraService) tagsToMap(tags []cassandra.Tag) map[string]string {
+func (s *Service) tagsToMap(tags []cassandra.Tag) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTag(t) {
@@ -267,7 +276,7 @@ func (s *CassandraService) tagsToMap(tags []cassandra.Tag) map[string]string {
 	return result
 }
 
-func (s *CassandraService) ignoreTag(t cassandra.Tag) bool {
+func (s *Service) ignoreTag(t cassandra.Tag) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.Key)
@@ -280,7 +289,7 @@ func (s *CassandraService) ignoreTag(t cassandra.Tag) bool {
 	return false
 }
 
-func (s *CassandraService) DescribeAccounts(id string) (object cassandra.DescribeAccountsResponse, err error) {
+func (s *Service) DescribeAccounts(id string) (object cassandra.DescribeAccountsResponse, err error) {
 	request := cassandra.CreateDescribeAccountsRequest()
 	request.RegionId = s.client.RegionId
 	request.ClusterId = id
@@ -289,21 +298,21 @@ func (s *CassandraService) DescribeAccounts(id string) (object cassandra.Describ
 		return cassandraClient.DescribeAccounts(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*cassandra.DescribeAccountsResponse)
 	return *response, nil
 }
 
-func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeCassandraBackupPlan(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeBackupPlans"
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
+		err = errs.WrapError(err)
 		return
 	}
 	request := map[string]interface{}{
@@ -311,11 +320,11 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 		"ClusterId": parts[0],
 	}
 	idExist := false
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Cassandra", "2019-01-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -323,19 +332,19 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Cassandra:BackupPlan", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		if errs.IsExpectedErrors(err, []string{"Cluster.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Cassandra:BackupPlan", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.BackupPlans.BackupPlan", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.BackupPlans.BackupPlan", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("Cassandra", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Cassandra", id), errs.NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if v.(map[string]interface{})["DataCenterId"].(string) == parts[1] {
@@ -344,7 +353,36 @@ func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[st
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Cassandra", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Cassandra", id), errs.NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+
+// describeVSwitch mirrors alicloud.VpcService.DescribeVSwitch for the cassandra
+// package without importing the root alicloud package (cross-product dependency
+// kept local; the root VpcService remains for not-yet-migrated callers).
+func (s *Service) describeVSwitch(id string) (v vpc.DescribeVSwitchAttributesResponse, err error) {
+	request := vpc.CreateDescribeVSwitchAttributesRequest()
+	request.RegionId = s.client.RegionId
+	request.VSwitchId = id
+	invoker := helper.NewInvoker()
+	err = invoker.Run(func() error {
+		raw, err := s.client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVSwitchAttributes(request)
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"InvalidVswitchID.NotFound"}) {
+				return errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
+			}
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*vpc.DescribeVSwitchAttributesResponse)
+		if response.VSwitchId != id {
+			return errs.WrapErrorf(errs.NotFoundErr("vswitch", id), errs.NotFoundMsg, errs.ProviderERROR)
+		}
+		v = *response
+		return nil
+	})
+	return
 }

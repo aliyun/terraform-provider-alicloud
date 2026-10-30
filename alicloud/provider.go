@@ -265,10 +265,6 @@ func Provider() *schema.Provider {
 			"alicloud_caller_identity": dataSourceAlicloudCallerIdentity(),
 
 			// cassandra
-			"alicloud_cassandra_clusters":     dataSourceAlicloudCassandraClusters(),
-			"alicloud_cassandra_data_centers": dataSourceAlicloudCassandraDataCenters(),
-			"alicloud_cassandra_zones":        dataSourceAlicloudCassandraZones(),
-			"alicloud_cassandra_backup_plans": dataSourceAlicloudCassandraBackupPlans(),
 
 			// cen
 			"alicloud_cen_instances":                                    dataSourceAlicloudCenInstances(),
@@ -1161,9 +1157,6 @@ func Provider() *schema.Provider {
 			// brain
 
 			// cassandra
-			"alicloud_cassandra_cluster":     resourceAlicloudCassandraCluster(),
-			"alicloud_cassandra_data_center": resourceAlicloudCassandraDataCenter(),
-			"alicloud_cassandra_backup_plan": resourceAlicloudCassandraBackupPlan(),
 
 			// cen
 			"alicloud_cen_transit_router_ecr_attachment":               resourceAliCloudCenTransitRouterEcrAttachment(),

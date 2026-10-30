@@ -12,15 +12,15 @@ description: |-
 The `alicloud_cassandra_clusters` data source provides a collection of Cassandra clusters available in Alicloud account.
 Filters support regular expression for the cluster name, ids or tags.
 
--> **NOTE:**  Available in 1.88.0+.
+-> **NOTE:** Available since v1.88.0.
 
 -> **DEPRECATED:**  This data source has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cassandra_clusters" "cassandra" {
-  name_regex        = "tf_testAccCassandra"
+  name_regex = "tf_testAccCassandra"
 }
 ```
 
@@ -48,6 +48,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `data_center_count` - The count of data centers
   * `pay_type` - Billing method. Value options are `Subscription` for Pay-As-You-Go and `PayAsYouGo` for yearly or monthly subscription.
   * `status` - Status of the cluster.
-  * `create_time` - The create time of the cluster.
+  * `created_time` - The created time of the cluster.
   * `expire_time` - The expire time of the cluster.
-  * `tags` - A mapping of tags to assign to the resource.
+  * `tags` - (Optional) A mapping of tags to assign to the resource.
