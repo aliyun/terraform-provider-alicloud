@@ -335,6 +335,18 @@ func IsBreakingChange(oldAttrs, newAttrs map[string]map[string]interface{}) (res
 			// This is a new field
 			newRequired, hasRequired := newAttr["Required"]
 			if hasRequired && newRequired.(bool) {
+				// A Required subfield under a newly added Optional parent
+				// block is not a breaking change: configurations written
+				// before the block existed do not reference it, so they
+				// remain valid. Only waive when the immediate parent block is
+				// itself new and Optional; a Required subfield added under a
+				// block that already existed still invalidates old configs
+				// that use the block, and a top-level new Required is always
+				// breaking.
+				if isNewOptionalNestedRequired(fieldName, oldAttrs, newAttrs) {
+					log.Infof("[Info]: New required attribute '%v' is nested under a new optional block; not a breaking change for existing configurations.", fieldName)
+					continue
+				}
 				res = true
 				log.Errorf("[Breaking Change]: New required attribute '%v' should not been added! New fields must be Optional.", fieldName)
 			}
@@ -342,6 +354,31 @@ func IsBreakingChange(oldAttrs, newAttrs map[string]map[string]interface{}) (res
 	}
 
 	return
+}
+
+// isNewOptionalNestedRequired reports whether fieldName is a nested subfield
+// (its key carries a parent-path separator) whose immediate parent block is
+// newly added in this change and declared Optional. Top-level fields and
+// subfields under a parent that already existed are never waived: the former
+// is a real new top-level required attribute, and the latter invalidates
+// configurations that already use the block. The parent is not modeled only
+// when the path is deeper than the schemas captured here; in that case the
+// violation is left to surface rather than waived on incomplete evidence.
+func isNewOptionalNestedRequired(fieldName string, oldAttrs, newAttrs map[string]map[string]interface{}) bool {
+	idx := strings.LastIndex(fieldName, ".")
+	if idx < 0 {
+		return false // top-level new required: always breaking
+	}
+	parent := fieldName[:idx]
+	if _, existedBefore := oldAttrs[parent]; existedBefore {
+		return false // parent block already existed: required subfield breaks old configs
+	}
+	parentAttr, ok := newAttrs[parent]
+	if !ok {
+		return false // parent not modeled: do not waive on incomplete evidence
+	}
+	optional, hasOptional := parentAttr["Optional"]
+	return hasOptional && optional.(bool)
 }
 
 // getFileContentFromGit retrieves file content from git at specified revision
@@ -399,7 +436,13 @@ func ParseSchemaFromAST(source string) map[string]map[string]interface{} {
 		if compLit, ok := n.(*ast.CompositeLit); ok {
 			// Check if this is a Schema map
 			if isSchemaMap(compLit) {
-				extractSchemaFields(compLit, attributeMap)
+				// Extract top-level fields with an empty path prefix and stop
+				// descending: nested schema maps live inside Elem and are
+				// recursed by extractSchemaFields with their parent path, so
+				// they are never flattened back onto bare field names and a
+				// Required subfield is never mistaken for a top-level field.
+				extractSchemaFields(compLit, attributeMap, "")
+				return false
 			}
 		}
 		return true
@@ -422,8 +465,14 @@ func isSchemaMap(compLit *ast.CompositeLit) bool {
 	return false
 }
 
-// extractSchemaFields extracts field information from schema map
-func extractSchemaFields(compLit *ast.CompositeLit, attributeMap map[string]map[string]interface{}) {
+// extractSchemaFields extracts field information from a schema map. prefix is
+// the dotted path of the enclosing block ("" at the resource root), so a
+// subfield declared inside a nested block is stored under
+// "parent_block.sub_field" rather than the bare "sub_field": that keeps
+// same-named subfields under different parent blocks from overwriting each
+// other and lets IsBreakingChange judge a Required subfield against its real
+// parent context instead of as a phantom top-level field.
+func extractSchemaFields(compLit *ast.CompositeLit, attributeMap map[string]map[string]interface{}, prefix string) {
 	for _, elt := range compLit.Elts {
 		if kv, ok := elt.(*ast.KeyValueExpr); ok {
 			// Get field name
@@ -436,23 +485,77 @@ func extractSchemaFields(compLit *ast.CompositeLit, attributeMap map[string]map[
 				continue
 			}
 
+			fullKey := prefix + fieldName
+
 			// Extract field properties
 			fieldProps := make(map[string]interface{})
 			fieldProps["Name"] = fieldName
 
 			// Parse field definition (should be another composite literal)
+			var schemaComp *ast.CompositeLit
 			if fieldComp, ok := kv.Value.(*ast.CompositeLit); ok {
-				extractFieldProperties(fieldComp, fieldProps)
+				schemaComp = fieldComp
 			} else if unary, ok := kv.Value.(*ast.UnaryExpr); ok {
 				// Handle &schema.Schema{...}
-				if fieldComp, ok := unary.X.(*ast.CompositeLit); ok {
-					extractFieldProperties(fieldComp, fieldProps)
-				}
+				schemaComp, _ = unary.X.(*ast.CompositeLit)
+			}
+			if schemaComp != nil {
+				extractFieldProperties(schemaComp, fieldProps)
 			}
 
-			attributeMap[fieldName] = fieldProps
+			attributeMap[fullKey] = fieldProps
+
+			// Recurse into a nested schema map declared under Elem (e.g.
+			// &schema.Resource{Schema: map[string]*schema.Schema{...}}) so its
+			// subfields keep the parent block path instead of being flattened.
+			if schemaComp != nil {
+				if nestedMap := nestedSchemaMap(schemaComp); nestedMap != nil {
+					extractSchemaFields(nestedMap, attributeMap, fullKey+".")
+				}
+			}
 		}
 	}
+}
+
+// nestedSchemaMap returns the nested map[string]*schema.Schema declared under
+// a field's Elem, if any. A primitive Elem such as &schema.Schema{Type: ...}
+// yields no nested map; only &schema.Resource{Schema: map[...]} (and the rare
+// direct schema-map Elem) does, which is what makes a block a block.
+func nestedSchemaMap(schemaComp *ast.CompositeLit) *ast.CompositeLit {
+	for _, elt := range schemaComp.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		key, ok := kv.Key.(*ast.Ident)
+		if !ok || key.Name != "Elem" {
+			continue
+		}
+		var resComp *ast.CompositeLit
+		switch e := kv.Value.(type) {
+		case *ast.UnaryExpr:
+			resComp, _ = e.X.(*ast.CompositeLit)
+		case *ast.CompositeLit:
+			resComp = e
+		}
+		if resComp == nil {
+			continue
+		}
+		for _, rElt := range resComp.Elts {
+			rKv, ok := rElt.(*ast.KeyValueExpr)
+			if !ok {
+				continue
+			}
+			rKey, ok := rKv.Key.(*ast.Ident)
+			if !ok || rKey.Name != "Schema" {
+				continue
+			}
+			if nestedMap, ok := rKv.Value.(*ast.CompositeLit); ok && isSchemaMap(nestedMap) {
+				return nestedMap
+			}
+		}
+	}
+	return nil
 }
 
 // extractFieldProperties extracts Type, Optional, Required, ForceNew etc from field definition

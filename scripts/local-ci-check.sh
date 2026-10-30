@@ -339,8 +339,14 @@ echo -e "${GREEN}  Part 2: Testing Coverage Rate Check${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
 
-# Check if there are any resource or data source changes
-RESOURCE_CHANGES=$(echo "$CHANGED_FILES" | grep -E "alicloud/(resource|data_source).*\.go$" | grep -v "_test\.go$" || true)
+# Check if there are any resource or data source changes. The gate matches the
+# split layout (alicloud/service/<product>/ and alicloud/provider/core/) as
+# well as the root layout, so a registered SDKv2 subpackage file is no longer
+# filtered out as "no resource changes" and the underlying checker (which
+# already supports splitlayout.Resolve) gets to run on it. Test files are
+# included: a resource's test change must reach the coverage check too, and
+# the checker recognises split-layout tests as a skip rather than a miss.
+RESOURCE_CHANGES=$(echo "$CHANGED_FILES" | grep -E "alicloud/((service/[A-Za-z0-9_-]+|provider/core)/)?(resource|data_source).*\.go$" || true)
 
 if [ -n "$RESOURCE_CHANGES" ]; then
   echo -e "${BLUE}▶ Running testing coverage rate check...${NC}"
@@ -688,30 +694,38 @@ echo -e "${GREEN}  Part 6: Example Tests (Documentation Examples)${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
 
-# Detect changed documentation files
+# Detect changed documentation files. CHANGED_RESOURCE_TYPES resolves changed
+# SDKv2 resource and data-source implementation files (root and split-layout)
+# to their registered Terraform type names via scripts/ci/list_resources,
+# which consults each product's register.go: a split-layout path like
+# alicloud/service/actiontrail/resource_advanced_query_template.go must map to
+# website/docs/r/actiontrail_advanced_query_template.html.markdown, so a
+# root-only alicloud/resource_alicloud_* glob no longer misses split-layout
+# entities. Test files are excluded: documentation tracks implementations.
 CHANGED_DOCS=""
 CHANGED_RESOURCES=""
+if [ -n "$CHANGED_FILES" ]; then
+  CHANGED_RESOURCE_TYPES=$(echo "$CHANGED_FILES" | go run "$SCRIPT_DIR/ci/list_resources/main.go" 2>/dev/null || true)
+else
+  CHANGED_RESOURCE_TYPES=""
+fi
 
-# Check for changed documentation files
+# Check for directly changed documentation files
 for file in $CHANGED_FILES; do
   if [[ "$file" == website/docs/r/*.html.markdown ]] || [[ "$file" == website/docs/d/*.html.markdown ]]; then
     CHANGED_DOCS="${CHANGED_DOCS}${file} "
-  elif [[ "$file" == alicloud/resource_alicloud*.go ]] && [[ "$file" != *_test.go ]]; then
-    # Convert resource file to doc file
-    resource_name=$(echo "$file" | sed 's|alicloud/resource_alicloud_||' | sed 's|\.go||')
-    doc_file="website/docs/r/${resource_name}.html.markdown"
-    if [ -f "$doc_file" ]; then
-      CHANGED_RESOURCES="${CHANGED_RESOURCES}${doc_file} "
-    fi
-  elif [[ "$file" == alicloud/data_source_alicloud*.go ]] && [[ "$file" != *_test.go ]]; then
-    # Convert data source file to doc file
-    resource_name=$(echo "$file" | sed 's|alicloud/data_source_alicloud_||' | sed 's|\.go||')
-    doc_file="website/docs/d/${resource_name}.html.markdown"
-    if [ -f "$doc_file" ]; then
-      CHANGED_RESOURCES="${CHANGED_RESOURCES}${doc_file} "
-    fi
   fi
 done
+
+# Documentation for changed SDKv2 resource/data-source implementations,
+# resolved to the registered type name.
+if [ -n "$CHANGED_RESOURCE_TYPES" ]; then
+  while IFS=$'\t' read -r resource_type doc_file; do
+    if [ -n "$doc_file" ] && [ -f "$doc_file" ]; then
+      CHANGED_RESOURCES="${CHANGED_RESOURCES}${doc_file} "
+    fi
+  done <<< "$CHANGED_RESOURCE_TYPES"
+fi
 
 # Combine and deduplicate
 ALL_AFFECTED_DOCS=$(echo "$CHANGED_DOCS $CHANGED_RESOURCES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
@@ -804,9 +818,14 @@ echo -e "${GREEN}  Part 7: Resource Integration Tests${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
 
-CHANGED_RESOURCE_FILES=$(echo "$CHANGED_FILES" | grep -E "^alicloud/(resource|data_source)_alicloud_.*\.go$" | grep -v "_test\.go$" || true)
-
-if [ -z "$CHANGED_RESOURCE_FILES" ]; then
+# Resource Integration Tests use the registered Terraform type names resolved
+# in Part 6 (CHANGED_RESOURCE_TYPES, "<type>\t<doc>"). scripts/ci/list_resources
+# consults each product's register.go, so a split-layout file like
+# alicloud/service/actiontrail/resource_advanced_query_template.go resolves to
+# the type alicloud_actiontrail_advanced_query_template instead of being
+# filtered out by a root-only alicloud/(resource|data_source)_alicloud_* glob.
+# Test files are excluded: integration tests target implementation files.
+if [ -z "$CHANGED_RESOURCE_TYPES" ]; then
   echo -e "${BLUE}▶ No resource or data source changes detected${NC}"
   echo -e "${GREEN}✓ SKIPPED: Resource Integration Tests (no resource changes)${NC}"
   echo
@@ -814,10 +833,7 @@ elif [ "$SKIP_RESOURCE_TEST" = true ]; then
   echo -e "${YELLOW}⚠ Skipping Resource Integration Tests (use default to enable)${NC}"
   echo
   echo -e "${BLUE}Changed resources detected:${NC}"
-  for file in $CHANGED_RESOURCE_FILES; do
-    resource_name=$(basename "$file" .go | sed -E 's/^(resource|data_source)_//')
-    echo -e "  - ${resource_name}"
-  done
+  echo "$CHANGED_RESOURCE_TYPES" | awk -F'\t' '$1 != "" {print "  - " $1}'
   echo
   echo -e "${BLUE}💡 To enable resource integration tests, run:${NC}"
   echo -e "  ${GREEN}make ci-check${NC}  (default behavior, requires credentials)"
@@ -836,12 +852,7 @@ else
     echo
     FAILED_CHECKS+=("Resource Integration Tests (credentials not set)")
   else
-    RESOURCE_NAMES=""
-    for file in $CHANGED_RESOURCE_FILES; do
-      resource_name=$(basename "$file" .go | sed -E 's/^(resource|data_source)_//')
-      RESOURCE_NAMES="${RESOURCE_NAMES}${resource_name} "
-    done
-    RESOURCE_NAMES=$(echo "$RESOURCE_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+    RESOURCE_NAMES=$(echo "$CHANGED_RESOURCE_TYPES" | awk -F'\t' '$1 != "" {print $1}' | sort -u | tr '\n' ' ')
 
     RESOURCE_COUNT=$(echo "$RESOURCE_NAMES" | wc -w | tr -d ' ')
     echo -e "${BLUE}▶ Found ${RESOURCE_COUNT} changed resource(s) to test:${NC}"
