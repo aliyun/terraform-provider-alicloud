@@ -734,19 +734,6 @@ func Provider() *schema.Provider {
 			// mse
 
 			// nas
-			"alicloud_nas_service":                dataSourceAlicloudNasService(),
-			"alicloud_nas_access_groups":          dataSourceAlicloudNasAccessGroups(),
-			"alicloud_nas_access_rules":           dataSourceAlicloudAccessRules(),
-			"alicloud_nas_mount_targets":          dataSourceAlicloudNasMountTargets(),
-			"alicloud_nas_file_systems":           dataSourceAlicloudFileSystems(),
-			"alicloud_nas_protocols":              dataSourceAlicloudNasProtocols(),
-			"alicloud_nas_log_analyses":           dataSourceAliCloudNasLogAnalyses(),
-			"alicloud_nas_zones":                  dataSourceAlicloudNasZones(),
-			"alicloud_nas_snapshots":              dataSourceAlicloudNasSnapshots(),
-			"alicloud_nas_filesets":               dataSourceAlicloudNasFilesets(),
-			"alicloud_nas_auto_snapshot_policies": dataSourceAlicloudNasAutoSnapshotPolicies(),
-			"alicloud_nas_lifecycle_policies":     dataSourceAlicloudNasLifecyclePolicies(),
-			"alicloud_nas_data_flows":             dataSourceAlicloudNasDataFlows(),
 
 			// nat
 
@@ -1811,21 +1798,6 @@ func Provider() *schema.Provider {
 			// mse
 
 			// nas
-			"alicloud_nas_protocol_service":      resourceAliCloudNasProtocolService(),
-			"alicloud_nas_protocol_mount_target": resourceAliCloudNasProtocolMountTarget(),
-			"alicloud_nas_access_point":          resourceAliCloudNasAccessPoint(),
-			"alicloud_nas_file_system":           resourceAliCloudNasFileSystem(),
-			"alicloud_nas_mount_target":          resourceAliCloudNasMountTarget(),
-			"alicloud_nas_access_group":          resourceAliCloudNasAccessGroup(),
-			"alicloud_nas_access_rule":           resourceAliCloudNasAccessRule(),
-			"alicloud_nas_log_analysis":          resourceAliCloudNasLogAnalysis(),
-			"alicloud_nas_smb_acl_attachment":    resourceAlicloudNasSmbAclAttachment(),
-			"alicloud_nas_snapshot":              resourceAlicloudNasSnapshot(),
-			"alicloud_nas_fileset":               resourceAliCloudNasFileset(),
-			"alicloud_nas_auto_snapshot_policy":  resourceAliCloudNasAutoSnapshotPolicy(),
-			"alicloud_nas_lifecycle_policy":      resourceAlicloudNasLifecyclePolicy(),
-			"alicloud_nas_data_flow":             resourceAlicloudNasDataFlow(),
-			"alicloud_nas_recycle_bin":           resourceAlicloudNasRecycleBin(),
 
 			// nat
 
