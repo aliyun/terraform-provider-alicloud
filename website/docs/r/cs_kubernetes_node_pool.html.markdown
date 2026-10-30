@@ -38,9 +38,7 @@ This resource will help you to manage node pool in Kubernetes Cluster, see [What
 
 -> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
 
--> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
-
--> **NOTE:** From version 1.185.0+, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
+-> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration`.
 
 For information about Container Service for Kubernetes (ACK) Nodepool and how to use it, see [What is Nodepool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools).
 
@@ -57,6 +55,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -145,48 +151,9 @@ resource "alicloud_cs_kubernetes_node_pool" "desired_size" {
   desired_size         = 0
 }
 
-# Create a managed node pool. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
-resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
-  node_pool_name       = "maintenance"
-  cluster_id           = alicloud_cs_managed_kubernetes.default.id
-  vswitch_ids          = [alicloud_vswitch.default.id]
-  instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
-  system_disk_category = "cloud_efficiency"
-  system_disk_size     = 40
-
-  # only key_name is supported in the management node pool
-  key_name = alicloud_key_pair.default.key_pair_name
-
-  # you need to specify the number of nodes in the node pool, which can be zero
-  desired_size = 1
-
-  # management node pool configuration.
-  management {
-    enable      = true
-    auto_repair = true
-    auto_repair_policy {
-      restart_node = true
-    }
-    auto_upgrade = true
-    auto_upgrade_policy {
-      auto_upgrade_kubelet = true
-    }
-    auto_vul_fix = true
-    auto_vul_fix_policy {
-      vul_level    = "asap"
-      restart_node = true
-    }
-    max_unavailable = 1
-  }
-
-  # Enable with automatic scaling node pool configuration.
-  # With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
-  #  scaling_config {
-  #    min_size = 1
-  #    max_size = 10
-  #    type     = "cpu"
-  #  }
-}
+# A managed node pool needs a cluster maintenance window and the `ack-node-problem-detector`
+# add-on. See the "Managed node pool with a maintenance window" example below for a complete
+# and runnable configuration.
 
 #Create a node pool with spot instance.
 resource "alicloud_cs_kubernetes_node_pool" "spot_instance" {
@@ -317,9 +284,143 @@ resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
     insecure_registries = ["registry.example.com", "192.168.1.1:5000"]
   }
 
+  # OS configuration parameters (requires ACK 1.28 or later)
+  os_config {
+    # sysctl parameters; e.g. raise the per-user user namespace limit
+    sysctl = {
+      "user.max_user_namespaces" = "65535"
+    }
+
+    # transparent hugepage configuration
+    hugepage {
+      transparent_enabled              = "always"
+      transparent_defrag               = "always"
+      khugepaged_defrag                = "0"
+      khugepaged_alloc_sleep_millisecs = "60000"
+      khugepaged_scan_sleep_millisecs  = "10000"
+      khugepaged_pages_to_scan         = "4096"
+    }
+  }
+
   # rolling policy: works when updating
   rolling_policy {
     max_parallelism = 1
+  }
+}
+```
+
+Managed node pool with a maintenance window and the `ack-node-problem-detector` add-on:
+
+A managed node pool runs its automated operations inside the cluster maintenance window. Enable `maintenance_window` on `alicloud_cs_managed_kubernetes` and install the `ack-node-problem-detector` add-on with `alicloud_cs_kubernetes_addon`; the node pool takes its `cluster_id` from the add-on, so it is created only after the add-on is installed. Otherwise the node pool creation is rejected with `InvalidParameter.Management` (`addon ack-node-problem-detector is not installed`). When `management.auto_repair` is `true`, install the `node-lifecycle-controller` add-on as well, because the automatic repair flow is driven by that controller; the example below chains the two add-ons and takes the node pool's `cluster_id` from the last one, so both are installed before the node pool is created.
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+variable "name" {
+  default = "terraform-example-managed"
+}
+
+data "alicloud_enhanced_nat_available_zones" "enhanced" {
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_efficiency"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.5.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.5.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
+}
+
+resource "alicloud_key_pair" "default" {
+  key_pair_name = "terraform-example-${random_integer.default.result}"
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name_prefix          = "terraform-example-${random_integer.default.result}"
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+  new_nat_gateway      = true
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
+  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 8)
+  slb_internet_enabled = true
+  enable_rrsa          = true
+
+  maintenance_window {
+    enable           = true
+    maintenance_time = "2025-07-07T00:00:00.000+08:00"
+    duration         = "3h"
+    weekly_period    = "Monday"
+  }
+}
+
+resource "alicloud_cs_kubernetes_addon" "npd" {
+  cluster_id = alicloud_cs_managed_kubernetes.default.id
+  name       = "ack-node-problem-detector"
+}
+
+resource "alicloud_cs_kubernetes_addon" "nlc" {
+  cluster_id = alicloud_cs_kubernetes_addon.npd.cluster_id
+  name       = "node-lifecycle-controller"
+}
+
+resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
+  node_pool_name       = "maintenance"
+  cluster_id           = alicloud_cs_kubernetes_addon.nlc.cluster_id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+
+  # only key_name is supported in the management node pool
+  key_name = alicloud_key_pair.default.key_pair_name
+
+  # you need to specify the number of nodes in the node pool, which can be zero
+  desired_size = 1
+
+  # management node pool configuration.
+  management {
+    enable      = true
+    auto_repair = true
+    auto_repair_policy {
+      restart_node = true
+    }
+    auto_upgrade = true
+    auto_upgrade_policy {
+      auto_upgrade_kubelet = true
+    }
+    auto_vul_fix = true
+    auto_vul_fix_policy {
+      vul_level    = "asap"
+      restart_node = true
+    }
+    max_unavailable = 1
   }
 }
 ```
@@ -335,6 +436,14 @@ Create Target mode private pools with `alicloud_ecs_capacity_reservation` and `a
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example-resource-pool-options"
 }
@@ -439,6 +548,14 @@ Nodepools enable Auto Mode can only be created in Auto Mode clusters. An Auto Mo
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 provider "alicloud" {
   region = var.region_id
 }
@@ -835,6 +952,7 @@ The following arguments are supported:
 * `containerd_config` - (Optional, Set, Available since v1.288.0) Containerd configuration parameters for worker nodes.
 
   -> **NOTE:** Setting `containerd_config` at creation time takes effect through an extra node_config update call issued after the node pool has been created. Removing the whole `containerd_config` block clears all custom containerd configuration on the cloud side (the API uses full-replacement semantics); an empty block is equivalent to omitting the parameter. See [`containerd_config`](#containerd_config) below.
+* `os_config` - (Optional, List, Available since v2.2.0) OS configuration parameters (sysctl and transparent hugepage) for worker nodes. See [`os_config`](#os_config) below for lifecycle and state semantics. Supported on ACK clusters of version 1.28 or later.
 * `labels` - (Optional, List) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
 * `login_as_non_root` - (Optional, ForceNew) Whether the ECS instance is logged on as a ecs-user user. Valid value: `true` and `false`.
 * `management` - (Optional, Computed, Set) Managed node pool configuration. See [`management`](#management) below.
@@ -937,7 +1055,6 @@ The following arguments are supported:
 * `instances` - (Optional, Available since v1.127.0) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `keep_instance_name` - (Optional, Available since v1.127.0) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
-* `rollout_policy` - (Optional, Deprecated since 1.185.0) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when node pool updating. Please use `rolling_policy` to instead it from provider version 1.185.0. See [`rollout_policy`](#rollout_policy) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.219.0). Field 'name' has been deprecated from provider version 1.219.0. New field 'node_pool_name' instead.
@@ -1105,6 +1222,28 @@ The containerd_config supports the following:
 * `registry_mirrors` - (Optional, List of String) Configure mirror sites for container image registries to accelerate image pulls. Each string follows the format `registry=mirror1[&override_path],mirror2[&override_path],...`. The part before `=` is the container image registry, which must be a domain name or IP address without protocol prefix (optionally including a port number), e.g., `docker.io`, `192.168.1.1:5000`. The part after `=` is one or more mirror sites separated by commas; each mirror must start with `http://` or `https://` followed by an IP address or domain name (optionally including a port number), e.g., `https://registry.cn-hangzhou.aliyuncs.com`. Append `&override_path` to a mirror to enable path override for that mirror.
 * `insecure_registries` - (Optional, List) Allow the container runtime to skip TLS certificate verification when pulling images. Typically used in test environments with self-signed certificate registries. The format is domain name or IP address without protocol prefix (e.g., `registry.example.com`, `192.168.1.1:5000`).
 
+### `os_config`
+
+-> **NOTE:** When `os_config` is set at creation time, this resource applies it through a `node_config` update (`ModifyNodePoolNodeConfig`) issued right after the node pool is created. The CreateClusterNodePool API also accepts `node_config.node_os_config`; this resource uses the follow-up call so that creation and updates share the same apply path.
+
+-> **NOTE:** The API uses full-replacement semantics for `os_config`: removing the whole `os_config` block clears all custom OS configuration on the cloud side, and an empty `os_config {}` block applies no parameters (any previously applied values are cleared) while remaining in the state as an empty block. Removing a key from the `sysctl` map or from the `hugepage` block removes the corresponding parameter from the cloud-side configuration.
+
+-> **NOTE:** `os_config` is supported only on ACK clusters of version 1.28 or later.
+
+The os_config supports the following:
+* `sysctl` - (Optional, Map, Available since v2.2.0) The sysctl parameters applied to worker nodes. The map key is the sysctl name and the value is the sysctl value as a string, e.g. `user.max_user_namespaces = "65535"`. Only sysctl parameters on the API whitelist are accepted. The `sysctl` map is returned by read operations: the state reflects the cloud-side values, so changes made outside Terraform are detected as drift during refresh, and imported node pools keep their sysctl configuration. When the API returns no sysctl entries, the configured map is kept in state.
+* `hugepage` - (Optional, List, Available since v2.2.0) The transparent hugepage configuration. See [`hugepage`](#os_config-hugepage) below. The API returns only explicitly set parameters. A parameter absent from the response is removed from state during refresh; if it remains configured, the next plan proposes sending the configured full value again.
+
+### `os_config-hugepage`
+
+The os_config-hugepage supports the following:
+* `transparent_enabled` - (Optional, String, Available since v2.2.0) Whether to enable transparent hugepages. Valid values: `always`, `never`, `madvise`.
+* `transparent_defrag` - (Optional, String, Available since v2.2.0) The transparent hugepage defragmentation mode. Valid values: `always`, `defer`, `madvise`, `defer+madvise`, `never`.
+* `khugepaged_defrag` - (Optional, String, Available since v2.2.0) Whether to enable khugepaged defragmentation. Valid values: `""`, `"0"`, `"1"`. An empty string means the parameter is not sent.
+* `khugepaged_alloc_sleep_millisecs` - (Optional, String, Available since v2.2.0) The sleep time of khugepaged between allocation attempts, in milliseconds. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+* `khugepaged_scan_sleep_millisecs` - (Optional, String, Available since v2.2.0) The sleep time of khugepaged between scans, in milliseconds. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+* `khugepaged_pages_to_scan` - (Optional, String, Available since v2.2.0) The number of memory pages that khugepaged scans at a time. Valid values: `""` or a canonical decimal integer string from `"0"` to `"9007199254740991"`.
+
 ### `labels`
 
 The labels supports the following:
@@ -1114,7 +1253,7 @@ The labels supports the following:
 ### `management`
 
 The management supports the following:
-* `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired. When `auto_repair` is `true`, this feature requires the `node-lifecycle-controller` and `ack-node-problem-detector` addons to be installed; see [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) for installation.
+* `auto_repair` - (Optional, Computed) Whether to enable automatic repair. Valid values: `true`: Automatic repair. `false`: not automatically repaired. When `auto_repair` is `true`, this feature requires the `node-lifecycle-controller` and `ack-node-problem-detector` addons to be installed; see [cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) for installation. The addons must be installed before the node pool is created, otherwise the creation is rejected with `InvalidParameter.Management` (`addon ack-node-problem-detector is not installed`).
 * `auto_repair_policy` - (Optional, Computed, Set) Automatic repair node policy. See [`auto_repair_policy`](#management-auto_repair_policy) below.
 * `auto_upgrade` - (Optional, Computed) Specifies whether to enable auto update. Valid values: `true`: enables auto update. `false`: disables auto update.
 * `auto_upgrade_policy` - (Optional, Computed, Set) The auto update policy. See [`auto_upgrade_policy`](#management-auto_upgrade_policy) below.
@@ -1166,6 +1305,9 @@ The rolling_policy supports the following:
 * `batch_interval` - (Optional, Int, Available since v1.269.0) The upgrade interval time between batches, in minutes. This parameter only takes effect when `pause_policy` is set to `NotPause`.
 * `max_parallelism` - (Optional, Int) The maximum number of nodes that can be upgraded in parallel per batch when updating nodes in the node pool.
 * `node_names` - (Optional, List, Available since v1.269.0) Specify the list of nodes to be upgraded.
+
+  -> **NOTE:** `node_names` only takes effect as part of an upgrade request. The provider sends it to the server only when an upgrade is triggered by `upgrade_policy`, that is, when `kubernetes_version`, `image_id`, `runtime` or `runtime_version` is set in `upgrade_policy`. Changing `rolling_policy` alone does not trigger an upgrade request, so `node_names` is only recorded in the Terraform state and is sent to the server together with the next upgrade.
+
 * `pause_policy` - (Optional, Available since v1.269.0) The auto-pause policy during node upgrade. Valid values:
   - `FirstBatch`: Pause after the first batch is completed.
   - `EveryBatch`: Pause after each batch is completed.
@@ -1212,11 +1354,6 @@ The upgrade_policy supports the following:
 * `use_replace` - (Optional, Available since v1.269.0) Whether to use replacement disk upgrade. Valid values:
   - `true`: Use replacement disk upgrade. Nodes in the node pool will be upgraded by replacing the system disk, and ACK will reinitialize the nodes according to the current node pool configuration (such as node login method, labels, taints, OS image, and runtime version).
   - `false`: Do not use replacement disk upgrade.
-
-### `rollout_policy`
-
-The rollout_policy mapping supports the following:
-* `max_unavailable` - (Optional, Deprecated since 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
 
 ## Attributes Reference
 
