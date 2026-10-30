@@ -90,32 +90,32 @@ The following attributes are exported in addition to the arguments listed above:
       - 0: no
       - 1: yes
   * `acl` - (Available in 1.124.1+) The method that is used to verify the identities of clients. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
-      - cert
-      - perfer
-      - verify-ca
-      - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+    - cert
+    - perfer
+    - verify-ca
+    - verify-full (supported only when the instance runs PostgreSQL 12 or later)
   * `ca_type` - (Available in 1.124.1+) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
-      - aliyun: a cloud certificate
-      - custom: a custom certificate
+    - aliyun: a cloud certificate
+    - custom: a custom certificate
   * `client_ca_cert` - (Available in 1.124.1+) The public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `client_cert_revocation_list` - (Available in 1.124.1+) The certificate revocation list (CRL) that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `client_ca_cert_expire_time` - (Available in 1.124.1+) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with cloud disks. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC. This parameter is not supported now.
   * `last_modify_status` - (Available in 1.124.1+) The status of the SSL link. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
-      - success
-      - setting
-      - failed
+    - success
+    - setting
+    - failed
   * `modify_status_reason` - (Available in 1.124.1+) The reason why the SSL link stays in the current state. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `replication_acl` - (Available in 1.124.1+) The method that is used to verify the replication permission. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
-      - cert
-      - perfer
-      - verify-ca
-      - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+    - cert
+    - perfer
+    - verify-ca
+    - verify-full (supported only when the instance runs PostgreSQL 12 or later)
   * `require_update_item` - (Available in 1.124.1+) The server certificate that needs to be updated. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `require_update_reason` - (Available in 1.124.1+) The reason why the server certificate needs to be updated. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `ssl_create_time` - (Available in 1.124.1+) The time when the server certificate was created. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is valid only when the CAType parameter is set to aliyun.
   * `ssl_enabled` - (Available in 1.124.1+) Indicates whether SSL encryption is enabled. Valid values:
-      - on: enabled
-      - off: disabled
+    - on: enabled
+    - off: disabled
   * `server_ca_url` - (Available in 1.124.1+) The URL of the CA that issues the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `server_cert` - (Available in 1.124.1+) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `server_key` - (Available in 1.124.1+) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
@@ -125,28 +125,28 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - (Available in 1.124.3+) The description of the encryption key.
   * `encryption_key` - (Available in 1.124.3+) The ID of the encryption key.
   * `encryption_key_status` - (Available in 1.124.3+) The status of the encryption key. Valid values:
-      - Enabled
-      - Disabled
+    - Enabled
+    - Disabled
   * `key_usage` - (Available in 1.124.3+) The purpose of the encryption key.
   * `material_expire_time` - (Available in 1.124.3+) The time when the encryption key expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
   * `origin` - (Available in 1.124.3+) The source of the encryption key.
   * `parameters` - (Available in 1.135.0+) Parameter list.
-      * `parameter_name` - The name of the parameter.
-      * `parameter_value` - The default value of the parameter.
-      * `force_modify` - Indicates whether the parameter can be modified. Valid values: true | false
-      * `force_restart` - Indicates whether the modified parameter takes effect only after a database restart. Valid values: true | false
-      * `checking_code` - The value range of the parameter.
-      * `parameter_description` - The description of the parameter.
+    * `parameter_name` - The name of the parameter.
+    * `parameter_value` - The default value of the parameter.
+    * `force_modify` - Indicates whether the parameter can be modified. Valid values: true | false
+    * `force_restart` - Indicates whether the modified parameter takes effect only after a database restart. Valid values: true | false
+    * `checking_code` - The value range of the parameter.
+    * `parameter_description` - The description of the parameter.
   * `deletion_protection` - (Available in 1.167.0+) Indicates whether the release protection feature is enabled for the instance. Valid values:
-      * **true**: The release protection feature is enabled.
-      * **false**: The release protection feature is disabled.
+    * **true**: The release protection feature is enabled.
+    * **false**: The release protection feature is disabled.
   * `ha_mode` - (Available since v1.209.1) The high availability mode of the instance.
   * `sync_mode` - (Available since v1.209.1) The data replication mode of the instance.
   * `host_instance_infos` - (Available since v1.209.1) An array that consists of the information of the primary and secondary instances.
-      * `log_sync_time` - The time when the secondary instance received logs from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-      * `node_type` - The type of the node.
-      * `zone_id` - The ID of the zone.
-      * `sync_status` - The synchronization status.
-      * `data_sync_time` - The time when the secondary instance completed the synchronization of data from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-      * `node_id` - The ID of the instance.
-      * `region_id` - The region ID of the instance.
+    * `log_sync_time` - The time when the secondary instance received logs from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+    * `node_type` - The type of the node.
+    * `zone_id` - The ID of the zone.
+    * `sync_status` - The synchronization status.
+    * `data_sync_time` - The time when the secondary instance completed the synchronization of data from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+    * `node_id` - The ID of the instance.
+    * `region_id` - The region ID of the instance.
