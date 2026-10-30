@@ -1,11 +1,13 @@
-package alicloud
+package clickhouse_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/clickhouse"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudClickHouseEnterpriseDbClusterPublicEndpoint_basic10561(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_enterprise_db_cluster_public_endpoint.default"
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseEnterpriseDbClusterPublicEndpointMap10561)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickHouseServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudClickHouseEnterpriseDbClusterPublicEndpointMap10561)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseEnterpriseDbClusterPublicEndpoint")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccclickhouse%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseEnterpriseDbClusterPublicEndpointBasicDependence10561)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudClickHouseEnterpriseDbClusterPublicEndpointBasicDependence10561)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,9 +41,9 @@ func TestAccAliCloudClickHouseEnterpriseDbClusterPublicEndpoint_basic10561(t *te
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_id":           CHECKSET,
+						"db_instance_id":           acctest.CHECKSET,
 						"net_type":                 "Public",
-						"connection_string_prefix": CHECKSET,
+						"connection_string_prefix": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -51,7 +53,7 @@ func TestAccAliCloudClickHouseEnterpriseDbClusterPublicEndpoint_basic10561(t *te
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_string_prefix": CHECKSET,
+						"connection_string_prefix": acctest.CHECKSET,
 					}),
 				),
 			},
