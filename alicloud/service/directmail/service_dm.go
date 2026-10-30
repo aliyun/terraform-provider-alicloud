@@ -1,4 +1,4 @@
-package alicloud
+package directmail
 
 import (
 	"fmt"
@@ -6,11 +6,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
+// DmService holds the DirectMail (Dm, 2015-11-23) client and the product API
+// helpers used by the SDKv2 handwritten directmail resources and data sources
+// migrated into this package.
 type DmService struct {
 	client *connectivity.AliyunClient
+}
+
+// NewDmService constructs the DmService from a connectivity client.
+func NewDmService(client *connectivity.AliyunClient) *DmService {
+	return &DmService{client: client}
 }
 
 func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]interface{}, err error) {
@@ -24,11 +35,11 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 	}
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -36,16 +47,16 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.data.receiver", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.receiver", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.data.receiver", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail", id), errs.NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if v.(map[string]interface{})["ReceiverId"].(string) == id {
@@ -59,7 +70,7 @@ func (s *DmService) DescribeDirectMailReceivers(id string) (object map[string]in
 		request["PageNo"] = request["PageNo"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail", id), errs.NotFoundWithResponse, response)
 	}
 	return
 }
@@ -70,11 +81,11 @@ func (s *DmService) DescribeDirectMailDomain(id string) (object map[string]inter
 	request := map[string]interface{}{
 		"DomainId": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -82,16 +93,16 @@ func (s *DmService) DescribeDirectMailDomain(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomainId.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("DirectMail:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		if errs.IsExpectedErrors(err, []string{"InvalidDomainId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail:Domain", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
@@ -103,11 +114,11 @@ func (s *DmService) DescDomain(id string) (object map[string]interface{}, err er
 	request := map[string]interface{}{
 		"DomainId": id,
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -115,16 +126,16 @@ func (s *DmService) DescDomain(id string) (object map[string]interface{}, err er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDomainId.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("DirectMail:Domain", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		if errs.IsExpectedErrors(err, []string{"InvalidDomainId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail:Domain", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
@@ -134,15 +145,15 @@ func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]
 	client := s.client
 	action := "QueryMailAddressByParam"
 	request := map[string]interface{}{
-		"PageSize": PageSizeLarge,
+		"PageSize": helper.PageSizeLarge,
 	}
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -150,16 +161,16 @@ func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.data.mailAddress", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.mailAddress", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.data.mailAddress", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail", id), errs.NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["MailAddressId"]) == id {
@@ -173,7 +184,7 @@ func (s *DmService) DescribeDirectMailMailAddress(id string) (object map[string]
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail", id), errs.NotFoundWithResponse, response)
 	}
 	return
 }
@@ -186,11 +197,11 @@ func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interfac
 	}
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -198,19 +209,19 @@ func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidTag.NotFound"}) {
-				return object, WrapErrorf(NotFoundErr("DirectMail:Tag", id), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			if errs.IsExpectedErrors(err, []string{"InvalidTag.NotFound"}) {
+				return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail:Tag", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
 			}
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.data.tag", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data.tag", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.data.tag", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail", id), errs.NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["TagId"]) == id {
@@ -224,7 +235,7 @@ func (s *DmService) DescribeDirectMailTag(id string) (object map[string]interfac
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("DirectMail", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DirectMail", id), errs.NotFoundWithResponse, response)
 	}
 	return
 }

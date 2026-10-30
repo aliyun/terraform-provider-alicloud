@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package directmail
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudDirectMailConfigSets() *schema.Resource {
+func DataSourceConfigSets() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudDirectMailConfigSetRead,
+		Read: DataSourceConfigSetRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -98,7 +102,7 @@ func dataSourceAliCloudDirectMailConfigSets() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta interface{}) error {
+func DataSourceConfigSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -131,25 +135,25 @@ func dataSourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta inte
 			request["All"] = v.True()
 		}
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageIndex"] = 1
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutRead), func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := jsonpath.Get("$.ConfigSets[*]", response)
@@ -165,7 +169,7 @@ func dataSourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta inte
 			objects = append(objects, item)
 		}
 
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageIndex"] = request["PageIndex"].(int) + 1
@@ -201,13 +205,13 @@ func dataSourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta inte
 
 			forbiddenStatusListRaw := make([]interface{}, 0)
 			if validationOptionRaw["ForbiddenStatusList"] != nil {
-				forbiddenStatusListRaw = convertToInterfaceArray(validationOptionRaw["ForbiddenStatusList"])
+				forbiddenStatusListRaw = convert.ConvertToInterfaceArray(validationOptionRaw["ForbiddenStatusList"])
 			}
 			validationOptionMap["forbidden_status_list"] = forbiddenStatusListRaw
 
 			forbiddenSubStatusListRaw := make([]interface{}, 0)
 			if validationOptionRaw["ForbiddenSubStatusList"] != nil {
-				forbiddenSubStatusListRaw = convertToInterfaceArray(validationOptionRaw["ForbiddenSubStatusList"])
+				forbiddenSubStatusListRaw = convert.ConvertToInterfaceArray(validationOptionRaw["ForbiddenSubStatusList"])
 			}
 			validationOptionMap["forbidden_sub_status_list"] = forbiddenSubStatusListRaw
 
@@ -222,39 +226,39 @@ func dataSourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta inte
 		}
 
 		id := fmt.Sprint(objectRaw["Id"])
-		mapping, err = dataSourceAliCloudDirectMailConfigSetReadDescription(d, id, mapping, meta)
+		mapping, err = DataSourceConfigSetReadDescription(d, id, mapping, meta)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("sets", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		if err := writeToFile(output.(string), s); err != nil {
-			return WrapError(err)
+		if err := helper.WriteToFile(output.(string), s); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	return nil
 }
 
-func dataSourceAliCloudDirectMailConfigSetReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+func DataSourceConfigSetReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 
-	directMailServiceV2 := DirectMailServiceV2{client}
+	directMailServiceV2 := NewDirectMailServiceV2(client)
 	getResp, err := directMailServiceV2.DescribeDirectMailConfigSet(id)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	// Merge additional fields from Get API response to mapping
@@ -291,13 +295,13 @@ func dataSourceAliCloudDirectMailConfigSetReadDescription(d *schema.ResourceData
 
 		forbiddenStatusListRaw := make([]interface{}, 0)
 		if validationOptionRaw["ForbiddenStatusList"] != nil {
-			forbiddenStatusListRaw = convertToInterfaceArray(validationOptionRaw["ForbiddenStatusList"])
+			forbiddenStatusListRaw = convert.ConvertToInterfaceArray(validationOptionRaw["ForbiddenStatusList"])
 		}
 
 		validationOptionMap["forbidden_status_list"] = forbiddenStatusListRaw
 		forbiddenSubStatusListRaw := make([]interface{}, 0)
 		if validationOptionRaw["ForbiddenSubStatusList"] != nil {
-			forbiddenSubStatusListRaw = convertToInterfaceArray(validationOptionRaw["ForbiddenSubStatusList"])
+			forbiddenSubStatusListRaw = convert.ConvertToInterfaceArray(validationOptionRaw["ForbiddenSubStatusList"])
 		}
 
 		validationOptionMap["forbidden_sub_status_list"] = forbiddenSubStatusListRaw

@@ -1,4 +1,4 @@
-package alicloud
+package directmail
 
 import (
 	"fmt"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDirectMailTag() *schema.Resource {
+func ResourceTag() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDirectMailTagCreate,
-		Read:   resourceAlicloudDirectMailTagRead,
-		Update: resourceAlicloudDirectMailTagUpdate,
-		Delete: resourceAlicloudDirectMailTagDelete,
+		Create: ResourceTagCreate,
+		Read:   ResourceTagRead,
+		Update: ResourceTagUpdate,
+		Delete: ResourceTagDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -31,18 +34,18 @@ func resourceAlicloudDirectMailTag() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDirectMailTagCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceTagCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateTag"
 	request := make(map[string]interface{})
 	var err error
 	request["TagName"] = d.Get("tag_name")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -50,31 +53,31 @@ func resourceAlicloudDirectMailTagCreate(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_direct_mail_tag", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_direct_mail_tag", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["TagId"]))
 
-	return resourceAlicloudDirectMailTagRead(d, meta)
+	return ResourceTagRead(d, meta)
 }
-func resourceAlicloudDirectMailTagRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceTagRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dmService := DmService{client}
+	dmService := NewDmService(client)
 	object, err := dmService.DescribeDirectMailTag(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_direct_mail_tag dmService.DescribeDirectMailTag Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("tag_name", object["TagName"])
 	return nil
 }
-func resourceAlicloudDirectMailTagUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceTagUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
@@ -88,11 +91,11 @@ func resourceAlicloudDirectMailTagUpdate(d *schema.ResourceData, meta interface{
 	}
 	if update {
 		action := "ModifyTag"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -100,14 +103,14 @@ func resourceAlicloudDirectMailTagUpdate(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudDirectMailTagRead(d, meta)
+	return ResourceTagRead(d, meta)
 }
-func resourceAlicloudDirectMailTagDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceTagDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTag"
 	var response map[string]interface{}
@@ -116,11 +119,11 @@ func resourceAlicloudDirectMailTagDelete(d *schema.ResourceData, meta interface{
 		"TagId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -128,9 +131,9 @@ func resourceAlicloudDirectMailTagDelete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
