@@ -319,7 +319,6 @@ func Provider() *schema.Provider {
 			"alicloud_cloud_monitor_service_metric_alarm_rules":     dataSourceAliCloudCloudMonitorServiceMetricAlarmRules(),
 			"alicloud_cloud_firewall_nat_firewalls":                 dataSourceAliCloudCloudFirewallNatFirewalls(),
 			"alicloud_cloud_firewall_vpc_cen_tr_firewalls":          dataSourceAliCloudCloudFirewallVpcCenTrFirewalls(),
-			"alicloud_cloud_connect_networks":                       dataSourceAlicloudCloudConnectNetworks(),
 			"alicloud_cloud_storage_gateway_service":                dataSourceAlicloudCloudStorageGatewayService(),
 			"alicloud_cloud_storage_gateway_storage_bundles":        dataSourceAlicloudCloudStorageGatewayStorageBundles(),
 			"alicloud_cloud_firewall_control_policies":              dataSourceAliCloudCloudFirewallControlPolicies(),
@@ -893,7 +892,6 @@ func Provider() *schema.Provider {
 			"alicloud_sae_grey_tag_routes":           dataSourceAlicloudSaeGreyTagRoutes(),
 
 			// sag
-			"alicloud_sag_acls": dataSourceAlicloudSagAcls(),
 
 			// scdn
 
@@ -950,7 +948,6 @@ func Provider() *schema.Provider {
 			"alicloud_sls_metric_stores":   dataSourceAliCloudSlsMetricStores(),
 
 			// smartag
-			"alicloud_smartag_flow_logs": dataSourceAlicloudSmartagFlowLogs(),
 
 			// snapshots
 			"alicloud_snapshots": dataSourceAliCloudEcsSnapshots(),
@@ -1234,9 +1231,6 @@ func Provider() *schema.Provider {
 			"alicloud_cloud_firewall_nat_firewall_control_policy":           resourceAliCloudCloudFirewallNatFirewallControlPolicy(),
 			"alicloud_cloud_monitor_service_enterprise_public":              resourceAliCloudCloudMonitorServiceEnterprisePublic(),
 			"alicloud_cloud_monitor_service_basic_public":                   resourceAliCloudCloudMonitorServiceBasicPublic(),
-			"alicloud_cloud_connect_network":                                resourceAlicloudCloudConnectNetwork(),
-			"alicloud_cloud_connect_network_attachment":                     resourceAlicloudCloudConnectNetworkAttachment(),
-			"alicloud_cloud_connect_network_grant":                          resourceAlicloudCloudConnectNetworkGrant(),
 			"alicloud_cloud_storage_gateway_storage_bundle":                 resourceAlicloudCloudStorageGatewayStorageBundle(),
 			"alicloud_cloud_firewall_control_policy":                        resourceAliCloudCloudFirewallControlPolicy(),
 			"alicloud_cloud_firewall_control_policy_order":                  resourceAliCloudCloudFirewallControlPolicyOrder(),
@@ -2061,14 +2055,6 @@ func Provider() *schema.Provider {
 			"alicloud_sae_load_balancer_intranet":   resourceAlicloudSaeLoadBalancerIntranet(),
 
 			// sag
-			"alicloud_sag_acl":         resourceAlicloudSagAcl(),
-			"alicloud_sag_acl_rule":    resourceAlicloudSagAclRule(),
-			"alicloud_sag_qos":         resourceAlicloudSagQos(),
-			"alicloud_sag_qos_policy":  resourceAlicloudSagQosPolicy(),
-			"alicloud_sag_qos_car":     resourceAlicloudSagQosCar(),
-			"alicloud_sag_snat_entry":  resourceAlicloudSagSnatEntry(),
-			"alicloud_sag_dnat_entry":  resourceAlicloudSagDnatEntry(),
-			"alicloud_sag_client_user": resourceAlicloudSagClientUser(),
 
 			// scdn
 
@@ -2127,7 +2113,6 @@ func Provider() *schema.Provider {
 			"alicloud_sls_metric_store":            resourceAliCloudSlsMetricStore(),
 
 			// smartag
-			"alicloud_smartag_flow_log": resourceAlicloudSmartagFlowLog(),
 
 			// sms
 
