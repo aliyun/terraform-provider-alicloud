@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"sort"
 	"strings"
 )
 
@@ -67,4 +68,20 @@ func DataResourceIdHash(ids []string) string {
 	}
 
 	return fmt.Sprintf("%d", Hashcode(buf.String()))
+}
+
+// DataResourceIdHashFromMap derives a stable data source ID from a request map:
+// keys are sorted so the same query condition always produces the same ID.
+func DataResourceIdHashFromMap(request map[string]interface{}) string {
+	keys := make([]string, 0, len(request))
+	for key := range request {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%v", key, request[key]))
+	}
+	return DataResourceIdHash(parts)
 }
