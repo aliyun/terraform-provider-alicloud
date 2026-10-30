@@ -17,6 +17,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// A newly created Lindorm instance can stay unreadable for a while; observed
+// around 18 minutes before GetLindormInstance recovered. The tolerance is at
+// most this upper bound and never more than three quarters of the create
+// timeout, so the wait always keeps a margin to surface the original error.
+const lindormPostCreateReadTolerance = 20 * time.Minute
+
+func lindormPostCreateReadToleranceFor(createTimeout time.Duration) time.Duration {
+	tolerance := createTimeout - createTimeout/4
+	if tolerance > lindormPostCreateReadTolerance {
+		tolerance = lindormPostCreateReadTolerance
+	}
+	return tolerance
+}
+
 func ResourceLindormInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceLindormInstanceCreate,
@@ -27,9 +41,9 @@ func ResourceLindormInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(90 * time.Minute),
-			Update: schema.DefaultTimeout(180 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(180 * time.Minute),
+			Update: schema.DefaultTimeout(720 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"vswitch_id": {
@@ -479,8 +493,13 @@ func resourceLindormInstanceCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 	lindormService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, lindormService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
+	var readTolerance LindormPostCreateReadTolerance
+	readToleranceDeadline := time.Now().Add(lindormPostCreateReadToleranceFor(d.Timeout(schema.TimeoutCreate)))
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, lindormService.LindormInstanceStateRefreshFuncWithPostCreateReadTolerance(d.Id(), []string{}, readToleranceDeadline, &readTolerance))
 	if _, err := stateConf.WaitForState(); err != nil {
+		if lastTolerated := readTolerance.last(); lastTolerated != nil {
+			return errs.WrapErrorf(err, errs.IdMsg+" last tolerated GetLindormInstance error: %v", d.Id(), lastTolerated)
+		}
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
@@ -828,7 +847,7 @@ func resourceLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 
 	}
 
-	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) && !d.IsNewResource() {
+	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") || d.HasChange("log_num")) && !d.IsNewResource() {
 		newLindormSpec := d.Get("table_engine_specification")
 		newLindormNum := d.Get("table_engine_node_count")
 		enabled := d.Get("enabled_table_engine").(bool)
@@ -836,7 +855,7 @@ func resourceLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 		if currentInstanceStorageErr != nil {
 			return currentInstanceStorageErr
 		}
-		if !enabled {
+		if !enabled && (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) {
 			upgradeLindormInstanceTableReq := map[string]interface{}{}
 			upgradeLindormInstanceTableReq["UpgradeType"] = "open-lindorm-engine"
 			upgradeLindormInstanceTableReq["LindormSpec"] = newLindormSpec
@@ -859,8 +878,8 @@ func resourceLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 			}
 		}
 
-		if enabled && d.HasChange("table_engine_node_count") {
-			if !d.IsNewResource() && d.HasChange("log_num") && d.HasChange("table_engine_node_count") {
+		if enabled && (d.HasChange("table_engine_node_count") || d.HasChange("log_num")) {
+			if !d.IsNewResource() && d.HasChange("log_num") {
 				upgradeLindormLogNumReq := map[string]interface{}{}
 				upgradeLindormLogNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
 				upgradeLindormLogNumReq["LogNum"] = d.Get("log_num")
@@ -880,7 +899,6 @@ func resourceLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 			}
 		}
-
 	}
 
 	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") || d.HasChange("time_series_engine_specification")) && !d.IsNewResource() {
@@ -1073,8 +1091,25 @@ func resourceLindormInstanceDelete(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if fmt.Sprint(object["PayType"]) == "PREPAY" {
-		log.Printf("[WARN] Cannot destroy resource alicloud_lindorm_instance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+		// A prepaid instance cannot be released directly. Switch it to
+		// pay-as-you-go first and wait until the new billing method and the
+		// instance are both ready before releasing it.
+		if err := modifyLindormInstancePayType(d, client, "POSTPAY"); err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "ModifyInstancePayType", errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"POSTPAY/ACTIVATION", "DELETED"}, d.Timeout(schema.TimeoutDelete), lindormPayTypeWaitDuration, func() (interface{}, string, error) {
+			object, err := lindormService.DescribeLindormInstance(d.Id())
+			if err != nil {
+				if errs.NotFoundError(err) {
+					return map[string]interface{}{"InstanceId": d.Id()}, "DELETED", nil
+				}
+				return nil, "", errs.WrapError(err)
+			}
+			return object, fmt.Sprintf("%v/%v", object["PayType"], object["InstanceStatus"]), nil
+		})
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
 	}
 
 	request := map[string]interface{}{
@@ -1085,7 +1120,7 @@ func resourceLindormInstanceDelete(d *schema.ResourceData, meta interface{}) err
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
 		if err != nil {
-			if helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"Instance.IsNotAvailable", "OperationDenied.OrderProcessing"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1103,6 +1138,35 @@ func resourceLindormInstanceDelete(d *schema.ResourceData, meta interface{}) err
 	}
 
 	return nil
+}
+
+// modifyLindormInstancePayType changes the billing method of a Lindorm
+// instance. A prepaid instance cannot be released directly, so Delete switches
+// it to pay-as-you-go before calling ReleaseLindormInstance.
+func modifyLindormInstancePayType(d *schema.ResourceData, client *connectivity.AliyunClient, payType string) error {
+	action := "ModifyInstancePayType"
+	request := map[string]interface{}{
+		"InstanceId":   d.Id(),
+		"PayType":      payType,
+		"Duration":     1,
+		"PricingCycle": "Month",
+	}
+	var response map[string]interface{}
+	var err error
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
+		response, err = client.RpcPost("hitsdb", "2020-06-15", action, nil, request, false)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Instance.IsNotAvailable", "OperationDenied.OrderProcessing"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	return err
 }
 
 func convertLindormInstancePaymentTypeRequest(source interface{}) interface{} {
@@ -1124,6 +1188,14 @@ func convertLindormInstancePaymentTypeResponse(source interface{}) interface{} {
 	}
 	return source
 }
+
+// The upgrade wait polls the instance status once a minute. Tests shorten it
+// so one request-level regression does not spend a minute inside the wait.
+var lindormUpgradeStateWaitDuration = 1 * time.Minute
+
+// The pay type wait polls the instance while a prepaid instance is converted
+// to pay-as-you-go during Delete.
+var lindormPayTypeWaitDuration = 10 * time.Second
 
 func upgradeLindormInstance(d *schema.ResourceData, meta interface{}, request map[string]interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -1153,7 +1225,7 @@ func upgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 	}
 
 	lindormService := NewService(client)
-	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, lindormService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), lindormUpgradeStateWaitDuration, lindormService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
