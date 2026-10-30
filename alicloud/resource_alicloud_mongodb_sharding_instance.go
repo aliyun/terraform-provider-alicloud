@@ -8,8 +8,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
@@ -25,6 +27,10 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(120 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("account_password"), cty.GetAttrPath("account_password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("kms_encrypted_password"), cty.GetAttrPath("account_password_wo")),
 		},
 		Schema: map[string]*schema.Schema{
 			"engine_version": {
@@ -141,6 +147,19 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+			},
+			"account_password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				RequiredWith:  []string{"account_password_wo_version"},
+				ConflictsWith: []string{"account_password", "kms_encrypted_password"},
+			},
+			"account_password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				RequiredWith: []string{"account_password_wo"},
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
@@ -563,6 +582,12 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		}
 
 		request["AccountPassword"] = decryptResp
+	}
+
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["AccountPassword"] = woValue.AsString()
 	}
 
 	if v, ok := d.GetOkExists("encrypted"); ok {
@@ -1055,7 +1080,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	update = false
@@ -1102,7 +1126,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	update = false
@@ -1150,7 +1173,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	update = false
@@ -1262,7 +1284,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_ip_list") {
@@ -1309,7 +1330,7 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 	}
 
-	if !d.IsNewResource() && (d.HasChange("account_password") || d.HasChange("kms_encrypted_password")) {
+	if !d.IsNewResource() && (d.HasChange("account_password") || d.HasChange("kms_encrypted_password") || d.HasChange("account_password_wo_version")) {
 		var accountPassword string
 		if accountPassword = d.Get("account_password").(string); accountPassword != "" {
 		} else if kmsPassword := d.Get("kms_encrypted_password").(string); kmsPassword != "" {
@@ -1320,7 +1341,12 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			}
 
 			accountPassword = decryptResp
+		}
 
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			accountPassword = woValue.AsString()
 		}
 
 		err := ddsService.ResetAccountPassword(d, accountPassword, "shardingInstance")
@@ -1423,7 +1449,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_retention_policy_on_cluster_deletion") || d.HasChange("enable_backup_log") || d.HasChange("log_backup_retention_period") || d.HasChange("snapshot_backup_type") || d.HasChange("backup_interval") {
@@ -1478,7 +1503,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
@@ -1573,7 +1597,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	if d.HasChange("db_instance_release_protection") {
@@ -1609,7 +1632,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
 	}
 
 	update = false
