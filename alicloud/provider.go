@@ -1067,14 +1067,6 @@ func Provider() *schema.Provider {
 			"alicloud_resource_manager_account_deletion_check_task": dataSourceAlicloudResourceManagerAccountDeletionCheckTask(),
 
 			// ros
-			"alicloud_ros_change_sets":        dataSourceAlicloudRosChangeSets(),
-			"alicloud_ros_stacks":             dataSourceAlicloudRosStacks(),
-			"alicloud_ros_stack_groups":       dataSourceAlicloudRosStackGroups(),
-			"alicloud_ros_templates":          dataSourceAlicloudRosTemplates(),
-			"alicloud_ros_stack_instances":    dataSourceAlicloudRosStackInstances(),
-			"alicloud_ros_regions":            dataSourceAlicloudRosRegions(),
-			"alicloud_ros_template_scratches": dataSourceAlicloudRosTemplateScratches(),
-
 			// route
 			"alicloud_route_tables":  dataSourceAlicloudRouteTables(),
 			"alicloud_route_entries": dataSourceAlicloudRouteEntries(),
@@ -2534,14 +2526,6 @@ func Provider() *schema.Provider {
 			"alicloud_rocketmq_instance":       resourceAliCloudRocketmqInstance(),
 
 			// ros
-			"alicloud_ros_change_set":       resourceAlicloudRosChangeSet(),
-			"alicloud_ros_stack":            resourceAlicloudRosStack(),
-			"alicloud_ros_stack_group":      resourceAliCloudRosStackGroup(),
-			"alicloud_ros_template":         resourceAlicloudRosTemplate(),
-			"alicloud_ros_stack_instance":   resourceAlicloudRosStackInstance(),
-			"alicloud_ros_stack_instances":  resourceAlicloudRosStackInstances(),
-			"alicloud_ros_template_scratch": resourceAlicloudRosTemplateScratch(),
-
 			// route
 			"alicloud_route_entry":            resourceAliyunRouteEntry(),
 			"alicloud_route_table":            resourceAliCloudVpcRouteTable(),
