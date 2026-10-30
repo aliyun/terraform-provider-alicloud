@@ -83,6 +83,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/esa"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eventbridge"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnect"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcopen"
@@ -261,6 +262,7 @@ var servicePackages = []conns.ServicePackage{
 	esa.ServicePackage(),
 	ess.ServicePackage(),
 	eventbridge.ServicePackage(),
+	expressconnect.ServicePackage(),
 	expressconnectrouter.ServicePackage(),
 	fc.ServicePackage(),
 	fcopen.ServicePackage(),

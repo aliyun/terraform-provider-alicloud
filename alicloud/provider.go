@@ -583,14 +583,6 @@ func Provider() *schema.Provider {
 			// event
 
 			// express
-			"alicloud_express_connect_access_points":                dataSourceAlicloudExpressConnectAccessPoints(),
-			"alicloud_express_connect_physical_connection_service":  dataSourceAlicloudExpressConnectPhysicalConnectionService(),
-			"alicloud_express_connect_physical_connections":         dataSourceAlicloudExpressConnectPhysicalConnections(),
-			"alicloud_express_connect_virtual_border_routers":       dataSourceAlicloudExpressConnectVirtualBorderRouters(),
-			"alicloud_express_connect_grant_rule_to_cens":           dataSourceAlicloudExpressConnectGrantRuleToCens(),
-			"alicloud_express_connect_virtual_physical_connections": dataSourceAlicloudExpressConnectVirtualPhysicalConnections(),
-			"alicloud_express_connect_vbr_pconn_associations":       dataSourceAlicloudExpressConnectVbrPconnAssociations(),
-			"alicloud_express_connect_router_interfaces":            dataSourceAlicloudExpressConnectRouterInterfaces(),
 
 			// fc
 			"alicloud_fc_functions":      dataSourceAlicloudFcFunctions(),
@@ -879,7 +871,6 @@ func Provider() *schema.Provider {
 			"alicloud_route_entries": dataSourceAlicloudRouteEntries(),
 
 			// router
-			"alicloud_router_interfaces": dataSourceAlicloudRouterInterfaces(),
 
 			// sae
 			"alicloud_sae_application_groups":        dataSourceAliCloudSaeApplicationGroups(),
@@ -1000,9 +991,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_ipv6_egress_rules":                   dataSourceAlicloudVpcIpv6EgressRules(),
 			"alicloud_vpc_ipv6_addresses":                      dataSourceAlicloudVpcIpv6Addresses(),
 			"alicloud_vpc_ipv6_internet_bandwidths":            dataSourceAlicloudVpcIpv6InternetBandwidths(),
-			"alicloud_vpc_bgp_groups":                          dataSourceAlicloudVpcBgpGroups(),
-			"alicloud_vpc_bgp_peers":                           dataSourceAlicloudVpcBgpPeers(),
-			"alicloud_vpc_bgp_networks":                        dataSourceAlicloudVpcBgpNetworks(),
 			"alicloud_vpc_ipv4_gateways":                       dataSourceAlicloudVpcIpv4Gateways(),
 			"alicloud_vpc_prefix_lists":                        dataSourceAlicloudVpcPrefixLists(),
 			"alicloud_vpc_public_ip_address_pools":             dataSourceAlicloudVpcPublicIpAddressPools(),
@@ -1603,17 +1591,6 @@ func Provider() *schema.Provider {
 			// event
 
 			// express
-			"alicloud_express_connect_traffic_qos_rule":            resourceAliCloudExpressConnectTrafficQosRule(),
-			"alicloud_express_connect_traffic_qos_queue":           resourceAliCloudExpressConnectTrafficQosQueue(),
-			"alicloud_express_connect_traffic_qos_association":     resourceAliCloudExpressConnectTrafficQosAssociation(),
-			"alicloud_express_connect_traffic_qos":                 resourceAliCloudExpressConnectTrafficQos(),
-			"alicloud_express_connect_ec_failover_test_job":        resourceAliCloudExpressConnectEcFailoverTestJob(),
-			"alicloud_express_connect_physical_connection":         resourceAliCloudExpressConnectPhysicalConnection(),
-			"alicloud_express_connect_virtual_border_router":       resourceAliCloudExpressConnectVirtualBorderRouter(),
-			"alicloud_express_connect_grant_rule_to_cen":           resourceAliCloudExpressConnectGrantRuleToCen(),
-			"alicloud_express_connect_virtual_physical_connection": resourceAlicloudExpressConnectVirtualPhysicalConnection(),
-			"alicloud_express_connect_vbr_pconn_association":       resourceAliCloudExpressConnectVbrPconnAssociation(),
-			"alicloud_express_connect_router_interface":            resourceAliCloudExpressConnectRouterInterface(),
 
 			// fc
 			"alicloud_fc_service":                      resourceAlicloudFCService(),
@@ -2047,8 +2024,6 @@ func Provider() *schema.Provider {
 			"alicloud_route_table_attachment": resourceAliCloudVpcRouteTableAttachment(),
 
 			// router
-			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
-			"alicloud_router_interface_connection": resourceAlicloudRouterInterfaceConnection(),
 
 			// sae
 			"alicloud_sae_namespace":                resourceAlicloudSaeNamespace(),
@@ -2201,11 +2176,7 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_ipv6_gateway":                            resourceAliCloudVpcIpv6Gateway(),
 			"alicloud_vpc_ipv6_egress_rule":                        resourceAliCloudVpcIpv6EgressRule(),
 			"alicloud_vpc_ipv6_internet_bandwidth":                 resourceAliCloudVpcIpv6InternetBandwidth(),
-			"alicloud_vpc_vbr_ha":                                  resourceAliCloudExpressConnectVbrHa(),
-			"alicloud_vpc_bgp_group":                               resourceAliCloudExpressConnectBgpGroup(),
 			"alicloud_vpc_dhcp_options_set_attachment":             resourceAlicloudVpcDhcpOptionsSetAttachement(),
-			"alicloud_vpc_bgp_peer":                                resourceAliCloudExpressConnectBgpPeer(),
-			"alicloud_vpc_bgp_network":                             resourceAliCloudExpressConnectBgpNetwork(),
 			"alicloud_vpc_ipv4_gateway":                            resourceAliCloudVpcIpv4Gateway(),
 			"alicloud_vpc_prefix_list":                             resourceAliCloudVpcPrefixList(),
 			"alicloud_vpc_ipv4_cidr_block":                         resourceAliCloudVpcIpv4CidrBlock(),
