@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"fmt"
@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudPvtzUserVpcAuthorization() *schema.Resource {
+func ResourceUserVpcAuthorization() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPvtzUserVpcAuthorizationCreate,
-		Read:   resourceAlicloudPvtzUserVpcAuthorizationRead,
-		Update: resourceAlicloudPvtzUserVpcAuthorizationUpdate,
-		Delete: resourceAlicloudPvtzUserVpcAuthorizationDelete,
+		Create: resourceUserVpcAuthorizationCreate,
+		Read:   resourceUserVpcAuthorizationRead,
+		Update: resourceUserVpcAuthorizationUpdate,
+		Delete: resourceUserVpcAuthorizationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,7 +50,7 @@ func resourceAlicloudPvtzUserVpcAuthorization() *schema.Resource {
 	}
 }
 
-func resourceAlicloudPvtzUserVpcAuthorizationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceUserVpcAuthorizationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AddUserVpcAuthorization"
@@ -59,11 +63,11 @@ func resourceAlicloudPvtzUserVpcAuthorizationCreate(d *schema.ResourceData, meta
 		request["AuthType"] = v
 	}
 	request["AuthorizedUserId"] = d.Get("authorized_user_id")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"System.Busy"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"System.Busy"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -71,9 +75,9 @@ func resourceAlicloudPvtzUserVpcAuthorizationCreate(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_user_vpc_authorization", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pvtz_user_vpc_authorization", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	// Default auth_type to NORMAL when omitted, matching the API default for
@@ -86,14 +90,14 @@ func resourceAlicloudPvtzUserVpcAuthorizationCreate(d *schema.ResourceData, meta
 	}
 	d.SetId(fmt.Sprintf("%s:%s", d.Get("authorized_user_id"), authType))
 
-	return resourceAlicloudPvtzUserVpcAuthorizationRead(d, meta)
+	return resourceUserVpcAuthorizationRead(d, meta)
 }
-func resourceAlicloudPvtzUserVpcAuthorizationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceUserVpcAuthorizationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
+	pvtzService := Service{client}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// Migrate legacy state IDs produced by a previous bug where unset auth_type
 	// resulted in ID = "<authorized_user_id>:<nil>". Treat "<nil>" as "NORMAL"
@@ -102,28 +106,28 @@ func resourceAlicloudPvtzUserVpcAuthorizationRead(d *schema.ResourceData, meta i
 		parts[1] = "NORMAL"
 		d.SetId(fmt.Sprintf("%s:%s", parts[0], parts[1]))
 	}
-	_, err = pvtzService.DescribePvtzUserVpcAuthorization(d.Id())
+	_, err = pvtzService.DescribeUserVpcAuthorization(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_pvtz_user_vpc_authorization pvtzService.DescribePvtzUserVpcAuthorization Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pvtz_user_vpc_authorization pvtzService.DescribeUserVpcAuthorization Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("auth_type", parts[1])
 	d.Set("authorized_user_id", parts[0])
 	return nil
 }
-func resourceAlicloudPvtzUserVpcAuthorizationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceUserVpcAuthorizationUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudPvtzUserVpcAuthorizationRead(d, meta)
+	return resourceUserVpcAuthorizationRead(d, meta)
 }
-func resourceAlicloudPvtzUserVpcAuthorizationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceUserVpcAuthorizationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	// Migrate legacy state IDs where auth_type was "<nil>" (see Read for details).
 	if parts[1] == "<nil>" {
@@ -136,11 +140,11 @@ func resourceAlicloudPvtzUserVpcAuthorizationDelete(d *schema.ResourceData, meta
 		"AuthorizedUserId": parts[0],
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"System.Busy"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"System.Busy"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -148,12 +152,12 @@ func resourceAlicloudPvtzUserVpcAuthorizationDelete(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ZoneVpc.Auth.NotExists"}) {
+		if errs.IsExpectedErrors(err, []string{"ZoneVpc.Auth.NotExists"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

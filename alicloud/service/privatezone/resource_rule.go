@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"fmt"
@@ -6,17 +6,22 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudPvtzRule() *schema.Resource {
+func ResourceRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPvtzRuleCreate,
-		Read:   resourceAlicloudPvtzRuleRead,
-		Update: resourceAlicloudPvtzRuleUpdate,
-		Delete: resourceAlicloudPvtzRuleDelete,
+		Create: resourceRuleCreate,
+		Read:   resourceRuleRead,
+		Update: resourceRuleUpdate,
+		Delete: resourceRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -62,7 +67,7 @@ func resourceAlicloudPvtzRule() *schema.Resource {
 	}
 }
 
-func resourceAlicloudPvtzRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AddResolverRule"
@@ -81,11 +86,11 @@ func resourceAlicloudPvtzRuleCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	request["ZoneName"] = d.Get("zone_name")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -93,26 +98,26 @@ func resourceAlicloudPvtzRuleCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pvtz_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["RuleId"]))
 
-	return resourceAlicloudPvtzRuleRead(d, meta)
+	return resourceRuleRead(d, meta)
 }
-func resourceAlicloudPvtzRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	object, err := pvtzService.DescribePvtzRule(d.Id())
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_pvtz_rule pvtzService.DescribePvtzRule Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pvtz_rule pvtzService.DescribeRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("endpoint_id", object["EndpointId"])
 	d.Set("rule_name", object["Name"])
@@ -122,7 +127,7 @@ func resourceAlicloudPvtzRuleRead(d *schema.ResourceData, meta interface{}) erro
 			forwardConfigArg := forwardConfigArgs.(map[string]interface{})
 			forwardConfigsMap := make(map[string]interface{})
 			forwardConfigsMap["ip"] = forwardConfigArg["Ip"]
-			forwardConfigArgPort, err := formatInt(forwardConfigArg["Port"])
+			forwardConfigArgPort, err := convert.FormatInt(forwardConfigArg["Port"])
 			if err != nil {
 				return err
 			}
@@ -135,7 +140,7 @@ func resourceAlicloudPvtzRuleRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("zone_name", object["ZoneName"])
 	return nil
 }
-func resourceAlicloudPvtzRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
@@ -161,11 +166,11 @@ func resourceAlicloudPvtzRuleUpdate(d *schema.ResourceData, meta interface{}) er
 	if update {
 		request["Lang"] = "en"
 		action := "UpdateResolverRule"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -173,14 +178,14 @@ func resourceAlicloudPvtzRuleUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudPvtzRuleRead(d, meta)
+	return resourceRuleRead(d, meta)
 }
-func resourceAlicloudPvtzRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteResolverRule"
 	var response map[string]interface{}
@@ -190,11 +195,11 @@ func resourceAlicloudPvtzRuleDelete(d *schema.ResourceData, meta interface{}) er
 	}
 
 	request["Lang"] = "en"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -202,12 +207,12 @@ func resourceAlicloudPvtzRuleDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResolverRule.NotExists"}) {
+		if errs.IsExpectedErrors(err, []string{"ResolverRule.NotExists"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

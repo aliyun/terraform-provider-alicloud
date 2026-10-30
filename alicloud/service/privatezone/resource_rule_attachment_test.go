@@ -1,32 +1,34 @@
-package alicloud
+package privatezone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudPvtzRuleAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_rule_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneRuleAttachmentMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribePvtzRuleAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivateZoneRuleAttachmentMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatezone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRuleAttachment")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateZoneRuleAttachmentBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivateZoneRuleAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,7 +42,7 @@ func TestAccAliCloudPvtzRuleAttachment_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rule_id": CHECKSET,
+						"rule_id": acctest.CHECKSET,
 						"vpcs.#":  "1",
 					}),
 				),
@@ -136,7 +138,7 @@ resource "alicloud_pvtz_rule" "default" {
   }
 }
 
-`, name, defaultRegionToTest)
+`, name, acctest.DefaultRegionToTest)
 }
 
 // lintignore: R001

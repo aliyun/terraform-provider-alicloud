@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"strconv"
@@ -6,13 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudPvtzResolverZones() *schema.Resource {
+func DataSourceResolverZones() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudPvtzResolverZonesRead,
+		Read: dataSourceResolverZonesRead,
 		Schema: map[string]*schema.Schema{
 			"status": {
 				Type:         schema.TypeString,
@@ -43,7 +47,7 @@ func dataSourceAlicloudPvtzResolverZones() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudPvtzResolverZonesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceResolverZonesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeResolverAvailableZones"
@@ -55,13 +59,13 @@ func dataSourceAlicloudPvtzResolverZonesRead(d *schema.ResourceData, meta interf
 	var err error
 	response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_resolver_zones", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_pvtz_resolver_zones", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.AvailableZones", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AvailableZones", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.AvailableZones", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -83,10 +87,10 @@ func dataSourceAlicloudPvtzResolverZonesRead(d *schema.ResourceData, meta interf
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

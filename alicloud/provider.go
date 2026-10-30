@@ -802,12 +802,6 @@ func Provider() *schema.Provider {
 			// privatelink
 
 			// pvtz
-			"alicloud_pvtz_zones":          dataSourceAliCloudPvtzZones(),
-			"alicloud_pvtz_zone_records":   dataSourceAliCloudPvtzZoneRecords(),
-			"alicloud_pvtz_service":        dataSourceAliCloudPvtzService(),
-			"alicloud_pvtz_endpoints":      dataSourceAlicloudPvtzEndpoints(),
-			"alicloud_pvtz_resolver_zones": dataSourceAlicloudPvtzResolverZones(),
-			"alicloud_pvtz_rules":          dataSourceAlicloudPvtzRules(),
 
 			// quick
 			// quickbi types are registered via service/quickbi.ServicePackage().
@@ -1937,13 +1931,6 @@ func Provider() *schema.Provider {
 			// privatelink
 
 			// pvtz
-			"alicloud_pvtz_zone":                   resourceAlicloudPvtzZone(),
-			"alicloud_pvtz_zone_attachment":        resourceAlicloudPvtzZoneAttachment(),
-			"alicloud_pvtz_zone_record":            resourceAlicloudPvtzZoneRecord(),
-			"alicloud_pvtz_user_vpc_authorization": resourceAlicloudPvtzUserVpcAuthorization(),
-			"alicloud_pvtz_endpoint":               resourceAlicloudPvtzEndpoint(),
-			"alicloud_pvtz_rule":                   resourceAlicloudPvtzRule(),
-			"alicloud_pvtz_rule_attachment":        resourceAlicloudPvtzRuleAttachment(),
 
 			// quick
 			// quickbi types are registered via service/quickbi.ServicePackage().

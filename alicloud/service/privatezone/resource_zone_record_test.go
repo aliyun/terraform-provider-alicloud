@@ -1,11 +1,13 @@
-package alicloud
+package privatezone_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,27 +15,27 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_record.default"
-	ra := resourceAttrInit(resourceId, pvtzZoneRecordBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, pvtzZoneRecordBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return privatezone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeZoneRecord")
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneRecordConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePvtzZoneRecordConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,7 +124,7 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 					"type":     "MX",
 					"value":    "bbb.test.com",
 					"priority": "2",
-					"ttl":      REMOVEKEY,
+					"ttl":      acctest.REMOVEKEY,
 					"remark":   "pvtz_zone_describe",
 					"rr":       "www",
 					"status":   "ENABLE",
@@ -143,13 +145,13 @@ func TestAccAliCloudPvtzZoneRecord_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"type":     "A",
 					"value":    "2.2.2.2",
-					"priority": REMOVEKEY,
+					"priority": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"type":     "A",
 						"value":    "2.2.2.2",
-						"priority": REMOVEKEY,
+						"priority": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -161,27 +163,27 @@ func TestAccAliCloudPvtzZoneRecord_multi(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_record.default.4"
-	ra := resourceAttrInit(resourceId, pvtzZoneRecordBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, pvtzZoneRecordBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return privatezone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeZoneRecord")
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneRecordConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePvtzZoneRecordConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -202,8 +204,8 @@ func TestAccAliCloudPvtzZoneRecord_multi(t *testing.T) {
 var pvtzZoneRecordAAAAMap = map[string]string{
 	"rr":      "www",
 	"type":    "AAAA",
-	"value":   CHECKSET,
-	"zone_id": CHECKSET,
+	"value":   acctest.CHECKSET,
+	"zone_id": acctest.CHECKSET,
 	"ttl":     "60",
 }
 
@@ -211,27 +213,27 @@ func TestAccAliCloudPvtzZoneRecord_aaaa(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone_record.default"
-	ra := resourceAttrInit(resourceId, pvtzZoneRecordAAAAMap)
+	ra := acctest.ResourceAttrInit(resourceId, pvtzZoneRecordAAAAMap)
 
 	serviceFunc := func() interface{} {
-		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return privatezone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeZoneRecord")
 
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%d.test.com", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePvtzZoneRecordConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePvtzZoneRecordConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 		// module name
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -287,7 +289,7 @@ func resourcePvtzZoneRecordConfigDependence(name string) string {
 var pvtzZoneRecordBasicMap = map[string]string{
 	"rr":      "www",
 	"type":    "A",
-	"value":   CHECKSET,
-	"zone_id": CHECKSET,
+	"value":   acctest.CHECKSET,
+	"zone_id": acctest.CHECKSET,
 	"ttl":     "60",
 }
