@@ -1243,27 +1243,30 @@ func TestAccAliCloudKVStoreRedisInstance_secondaryZoneOnly(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class":    "redis.shard.small.ce",
-					"db_instance_name":  name,
-					"instance_type":     "Redis",
-					"engine_version":    "7.0",
-					"shard_count":       "2",
-					"payment_type":      "PostPaid",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"instance_class":      "redis.shard.small.ce",
+					"db_instance_name":    name,
+					"instance_type":       "Redis",
+					"engine_version":      "7.0",
+					"shard_count":         "2",
+					"payment_type":        "PostPaid",
+					"zone_id":             "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id":   "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":    "redis.shard.small.ce",
-						"db_instance_name":  name,
-						"instance_type":     "Redis",
-						"engine_version":    "7.0",
-						"shard_count":       "2",
-						"payment_type":      "PostPaid",
-						"zone_id":           CHECKSET,
-						"vswitch_id":        CHECKSET,
-						"secondary_zone_id": CHECKSET,
+						"instance_class":      "redis.shard.small.ce",
+						"db_instance_name":    name,
+						"instance_type":       "Redis",
+						"engine_version":      "7.0",
+						"shard_count":         "2",
+						"payment_type":        "PostPaid",
+						"zone_id":             CHECKSET,
+						"vswitch_id":          CHECKSET,
+						"secondary_zone_id":   CHECKSET,
+						"password_wo_version": "1",
 					}),
 				),
 			},
@@ -1287,6 +1290,30 @@ func TestAccAliCloudKVStoreRedisInstance_secondaryZoneOnly(t *testing.T) {
 					testAccCheck(map[string]string{
 						"zone_id":           CHECKSET,
 						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password_wo":         "YourPassword123!Update",
+					"password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password":            "YourPassword123!password",
+					"password_wo":         REMOVEKEY,
+					"password_wo_version": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password":            "YourPassword123!password",
+						"password_wo_version": REMOVEKEY,
 					}),
 				),
 			},

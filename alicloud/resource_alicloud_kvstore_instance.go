@@ -14,6 +14,7 @@ import (
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -32,6 +33,10 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(20 * time.Minute),
 			Update: schema.DefaultTimeout(40 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
+		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("password"), cty.GetAttrPath("password_wo")),
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("kms_encrypted_password"), cty.GetAttrPath("password_wo")),
 		},
 		Schema: map[string]*schema.Schema{
 			"additional_bandwidth": {
@@ -236,6 +241,19 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+			},
+			"password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				RequiredWith:  []string{"password_wo_version"},
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
+			},
+			"password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"password_wo"},
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
@@ -561,6 +579,11 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 
 	request["Password"] = d.Get("password")
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["Password"] = woValue.AsString()
+	}
 	if fmt.Sprint(request["Password"]) == "" {
 		if v, ok := d.GetOk("kms_encrypted_password"); ok && fmt.Sprint(v) != "" {
 			kmsService := KmsService{client}
@@ -1310,10 +1333,16 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		modifyInstanceAttributeReq.InstanceReleaseProtection = requests.NewBoolean(d.Get("instance_release_protection").(bool))
 	}
-	if !d.IsNewResource() && (d.HasChange("password") || d.HasChange("kms_encrypted_password")) {
+	if !d.IsNewResource() && (d.HasChange("password") || d.HasChange("kms_encrypted_password") || d.HasChange("password_wo_version")) {
 		update = true
 		password := d.Get("password").(string)
 		kmsPassword := d.Get("kms_encrypted_password").(string)
+
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			password = woValue.AsString()
+		}
 
 		if password == "" && kmsPassword == "" {
 			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
@@ -1330,6 +1359,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			modifyInstanceAttributeReq.NewPassword = decryptResp
 		}
 	}
+
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyInstanceAttribute(modifyInstanceAttributeReq)

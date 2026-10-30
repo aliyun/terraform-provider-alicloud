@@ -14,6 +14,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -32,6 +33,9 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			Create: schema.DefaultTimeout(60 * time.Minute),
 			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("password"), cty.GetAttrPath("password_wo")),
 		},
 		Schema: map[string]*schema.Schema{
 			"architecture_type": {
@@ -199,6 +203,19 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+			},
+			"password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				WriteOnly:     true,
+				RequiredWith:  []string{"password_wo_version"},
+				ConflictsWith: []string{"password"},
+			},
+			"password_wo_version": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
+				RequiredWith: []string{"password_wo"},
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -400,6 +417,11 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	request["ZoneId"] = d.Get("zone_id")
 	if v, ok := d.GetOk("password"); ok {
 		request["Password"] = v
+	}
+	if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("password_wo"), cty.String); err != nil {
+		return WrapError(err)
+	} else if !woValue.IsNull() {
+		request["Password"] = woValue.AsString()
 	}
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
@@ -748,7 +770,15 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 		request["NewPassword"] = d.Get("password")
 	}
+	if !d.IsNewResource() && d.HasChange("password_wo_version") {
+		update = true
 
+		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("password_wo"), cty.String); err != nil {
+			return WrapError(err)
+		} else if !woValue.IsNull() {
+			request["NewPassword"] = woValue.AsString()
+		}
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
