@@ -9,9 +9,9 @@ description: |-
 
 # alicloud_eflo_subnets
 
-This data source provides Eflo Subnet available to the user.[What is Subnet](https://help.aliyun.com/document_detail/604977.html)
+This data source provides Eflo Subnet available to the user.[What is Subnet](https://www.alibabacloud.com/help/doc-detail/604977.html)
 
--> **NOTE:** Available in 1.204.0+
+-> **NOTE:** Available since v1.204.0
 
 ## Example Usage
 
@@ -31,16 +31,17 @@ output "alicloud_eflo_subnet_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `resource_group_id` - (ForceNew,Optional) Resource Group ID.
-* `status` - (ForceNew,Optional) The status of the resource.
-* `subnet_id` - (ForceNew,Optional) Primary key ID.
-* `subnet_name` - (ForceNew,Optional) The Subnet name.
-* `type` - (ForceNew,Optional) Eflo subnet usage type, optional value: 
+* `resource_group_id` - (ForceNew, Optional) Resource Group ID.
+* `status` - (ForceNew, Optional) The status of the resource.
+* `subnet_id` - (ForceNew, Optional) Primary key ID.
+* `subnet_name` - (ForceNew, Optional) The Subnet name.
+* `type` - (ForceNew, Optional) Eflo subnet usage type, optional value:
   - General type is not filled in
-  - OOB:OOB type 
+  - OOB:OOB type
   - LB: LB type
-* `vpd_id` - (ForceNew,Optional) The Eflo VPD ID.
-* `zone_id` - (ForceNew,Optional) The zone ID of the resource.
+* `vpd_id` - (ForceNew, Optional) The Eflo VPD ID.
+* `zone_id` - (ForceNew, Optional) The zone ID of the resource.
+* `ids` - (Optional, Computed) A list of Subnet IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -48,6 +49,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+* `ids` - A list of Subnet IDs.
 * `names` - A list of name of Subnets.
 * `subnets` - A list of Subnet Entries. Each element contains the following attributes:
   * `cidr` - Network segment
