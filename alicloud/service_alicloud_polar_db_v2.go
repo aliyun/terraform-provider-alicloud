@@ -239,14 +239,17 @@ func (s *PolarDbServiceV2) DescribePolarDbAccount(id string) (object map[string]
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
-	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	if len(parts) != 2 && len(parts) != 3 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d or %d, got %d", id, 2, 3, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
+	if len(parts) == 3 && parts[2] != "" {
+		request["NodeType"] = parts[2]
+	}
 
 	action := "DescribeAccounts"
 
@@ -276,16 +279,17 @@ func (s *PolarDbServiceV2) DescribePolarDbAccount(id string) (object map[string]
 		return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
 	}
 
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
+	for _, item := range v.([]interface{}) {
+		account, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if accountName, ok := account["AccountName"].(string); ok && accountName == parts[1] {
+			return account, nil
+		}
 	}
 
-	currentStatus := v.([]interface{})[0].(map[string]interface{})["AccountName"]
-	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return object, WrapErrorf(NotFoundErr("Account", id), NotFoundMsg, response)
 }
 
 func (s *PolarDbServiceV2) PolarDbAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
