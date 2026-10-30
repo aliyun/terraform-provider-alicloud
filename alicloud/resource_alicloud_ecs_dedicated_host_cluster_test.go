@@ -300,6 +300,7 @@ func TestUnitAlicloudECSDedicatedHostCluster(t *testing.T) {
 						"key": "value",
 					},
 					"DedicatedHostClusterId": "MockDedicatedHostClusterId",
+					"ResourceGroupId":        "rg-mock-id",
 				},
 			},
 		},
