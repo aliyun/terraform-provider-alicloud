@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
+func TestAccAliCloudCRChartRepository_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cr_chart_repository.default"
 	ra := resourceAttrInit(resourceId, AlicloudCRChartRepositoryMap0)
@@ -96,6 +96,7 @@ func TestAccAlicloudCRChartRepository_basic0(t *testing.T) {
 var AlicloudCRChartRepositoryMap0 = map[string]string{
 	"repo_name":           CHECKSET,
 	"repo_namespace_name": CHECKSET,
+	"resource_group_id":   CHECKSET,
 }
 
 func AlicloudCRChartRepositoryBasicDependence0(name string) string {
@@ -148,6 +149,7 @@ func TestUnitAlicloudCRChartRepository(t *testing.T) {
 		"repo_type":           "PUBLIC",
 		"summary":             "Summary",
 		"repo_namespace_name": "repo_namespace_name",
+		"ResourceGroupId":     "rg-mockxxxxx",
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
