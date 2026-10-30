@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"fmt"
@@ -8,15 +8,18 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDataWorksDataSourceSharedRule() *schema.Resource {
+func ResourceDataSourceSharedRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksDataSourceSharedRuleCreate,
-		Read:   resourceAliCloudDataWorksDataSourceSharedRuleRead,
-		Delete: resourceAliCloudDataWorksDataSourceSharedRuleDelete,
+		Create: resourceDataSourceSharedRuleCreate,
+		Read:   resourceDataSourceSharedRuleRead,
+		Delete: resourceDataSourceSharedRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -57,7 +60,7 @@ func resourceAliCloudDataWorksDataSourceSharedRule() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDataWorksDataSourceSharedRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceSharedRuleCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -75,11 +78,11 @@ func resourceAliCloudDataWorksDataSourceSharedRuleCreate(d *schema.ResourceData,
 		request["SharedUser"] = v
 	}
 	request["EnvType"] = d.Get("env_type")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -87,29 +90,29 @@ func resourceAliCloudDataWorksDataSourceSharedRuleCreate(d *schema.ResourceData,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_data_source_shared_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_data_source_shared_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["DataSourceId"], response["Id"]))
 
-	return resourceAliCloudDataWorksDataSourceSharedRuleRead(d, meta)
+	return resourceDataSourceSharedRuleRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDataSourceSharedRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceSharedRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksDataSourceSharedRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_data_source_shared_rule DescribeDataWorksDataSourceSharedRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CreateTime"] != nil {
@@ -134,7 +137,7 @@ func resourceAliCloudDataWorksDataSourceSharedRuleRead(d *schema.ResourceData, m
 	return nil
 }
 
-func resourceAliCloudDataWorksDataSourceSharedRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceSharedRuleDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -147,12 +150,12 @@ func resourceAliCloudDataWorksDataSourceSharedRuleDelete(d *schema.ResourceData,
 	request["Id"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -160,13 +163,13 @@ func resourceAliCloudDataWorksDataSourceSharedRuleDelete(d *schema.ResourceData,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"1000011038"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"1000011038"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

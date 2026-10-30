@@ -1,35 +1,44 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// The following TypeList attribute is pre-existing stock surfaced by the
+// dataworks subpackage migration (schema unchanged by this PR). A convergent
+// reorder ACC requires a DataWorks-enabled account, which is not opened this
+// round, so no fabricated reorder configuration is added; it is marked as
+// known stock debt per scripts/collection-order/README.md.
+// collection-order: bypass roles -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
 
 // Test DataWorks ProjectMember. >>> Resource test cases, automatically generated.
 // Case projectMember对接terraform_成都 8920
 func TestAccAliCloudDataWorksProjectMember_basic8920(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_project_member.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksProjectMemberMap8920)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksProjectMemberMap8920)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksProjectMember")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksProjectMemberBasicDependence8920)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksProjectMemberBasicDependence8920)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -43,8 +52,8 @@ func TestAccAliCloudDataWorksProjectMember_basic8920(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_id":    CHECKSET,
-						"project_id": CHECKSET,
+						"user_id":    acctest.CHECKSET,
+						"project_id": acctest.CHECKSET,
 						"roles.#":    "1",
 					}),
 				),
@@ -85,7 +94,7 @@ func TestAccAliCloudDataWorksProjectMember_basic8920(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"roles": REMOVEKEY,
+					"roles": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -146,7 +155,7 @@ func TestAccAliCloudDataWorksProjectMember_basic8920(t *testing.T) {
 }
 
 var AlicloudDataWorksProjectMemberMap8920 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksProjectMemberBasicDependence8920(name string) string {

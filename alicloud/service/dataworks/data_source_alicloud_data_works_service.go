@@ -1,18 +1,21 @@
-package alicloud
+package dataworks
 
 import (
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDataWorksService() *schema.Resource {
+func DataSourceService() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDataWorksServiceRead,
+		Read: dataSourceServiceRead,
 
 		Schema: map[string]*schema.Schema{
 			"enable": {
@@ -28,7 +31,7 @@ func dataSourceAlicloudDataWorksService() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudDataWorksServiceRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceServiceRead(d *schema.ResourceData, meta interface{}) error {
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
 		d.SetId("DataWorksServiceHasNotBeenOpened")
 		d.Set("status", "")
@@ -40,27 +43,27 @@ func dataSourceAlicloudDataWorksServiceRead(d *schema.ResourceData, meta interfa
 	}
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.DataWorksService)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := conn.DoRequest(helper.StringPointer(action), nil, helper.StringPointer("POST"), helper.StringPointer("2018-06-01"), helper.StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || helper.NeedRetry(err) {
 				return retry.RetryableError(err)
 			}
-			addDebug(action, response, nil)
+			logs.AddDebug(action, response, nil)
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, nil)
+		logs.AddDebug(action, response, nil)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
+		if errs.IsExpectedErrors(err, []string{"ORDER.OPEND"}) {
 			d.SetId("DataWorksServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dataworks_service", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_dataworks_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId("DataWorksServiceHasBeenOpened")
 	d.Set("status", "Opened")
