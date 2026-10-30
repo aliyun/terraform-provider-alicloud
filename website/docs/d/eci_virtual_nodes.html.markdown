@@ -7,11 +7,11 @@ description: |-
   Provides a list of Eci Virtual Nodes to the user.
 ---
 
-# alicloud\_eci\_virtual\_nodes
+# alicloud_eci_virtual_nodes
 
 This data source provides the Eci Virtual Nodes of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.145.0+.
+-> **NOTE:** Available since v1.145.0.
 
 ## Example Usage
 
@@ -45,34 +45,36 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The Status of the virtual node. Valid values: `Cleaned`, `Failed`, `Pending`, `Ready`.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 * `virtual_node_name` - (Optional, ForceNew) The name of the virtual node.
+* `vswitch_id` - (Optional, ForceNew) The ID of the vSwitch.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Virtual Node names.
 * `nodes` - A list of Eci Virtual Nodes. Each element contains the following attributes:
-	* `cpu` - The Number of CPU.
-	* `create_time` - The creation time of the virtual node.
-	* `eni_instance_id` - The ENI instance ID.
-	* `events` - The event list.
-		* `type` - The Event type.
-		* `count` - The number of occurrences.
-		* `first_timestamp` - The first presentation time stamp.
-		* `last_timestamp` - The most recent time stamp.
-		* `message` - The event of the message body.
-		* `name` - The name of the event.
-		* `reason` - The causes of the incident.
-	* `id` - The ID of the Virtual Node.
-	* `internet_ip` - The IP address of a public network.
-	* `intranet_ip` - The private IP address of the RDS instance.
-	* `memory` - The memory size.
-	* `ram_role_name` - The ram role.
-	* `resource_group_id` - The resource group ID. 
-	* `security_group_id` - The security group ID.
-	* `status` - The Status of the virtual node.
-	* `tags` - A mapping of tags to assign to the resource.
-	* `virtual_node_id` - Of the virtual node number.
-	* `virtual_node_name` - The name of the virtual node.
-	* `vswitch_id` - The vswitch id.
-	* `zone_id` - The Zone.
+  * `cpu` - The Number of CPU.
+  * `create_time` - The creation time of the virtual node.
+  * `eni_instance_id` - The ENI instance ID.
+  * `events` - The event list.
+    * `type` - The Event type.
+    * `count` - The number of occurrences.
+    * `first_timestamp` - The first presentation time stamp.
+    * `last_timestamp` - The most recent time stamp.
+    * `message` - The event of the message body.
+    * `name` - The name of the event.
+    * `reason` - The causes of the incident.
+  * `id` - The ID of the Virtual Node.
+  * `internet_ip` - The IP address of a public network.
+  * `intranet_ip` - The private IP address of the RDS instance.
+  * `memory` - The memory size.
+  * `ram_role_name` - The ram role.
+  * `resource_group_id` - The resource group ID.
+  * `security_group_id` - The security group ID.
+  * `status` - The Status of the virtual node.
+  * `tags` - A mapping of tags to assign to the resource.
+  * `virtual_node_id` - Of the virtual node number.
+  * `virtual_node_name` - The name of the virtual node.
+  * `vpc_id` - The ID of the VPC.
+  * `vswitch_id` - The vswitch id.
+  * `zone_id` - The Zone.

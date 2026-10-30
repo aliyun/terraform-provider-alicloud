@@ -1,14 +1,17 @@
-package alicloud
+package eci
 
 import (
 	"sort"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudEciZones() *schema.Resource {
+func DataSourceEciZones() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEciZonesRead,
 		Schema: map[string]*schema.Schema{
@@ -48,13 +51,13 @@ func dataSourceAlicloudEciZonesRead(d *schema.ResourceData, meta interface{}) er
 	var err error
 	response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eci_zones", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eci_zones", action, errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	resp, err := jsonpath.Get("$.Regions", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Regions", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Regions", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -76,12 +79,12 @@ func dataSourceAlicloudEciZonesRead(d *schema.ResourceData, meta interface{}) er
 	if len(zoneIds) > 0 {
 		sort.Strings(zoneIds)
 	}
-	d.SetId(dataResourceIdHash(zoneIds))
+	d.SetId(helper.DataResourceIdHash(zoneIds))
 	if err := d.Set("zones", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

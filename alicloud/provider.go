@@ -582,12 +582,6 @@ func Provider() *schema.Provider {
 			"alicloud_ecd_custom_properties":         dataSourceAlicloudEcdCustomProperties(),
 			"alicloud_ecd_ad_connector_office_sites": dataSourceAlicloudEcdAdConnectorOfficeSites(),
 
-			// eci
-			"alicloud_eci_image_caches":     dataSourceAlicloudEciImageCaches(),
-			"alicloud_eci_container_groups": dataSourceAlicloudEciContainerGroups(),
-			"alicloud_eci_virtual_nodes":    dataSourceAlicloudEciVirtualNodes(),
-			"alicloud_eci_zones":            dataSourceAlicloudEciZones(),
-
 			// ecp
 			"alicloud_ecp_key_pairs":      dataSourceAlicloudEcpKeyPairs(),
 			"alicloud_ecp_instances":      dataSourceAlicloudEcpInstances(),
@@ -1790,12 +1784,6 @@ func Provider() *schema.Provider {
 			"alicloud_ecd_ad_connector_directory":   resourceAlicloudEcdAdConnectorDirectory(),
 			"alicloud_ecd_custom_property":          resourceAlicloudEcdCustomProperty(),
 			"alicloud_ecd_ad_connector_office_site": resourceAlicloudEcdAdConnectorOfficeSite(),
-
-			// eci
-			"alicloud_eci_openapi_image_cache": resourceAlicloudEciImageCache(),
-			"alicloud_eci_image_cache":         resourceAlicloudEciImageCache(),
-			"alicloud_eci_container_group":     resourceAliCloudEciContainerGroup(),
-			"alicloud_eci_virtual_node":        resourceAlicloudEciVirtualNode(),
 
 			// ecp
 			"alicloud_ecp_key_pair": resourceAlicloudEcpKeyPair(),

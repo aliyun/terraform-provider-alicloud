@@ -1,44 +1,45 @@
-package alicloud
+package eci_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+func TestAccAliCloudEciContainerGroupsDataSource(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_eci_container_group.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_eci_container_group.default.id}_fake"]`,
 		}),
 	}
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_container_group.default.id}"]`,
 			"resource_group_id": `"${alicloud_eci_container_group.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_container_group.default.id}"]`,
 			"resource_group_id": `"${alicloud_eci_container_group.default.resource_group_id}_fake"`,
 		}),
 	}
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_eci_container_group.default.id}"]`,
 			"tags": `{
 				"created" = "tf"
 				"for" = "acceptance-test"
 		}`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_eci_container_group.default.id}"]`,
 			"tags": `{
 				"created" = "tf-fake"
@@ -46,26 +47,26 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 			}`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_eci_container_group.default.container_group_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_eci_container_group.default.container_group_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_eci_container_group.default.id}"]`,
 			"status": `"${alicloud_eci_container_group.default.status}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_eci_container_group.default.id}"]`,
 			"status": `"ScheduleFailed"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_container_group.default.id}"]`,
 			"name_regex":        `"${alicloud_eci_container_group.default.container_group_name}"`,
 			"resource_group_id": `"${alicloud_eci_container_group.default.resource_group_id}"`,
@@ -75,7 +76,7 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 				"for" = "acceptance-test"
 		}`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_container_group.default.id}_fake"]`,
 			"name_regex":        `"${alicloud_eci_container_group.default.container_group_name}_fake"`,
 			"resource_group_id": `"${alicloud_eci_container_group.default.resource_group_id}_fake"`,
@@ -91,11 +92,11 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 			"ids.#":                                        "1",
 			"names.#":                                      "1",
 			"groups.#":                                     "1",
-			"groups.0.id":                                  CHECKSET,
-			"groups.0.container_group_id":                  CHECKSET,
-			"groups.0.container_group_name":                CHECKSET,
+			"groups.0.id":                                  acctest.CHECKSET,
+			"groups.0.container_group_id":                  acctest.CHECKSET,
+			"groups.0.container_group_name":                acctest.CHECKSET,
 			"groups.0.containers.#":                        "1",
-			"groups.0.containers.0.image":                  fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+			"groups.0.containers.0.image":                  fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", acctest.DefaultRegionToTest),
 			"groups.0.containers.0.name":                   "nginx",
 			"groups.0.containers.0.image_pull_policy":      "IfNotPresent",
 			"groups.0.containers.0.volume_mounts.#":        "1",
@@ -106,15 +107,15 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 			"groups.0.host_aliases.#":                      "1",
 			"groups.0.init_containers.#":                   "1",
 			"groups.0.init_containers.0.name":              "init-busybox",
-			"groups.0.init_containers.0.image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
+			"groups.0.init_containers.0.image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", acctest.DefaultRegionToTest),
 			"groups.0.init_containers.0.image_pull_policy": "IfNotPresent",
 			"groups.0.memory":                              "4",
-			"groups.0.resource_group_id":                   CHECKSET,
-			"groups.0.security_group_id":                   CHECKSET,
+			"groups.0.resource_group_id":                   acctest.CHECKSET,
+			"groups.0.security_group_id":                   acctest.CHECKSET,
 			"groups.0.status":                              "Running",
-			"groups.0.vswitch_id":                          CHECKSET,
-			"groups.0.vpc_id":                              CHECKSET,
-			"groups.0.zone_id":                             CHECKSET,
+			"groups.0.vswitch_id":                          acctest.CHECKSET,
+			"groups.0.vpc_id":                              acctest.CHECKSET,
+			"groups.0.zone_id":                             acctest.CHECKSET,
 			"groups.0.volumes.#":                           "1",
 		}
 	}
@@ -124,12 +125,12 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudEciContainerGroupsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_eci_container_groups.default",
-		existMapFunc: existAlicloudEciContainerGroupsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEciContainerGroupsDataSourceNameMapFunc,
+	var alicloudEciContainerGroupsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_eci_container_groups.default",
+		ExistMapFunc: existAlicloudEciContainerGroupsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEciContainerGroupsDataSourceNameMapFunc,
 	}
-	alicloudEciContainerGroupsCheckInfo.dataSourceTestCheck(t, rand, idsConf, resourceGroupIdConf, tagsConf, nameRegexConf, statusConf, allConf)
+	alicloudEciContainerGroupsCheckInfo.DataSourceTestCheck(t, rand, idsConf, resourceGroupIdConf, tagsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEciContainerGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -213,6 +214,6 @@ data "alicloud_eci_container_groups" "default" {
 	enable_details = true
 	%s	
 }
-`, rand, defaultRegionToTest, defaultRegionToTest, strings.Join(pairs, " \n "))
+`, rand, acctest.DefaultRegionToTest, acctest.DefaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
 }

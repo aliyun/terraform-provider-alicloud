@@ -1,4 +1,4 @@
-package alicloud
+package eci
 
 import (
 	"fmt"
@@ -7,11 +7,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudEciContainerGroup() *schema.Resource {
+func ResourceEciContainerGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudEciContainerGroupCreate,
 		Read:   resourceAliCloudEciContainerGroupRead,
@@ -85,7 +90,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
 			},
 			"auto_match_image_cache": {
 				Type:     schema.TypeBool,
@@ -138,9 +143,9 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 				ForceNew:     true,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"containers": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -175,7 +180,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "IfNotPresent",
-							ValidateFunc: StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
 						},
 						"working_dir": {
 							Type:     schema.TypeString,
@@ -500,7 +505,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "IfNotPresent",
-							ValidateFunc: StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
 						},
 						"working_dir": {
 							Type:     schema.TypeString,
@@ -863,7 +868,7 @@ func resourceAliCloudEciContainerGroup() *schema.Resource {
 
 func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	var response map[string]interface{}
 	action := "CreateContainerGroup"
 	request := make(map[string]interface{})
@@ -1213,7 +1218,7 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["ZoneId"] = v
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	vswitchId := helper.Trim(d.Get("vswitch_id").(string))
 	request["VSwitchId"] = vswitchId
 
 	if v, ok := d.GetOk("image_registry_credential"); ok {
@@ -1258,12 +1263,12 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["SpotPriceLimit"] = v
 	}
 
-	request["ClientToken"] = buildClientToken("CreateContainerGroup")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateContainerGroup")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1271,17 +1276,17 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_container_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eci_container_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ContainerGroupId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudEciContainerGroupRead(d, meta)
@@ -1289,15 +1294,15 @@ func resourceAliCloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	object, err := eciService.DescribeEciContainerGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eci_openapi_container_group eciService.DescribeEciContainerGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("container_group_name", object["ContainerGroupName"])
 	d.Set("internet_ip", object["InternetIp"])
@@ -1483,7 +1488,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("containers", containers); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("cpu", object["Cpu"])
 
@@ -1541,7 +1546,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("host_aliases", hostAliases); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	initContainers := make([]map[string]interface{}, 0)
@@ -1632,7 +1637,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("init_containers", initContainers); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("instance_type", object["InstanceType"])
 	d.Set("memory", object["Memory"])
@@ -1641,7 +1646,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("restart_policy", object["RestartPolicy"])
 	d.Set("security_group_id", object["SecurityGroupId"])
 	d.Set("status", object["Status"])
-	d.Set("tags", tagsToMap(object["Tags"]))
+	d.Set("tags", tags.TagsToMap(object["Tags"]))
 	d.Set("vswitch_id", object["VSwitchId"])
 
 	volumes := make([]map[string]interface{}, 0)
@@ -1679,7 +1684,7 @@ func resourceAliCloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		}
 	}
 	if err := d.Set("volumes", volumes); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("spot_strategy", object["SpotStrategy"])
@@ -1752,7 +1757,7 @@ func getConfigFileContent(d *schema.ResourceData, name interface{}, path interfa
 
 func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	var response map[string]interface{}
 	var err error
 	update := false
@@ -2056,11 +2061,11 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 		request["InitContainer"] = InitContainers
 
 		action := "UpdateContainerGroup"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2068,15 +2073,15 @@ func resourceAliCloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -2093,11 +2098,11 @@ func resourceAliCloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 	}
 
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -2105,10 +2110,10 @@ func resourceAliCloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package eci
 
 import (
 	"fmt"
@@ -7,12 +7,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudEciVirtualNode() *schema.Resource {
+func ResourceEciVirtualNode() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudEciVirtualNodeCreate,
 		Read:   resourceAlicloudEciVirtualNodeRead,
@@ -144,12 +148,12 @@ func resourceAlicloudEciVirtualNodeCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
-	request["ClientToken"] = buildClientToken("CreateVirtualNode")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateVirtualNode")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -157,31 +161,31 @@ func resourceAlicloudEciVirtualNodeCreate(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_virtual_node", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eci_virtual_node", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["VirtualNodeId"]))
-	eciService := EciService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Ready"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eciService.EciVirtualNodeStateRefreshFunc(d.Id(), []string{}))
+	eciService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Ready"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eciService.EciVirtualNodeStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAlicloudEciVirtualNodeRead(d, meta)
 }
 func resourceAlicloudEciVirtualNodeRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	object, err := eciService.DescribeEciVirtualNode(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eci_virtual_node eciService.DescribeEciVirtualNode Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("security_group_id", object["SecurityGroupId"])
@@ -189,7 +193,7 @@ func resourceAlicloudEciVirtualNodeRead(d *schema.ResourceData, meta interface{}
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("virtual_node_name", object["VirtualNodeName"])
 	d.Set("zone_id", object["ZoneId"])
-	d.Set("tags", tagsToMap(object["Tags"]))
+	d.Set("tags", tags.TagsToMap(object["Tags"]))
 	return nil
 }
 func resourceAlicloudEciVirtualNodeUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -206,12 +210,12 @@ func resourceAlicloudEciVirtualNodeDelete(d *schema.ResourceData, meta interface
 	}
 
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("DeleteVirtualNode")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("DeleteVirtualNode")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -219,9 +223,9 @@ func resourceAlicloudEciVirtualNodeDelete(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

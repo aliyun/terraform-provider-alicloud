@@ -1,4 +1,4 @@
-package alicloud
+package eci_test
 
 import (
 	"fmt"
@@ -14,10 +14,16 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eci"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +38,7 @@ func init() {
 }
 
 func testSweepECIVirtualNode(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := eciTestClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -47,11 +53,11 @@ func testSweepECIVirtualNode(region string) error {
 	}
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -59,7 +65,7 @@ func testSweepECIVirtualNode(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -67,7 +73,7 @@ func testSweepECIVirtualNode(region string) error {
 
 		resp, err := jsonpath.Get("$.VirtualNodes", response)
 
-		totalCount, formatErr := formatInt(response["TotalCount"])
+		totalCount, formatErr := convert.FormatInt(response["TotalCount"])
 		if formatErr != nil {
 			return formatErr
 		}
@@ -97,7 +103,7 @@ func testSweepECIVirtualNode(region string) error {
 				"VirtualNodeId": item["VirtualNodeId"],
 				"RegionId":      client.RegionId,
 			}
-			request["ClientToken"] = buildClientToken("DeleteVirtualNode")
+			request["ClientToken"] = helper.BuildClientToken("DeleteVirtualNode")
 			_, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete ECI VirtualNode (%s): %s", item["VirtualNodeName"].(string), err)
@@ -121,22 +127,22 @@ func testSweepECIVirtualNode(region string) error {
 func TestAccAliCloudEciVirtualNode_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
-	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eci.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEciVirtualNode")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secivirtualnode%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECIVirtualNodeBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secivirtualnode%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudECIVirtualNodeBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "KUBE_CONFIG")
+			acctest.PreCheck(t)
+			acctest.PreCheckWithEnvVariable(t, "KUBE_CONFIG")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -162,9 +168,9 @@ func TestAccAliCloudEciVirtualNode_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
-						"vswitch_id":        CHECKSET,
-						"resource_group_id": CHECKSET,
+						"security_group_id": acctest.CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"virtual_node_name": name,
 						"tags.%":            "2",
 						"tags.Created":      "Tf1",
@@ -196,9 +202,9 @@ func TestAccAliCloudEciVirtualNode_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
-						"vswitch_id":        CHECKSET,
-						"resource_group_id": CHECKSET,
+						"security_group_id": acctest.CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"virtual_node_name": name,
 						"tags.%":            "2",
 					}),
@@ -217,22 +223,22 @@ func TestAccAliCloudEciVirtualNode_basic0(t *testing.T) {
 func TestAccAliCloudEciVirtualNode_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_virtual_node.default"
-	ra := resourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudECIVirtualNodeMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return eci.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEciVirtualNode")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secivirtualnode%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECIVirtualNodeBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secivirtualnode%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudECIVirtualNodeBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "KUBE_CONFIG")
+			acctest.PreCheck(t)
+			acctest.PreCheckWithEnvVariable(t, "KUBE_CONFIG")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -244,9 +250,9 @@ func TestAccAliCloudEciVirtualNode_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_group_id": CHECKSET,
-						"vswitch_id":        CHECKSET,
-						"resource_group_id": CHECKSET,
+						"security_group_id": acctest.CHECKSET,
+						"vswitch_id":        acctest.CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						"virtual_node_name": name,
 					}),
 				),
@@ -299,10 +305,10 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 // lintignore: R001
 func TestUnitAlicloudEciVirtualNode(t *testing.T) {
-	p := Provider().ResourcesMap
-	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
-	dInit, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(nil, nil)
+	resourceSchema := eci.ResourceEciVirtualNode()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"security_group_id": "CreateVirtualNodeValue",
@@ -333,7 +339,7 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := eciTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -366,18 +372,18 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_eci_virtual_node", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_eci_virtual_node", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -385,13 +391,13 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEciClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEciVirtualNodeCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -413,14 +419,14 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEciVirtualNodeCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -432,7 +438,7 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	}
 
 	// Update
-	err = resourceAlicloudEciVirtualNodeUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	assert.Nil(t, err)
 
 	// Read
@@ -456,7 +462,7 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEciVirtualNodeRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -469,13 +475,13 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEciClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEciVirtualNodeDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -497,7 +503,7 @@ func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEciVirtualNodeDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
