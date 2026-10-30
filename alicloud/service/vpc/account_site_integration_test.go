@@ -1,0 +1,41 @@
+package vpc_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestAccAliCloudVPC_internationalAccount(t *testing.T) {
+	var v map[string]interface{}
+	id := "alicloud_vpc.default"
+	ra := acctest.ResourceAttrInit(id, AlicloudVpcMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(id, &v, func() interface{} { return NewVpcService(testAccProvider.Meta().(*connectivity.AliyunClient)) }, "DescribeVpc")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	name := fmt.Sprintf("tf-testAcc-intl-vpc-%d", tfacctest.RandIntRange(1000000, 9999999))
+	config := func(description string) string {
+		return fmt.Sprintf(`
+provider "alicloud" {
+ region = "us-west-1"
+}
+resource "alicloud_vpc" "default" {
+ vpc_name = %q
+ cidr_block = "192.168.0.0/16"
+ description = %q
+}`, name, description)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { acctest.PreCheckWithAccountSiteType(t, acctest.IntlSite); testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{Config: config("international acceptance test"), Check: resource.TestCheckResourceAttr(id, "vpc_name", name)},
+			{ResourceName: id, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6"}},
+			{Config: config("international acceptance test updated"), Check: resource.TestCheckResourceAttr(id, "description", "international acceptance test updated")},
+		},
+	})
+}
