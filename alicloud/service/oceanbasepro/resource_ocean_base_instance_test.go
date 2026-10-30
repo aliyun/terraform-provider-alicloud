@@ -1,33 +1,35 @@
-package alicloud
+package oceanbasepro_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/oceanbasepro"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ocean_base_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OceanBaseServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return oceanbasepro.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeOceanBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOceanBaseInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudOceanBaseInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,7 +50,7 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 						"series":         "normal",
 						"auto_renew":     "false",
 						"disk_size":      "100",
-						"instance_class": CHECKSET,
+						"instance_class": acctest.CHECKSET,
 						//"resource_group_id": CHECKSET,
 						"zones.#":      "3",
 						"payment_type": "PayAsYouGo",
@@ -83,7 +85,7 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"disk_size":      "200",
-						"instance_class": CHECKSET,
+						"instance_class": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -95,7 +97,7 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"disk_size":      "100",
-						"instance_class": CHECKSET,
+						"instance_class": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -112,22 +114,22 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 func TestAccAliCloudOceanBaseInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ocean_base_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OceanBaseServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return oceanbasepro.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeOceanBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOceanBaseInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudOceanBaseInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -147,7 +149,7 @@ func TestAccAliCloudOceanBaseInstance_basic1(t *testing.T) {
 						"series":         "normal",
 						"auto_renew":     "false",
 						"disk_size":      "100",
-						"instance_class": CHECKSET,
+						"instance_class": acctest.CHECKSET,
 						//"resource_group_id": CHECKSET,
 						"zones.#":      "3",
 						"payment_type": "PayAsYouGo",
@@ -167,23 +169,23 @@ func TestAccAliCloudOceanBaseInstance_basic1(t *testing.T) {
 func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ocean_base_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OceanBaseServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return oceanbasepro.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeOceanBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOceanBaseInstanceBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudOceanBaseInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -210,7 +212,7 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 						"disk_size":      "300",
 						"disk_type":      "cloud_essd_pl1",
 						"ob_version":     "4.2.1",
-						"instance_class": CHECKSET,
+						"instance_class": acctest.CHECKSET,
 						//"resource_group_id": CHECKSET,
 						"zones.#":      "3",
 						"payment_type": "Subscription",
@@ -228,12 +230,12 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 }
 
 var AlicloudOceanBaseInstanceMap0 = map[string]string{
-	"status":  CHECKSET,
-	"zones.#": CHECKSET,
+	"status":  acctest.CHECKSET,
+	"zones.#": acctest.CHECKSET,
 }
 
 func AlicloudOceanBaseInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -251,22 +253,22 @@ data "alicloud_resource_manager_resource_groups" "default"{}
 func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ocean_base_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap7602)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &OceanBaseServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudOceanBaseInstanceMap7602)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return oceanbasepro.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeOceanBaseInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%soceanbaseinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOceanBaseInstanceBasicDependence7602)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soceanbaseinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudOceanBaseInstanceBasicDependence7602)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -286,7 +288,7 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":   CHECKSET,
+						"instance_class":   acctest.CHECKSET,
 						"zones.#":          "2",
 						"instance_name":    name,
 						"disk_type":        "cloud_essd_pl1",
@@ -296,8 +298,8 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 						"ob_version":       "4.2.1",
 						"node_num":         "3",
 						"cpu_arch":         "X86",
-						"primary_region":   CHECKSET,
-						"primary_instance": CHECKSET,
+						"primary_region":   acctest.CHECKSET,
+						"primary_instance": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -310,7 +312,7 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":      CHECKSET,
+						"instance_class":      acctest.CHECKSET,
 						"instance_name":       name + "_update",
 						"disk_size":           "200",
 						"upgrade_spec_native": "true",
@@ -339,7 +341,7 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 					testAccCheck(map[string]string{
 						"instance_name":  name + "_update",
 						"disk_size":      "100",
-						"instance_class": CHECKSET,
+						"instance_class": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -354,14 +356,14 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 }
 
 var AlicloudOceanBaseInstanceMap7602 = map[string]string{
-	"node_num":       CHECKSET,
-	"cpu":            CHECKSET,
-	"disk_type":      CHECKSET,
-	"commodity_code": CHECKSET,
-	"ob_version":     CHECKSET,
-	"status":         CHECKSET,
-	"create_time":    CHECKSET,
-	"instance_name":  CHECKSET,
+	"node_num":       acctest.CHECKSET,
+	"cpu":            acctest.CHECKSET,
+	"disk_type":      acctest.CHECKSET,
+	"commodity_code": acctest.CHECKSET,
+	"ob_version":     acctest.CHECKSET,
+	"status":         acctest.CHECKSET,
+	"create_time":    acctest.CHECKSET,
+	"instance_name":  acctest.CHECKSET,
 }
 
 func AlicloudOceanBaseInstanceBasicDependence7602(name string) string {

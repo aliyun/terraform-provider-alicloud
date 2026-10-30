@@ -1,83 +1,84 @@
-package alicloud
+package oceanbasepro_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudOceanBaseInstancesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(100, 999)
-	checkoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(100, 999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.OceanBaseSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ocean_base_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ocean_base_instance.default.id}_fake"]`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_ocean_base_instance.default.id}"]`,
 			"status": `"${alicloud_ocean_base_instance.default.status}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_ocean_base_instance.default.id}"]`,
 			"status": `"PREPAID_EXPIRE_CLOSED"`,
 		}),
 	}
-	instanceIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	instanceIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_ocean_base_instance.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_ocean_base_instance.default.id}_fake"`,
 		}),
 	}
-	instanceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	instanceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_ocean_base_instance.default.id}"]`,
 			"instance_name": `"${alicloud_ocean_base_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_ocean_base_instance.default.id}"]`,
 			"instance_name": `"${alicloud_ocean_base_instance.default.instance_name}_fake"`,
 		}),
 	}
-	searchKeyConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	searchKeyConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_ocean_base_instance.default.id}"]`,
 			"search_key": `"${alicloud_ocean_base_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_ocean_base_instance.default.id}"]`,
 			"search_key": `"${alicloud_ocean_base_instance.default.instance_name}_fake"`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_ocean_base_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_ocean_base_instance.default.instance_name}_fake"`,
 		}),
 	}
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ocean_base_instance.default.id}"]`,
 			"resource_group_id": `"${alicloud_ocean_base_instance.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ocean_base_instance.default.id}"]`,
 			"resource_group_id": `"${alicloud_ocean_base_instance.default.resource_group_id}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ocean_base_instance.default.id}"]`,
 			"instance_id":       `"${alicloud_ocean_base_instance.default.id}"`,
 			"instance_name":     `"${alicloud_ocean_base_instance.default.instance_name}"`,
@@ -86,7 +87,7 @@ func TestAccAlicloudOceanBaseInstancesDataSource(t *testing.T) {
 			"status":            `"${alicloud_ocean_base_instance.default.status}"`,
 			"search_key":        `"${alicloud_ocean_base_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ocean_base_instance.default.id}_fake"]`,
 			"instance_id":       `"${alicloud_ocean_base_instance.default.id}_fake"`,
 			"instance_name":     `"${alicloud_ocean_base_instance.default.instance_name}_fake"`,
@@ -101,16 +102,16 @@ func TestAccAlicloudOceanBaseInstancesDataSource(t *testing.T) {
 			"ids.#":                         "1",
 			"names.#":                       "1",
 			"instances.#":                   "1",
-			"instances.0.id":                CHECKSET,
-			"instances.0.commodity_code":    CHECKSET,
-			"instances.0.create_time":       CHECKSET,
-			"instances.0.cpu":               CHECKSET,
+			"instances.0.id":                acctest.CHECKSET,
+			"instances.0.commodity_code":    acctest.CHECKSET,
+			"instances.0.create_time":       acctest.CHECKSET,
+			"instances.0.cpu":               acctest.CHECKSET,
 			"instances.0.disk_size":         "100",
 			"instances.0.instance_class":    "8C32GB",
-			"instances.0.instance_id":       CHECKSET,
-			"instances.0.instance_name":     CHECKSET,
+			"instances.0.instance_id":       acctest.CHECKSET,
+			"instances.0.instance_name":     acctest.CHECKSET,
 			"instances.0.payment_type":      "PayAsYouGo",
-			"instances.0.resource_group_id": CHECKSET,
+			"instances.0.resource_group_id": acctest.CHECKSET,
 			"instances.0.series":            "normal",
 			"instances.0.status":            "ONLINE",
 			"instances.0.zones.#":           "3",
@@ -124,16 +125,16 @@ func TestAccAlicloudOceanBaseInstancesDataSource(t *testing.T) {
 			"instances.#": "0",
 		}
 	}
-	var alicloudOceanBaseInstancesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ocean_base_instances.default",
-		existMapFunc: existAlicloudOceanBaseInstancesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudOceanBaseInstancesDataSourceNameMapFunc,
+	var alicloudOceanBaseInstancesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ocean_base_instances.default",
+		ExistMapFunc: existAlicloudOceanBaseInstancesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudOceanBaseInstancesDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudOceanBaseInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, instanceIdConf, instanceNameConf, searchKeyConf, nameRegexConf, resourceGroupIdConf, allConf)
+	alicloudOceanBaseInstancesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, instanceIdConf, instanceNameConf, searchKeyConf, nameRegexConf, resourceGroupIdConf, allConf)
 }
 func testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -143,7 +144,7 @@ func testAccCheckAlicloudOceanBaseInstancesDataSourceName(rand int, attrMap map[
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testacc-%d"
 }
 
@@ -160,7 +161,7 @@ resource "alicloud_ocean_base_instance" "default" {
 
 data "alicloud_ocean_base_instances" "default" {
 enable_details = true
-	%s	
+	%s
 }
 `, rand, strings.Join(pairs, " \n "))
 	return config

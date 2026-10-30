@@ -1,4 +1,4 @@
-package alicloud
+package oceanbasepro
 
 import (
 	"fmt"
@@ -9,11 +9,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudOceanBaseInstance() *schema.Resource {
+func ResourceAliCloudOceanBaseInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudOceanBaseInstanceCreate,
 		Read:   resourceAliCloudOceanBaseInstanceRead,
@@ -31,17 +36,17 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 			"auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
 			},
 			"backup_retain_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"receive_all", "delete_all", "receive_last"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"receive_all", "delete_all", "receive_last"}, false),
 			},
 			"commodity_code": {
 				Type:     schema.TypeString,
@@ -56,7 +61,7 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ARM", "X86"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ARM", "X86"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -65,14 +70,14 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 			"disk_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntBetween(50, 10000),
+				ValidateFunc: validators.IntBetween(50, 10000),
 			},
 			"disk_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_essd_pl1", "cloud_essd_pl0"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cloud_essd_pl1", "cloud_essd_pl0"}, false),
 			},
 			"instance_class": {
 				Type:     schema.TypeString,
@@ -107,19 +112,19 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
 			"period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
-				ValidateFunc:     IntInSlice([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 48, 60}),
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
+				ValidateFunc:     validators.IntInSlice([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 48, 60}),
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
-				ValidateFunc:     StringInSlice([]string{"Month", "Hour"}, false),
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
+				ValidateFunc:     validators.StringInSlice([]string{"Month", "Hour"}, false),
 			},
 			"primary_instance": {
 				Type:     schema.TypeString,
@@ -141,7 +146,7 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"normal", "normal_ssd", "history", "normal_kv", "normal_hg"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"normal", "normal_ssd", "history", "normal_kv", "normal_hg"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -196,7 +201,7 @@ func resourceAliCloudOceanBaseInstanceCreate(d *schema.ResourceData, meta interf
 	request["ChargeType"] = convertOceanBaseInstanceChargeTypeRequest(d.Get("payment_type").(string))
 	jsonPathResult10, err := jsonpath.Get("$", d.Get("zones"))
 	if err == nil {
-		request["Zones"] = convertListToCommaSeparate(jsonPathResult10.(*schema.Set).List())
+		request["Zones"] = convert.ConvertListToCommaSeparate(jsonPathResult10.(*schema.Set).List())
 	}
 
 	if v, ok := d.GetOk("ob_version"); ok {
@@ -214,31 +219,31 @@ func resourceAliCloudOceanBaseInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("cpu_arch"); ok {
 		request["CpuArch"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ocean_base_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ocean_base_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.InstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	oceanBaseServiceV2 := OceanBaseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ONLINE"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	oceanBaseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ONLINE"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudOceanBaseInstanceUpdate(d, meta)
@@ -246,16 +251,16 @@ func resourceAliCloudOceanBaseInstanceCreate(d *schema.ResourceData, meta interf
 
 func resourceAliCloudOceanBaseInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	oceanBaseServiceV2 := OceanBaseServiceV2{client}
+	oceanBaseServiceV2 := NewService(client)
 
 	objectRaw, err := oceanBaseServiceV2.DescribeOceanBaseInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ocean_base_instance DescribeOceanBaseInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CpuArchitecture"] != nil {
@@ -307,14 +312,14 @@ func resourceAliCloudOceanBaseInstanceRead(d *schema.ResourceData, meta interfac
 
 	objectRaw, err = oceanBaseServiceV2.DescribeDescribeInstances(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CommodityCode"] != nil {
 		d.Set("commodity_code", objectRaw["CommodityCode"])
 	}
 	if objectRaw["Cpu"] != nil {
-		cpuVal, err := formatInt(objectRaw["Cpu"])
+		cpuVal, err := convert.FormatInt(objectRaw["Cpu"])
 		if err != nil {
 			return err
 		}
@@ -348,21 +353,21 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	request["InstanceName"] = d.Get("instance_name")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -371,33 +376,33 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 
-	oceanBaseServiceV2 := OceanBaseServiceV2{client}
+	oceanBaseServiceV2 := NewService(client)
 	objectRaw, err := oceanBaseServiceV2.DescribeOceanBaseInstance(d.Id())
 	if d.HasChange("node_num") && fmt.Sprint(objectRaw["NodeNum"]) != d.Get("node_num") {
 		update = true
 	}
 	request["NodeNum"] = d.Get("node_num")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Instance.Order.CreateFailed"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"Instance.Order.CreateFailed"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		oceanBaseServiceV2 := OceanBaseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ONLINE"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		oceanBaseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ONLINE"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -418,26 +423,26 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 		request["UpgradeSpecNative"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Instance.Order.CreateFailed"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"Instance.Order.CreateFailed"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		oceanBaseServiceV2 := OceanBaseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ONLINE"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		oceanBaseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ONLINE"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -448,7 +453,7 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 func resourceAliCloudOceanBaseInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("payment_type"); ok && fmt.Sprint(v) == "Subscription" {
-		return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+		return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 	}
 
 	client := meta.(*connectivity.AliyunClient)
@@ -463,32 +468,32 @@ func resourceAliCloudOceanBaseInstanceDelete(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("backup_retain_mode"); ok {
 		request["BackupRetainMode"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("OceanBasePro", "2019-09-01", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"UnknownError", "IllegalOperation.Resource"}) {
+		if errs.IsExpectedErrors(err, []string{"UnknownError", "IllegalOperation.Resource"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	oceanBaseServiceV2 := OceanBaseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 20*time.Second, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	oceanBaseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 20*time.Second, oceanBaseServiceV2.OceanBaseInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
@@ -550,4 +555,20 @@ func convertOceanBaseInstanceSeriesResponse(source interface{}) interface{} {
 		return "history"
 	}
 	return source
+}
+
+// postPaidDiffSuppressFunc is the package-local copy of the root-package
+// PostPaidDiffSuppressFunc (diff_suppress_funcs.go). Resource-specific
+// suppressors migrate into the owning product package; the root copy stays for
+// its remaining consumers. Body migrated verbatim.
+func postPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	// payment_type is the instance_charge_type's replacement.
+	// If both instance_charge_type and payment_type are "", it means hiding a default "PostPaid"
+	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "prepaid" {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+		return false
+	}
+	return true
 }
