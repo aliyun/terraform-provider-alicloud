@@ -519,11 +519,6 @@ func Provider() *schema.Provider {
 			"alicloud_ecs_elasticity_assurances":         dataSourceAlicloudEcsElasticityAssurances(),
 
 			// edas
-			"alicloud_edas_service":       dataSourceAlicloudEdasService(),
-			"alicloud_edas_applications":  dataSourceAlicloudEdasApplications(),
-			"alicloud_edas_deploy_groups": dataSourceAlicloudEdasDeployGroups(),
-			"alicloud_edas_clusters":      dataSourceAlicloudEdasClusters(),
-			"alicloud_edas_namespaces":    dataSourceAlicloudEdasNamespaces(),
 
 			// eflo
 			"alicloud_eflo_vpds":    dataSourceAlicloudEfloVpds(),
@@ -1465,17 +1460,6 @@ func Provider() *schema.Provider {
 			"alicloud_ecs_elasticity_assurance":            resourceAliCloudEcsElasticityAssurance(),
 
 			// edas
-			"alicloud_edas_application":                 resourceAlicloudEdasApplication(),
-			"alicloud_edas_deploy_group":                resourceAlicloudEdasDeployGroup(),
-			"alicloud_edas_application_scale":           resourceAlicloudEdasApplicationScale(),
-			"alicloud_edas_slb_attachment":              resourceAlicloudEdasSlbAttachment(),
-			"alicloud_edas_cluster":                     resourceAlicloudEdasCluster(),
-			"alicloud_edas_instance_cluster_attachment": resourceAlicloudEdasInstanceClusterAttachment(),
-			"alicloud_edas_application_deployment":      resourceAlicloudEdasApplicationPackageAttachment(),
-			"alicloud_edas_k8s_cluster":                 resourceAlicloudEdasK8sCluster(),
-			"alicloud_edas_k8s_application":             resourceAlicloudEdasK8sApplication(),
-			"alicloud_edas_k8s_slb_attachment":          resourceAlicloudEdasK8sSlbAttachment(),
-			"alicloud_edas_namespace":                   resourceAlicloudEdasNamespace(),
 
 			// eflo
 			"alicloud_eflo_hyper_node":               resourceAliCloudEfloHyperNode(),
