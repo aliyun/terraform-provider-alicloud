@@ -205,7 +205,12 @@ The following attributes are exported in addition to the arguments listed above:
     * `security_context_read_only_root_file_system` - Whether the root file system is read-only.
     * `security_context_run_as_user` - UID to run the container as.
     * `ports` - Ports exposed by the init container.
+      * `port` - Port number.
+      * `protocol` - Protocol of the port.
     * `environment_vars` - Environment variables.
+      * `key` - Name of the environment variable.
+      * `value` - Value of the environment variable.
+      * `field_ref_field_path` - Field reference path.
     * `working_dir` - Working directory.
     * `args` - Arguments passed to the init container.
     * `cpu` - CPU size.
@@ -215,6 +220,11 @@ The following attributes are exported in addition to the arguments listed above:
     * `image` - Init container image.
     * `image_pull_policy` - Image pull policy.
     * `volume_mounts` - Volume mounts.
+      * `mount_path` - Path where the volume is mounted.
+      * `mount_propagation` - Mount propagation mode.
+      * `sub_path` - Subpath within the volume.
+      * `name` - Name of the volume.
+      * `read_only` - Whether the mount is read-only.
     * `commands` - Commands run by the init container.
   * `volumes` - Volumes in the container group.
     * `config_file_volume_config_file_to_paths` - Files mounted from a config file volume.
