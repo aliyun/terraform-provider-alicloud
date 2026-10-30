@@ -177,7 +177,6 @@ func Provider() *schema.Provider {
 			"alicloud_account": dataSourceAlicloudAccount(),
 
 			// ack
-			"alicloud_ack_service": dataSourceAlicloudAckService(),
 
 			// adb
 			"alicloud_adb_clusters":                 dataSourceAlicloudAdbDbClusters(),
@@ -439,17 +438,6 @@ func Provider() *schema.Provider {
 			"alicloud_cr_vpc_endpoint_linked_vpcs":    dataSourceAlicloudCrVpcEndpointLinkedVpcs(),
 
 			// cs
-			"alicloud_cs_clusters":                       dataSourceAliCloudAckClusters(),
-			"alicloud_cs_kubernetes_node_pools":          dataSourceAliCloudAckNodepools(),
-			"alicloud_cs_kubernetes_clusters":            dataSourceAlicloudCSKubernetesClusters(),
-			"alicloud_cs_managed_kubernetes_clusters":    dataSourceAlicloudCSManagerKubernetesClusters(),
-			"alicloud_cs_edge_kubernetes_clusters":       dataSourceAlicloudCSEdgeKubernetesClusters(),
-			"alicloud_cs_serverless_kubernetes_clusters": dataSourceAlicloudCSServerlessKubernetesClusters(),
-			"alicloud_cs_kubernetes_permissions":         dataSourceAlicloudCSKubernetesPermissions(),
-			"alicloud_cs_kubernetes_addons":              dataSourceAlicloudCSKubernetesAddons(),
-			"alicloud_cs_kubernetes_version":             dataSourceAlicloudCSKubernetesVersion(),
-			"alicloud_cs_kubernetes_addon_metadata":      dataSourceAlicloudCSKubernetesAddonMetadata(),
-			"alicloud_cs_cluster_credential":             dataSourceAlicloudCSClusterCredential(),
 
 			// das
 			"alicloud_das_sql_log_configs": dataSourceAliCloudDasSqlLogConfigs(),
@@ -1589,16 +1577,6 @@ func Provider() *schema.Provider {
 			"alicloud_cr_vpc_endpoint_linked_vpc":     resourceAlicloudCrVpcEndpointLinkedVpc(),
 
 			// cs
-			"alicloud_cs_kubernetes_policy_instance": resourceAliCloudCSKubernetesPolicyInstance(),
-			"alicloud_cs_kubernetes":                 resourceAlicloudCSKubernetes(),
-			"alicloud_cs_kubernetes_addon":           resourceAlicloudCSKubernetesAddon(),
-			"alicloud_cs_managed_kubernetes":         resourceAlicloudCSManagedKubernetes(),
-			"alicloud_cs_edge_kubernetes":            resourceAlicloudCSEdgeKubernetes(),
-			"alicloud_cs_serverless_kubernetes":      resourceAlicloudCSServerlessKubernetes(),
-			"alicloud_cs_kubernetes_autoscaler":      resourceAlicloudCSKubernetesAutoscaler(),
-			"alicloud_cs_kubernetes_node_pool":       resourceAliCloudAckNodepool(),
-			"alicloud_cs_kubernetes_permissions":     resourceAlicloudCSKubernetesPermissions(),
-			"alicloud_cs_autoscaling_config":         resourceAlicloudCSAutoscalingConfig(),
 
 			// das
 			"alicloud_das_sql_log_config": resourceAliCloudDasSqlLogConfig(),

@@ -206,45 +206,9 @@ Computed params:
 
 Removed params:
 
-* `master_instance_type` - (Removed) The instance type of master node.
-* `worker_instance_type` - (Removed) The instance type of worker node.
-* `vswitch_id` - (Removed) The vswitch where new kubernetes cluster will be located. If it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
-* `vswitch_ids` - (Removed) The vswitch where new kubernetes cluster will be located. Specify one or more vswitch's id. It must be in the zone which `availability_zone` specified.
-* `force_update` - (Removed) Whether to force the update of kubernetes cluster arguments. Default to false.
-* `log_config` - (Removed) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
-* `cluster_network_type` - (Removed) The network that cluster uses, use `flannel` or `terway`.
-* `worker_data_disk_category` - (Removed) The data disk category of worker, use `worker_data_disks` to instead it.
-* `worker_data_disk_size` - (Removed) The data disk size of worker, use `worker_data_disks` to instead it.
-* `worker_numbers` - (Removed) The number of workers, use `worker_number` to instead it.
-* `nodes` - (Removed) The master nodes, use `master_nodes` to instead it.
-* `exclude_autoscaler_nodes` - (Removed since v1.212.0) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
-* `kube_config` - (Removed since v1.212.0) The path of kube config, like ~/.kube/config. Please use the attribute [output_file](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_cluster_credential#output_file) of new DataSource `alicloud_cs_cluster_credential` to replace it.
-* `availability_zone` - (Removed since v1.212.0) The Zone where new kubernetes cluster will be located. If it is not be specified, the `vswitch_ids` should be set, its value will be vswitch's zone.
-* `worker_number` - (Removed since v1.212.0) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `worker_vswitch_ids` - (Removed since v1.212.0) The vswitches used by workers.
-* `worker_instance_types` - (Removed since v1.212.0) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
-* `worker_instance_charge_type` - (Removed since v1.212.0) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required, default is `PostPaid`.
-* `worker_period` - (Removed since v1.212.0) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
-* `worker_period_unit` - (Removed since v1.212.0) Worker payment period unit, the valid value is `Month`.
-* `worker_auto_renew` - (Removed since v1.212.0) Enable worker payment auto-renew, defaults to false.
-* `worker_auto_renew_period` - (Removed since v1.212.0) Worker payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
-* `worker_disk_category` - (Removed since v1.212.0) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Removed since v1.212.0) The system disk size of worker node. Its valid value range [40~500] in GB.
-* `worker_data_disks` - (Removed since v1.212.0) The data disk configurations of worker nodes, such as the disk type and disk size. See [`worker_data_disks`](#worker_data_disks) below.
-* `node_port_range`- (Removed since v1.212.0) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
-* `cpu_policy` - (Removed since v1.212.0) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
-* `user_data` - (Removed since v1.212.0) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
-* `taints` - (Removed since v1.212.0) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
-* `worker_disk_performance_level` - (Removed since v1.212.0) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `worker_disk_snapshot_policy_id` - (Removed since v1.212.0) Worker node system disk auto snapshot policy.
+The following parameters have been removed from the resource. Use `alicloud_cs_kubernetes_node_pool` to manage worker nodes instead.
 
-### `taints`
-
-The taints supports the following:
-
-* `key` - (Optional) The key of a taint.
-* `value` - (Optional) The key of a taint.
-* `effect` - (Optional) The scheduling policy. Valid values: NoSchedule | NoExecute | PreferNoSchedule. Default value: NoSchedule.
+`master_instance_type`, `worker_instance_type`, `vswitch_id`, `vswitch_ids`, `force_update`, `log_config`, `cluster_network_type`, `worker_data_disk_category`, `worker_data_disk_size`, `worker_numbers`, `nodes`, `exclude_autoscaler_nodes`, `kube_config`, `availability_zone`, `worker_number`, `worker_vswitch_ids`, `worker_instance_types`, `worker_instance_charge_type`, `worker_period`, `worker_period_unit`, `worker_auto_renew`, `worker_auto_renew_period`, `worker_disk_category`, `worker_disk_size`, `worker_data_disks`, `node_port_range`, `cpu_policy`, `user_data`, `taints`, `worker_disk_performance_level`, `worker_disk_snapshot_policy_id`
 
 ### `addons`
 
@@ -267,27 +231,6 @@ addons {
   # config = "{\"IngressSlbNetworkType\":\"intranet",\"IngressSlbSpec\":\"slb.s2.small\"}"
 }
 ```
-
-### `worker_data_disks`
-
-The worker_data_disks supports the following:
-
-* `category` - (Optional) The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-* `size` - (Optional) The size of a data disk, Its valid value range [40~32768] in GB. Unit: GiB.
-* `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false.
-* `performance_level` - (Optional, Available since v1.120.0) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `auto_snapshot_policy_id` - (Optional, Available since v1.120.0) Worker node data disk auto snapshot policy.
-* `snapshot_id` - (Optional) The id of snapshot.
-* `kms_key_id` - (Optional) The id of the kms key.
-* `name` - (Optional) The name of the data disks.
-* `device` - (Optional) The device of the data disks.
-
-### `log_config`
-
-The log_config supports the following:
-
-* `type` - (Required) Type of collecting logs, only `SLS` are supported currently.
-* `project` - (Optional) Log Service project name, cluster logs will output to this project.
 
 ### `runtime`
 
@@ -361,7 +304,6 @@ The following attributes are exported:
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 * `slb_id` - The ID of APIServer load balancer.
 * `master_nodes` - (Optional) The master nodes. See [`master_nodes`](#master_nodes) below.
-* `worker_nodes` - (Removed since v1.212.0) List of cluster worker nodes. See [`worker_nodes`](#worker_nodes) below.
 
 ### `master_nodes`
 
@@ -370,14 +312,6 @@ The master_nodes supports the following:
 * `id` - (Optional) The id of a node.
 * `name` - (Optional) The name of a node.
 * `private_ip` - (Optional) The private ip of a node.
-
-### `worker_nodes`
-
-The worker_nodes supports the following:
-
-* `id` - ID of the node.
-* `name` - Node name.
-* `private_ip` - The private IP address of node.
 
 ## Timeouts
 

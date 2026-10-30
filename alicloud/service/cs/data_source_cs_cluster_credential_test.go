@@ -1,0 +1,103 @@
+package cs_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAliCloudCSClusterCredentialDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_cs_cluster_credential.default"
+
+	testAccConfigInternet := acctest.DataSourceTestAccConfigFunc(
+		resourceId,
+		fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+		dataSourceCSClusterCredentialConfigDependence_Internet,
+	)
+
+	idConfig := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfigInternet(map[string]interface{}{
+			"cluster_id":                 "${alicloud_cs_managed_kubernetes.default.id}",
+			"temporary_duration_minutes": "60",
+		}),
+		FakeConfig: testAccConfigInternet(map[string]interface{}{
+			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
+		}),
+	}
+
+	var existCSClusterCredentialMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"cluster_id":                           acctest.CHECKSET,
+			"cluster_name":                         acctest.REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+			"kube_config":                          acctest.CHECKSET,
+			"certificate_authority.0.cluster_cert": acctest.CHECKSET,
+			"certificate_authority.0.client_cert":  acctest.CHECKSET,
+			"certificate_authority.0.client_key":   acctest.CHECKSET,
+			"expiration":                           acctest.CHECKSET,
+		}
+	}
+
+	var fakeCSClusterCredentialMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"cluster_id":                           acctest.CHECKSET,
+			"cluster_name":                         acctest.REGEXMATCH + fmt.Sprintf("tf-testaccinternetk8s-%d", rand),
+			"kube_config":                          acctest.CHECKSET,
+			"certificate_authority.0.cluster_cert": acctest.CHECKSET,
+			"certificate_authority.0.client_cert":  acctest.CHECKSET,
+			"certificate_authority.0.client_key":   acctest.CHECKSET,
+			"expiration":                           acctest.CHECKSET,
+		}
+	}
+
+	var csClusterAuthCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existCSClusterCredentialMapFunc,
+		FakeMapFunc:  fakeCSClusterCredentialMapFunc,
+	}
+	preCheck := func() {
+		acctest.PreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
+	}
+	csClusterAuthCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idConfig)
+}
+
+func dataSourceCSClusterCredentialConfigDependence_Internet(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" default {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id            = alicloud_vpc.default.id
+  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = alicloud_vswitch.vswitch.id
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name                 = var.name
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [local.vswitch_id]
+  new_nat_gateway      = false
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
+  service_cidr         = cidrsubnet("172.18.0.0/16", 4, 7)
+  slb_internet_enabled = true
+}
+`, name)
+}
