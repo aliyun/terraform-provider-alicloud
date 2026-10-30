@@ -1,35 +1,39 @@
-package alicloud
+// Package adb_test.
+package adb_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/adb"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// collection-order: bypass account_privileges.privileges -- pre-existing stock TypeList nested in the account_privileges TypeSet; schema byte-for-byte unchanged by this pure-move migration (verified against base 0f634b284), not added or changed by this PR.
 // Test Adb LakeAccount. >>> Resource test cases, automatically generated.
 // Case 湖仓账号测试用例 5218
 func TestAccAliCloudAdbLakeAccount_basic5218(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_lake_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbLakeAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccadb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,7 +44,7 @@ func TestAccAliCloudAdbLakeAccount_basic5218(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id": CHECKSET,
+						"db_cluster_id": acctest.CHECKSET,
 						"account_type":  "Super",
 						"account_name":  "tf_account_name_supper",
 					}),
@@ -131,22 +135,22 @@ func TestAccAliCloudAdbLakeAccount_basic5218(t *testing.T) {
 func TestAccAliCloudAdbLakeAccount_basic5218_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_lake_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbLakeAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccadb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -194,7 +198,7 @@ func TestAccAliCloudAdbLakeAccount_basic5218_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id":        CHECKSET,
+						"db_cluster_id":        acctest.CHECKSET,
 						"account_type":         "Super",
 						"account_name":         "tf_account_name_supper",
 						"account_description":  name,
@@ -216,22 +220,22 @@ func TestAccAliCloudAdbLakeAccount_basic5218_twin(t *testing.T) {
 func TestAccAliCloudAdbLakeAccount_basic5220(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_lake_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbLakeAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccadb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -242,7 +246,7 @@ func TestAccAliCloudAdbLakeAccount_basic5220(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id": CHECKSET,
+						"db_cluster_id": acctest.CHECKSET,
 						"account_type":  "Normal",
 						"account_name":  "tf_account_name_normal",
 					}),
@@ -333,22 +337,22 @@ func TestAccAliCloudAdbLakeAccount_basic5220(t *testing.T) {
 func TestAccAliCloudAdbLakeAccount_basic5220_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_lake_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbLakeAccountMap5218)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbLakeAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccadb%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbLakeAccountBasicDependence5218)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -396,7 +400,7 @@ func TestAccAliCloudAdbLakeAccount_basic5220_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id":        CHECKSET,
+						"db_cluster_id":        acctest.CHECKSET,
 						"account_type":         "Normal",
 						"account_name":         "tf_account_name_normal",
 						"account_description":  name,
@@ -416,7 +420,7 @@ func TestAccAliCloudAdbLakeAccount_basic5220_twin(t *testing.T) {
 }
 
 var AliCloudAdbLakeAccountMap5218 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AliCloudAdbLakeAccountBasicDependence5218(name string) string {

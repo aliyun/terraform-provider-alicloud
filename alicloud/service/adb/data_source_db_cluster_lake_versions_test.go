@@ -1,52 +1,54 @@
-package alicloud
+// Package adb_test.
+package adb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudAdbDbClusterLakeVersionsDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+func TestAccAliCloudAdbDbClusterLakeVersionsDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_adb_db_cluster_lake_version.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_adb_db_cluster_lake_version.default.id}_fake"]`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_adb_db_cluster_lake_version.default.id}"]`,
 			"status": `"${alicloud_adb_db_cluster_lake_version.default.status}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_adb_db_cluster_lake_version.default.id}_fake"]`,
 			"status": `"Deleting"`,
 		}),
 	}
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_adb_db_cluster_lake_version.default.id}"]`,
 			"resource_group_id": `"${alicloud_adb_db_cluster_lake_version.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_adb_db_cluster_lake_version.default.id}_fake"]`,
 			"resource_group_id": `"${alicloud_adb_db_cluster_lake_version.default.resource_group_id}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_adb_db_cluster_lake_version.default.id}"]`,
 			"status":            `"${alicloud_adb_db_cluster_lake_version.default.status}"`,
 			"resource_group_id": `"${alicloud_adb_db_cluster_lake_version.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_adb_db_cluster_lake_version.default.id}_fake"]`,
 			"status":            `"Deleting"`,
 			"resource_group_id": `"${alicloud_adb_db_cluster_lake_version.default.resource_group_id}_fake"`,
@@ -56,27 +58,27 @@ func TestAccAlicloudAdbDbClusterLakeVersionsDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                         "1",
 			"versions.#":                    "1",
-			"versions.0.id":                 CHECKSET,
-			"versions.0.db_cluster_id":      CHECKSET,
-			"versions.0.commodity_code":     CHECKSET,
-			"versions.0.connection_string":  CHECKSET,
+			"versions.0.id":                 acctest.CHECKSET,
+			"versions.0.db_cluster_id":      acctest.CHECKSET,
+			"versions.0.commodity_code":     acctest.CHECKSET,
+			"versions.0.connection_string":  acctest.CHECKSET,
 			"versions.0.expire_time":        "",
 			"versions.0.compute_resource":   "16ACU",
 			"versions.0.db_cluster_version": "5.0",
 			"versions.0.payment_type":       "PayAsYouGo",
 			"versions.0.storage_resource":   "0ACU",
-			"versions.0.status":             CHECKSET,
-			"versions.0.vswitch_id":         CHECKSET,
-			"versions.0.vpc_id":             CHECKSET,
-			"versions.0.zone_id":            CHECKSET,
-			"versions.0.resource_group_id":  CHECKSET,
-			"versions.0.engine_version":     CHECKSET,
-			"versions.0.engine":             CHECKSET,
-			"versions.0.create_time":        CHECKSET,
+			"versions.0.status":             acctest.CHECKSET,
+			"versions.0.vswitch_id":         acctest.CHECKSET,
+			"versions.0.vpc_id":             acctest.CHECKSET,
+			"versions.0.zone_id":            acctest.CHECKSET,
+			"versions.0.resource_group_id":  acctest.CHECKSET,
+			"versions.0.engine_version":     acctest.CHECKSET,
+			"versions.0.engine":             acctest.CHECKSET,
+			"versions.0.create_time":        acctest.CHECKSET,
 			"versions.0.expired":            "",
-			"versions.0.lock_mode":          CHECKSET,
+			"versions.0.lock_mode":          acctest.CHECKSET,
 			"versions.0.lock_reason":        "",
-			"versions.0.port":               CHECKSET,
+			"versions.0.port":               acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudAdbDbClusterLakeVersionsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -84,16 +86,16 @@ func TestAccAlicloudAdbDbClusterLakeVersionsDataSource(t *testing.T) {
 			"ids.#": "0",
 		}
 	}
-	var alicloudAdbDbClusterLakeVersionsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_adb_db_cluster_lake_versions.default",
-		existMapFunc: existAlicloudAdbDbClusterLakeVersionsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudAdbDbClusterLakeVersionsDataSourceNameMapFunc,
+	var alicloudAdbDbClusterLakeVersionsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_adb_db_cluster_lake_versions.default",
+		ExistMapFunc: existAlicloudAdbDbClusterLakeVersionsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudAdbDbClusterLakeVersionsDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudAdbDbClusterLakeVersionsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, resourceGroupIdConf, allConf)
+	alicloudAdbDbClusterLakeVersionsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, statusConf, resourceGroupIdConf, allConf)
 }
 func testAccCheckAlicloudAdbDbClusterLakeVersionsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

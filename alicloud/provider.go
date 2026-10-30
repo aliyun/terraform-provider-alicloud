@@ -180,12 +180,8 @@ func Provider() *schema.Provider {
 			// ack
 			"alicloud_ack_service": dataSourceAlicloudAckService(),
 
-			// adb
-			"alicloud_adb_clusters":                 dataSourceAlicloudAdbDbClusters(),
-			"alicloud_adb_zones":                    dataSourceAlicloudAdbZones(),
-			"alicloud_adb_db_clusters":              dataSourceAlicloudAdbDbClusters(),
-			"alicloud_adb_db_cluster_lake_versions": dataSourceAlicloudAdbDbClusterLakeVersions(),
-			"alicloud_adb_resource_groups":          dataSourceAlicloudAdbResourceGroups(),
+			// adb resources and data sources are registered via service/adb.ServicePackage()
+			// (provider/registry); see alicloud/service/adb/register.go.
 
 			// alb
 			"alicloud_alb_security_policies":        dataSourceAlicloudAlbSecurityPolicies(),
@@ -1045,15 +1041,8 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			// ack
 
-			// adb
-			"alicloud_adb_lake_account":            resourceAliCloudAdbLakeAccount(),
-			"alicloud_adb_cluster":                 resourceAliCloudAdbDbCluster(),
-			"alicloud_adb_backup_policy":           resourceAlicloudAdbBackupPolicy(),
-			"alicloud_adb_account":                 resourceAliCloudAdbAccount(),
-			"alicloud_adb_connection":              resourceAlicloudAdbConnection(),
-			"alicloud_adb_db_cluster":              resourceAliCloudAdbDbCluster(),
-			"alicloud_adb_db_cluster_lake_version": resourceAliCloudAdbDbClusterLakeVersion(),
-			"alicloud_adb_resource_group":          resourceAliCloudAdbResourceGroup(),
+			// adb resources and data sources are registered via service/adb.ServicePackage()
+			// (provider/registry); see alicloud/service/adb/register.go.
 
 			// alb
 			"alicloud_alb_load_balancer_zone_shifted_attachment":             resourceAliCloudAlbLoadBalancerZoneShiftedAttachment(),
