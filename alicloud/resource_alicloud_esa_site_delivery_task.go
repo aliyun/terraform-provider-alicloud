@@ -1,8 +1,26 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+
+// Hand-maintained differences from the generator output. The generator has not absorbed them yet;
+// keep them when this file is regenerated:
+//  1. A transient 400 InternalError is retried with a bound on create, on the status switch, on
+//     update and on delete (esaSiteDeliveryTaskWriteRetryable) and on ListSiteDeliveryTasks
+//     (esaSiteDeliveryTaskListRetryable); the InternalError code is only retried together with the
+//     service's "please try again later" hint, and other 4xx stay non-retryable.
+//  2. http_delivery header_param/query_param values are sent as {"<key>":{"StaticValue":"<value>"}}.
+//  3. Create finishes with Read and only an explicit status=offline switches the task; Update
+//     switches status only on a real status change instead of a create tail-calling Update.
+//  4. Existence and destroy are decided by a fully successful, fully paginated
+//     ListSiteDeliveryTasks (a malformed page is an error, never an empty page), because
+//     GetSiteDeliveryTask reports an absent task as HTTP 400 InternalError instead of 404.
+//
+// (1) is expressible through the resource-to-API mapping (per-operation retry policies); (2)-(4)
+// are generator template behaviours that still need a generator-side change. Regenerating this file
+// before the generator carries them would silently drop them.
 package alicloud
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -332,7 +350,7 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		}
 		headerParam1, _ := jsonpath.Get("$[0].header_param", v)
 		if headerParam1 != nil && headerParam1 != "" {
-			httpDelivery["HeaderParam"] = headerParam1
+			httpDelivery["HeaderParam"] = esaSiteDeliveryTaskHttpParamValues(headerParam1)
 		}
 		compress1, _ := jsonpath.Get("$[0].compress", v)
 		if compress1 != nil && compress1 != "" {
@@ -348,7 +366,7 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 		}
 		queryParam1, _ := jsonpath.Get("$[0].query_param", v)
 		if queryParam1 != nil && queryParam1 != "" {
-			httpDelivery["QueryParam"] = queryParam1
+			httpDelivery["QueryParam"] = esaSiteDeliveryTaskHttpParamValues(queryParam1)
 		}
 		maxBatchSize1, _ := jsonpath.Get("$[0].max_batch_size", v)
 		if maxBatchSize1 != nil && maxBatchSize1 != "" {
@@ -517,7 +535,7 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if esaSiteDeliveryTaskWriteRetryable(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -533,7 +551,16 @@ func resourceAliCloudEsaSiteDeliveryTaskCreate(d *schema.ResourceData, meta inte
 
 	d.SetId(fmt.Sprintf("%v:%v", response["SiteId"], response["TaskName"]))
 
-	return resourceAliCloudEsaSiteDeliveryTaskUpdate(d, meta)
+	// CreateSiteDeliveryTask brings a new task up online, so only an explicit offline request needs
+	// a status switch here. An online create must not call UpdateSiteDeliveryTaskStatus: the extra
+	// call races the just-created task and the service answers 400 InternalError.
+	if status, _ := d.Get("status").(string); status == "offline" {
+		if err := esaSiteDeliveryTaskUpdateStatus(client, d.Id(), "offline", d.Timeout(schema.TimeoutCreate)); err != nil {
+			return err
+		}
+	}
+
+	return resourceAliCloudEsaSiteDeliveryTaskRead(d, meta)
 }
 
 func resourceAliCloudEsaSiteDeliveryTaskRead(d *schema.ResourceData, meta interface{}) error {
@@ -542,8 +569,19 @@ func resourceAliCloudEsaSiteDeliveryTaskRead(d *schema.ResourceData, meta interf
 
 	objectRaw, err := esaServiceV2.DescribeEsaSiteDeliveryTask(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_esa_site_delivery_task DescribeEsaSiteDeliveryTask Failed!!! %s", err)
+		// GetSiteDeliveryTask reports an absent task as HTTP 400 InternalError instead of 404, so a
+		// failed Get does not prove the task is gone. Only a fully successful ListSiteDeliveryTasks
+		// result can prove absence: a failed List, or a task that is still listed, surfaces the error.
+		parts := strings.SplitN(d.Id(), ":", 2)
+		if d.IsNewResource() || len(parts) != 2 {
+			return WrapError(err)
+		}
+		exists, listErr := esaServiceV2.EsaSiteDeliveryTaskExists(parts[0], parts[1])
+		if listErr != nil {
+			return WrapErrorf(listErr, "failed to confirm whether %s still exists after GetSiteDeliveryTask failed with %v", d.Id(), err)
+		}
+		if !exists {
+			log.Printf("[DEBUG] Resource alicloud_esa_site_delivery_task %s is absent from ListSiteDeliveryTasks, removing from state. GetSiteDeliveryTask reported: %v", d.Id(), err)
 			d.SetId("")
 			return nil
 		}
@@ -581,16 +619,16 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 	request["SiteId"] = parts[0]
 	request["TaskName"] = parts[1]
 
-	if !d.IsNewResource() && d.HasChange("discard_rate") {
+	if d.HasChange("discard_rate") {
 		update = true
 		request["DiscardRate"] = d.Get("discard_rate")
 	}
 
-	if !d.IsNewResource() && d.HasChange("business_type") {
+	if d.HasChange("business_type") {
 		update = true
 	}
 	request["BusinessType"] = d.Get("business_type")
-	if !d.IsNewResource() && d.HasChange("field_name") {
+	if d.HasChange("field_name") {
 		update = true
 	}
 	request["FieldName"] = d.Get("field_name")
@@ -599,7 +637,7 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if esaSiteDeliveryTaskWriteRetryable(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -613,36 +651,13 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 		}
 	}
 	update = false
-	parts = strings.Split(d.Id(), ":")
-	action = "UpdateSiteDeliveryTaskStatus"
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["SiteId"] = parts[0]
-	query["TaskName"] = parts[1]
-
 	if d.HasChange("status") {
 		update = true
 	}
-	if v, ok := d.GetOk("status"); ok {
-		query["Method"] = v.(string)
-	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		if err := esaSiteDeliveryTaskUpdateStatus(client, d.Id(), d.Get("status").(string), d.Timeout(schema.TimeoutUpdate)); err != nil {
+			return err
 		}
 	}
 
@@ -653,21 +668,111 @@ func resourceAliCloudEsaSiteDeliveryTaskUpdate(d *schema.ResourceData, meta inte
 func resourceAliCloudEsaSiteDeliveryTaskDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	parts := strings.Split(d.Id(), ":")
+	esaServiceV2 := EsaServiceV2{client}
+	parts := strings.SplitN(d.Id(), ":", 2)
+	if len(parts) != 2 {
+		return WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", d.Id(), 2, len(parts)))
+	}
+	siteId, taskName := parts[0], parts[1]
 	action := "DeleteSiteDeliveryTask"
-	var request map[string]interface{}
-	var response map[string]interface{}
-	query := make(map[string]interface{})
-	var err error
-	request = make(map[string]interface{})
-	request["SiteId"] = parts[0]
-	request["TaskName"] = parts[1]
 
+	// DeleteSiteDeliveryTask answers 400 InvalidParameter (or 406) for a task that is already gone,
+	// so the error alone is not proof of deletion and an already-deleted task is only accepted after
+	// a fully successful ListSiteDeliveryTasks shows it absent.
+	err := esaSiteDeliveryTaskDeleteWithApis(d.Id(), siteId, taskName, esaServiceV2.EsaSiteDeliveryTaskExists, func() error {
+		request := map[string]interface{}{
+			"SiteId":   siteId,
+			"TaskName": taskName,
+		}
+		query := make(map[string]interface{})
+		var response map[string]interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if esaSiteDeliveryTaskWriteRetryable(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		return err
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+// esaSiteDeliveryTaskDeleteWithApis runs the List-guarded delete sequence with the existence probe
+// and the delete call injected, so the decision order stays verifiable without a live client. A
+// failed pre-delete List fails closed: the task is not deleted and the List error is returned.
+func esaSiteDeliveryTaskDeleteWithApis(id, siteId, taskName string, exists func(siteId, taskName string) (bool, error), remove func() error) error {
+	existedBefore, listErr := exists(siteId, taskName)
+	if listErr != nil {
+		// Fail closed: a failed List proves nothing about the task, so deleting anyway would hide a
+		// real List/pagination/permission error behind a successful DeleteSiteDeliveryTask. The
+		// error reaches the resource Delete and the out-of-band cleanup that share this helper.
+		return WrapErrorf(listErr, DefaultErrorMsg, id, "ListSiteDeliveryTasks", AlibabaCloudSdkGoERROR)
+	}
+	if !existedBefore {
+		log.Printf("[DEBUG] Resource alicloud_esa_site_delivery_task %s is absent from ListSiteDeliveryTasks, skip delete", id)
+		return nil
+	}
+
+	deleteErr := remove()
+	if deleteErr == nil {
+		return nil
+	}
+
+	// Converge only when the post-error List succeeds and no longer sees the task. A failed or
+	// still-listed result keeps both failures: the delete error alone does not explain why the
+	// disappearance could not be proven.
+	existsAfter, afterErr := exists(siteId, taskName)
+	if esaSiteDeliveryTaskDeleteConverged(existsAfter, afterErr) {
+		log.Printf("[DEBUG] Resource alicloud_esa_site_delivery_task %s is gone from ListSiteDeliveryTasks although DeleteSiteDeliveryTask reported: %v", id, deleteErr)
+		return nil
+	}
+	if afterErr != nil {
+		return errors.Join(deleteErr, WrapErrorf(afterErr, DefaultErrorMsg, id, "ListSiteDeliveryTasks", AlibabaCloudSdkGoERROR))
+	}
+	return deleteErr
+}
+
+// esaSiteDeliveryTaskWriteRetryable reports whether a write call on a delivery task may be retried.
+// Only the service's transient backend failure (InternalError plus the "please try again later"
+// hint) is retried; a persistent InternalError with another message and every other 4xx reach the
+// caller. A retried create cannot duplicate the task: TaskName is unique per site, so the worst case
+// is the same terminal error as without a retry.
+func esaSiteDeliveryTaskWriteRetryable(err error) bool {
+	return esaSiteDeliveryTaskTransientInternalError(err) || NeedRetry(err)
+}
+
+// esaSiteDeliveryTaskUpdateStatus switches an existing task between online and offline.
+func esaSiteDeliveryTaskUpdateStatus(client *connectivity.AliyunClient, id, method string, timeout time.Duration) error {
+	parts := strings.SplitN(id, ":", 2)
+	if len(parts) != 2 {
+		return WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "UpdateSiteDeliveryTaskStatus"
+	request := make(map[string]interface{})
+	query := map[string]interface{}{
+		"SiteId":   parts[0],
+		"TaskName": parts[1],
+		"Method":   method,
+	}
+	var response map[string]interface{}
+	var err error
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+	err = retry.Retry(timeout, func() *retry.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
 		if err != nil {
-			if NeedRetry(err) {
+			if esaSiteDeliveryTaskWriteRetryable(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -676,13 +781,32 @@ func resourceAliCloudEsaSiteDeliveryTaskDelete(d *schema.ResourceData, meta inte
 		return nil
 	})
 	addDebug(action, response, request)
-
 	if err != nil {
-		if NotFoundError(err) {
-			return nil
-		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
 	return nil
+}
+
+// esaSiteDeliveryTaskHttpParamValues converts the flat header_param/query_param map into the
+// {"<key>":{"StaticValue":"<value>"}} shape CreateSiteDeliveryTask expects.
+func esaSiteDeliveryTaskHttpParamValues(params interface{}) map[string]interface{} {
+	values := make(map[string]interface{})
+	paramMap, ok := params.(map[string]interface{})
+	if !ok {
+		return values
+	}
+	for key, value := range paramMap {
+		if strValue, ok := value.(string); ok {
+			value = map[string]interface{}{"StaticValue": strValue}
+		}
+		values[key] = value
+	}
+	return values
+}
+
+// esaSiteDeliveryTaskDeleteConverged reports whether a failed DeleteSiteDeliveryTask may be treated
+// as success. The caller reaches it only after a successful pre-delete List saw the task, so absence
+// is proven only when the post-error List succeeds and no longer sees the task.
+func esaSiteDeliveryTaskDeleteConverged(existsAfter bool, afterErr error) bool {
+	return afterErr == nil && !existsAfter
 }
