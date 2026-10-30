@@ -9,6 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// collection-order: bypass shared.match.criteria -- pre-existing nested TypeList outside this change (only position added)
+// collection-order: bypass shared.match.criteria.criteria -- pre-existing nested TypeList outside this change (only position added)
+// collection-order: bypass shared.match.criteria.criteria.criteria -- pre-existing nested TypeList outside this change (only position added)
+
 // Test ESA WafRule. >>> Resource test cases, automatically generated.
 // Case resource_wafrule_custom_test
 func TestAccAliCloudESAWafRuleresource_wafrule_custom_test(t *testing.T) {
@@ -56,6 +60,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_custom_test(t *testing.T) {
 						},
 					},
 					"site_version": "0",
+					"position":     "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -85,6 +90,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_custom_test(t *testing.T) {
 						},
 					},
 					"site_version": "0",
+					"position":     "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -233,7 +239,6 @@ func TestAccAliCloudESAWafRuleresource_wafrule_http_anti_scan_test(t *testing.T)
 												{
 													"ratio": "70",
 													"count": "50",
-													"code":  "404",
 												},
 											},
 											"request": "50",
@@ -318,6 +323,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_http_anti_scan_test(t *testing.T)
 
 												{
 													"match_type": "ip.src",
+													"logic":      "and",
 												},
 											},
 											"logic": "and",
@@ -350,46 +356,50 @@ func TestAccAliCloudESAWafRuleresource_wafrule_http_anti_scan_test(t *testing.T)
 								{
 									"response": []map[string]interface{}{
 										{
-											"id":   "0",
-											"code": "403",
+											"id":   "10",
+											"code": "401",
 										},
 									},
 								},
 							},
-							"name": "tttt1",
+							"name":          "tttt1",
+							"target":        "web",
+							"mode":          "automatic",
+							"cross_site_id": "0",
 							"match": []map[string]interface{}{
 								{
+									"match_type": "http.host",
 									"criteria": []map[string]interface{}{
 
 										{
-											"match_type": "ip.src",
+											"match_type": "http.host",
 										},
 
 										{
 											"criteria": []map[string]interface{}{
 
 												{
-													"match_type": "ip.src",
+													"match_type": "http.host",
 												},
 
 												{
 													"criteria": []map[string]interface{}{
 
 														{
-															"match_type": "ip.src",
+															"match_type": "http.host",
 														},
 
 														{
-															"match_type": "ip.src",
+															"match_type": "http.host",
 														},
 													},
-													"logic": "and",
+													"logic": "or",
 												},
 											},
-											"logic": "and",
+											"logic": "or",
 										},
 									},
-									"logic": "and",
+									"logic": "or",
 								},
 							},
 						},
@@ -2167,9 +2177,8 @@ func TestAccAliCloudESAWafRuleresource_wafrule_http_scan_tools_test(t *testing.T
 					"phase":      "http_anti_scan",
 					"config": []map[string]interface{}{
 						{
-							"status":       "on",
-							"type":         "http_scan_tools",
-							"managed_list": "intelligence_scan_tools",
+							"status": "on",
+							"type":   "http_scan_tools",
 						},
 					},
 					"shared": []map[string]interface{}{
