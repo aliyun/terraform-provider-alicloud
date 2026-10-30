@@ -1,4 +1,4 @@
-package alicloud
+package dbfs_test
 
 import (
 	"fmt"
@@ -10,9 +10,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,23 +25,23 @@ import (
 func TestAccAliCloudDbfsInstanceAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
-	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	resourceId := "alicloud_dbfs_instance_attachment.default"
-	ra := resourceAttrInit(resourceId, AliCloudDbfsInstanceAttachmentMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbfsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudDbfsInstanceAttachmentMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dbfs.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDbfsInstanceAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc-dbfsinstanceattachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudDbfsInstanceAttachmentBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudDbfsInstanceAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -45,8 +50,8 @@ func TestAccAliCloudDbfsInstanceAttachment_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
-						"ecs_id":      CHECKSET,
+						"instance_id": acctest.CHECKSET,
+						"ecs_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -60,7 +65,7 @@ func TestAccAliCloudDbfsInstanceAttachment_basic0(t *testing.T) {
 }
 
 var AliCloudDbfsInstanceAttachmentMap0 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AliCloudDbfsInstanceAttachmentBasicDependence0(name string) string {
@@ -118,9 +123,9 @@ func AliCloudDbfsInstanceAttachmentBasicDependence0(name string) string {
 
 // lintignore: R001
 func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_dbfs_instance_attachment"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_dbfs_instance_attachment"].Schema).Data(nil, nil)
+	resourceSchema := dbfs.ResourceInstanceAttachment()
+	d, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
 		"instance_id": "instance_id",
@@ -132,7 +137,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -168,20 +173,20 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dbfs_instance_attachment", "instance_id:ecs_id"))
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dbfs_instance_attachment", "instance_id:ecs_id"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -202,13 +207,13 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDbfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -225,7 +230,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -242,7 +247,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentCreate(dCreate, rawClient)
+		err := resourceSchema.Create(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -259,10 +264,10 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DbfsService{}), "DescribeDbfsInstanceAttachment", func(*DbfsService, string) (map[string]interface{}, error) {
+		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&dbfs.Service{}), "DescribeDbfsInstanceAttachment", func(*dbfs.Service, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentCreate(dCreate, rawClient)
+		err := resourceSchema.Create(dCreate, rawClient)
 		patches.Reset()
 		patchDescribe.Reset()
 		assert.NotNil(t, err)
@@ -279,7 +284,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentCreate(d, rawClient)
+		err := resourceSchema.Create(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -291,13 +296,13 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDbfsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -315,7 +320,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -330,7 +335,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -345,10 +350,10 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&DbfsService{}), "DescribeDbfsInstanceAttachment", func(*DbfsService, string) (map[string]interface{}, error) {
+		patchDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&dbfs.Service{}), "DescribeDbfsInstanceAttachment", func(*dbfs.Service, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		patchDescribe.Reset()
 		assert.Nil(t, err)
@@ -365,7 +370,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentDelete(d, rawClient)
+		err := resourceSchema.Delete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -382,7 +387,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patchRequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -397,7 +402,7 @@ func TestUnitAliCloudDbfsInstanceAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAliCloudDbfsInstanceAttachmentRead(d, rawClient)
+		err := resourceSchema.Read(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

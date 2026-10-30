@@ -1,4 +1,4 @@
-package alicloud
+package dbfs
 
 import (
 	"fmt"
@@ -6,31 +6,41 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type DbfsService struct {
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interface{}, err error) {
+// NewService is the exported constructor: the client field stays unexported,
+// so callers outside the package (including the acceptance tests) build
+// values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) DescribeDbfsInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListDbfs"
 
 	client := s.client
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
-		"PageSize":   PageSizeLarge,
+		"PageSize":   helper.PageSizeLarge,
 		"PageNumber": 1,
 	}
 
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -38,19 +48,19 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.DBFSInfo", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DBFSInfo", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DBFSInfo", response)
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(NotFoundErr("Dbfs:Instance", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("Dbfs:Instance", id), errs.NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -68,21 +78,21 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Dbfs:Instance", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Dbfs:Instance", id), errs.NotFoundWithResponse, response)
 	}
 
 	return object, nil
 }
 
-func (s *DbfsService) DescribeDbfsInstanceAttachment(id string) (object map[string]interface{}, err error) {
-	parts, err := ParseResourceId(id, 2)
+func (s *Service) DescribeDbfsInstanceAttachment(id string) (object map[string]interface{}, err error) {
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return object, WrapError(err)
+		return object, errs.WrapError(err)
 	}
 
 	object, err = s.DescribeDbfsInstance(parts[0])
 	if err != nil {
-		return object, WrapError(err)
+		return object, errs.WrapError(err)
 	}
 
 	idExist := false
@@ -98,26 +108,26 @@ func (s *DbfsService) DescribeDbfsInstanceAttachment(id string) (object map[stri
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Dbfs:InstanceAttachment", id), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
+		return object, errs.WrapErrorf(errs.NotFoundErr("Dbfs:InstanceAttachment", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(object["RequestId"]))
 	}
 
 	return object, nil
 }
 
-func (s *DbfsService) DbfsInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DbfsInstanceStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
-				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
 
@@ -125,24 +135,24 @@ func (s *DbfsService) DbfsInstanceStateRefreshFunc(id string, failStates []strin
 	}
 }
 
-func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDbfsSnapshot(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListSnapshot"
 
 	client := s.client
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
-		"PageSize":   PageSizeLarge,
+		"PageSize":   helper.PageSizeLarge,
 		"PageNumber": 1,
 	}
 
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -150,19 +160,19 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Snapshots", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Snapshots", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Snapshots", response)
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(NotFoundErr("Dbfs:Snapshot", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("Dbfs:Snapshot", id), errs.NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -180,26 +190,26 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Dbfs:Snapshot", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Dbfs:Snapshot", id), errs.NotFoundWithResponse, response)
 	}
 
 	return object, nil
 }
 
-func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DbfsSnapshotStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsSnapshot(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
-				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
 
@@ -207,16 +217,16 @@ func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []strin
 	}
 }
 
-func (s *DbfsService) DescribeDbfsServiceLinkedRole(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDbfsServiceLinkedRole(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "GetServiceLinkedRole"
 	request := map[string]interface{}{}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DBFS", "2020-04-18", action, request, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -224,39 +234,39 @@ func (s *DbfsService) DescribeDbfsServiceLinkedRole(id string) (object map[strin
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
 }
 
-func (s *DbfsService) DbfsServiceLinkedRoleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+func (s *Service) DbfsServiceLinkedRoleStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsServiceLinkedRole(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["DbfsLinkedRole"]) == failState {
-				return object, fmt.Sprint(object["DbfsLinkedRole"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DbfsLinkedRole"])))
+				return object, fmt.Sprint(object["DbfsLinkedRole"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["DbfsLinkedRole"])))
 			}
 		}
 		return object, fmt.Sprint(object["DbfsLinkedRole"]), nil
 	}
 }
 
-func (s *DbfsService) DescribeDbfsAutoSnapShotPolicy(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeDbfsAutoSnapShotPolicy(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	request := map[string]interface{}{
 		"PolicyId": id,
@@ -265,29 +275,29 @@ func (s *DbfsService) DescribeDbfsAutoSnapShotPolicy(id string) (object map[stri
 
 	var response map[string]interface{}
 	action := "GetAutoSnapshotPolicy"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
 		response = resp
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AutoSnapshotPolicyNotFound"}) {
-			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"AutoSnapshotPolicyNotFound"}) {
+			return object, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data", response)
 	}
 	return v.(map[string]interface{}), nil
 }

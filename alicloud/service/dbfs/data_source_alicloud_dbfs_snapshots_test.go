@@ -1,51 +1,52 @@
-package alicloud
+package dbfs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudDBFSSnapshotsDataSource(t *testing.T) {
+func TestAccAliCloudDBFSSnapshotsDataSource(t *testing.T) {
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dbfs_snapshot.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_dbfs_snapshot.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_dbfs_snapshot.default.snapshot_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_dbfs_snapshot.default.snapshot_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_dbfs_snapshot.default.id}"]`,
 			"status": `"accomplished"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_dbfs_snapshot.default.id}"]`,
 			"status": `"failed"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_dbfs_snapshot.default.id}"]`,
 			"name_regex": `"${alicloud_dbfs_snapshot.default.snapshot_name}"`,
 			"status":     `"accomplished"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_dbfs_snapshot.default.id}_fake"]`,
 			"name_regex": `"${alicloud_dbfs_snapshot.default.snapshot_name}_fake"`,
 			"status":     `"failed"`,
@@ -57,19 +58,19 @@ func TestAccAlicloudDBFSSnapshotsDataSource(t *testing.T) {
 			"names.#":                        "1",
 			"snapshots.#":                    "1",
 			"snapshots.0.description":        fmt.Sprintf("tf-testAccSnapshot-%d", rand),
-			"snapshots.0.instance_id":        CHECKSET,
+			"snapshots.0.instance_id":        acctest.CHECKSET,
 			"snapshots.0.retention_days":     "30",
 			"snapshots.0.status":             "accomplished",
-			"snapshots.0.category":           CHECKSET,
-			"snapshots.0.create_time":        CHECKSET,
-			"snapshots.0.last_modified_time": CHECKSET,
-			"snapshots.0.progress":           CHECKSET,
-			"snapshots.0.remain_time":        CHECKSET,
-			"snapshots.0.id":                 CHECKSET,
-			"snapshots.0.snapshot_id":        CHECKSET,
+			"snapshots.0.category":           acctest.CHECKSET,
+			"snapshots.0.create_time":        acctest.CHECKSET,
+			"snapshots.0.last_modified_time": acctest.CHECKSET,
+			"snapshots.0.progress":           acctest.CHECKSET,
+			"snapshots.0.remain_time":        acctest.CHECKSET,
+			"snapshots.0.id":                 acctest.CHECKSET,
+			"snapshots.0.snapshot_id":        acctest.CHECKSET,
 			"snapshots.0.snapshot_name":      fmt.Sprintf("tf-testAccSnapshot-%d", rand),
-			"snapshots.0.snapshot_type":      CHECKSET,
-			"snapshots.0.source_fs_size":     CHECKSET,
+			"snapshots.0.snapshot_type":      acctest.CHECKSET,
+			"snapshots.0.source_fs_size":     acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudDbfsSnapshotsDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -78,16 +79,16 @@ func TestAccAlicloudDBFSSnapshotsDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudDbfsSnapshotsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_dbfs_snapshots.default",
-		existMapFunc: existAlicloudDbfsSnapshotsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudDbfsSnapshotsDataSourceNameMapFunc,
+	var alicloudDbfsSnapshotsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_dbfs_snapshots.default",
+		ExistMapFunc: existAlicloudDbfsSnapshotsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudDbfsSnapshotsDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudDbfsSnapshotsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
+	alicloudDbfsSnapshotsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudDbfsSnapshotsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

@@ -1,4 +1,4 @@
-package alicloud
+package dbfs
 
 import (
 	"fmt"
@@ -7,12 +7,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudDbfsAutoSnapShotPolicy() *schema.Resource {
+func ResourceAutoSnapShotPolicy() *schema.Resource {
 	return &schema.Resource{
 		Create:             resourceAlicloudDbfsAutoSnapShotPolicyCreate,
 		Read:               resourceAlicloudDbfsAutoSnapShotPolicyRead,
@@ -88,31 +92,31 @@ func resourceAlicloudDbfsAutoSnapShotPolicyCreate(d *schema.ResourceData, meta i
 	request["RegionId"] = client.RegionId
 	request["PolicyName"] = d.Get("policy_name")
 	request["RetentionDays"] = d.Get("retention_days")
-	request["RepeatWeekdays"] = convertListToJsonString(d.Get("repeat_weekdays").([]interface{}))
-	request["TimePoints"] = convertListToJsonString(d.Get("time_points").([]interface{}))
+	request["RepeatWeekdays"] = convert.ConvertListToJsonString(d.Get("repeat_weekdays").([]interface{}))
+	request["TimePoints"] = convert.ConvertListToJsonString(d.Get("time_points").([]interface{}))
 
 	var response map[string]interface{}
 	action := "CreateAutoSnapshotPolicy"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		resp, err := client.RpcPost("DBFS", "2020-04-18", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
 		response = resp
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dbfs_auto_snap_shot_policy", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dbfs_auto_snap_shot_policy", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if v, err := jsonpath.Get("$.PolicyId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_dbfs_auto_snap_shot_policy")
+		return errs.WrapErrorf(err, errs.IdMsg, "alicloud_dbfs_auto_snap_shot_policy")
 	} else {
 		d.SetId(fmt.Sprint(v))
 	}
@@ -122,16 +126,16 @@ func resourceAlicloudDbfsAutoSnapShotPolicyCreate(d *schema.ResourceData, meta i
 
 func resourceAlicloudDbfsAutoSnapShotPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dbfsService := DbfsService{client}
+	dbfsService := Service{client}
 
 	object, err := dbfsService.DescribeDbfsAutoSnapShotPolicy(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dbfs_auto_snap_shot_policy dbfsService.DescribeDbfsAutoSnapShotPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("applied_dbfs_number", object["AppliedDbfsNumber"])
 	d.Set("create_time", object["CreatedTime"])
@@ -167,7 +171,7 @@ func resourceAlicloudDbfsAutoSnapShotPolicyUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("repeat_weekdays") {
 		update = true
 		if v, ok := d.GetOk("repeat_weekdays"); ok {
-			request["RepeatWeekdays"] = convertListToJsonString(v.([]interface{}))
+			request["RepeatWeekdays"] = convert.ConvertListToJsonString(v.([]interface{}))
 		}
 	}
 	if d.HasChange("retention_days") {
@@ -179,27 +183,27 @@ func resourceAlicloudDbfsAutoSnapShotPolicyUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("time_points") {
 		update = true
 		if v, ok := d.GetOk("time_points"); ok {
-			request["TimePoints"] = convertListToJsonString(v.([]interface{}))
+			request["TimePoints"] = convert.ConvertListToJsonString(v.([]interface{}))
 		}
 	}
 
 	if update {
 		action := "ModifyAutoSnapshotPolicy"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			resp, err := client.RpcPost("DBFS", "2020-04-18", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+			logs.AddDebug(action, resp, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -216,24 +220,24 @@ func resourceAlicloudDbfsAutoSnapShotPolicyDelete(d *schema.ResourceData, meta i
 	}
 
 	action := "DeleteAutoSnapshotPolicy"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		resp, err := client.RpcPost("DBFS", "2020-04-18", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		logs.AddDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"AutoSnapshotPolicyNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"AutoSnapshotPolicyNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

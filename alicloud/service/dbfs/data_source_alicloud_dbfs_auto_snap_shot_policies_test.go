@@ -1,47 +1,48 @@
-package alicloud
+package dbfs_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudDbfsAutoSnapShotPolicyDataSource(t *testing.T) {
+func TestAccAliCloudDbfsAutoSnapShotPolicyDataSource(t *testing.T) {
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_dbfs_auto_snap_shot_policy.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_dbfs_auto_snap_shot_policy.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_dbfs_auto_snap_shot_policy.default.policy_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_dbfs_auto_snap_shot_policy.default.policy_name}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_dbfs_auto_snap_shot_policy.default.id}"]`,
 			"name_regex": `"${alicloud_dbfs_auto_snap_shot_policy.default.policy_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_dbfs_auto_snap_shot_policy.default.id}_fake"]`,
 			"name_regex": `"${alicloud_dbfs_auto_snap_shot_policy.default.policy_name}_fake"`,
 		}),
 	}
 
-	DbfsAutoSnapShotPolicyCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	DbfsAutoSnapShotPolicyCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
 var existDbfsAutoSnapShotPolicyMapFunc = func(rand int) map[string]string {
@@ -49,15 +50,15 @@ var existDbfsAutoSnapShotPolicyMapFunc = func(rand int) map[string]string {
 		"ids.#":                        "1",
 		"names.#":                      "1",
 		"auto_snap_shot_policies.#":    "1",
-		"auto_snap_shot_policies.0.id": CHECKSET,
-		"auto_snap_shot_policies.0.applied_dbfs_number": CHECKSET,
-		"auto_snap_shot_policies.0.create_time":         CHECKSET,
-		"auto_snap_shot_policies.0.last_modified":       CHECKSET,
-		"auto_snap_shot_policies.0.policy_id":           CHECKSET,
-		"auto_snap_shot_policies.0.policy_name":         CHECKSET,
+		"auto_snap_shot_policies.0.id": acctest.CHECKSET,
+		"auto_snap_shot_policies.0.applied_dbfs_number": acctest.CHECKSET,
+		"auto_snap_shot_policies.0.create_time":         acctest.CHECKSET,
+		"auto_snap_shot_policies.0.last_modified":       acctest.CHECKSET,
+		"auto_snap_shot_policies.0.policy_id":           acctest.CHECKSET,
+		"auto_snap_shot_policies.0.policy_name":         acctest.CHECKSET,
 		"auto_snap_shot_policies.0.repeat_weekdays.#":   "1",
-		"auto_snap_shot_policies.0.retention_days":      CHECKSET,
-		"auto_snap_shot_policies.0.status":              CHECKSET,
+		"auto_snap_shot_policies.0.retention_days":      acctest.CHECKSET,
+		"auto_snap_shot_policies.0.status":              acctest.CHECKSET,
 		"auto_snap_shot_policies.0.status_detail":       "",
 		"auto_snap_shot_policies.0.time_points.#":       "1",
 	}
@@ -71,10 +72,10 @@ var fakeDbfsAutoSnapShotPolicyMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var DbfsAutoSnapShotPolicyCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_dbfs_auto_snap_shot_policies.default",
-	existMapFunc: existDbfsAutoSnapShotPolicyMapFunc,
-	fakeMapFunc:  fakeDbfsAutoSnapShotPolicyMapFunc,
+var DbfsAutoSnapShotPolicyCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_dbfs_auto_snap_shot_policies.default",
+	ExistMapFunc: existDbfsAutoSnapShotPolicyMapFunc,
+	FakeMapFunc:  fakeDbfsAutoSnapShotPolicyMapFunc,
 }
 
 func testAccCheckAlicloudDbfsAutoSnapShotPolicySourceConfig(rand int, attrMap map[string]string) string {

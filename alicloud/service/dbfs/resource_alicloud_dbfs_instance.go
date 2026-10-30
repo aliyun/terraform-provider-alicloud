@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dbfs
 
 import (
 	"fmt"
@@ -7,11 +7,17 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
+func ResourceInstance() *schema.Resource {
 	return &schema.Resource{
 		Create:             resourceAliCloudDbfsDbfsInstanceCreate,
 		Read:               resourceAliCloudDbfsDbfsInstanceRead,
@@ -36,7 +42,7 @@ func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"standard", "enterprise"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"standard", "enterprise"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -65,7 +71,7 @@ func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 			"instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"dbfs.small", "dbfs.medium", "dbfs.large "}, false),
+				ValidateFunc: validators.StringInSlice([]string{"dbfs.small", "dbfs.medium", "dbfs.large "}, false),
 			},
 			"kms_key_id": {
 				Type:     schema.TypeString,
@@ -76,18 +82,18 @@ func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 			},
 			"raid_stripe_unit_number": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: IntBetween(2, 8),
+				ValidateFunc: validators.IntBetween(2, 8),
 			},
 			"size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntBetween(20, 262144),
+				ValidateFunc: validators.IntBetween(20, 262144),
 			},
 			"snapshot_id": {
 				Type:     schema.TypeString,
@@ -102,9 +108,9 @@ func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 			"used_scene": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"MySQL 5.7", "PostgreSQL ", "MongoDB", "DataCube"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"MySQL 5.7", "PostgreSQL ", "MongoDB", "DataCube"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"ecs_list": {
 				Type:       schema.TypeSet,
 				Optional:   true,
@@ -144,7 +150,7 @@ func resourceAliCloudDbfsDbfsInstanceCreate(d *schema.ResourceData, meta interfa
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["FsName"] = v
@@ -186,32 +192,32 @@ func resourceAliCloudDbfsDbfsInstanceCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("advanced_features"); ok {
 		request["AdvancedFeatures"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, true)
-		request["ClientToken"] = buildClientToken(action)
+		request["ClientToken"] = helper.BuildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dbfs_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dbfs_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["FsId"]))
 
-	dbfsServiceV2 := DbfsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"unattached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	dbfsServiceV2 := ServiceV2{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"unattached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudDbfsDbfsInstanceRead(d, meta)
@@ -219,16 +225,16 @@ func resourceAliCloudDbfsDbfsInstanceCreate(d *schema.ResourceData, meta interfa
 
 func resourceAliCloudDbfsDbfsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dbfsServiceV2 := DbfsServiceV2{client}
+	dbfsServiceV2 := ServiceV2{client}
 
 	objectRaw, err := dbfsServiceV2.DescribeDbfsDbfsInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dbfs_instance DescribeDbfsDbfsInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("advanced_features", objectRaw["AdvancedFeatures"])
@@ -246,7 +252,7 @@ func resourceAliCloudDbfsDbfsInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("status", objectRaw["Status"])
 	d.Set("used_scene", objectRaw["UsedScene"])
 	d.Set("zone_id", objectRaw["ZoneId"])
-	d.Set("tags", tagsToMap(objectRaw["Tags"]))
+	d.Set("tags", tags.TagsToMap(objectRaw["Tags"]))
 
 	d.Set("instance_name", d.Get("fs_name"))
 	if ecsListList, ok := objectRaw["EcsList"]; ok && ecsListList != nil {
@@ -286,22 +292,22 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -315,27 +321,27 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 	request["NewSizeG"] = d.Get("size")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		dbfsServiceV2 := DbfsServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("size"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "SizeG", []string{}))
+		dbfsServiceV2 := ServiceV2{client}
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("size"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "SizeG", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -360,22 +366,22 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -390,22 +396,22 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -428,14 +434,14 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 				tagsMap["TagValue"] = value
 				tagsMaps = append(tagsMaps, tagsMap)
 			}
-			deleteTagsBatchReq["Tags"], _ = convertListMapToJsonString(tagsMaps)
+			deleteTagsBatchReq["Tags"], _ = convert.ConvertListMapToJsonString(tagsMaps)
 
 			action := "DeleteTagsBatch"
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, deleteTagsBatchReq, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -443,9 +449,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 				}
 				return nil
 			})
-			addDebug(action, response, deleteTagsBatchReq)
+			logs.AddDebug(action, response, deleteTagsBatchReq)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 
@@ -463,15 +469,15 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 				tagsMap["TagValue"] = value
 				tagsMaps = append(tagsMaps, tagsMap)
 			}
-			addTagsBatchReq["Tags"], _ = convertListMapToJsonString(tagsMaps)
+			addTagsBatchReq["Tags"], _ = convert.ConvertListMapToJsonString(tagsMaps)
 
 			action := "AddTagsBatch"
-			request["ClientToken"] = buildClientToken("AddTagsBatch")
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			request["ClientToken"] = helper.BuildClientToken("AddTagsBatch")
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, addTagsBatchReq, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -479,9 +485,9 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 				}
 				return nil
 			})
-			addDebug(action, response, addTagsBatchReq)
+			logs.AddDebug(action, response, addTagsBatchReq)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 
@@ -505,11 +511,11 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 				detachdbfsrequest["ECSInstanceId"] = ecsMap["ecs_id"]
 
 				action := "DetachDbfs"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, detachdbfsrequest, false)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -517,15 +523,15 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, detachdbfsrequest)
+				logs.AddDebug(action, response, detachdbfsrequest)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
-				dbfsService := DbfsService{client}
-				stateConf := BuildStateConf([]string{}, []string{"unattached", "attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
+				dbfsService := Service{client}
+				stateConf := helper.BuildStateConf([]string{}, []string{"unattached", "attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 		}
@@ -540,11 +546,11 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 			for _, ecsArg := range added.List() {
 				ecsMap := ecsArg.(map[string]interface{})
 				attachdbfsrequest["ECSInstanceId"] = ecsMap["ecs_id"]
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, attachdbfsrequest, false)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -552,14 +558,14 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 					}
 					return nil
 				})
-				addDebug(action, response, attachdbfsrequest)
+				logs.AddDebug(action, response, attachdbfsrequest)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				dbfsService := DbfsService{client}
-				stateConf := BuildStateConf([]string{}, []string{"attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
+				dbfsService := Service{client}
+				stateConf := helper.BuildStateConf([]string{}, []string{"attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 		}
@@ -581,32 +587,32 @@ func resourceAliCloudDbfsDbfsInstanceDelete(d *schema.ResourceData, meta interfa
 	query["FsId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
+		if errs.IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	dbfsServiceV2 := DbfsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	dbfsServiceV2 := ServiceV2{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
