@@ -272,3 +272,23 @@ func TestMalformedPayloadsFailClosed(t *testing.T) {
 		t.Fatal("silently discarded malformed query")
 	}
 }
+
+func TestSelectedCaseFromExactRun(t *testing.T) {
+	for _, selection := range []string{"^TestExample$", "^TestAccExample_123$"} {
+		got, err := selectedCase(selection, "")
+		if err != nil || got != selection[1:len(selection)-1] {
+			t.Fatalf("selection %q: case=%q err=%v", selection, got, err)
+		}
+	}
+	for _, selection := range []string{"", "TestExample", "^Test", "^Test.*$", "^(TestOne|TestTwo)$", "^TestOne$|^TestTwo$", "^TestOne$/subtest", "^TestOne/subtest$", "^BenchmarkOne$", "^TestOne$\n"} {
+		if _, err := selectedCase(selection, ""); err == nil {
+			t.Errorf("accepted ambiguous selector %q", selection)
+		}
+	}
+	if _, err := selectedCase("^TestExample$", "TestOther"); err == nil {
+		t.Fatal("accepted mismatched legacy case")
+	}
+	if got, err := selectedCase("^TestExample$", "TestExample"); err != nil || got != "TestExample" {
+		t.Fatalf("legacy compatibility: %q %v", got, err)
+	}
+}

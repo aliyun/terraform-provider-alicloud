@@ -40,7 +40,7 @@ func runRecordingFixture(t *testing.T, run func() int) int {
 	t.Helper()
 	selection := flag.Lookup("test.run").Value
 	previous := selection.String()
-	if err := selection.Set("^" + regexp.QuoteMeta(os.Getenv(recording.CaseEnv)) + "$"); err != nil {
+	if err := selection.Set("^" + regexp.QuoteMeta(strings.SplitN(t.Name(), "/", 2)[0]) + "$"); err != nil {
 		t.Fatal(err)
 	}
 	defer selection.Set(previous)
@@ -104,7 +104,6 @@ func TestRecordingDnsLifecycleOffline(t *testing.T) {
 	endpoint, _ := url.Parse(server.URL)
 	dir := filepath.Join(t.TempDir(), "TestRecordingDnsLifecycleOffline")
 	t.Setenv(recording.PathEnv, dir)
-	t.Setenv(recording.CaseEnv, t.Name())
 	t.Setenv("ALICLOUD_ACCESS_KEY", "recording-access-key")
 	t.Setenv("ALICLOUD_SECRET_KEY", "recording-secret-key")
 	t.Setenv("ALICLOUD_SECURITY_TOKEN", "")

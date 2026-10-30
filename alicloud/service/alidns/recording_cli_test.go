@@ -98,7 +98,6 @@ func TestRecordingDnsTerraformCLI(t *testing.T) {
 		directory = filepath.Join(output, t.Name())
 	}
 	t.Setenv(recording.PathEnv, directory)
-	t.Setenv(recording.CaseEnv, t.Name())
 
 	factory := func() (tfprotov5.ProviderServer, error) {
 		p := alicloud.Provider()

@@ -21,28 +21,41 @@ func TestMain(m *testing.M) {
 r := acctest.RecordingRandInt()
 ```
 
-Run exactly one anchored test per process. Record into a new directory (the
-parent must exist), and reuse that directory to replay. Set the account type
-explicitly in both modes, so the unrelated legacy account-type discovery request
-is not needed:
+Run exactly one anchored top-level test per process: `-run '^TestExample$'`.
+The recorder infers its identity from this selector. Prefixes, regular-expression
+alternatives, subtests and multiple cases are rejected. No
+`TF_ACC_RECORDING_CASE` is required. For older callers it remains an optional
+assertion and must match `-run` when present.
+
+Only two recording settings are required: `TF_ACC_RECORDING_MODE=record|replay`
+and `TF_ACC_RECORDING_PATH`. `TF_ACC=1` is the standard acceptance-test switch;
+credentials remain the normal Provider configuration. Set `account_type`
+explicitly in the test's Provider configuration (`Domestic` or `International`),
+or use the existing `ALIBABA_CLOUD_ACCOUNT_TYPE` setting for older test suites.
+This prevents an unrelated account-type discovery API call. Do not change the
+account type between recording and replay.
+
+The live Cloud DNS group pilot below already declares `account_type = "Domestic"`
+in its Provider configuration and generates its resource name from the saved
+seed. It needs neither `TF_ACC_LIVE_RECORDING` nor `TF_RECORDING_GROUP_NAME`.
+With installed Go and Terraform, run from the repository root:
 
 ```sh
-export TF_ACC=1
-export ALIBABA_CLOUD_ACCOUNT_TYPE=Domestic
-export TF_ACC_RECORDING_CASE=TestAccAlicloudAlidnsRecord_old_basic
-export TF_ACC_RECORDING_PATH=/absolute/path/to/new-case-directory
-
-# Requires appropriate real test credentials and creates real resources.
-TF_ACC_RECORDING_MODE=record go test ./alicloud \
-  -run '^TestAccAlicloudAlidnsRecord_old_basic$' -count=1 -parallel=1
-
-# Run in an externally network-isolated test process with only dummy credentials.
-# Do not pass real credentials, role profiles, tokens, or metadata access through.
-ALICLOUD_ACCESS_KEY=recording-access-key \
-ALICLOUD_SECRET_KEY=recording-secret-key \
-TF_ACC_RECORDING_MODE=replay go test ./alicloud \
-  -run '^TestAccAlicloudAlidnsRecord_old_basic$' -count=1 -parallel=1
+# Parent directory must exist; the case directory must be NEW.
+# Uses normal real test credentials and creates/deletes an empty DNS group.
+TF_ACC=1 \
+TF_ACC_RECORDING_MODE=record \
+TF_ACC_RECORDING_PATH=/absolute/private/path/new-dns-group-case \
+go test ./alicloud/service/alidns \
+  -run '^TestRecordingAlidnsGroupLiveTerraformCLI$' -count=1 -v
 ```
+
+Replay selects the same test with `-run`, uses the same directory and source
+version, and uses only the dummy credential pair. Environment variables select
+the mode; they do **not** isolate the process from the network. The complete
+macOS isolation example below compiles before isolation, clears the inherited
+environment and runs the test binary with external networking denied. On other
+platforms use an equivalent externally enforced test sandbox.
 
 Credentials inherited from other environment variables must also be removed.
 Role assumption, OIDC and metadata credential sources are rejected by the
@@ -160,65 +173,91 @@ rejected. A successful CLI fixture does not imply that every historical ACC or
 SDK is supported. Keep the supported-client and single-process constraints above
 when proceeding to an authorized real-cloud recording.
 
-## Real-cloud local pilot
+## Real-cloud local pilot and isolated replay
 
-`TestRecordingAlidnsGroupLiveTerraformCLI` is an opt-in live test in
-`alicloud/service/alidns`. It uses the production Provider Configure function,
-registered resource and SDK, with only the exposed resource schema reduced to
-`alicloud_alidns_domain_group`. Terraform creates an empty group, verifies import,
-renames it with `-u`, and destroys it. It creates no domains or DNS records.
-The test skips unless `TF_ACC_LIVE_RECORDING=1`; recording must also be enabled.
-Use a new unique `TF_RECORDING_GROUP_NAME` beginning with `tf-rr-`, between 12 and
-18 characters, to leave room for the update suffix within the service limit.
-Never select an existing group.
+`TestRecordingAlidnsGroupLiveTerraformCLI` uses the production Provider Configure
+function, registered `alicloud_alidns_domain_group` resource and SDK, with only
+the exposed schema reduced to that resource. Terraform creates an empty group,
+verifies import, renames it with `-u`, and destroys it. No domains or DNS records
+are added. Without `TF_ACC` or without record/replay mode the pilot skips and
+creates no resources. A skipped run cannot produce a successful recording.
 
-Compile once before isolation (the test requires an installed Terraform CLI):
+The group name is drawn deterministically from the recording seed and printed as
+`Recording DNS group: ...` in verbose output. The same seed generates the same
+name during replay, even after the real group is deleted. Keep `cassette.json`
+and `seed` together. Use a fresh directory for each new recording, including
+retries after failure. No local helper scripts are needed.
+
+After recording, independently query `DescribeDomainGroups` with the logged
+name as `KeyWord`. Filter exact names (both the original and its `-u` variant),
+check all pages, and require no remaining groups. For example, with the normal
+real test credentials and Aliyun CLI configured:
 
 ```sh
-go test -p=1 -c -o /private/local/path/alidns.test ./alicloud/service/alidns
+ALIBABA_CLOUD_USER_AGENT=AlibabaCloud-Agent-Skills \
+aliyun alidns DescribeDomainGroups --region cn-hangzhou \
+  --KeyWord '<name printed by the test>' --PageSize 100 --PageNumber 1
 ```
 
-Run exactly `-test.run='^TestRecordingAlidnsGroupLiveTerraformCLI$' -test.v`
-in separate record and replay processes with the same test name, group name,
-recording path and source binary. Record with authorized test credentials,
-`TF_ACC_RECORDING_MODE=record`, `TF_ACC=1`, and
-`ALIBABA_CLOUD_ACCOUNT_TYPE=Domestic`. Use a new recording directory. Avoid
-HTTP debug logging and retain the cassette in a private directory only.
+If the test failed, inspect any remaining exact-name groups. Delete only groups
+confirmed to have been created by this run, after checking their domain count
+is zero. Never use a broad sweeper or delete a pre-existing group. Verify cleanup
+before replay and, using a separate credentialed process, again after replay.
+The acceptance harness's destroy step alone is not an independent cleanup check.
+Avoid HTTP debug logging; retain recordings and logs in a private directory.
 
-After recording, independently query `DescribeDomainGroups` with the unique
-name as `KeyWord`. Filter exact names (both the original and its `-u` variant),
-check all pages, and require no remaining groups. If the test failed, delete only
-those exact groups after checking their domain count is zero; do not use a broad
-sweeper. Verify cleanup before replay and again after replay. The Terraform
-harness's destroy step alone is not an independent cleanup check.
+For macOS, compile the selected package once before isolating its test process:
 
-For macOS process isolation, this profile allows only loopback TCP and local Unix
-sockets needed by Terraform's provider RPC; all external network operations stay
-denied. It does not change the host's connectivity:
-
-```scheme
-(version 1)
+```sh
+recording_work="$(mktemp -d)"
+go test -p=1 -c -o "$recording_work/alidns.test" ./alicloud/service/alidns
+replay_home="$(mktemp -d)"
+replay_policy='(version 1)
 (allow default)
 (deny network*)
 (allow network-outbound (remote ip "localhost:*"))
 (allow network-inbound (local ip "localhost:*"))
-(allow network* (local unix-socket) (remote unix-socket))
+(allow network* (local unix-socket) (remote unix-socket))'
 ```
 
-Invoke the precompiled binary with `sandbox-exec -f /private/local/path/replay.sb`.
-Construct a fresh environment instead of inheriting the record environment:
-retain only the required PATH/TMPDIR and test settings, set HOME to an empty
-private directory, remove all proxies and real credential/profile variables,
-and set both Provider access-key variables to the documented dummy pair.
-Use `TF_ACC_RECORDING_MODE=replay` and a separate
-`TF_ACC_RECORDING_RESULT_PATH`. Run an external-IP socket probe under the same
-profile first and require an explicit permission denial, not a timeout or DNS
-failure. Check both test PASS and result success, zero unmatched/unused requests,
-and unchanged SHA-256 hashes of `cassette.json` and `seed`.
+The profile permits loopback TCP and local Unix sockets for Terraform's Provider
+RPC, while denying external networking. It affects only the invoked process and
+its descendants, never the host's network configuration. Confirm the profile
+with an external-IP probe (Python 3 is needed only for this check):
 
-This pilot passed against real Cloud DNS APIs on 2026-10-30: 9 HTTP interactions,
-then successful replay with external TCP explicitly denied, unchanged baseline
-hashes, and no remaining test groups. Record/replay logs and credential-scanned
-cassette remain local; no real response payloads are committed. Empty VPCs are
-not covered by this pilot: their current legacy Tea RPC path is still rejected
-by version 1 before creating infrastructure.
+```sh
+env -i PATH="$PATH" HOME="$replay_home" \
+  sandbox-exec -p "$replay_policy" python3 -c \
+  'import socket; socket.create_connection(("1.1.1.1", 443), timeout=3)'
+```
+
+This probe must fail with an explicit `PermissionError: ... Operation not
+permitted` or permission denied. A timeout, DNS failure or successful connection
+does not establish the required isolation. Then replay with the same profile and
+a fresh environment, without real credentials, tokens, profiles or proxies:
+
+```sh
+env -i PATH="$PATH" HOME="$replay_home" TMPDIR="${TMPDIR:-/tmp}" \
+  TF_ACC=1 \
+  TF_ACC_RECORDING_MODE=replay \
+  TF_ACC_RECORDING_PATH=/absolute/private/path/new-dns-group-case \
+  TF_ACC_RECORDING_RESULT_PATH="$recording_work/replay-result.json" \
+  ALICLOUD_ACCESS_KEY=recording-access-key \
+  ALICLOUD_SECRET_KEY=recording-secret-key \
+  sandbox-exec -p "$replay_policy" "$recording_work/alidns.test" \
+    -test.run='^TestRecordingAlidnsGroupLiveTerraformCLI$' -test.count=1 -test.v
+```
+
+`TF_ACC_RECORDING_RESULT_PATH` is optional; here it keeps the fresh report outside
+the input baseline. Require the exact test to PASS, report success with zero
+unmatched/unused requests, and unchanged SHA-256 hashes of `cassette.json` and
+`seed` before and after replay. Compare the logged resource name in both phases.
+Other people can replay a privately shared `cassette.json` and `seed` using the
+same case/source and account type, without real credentials or cloud resources.
+Preinstall Terraform and compile/download Go dependencies before isolation.
+Never publish real cassette payloads in a public repository.
+
+The pilot was validated against real Cloud DNS APIs and externally isolated
+local replay. This is a supported-client pilot, not blanket support for all
+resources. Empty VPCs currently use an unsupported legacy Tea RPC path and are
+rejected before creation.

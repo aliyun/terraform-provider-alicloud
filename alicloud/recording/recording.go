@@ -29,6 +29,7 @@ import (
 const (
 	ModeEnv = "TF_ACC_RECORDING_MODE"
 	PathEnv = "TF_ACC_RECORDING_PATH"
+	// CaseEnv is an optional legacy assertion. New callers select the case via -run.
 	CaseEnv = "TF_ACC_RECORDING_CASE"
 	maxBody = 8 << 20
 )
@@ -157,9 +158,14 @@ func (r mainRunner) Run() int {
 	if !Enabled() {
 		return r.m.Run()
 	}
-	testCase := os.Getenv(CaseEnv)
-	if f := flag.Lookup("test.run"); f == nil || f.Value.String() != "^"+regexp.QuoteMeta(testCase)+"$" {
+	f := flag.Lookup("test.run")
+	if f == nil {
 		fmt.Fprintln(os.Stderr, "recording requires -run with one exact anchored test name")
+		return 1
+	}
+	testCase, err := selectedCase(f.Value.String(), os.Getenv(CaseEnv))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	s, err := New(Mode(), os.Getenv(PathEnv), testCase)
@@ -179,6 +185,19 @@ func (r mainRunner) Run() int {
 		return 1
 	}
 	return code
+}
+
+// Only a literal top-level Go test identifier is accepted. Regex groups,
+// alternatives, prefixes and subtest selectors could execute several cases.
+func selectedCase(selection, legacyCase string) (string, error) {
+	match := regexp.MustCompile(`^\^(Test[A-Za-z0-9_]+)\$$`).FindStringSubmatch(selection)
+	if match == nil {
+		return "", errors.New("recording requires -run with one exact anchored test name, such as ^TestExample$")
+	}
+	if legacyCase != "" && legacyCase != match[1] {
+		return "", errors.New("legacy TF_ACC_RECORDING_CASE must match the test selected by -run")
+	}
+	return match[1], nil
 }
 
 // RandInt preserves existing randomness outside recording. Tests using other
