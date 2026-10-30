@@ -6,7 +6,10 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -3759,102 +3762,169 @@ func TestAccAliCloudKVStoreRedisInstance_elastic_burst(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth_burst":              "false",
-					"additional_bandwidth":         "20",
-					"additional_bandwidth_node_id": "All",
+					"bandwidth_burst": "false",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 20},
+						{"node_id": "db-1", "bandwidth": 20},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bandwidth_burst":              "false",
-						"additional_bandwidth":         "20",
-						"additional_bandwidth_node_id": "All",
+						"bandwidth_burst": "false",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "20"),
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "20",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-1",
+						"bandwidth": "20",
+					}),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 20, "db-1": 20}),
 				),
 			},
 			{
+				// Non-uniform per-shard values: each block carries its own value.
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "30",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 30},
+						{"node_id": "db-1", "bandwidth": 40},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "30",
-						"additional_bandwidth_node_id": "All",
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "30",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "30"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-1",
+						"bandwidth": "40",
+					}),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 30, "db-1": 40}),
 				),
 			},
 			{
-				// The contract requires NodeId for cluster and read/write splitting
-				// architectures, so the request is rejected before it reaches the API.
+				// An import has no configuration to key the read-back on, so every shard with
+				// purchased bandwidth is reported under its node name.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "bandwidth_burst", "additional_bandwidth"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported state, got %d", len(states))
+					}
+					instanceId := states[0].Attributes["id"]
+					want := map[string]int{instanceId + "-db-0": 30, instanceId + "-db-1": 40}
+					if got := importedAdditionalBandwidth(states[0]); !reflect.DeepEqual(want, got) {
+						return fmt.Errorf("expected the imported per-shard additional bandwidth %v, got %v", want, got)
+					}
+					return nil
+				},
+			},
+			{
+				// Dropping a block leaves the bandwidth purchased for that shard in place; only
+				// the remaining shard is managed and reported.
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "10",
-					"additional_bandwidth_node_id": REMOVEKEY,
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 20},
+					},
 				}),
-				ExpectError: regexp.MustCompile("additional_bandwidth_node_id must be set"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "20",
+					}),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 20, "db-1": 40}),
+				),
+			},
+			{
+				// A node_id that does not name exactly one data shard is rejected before the
+				// paid request is sent.
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-9", "bandwidth": 10},
+					},
+				}),
+				ExpectError: regexp.MustCompile("does not match exactly one data shard"),
+			},
+			{
+				// A block without bandwidth has no meaning and is rejected instead of being
+				// sent as zero (which would release the purchased bandwidth).
+				Config: testAccConfig(map[string]interface{}{
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0"},
+					},
+				}),
+				ExpectError: regexp.MustCompile("additional_bandwidth requires bandwidth in every block"),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "30",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 30},
+						{"node_id": "db-1", "bandwidth": 30},
+					},
 				}),
 				// The out-of-band change made by the check below leaves the plan non-empty.
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "30",
-						"additional_bandwidth_node_id": "All",
-					}),
-					// Change the purchased bandwidth out of band; the next step's refresh must
-					// see the drift and reconcile it back to the configured value.
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 30, "db-1": 30}),
+					// Change the purchased bandwidth of one shard out of band; the next step's
+					// refresh must see the drift and reconcile it back to the configured value.
 					func(s *terraform.State) error {
 						rs, ok := s.RootModule().Resources[resourceId]
 						if !ok {
 							return fmt.Errorf("can't find resource by id: %s", resourceId)
 						}
-						return testAccSetAdditionalBandwidthOutOfBand(rs.Primary.ID, "40", "All")
+						return testAccSetAdditionalBandwidthOutOfBand(rs.Primary.ID, "db-1", 50)
 					},
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "30",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 30},
+						{"node_id": "db-1", "bandwidth": 30},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "30",
-						"additional_bandwidth_node_id": "All",
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-1",
+						"bandwidth": "30",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "30"),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 30, "db-1": 30}),
 				),
 			},
 			{
 				// Explicit "0" is the documented release path for the purchased bandwidth.
 				Config: testAccConfig(map[string]interface{}{
-					"additional_bandwidth":         "0",
-					"additional_bandwidth_node_id": "All",
+					"additional_bandwidth": []map[string]interface{}{
+						{"node_id": "db-0", "bandwidth": 0},
+						{"node_id": "db-1", "bandwidth": 0},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"additional_bandwidth":         "0",
-						"additional_bandwidth_node_id": "All",
+					resource.TestCheckResourceAttr(resourceId, "additional_bandwidth.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "additional_bandwidth.*", map[string]string{
+						"node_id":   "db-0",
+						"bandwidth": "0",
 					}),
-					testAccCheckAdditionalBandwidthFromApi(resourceId, "0"),
+					testAccCheckAdditionalBandwidthShardsFromApi(resourceId, map[string]int{"db-0": 0, "db-1": 0}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth_burst":              REMOVEKEY,
-					"additional_bandwidth":         REMOVEKEY,
-					"additional_bandwidth_node_id": REMOVEKEY,
+					"bandwidth_burst":      REMOVEKEY,
+					"additional_bandwidth": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bandwidth_burst":              REMOVEKEY,
-						"additional_bandwidth":         REMOVEKEY,
-						"additional_bandwidth_node_id": REMOVEKEY,
+						"bandwidth_burst": REMOVEKEY,
 					}),
 				),
 			},
@@ -3862,25 +3932,34 @@ func TestAccAliCloudKVStoreRedisInstance_elastic_burst(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "bandwidth_burst", "additional_bandwidth_node_id"},
+				ImportStateVerifyIgnore: []string{"dry_run", "business_info", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "order_type", "password", "period", "enable_public", "security_ip_group_attribute", "enable_backup_log", "bandwidth_burst", "additional_bandwidth"},
 			},
 		},
 	})
 }
 
-// testAccSetAdditionalBandwidthOutOfBand changes the purchased bandwidth outside Terraform and
-// verifies the change through DescribeRoleZoneInfo, so a later Terraform run can be shown to
-// detect and reconcile the drift.
-func testAccSetAdditionalBandwidthOutOfBand(instanceId, bandwidth, nodeId string) error {
+// testAccSetAdditionalBandwidthOutOfBand changes the purchased bandwidth of one shard outside
+// Terraform and verifies the change through DescribeRoleZoneInfo, so a later Terraform run can be
+// shown to detect and reconcile the drift.
+func testAccSetAdditionalBandwidthOutOfBand(instanceId, shardToken string, bandwidth int) error {
+	extras, err := testAccAdditionalBandwidthExtras(instanceId)
+	if err != nil {
+		return err
+	}
+	shard, err := testAccAdditionalBandwidthShardName(extras, shardToken)
+	if err != nil {
+		return err
+	}
+
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	request := map[string]interface{}{
 		"InstanceId": instanceId,
 		"ChargeType": "PostPaid",
-		"Bandwidth":  bandwidth,
-		"NodeId":     nodeId,
+		"Bandwidth":  strconv.Itoa(bandwidth),
+		"NodeId":     shard,
 	}
 	if _, err := client.RpcPost("R-kvstore", "2015-01-01", "EnableAdditionalBandwidth", nil, request, false); err != nil {
-		return fmt.Errorf("out-of-band EnableAdditionalBandwidth(%s) failed: %s", bandwidth, err)
+		return fmt.Errorf("out-of-band EnableAdditionalBandwidth(%d) on %s failed: %s", bandwidth, shard, err)
 	}
 
 	service := R_kvstoreService{client}
@@ -3888,120 +3967,453 @@ func testAccSetAdditionalBandwidthOutOfBand(instanceId, bandwidth, nodeId string
 	// waiting only for the order flag leaves it in a transient status.
 	statusConf := BuildStateConf([]string{}, []string{"Normal"}, 15*time.Minute, 10*time.Second, service.KvstoreInstanceAttributeRefreshFunc(instanceId, "InstanceStatus"))
 	if _, err := statusConf.WaitForState(); err != nil {
-		return fmt.Errorf("waiting for the instance to become Normal after out-of-band EnableAdditionalBandwidth(%s) failed: %s", bandwidth, err)
+		return fmt.Errorf("waiting for the instance to become Normal after out-of-band EnableAdditionalBandwidth(%d) failed: %s", bandwidth, err)
 	}
 	stateConf := BuildStateConf([]string{}, []string{"true"}, 10*time.Minute, 10*time.Second, service.KvstoreInstanceAttributeRefreshFunc(instanceId, "IsOrderCompleted"))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return fmt.Errorf("waiting for out-of-band EnableAdditionalBandwidth(%s) failed: %s", bandwidth, err)
+		return fmt.Errorf("waiting for out-of-band EnableAdditionalBandwidth(%d) failed: %s", bandwidth, err)
 	}
 
-	nodes, err := service.DescribeKvstoreDataNodes(instanceId)
+	actual, err := testAccAdditionalBandwidthExtras(instanceId)
 	if err != nil {
 		return err
 	}
-	if actual := buildAdditionalBandwidthState(nodes); actual != bandwidth {
-		return fmt.Errorf("expected out-of-band server-side additional bandwidth %q, got %q", bandwidth, actual)
+	if got := int(actual[shard]); got != bandwidth {
+		return fmt.Errorf("expected out-of-band server-side additional bandwidth %d on shard %s, got %d", bandwidth, shard, got)
 	}
 	return nil
 }
 
-// testAccCheckAdditionalBandwidthFromApi asserts the additional bandwidth reported by the
-// read-only DescribeRoleZoneInfo API, independently of the Terraform state.
-func testAccCheckAdditionalBandwidthFromApi(resourceId, expected string) resource.TestCheckFunc {
+// testAccAdditionalBandwidthExtras returns the additional bandwidth reported by the read-only
+// DescribeRoleZoneInfo API for every data shard, keyed by shard node name.
+func testAccAdditionalBandwidthExtras(instanceId string) (map[string]int64, error) {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	service := R_kvstoreService{client}
+	nodes, err := service.DescribeKvstoreDataNodes(instanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	extras := make(map[string]int64)
+	for _, node := range nodes {
+		if fmt.Sprint(node["InsType"]) == "3" {
+			continue
+		}
+		if !strings.EqualFold(fmt.Sprint(node["Role"]), "master") {
+			continue
+		}
+		defaultBandWidth, _ := strconv.ParseInt(fmt.Sprint(node["DefaultBandWidth"]), 10, 64)
+		currentBandWidth, _ := strconv.ParseInt(fmt.Sprint(node["CurrentBandWidth"]), 10, 64)
+		extra := currentBandWidth - defaultBandWidth
+		if extra < 0 {
+			extra = 0
+		}
+		extras[fmt.Sprint(node["InsName"])] = extra
+	}
+	return extras, nil
+}
+
+// testAccAdditionalBandwidthShardName resolves a configured node_id the way an operator reads the
+// topology: the shard node name (or its full topology ID) is used as is, and a suffix such as
+// "db-0" is matched against the names reported by the API. The production resolver is deliberately
+// not reused, so the assertion can detect a resolution defect.
+func testAccAdditionalBandwidthShardName(extras map[string]int64, token string) (string, error) {
+	name := token
+	if idx := strings.Index(name, "#"); idx >= 0 {
+		name = name[:idx]
+	}
+	if _, ok := extras[name]; ok {
+		return name, nil
+	}
+
+	matched := make([]string, 0, 1)
+	for shard := range extras {
+		if strings.HasSuffix(shard, "-"+name) {
+			matched = append(matched, shard)
+		}
+	}
+	if len(matched) == 1 {
+		return matched[0], nil
+	}
+	names := make([]string, 0, len(extras))
+	for shard := range extras {
+		names = append(names, shard)
+	}
+	sort.Strings(names)
+	return "", fmt.Errorf("node_id %q does not match exactly one data shard, data shards: %v", token, names)
+}
+
+// testAccCheckAdditionalBandwidthShardsFromApi asserts the additional bandwidth reported by the
+// read-only DescribeRoleZoneInfo API for each configured shard. The expected map is keyed by the
+// node_id used in the configuration.
+func testAccCheckAdditionalBandwidthShardsFromApi(resourceId string, expected map[string]int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceId]
 		if !ok {
 			return fmt.Errorf("can't find resource by id: %s", resourceId)
 		}
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		service := R_kvstoreService{client}
-		nodes, err := service.DescribeKvstoreDataNodes(rs.Primary.ID)
+		extras, err := testAccAdditionalBandwidthExtras(rs.Primary.ID)
 		if err != nil {
 			return err
 		}
-		if actual := buildAdditionalBandwidthState(nodes); actual != expected {
-			return fmt.Errorf("expected server-side additional bandwidth %q from DescribeRoleZoneInfo, got %q", expected, actual)
+		for token, want := range expected {
+			shard, err := testAccAdditionalBandwidthShardName(extras, token)
+			if err != nil {
+				return err
+			}
+			if got := int(extras[shard]); got != want {
+				return fmt.Errorf("expected server-side additional bandwidth %d on shard %s (%s), got %d", want, token, shard, got)
+			}
 		}
 		return nil
 	}
 }
 
-func TestUnitKvstoreAdditionalBandwidthNodeIdValidation(t *testing.T) {
-	testCases := []struct {
-		name                string
-		architectureType    string
-		shardCount          int
-		additionalBandwidth string
-		nodeId              string
-		expectedError       bool
-	}{
-		{name: "cluster without node id", architectureType: "cluster", additionalBandwidth: "10", expectedError: true},
-		{name: "read/write split without node id", architectureType: "SplitRW", additionalBandwidth: "10", expectedError: true},
-		{name: "tair rwsplit without node id", architectureType: "rwsplit", additionalBandwidth: "10", expectedError: true},
-		{name: "multiple shards without node id", architectureType: "standard", shardCount: 2, additionalBandwidth: "10", expectedError: true},
-		{name: "cluster with node id", architectureType: "cluster", additionalBandwidth: "10", nodeId: "All"},
-		{name: "standard single shard without node id", architectureType: "standard", shardCount: 1, additionalBandwidth: "10"},
-		{name: "burst only on cluster", architectureType: "cluster"},
+// importedAdditionalBandwidth collects the additional_bandwidth blocks of an imported state, keyed
+// by node_id.
+func importedAdditionalBandwidth(state *terraform.InstanceState) map[string]int {
+	blocks := make(map[string]int)
+	for key, value := range state.Attributes {
+		if !strings.HasPrefix(key, "additional_bandwidth.") || !strings.HasSuffix(key, ".node_id") {
+			continue
+		}
+		bandwidth, _ := strconv.Atoi(state.Attributes[strings.TrimSuffix(key, ".node_id")+".bandwidth"])
+		blocks[value] = bandwidth
 	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateAdditionalBandwidthNodeId(tc.architectureType, tc.shardCount, tc.additionalBandwidth, tc.nodeId)
-			if tc.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
+	return blocks
 }
 
 func TestUnitKvstoreAdditionalBandwidthState(t *testing.T) {
-	node := func(shardId, insName, role string, defaultBandWidth, currentBandWidth int64) map[string]interface{} {
+	node := func(insName, role string, defaultBandWidth, currentBandWidth int64) map[string]interface{} {
 		return map[string]interface{}{
-			"CustinsId":              shardId,
-			"InsName":                insName,
-			"Role":                   role,
-			"DefaultBandWidth":       defaultBandWidth,
-			"CurrentBandWidth":       currentBandWidth,
-			"IsOpenBandWidthService": currentBandWidth <= defaultBandWidth,
+			"CustinsId":        insName + "-shard",
+			"InsName":          insName,
+			"Role":             role,
+			"DefaultBandWidth": defaultBandWidth,
+			"CurrentBandWidth": currentBandWidth,
 		}
 	}
+	twoShards := []map[string]interface{}{
+		node("r-x-db-0", "MASTER", 96, 116),
+		node("r-x-db-1", "MASTER", 96, 126),
+	}
 
-	assert.Equal(t, "", buildAdditionalBandwidthState(nil))
-	assert.Equal(t, "0", buildAdditionalBandwidthState([]map[string]interface{}{
-		node("103819958", "r-x-db-0", "master", 96, 96),
-	}))
-	assert.Equal(t, "4", buildAdditionalBandwidthState([]map[string]interface{}{
-		node("103819958", "r-x-db-0", "master", 96, 100),
-	}))
-	// A shard reports a master and a slave row sharing CustinsId; the value is taken once per
-	// shard, so a two-shard uniform request round-trips as a single number.
-	assert.Equal(t, "20", buildAdditionalBandwidthState([]map[string]interface{}{
-		node("103819958", "r-x-db-0", "SLAVE", 96, 116),
-		node("103819958", "r-x-db-0", "MASTER", 96, 116),
-		node("103819959", "r-x-db-1", "SLAVE", 96, 116),
-		node("103819959", "r-x-db-1", "MASTER", 96, 116),
-	}))
-	// Differing per-shard values are joined in numeric shard order, not response order.
-	assert.Equal(t, "20,30,40", buildAdditionalBandwidthState([]map[string]interface{}{
-		node("c", "r-x-db-10", "MASTER", 96, 136),
-		node("b", "r-x-db-2", "MASTER", 96, 126),
-		node("a", "r-x-db-1", "MASTER", 96, 116),
-	}))
+	state, ok := buildAdditionalBandwidthState(nil, nil)
+	assert.False(t, ok)
+	assert.Nil(t, state)
 
-	// Read-only nodes are not bandwidth targets; without a writable data node nothing is derived.
-	readOnly := node("a", "r-x-db-0", "MASTER", 96, 200)
+	// An import (no managed shards) reports every shard with purchased bandwidth, keyed by name.
+	state, ok = buildAdditionalBandwidthState(twoShards, nil)
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{
+		{"node_id": "r-x-db-0", "bandwidth": 20},
+		{"node_id": "r-x-db-1", "bandwidth": 30},
+	}, state)
+
+	// A shard without purchased bandwidth is not reported by an import.
+	state, ok = buildAdditionalBandwidthState([]map[string]interface{}{
+		node("r-x-db-0", "MASTER", 96, 116),
+		node("r-x-db-1", "MASTER", 96, 96),
+	}, nil)
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{{"node_id": "r-x-db-0", "bandwidth": 20}}, state)
+
+	// Managed shards are reported with their own value and keep the configured node_id, so a
+	// shard that the configuration does not manage does not appear.
+	state, ok = buildAdditionalBandwidthState(twoShards, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-1", Bandwidth: 0},
+		{NodeId: "r-x-db-0#100", Bandwidth: 0},
+	})
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{
+		{"node_id": "db-1", "bandwidth": 30},
+		{"node_id": "r-x-db-0#100", "bandwidth": 20},
+	}, state)
+
+	// A shard reports a master and a slave row; the master row wins, and read-only nodes
+	// (InsType 3) are not bandwidth targets.
+	readOnly := node("r-x-db-1", "MASTER", 96, 200)
 	readOnly["InsType"] = 3
-	assert.Equal(t, "", buildAdditionalBandwidthState([]map[string]interface{}{readOnly}))
+	state, ok = buildAdditionalBandwidthState([]map[string]interface{}{
+		node("r-x-db-0", "SLAVE", 96, 140),
+		node("r-x-db-0", "MASTER", 96, 116),
+		readOnly,
+	}, nil)
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{{"node_id": "r-x-db-0", "bandwidth": 20}}, state)
 
-	// IsOpenBandWidthService is true whenever the node bandwidth exceeds the default, so it is
-	// not used to gate the derivation.
-	purchased := node("a", "r-x-db-0", "MASTER", 96, 120)
-	purchased["IsOpenBandWidthService"] = true
-	assert.Equal(t, "24", buildAdditionalBandwidthState([]map[string]interface{}{purchased}))
+	// Bandwidth below the specification default is reported as no additional bandwidth.
+	state, ok = buildAdditionalBandwidthState([]map[string]interface{}{
+		node("r-x-db-0", "MASTER", 96, 90),
+	}, nil)
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{}, state)
 
-	// A current bandwidth below the default is clamped to zero instead of going negative.
-	belowDefault := node("a", "r-x-db-0", "MASTER", 96, 90)
-	belowDefault["IsOpenBandWidthService"] = false
-	assert.Equal(t, "0", buildAdditionalBandwidthState([]map[string]interface{}{belowDefault}))
+	// A managed shard without a bandwidth row means the listing is incomplete: the caller keeps
+	// the previous state instead of reporting a smaller value.
+	state, ok = buildAdditionalBandwidthState(twoShards[:1], []kvstoreAdditionalBandwidth{
+		{NodeId: "db-1", Bandwidth: 30},
+	})
+	assert.False(t, ok)
+	assert.Nil(t, state)
+
+	// A managed node_id that no longer maps to exactly one shard cannot be refreshed.
+	state, ok = buildAdditionalBandwidthState([]map[string]interface{}{
+		node("r-x-db-0", "MASTER", 96, 116),
+		node("r-y-db-0", "MASTER", 96, 116),
+	}, []kvstoreAdditionalBandwidth{{NodeId: "db-0", Bandwidth: 20}})
+	assert.False(t, ok)
+	assert.Nil(t, state)
+
+	// An unambiguous suffix is resolved to its shard.
+	state, ok = buildAdditionalBandwidthState(twoShards, []kvstoreAdditionalBandwidth{{NodeId: "db-0", Bandwidth: 20}})
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{{"node_id": "db-0", "bandwidth": 20}}, state)
+
+	// A standard instance configures the bandwidth without a node_id; its single data shard is
+	// the target, including for a refreshed value.
+	state, ok = buildAdditionalBandwidthState([]map[string]interface{}{node("r-x", "MASTER", 96, 116)}, []kvstoreAdditionalBandwidth{{Bandwidth: 20}})
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{{"node_id": "", "bandwidth": 20}}, state)
+
+	state, ok = buildAdditionalBandwidthState([]map[string]interface{}{node("r-x", "MASTER", 96, 136)}, []kvstoreAdditionalBandwidth{{Bandwidth: 20}})
+	assert.True(t, ok)
+	assert.Equal(t, []map[string]interface{}{{"node_id": "", "bandwidth": 40}}, state)
+
+	// A node_id-less block cannot be refreshed when the listing has several data shards.
+	state, ok = buildAdditionalBandwidthState(twoShards, []kvstoreAdditionalBandwidth{{Bandwidth: 20}})
+	assert.False(t, ok)
+	assert.Nil(t, state)
+}
+
+func TestUnitKvstoreAdditionalBandwidthStandardRefresh(t *testing.T) {
+	node := func(insName string, defaultBandWidth, currentBandWidth int64) map[string]interface{} {
+		return map[string]interface{}{
+			"InsName":          insName,
+			"Role":             "MASTER",
+			"DefaultBandWidth": defaultBandWidth,
+			"CurrentBandWidth": currentBandWidth,
+		}
+	}
+	stateOf := func(t *testing.T, d *schema.ResourceData) map[string]int {
+		value, ok := d.Get("additional_bandwidth").(*schema.Set)
+		assert.True(t, ok)
+		blocks := make(map[string]int)
+		for _, item := range value.List() {
+			entry := item.(map[string]interface{})
+			blocks[fmt.Sprint(entry["node_id"])] = entry["bandwidth"].(int)
+		}
+		return blocks
+	}
+	newResourceData := func(raw map[string]interface{}) *schema.ResourceData {
+		d := schema.TestResourceDataRaw(t, resourceAliCloudKvstoreInstance().Schema, raw)
+		d.SetId("r-x")
+		return d
+	}
+
+	// A standard instance configures the bandwidth without a node_id. The refresh keeps that block
+	// instead of treating the instance as an import, so the state still matches the configuration.
+	d := newResourceData(map[string]interface{}{
+		"additional_bandwidth": []interface{}{map[string]interface{}{"bandwidth": 20}},
+	})
+	assert.True(t, refreshAdditionalBandwidthState(d, []map[string]interface{}{node("r-x", 96, 116)}))
+	assert.Equal(t, map[string]int{"": 20}, stateOf(t, d))
+
+	// A second refresh of the same listing produces the same state, so the next plan is empty.
+	assert.True(t, refreshAdditionalBandwidthState(d, []map[string]interface{}{node("r-x", 96, 116)}))
+	assert.Equal(t, map[string]int{"": 20}, stateOf(t, d))
+
+	// A bandwidth changed outside Terraform reaches the state, so the drift shows up in the plan.
+	assert.True(t, refreshAdditionalBandwidthState(d, []map[string]interface{}{node("r-x", 96, 136)}))
+	assert.Equal(t, map[string]int{"": 40}, stateOf(t, d))
+
+	// An explicit zero releases the purchased bandwidth but keeps the block, so the release stays
+	// in the state and does not turn into a pending creation.
+	released := newResourceData(map[string]interface{}{
+		"additional_bandwidth": []interface{}{map[string]interface{}{"bandwidth": 0}},
+	})
+	assert.True(t, refreshAdditionalBandwidthState(released, []map[string]interface{}{node("r-x", 96, 96)}))
+	assert.Equal(t, map[string]int{"": 0}, stateOf(t, released))
+
+	// Only a state without a managed block (an import) rebuilds the blocks from the node names.
+	imported := newResourceData(map[string]interface{}{})
+	assert.True(t, refreshAdditionalBandwidthState(imported, []map[string]interface{}{node("r-x", 96, 116)}))
+	assert.Equal(t, map[string]int{"r-x": 20}, stateOf(t, imported))
+
+	// A node_id-less block cannot be matched to a listing with several data shards, so the refresh
+	// keeps the previous state rather than writing another shard's value.
+	ambiguous := newResourceData(map[string]interface{}{
+		"additional_bandwidth": []interface{}{map[string]interface{}{"bandwidth": 20}},
+	})
+	assert.False(t, refreshAdditionalBandwidthState(ambiguous, []map[string]interface{}{
+		node("r-x-db-0", 96, 116),
+		node("r-x-db-1", 96, 116),
+	}))
+	assert.Equal(t, map[string]int{"": 20}, stateOf(t, ambiguous))
+}
+
+func TestUnitKvstoreAdditionalBandwidthRequest(t *testing.T) {
+	shards := []string{"r-x-db-0", "r-x-db-1", "r-x-db-10"}
+
+	nodeIds, bandwidths, err := buildAdditionalBandwidthRequest("cluster", 3, shards, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "", nodeIds)
+	assert.Equal(t, "", bandwidths)
+
+	// Every bandwidth value is emitted next to its own shard, and the vectors are ordered by
+	// shard name so a plan produces a stable request.
+	nodeIds, bandwidths, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "r-x-db-1", Bandwidth: 30},
+		{NodeId: "r-x-db-0", Bandwidth: 20},
+		{NodeId: "r-x-db-10", Bandwidth: 40},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "r-x-db-0,r-x-db-1,r-x-db-10", nodeIds)
+	assert.Equal(t, "20,30,40", bandwidths)
+
+	// A suffix addresses one shard without repeating the instance ID.
+	nodeIds, bandwidths, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-10", Bandwidth: 50},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "r-x-db-10", nodeIds)
+	assert.Equal(t, "50", bandwidths)
+
+	// The topology form is accepted, but only the shard node name is sent.
+	nodeIds, bandwidths, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "r-x-db-0#123456", Bandwidth: 20},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "r-x-db-0", nodeIds)
+	assert.Equal(t, "20", bandwidths)
+
+	// Releasing the purchased bandwidth is an explicit zero.
+	nodeIds, bandwidths, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-0", Bandwidth: 0},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "r-x-db-0", nodeIds)
+	assert.Equal(t, "0", bandwidths)
+
+	// A standard instance takes Bandwidth alone; the API does not accept NodeId for it.
+	nodeIds, bandwidths, err = buildAdditionalBandwidthRequest("standard", 1, nil, []kvstoreAdditionalBandwidth{
+		{Bandwidth: 20},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "", nodeIds)
+	assert.Equal(t, "20", bandwidths)
+
+	// A read/write splitting architecture identified only by its shard count still requires the
+	// shard name, and a standard instance rejects a block that names one.
+	nodeIds, bandwidths, err = buildAdditionalBandwidthRequest("", 2, []string{"r-x-db-0", "r-x-db-1"}, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-1", Bandwidth: 20},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "r-x-db-1", nodeIds)
+	assert.Equal(t, "20", bandwidths)
+
+	_, _, err = buildAdditionalBandwidthRequest("standard", 1, nil, []kvstoreAdditionalBandwidth{
+		{NodeId: "r-x", Bandwidth: 20},
+	})
+	assert.Error(t, err)
+
+	// A cluster instance rejects a block without a shard name, and a standard instance accepts a
+	// single block only.
+	_, _, err = buildAdditionalBandwidthRequest("cluster", 2, shards, []kvstoreAdditionalBandwidth{
+		{Bandwidth: 20},
+	})
+	assert.Error(t, err)
+
+	_, _, err = buildAdditionalBandwidthRequest("standard", 1, nil, []kvstoreAdditionalBandwidth{
+		{Bandwidth: 20},
+		{Bandwidth: 30},
+	})
+	assert.Error(t, err)
+
+	// The same shard spelled two ways is rejected instead of being sent twice.
+	_, _, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-0", Bandwidth: 20},
+		{NodeId: "r-x-db-0#123456", Bandwidth: 30},
+	})
+	assert.Error(t, err)
+
+	// A node_id that matches no shard is rejected before the API call.
+	_, _, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-9", Bandwidth: 20},
+	})
+	assert.Error(t, err)
+
+	// A suffix shared by two shards is ambiguous and rejected.
+	_, _, err = buildAdditionalBandwidthRequest("cluster", 2, []string{"r-x-db-0", "r-y-db-0"}, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-0", Bandwidth: 20},
+	})
+	assert.Error(t, err)
+
+	// A negative bandwidth value is rejected.
+	_, _, err = buildAdditionalBandwidthRequest("cluster", 3, shards, []kvstoreAdditionalBandwidth{
+		{NodeId: "db-0", Bandwidth: -1},
+	})
+	assert.Error(t, err)
+}
+
+func TestUnitKvstoreAdditionalBandwidthPagination(t *testing.T) {
+	pages := map[int][]map[string]interface{}{
+		1: {{"InsName": "r-x-db-0"}, {"InsName": "r-x-db-1"}},
+		2: {{"InsName": "r-x-db-2"}},
+	}
+	var requested []int
+	nodes, err := collectAdditionalBandwidthNodes(func(pageNumber, pageSize int) ([]map[string]interface{}, int, error) {
+		requested = append(requested, pageNumber)
+		return pages[pageNumber], 3, nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []int{1, 2}, requested)
+	assert.Len(t, nodes, 3)
+
+	// A late page is still collected when the earlier pages are full.
+	requested = nil
+	nodes, err = collectAdditionalBandwidthNodes(func(pageNumber, pageSize int) ([]map[string]interface{}, int, error) {
+		requested = append(requested, pageNumber)
+		if pageNumber == 1 {
+			return []map[string]interface{}{{"InsName": "r-x-db-0"}}, 2, nil
+		}
+		if pageNumber == 2 {
+			return []map[string]interface{}{{"InsName": "r-x-db-1"}}, 2, nil
+		}
+		return nil, 2, nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []int{1, 2}, requested)
+	assert.Len(t, nodes, 2)
+
+	// An empty page before TotalCount is reached is an incomplete listing.
+	_, err = collectAdditionalBandwidthNodes(func(pageNumber, pageSize int) ([]map[string]interface{}, int, error) {
+		if pageNumber == 1 {
+			return []map[string]interface{}{{"InsName": "r-x-db-0"}}, 3, nil
+		}
+		return nil, 3, nil
+	})
+	assert.ErrorIs(t, err, errIncompleteAdditionalBandwidthNodes)
+
+	// Without TotalCount a short page ends the walk.
+	requested = nil
+	nodes, err = collectAdditionalBandwidthNodes(func(pageNumber, pageSize int) ([]map[string]interface{}, int, error) {
+		requested = append(requested, pageNumber)
+		if pageNumber == 1 {
+			return []map[string]interface{}{{"InsName": "r-x-db-0"}}, 0, nil
+		}
+		return nil, 0, nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []int{1}, requested)
+	assert.Len(t, nodes, 1)
+
+	// A page error is surfaced with the nodes collected so far.
+	_, err = collectAdditionalBandwidthNodes(func(pageNumber, pageSize int) ([]map[string]interface{}, int, error) {
+		if pageNumber == 2 {
+			return nil, 0, fmt.Errorf("boom")
+		}
+		return []map[string]interface{}{{"InsName": "r-x-db-0"}}, 2, nil
+	})
+	assert.Error(t, err)
 }

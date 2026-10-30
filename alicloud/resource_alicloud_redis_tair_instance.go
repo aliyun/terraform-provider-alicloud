@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -38,14 +39,23 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Computed: true,
 			},
 			"additional_bandwidth": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^(\d+,)*\d+$`), "must be a comma separated list of non-negative integers"),
-			},
-			"additional_bandwidth_node_id": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"node_id": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\S+$`), "must be a data shard name without surrounding whitespace"),
+						},
+						"bandwidth": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(0),
+						},
+					},
+				},
 			},
 			"auto_renew": {
 				Type:     schema.TypeString,
@@ -589,12 +599,14 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	// bandwidth is observable instead of being write-only.
 	dataNodes, err := redisServiceV2.DescribeTairInstanceDataNodes(d.Id())
 	if err != nil {
-		// The instance can be removed between the attribute read and this call.
-		if !NotFoundError(err) {
+		// The instance can be removed between the attribute read and this call, and an
+		// incomplete page listing must not overwrite the state with a partial value.
+		if !NotFoundError(err) && !errors.Is(err, errIncompleteAdditionalBandwidthNodes) {
 			return WrapError(err)
 		}
-	} else if v := buildAdditionalBandwidthState(dataNodes); v != "" {
-		d.Set("additional_bandwidth", v)
+		log.Printf("[WARN] Keeping the previous additional_bandwidth of %s: %s", d.Id(), err)
+	} else if !refreshAdditionalBandwidthState(d, dataNodes) {
+		log.Printf("[WARN] Keeping the previous additional_bandwidth of %s: the DescribeRoleZoneInfo listing has no row for a configured data shard", d.Id())
 	}
 
 	objectRaw, err = redisServiceV2.DescribeTairInstanceDescribeInstanceConfig(d.Id())
@@ -1335,7 +1347,7 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	if d.HasChanges("bandwidth_burst", "additional_bandwidth", "additional_bandwidth_node_id") {
+	if d.HasChanges("bandwidth_burst", "additional_bandwidth") {
 		request = make(map[string]interface{})
 		query = make(map[string]interface{})
 		request["InstanceId"] = d.Id()
@@ -1351,22 +1363,32 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		// additional_bandwidth is Optional+Computed, so d.Get would also return the value read
 		// back from DescribeRoleZoneInfo. Only the raw configuration says what the user actually
 		// configured; otherwise a value removed from the configuration would be re-applied.
-		additionalBandwidth, additionalBandwidthNodeId := additionalBandwidthFromRawConfig(d)
-		if additionalBandwidth != "" {
-			redisServiceV2 := RedisServiceV2{client}
-			instance, err := redisServiceV2.DescribeRedisTairInstance(d.Id())
+		if targets, err := additionalBandwidthEntriesFromRawConfig(d); err != nil {
+			return WrapError(err)
+		} else if len(targets) > 0 {
+			tairService := RedisServiceV2{client}
+			instance, err := tairService.DescribeRedisTairInstance(d.Id())
 			if err != nil {
 				return WrapError(err)
 			}
 			architectureType := fmt.Sprint(instance["ArchitectureType"])
 			shardCount, _ := strconv.Atoi(fmt.Sprint(instance["ShardCount"]))
-			if err := validateAdditionalBandwidthNodeId(architectureType, shardCount, additionalBandwidth, additionalBandwidthNodeId); err != nil {
+			var shardNames []string
+			if additionalBandwidthNeedsShardNames(targets) {
+				dataNodes, err := tairService.DescribeTairInstanceDataNodes(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+				shardNames = additionalBandwidthShardNames(additionalBandwidthNodeExtras(dataNodes))
+			}
+			nodeIds, bandwidths, err := buildAdditionalBandwidthRequest(architectureType, shardCount, shardNames, targets)
+			if err != nil {
 				return WrapError(err)
 			}
-			request["Bandwidth"] = additionalBandwidth
-			if additionalBandwidthNodeId != "" {
-				request["NodeId"] = additionalBandwidthNodeId
+			if nodeIds != "" {
+				request["NodeId"] = nodeIds
 			}
+			request["Bandwidth"] = bandwidths
 		}
 
 		if len(request) > 2 {
@@ -1526,15 +1548,24 @@ func convertRedisTairInstanceShardTypeRequest(source interface{}) interface{} {
 func configuredConfigKeysFromRawConfig(d *schema.ResourceData) map[string]struct{} {
 	keys := make(map[string]struct{})
 	rawConfig := d.GetRawConfig()
-	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+	if !rawConfig.IsNull() && rawConfig.IsKnown() {
+		configValue := rawConfig.GetAttr("config")
+		if configValue.IsNull() || !configValue.IsKnown() {
+			// config is not managed by the configuration: keep the full API template so the
+			// state does not freeze a subset that later diverges from an import read.
+			return keys
+		}
+		for k := range configValue.AsValueMap() {
+			keys[k] = struct{}{}
+		}
 		return keys
 	}
-	configValue := rawConfig.GetAttr("config")
-	if configValue.IsNull() || !configValue.IsKnown() {
-		return keys
-	}
-	for k := range configValue.AsValueMap() {
-		keys[k] = struct{}{}
+	// A plain refresh carries no raw configuration; fall back to the keys already tracked in
+	// state so a configured subset is not replaced by the full API template.
+	if v, ok := d.GetOk("config"); ok && v != nil {
+		for k := range v.(map[string]interface{}) {
+			keys[k] = struct{}{}
+		}
 	}
 	return keys
 }
