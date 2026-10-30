@@ -230,24 +230,6 @@ func Provider() *schema.Provider {
 
 			// apig
 
-			// arms
-			"alicloud_arms_addon_releases":         dataSourceAliCloudArmsAddonReleases(),
-			"alicloud_arms_env_features":           dataSourceAliCloudArmsEnvFeatures(),
-			"alicloud_arms_env_custom_jobs":        dataSourceAliCloudArmsEnvCustomJobs(),
-			"alicloud_arms_env_service_monitors":   dataSourceAliCloudArmsEnvServiceMonitors(),
-			"alicloud_arms_env_pod_monitors":       dataSourceAliCloudArmsEnvPodMonitors(),
-			"alicloud_arms_environments":           dataSourceAliCloudArmsEnvironments(),
-			"alicloud_arms_alert_contacts":         dataSourceAlicloudArmsAlertContacts(),
-			"alicloud_arms_alert_robots":           dataSourceAlicloudArmsAlertRobots(),
-			"alicloud_arms_alert_contact_groups":   dataSourceAlicloudArmsAlertContactGroups(),
-			"alicloud_arms_dispatch_rules":         dataSourceAlicloudArmsDispatchRules(),
-			"alicloud_arms_prometheus_alert_rules": dataSourceAlicloudArmsPrometheusAlertRules(),
-			"alicloud_arms_prometheis":             dataSourceAliCloudArmsPrometheis(),
-			"alicloud_arms_prometheus":             dataSourceAliCloudArmsPrometheis(),
-			"alicloud_arms_integration_exporters":  dataSourceAlicloudArmsIntegrationExporters(),
-			"alicloud_arms_remote_writes":          dataSourceAlicloudArmsRemoteWrites(),
-			"alicloud_arms_prometheus_monitorings": dataSourceAliCloudArmsPrometheusMonitorings(),
-
 			// bastionhost
 			"alicloud_bastionhost_instances":       dataSourceAlicloudBastionhostInstances(),
 			"alicloud_bastionhost_user_groups":     dataSourceAlicloudBastionhostUserGroups(),
@@ -1124,26 +1106,6 @@ func Provider() *schema.Provider {
 			"alicloud_api_gateway_plugin_attachment":       resourceAlicloudApiGatewayPluginAttachment(),
 
 			// apig
-
-			// arms
-			"alicloud_arms_synthetic_task":        resourceAliCloudArmsSyntheticTask(),
-			"alicloud_arms_grafana_workspace":     resourceAliCloudArmsGrafanaWorkspace(),
-			"alicloud_arms_env_custom_job":        resourceAliCloudArmsEnvCustomJob(),
-			"alicloud_arms_env_service_monitor":   resourceAliCloudArmsEnvServiceMonitor(),
-			"alicloud_arms_env_pod_monitor":       resourceAliCloudArmsEnvPodMonitor(),
-			"alicloud_arms_addon_release":         resourceAliCloudArmsAddonRelease(),
-			"alicloud_arms_env_feature":           resourceAliCloudArmsEnvFeature(),
-			"alicloud_arms_environment":           resourceAliCloudArmsEnvironment(),
-			"alicloud_arms_prometheus_monitoring": resourceAliCloudArmsPrometheusMonitoring(),
-			"alicloud_arms_alert_contact":         resourceAlicloudArmsAlertContact(),
-			"alicloud_arms_alert_robot":           resourceAlicloudArmsAlertRobot(),
-			"alicloud_arms_alert_contact_group":   resourceAlicloudArmsAlertContactGroup(),
-			"alicloud_arms_dispatch_rule":         resourceAlicloudArmsDispatchRule(),
-			"alicloud_arms_prometheus_alert_rule": resourceAlicloudArmsPrometheusAlertRule(),
-			"alicloud_arms_prometheus":            resourceAlicloudArmsPrometheus(),
-			"alicloud_arms_integration_exporter":  resourceAlicloudArmsIntegrationExporter(),
-			"alicloud_arms_remote_write":          resourceAliCloudArmsRemoteWrite(),
-			"alicloud_arms_notification_policy":   resourceAliCloudArmsNotificationPolicy(),
 
 			// auto
 			"alicloud_auto_provisioning_group": resourceAlicloudAutoProvisioningGroup(),

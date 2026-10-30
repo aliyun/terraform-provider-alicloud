@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Arms Alert Contact Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.131.0+.
+-> **NOTE:** Available since v1.131.0.
 
 ## Example Usage
 
@@ -39,14 +39,14 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Alert Contact Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Alert Contact Group names.
 * `groups` - A list of Arms Alert Contact Groups. Each element contains the following attributes:
-	* `alert_contact_group_id` - The first ID of the resource.
-	* `alert_contact_group_name` - The name of the resource.
-	* `contact_ids` - contact ids.
-	* `create_time` - The creation time of the resource.
-	* `id` - The ID of the Alert Contact Group.
+  * `alert_contact_group_id` - The first ID of the resource.
+  * `alert_contact_group_name` - The name of the resource.
+  * `contact_ids` - contact ids.
+  * `create_time` - The creation time of the resource.
+  * `id` - The ID of the Alert Contact Group.

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Arms Alert Contacts of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.129.0+.
+-> **NOTE:** Available since v1.129.0.
 
 ## Example Usage
 
@@ -43,18 +43,18 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `phone_num` - (Optional, ForceNew) The mobile number of the alert contact. 
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Alert Contact names.
 * `contacts` - A list of Arms Alert Contacts. Each element contains the following attributes:
-	* `alert_contact_id` - Contact ID.
-	* `alert_contact_name` - The name of the alert contact.
-	* `create_time` - The Creation Time Timestamp.
-	* `ding_robot_webhook_url` - The webhook URL of the DingTalk chatbot. 
-	* `email` - The email address of the alert contact. 
-	* `id` - The ID of the Alert Contact.
-	* `phone_num` - The mobile number of the alert contact. 
-	* `system_noc` - Specifies whether the alert contact receives system notifications. 
-	* `webhook` - Webhook Information.
+  * `alert_contact_id` - Contact ID.
+  * `alert_contact_name` - The name of the alert contact.
+  * `create_time` - The Creation Time Timestamp.
+  * `ding_robot_webhook_url` - The webhook URL of the DingTalk chatbot.
+  * `email` - The email address of the alert contact.
+  * `id` - The ID of the Alert Contact.
+  * `phone_num` - The mobile number of the alert contact.
+  * `system_noc` - Specifies whether the alert contact receives system notifications.
+  * `webhook` - Webhook Information.
