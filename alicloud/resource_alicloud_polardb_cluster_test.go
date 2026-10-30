@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -982,6 +983,30 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 						"auto_renew_period": "2",
 					}),
 				),
+			},
+			{
+				// The previous step already left duration=2/period_unit=Month in
+				// the API, so this step must move the values to exercise the new
+				// ModifyAutoRenewAttribute branch.
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "AutoRenewal",
+					"duration":       "6",
+					"period_unit":    "Month",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "AutoRenewal",
+						"duration":       "6",
+						"period_unit":    "Month",
+					}),
+				),
+			},
+			{
+				// The applied auto-renewal values must be readable after import.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category", "period", "auto_renew_period"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -2013,21 +2038,29 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"standby_az": "cn-hangzhou-i",
+					"standby_az":                  "cn-hangzhou-i",
+					"zone_type":                   "Standby",
+					"is_switch_over_for_disaster": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"standby_az": "cn-hangzhou-i",
+						"standby_az":                  "cn-hangzhou-i",
+						"zone_type":                   "Standby",
+						"is_switch_over_for_disaster": "false",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"standby_az": "cn-hangzhou-k",
+					"standby_az":                  "cn-hangzhou-k",
+					"zone_type":                   "Standby",
+					"is_switch_over_for_disaster": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"standby_az": "cn-hangzhou-k",
+						"standby_az":                  "cn-hangzhou-k",
+						"zone_type":                   "Standby",
+						"is_switch_over_for_disaster": "false",
 					}),
 				),
 			},
@@ -3002,6 +3035,268 @@ func resourcePolarDBClusterTDEOracleConfigDependence(name string) string {
 	// (the API returns abbreviated Engine names); the Oracle cluster identity
 	// (db_type/db_version/db_node_class) is supplied by the test step config.
 	return resourcePolarDBClusterTDEPostgreSQLConfigDependence(name)
+}
+
+func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
+	var v *polardb.DescribeDBClusterAttributeResponse
+	name := "tf-testAccPolarDBClusterArchitecture"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":           CHECKSET,
+		"db_node_class":         CHECKSET,
+		"vswitch_id":            CHECKSET,
+		"db_type":               CHECKSET,
+		"db_version":            CHECKSET,
+		"architecture":          CHECKSET,
+		"cluster_network_type":  CHECKSET,
+		"storage_auto_scale":    CHECKSET,
+		"storage_type":          CHECKSET,
+		"storage_space":         CHECKSET,
+		"storage_upper_bound":   CHECKSET,
+		"deploy_unit":           CHECKSET,
+		"db_cluster_ip_array.#": CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterSENormalConfigDependence)
+
+	// A near-future flashing time is required for ModifyDBNodeClass in the
+	// update step; it must stay inside the 24 hour scheduling window.
+	plannedFlashingOffTime := time.Now().Add(45 * time.Minute).UTC().Format("2006-01-02T15:04:05Z")
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			// The SENormal architecture/storage matrix is only sold in
+			// cn-hangzhou; other default regions return InvalidZoneID.NotFound.
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+
+		IDRefreshName: resourceId,
+		// tags and global_security_group_list are Optional (not Computed) and only
+		// populated by Read, so the refresh-only state gains "0"/"0" keys that the
+		// applied state does not have; the ID-only test cannot be equal for them.
+		IDRefreshIgnore: []string{"tags", "global_security_group_list"},
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":              "MySQL",
+					"db_version":           "8.0",
+					"pay_type":             "PostPaid",
+					"db_node_count":        "2",
+					"db_node_class":        "polar.mysql.x4.large.c",
+					"vswitch_id":           "${local.vswitch_id}",
+					"zone_id":              "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
+					"creation_category":    "SENormal",
+					"architecture":         "X86",
+					"cluster_network_type": "VPC",
+					"storage_type":         "ESSDPL1",
+					"storage_space":        50,
+					"storage_auto_scale":   "Enable",
+					"storage_upper_bound":  "200",
+					"description":          "${var.name}",
+					// DescribeDBClusterTDE reports EncryptNewTables="OFF" while the
+					// schema field is Optional (not Computed), so it must be stated
+					// explicitly or the OFF=>"" drift fails the post-apply plan check.
+					"encrypt_new_tables": "OFF",
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"architecture":         "X86",
+						"cluster_network_type": "VPC",
+						"storage_auto_scale":   "Enable",
+						"storage_type":         "ESSDPL1",
+						"storage_space":        "50",
+						"storage_upper_bound":  "200",
+						"deploy_unit":          CHECKSET,
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "db_cluster_ip_array.*", map[string]string{
+						"db_cluster_ip_array_name": "default",
+					}),
+				),
+			},
+			{
+				// Schema-path entries silence the coverage gate; the indexed entries
+				// are what ImportStateVerify prefix-matches for set elements.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
+			},
+			{
+				// Node class change sends planned_flashing_off_time. Automatic
+				// storage scaling is disabled while storage_upper_bound stays at
+				// 300: the API only reports the bound while scaling is enabled, so
+				// this is the state that the import step below has to converge.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class":       "polar.mysql.x4.xlarge.c",
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+					"encrypt_new_tables":  "OFF",
+					// Add a user-managed hidden IP array to verify the write path
+					// sends DBClusterIPArrayAttribute=hidden and the Read path (F2)
+					// keeps it in state so the attribute converges instead of being
+					// dropped. The default array is redeclared so it is not removed.
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_type":        "ESSDPL1",
+						"storage_upper_bound": "300",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "db_cluster_ip_array.*", map[string]string{
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+					}),
+				),
+			},
+			{
+				// Import with automatic storage scaling disabled: the bound is not
+				// reported by the API, so only the attributes the API returns can
+				// be compared. The plan check below proves the configured 300 GB is
+				// kept instead of producing a diff.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// storage_upper_bound is not reported while automatic storage
+				// scaling is disabled; apply-time convergence is covered by step 3.
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "storage_upper_bound"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attrs := states[0].Attributes
+					if attrs["storage_auto_scale"] != "Disable" {
+						return fmt.Errorf("imported storage_auto_scale = %q, want Disable", attrs["storage_auto_scale"])
+					}
+					if attrs["db_cluster_ip_array.#"] != "2" {
+						return fmt.Errorf("imported db_cluster_ip_array.# = %q, want 2", attrs["db_cluster_ip_array.#"])
+					}
+					foundHidden := false
+					for key, value := range attrs {
+						if strings.HasSuffix(key, ".db_cluster_ip_array_name") && value == "tftesthid" {
+							foundHidden = true
+						}
+					}
+					if !foundHidden {
+						return fmt.Errorf("imported state is missing the user managed hidden whitelist group")
+					}
+					return nil
+				},
+			},
+			{
+				// Convergence after import while auto scaling is disabled: the
+				// persisted imported state has no readable bound, so applying this
+				// configuration keeps 300 GB instead of diffing it away. The
+				// write-side attributes are declared here (without changing
+				// db_node_class or standby_az) so they stay covered without
+				// scheduling another modify call.
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_new_tables":          "OFF",
+					"storage_auto_scale":          "Disable",
+					"storage_upper_bound":         "300",
+					"planned_flashing_off_time":   plannedFlashingOffTime,
+					"zone_type":                   "Standby",
+					"is_switch_over_for_disaster": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":          "Disable",
+						"storage_upper_bound":         "300",
+						"planned_flashing_off_time":   plannedFlashingOffTime,
+						"zone_type":                   "Standby",
+						"is_switch_over_for_disaster": "false",
+					}),
+				),
+			},
+			{
+				// The nested block only supports IP whitelists; security groups are
+				// managed by the top-level security_group_ids attribute.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "SecurityGroup",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`expected white_list_type to be one of \[IP\]`),
+			},
+			{
+				// The contract minimum for StorageUpperBound is 20.
+				Config: testAccConfig(map[string]interface{}{
+					"storage_upper_bound": "10",
+				}),
+				ExpectError: regexp.MustCompile(`expected storage_upper_bound to be in the range \(20 - 64000\)`),
+			},
+			{
+				// ModifyDBNodeClass only accepts DLNode for AI node class changes.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_type": "Primary",
+				}),
+				ExpectError: regexp.MustCompile(`expected db_node_type to be one of \[DLNode\]`),
+			},
+			{
+				// Restore a valid configuration after the negative steps so the
+				// final destroy runs with accepted values instead of the rejected
+				// ones from the expectations above.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_type":        REMOVEKEY,
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+					"encrypt_new_tables":  "OFF",
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_auto_scale":  "Disable",
+						"storage_upper_bound": "300",
+					}),
+				),
+			},
+		},
+	})
 }
 
 func resourcePolarDBClusterConfigDependence(name string) string {
