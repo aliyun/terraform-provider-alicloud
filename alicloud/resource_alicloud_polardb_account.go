@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -31,6 +32,21 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
 			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("account_password"), cty.GetAttrPath("account_password_wo")),
 			validation.PreferWriteOnlyAttribute(cty.GetAttrPath("kms_encrypted_password"), cty.GetAttrPath("account_password_wo")),
+		},
+		// CreateAccount applies PrivForAllDB only when AccountPrivilege is sent in the same request,
+		// so reject the combination at plan time instead of silently creating an account without the declared grants.
+		// Unknown values at plan time are validated again before the API call in Create.
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+			if !diff.NewValueKnown("priv_for_all_db") || !diff.NewValueKnown("account_privilege") {
+				return nil
+			}
+			if diff.Get("priv_for_all_db").(string) != "1" {
+				return nil
+			}
+			if diff.Get("account_privilege").(string) == "" {
+				return fmt.Errorf(`"priv_for_all_db" set to "1" requires "account_privilege" to be set`)
+			}
+			return nil
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -75,17 +91,51 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"account_type": {
+			"account_privilege": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Normal", "Super", "DynamoDB"}, false),
+				RequiredWith: []string{"db_name"},
+				ValidateFunc: validatePolarDbAccountPrivilege,
+			},
+			"account_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				Computed:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Normal", "Super", "DynamoDB"}, false),
+				DiffSuppressFunc: polarDbAccountTypeDiffSuppressFunc,
 			},
 			"db_cluster_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"db_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"node_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Search"}, false),
+			},
+			"password_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"priv_for_all_db": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"reset_permission_flag": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -119,6 +169,13 @@ func resourceAliCloudPolarDbAccount() *schema.Resource {
 func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+
+	// Plan-time values may be unknown; re-check the pairing that the API silently ignores here.
+	if v, ok := d.GetOk("priv_for_all_db"); ok && v.(string) == "1" {
+		if _, ok := d.GetOk("account_privilege"); !ok {
+			return WrapError(Error(`"priv_for_all_db" set to "1" requires "account_privilege" to be set`))
+		}
+	}
 
 	action := "CreateAccount"
 	var request map[string]interface{}
@@ -165,11 +222,23 @@ func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface
 	} else {
 		request["AccountType"] = "Normal"
 	}
+	if v, ok := d.GetOk("db_name"); ok {
+		request["DBName"] = v
+	}
+	if v, ok := d.GetOk("node_type"); ok {
+		request["NodeType"] = v
+	}
+	if v, ok := d.GetOk("priv_for_all_db"); ok {
+		request["PrivForAllDB"] = v
+	}
+	if v, ok := d.GetOk("account_privilege"); ok {
+		request["AccountPrivilege"] = v
+	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout", "EngineMigration.ActionDisabled"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -184,6 +253,9 @@ func resourceAliCloudPolarDbAccountCreate(d *schema.ResourceData, meta interface
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["DBClusterId"], request["AccountName"]))
+	if v, ok := d.GetOk("node_type"); ok {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), v))
+	}
 
 	polarDbServiceV2 := PolarDbServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, polarDbServiceV2.PolarDbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
@@ -222,6 +294,9 @@ func resourceAliCloudPolarDbAccountRead(d *schema.ResourceData, meta interface{}
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_cluster_id", parts[0])
+	if len(parts) == 3 && parts[2] != "" {
+		d.Set("node_type", parts[2])
+	}
 
 	return nil
 }
@@ -301,16 +376,16 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 	}
 	update = false
 	parts = strings.Split(d.Id(), ":")
-	action = "ModifyAccountPassword"
+	action = "ResetAccountPassword"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
 
+	password := ""
 	if !d.IsNewResource() && d.HasChange("account_password") {
 		update = true
-
-		request["NewAccountPassword"] = d.Get("account_password")
+		password = d.Get("account_password").(string)
 	}
 
 	if !d.IsNewResource() && d.HasChange("kms_encrypted_password") {
@@ -321,7 +396,7 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapError(err)
 		}
-		request["NewAccountPassword"] = decryptResp
+		password = decryptResp
 	}
 
 	if !d.IsNewResource() && d.HasChange("account_password_wo_version") {
@@ -329,7 +404,67 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 		if woValue, err := getWriteOnlyValue(d, cty.GetAttrPath("account_password_wo"), cty.String); err != nil {
 			return WrapError(err)
 		} else if !woValue.IsNull() {
-			request["NewAccountPassword"] = woValue.AsString()
+			password = woValue.AsString()
+		}
+	}
+	passwordType := d.Get("password_type").(string)
+	// Removing password_type is not a password update; only a configured type is sent together with a new password.
+	if !d.IsNewResource() && d.HasChange("password_type") && passwordType != "" {
+		update = true
+	}
+	if update && password == "" {
+		if v := d.Get("account_password").(string); v != "" {
+			password = v
+		} else {
+			return WrapError(Error("The 'password_type' can only be changed together with 'account_password', 'kms_encrypted_password' or 'account_password_wo_version'."))
+		}
+	}
+	if update {
+		// ModifyAccountPassword is the only API that accepts PasswordType; the regular
+		// password update goes through ResetAccountPassword.
+		if passwordType != "" {
+			action = "ModifyAccountPassword"
+			request["NewAccountPassword"] = password
+			request["PasswordType"] = passwordType
+		} else {
+			request["AccountPassword"] = password
+		}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OutofUsage", "InstanceConnectTimeoutFault", "OperationDenied.DBInstanceStatus", "ConcurrentTaskExceeded", "OperationDenied.DBClusterStatus", "OperationDenied.DBStatus", "Database.ConnectError", "LockTimeout", "EngineMigration.ActionDisabled"}) || NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	action = "ResetAccount"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["AccountName"] = parts[1]
+	request["DBClusterId"] = parts[0]
+
+	if !d.IsNewResource() && d.HasChange("reset_permission_flag") && d.Get("reset_permission_flag").(bool) {
+		if v, ok := d.GetOk("account_type"); !ok || v.(string) != "Super" {
+			return WrapError(Error("The 'reset_permission_flag' can only be used to reset the permissions of a Super account."))
+		}
+		update = true
+		if password == "" {
+			password = d.Get("account_password").(string)
+		}
+		if password != "" {
+			request["AccountPassword"] = password
 		}
 	}
 	if update {
@@ -348,6 +483,12 @@ func resourceAliCloudPolarDbAccountUpdate(d *schema.ResourceData, meta interface
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		polarDbServiceV2 := PolarDbServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, polarDbServiceV2.PolarDbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
@@ -401,4 +542,39 @@ func resourceAliCloudPolarDbAccountDelete(d *schema.ResourceData, meta interface
 	}
 
 	return nil
+}
+
+// DescribeAccounts reports the privilege-scoped account type (for example ReadOnly for an account
+// created with a cluster-wide read-only privilege) even though CreateAccount was called with Normal.
+// Suppressing that one transition keeps the configured type as the plan intent; any change the user
+// actually makes to account_type still produces a replacement diff.
+func polarDbAccountTypeDiffSuppressFunc(_, old, new string, _ *schema.ResourceData) bool {
+	return new == "Normal" && old == "ReadOnly"
+}
+
+func validatePolarDbAccountPrivilege(v interface{}, k string) (ws []string, es []error) {
+	value, ok := v.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("%q must be a string", k)}
+	}
+	if len(value) > 900 {
+		return nil, []error{fmt.Errorf("%q cannot exceed 900 characters", k)}
+	}
+	allowed := map[string]bool{
+		"ReadWrite": true,
+		"ReadOnly":  true,
+		"DMLOnly":   true,
+		"DDLOnly":   true,
+		"ReadIndex": true,
+	}
+	for _, privilege := range strings.Split(value, ",") {
+		if privilege == "" {
+			es = append(es, fmt.Errorf("%q contains an empty value, use a comma-separated list such as \"ReadWrite,ReadOnly\"", k))
+			continue
+		}
+		if !allowed[privilege] {
+			es = append(es, fmt.Errorf("%q contains invalid value %q, valid values: ReadWrite, ReadOnly, DMLOnly, DDLOnly, ReadIndex", k, privilege))
+		}
+	}
+	return ws, es
 }
