@@ -7,11 +7,11 @@ description: |-
   Provides a list of log projects to the user.
 ---
 
-# alicloud\_log\_projects
+# alicloud_log_projects
 
 This data source provides the Log Projects of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.126.0+.
+-> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
@@ -36,17 +36,17 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of log project. Valid values `Normal` and `Disable`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of project names.
 * `projects` - A list of Log Project. Each element contains the following attributes:
-	* `description` - The description of the project.
-	* `id` - The ID of the project.
-	* `project_name` - The name of the project. 
-	* `last_modify_time` - The last modify time of project.
-	* `owner` - The owner of project.
-	* `region` - The region of project.
-	* `status` - The status of project.
-	* `policy` - (Available in 1.198.0+) The policy of project.
+  * `description` - The description of the project.
+  * `id` - The ID of the project.
+  * `project_name` - The name of the project.
+  * `last_modify_time` - The last modify time of project.
+  * `owner` - The owner of project.
+  * `region` - The region of project.
+  * `status` - The status of project.
+  * `policy` - (Available in 1.198.0+) The policy of project.
