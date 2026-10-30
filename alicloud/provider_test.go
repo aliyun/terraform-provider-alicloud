@@ -558,13 +558,6 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no sag instance id setting")
-		t.Skipped()
-	}
-}
-
 func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1")); v == "" {
 		t.Skip("Skipping the test case with no sag folder id setting")
@@ -597,13 +590,6 @@ func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
 func testAccPreCheckWithSlbInstanceSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_SLB_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no slb instance id setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no sag app instance id setting")
 		t.Skipped()
 	}
 }
