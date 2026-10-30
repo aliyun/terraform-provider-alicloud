@@ -341,16 +341,6 @@ func resourceAlicloudArmsDispatchRuleRead(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
-	notifyPolicy, err := armsService.ListArmsNotificationPolicies(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_arms_dispatch_rule armsService.ListArmsNotificationPolicies Failed!!! %s", err)
-			d.SetId("")
-			return nil
-		}
-		return WrapError(err)
-	}
-
 	if groupRulesList, ok := object["GroupRules"]; ok && groupRulesList != nil {
 		groupRulesMaps := make([]map[string]interface{}, 0)
 		for _, groupRulesListItem := range groupRulesList.([]interface{}) {
@@ -414,29 +404,30 @@ func resourceAlicloudArmsDispatchRuleRead(d *schema.ResourceData, meta interface
 				notifyRulesMap["notify_objects"] = notifyObjectsMaps
 				notifyRulesMap["notify_channels"] = notifyRulesItemMap["NotifyChannels"]
 
-				notifyRule := notifyPolicy["NotifyRule"].(map[string]interface{})
-				notifyRulesMap["notify_start_time"] = notifyRule["NotifyStartTime"]
-				notifyRulesMap["notify_end_time"] = notifyRule["NotifyEndTime"]
+				notifyStartTime, notifyEndTime := normalizeArmsNotifyTimeRange(notifyRulesItemMap["NotifyStartTime"], notifyRulesItemMap["NotifyEndTime"])
+				notifyRulesMap["notify_start_time"] = notifyStartTime
+				notifyRulesMap["notify_end_time"] = notifyEndTime
 				notifyRulesMaps = append(notifyRulesMaps, notifyRulesMap)
 			}
 		}
 		d.Set("notify_rules", notifyRulesMaps)
 	}
 
-	if notifyTemplate, ok := notifyPolicy["NotifyTemplate"]; ok && notifyTemplate != nil {
+	if notifyTemplate, ok := object["NotifyTemplate"]; ok && notifyTemplate != nil {
 		notifyTemplateMaps := make([]map[string]interface{}, 0)
-		notifyTemplateObject := notifyTemplate.(map[string]interface{})
+		notifyTemplateObject := notifyTemplate.([]interface{})
 		if len(notifyTemplateObject) != 0 {
+			template := notifyTemplateObject[0].(map[string]interface{})
 			notifyTemplateMap := map[string]interface{}{
-				"email_title":           notifyTemplateObject["EmailTitle"],
-				"email_content":         notifyTemplateObject["EmailContent"],
-				"email_recover_title":   notifyTemplateObject["EmailRecoverTitle"],
-				"email_recover_content": notifyTemplateObject["EmailRecoverContent"],
-				"tts_content":           notifyTemplateObject["TtsContent"],
-				"tts_recover_content":   notifyTemplateObject["TtsRecoverContent"],
-				"sms_content":           notifyTemplateObject["SmsContent"],
-				"sms_recover_content":   notifyTemplateObject["SmsRecoverContent"],
-				"robot_content":         notifyTemplateObject["RobotContent"],
+				"email_title":           template["EmailTitle"],
+				"email_content":         template["EmailContent"],
+				"email_recover_title":   template["EmailRecoverTitle"],
+				"email_recover_content": template["EmailRecoverContent"],
+				"tts_content":           template["TtsContent"],
+				"tts_recover_content":   template["TtsRecoverContent"],
+				"sms_content":           template["SmsContent"],
+				"sms_recover_content":   template["SmsRecoverContent"],
+				"robot_content":         template["RobotContent"],
 			}
 			notifyTemplateMaps = append(notifyTemplateMaps, notifyTemplateMap)
 		}
@@ -445,6 +436,21 @@ func resourceAlicloudArmsDispatchRuleRead(d *schema.ResourceData, meta interface
 
 	d.Set("dispatch_rule_name", object["Name"])
 	return nil
+}
+
+// The ARMS API omits NotifyStartTime and NotifyEndTime for all-day rules.
+// Normalize the empty response to the values used when creating the rule so
+// that refresh does not produce a perpetual no-op diff.
+func normalizeArmsNotifyTimeRange(start, end interface{}) (string, string) {
+	startTime, _ := start.(string)
+	if startTime == "" {
+		startTime = "00:00"
+	}
+	endTime, _ := end.(string)
+	if endTime == "" {
+		endTime = "23:59"
+	}
+	return startTime, endTime
 }
 func resourceAlicloudArmsDispatchRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
