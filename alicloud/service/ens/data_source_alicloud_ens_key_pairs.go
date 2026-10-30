@@ -1,0 +1,170 @@
+package ens
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceEnsKeyPairs() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceEnsKeyPairsRead,
+		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"key_pair_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"pairs": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key_pair_finger_print": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key_pair_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceEnsKeyPairsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeKeyPairs"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("key_pair_name"); ok {
+		request["KeyPairName"] = v
+	}
+	request["Version"] = d.Get("version")
+	request["PageSize"] = helper.PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var keyPairNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		keyPairNameRegex = r
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Ens", "2017-11-10", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ens_key_pairs", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.KeyPairs.KeyPair", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.KeyPairs.KeyPair", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if keyPairNameRegex != nil && !keyPairNameRegex.MatchString(fmt.Sprint(item["KeyPairName"])) {
+				continue
+			}
+			objects = append(objects, item)
+		}
+		if len(result) < helper.PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":                    fmt.Sprint(object["KeyPairName"], ":", request["Version"]),
+			"create_time":           object["CreationTime"],
+			"key_pair_finger_print": object["KeyPairFingerPrint"],
+			"key_pair_name":         object["KeyPairName"],
+			"version":               request["Version"],
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["KeyPairName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("pairs", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

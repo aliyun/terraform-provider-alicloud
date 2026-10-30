@@ -651,11 +651,6 @@ func Provider() *schema.Provider {
 			"alicloud_enhanced_nat_available_zones": dataSourceAlicloudEnhancedNatAvailableZones(),
 
 			// ens
-			"alicloud_ens_load_balancer_udp_listeners": dataSourceAliCloudEnsLoadBalancerUdpListeners(),
-			"alicloud_ens_key_pairs":                   dataSourceAlicloudEnsKeyPairs(),
-			"alicloud_ens_security_groups":             dataSourceAliCloudEnsSecurityGroups(),
-			"alicloud_ens_bucket_lifecycles":           dataSourceAlicloudEnsBucketLifecycles(),
-			"alicloud_ens_network_route_tables":        dataSourceAliCloudEnsNetworkRouteTables(),
 
 			// esa
 			"alicloud_esa_network_optimizations":      dataSourceAliCloudEsaNetworkOptimizations(),
@@ -1843,24 +1838,6 @@ func Provider() *schema.Provider {
 			"alicloud_emrv2_cluster": resourceAlicloudEmrV2Cluster(),
 
 			// ens
-			"alicloud_ens_load_balancer_udp_listener":         resourceAliCloudEnsLoadBalancerUdpListener(),
-			"alicloud_ens_nat_gateway":                        resourceAliCloudEnsNatGateway(),
-			"alicloud_ens_network_route_table":                resourceAliCloudEnsNetworkRouteTable(),
-			"alicloud_ens_eip_instance_attachment":            resourceAliCloudEnsEipInstanceAttachment(),
-			"alicloud_ens_instance_security_group_attachment": resourceAliCloudEnsInstanceSecurityGroupAttachment(),
-			"alicloud_ens_disk_instance_attachment":           resourceAliCloudEnsDiskInstanceAttachment(),
-			"alicloud_ens_image":                              resourceAliCloudEnsImage(),
-			"alicloud_ens_security_group":                     resourceAliCloudEnsSecurityGroup(),
-			"alicloud_ens_vswitch":                            resourceAliCloudEnsVswitch(),
-			"alicloud_ens_load_balancer":                      resourceAliCloudEnsLoadBalancer(),
-			"alicloud_ens_load_balancer_http_listener":        resourceAliCloudEnsLoadBalancerHttpListener(),
-			"alicloud_ens_eip":                                resourceAliCloudEnsEip(),
-			"alicloud_ens_network":                            resourceAliCloudEnsNetwork(),
-			"alicloud_ens_snapshot":                           resourceAliCloudEnsSnapshot(),
-			"alicloud_ens_disk":                               resourceAliCloudEnsDisk(),
-			"alicloud_ens_bucket_lifecycle":                   resourceAliCloudEnsBucketLifecycle(),
-			"alicloud_ens_instance":                           resourceAliCloudEnsInstance(),
-			"alicloud_ens_key_pair":                           resourceAlicloudEnsKeyPair(),
 
 			// esa
 			"alicloud_esa_custom_response_code_rule":                       resourceAliCloudEsaCustomResponseCodeRule(),
