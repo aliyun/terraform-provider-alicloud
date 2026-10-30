@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/agentloop"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -14,17 +15,22 @@ import (
 // Case EvaluatorSkill全生命周期 11083
 func TestAccAliCloudAgentloopEvaluatorSkill_basic11083(t *testing.T) {
 	resourceId := "alicloud_agentloop_evaluator_skill.default"
-	rac := resourceAttrCheckInit(resourceId, AlicloudAgentloopEvaluatorSkillMap11083, (*agentloop.Service).DescribeEvaluatorSkill)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAgentloopEvaluatorSkillMap11083)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEvaluatorSkill")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tftestaccevalskill%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAgentloopEvaluatorSkillBasicDependence11083)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAgentloopEvaluatorSkillBasicDependence11083)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.checkResourceDestroy(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -171,29 +177,27 @@ func TestAccAliCloudAgentloopEvaluatorSkill_basic11083(t *testing.T) {
 }
 
 var AlicloudAgentloopEvaluatorSkillMap11083 = map[string]string{
-	"created_at": CHECKSET,
-	"updated_at": CHECKSET,
+	"created_at": acctest.CHECKSET,
+	"updated_at": acctest.CHECKSET,
 }
 
 func AlicloudAgentloopEvaluatorSkillBasicDependence11083(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_agentloop_agent_space" "default" {
-    agent_space = "${var.name}-as"
+  agent_space = "${var.name}-as"
 }
 
 resource "alicloud_agentloop_evaluator" "default" {
-    agent_space = alicloud_agentloop_agent_space.default.agent_space
-    name        = "${var.name}eval"
-    type        = "AGENT"
-    metric_name = "tf_test_metric"
-    version     = "v1"
-}
-
-`, name)
+  agent_space = alicloud_agentloop_agent_space.default.agent_space
+  name        = "${var.name}eval"
+  type        = "AGENT"
+  metric_name = "tf_test_metric"
+  version     = "v1"
+}`, name)
 }
 
 // Test Agentloop EvaluatorSkill. <<< Resource test cases, automatically generated.
