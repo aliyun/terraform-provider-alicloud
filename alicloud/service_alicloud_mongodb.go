@@ -94,6 +94,25 @@ func (s *MongoDBService) RdsMongodbDBInstanceStateRefreshFunc(id string, failSta
 	}
 }
 
+// Waits for an attribute to reach the requested value, so a caller is not
+// released by the terminal state of the order issued before it.
+func (s *MongoDBService) RdsMongodbDBInstanceAttributeRefreshFunc(id, attribute, expected string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMongoDBInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		if fmt.Sprint(object[attribute]) == expected {
+			return object, "Applied", nil
+		}
+		return object, "Pending", nil
+	}
+}
+
 func (s *MongoDBService) RdsMongodbDBInstanceOrderStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMongoDBInstance(id)
