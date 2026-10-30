@@ -3,14 +3,10 @@ package arms
 import (
 	"fmt"
 	"regexp"
-	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -226,14 +222,9 @@ func DataSourceDispatchRulesRead(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListNotificationPolicies"
-	request := map[string]interface{}{
-		"Page":     1,
-		"Size":     helper.PageSizeXLarge,
-		"RegionId": client.RegionId,
-		"IsDetail": true,
-	}
-	if v, ok := d.GetOk("dispatch_rule_name"); ok {
-		request["Name"] = v
+	allObjects, err := (&Service{client: client}).ListArmsNotificationPolicies()
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_arms_dispatch_rules", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	var objects []map[string]interface{}
 	var dispatchRuleNameRegex *regexp.Regexp
@@ -254,31 +245,10 @@ func DataSourceDispatchRulesRead(d *schema.ResourceData, meta interface{}) error
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var response map[string]interface{}
-	var err error
-	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
-		if err != nil {
-			if helper.NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
+	for _, item := range allObjects {
+		if v, ok := d.GetOk("dispatch_rule_name"); ok && fmt.Sprint(item["Name"]) != fmt.Sprint(v) {
+			continue
 		}
-		return nil
-	})
-	logs.AddDebug(action, response, request)
-	if err != nil {
-		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_arms_dispatch_rules", action, errs.AlibabaCloudSdkGoERROR)
-	}
-	resp, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
-	if err != nil {
-		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.PageBean.NotificationPolicies", response)
-	}
-	result, _ := resp.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
 		if dispatchRuleNameRegex != nil && !dispatchRuleNameRegex.MatchString(fmt.Sprint(item["Name"])) {
 			continue
 		}
