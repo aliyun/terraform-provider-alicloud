@@ -1493,6 +1493,8 @@ func Provider() *schema.Provider {
 			"alicloud_eflo_hyper_node":               resourceAliCloudEfloHyperNode(),
 			"alicloud_eflo_vpd_grant_rule":           resourceAliCloudEfloVpdGrantRule(),
 			"alicloud_eflo_er":                       resourceAliCloudEfloEr(),
+			"alicloud_eflo_er_attachment":            resourceAliCloudEfloErAttachment(),
+			"alicloud_eflo_er_route_map":             resourceAliCloudEfloErRouteMap(),
 			"alicloud_eflo_node_group_attachment":    resourceAliCloudEfloNodeGroupAttachment(),
 			"alicloud_eflo_vsc":                      resourceAliCloudEfloVsc(),
 			"alicloud_eflo_experiment_plan":          resourceAliCloudEfloExperimentPlan(),
