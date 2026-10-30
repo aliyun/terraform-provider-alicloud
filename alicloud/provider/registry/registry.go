@@ -48,6 +48,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/das"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/databasegateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/datahub"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworkspublic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbs"
@@ -225,6 +226,7 @@ var servicePackages = []conns.ServicePackage{
 	cs.ServicePackage(),
 	das.ServicePackage(),
 	datahub.ServicePackage(),
+	dataworks.ServicePackage(),
 	dataworkspublic.ServicePackage(),
 	dbfs.ServicePackage(),
 	dbs.ServicePackage(),
