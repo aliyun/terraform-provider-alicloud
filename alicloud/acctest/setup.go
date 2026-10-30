@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/internal/acctestcredentials"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -138,18 +140,7 @@ const (
 // The setting of account site type can skip some unsupported cases automatically.
 
 func PreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
-	defaultAccount := string(DomesticSite)
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	}
-	if defaultAccount != string(account) {
-		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
-		t.Skipped()
-	}
+	acctestcredentials.Select(t, string(account))
 }
 
 func PreCheckPrePaidResources(t *testing.T) {
