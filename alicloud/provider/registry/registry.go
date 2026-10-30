@@ -143,7 +143,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rocketmq"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ros"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sae"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/scdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sddp"
@@ -160,6 +159,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/swasopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tag"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/threatdetection"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tsdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ververica"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/videosurveillancesystem"
@@ -320,7 +320,6 @@ var servicePackages = []conns.ServicePackage{
 	rocketmq.ServicePackage(),
 	ros.ServicePackage(),
 	sae.ServicePackage(),
-	sas.ServicePackage(),
 	scdn.ServicePackage(),
 	schedulerx.ServicePackage(),
 	sddp.ServicePackage(),
@@ -336,6 +335,7 @@ var servicePackages = []conns.ServicePackage{
 	sts.ServicePackage(),
 	swasopen.ServicePackage(),
 	tag.ServicePackage(),
+	threatdetection.ServicePackage(),
 	tsdb.ServicePackage(),
 	ververica.ServicePackage(),
 	vod.ServicePackage(),

@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Threat Detection Honeypot Node available to the user.[What is Honeypot Node](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createhoneypotnode)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_threat_detection_honeypot_nodes" "default" {
   ids = ["${alicloud_threat_detection_honeypot_node.default.id}"]
 }
@@ -28,9 +28,9 @@ output "alicloud_threat_detection_honeypot_node_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `node_id` - (ForceNew,Optional) Honeypot management node id.
-* `name_regex` - (ForceNew,Optional)  A regex string to filter results by Honeypot Node name.
-* `node_name` - (ForceNew,Optional) The name of the management node.
+* `node_id` - (ForceNew, Optional) Honeypot management node id.
+* `name_regex` - (ForceNew, Optional)  A regex string to filter results by Honeypot Node name.
+* `node_name` - (ForceNew, Optional) The name of the management node.
 * `ids` - (Optional, ForceNew, Computed) A list of Honeypot Node IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -46,5 +46,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `node_id` - Honeypot management node id.
   * `id` - The ID of the Honeypot management node.
   * `node_name` - Management node name.
-  * `page_total` - Total pages.
+  * `create_time` - The creation time of the honeypot management node.
   * `security_group_probe_ip_list` - Release the collection of network segments.
+  * `status` - The status of the honeypot management node.
