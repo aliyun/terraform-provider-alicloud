@@ -427,15 +427,6 @@ func Provider() *schema.Provider {
 			"alicloud_dbfs_snapshots":               dataSourceAlicloudDbfsSnapshots(),
 			"alicloud_dbfs_auto_snap_shot_policies": dataSourceAlicloudDbfsAutoSnapShotPolicies(),
 
-			// dcdn
-			"alicloud_dcdn_service":      dataSourceAlicloudDcdnService(),
-			"alicloud_dcdn_domains":      dataSourceAlicloudDcdnDomains(),
-			"alicloud_dcdn_ipa_domains":  dataSourceAlicloudDcdnIpaDomains(),
-			"alicloud_dcdn_waf_policies": dataSourceAlicloudDcdnWafPolicies(),
-			"alicloud_dcdn_waf_domains":  dataSourceAlicloudDcdnWafDomains(),
-			"alicloud_dcdn_kv_account":   dataSourceAlicloudDcdnKvAccount(),
-			"alicloud_dcdn_waf_rules":    dataSourceAlicloudDcdnWafRules(),
-
 			// ddoscoo
 
 			// direct
@@ -1371,18 +1362,6 @@ func Provider() *schema.Provider {
 			"alicloud_dbfs_instance_attachment":   resourceAliCloudDbfsInstanceAttachment(),
 			"alicloud_dbfs_service_linked_role":   resourceAlicloudDbfsServiceLinkedRole(),
 			"alicloud_dbfs_auto_snap_shot_policy": resourceAlicloudDbfsAutoSnapShotPolicy(),
-
-			// dcdn
-			"alicloud_dcdn_domain":                       resourceAliCloudDcdnDomain(),
-			"alicloud_dcdn_domain_config":                resourceAliCloudDcdnDomainConfig(),
-			"alicloud_dcdn_ipa_domain":                   resourceAlicloudDcdnIpaDomain(),
-			"alicloud_dcdn_waf_policy":                   resourceAlicloudDcdnWafPolicy(),
-			"alicloud_dcdn_waf_domain":                   resourceAlicloudDcdnWafDomain(),
-			"alicloud_dcdn_waf_policy_domain_attachment": resourceAlicloudDcdnWafPolicyDomainAttachment(),
-			"alicloud_dcdn_kv_namespace":                 resourceAlicloudDcdnKvNamespace(),
-			"alicloud_dcdn_kv":                           resourceAlicloudDcdnKv(),
-			"alicloud_dcdn_waf_rule":                     resourceAlicloudDcdnWafRule(),
-			"alicloud_dcdn_er":                           resourceAlicloudDcdnEr(),
 
 			// ddoscoo
 
