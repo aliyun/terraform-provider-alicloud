@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Hbr Hana Backup Plans of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.179.0+.
+-> **NOTE:** Available since v1.179.0.
 
 ## Example Usage
 
@@ -36,19 +36,22 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `vault_id` - (Optional, ForceNew) The id of the vault.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Hana Backup Plan name.
+* `cluster_id` - (Required) The ID of the SAP HANA instance.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
+* `names` - A list of Hbr Hana Backup Plan names.
 * `plans` - A list of Hbr Hana Backup Plans. Each element contains the following attributes:
-	* `backup_prefix` - The backup prefix.
-	* `backup_type` - The backup type.
-	* `cluster_id` - The ID of the SAP HANA instance.
-	* `database_name` - The name of the database.
-	* `status` - The status of the resource.
-	* `id` - The ID of the resource.
-	* `plan_id` - The ID of the backup plan.
-	* `plan_name` - The name of the backup plan.
-	* `schedule` - The backup policy.
-	* `vault_id` - The ID of the backup vault.
+  * `backup_prefix` - The backup prefix.
+  * `backup_type` - The backup type.
+  * `cluster_id` - The ID of the SAP HANA instance.
+  * `database_name` - The name of the database.
+  * `status` - The status of the resource.
+  * `id` - The ID of the resource.
+  * `page_total` - The total number of pages.
+  * `plan_id` - The ID of the backup plan.
+  * `plan_name` - The name of the backup plan.
+  * `schedule` - The backup policy.
+  * `vault_id` - The ID of the backup vault.

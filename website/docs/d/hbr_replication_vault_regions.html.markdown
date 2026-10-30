@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the HBR Replication Vault Regions of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0.
 
 ## Example Usage
 
@@ -31,9 +31,9 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `regions` - A list of Ros Regions. Each element contains the following attributes:
-	* `replication_region_id` - The ID of the replication region.
+  * `replication_region_id` - The ID of the replication region.
