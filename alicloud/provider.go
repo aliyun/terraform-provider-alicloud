@@ -1006,11 +1006,6 @@ func Provider() *schema.Provider {
 			"alicloud_quick_bi_users": dataSourceAlicloudQuickBiUsers(),
 
 			// quotas
-			"alicloud_quotas_quotas":                dataSourceAlicloudQuotasQuotas(),
-			"alicloud_quotas_application_infos":     dataSourceAlicloudQuotasQuotaApplications(),
-			"alicloud_quotas_quota_alarms":          dataSourceAlicloudQuotasQuotaAlarms(),
-			"alicloud_quotas_quota_applications":    dataSourceAlicloudQuotasQuotaApplications(),
-			"alicloud_quotas_template_applications": dataSourceAliCloudQuotasTemplateApplications(),
 
 			// ram
 			"alicloud_ram_role_policy_attachments": dataSourceAliCloudRamRolePolicyAttachments(),
@@ -2434,12 +2429,6 @@ func Provider() *schema.Provider {
 			"alicloud_quick_bi_user": resourceAlicloudQuickBiUser(),
 
 			// quotas
-			"alicloud_quotas_template_service":      resourceAliCloudQuotasTemplateService(),
-			"alicloud_quotas_template_applications": resourceAliCloudQuotasTemplateApplications(),
-			"alicloud_quotas_template_quota":        resourceAliCloudQuotasTemplateQuota(),
-			"alicloud_quotas_application_info":      resourceAliCloudQuotasQuotaApplication(),
-			"alicloud_quotas_quota_alarm":           resourceAliCloudQuotasQuotaAlarm(),
-			"alicloud_quotas_quota_application":     resourceAliCloudQuotasQuotaApplication(),
 
 			// ram
 			"alicloud_ram_password_policy":         resourceAliCloudRamPasswordPolicy(),

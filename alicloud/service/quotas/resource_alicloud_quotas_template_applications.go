@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package quotas. This file is generated automatically. Please do not modify it manually, thank you!
+package quotas
 
 import (
 	"fmt"
@@ -7,17 +7,22 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudQuotasTemplateApplications() *schema.Resource {
+func ResourceTemplateApplications() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudQuotasTemplateApplicationsCreate,
-		Read:   resourceAliCloudQuotasTemplateApplicationsRead,
-		Update: resourceAliCloudQuotasTemplateApplicationsUpdate,
-		Delete: resourceAliCloudQuotasTemplateApplicationsDelete,
+		Create: resourceTemplateApplicationsCreate,
+		Read:   resourceTemplateApplicationsRead,
+		Update: resourceTemplateApplicationsUpdate,
+		Delete: resourceTemplateApplicationsDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -166,7 +171,7 @@ func resourceAliCloudQuotasTemplateApplications() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
 			},
 			"reason": {
 				Type:     schema.TypeString,
@@ -177,7 +182,7 @@ func resourceAliCloudQuotasTemplateApplications() *schema.Resource {
 	}
 }
 
-func resourceAliCloudQuotasTemplateApplicationsCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateApplicationsCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -221,48 +226,48 @@ func resourceAliCloudQuotasTemplateApplicationsCreate(d *schema.ResourceData, me
 		request["Dimensions"] = dimensionsMaps
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_template_applications", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_quotas_template_applications", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["BatchQuotaApplicationId"]))
 
 	quotasServiceV2 := QuotasServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(response["BatchQuotaApplicationId"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, quotasServiceV2.QuotasTemplateApplicationsStateRefreshFunc(d.Id(), "BatchQuotaApplicationId", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(response["BatchQuotaApplicationId"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, quotasServiceV2.QuotasTemplateApplicationsStateRefreshFunc(d.Id(), "BatchQuotaApplicationId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudQuotasTemplateApplicationsRead(d, meta)
+	return resourceTemplateApplicationsRead(d, meta)
 }
 
-func resourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateApplicationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	quotasServiceV2 := QuotasServiceV2{client}
 
 	objectRaw, err := quotasServiceV2.DescribeQuotasTemplateApplications(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_quotas_template_applications DescribeQuotasTemplateApplications Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("desire_value", objectRaw["DesireValue"])
@@ -285,7 +290,7 @@ func resourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, meta
 	d.Set("dimensions", evaluation)
 	objectRaw, err = quotasServiceV2.DescribeListQuotaApplicationsDetailForTemplate(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	quotaApplications1Raw := objectRaw["QuotaApplications"]
@@ -312,7 +317,7 @@ func resourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, meta
 			periodMap := make(map[string]interface{})
 			period1Raw := quotaApplicationsChild1Raw["Period"].(map[string]interface{})
 			periodMap["period_unit"] = period1Raw["PeriodUnit"]
-			periodValue, err := formatInt(period1Raw["PeriodValue"])
+			periodValue, err := convert.FormatInt(period1Raw["PeriodValue"])
 			if err != nil {
 				return err
 			}
@@ -328,12 +333,12 @@ func resourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, meta
 	return nil
 }
 
-func resourceAliCloudQuotasTemplateApplicationsUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateApplicationsUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] Cannot update resource Alicloud Resource Template Applications.")
 	return nil
 }
 
-func resourceAliCloudQuotasTemplateApplicationsDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateApplicationsDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Template Applications. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
