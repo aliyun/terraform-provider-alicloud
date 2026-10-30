@@ -1,42 +1,43 @@
-package alicloud
+package quotas_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudQuotasQuotaAlarmsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_quotas_quota_alarms.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccQuotasQuotaAlarmsTest%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotaAlarmsDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotaAlarmsDependence)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_alarm.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_alarm.default.id}-fake"},
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex":     name,
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_alarm.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":     name,
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_alarm.default.id}-fake"},
 		}),
 	}
-	dimensionsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	dimensionsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_alarm.default.id}"},
 			"quota_dimensions": []map[string]interface{}{
@@ -46,7 +47,7 @@ func TestAccAlicloudQuotasQuotaAlarmsDataSource(t *testing.T) {
 				},
 			},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_alarm.default.id}"},
 			"quota_dimensions": []map[string]interface{}{
@@ -60,12 +61,12 @@ func TestAccAlicloudQuotasQuotaAlarmsDataSource(t *testing.T) {
 	var existQuotasQuotaAlarmsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                       "1",
-			"ids.0":                       CHECKSET,
+			"ids.0":                       acctest.CHECKSET,
 			"names.#":                     "1",
 			"names.0":                     name,
 			"alarms.#":                    "1",
-			"alarms.0.id":                 CHECKSET,
-			"alarms.0.alarm_id":           CHECKSET,
+			"alarms.0.id":                 acctest.CHECKSET,
+			"alarms.0.alarm_id":           acctest.CHECKSET,
 			"alarms.0.product_code":       "ecs",
 			"alarms.0.quota_action_code":  "q_prepaid-instance-count-per-once-purchase",
 			"alarms.0.quota_alarm_name":   name,
@@ -84,13 +85,13 @@ func TestAccAlicloudQuotasQuotaAlarmsDataSource(t *testing.T) {
 		}
 	}
 
-	var QuotasApplicationInfosInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existQuotasQuotaAlarmsMapFunc,
-		fakeMapFunc:  fakeQuotasQuotaAlarmsMapFunc,
+	var QuotasApplicationInfosInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existQuotasQuotaAlarmsMapFunc,
+		FakeMapFunc:  fakeQuotasQuotaAlarmsMapFunc,
 	}
 
-	QuotasApplicationInfosInfo.dataSourceTestCheck(t, 0, idsConf, nameRegexConf, dimensionsConf)
+	QuotasApplicationInfosInfo.DataSourceTestCheck(t, 0, idsConf, nameRegexConf, dimensionsConf)
 }
 
 func dataSourceQuotasQuotaAlarmsDependence(name string) string {

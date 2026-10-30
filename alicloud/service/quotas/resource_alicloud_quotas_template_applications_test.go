@@ -1,11 +1,15 @@
-package alicloud
+package quotas_test
+
+// collection-order: bypass aliyun_uids -- pre-existing TypeList unchanged by pure package migration; original schema, request/read ordering and one-account test preserved; no new reorder acceptance claimed
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quotas"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,20 +19,20 @@ import (
 func TestAccAliCloudQuotasTemplateApplications_basic5294(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_applications.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateApplicationsMap5294)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasTemplateApplicationsMap5294)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasTemplateApplications")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasapp%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5294)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasapp%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5294)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -81,7 +85,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5294(t *testing.T) {
 }
 
 var AlicloudQuotasTemplateApplicationsMap5294 = map[string]string{
-	"quota_application_details.#": CHECKSET,
+	"quota_application_details.#": acctest.CHECKSET,
 }
 
 func AlicloudQuotasTemplateApplicationsBasicDependence5294(name string) string {
@@ -104,20 +108,20 @@ resource "alicloud_resource_manager_account" "account" {
 func TestAccAliCloudQuotasTemplateApplications_basic5284(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_applications.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateApplicationsMap5284)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasTemplateApplicationsMap5284)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasTemplateApplications")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotas%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5284)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotas%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5284)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -155,7 +159,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5284(t *testing.T) {
 }
 
 var AlicloudQuotasTemplateApplicationsMap5284 = map[string]string{
-	"quota_application_details.#": CHECKSET,
+	"quota_application_details.#": acctest.CHECKSET,
 }
 
 func AlicloudQuotasTemplateApplicationsBasicDependence5284(name string) string {
@@ -178,20 +182,20 @@ resource "alicloud_resource_manager_account" "account" {
 func TestAccAliCloudQuotasTemplateApplications_basic5278(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_applications.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateApplicationsMap5278)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasTemplateApplicationsMap5278)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasTemplateApplications")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotastp%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5278)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotastp%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5278)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -233,7 +237,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5278(t *testing.T) {
 }
 
 var AlicloudQuotasTemplateApplicationsMap5278 = map[string]string{
-	"quota_application_details.#": CHECKSET,
+	"quota_application_details.#": acctest.CHECKSET,
 }
 
 func AlicloudQuotasTemplateApplicationsBasicDependence5278(name string) string {

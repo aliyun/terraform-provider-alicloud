@@ -106,27 +106,35 @@ The dimensions supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `quota_application_details` - List of quota application details.
-  * `aliyun_uid` - Alibaba Cloud account (primary account).
-  * `application_id` - The ID of the quota promotion request.
-  * `approve_value` - The approved quota value of the quota increase request.
-  * `audit_reason` - Approval comments on quota increase applications.
-  * `env_language` - The language of the quota alert notification. Value: zh: Chinese, en: English.
-  * `notice_type` - Whether to notify the quota increase application result. Value: 0: No, 3: Yes.
-  * `period` - Quota calculation period.
-    * `period_unit` - Quota calculation cycle unit.
-    * `period_value` - The quota calculation period value.
-  * `dimensions` - Quota dimension.
-  * `quota_arn` - Quota ARN.
-  * `quota_description` - The quota description.
-  * `quota_name` - The quota name.
-  * `quota_unit` - Quota unit.
-  * `reason` - The reason for the quota increase application.
-  * `status` - The approval status of the quota promotion application. Value:
+* `quota_application_details` - List of quota application details. Each element contains the following attributes:
+
+### `quota_application_details`
+
+The quota_application_details supports the following attributes:
+* `aliyun_uid` - Alibaba Cloud account (primary account).
+* `application_id` - The ID of the quota promotion request.
+* `approve_value` - The approved quota value of the quota increase request.
+* `audit_reason` - Approval comments on quota increase applications.
+* `dimensions` - Quota dimension.
+* `env_language` - The language of the quota alert notification. Value: zh: Chinese, en: English.
+* `notice_type` - Whether to notify the quota increase application result. Value: 0: No, 3: Yes.
+* `period` - Quota calculation period. See [`period`](#quota_application_detailsperiod) below.
+* `quota_arn` - Quota ARN.
+* `quota_description` - The quota description.
+* `quota_name` - The quota name.
+* `quota_unit` - Quota unit.
+* `reason` - The reason for the quota increase application.
+* `status` - The approval status of the quota promotion application. Value:
   - Disagree: reject.
   - Approve: approved.
   - Process: under review.
   - Cancel: Closed.
+
+### `quota_application_details.period`
+
+The period supports the following attributes:
+* `period_unit` - Quota calculation cycle unit.
+* `period_value` - The quota calculation period value.
 
 ## Timeouts
 

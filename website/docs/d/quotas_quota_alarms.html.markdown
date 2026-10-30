@@ -7,11 +7,11 @@ description: |-
   Provides a list of Quotas Quota Alarms to the user.
 ---
 
-# alicloud\_quotas\_quota\_alarms
+# alicloud_quotas_quota_alarms
 
 This data source provides the Quotas Quota Alarms of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -31,37 +31,42 @@ output "first_quotas_quota_alarm_id" {
 ## Argument Reference
 
 The following arguments are supported:
-
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Quota Alarm IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Quota Alarm name.
+* `ids` - (Optional, Computed) A list of Quota Alarm IDs.
+* `name_regex` - (Optional) A regex string to filter results by Quota Alarm name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `product_code` - (Optional, ForceNew) The Product Code.
-* `quota_action_code` - (Optional, ForceNew) The Quota Action Code.
-* `quota_alarm_name` - (Optional, ForceNew) The name of Quota Alarm.
-* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions.
+* `product_code` - (Optional) The Product Code.
+* `quota_action_code` - (Optional) The Quota Action Code.
+* `quota_alarm_name` - (Optional) The name of Quota Alarm.
+* `quota_dimensions` - (Optional) The Quota Dimensions. See [`quota_dimensions`](#quota_dimensions) below.
 
-#### Block quota_dimensions
+### `quota_dimensions`
 
-The dimensions supports the following: 
+The quota_dimensions supports the following:
+* `key` - (Optional) The key of quota_dimensions.
+* `value` - (Optional) The value of quota_dimensions.
 
-* `key` - (Optional, ForceNew) The key of quota_dimensions.
-* `value` - (Optional, ForceNew) The value of quota_dimensions.
-
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
 * `names` - A list of Quota Alarm names.
 * `alarms` - A list of Quotas Quota Alarms. Each element contains the following attributes:
-	* `alarm_id` - The first ID of the resource.
-	* `id` - The ID of the Quota Alarm.
-	* `product_code` - The Product Code.
-	* `quota_action_code` - The Quota Action Code.
-	* `quota_alarm_name` - The name of Quota Alarm.
-	* `quota_dimensions` - The Quota Dimensions.
-		* `key` - The key of quota_dimensions.
-		* `value` - The value of quota_dimensions.
-	* `threshold` - The threshold of Quota Alarm.
-	* `threshold_percent` - The threshold percent of Quota Alarm.
-	* `web_hook` - The WebHook of Quota Alarm.
+
+### `alarms`
+
+The alarms supports the following attributes:
+* `alarm_id` - The first ID of the resource.
+* `id` - The ID of the Quota Alarm.
+* `product_code` - The Product Code.
+* `quota_action_code` - The Quota Action Code.
+* `quota_alarm_name` - The name of Quota Alarm.
+* `quota_dimensions` - The Quota Dimensions. See [`quota_dimensions`](#alarmsquota_dimensions) below.
+* `threshold` - The threshold of Quota Alarm.
+* `threshold_percent` - The threshold percent of Quota Alarm.
+* `web_hook` - The WebHook of Quota Alarm.
+
+### `alarms.quota_dimensions`
+
+The quota_dimensions supports the following:
+* `key` - The key of quota_dimensions.
+* `value` - The value of quota_dimensions.

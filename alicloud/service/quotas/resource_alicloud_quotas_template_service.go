@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package quotas. This file is generated automatically. Please do not modify it manually, thank you!
+package quotas
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudQuotasTemplateService() *schema.Resource {
+func ResourceTemplateService() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudQuotasTemplateServiceCreate,
-		Read:   resourceAliCloudQuotasTemplateServiceRead,
-		Update: resourceAliCloudQuotasTemplateServiceUpdate,
-		Delete: resourceAliCloudQuotasTemplateServiceDelete,
+		Create: resourceTemplateServiceCreate,
+		Read:   resourceTemplateServiceRead,
+		Update: resourceTemplateServiceUpdate,
+		Delete: resourceTemplateServiceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -29,13 +33,13 @@ func resourceAliCloudQuotasTemplateService() *schema.Resource {
 			"service_status": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntInSlice([]int{0, 1, -1}),
+				ValidateFunc: validators.IntInSlice([]int{0, 1, -1}),
 			},
 		},
 	}
 }
 
-func resourceAliCloudQuotasTemplateServiceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateServiceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -47,42 +51,42 @@ func resourceAliCloudQuotasTemplateServiceCreate(d *schema.ResourceData, meta in
 	request = make(map[string]interface{})
 
 	request["ServiceStatus"] = d.Get("service_status")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_template_service", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_quotas_template_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	accountId, err := meta.(*connectivity.AliyunClient).AccountId()
 	d.SetId(fmt.Sprint(accountId))
 
-	return resourceAliCloudQuotasTemplateServiceRead(d, meta)
+	return resourceTemplateServiceRead(d, meta)
 }
 
-func resourceAliCloudQuotasTemplateServiceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateServiceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	quotasServiceV2 := QuotasServiceV2{client}
 
 	objectRaw, err := quotasServiceV2.DescribeQuotasTemplateService(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_quotas_template_service DescribeQuotasTemplateService Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["ServiceStatus"] != nil {
@@ -92,7 +96,7 @@ func resourceAliCloudQuotasTemplateServiceRead(d *schema.ResourceData, meta inte
 	return nil
 }
 
-func resourceAliCloudQuotasTemplateServiceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateServiceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -108,28 +112,28 @@ func resourceAliCloudQuotasTemplateServiceUpdate(d *schema.ResourceData, meta in
 	}
 	request["ServiceStatus"] = d.Get("service_status")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("quotas", "2020-05-10", action, query, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudQuotasTemplateServiceRead(d, meta)
+	return resourceTemplateServiceRead(d, meta)
 }
 
-func resourceAliCloudQuotasTemplateServiceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Template Service. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

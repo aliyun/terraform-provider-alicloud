@@ -1,4 +1,4 @@
-package alicloud
+package quotas
 
 import (
 	"fmt"
@@ -6,13 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudQuotasQuotaAlarms() *schema.Resource {
+func DataSourceQuotaAlarms() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudQuotasQuotaAlarmsRead,
+		Read: dataSourceQuotaAlarmsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:         schema.TypeString,
@@ -127,7 +130,7 @@ func dataSourceAlicloudQuotasQuotaAlarms() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceQuotaAlarmsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListQuotaAlarms"
@@ -154,13 +157,13 @@ func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interf
 		request["QuotaDimensions"] = quotaDimensionsMaps
 
 	}
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 	var quotaAlarmNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		quotaAlarmNameRegex = r
 	}
@@ -177,15 +180,15 @@ func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var err error
 	for {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_quota_alarms", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_quotas_quota_alarms", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.QuotaAlarms", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.QuotaAlarms", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.QuotaAlarms", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -233,7 +236,7 @@ func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interf
 		id := fmt.Sprint(object["AlarmId"])
 		getResp, err := quotasService.DescribeQuotasQuotaAlarm(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		quotaDimensionList := make([]map[string]interface{}, 0)
@@ -252,20 +255,20 @@ func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interf
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("alarms", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
