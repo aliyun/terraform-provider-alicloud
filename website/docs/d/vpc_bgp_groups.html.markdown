@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Vpc Bgp Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0.
 
 ## Example Usage
 
@@ -44,22 +44,22 @@ The following arguments are supported:
 * `router_id` - (Optional, ForceNew) The ID of the virtual border router (VBR) that is associated with the BGP group.
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Available`, `Deleting` and `Pending`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Bgp Group names.
 * `groups` - A list of Vpc Bgp Groups. Each element contains the following attributes:
-	* `auth_key` - The key used by the BGP group.
-	* `bgp_group_name` - The name of the BGP group.
-	* `description` - Description of the BGP group.
-	* `hold` - The hold time to wait for the incoming BGP message. If no message has been passed in after the hold time, the BGP neighbor is considered disconnected.
-	* `id` - The ID of the Bgp Group.
-	* `ip_version` - IP version.
-	* `is_fake_asn` - Whether the AS number is false.
-	* `keepalive` - The keepalive time.
-	* `local_asn` - The local AS number.
-	* `peer_asn` - The autonomous system (AS) number of the BGP peer.
-	* `route_limit` - Routing limits.
-	* `router_id` - The ID of the VBR.
-	* `status` - The status of the resource.
+  * `auth_key` - The key used by the BGP group.
+  * `bgp_group_name` - The name of the BGP group.
+  * `description` - Description of the BGP group.
+  * `hold` - The hold time to wait for the incoming BGP message. If no message has been passed in after the hold time, the BGP neighbor is considered disconnected.
+  * `id` - The ID of the Bgp Group.
+  * `ip_version` - IP version.
+  * `is_fake_asn` - Whether the AS number is false.
+  * `keepalive` - The keepalive time.
+  * `local_asn` - The local AS number.
+  * `peer_asn` - The autonomous system (AS) number of the BGP peer.
+  * `route_limit` - Routing limits.
+  * `router_id` - The ID of the VBR.
+  * `status` - The status of the resource.
