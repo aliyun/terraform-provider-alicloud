@@ -964,8 +964,6 @@ func Provider() *schema.Provider {
 			// snat
 
 			// ssl
-			"alicloud_ssl_vpn_servers":      dataSourceAlicloudSslVpnServers(),
-			"alicloud_ssl_vpn_client_certs": dataSourceAlicloudSslVpnClientCerts(),
 
 			// tag
 
@@ -1019,15 +1017,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpcs": dataSourceAlicloudVpcs(),
 
 			// vpn
-			"alicloud_vpn_gateway_enhanced_vpn_gateways": dataSourceAliCloudVpnGatewayEnhancedVpnGateways(),
-			"alicloud_vpn_gateway_zones":                 dataSourceAliCloudVPNGatewayZones(),
-			"alicloud_vpn_gateways":                      dataSourceAlicloudVpnGateways(),
-			"alicloud_vpn_customer_gateways":             dataSourceAlicloudVpnCustomerGateways(),
-			"alicloud_vpn_connections":                   dataSourceAlicloudVpnConnections(),
-			"alicloud_vpn_ipsec_servers":                 dataSourceAlicloudVpnIpsecServers(),
-			"alicloud_vpn_pbr_route_entries":             dataSourceAlicloudVpnPbrRouteEntries(),
-			"alicloud_vpn_gateway_vpn_attachments":       dataSourceAliCloudVpnGatewayVpnAttachments(),
-			"alicloud_vpn_gateway_vco_routes":            dataSourceAlicloudVpnGatewayVcoRoutes(),
 
 			// vswitches
 			"alicloud_vswitches": dataSourceAlicloudVswitches(),
@@ -2150,8 +2139,6 @@ func Provider() *schema.Provider {
 			// snat
 
 			// ssl
-			"alicloud_ssl_vpn_server":      resourceAliyunSslVpnServer(),
-			"alicloud_ssl_vpn_client_cert": resourceAliyunSslVpnClientCert(),
 
 			// star: alicloud_star_rocks_* migrated to alicloud/service/starrocks; see starrocks.ServicePackage().
 
@@ -2227,15 +2214,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpc_gateway_route_table_attachment":          resourceAliCloudVpcGatewayRouteTableAttachment(),
 
 			// vpn
-			"alicloud_vpn_gateway_enhanced_vpn_gateway": resourceAliCloudVpnGatewayEnhancedVpnGateway(),
-			"alicloud_vpn_gateway":                      resourceAliCloudVPNGatewayVPNGateway(),
-			"alicloud_vpn_customer_gateway":             resourceAliCloudVPNGatewayCustomerGateway(),
-			"alicloud_vpn_route_entry":                  resourceAliyunVpnRouteEntry(),
-			"alicloud_vpn_connection":                   resourceAliCloudVPNGatewayVpnConnection(),
-			"alicloud_vpn_ipsec_server":                 resourceAlicloudVpnIpsecServer(),
-			"alicloud_vpn_pbr_route_entry":              resourceAlicloudVpnPbrRouteEntry(),
-			"alicloud_vpn_gateway_vpn_attachment":       resourceAliCloudVpnGatewayVpnAttachment(),
-			"alicloud_vpn_gateway_vco_route":            resourceAlicloudVpnGatewayVcoRoute(),
 
 			// vswitch
 			"alicloud_vswitch": resourceAliCloudVpcVswitch(),

@@ -25,6 +25,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpngateway"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -33,6 +34,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
+
+// testAccCheckVpnCustomerGatewayDestroy is retained in the root package: the
+// vpn_gateway_vpn_attachment test stays in package alicloud to access CEN service
+// (CbnService/CenServiceV2) private fields, so it cannot reuse the copy that migrated
+// to package vpngateway_test with the customer_gateway test.
+func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	vpnGatewayService := vpngateway.NewVPNGatewayServiceV2(client)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_vpn_customer_gateway" {
+			continue
+		}
+
+		_, err := vpnGatewayService.DescribeVPNGatewayCustomerGateway(rs.Primary.ID)
+
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		}
+	}
+
+	return nil
+}
 
 func init() {
 	resource.AddTestSweepers(
@@ -131,7 +158,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPNGatewayVpnAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVpcService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -296,7 +323,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VpnGatewayVpnAttachmentSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudVPNGatewayVpnAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVpcService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -536,7 +563,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
+	err = vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -559,7 +586,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
+		err := vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -586,7 +613,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
+	err = vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -700,7 +727,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
+		err := vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -744,7 +771,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpnGatewayVpnAttachmentRead(dExisted, rawClient)
+		err := vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -763,7 +790,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
+	err = vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -791,7 +818,7 @@ func TestUnitAccAlicloudVpnGatewayVpnAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
+		err := vpngateway.ResourceAliCloudVpnGatewayVpnAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -809,7 +836,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10338(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap10338)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -1260,7 +1287,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic10363(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap10363)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -1475,7 +1502,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic5629(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap5629)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -1677,7 +1704,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_basic5358(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMap5358)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -1921,7 +1948,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_role(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMapRole)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -2200,7 +2227,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_legacyFields(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMapLegacy)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -2362,7 +2389,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_roleSwitch(t *testing.T) {
 		if originalID != entry.Primary.ID {
 			return fmt.Errorf("SAFE_UNEXPECTED_RECREATION")
 		}
-		service := VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		service := vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 		obj, err := service.DescribeVpnGatewayVpnAttachment(entry.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("SAFE_VPN_LIVE_READ_FAILED")
@@ -2392,7 +2419,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_roleSwitch(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMapRoleSwitch)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -2583,7 +2610,7 @@ func TestAccAliCloudVpnGatewayVpnAttachment_tunnelBandwidth(t *testing.T) {
 	resourceId := "alicloud_vpn_gateway_vpn_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayVpnAttachmentMapTunnelBandwidth)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -2725,7 +2752,7 @@ resource "alicloud_vpn_customer_gateway" "cgw2" {
 func TestUnitVpnGatewayVpnAttachmentRejectsRemovedConfiguration(t *testing.T) {
 	for _, removed := range []string{"all_tunnels", "one_tunnel", "tunnel_bgp_config", "tunnel_ike_config", "tunnel_ipsec_config"} {
 		t.Run(removed, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentUnitConfig())
 			old.SetId("vco-unit-test")
 			config := vpnAttachmentUnitConfig()
@@ -2772,7 +2799,7 @@ func TestUnitVpnGatewayVpnAttachmentRebuildAllowsRemovedConfiguration(t *testing
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentUnitConfig())
 			old.SetId("vco-unit-test")
 			config := vpnAttachmentUnitConfig()
@@ -2815,7 +2842,7 @@ func TestUnitVpnGatewayVpnAttachmentNestedDiffAndUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.block+"/"+tt.field, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentUnitConfig())
 			old.SetId("vco-unit-test")
 			config := vpnAttachmentUnitConfig()
@@ -2868,7 +2895,7 @@ func TestUnitVpnGatewayVpnAttachmentNestedDiffAndUpdate(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentOptionalComputedRead(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentUnitConfig()
 	for _, value := range config["tunnel_options_specification"].([]interface{}) {
 		tunnel := value.(map[string]interface{})
@@ -2893,7 +2920,7 @@ func TestUnitVpnGatewayVpnAttachmentOptionalComputedRead(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentPartialComputedRead(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentUnitConfig()
 	for _, value := range config["tunnel_options_specification"].([]interface{}) {
 		tunnel := value.(map[string]interface{})
@@ -2912,7 +2939,7 @@ func TestUnitVpnGatewayVpnAttachmentPartialComputedRead(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentCreateTunnels(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentUnitConfig()
 	config["tunnel_options_specification"].([]interface{})[1].(map[string]interface{})["role"] = "slave"
 	diff, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil)
@@ -2956,7 +2983,7 @@ func TestUnitVpnGatewayVpnAttachmentReadPSK(t *testing.T) {
 	// returned); "literal*test*psk" exercises '*' as a legal PSK character.
 	for _, value := range []string{"externally-rotated-test-psk", "literal*test*psk", "123456****"} {
 		t.Run(value, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			config := vpnAttachmentUnitConfig()
 			config["ike_config"] = []interface{}{map[string]interface{}{"psk": "old-top-level-test-psk"}}
 			d := schema.TestResourceDataRaw(t, r.Schema, config)
@@ -2988,7 +3015,7 @@ func TestUnitVpnGatewayVpnAttachmentReadPSK(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentReadStableOrder(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentUnitConfig()
 	d := schema.TestResourceDataRaw(t, r.Schema, config)
 	d.SetId("vco-unit-test")
@@ -3017,7 +3044,7 @@ func TestUnitVpnGatewayVpnAttachmentSortedTunnelsThreeTunnels(t *testing.T) {
 		vpnAttachmentUnitTunnel(2),
 		vpnAttachmentUnitTunnel(0),
 	}
-	sorted, sortedErr := vpnAttachmentSortedTunnels(tunnels)
+	sorted, sortedErr := vpngateway.VpnAttachmentSortedTunnels(tunnels)
 	if sortedErr != nil {
 		t.Fatalf("vpnAttachmentSortedTunnels got an error: %v", sortedErr)
 	}
@@ -3029,13 +3056,13 @@ func TestUnitVpnGatewayVpnAttachmentSortedTunnelsThreeTunnels(t *testing.T) {
 			t.Errorf("sorted tunnel at position %d = %v, want index %d", i, got, i)
 		}
 	}
-	if _, err := vpnAttachmentSortedTunnels([]interface{}{map[string]interface{}{"tunnel_index": "not-a-number"}}); err == nil {
+	if _, err := vpngateway.VpnAttachmentSortedTunnels([]interface{}{map[string]interface{}{"tunnel_index": "not-a-number"}}); err == nil {
 		t.Error("malformed tunnel_index should return an error")
 	}
 }
 
 func TestUnitVpnGatewayVpnAttachmentEnableBgpOnly(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	oldConfig := vpnAttachmentUnitConfig()
 	oldConfig["enable_tunnels_bgp"] = false
 	old := schema.TestResourceDataRaw(t, r.Schema, oldConfig)
@@ -3083,7 +3110,7 @@ func TestUnitVpnGatewayVpnAttachmentEnableBgpOnly(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentUpdateWaitsForCompletion(t *testing.T) {
 	for _, completedState := range []string{"attached", "init", "active"} {
 		t.Run(completedState, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			oldConfig := vpnAttachmentUnitConfig()
 			old := schema.TestResourceDataRaw(t, r.Schema, oldConfig)
 			old.SetId("vco-unit-test")
@@ -3129,7 +3156,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateWaitsForCompletion(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentUpdateRejectsFailureStates(t *testing.T) {
 	for _, failedState := range []string{"financialLocked", "deleted"} {
 		t.Run(failedState, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			oldConfig := vpnAttachmentUnitConfig()
 			old := schema.TestResourceDataRaw(t, r.Schema, oldConfig)
 			old.SetId("vco-unit-test")
@@ -3160,7 +3187,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateRejectsFailureStates(t *testing.T) {
 
 func TestUnitVpnGatewayVpnAttachmentUpdateTunnelIkeWithoutPsk(t *testing.T) {
 	t.Run("blocked", func(t *testing.T) {
-		r := resourceAliCloudVpnGatewayVpnAttachment()
+		r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 		oldConfig := vpnAttachmentUnitConfig()
 		for _, value := range oldConfig["tunnel_options_specification"].([]interface{}) {
 			value.(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["psk"] = ""
@@ -3188,7 +3215,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTunnelIkeWithoutPsk(t *testing.T) {
 	})
 
 	t.Run("explicit_psk_applies", func(t *testing.T) {
-		r := resourceAliCloudVpnGatewayVpnAttachment()
+		r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 		oldConfig := vpnAttachmentUnitConfig()
 		for _, value := range oldConfig["tunnel_options_specification"].([]interface{}) {
 			value.(map[string]interface{})["tunnel_ike_config"].([]interface{})[0].(map[string]interface{})["psk"] = ""
@@ -3231,7 +3258,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTunnelIkeWithoutPsk(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 	for _, priorPsk := range []string{"", "prior-top-level-psk"} {
 		t.Run("blocked_empty_psk_from_"+map[bool]string{true: "empty_state", false: "known_state"}[priorPsk == ""], func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			oldConfig := vpnAttachmentUnitConfig()
 			oldConfig["ike_config"] = []interface{}{map[string]interface{}{"psk": priorPsk, "ike_lifetime": 86400}}
 			old := schema.TestResourceDataRaw(t, r.Schema, oldConfig)
@@ -3259,7 +3286,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 	for _, mode := range []string{"explicit_psk_applies", "omitted_psk_inherits", "unknown_psk_resolved"} {
 		t.Run(mode, func(t *testing.T) {
 			omitPsk := mode == "omitted_psk_inherits"
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			oldConfig := vpnAttachmentUnitConfig()
 			priorPsk := ""
 			if mode != "explicit_psk_applies" {
@@ -3313,7 +3340,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 
 	for _, replacement := range []bool{false, true} {
 		t.Run(map[bool]string{false: "create_empty_psk_allowed", true: "replacement_empty_psk_allowed"}[replacement], func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			config := vpnAttachmentUnitConfig()
 			config["ike_config"] = []interface{}{map[string]interface{}{"psk": "", "ike_lifetime": 43200}}
 			var prior *sdktf.InstanceState
@@ -3334,7 +3361,7 @@ func TestUnitVpnGatewayVpnAttachmentUpdateTopLevelIkeWithoutPsk(t *testing.T) {
 
 func TestUnitVpnGatewayVpnAttachmentReadMaskedPSK(t *testing.T) {
 	t.Run("empty_keeps_prior", func(t *testing.T) {
-		r := resourceAliCloudVpnGatewayVpnAttachment()
+		r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 		config := vpnAttachmentUnitConfig()
 		config["ike_config"] = []interface{}{map[string]interface{}{"psk": "old-top-level-test-psk"}}
 		d := schema.TestResourceDataRaw(t, r.Schema, config)
@@ -3369,7 +3396,7 @@ func TestUnitVpnGatewayVpnAttachmentReadMaskedPSK(t *testing.T) {
 	// form, so an all-asterisk response is a real value. Adopting it keeps an
 	// externally rotated key visible instead of masking it behind the prior.
 	t.Run("all_asterisk_adopted", func(t *testing.T) {
-		r := resourceAliCloudVpnGatewayVpnAttachment()
+		r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 		config := vpnAttachmentUnitConfig()
 		config["ike_config"] = []interface{}{map[string]interface{}{"psk": "old-top-level-test-psk"}}
 		d := schema.TestResourceDataRaw(t, r.Schema, config)
@@ -3494,7 +3521,7 @@ func vpnAttachmentUnitAssertNoDiff(t *testing.T, r *schema.Resource, state *sdkt
 
 func vpnAttachmentUnitStateTunnels(d *schema.ResourceData) ([]interface{}, error) {
 	if set, ok := d.Get("tunnel_options_specification").(*schema.Set); ok {
-		tunnels, tunnelsErr := vpnAttachmentSortedTunnels(set.List())
+		tunnels, tunnelsErr := vpngateway.VpnAttachmentSortedTunnels(set.List())
 		if tunnelsErr != nil {
 			return nil, tunnelsErr
 		}
@@ -3610,7 +3637,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_tunnelOrder(t *testing.T) {
 		if !ok {
 			return fmt.Errorf("SAFE_VPN_STATE_MISSING")
 		}
-		service := VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		service := vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 		deadline := time.Now().Add(3 * time.Minute)
 		for {
 			obj, err := service.DescribeVpnGatewayVpnAttachment(entry.Primary.ID)
@@ -3714,7 +3741,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_tunnelOrder(t *testing.T) {
 			id, method string
 			service    func() interface{}
 		}{
-			{vpn, "DescribeVpnGatewayVpnAttachment", func() interface{} { return &VPNGatewayServiceV2{client()} }},
+			{vpn, "DescribeVpnGatewayVpnAttachment", func() interface{} { return vpngateway.NewVPNGatewayServiceV2(client()) }},
 			{"alicloud_cen_transit_router_vpn_attachment.default", "DescribeCenTransitRouterVpnAttachment", func() interface{} { return &CbnService{client()} }},
 			{"alicloud_cen_transit_router_cidr.default", "DescribeCenTransitRouterCidr", func() interface{} { return &CbnService{client()} }},
 			{"alicloud_cen_transit_router.default", "DescribeCenTransitRouter", func() interface{} { return &CenServiceV2{client()} }},
@@ -3835,7 +3862,7 @@ func vpnAttachmentCenReproAssignedIP(value string) bool {
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetReorderNoDiff(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentDistinctConfig())
 	old.SetId("vco-unit-test")
 	config := vpnAttachmentDistinctConfig()
@@ -3854,7 +3881,7 @@ func TestUnitVpnGatewayVpnAttachmentSetReorderNoDiff(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentSetExplicitUpdateAfterRefresh(t *testing.T) {
 	for _, reverse := range []bool{false, true} {
 		t.Run(fmt.Sprint(reverse), func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			original := vpnAttachmentDistinctConfig()
 			old := schema.TestResourceDataRaw(t, r.Schema, original)
 			old.SetId("vco-unit-test")
@@ -3900,7 +3927,7 @@ func TestUnitVpnGatewayVpnAttachmentSetExplicitUpdateAfterRefresh(t *testing.T) 
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetExplicitWholeIke(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	original := vpnAttachmentDistinctConfig()
 	old := schema.TestResourceDataRaw(t, r.Schema, original)
 	old.SetId("vco-unit-test")
@@ -3928,7 +3955,7 @@ func TestUnitVpnGatewayVpnAttachmentSetExplicitWholeIke(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetRejectsDuplicateIndex(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentDistinctConfig()
 	tunnels := config["tunnel_options_specification"].([]interface{})
 	tunnels[1].(map[string]interface{})["tunnel_index"] = 1
@@ -3940,7 +3967,7 @@ func TestUnitVpnGatewayVpnAttachmentSetRejectsDuplicateIndex(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentSetUnknownValues(t *testing.T) {
 	for _, field := range []string{"tunnel_index", "customer_gateway_id", "enable_dpd", "tunnel_ike_config", "psk"} {
 		t.Run(field, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentDistinctConfig())
 			old.SetId("vco-unit-test")
 			config := vpnAttachmentDistinctConfig()
@@ -3975,7 +4002,7 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownValues(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentSetPartialUpdate(t *testing.T) {
 	for _, omitBlock := range []bool{false, true} {
 		t.Run(fmt.Sprint(omitBlock), func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			full := vpnAttachmentDistinctConfig()
 			if omitBlock {
 				full["tunnel_options_specification"].([]interface{})[1].(map[string]interface{})["enable_dpd"] = true
@@ -4034,9 +4061,9 @@ func TestUnitVpnGatewayVpnAttachmentSetPartialUpdate(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetLegacyRefreshAndImport(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	config := vpnAttachmentDistinctConfig()
-	legacy := resourceAliCloudVpnGatewayVpnAttachment()
+	legacy := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	legacy.Schema["tunnel_options_specification"].Set = func(v interface{}) int {
 		m := v.(map[string]interface{})
 		return int(crc32.ChecksumIEEE([]byte(fmt.Sprintf("%d-%s", m["tunnel_index"].(int), m["customer_gateway_id"].(string)))))
@@ -4066,7 +4093,7 @@ func TestUnitVpnGatewayVpnAttachmentSetLegacyRefreshAndImport(t *testing.T) {
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetHashWritableOnly(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	setSchema := r.Schema["tunnel_options_specification"]
 	hash := setSchema.Set
 	fields := setSchema.Elem.(*schema.Resource).Schema
@@ -4115,7 +4142,7 @@ func TestUnitVpnGatewayVpnAttachmentSetHashWritableOnly(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentRoleCompatibility(t *testing.T) {
 	for _, mixed := range []bool{false, true} {
 		t.Run(fmt.Sprint(mixed), func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentDistinctConfig())
 			old.SetId("vco-unit-test")
 			baselineClient, _ := vpnAttachmentUnitClient(t, vpnAttachmentUnitAPI(vpnAttachmentDistinctConfig()))
@@ -4190,7 +4217,7 @@ func TestUnitVpnGatewayVpnAttachmentSetUnknownResolvedUpdate(t *testing.T) {
 		{"local_asn", "TunnelBgpConfig.LocalAsn", 0},
 	} {
 		t.Run(tc.field, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentDistinctConfig())
 			old.SetId("vco-unit-test")
 			config := vpnAttachmentDistinctConfig()
@@ -4247,7 +4274,7 @@ func vpnAttachmentStateAttrByIndex(attributes map[string]string, index int, fiel
 }
 
 func TestUnitVpnGatewayVpnAttachmentSetExplicitEmptyPsk(t *testing.T) {
-	r := resourceAliCloudVpnGatewayVpnAttachment()
+	r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 	old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentDistinctConfig())
 	old.SetId("vco-unit-test")
 	config := vpnAttachmentDistinctConfig()
@@ -4268,7 +4295,7 @@ func TestUnitVpnGatewayVpnAttachmentSetExplicitEmptyPsk(t *testing.T) {
 func TestUnitVpnGatewayVpnAttachmentSetUnknownIdentityAndBlockResolved(t *testing.T) {
 	for _, field := range []string{"tunnel_index", "tunnel_ike_config"} {
 		t.Run(field, func(t *testing.T) {
-			r := resourceAliCloudVpnGatewayVpnAttachment()
+			r := vpngateway.ResourceAliCloudVpnGatewayVpnAttachment()
 			old := schema.TestResourceDataRaw(t, r.Schema, vpnAttachmentDistinctConfig())
 			old.SetId("vco-unit-test")
 			pending := vpnAttachmentDistinctConfig()
@@ -4303,7 +4330,7 @@ func TestAccAliCloudVPNGatewayVpnAttachment_reorderExplicitIkeBlock(t *testing.T
 	var originalID string
 	const resourceID = "alicloud_vpn_gateway_vpn_attachment.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceID, &v, func() interface{} {
-		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpnGatewayVpnAttachment")
 	name := fmt.Sprintf("tfaccvpnreorder%d", acctest.RandIntRange(10000, 99999))
 
@@ -4384,7 +4411,9 @@ func vpnAttachmentReorderExplicitIkeTunnel(index, ikeIdentity int) string {
 func TestAccAliCloudVpnGatewayVpnAttachment_partialIkeUpdate(t *testing.T) {
 	var v map[string]interface{}
 	const resourceID = "alicloud_vpn_gateway_vpn_attachment.default"
-	rc := resourceCheckInitWithDescribeMethod(resourceID, &v, func() interface{} { return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)} }, "DescribeVpnGatewayVpnAttachment")
+	rc := resourceCheckInitWithDescribeMethod(resourceID, &v, func() interface{} {
+		return vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpnGatewayVpnAttachment")
 	name := fmt.Sprintf("tfaccvpnpartial%d", acctest.RandIntRange(10000, 99999))
 	config := func(step int) string {
 		blocks := ""
@@ -4488,7 +4517,7 @@ func vpnAttachmentCheckConfiguration(resourceID string, originalID *string, expe
 		if *originalID != entry.Primary.ID {
 			return mismatch
 		}
-		service := VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		service := vpngateway.NewVPNGatewayServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 		obj, err := service.DescribeVpnGatewayVpnAttachment(entry.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("SAFE_VPN_LIVE_READ_FAILED")
