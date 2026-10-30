@@ -40,6 +40,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudfw"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudphone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudsso"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudstoragegateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/computenest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/config"
@@ -217,6 +218,7 @@ var servicePackages = []conns.ServicePackage{
 	natgateway.ServicePackage(),
 	cloudphone.ServicePackage(),
 	cloudsso.ServicePackage(),
+	cloudstoragegateway.ServicePackage(),
 	cms.ServicePackage(),
 	computenest.ServicePackage(),
 	config.ServicePackage(),
