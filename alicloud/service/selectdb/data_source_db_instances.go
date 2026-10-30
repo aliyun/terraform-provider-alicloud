@@ -1,16 +1,20 @@
-package alicloud
+package selectdb
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudSelectDBDbInstances() *schema.Resource {
+func DataSourceDbInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudSelectDBDbInstancesRead,
+		Read: dataSourceDbInstancesRead,
 
 		Schema: map[string]*schema.Schema{
 			"ids": {
@@ -19,7 +23,7 @@ func dataSourceAlicloudSelectDBDbInstances() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -142,9 +146,9 @@ func dataSourceAlicloudSelectDBDbInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudSelectDBDbInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDbInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	selectDBService := SelectDBService{client}
+	selectDBService := NewService(client)
 
 	tags := make([]map[string]interface{}, 0)
 	if v, ok := d.GetOk("tags"); ok {
@@ -167,9 +171,9 @@ func dataSourceAlicloudSelectDBDbInstancesRead(d *schema.ResourceData, meta inte
 		}
 	}
 
-	instanceResp, err := selectDBService.DescribeSelectDBDbInstances(idsStr, tags)
+	instanceResp, err := selectDBService.DescribeDbInstances(idsStr, tags)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instances", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_instances", errs.AlibabaCloudSdkGoERROR)
 	}
 
 	var objects []map[string]interface{}
@@ -187,7 +191,7 @@ func dataSourceAlicloudSelectDBDbInstancesRead(d *schema.ResourceData, meta inte
 
 			"db_instance_description": object["Description"],
 			"status":                  object["Status"],
-			"payment_type":            convertChargeTypeToPaymentType(object["ChargeType"]),
+			"payment_type":            convert.ConvertChargeTypeToPaymentType(object["ChargeType"]),
 
 			"region_id":    object["RegionId"],
 			"zone_id":      object["ZoneId"],
@@ -200,9 +204,9 @@ func dataSourceAlicloudSelectDBDbInstancesRead(d *schema.ResourceData, meta inte
 			"lock_reason":  object["LockReason"],
 		}
 		// cpu,mem,cache
-		instanceResp, err := selectDBService.DescribeSelectDBDbInstance(object["DBInstanceId"].(string))
+		instanceResp, err := selectDBService.DescribeDbInstance(object["DBInstanceId"].(string))
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instance", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_instance", errs.AlibabaCloudSdkGoERROR)
 		}
 		result := instanceResp["DBClusterList"]
 		cpuPrepaid := 0
@@ -256,16 +260,16 @@ func dataSourceAlicloudSelectDBDbInstancesRead(d *schema.ResourceData, meta inte
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

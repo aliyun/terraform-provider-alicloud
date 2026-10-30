@@ -1,12 +1,16 @@
-package alicloud
+package selectdb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/selectdb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -18,7 +22,7 @@ func init() {
 }
 
 func testSweepSelectDBDbClusterAndDbInstance(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
@@ -28,10 +32,10 @@ func testSweepSelectDBDbClusterAndDbInstance(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	selectDBService := SelectDBService{client}
-	instanceResp, err := selectDBService.DescribeSelectDBDbInstances("", nil)
+	selectDBService := selectdb.NewService(client)
+	instanceResp, err := selectDBService.DescribeDbInstances("", nil)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instances", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_instances", errs.AlibabaCloudSdkGoERROR)
 	}
 
 	var objects []map[string]interface{}
@@ -39,7 +43,7 @@ func testSweepSelectDBDbClusterAndDbInstance(region string) error {
 	for _, item := range instanceResp {
 		name := item["Description"].(string)
 		skip := true
-		if !sweepAll() {
+		if !sweep.SweepAll() {
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(name, prefix) {
 					skip = false
@@ -54,9 +58,9 @@ func testSweepSelectDBDbClusterAndDbInstance(region string) error {
 	}
 
 	for _, id := range objects {
-		_, err := selectDBService.DeleteSelectDBInstance(id["DBInstanceId"].(string))
+		_, err := selectDBService.DeleteInstance(id["DBInstanceId"].(string))
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_instances_clusters", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_instances_clusters", errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	return nil
@@ -65,26 +69,26 @@ func testSweepSelectDBDbClusterAndDbInstance(region string) error {
 func TestAccAliCloudSelectDBDbCluster_basic_info(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_selectdb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudSelectDBDbClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SelectDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSelectDBDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSelectDBDbClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return selectdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDbCluster")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testAccselectdbcluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSelectDBDbClusterBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSelectDBDbClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_class":       "selectdb.xlarge",
+					"db_cluster_class":       "selectdb.g.2xlarge",
 					"cache_size":             "200",
 					"payment_type":           "PayAsYouGo",
 					"db_cluster_description": name,
@@ -92,10 +96,10 @@ func TestAccAliCloudSelectDBDbCluster_basic_info(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_class":       "selectdb.xlarge",
+						"db_cluster_class":       "selectdb.g.2xlarge",
 						"cache_size":             "200",
 						"payment_type":           "PayAsYouGo",
-						"db_cluster_description": CHECKSET,
+						"db_cluster_description": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -141,26 +145,26 @@ func TestAccAliCloudSelectDBDbCluster_basic_info(t *testing.T) {
 func TestAccAliCloudSelectDBDbCluster_status(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_selectdb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudSelectDBDbClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SelectDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSelectDBDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSelectDBDbClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return selectdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDbCluster")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testAccselectdbcluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSelectDBDbClusterBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSelectDBDbClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_class":       "selectdb.xlarge",
+					"db_cluster_class":       "selectdb.g.2xlarge",
 					"cache_size":             "200",
 					"payment_type":           "PayAsYouGo",
 					"db_cluster_description": name,
@@ -168,7 +172,7 @@ func TestAccAliCloudSelectDBDbCluster_status(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_class":       "selectdb.xlarge",
+						"db_cluster_class":       "selectdb.g.2xlarge",
 						"cache_size":             "200",
 						"payment_type":           "PayAsYouGo",
 						"db_cluster_description": name,
@@ -220,26 +224,26 @@ func TestAccAliCloudSelectDBDbCluster_status(t *testing.T) {
 func TestAccAliCloudSelectDBDbCluster_modify(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_selectdb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudSelectDBDbClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SelectDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSelectDBDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudSelectDBDbClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return selectdb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDbCluster")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testAccselectdbcluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSelectDBDbClusterBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudSelectDBDbClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_class":       "selectdb.xlarge",
+					"db_cluster_class":       "selectdb.g.2xlarge",
 					"cache_size":             "200",
 					"payment_type":           "PayAsYouGo",
 					"db_cluster_description": name,
@@ -247,7 +251,7 @@ func TestAccAliCloudSelectDBDbCluster_modify(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_class":       "selectdb.xlarge",
+						"db_cluster_class":       "selectdb.g.2xlarge",
 						"cache_size":             "200",
 						"payment_type":           "PayAsYouGo",
 						"db_cluster_description": name,
@@ -266,12 +270,12 @@ func TestAccAliCloudSelectDBDbCluster_modify(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_class": "selectdb.xlarge",
+					"db_cluster_class": "selectdb.g.2xlarge",
 					"cache_size":       "1000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_class": "selectdb.xlarge",
+						"db_cluster_class": "selectdb.g.2xlarge",
 						"cache_size":       "1000",
 					}),
 				),
@@ -286,11 +290,11 @@ func TestAccAliCloudSelectDBDbCluster_modify(t *testing.T) {
 }
 
 var AliCloudSelectDBDbClusterMap0 = map[string]string{
-	"db_instance_id":         CHECKSET,
-	"db_cluster_description": CHECKSET,
-	"payment_type":           CHECKSET,
-	"db_cluster_class":       CHECKSET,
-	"cache_size":             CHECKSET,
+	"db_instance_id":         acctest.CHECKSET,
+	"db_cluster_description": acctest.CHECKSET,
+	"payment_type":           acctest.CHECKSET,
+	"db_cluster_class":       acctest.CHECKSET,
+	"cache_size":             acctest.CHECKSET,
 }
 
 func AliCloudSelectDBDbClusterBasicDependence0(name string) string {
@@ -309,10 +313,10 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_zones.default.ids.0
 }
 resource "alicloud_selectdb_db_instance" "default" {
-  db_instance_class       = "selectdb.xlarge"
+  db_instance_class       = "selectdb.g.2xlarge"
   db_instance_description = var.name
   cache_size              = "200"
-  engine_minor_version    = "4.0.3"
+  engine_minor_version    = "4.0"
   payment_type            = "PayAsYouGo"
   vpc_id                  = data.alicloud_vswitches.default.vswitches.0.vpc_id
   zone_id                 = data.alicloud_vswitches.default.vswitches.0.zone_id

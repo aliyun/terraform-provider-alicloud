@@ -1,53 +1,54 @@
-package alicloud
+package selectdb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudSelectDBDbInstancesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	dbInstanceIdsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	dbInstanceIdsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
 			"ids": `["${alicloud_selectdb_db_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
 			"ids": `["${alicloud_selectdb_db_instance.default.id}_fake"]`,
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
-			"tags": `{ 
-						"Created" = "TF-update"
-    					"For"     = "acceptance-test-update" 
-					}`,
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
+			"tags": `{
+							"Created" = "TF-update"
+	    					"For"     = "acceptance-test-update"
+						}`,
 		}),
-		fakeConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
-			"tags": `{ 
-						"Created" = "TF-update-fake"
-    					"For"     = "acceptance-test-update-fake" 
-					}`,
+		FakeConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
+			"tags": `{
+							"Created" = "TF-update-fake"
+	    					"For"     = "acceptance-test-update-fake"
+						}`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
 			"ids": `["${alicloud_selectdb_db_instance.default.id}"]`,
-			"tags": `{ 
-						"Created" = "TF-update"
-    					"For"     = "acceptance-test-update" 
-					}`,
+			"tags": `{
+							"Created" = "TF-update"
+	    					"For"     = "acceptance-test-update"
+						}`,
 		}),
-		fakeConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSelectDBDbInstancesDataSource(rand, map[string]string{
 			"ids": `["${alicloud_selectdb_db_instance.default.id}_fake"]`,
-			"tags": `{ 
-						"Created" = "TF-update-fake"
-    					"For"     = "acceptance-test-update-fake" 
-					}`,
+			"tags": `{
+							"Created" = "TF-update-fake"
+	    					"For"     = "acceptance-test-update-fake"
+						}`,
 		}),
 	}
 
@@ -56,13 +57,13 @@ func TestAccAlicloudSelectDBDbInstancesDataSource(t *testing.T) {
 			"ids.#":                               "1",
 			"instances.#":                         "1",
 			"instances.0.payment_type":            "PayAsYouGo",
-			"instances.0.db_instance_id":          CHECKSET,
+			"instances.0.db_instance_id":          acctest.CHECKSET,
 			"instances.0.db_instance_description": fmt.Sprintf("tf-testAccSelectDBDbInstance-%d", rand),
 			"instances.0.engine":                  "selectdb",
-			"instances.0.region_id":               CHECKSET,
-			"instances.0.vswitch_id":              CHECKSET,
-			"instances.0.vpc_id":                  CHECKSET,
-			"instances.0.zone_id":                 CHECKSET,
+			"instances.0.region_id":               acctest.CHECKSET,
+			"instances.0.vswitch_id":              acctest.CHECKSET,
+			"instances.0.vpc_id":                  acctest.CHECKSET,
+			"instances.0.zone_id":                 acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudSelectDBDbInstancesDataSourceMapFunc = func(rand int) map[string]string {
@@ -71,16 +72,16 @@ func TestAccAlicloudSelectDBDbInstancesDataSource(t *testing.T) {
 			"names.#":        "0",
 		}
 	}
-	var alicloudSelectDBDbInstancesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_selectdb_db_instances.default",
-		existMapFunc: existAlicloudSelectDBDbInstancesDataSourceMapFunc,
-		fakeMapFunc:  fakeAlicloudSelectDBDbInstancesDataSourceMapFunc,
+	var alicloudSelectDBDbInstancesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_selectdb_db_instances.default",
+		ExistMapFunc: existAlicloudSelectDBDbInstancesDataSourceMapFunc,
+		FakeMapFunc:  fakeAlicloudSelectDBDbInstancesDataSourceMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+		acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 	}
 
-	alicloudSelectDBDbInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, dbInstanceIdsConf, tagsConf, allConf)
+	alicloudSelectDBDbInstancesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, dbInstanceIdsConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudSelectDBDbInstancesDataSource(rand int, attrMap map[string]string) string {
@@ -104,10 +105,10 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_zones.default.ids.0
 }
 resource "alicloud_selectdb_db_instance" "default" {
-  db_instance_class       = "selectdb.2xlarge"
+  db_instance_class       = "selectdb.g.2xlarge"
   db_instance_description = var.name
   cache_size              = "400"
-  engine_minor_version    = "4.0.3"
+  engine_minor_version    = "4.0"
   payment_type            = "PayAsYouGo"
   vpc_id                  = "${data.alicloud_vpcs.default.ids.0}"
   zone_id                 = "${data.alicloud_zones.default.ids.0}"

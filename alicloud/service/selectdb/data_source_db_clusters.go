@@ -1,16 +1,19 @@
-package alicloud
+package selectdb
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudSelectDBDbClusters() *schema.Resource {
+func DataSourceDbClusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudSelectDBDbClustersRead,
+		Read: dataSourceDbClustersRead,
 
 		Schema: map[string]*schema.Schema{
 			"ids": {
@@ -177,9 +180,9 @@ func dataSourceAlicloudSelectDBDbClusters() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceDbClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	selectDBService := SelectDBService{client}
+	selectDBService := NewService(client)
 
 	instanceMap := make(map[string]string)
 	idsMap := make(map[string]string)
@@ -189,9 +192,9 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 			if vv == nil {
 				continue
 			}
-			parts, err := ParseResourceId(vv.(string), 2)
+			parts, err := helper.ParseResourceId(vv.(string), 2)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			//instanceid:clusterid clusterid
 			idsMap[vv.(string)] = parts[1]
@@ -202,9 +205,9 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 	instanceResult := make(map[string]interface{})
 	instanceClusterResult := make(map[string]interface{})
 	for _, instanceId := range instanceMap {
-		instanceResp, err := selectDBService.DescribeSelectDBDbInstance(instanceId)
+		instanceResp, err := selectDBService.DescribeDbInstance(instanceId)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_selectdb_db_clusters", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_selectdb_db_clusters", errs.AlibabaCloudSdkGoERROR)
 		}
 		resp := instanceResp["DBClusterList"]
 		instanceResult[instanceId] = instanceResp
@@ -215,9 +218,9 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 
 	if len(idsMap) > 0 {
 		for pairId, pairClusterId := range idsMap {
-			parts, err := ParseResourceId(pairId, 2)
+			parts, err := helper.ParseResourceId(pairId, 2)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			result := instanceClusterResult[parts[0]].([]interface{})
 			for _, v := range result {
@@ -244,7 +247,7 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 			"status":                 object["Status"].(string),
 			"create_time":            object["CreatedTime"].(string),
 			"db_cluster_description": object["DbClusterName"].(string),
-			"payment_type":           convertChargeTypeToPaymentType(object["ChargeType"]),
+			"payment_type":           convert.ConvertChargeTypeToPaymentType(object["ChargeType"]),
 			"cpu":                    cpuP,
 			"memory":                 memoryP,
 			"cache_size":             cacheP,
@@ -261,11 +264,11 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 		id := fmt.Sprint(object["DbInstanceName"]) + ":" + fmt.Sprint(object["DbClusterId"])
 		mapping["id"] = id
 
-		selectDBService := SelectDBService{client}
+		selectDBService := NewService(client)
 
-		configArrayList, err := selectDBService.DescribeSelectDBDbClusterConfig(id)
+		configArrayList, err := selectDBService.DescribeDbClusterConfig(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		configArray := make([]map[string]interface{}, 0)
 		for _, v := range configArrayList {
@@ -287,9 +290,9 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 		}
 		mapping["params"] = configArray
 
-		configChangeArrayList, err := selectDBService.DescribeSelectDBDbClusterConfigChangeLog(id)
+		configChangeArrayList, err := selectDBService.DescribeDbClusterConfigChangeLog(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		configChangeArray := make([]map[string]interface{}, 0)
 		for _, v := range configChangeArrayList {
@@ -311,16 +314,16 @@ func dataSourceAlicloudSelectDBDbClustersRead(d *schema.ResourceData, meta inter
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
