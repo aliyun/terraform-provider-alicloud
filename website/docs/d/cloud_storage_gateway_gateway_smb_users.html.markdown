@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Storage Gateway Gateway SMB Users to the user.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_gateway\_smb\_users
+# alicloud_cloud_storage_gateway_gateway_smb_users
 
 This data source provides the Cloud Storage Gateway Gateway SMB Users of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -66,11 +66,11 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Gateway SMB username.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `users` - A list of Cloud Storage Gateway SMB Users. Each element contains the following attributes:
-	* `gateway_id` - The Gateway ID.
-	* `id` - The ID of the Gateway SMB User.
-	* `username` - The username of the Gateway SMB User.
+  * `gateway_id` - The Gateway ID.
+  * `id` - The ID of the Gateway SMB User.
+  * `username` - The username of the Gateway SMB User.
