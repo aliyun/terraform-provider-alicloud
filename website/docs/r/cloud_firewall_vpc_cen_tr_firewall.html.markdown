@@ -43,20 +43,8 @@ variable "firewall_name" {
   default = "tf-example"
 }
 
-variable "tr_attachment_master_cidr" {
-  default = "192.168.3.192/26"
-}
-
-variable "firewall_subnet_cidr" {
-  default = "192.168.3.0/25"
-}
-
 variable "region" {
   default = "cn-hangzhou"
-}
-
-variable "tr_attachment_slave_cidr" {
-  default = "192.168.3.128/26"
 }
 
 variable "firewall_vpc_cidr" {
@@ -143,11 +131,8 @@ resource "time_sleep" "wait_10_minutes" {
 resource "alicloud_cloud_firewall_vpc_cen_tr_firewall" "default" {
   cen_id                    = alicloud_cen_transit_router_vpc_attachment.tr-vpc1.cen_id
   firewall_name             = var.name
-  firewall_subnet_cidr      = var.firewall_subnet_cidr
-  tr_attachment_slave_cidr  = var.tr_attachment_slave_cidr
   firewall_description      = "VpcCenTrFirewall created by terraform"
   region_no                 = var.region
-  tr_attachment_master_cidr = var.tr_attachment_master_cidr
   firewall_vpc_cidr         = var.firewall_vpc_cidr
   transit_router_id         = alicloud_cen_transit_router.tr.transit_router_id
   route_mode                = "managed"
@@ -166,26 +151,23 @@ The following arguments are supported:
 * `cen_id` - (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance.
 * `firewall_description` - (Optional, ForceNew) The description of the firewall.
 * `firewall_name` - (Required) The name of the Cloud Firewall instance.
-* `firewall_subnet_cidr` - (Optional, ForceNew) The CIDR block of the subnet in the firewall VPC that hosts the firewall ENI in automatic mode.
-* `firewall_vpc_cidr` - (Required, ForceNew) The CIDR block of the firewall VPC in automatic mode.
+* `firewall_vpc_cidr` - (Optional, ForceNew) The CIDR block of the firewall VPC in automatic mode.
+* `firewall_vpc_id` - (Optional, ForceNew, Available since v2.2.0) The ID of the VPC where the firewall ENI is created in manual mode.
+* `firewall_vswitch_id` - (Optional, ForceNew, Available since v2.2.0) The ID of the vSwitch where the firewall ENI is created in manual mode.
 * `region_no` - (Required, ForceNew) The region ID of transit router instance I.
 * `route_mode` - (Required, ForceNew) The routing mode. Valid values:
-  - `managed`: indicates automatic mode.
-  - `manual`: indicates manual mode.
+  - `managed`: automatic mode. You only need to specify `firewall_vpc_cidr`. The `firewall_subnet_cidr`, `tr_attachment_slave_cidr`, and `tr_attachment_master_cidr` are deprecated and do not need to be specified.
+  - `manual`: (Available since v2.2.0) manual mode for custom VPCs. You must specify `firewall_vpc_id`, `firewall_vswitch_id`, `tr_attachment_master_zone`, and `tr_attachment_slave_zone`.
+  - `semi-managed`: (Available since v2.2.0) manual mode for managed VPCs. You only need to specify `firewall_vpc_cidr`.
 
   -> **NOTE:**  If this parameter is not specified, VPC border firewalls in all routing modes are queried.
 
-* `tr_attachment_master_cidr` - (Optional, ForceNew) The primary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
-* `tr_attachment_master_zone` - (Optional) The primary zone of the vSwitch.
-
-  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
-
-* `tr_attachment_slave_cidr` - (Optional, ForceNew) The secondary CIDR block of the subnet in the firewall VPC used to connect to the transit router (TR) in automatic mode.
-* `tr_attachment_slave_zone` - (Optional) The secondary zone of the vSwitch.
-
-  -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
-
+* `tr_attachment_master_zone` - (Optional, ForceNew) The primary zone of the vSwitch.
+* `tr_attachment_slave_zone` - (Optional, ForceNew) The secondary zone of the vSwitch.
 * `transit_router_id` - (Required, ForceNew) The ID of the transit router instance.
+* `firewall_subnet_cidr` - (Optional, ForceNew, Deprecated since v2.2.0) Field `firewall_subnet_cidr` has been deprecated from provider version 2.2.0.
+* `tr_attachment_master_cidr` - (Optional, ForceNew, Deprecated since v2.2.0) Field `tr_attachment_master_cidr` has been deprecated from provider version 2.2.0.
+* `tr_attachment_slave_cidr` - (Optional, ForceNew, Deprecated since v2.2.0) Field `tr_attachment_slave_cidr` has been deprecated from provider version 2.2.0.
 
 ## Attributes Reference
 

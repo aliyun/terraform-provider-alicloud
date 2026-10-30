@@ -48,19 +48,26 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"firewall_subnet_cidr": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"firewall_vpc_attachment_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"firewall_vpc_cidr": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+			},
+			"firewall_vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"firewall_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"region_no": {
 				Type:     schema.TypeString,
@@ -71,22 +78,13 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"managed"}, false),
+				ValidateFunc: StringInSlice([]string{"managed", "manual", "semi-managed"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tr_attachment_master_cidr": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"tr_attachment_master_zone": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"tr_attachment_slave_cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -94,11 +92,31 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewall() *schema.Resource {
 			"tr_attachment_slave_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"firewall_subnet_cidr": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Computed:   true,
+				Deprecated: "Field `firewall_subnet_cidr` has been deprecated from provider version 2.2.0.",
+			},
+			"tr_attachment_master_cidr": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field `tr_attachment_master_cidr` has been deprecated from provider version 2.2.0.",
+			},
+			"tr_attachment_slave_cidr": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field `tr_attachment_slave_cidr` has been deprecated from provider version 2.2.0.",
 			},
 		},
 	}
@@ -139,7 +157,15 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("tr_attachment_master_zone"); ok {
 		request["TrAttachmentMasterZone"] = v
 	}
-	request["FirewallVpcCidr"] = d.Get("firewall_vpc_cidr")
+	if v, ok := d.GetOk("firewall_vpc_cidr"); ok {
+		request["FirewallVpcCidr"] = v
+	}
+	if v, ok := d.GetOk("firewall_vpc_id"); ok {
+		request["FirewallVpcId"] = v
+	}
+	if v, ok := d.GetOk("firewall_vswitch_id"); ok {
+		request["FirewallVswitchId"] = v
+	}
 	wait := incrementalWait(30*time.Second, 30*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, query, request, false, endpoint)
@@ -190,6 +216,8 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 	d.Set("firewall_description", objectRaw["FirewallDescription"])
 	d.Set("firewall_eni_id", objectRaw["FirewallEniId"])
 	d.Set("firewall_eni_vpc_id", objectRaw["FirewallEniVpcId"])
+	d.Set("firewall_vpc_id", objectRaw["FirewallEniVpcId"])
+	d.Set("firewall_vswitch_id", objectRaw["FirewallEniVswitchId"])
 	d.Set("firewall_name", objectRaw["FirewallName"])
 	d.Set("firewall_subnet_cidr", objectRaw["FirewallSubnetCidr"])
 	d.Set("firewall_vpc_attachment_id", objectRaw["TrAttachmentId"])
@@ -200,6 +228,8 @@ func resourceAliCloudCloudFirewallVpcCenTrFirewallRead(d *schema.ResourceData, m
 	d.Set("tr_attachment_master_cidr", objectRaw["TrAttachmentMasterCidr"])
 	d.Set("tr_attachment_slave_cidr", objectRaw["TrAttachmentSlaveCidr"])
 	d.Set("transit_router_id", objectRaw["TransitRouterId"])
+	d.Set("tr_attachment_master_zone", objectRaw["TrAttachmentMasterZone"])
+	d.Set("tr_attachment_slave_zone", objectRaw["TrAttachmentSlaveZone"])
 
 	return nil
 }
