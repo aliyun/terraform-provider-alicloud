@@ -46,11 +46,55 @@ cleanup() {
 # Register cleanup function to run on exit
 trap cleanup EXIT INT TERM
 
+# Detect whether HCL example content read from stdin already declares a
+# `required_providers` block. Terraform refuses to load any module that
+# contains two `required_providers` blocks, reporting "Duplicate required
+# providers configuration" regardless of which providers each block lists, so
+# the synthesized provider configuration below must only be written when the
+# example declares none. This preserves an example's own alicloud declaration
+# (with source, version constraints and aliases) and still lets real
+# duplicates or conflicts inside the example surface during init/validate.
+# Returns 0 when a required_providers block is present, 1 otherwise.
+example_has_required_providers_block() {
+  awk '
+    BEGIN { found = 0 }
+    {
+      line = $0
+      # Truncate at the earliest HCL line comment (# or //) so a
+      # commented-out block is not mistaken for a real declaration. Use
+      # index/substr instead of a // regex so the awk program stays
+      # portable across BSD and GNU awk.
+      c = index(line, "#"); if (c == 0) c = length(line) + 1
+      s = index(line, "//"); if (s == 0) s = length(line) + 1
+      if (c < s) line = substr(line, 1, c - 1); else line = substr(line, 1, s - 1)
+      if (line ~ /required_providers/) found = 1
+    }
+    END { exit found ? 0 : 1 }
+  '
+}
+
+# Record the PASS/FAIL result for one example and update the running totals.
+# Kept as a helper so the validate-only path and the full cloud path share the
+# same accounting instead of duplicating the tally logic.
+mark_example_result() {
+  local name="$1"
+  local failed="$2"
+  if [ "$failed" = true ]; then
+    echo -e "${RED}--- FAIL: ${name}${NC}"
+    FAILED_EXAMPLES=$((FAILED_EXAMPLES + 1))
+    FAILED_EXAMPLE_LIST="${FAILED_EXAMPLE_LIST}${name} "
+  else
+    echo -e "${GREEN}--- PASS: ${name}${NC}"
+    PASSED_EXAMPLES=$((PASSED_EXAMPLES + 1))
+  fi
+}
+
 # Parse command line arguments
 CHECK_ALL=false
 DRY_RUN=false
 SPECIFIC_FILE=""
 SKIP_BUILD=false
+VALIDATE_ONLY=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -70,6 +114,11 @@ while [[ $# -gt 0 ]]; do
       SKIP_BUILD=true
       shift
       ;;
+    --validate-only)
+      VALIDATE_ONLY=true
+      SKIP_BUILD=true
+      shift
+      ;;
     -h|--help)
       echo "Usage: $0 [OPTIONS]"
       echo ""
@@ -78,6 +127,10 @@ while [[ $# -gt 0 ]]; do
       echo "  --file <path>         Check a specific documentation file"
       echo "  --dry-run             Show what would be tested without running"
       echo "  --skip-build          Skip building provider binary"
+      echo "  --validate-only       Only run lightweight HCL config validation"
+      echo "                        (no provider build, init, cloud credentials or"
+      echo "                        real resources; reports Duplicate required"
+      echo "                        providers configuration as a failure)"
       echo "  -h, --help            Show this help message"
       echo ""
       echo "Environment Variables (required for actual testing):"
@@ -126,7 +179,7 @@ if [ "$SKIP_BUILD" = false ] && [ "$DRY_RUN" = false ]; then
 fi
 
 # Setup provider override in ~/.terraformrc (even if build was skipped)
-if [ "$DRY_RUN" = false ]; then
+if [ "$DRY_RUN" = false ] && [ "$VALIDATE_ONLY" = false ]; then
   echo -e "${BLUE}Setting up provider override in ~/.terraformrc...${NC}"
 
   PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -345,8 +398,8 @@ if [ "$DRY_RUN" = false ]; then
   fi
 fi
 
-# Check credentials (skip in dry-run mode)
-if [ "$DRY_RUN" = false ]; then
+# Check credentials (skip in dry-run and validate-only modes)
+if [ "$DRY_RUN" = false ] && [ "$VALIDATE_ONLY" = false ]; then
   if [ -z "$ALICLOUD_ACCESS_KEY" ] || [ -z "$ALICLOUD_SECRET_KEY" ]; then
     echo -e "${YELLOW}WARNING: AliCloud credentials not set!${NC}"
     echo -e "${YELLOW}Please set the following environment variables:${NC}"
@@ -363,6 +416,12 @@ if [ "$DRY_RUN" = false ]; then
   echo -e "${GREEN}✓ AliCloud credentials configured${NC}"
   echo -e "  Region: ${ALICLOUD_REGION}"
   echo
+fi
+
+# Provide a default region for the cloud-free validate-only path so the
+# generated example configuration remains self-contained.
+if [ "$VALIDATE_ONLY" = true ]; then
+  ALICLOUD_REGION=${ALICLOUD_REGION:-cn-hangzhou}
 fi
 
 # Get files to check
@@ -464,10 +523,15 @@ echo -e "${BLUE}═════════════════════�
 echo -e "${BLUE}  Running Example Tests${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════════${NC}"
 echo
-echo -e "${RED}WARNING: This will create real resources in your AliCloud account!${NC}"
-echo -e "${YELLOW}Press Ctrl+C within 5 seconds to cancel...${NC}"
-sleep 5
-echo
+if [ "$VALIDATE_ONLY" = true ]; then
+  echo -e "${BLUE}Validate-only mode: HCL config checks (no init, credentials or resources).${NC}"
+  echo
+else
+  echo -e "${RED}WARNING: This will create real resources in your AliCloud account!${NC}"
+  echo -e "${YELLOW}Press Ctrl+C within 5 seconds to cancel...${NC}"
+  sleep 5
+  echo
+fi
 
 # Create temporary directory for test runs
 TEST_DIR=$(mktemp -d)
@@ -516,8 +580,19 @@ for file_info in $FILES_WITH_EXAMPLES; do
 
       mkdir -p "$example_dir"
 
-      # Create provider configuration
-      cat > "$example_dir/terraform.tf" <<EOF
+      # Create provider configuration. Only synthesize the required_providers
+      # block when the example declares none: Terraform rejects any module
+      # that contains two required_providers blocks with "Duplicate required
+      # providers configuration", regardless of which providers each block
+      # lists. Examples that already declare alicloud (with source, version
+      # constraints or aliases) keep their own declaration; examples without
+      # any required_providers block get the alicloud source injected. Real
+      # duplicates or conflicts inside the example are still surfaced by
+      # terraform init/validate and are not suppressed.
+      if printf '%s' "$example_content" | example_has_required_providers_block; then
+        echo -e "${YELLOW}  - example already declares required_providers; keeping it.${NC}"
+      else
+        cat > "$example_dir/terraform.tf" <<EOF
 terraform {
   required_providers {
     alicloud = {
@@ -527,6 +602,7 @@ terraform {
 }
 
 EOF
+      fi
 
       # Write example content to main.tf
       echo "$example_content" > "$example_dir/main.tf"
@@ -539,6 +615,37 @@ EOF
 
       test_failed=false
       error_log="$example_dir/error.log"
+
+      if [ "$VALIDATE_ONLY" = true ]; then
+        # Lightweight HCL config check: parse the combined module config
+        # without init, provider download or cloud credentials. The
+        # conditional injection above ensures a well-formed example never
+        # reports "Duplicate required providers configuration"; real
+        # duplicates or conflicts inside the example still surface here.
+        # terraform validate -json emits JSON diagnostics even on error and
+        # exits non-zero for ordinary problems such as "Missing required
+        # provider" when init was skipped, so the exit code is not used as a
+        # pass/fail signal here; only a duplicate required_providers block
+        # counts as a failure.
+        echo -e "${YELLOW}=== RUN   ${example_name} VALIDATE${NC}"
+        validate_json="$example_dir/validate.json"
+        (cd "$example_dir" && terraform validate -json > "$validate_json" 2>&1) || true
+        if [ ! -s "$validate_json" ]; then
+          echo -e "${RED} - validate failed to run (no output).${NC}"
+          test_failed=true
+        elif grep -q "Duplicate required providers configuration" "$validate_json"; then
+          echo -e "${RED} - duplicate required_providers check: fail.${NC}"
+          echo -e "${YELLOW}Validate diagnostics:${NC}"
+          cat "$validate_json"
+          test_failed=true
+        else
+          echo -e "${GREEN} - duplicate required_providers check: success.${NC}"
+        fi
+        mark_example_result "$example_name" "$test_failed"
+        echo
+        example_num=$((example_num + 1))
+        continue
+      fi
 
       # APPLY phase
       echo -e "${YELLOW}=== RUN   ${example_name} APPLY${NC}"
@@ -639,14 +746,7 @@ EOF
       fi
 
       # Mark result
-      if [ "$test_failed" = true ]; then
-        echo -e "${RED}--- FAIL: ${example_name}${NC}"
-        FAILED_EXAMPLES=$((FAILED_EXAMPLES + 1))
-        FAILED_EXAMPLE_LIST="${FAILED_EXAMPLE_LIST}${example_name} "
-      else
-        echo -e "${GREEN}--- PASS: ${example_name}${NC}"
-        PASSED_EXAMPLES=$((PASSED_EXAMPLES + 1))
-      fi
+      mark_example_result "$example_name" "$test_failed"
 
       echo
       example_num=$((example_num + 1))
