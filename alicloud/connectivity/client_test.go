@@ -356,3 +356,105 @@ func TestUnitCommonWithRamClient_Proxy(t *testing.T) {
 		})
 	}
 }
+
+// TestUnitTeaNoProxyHost verifies the endpoint-to-hostname normalization that
+// hands tea a bare host (no scheme, no port) for its exact-match NO_PROXY list.
+func TestUnitTeaNoProxyHost(t *testing.T) {
+	cases := []struct {
+		name     string
+		endpoint string
+		want     string
+	}{
+		{"bare hostname", "tablestore.cn-shanghai.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com"},
+		{"https scheme", "https://tablestore.cn-shanghai.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com"},
+		{"host with port", "tablestore.cn-shanghai.aliyuncs.com:443", "tablestore.cn-shanghai.aliyuncs.com"},
+		{"scheme and port", "http://foo.com:8080", "foo.com"},
+		{"empty endpoint", "", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, teaNoProxyHost(tc.endpoint))
+		})
+	}
+}
+
+// TestUnitResolveTeaProxy verifies the tea-roa proxy decision reuses the
+// provider's regexp-based skipProxy (suffix/wildcard matching) instead of
+// tea's own exact host comparison. It covers every NO_PROXY form the source
+// task requires: suffix (.aliyuncs.com), wildcard (*.aliyuncs.com), exact
+// host, star (*), host:443 (port-bearing miss), empty, and no HTTPS_PROXY.
+func TestUnitResolveTeaProxy(t *testing.T) {
+	const proxyURL = "http://proxy.example.com:8080"
+	const host = "tablestore.cn-shanghai.aliyuncs.com"
+
+	cases := []struct {
+		name            string
+		httpsProxy      string
+		noProxy         string
+		protocol        string
+		endpoint        string
+		wantUseProxy    bool
+		wantProxyURL    string
+		wantNoProxyHost string
+	}{
+		{
+			name:       "no proxy environment configured",
+			httpsProxy: "", noProxy: "", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: "",
+		},
+		{
+			name:       "suffix no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: ".aliyuncs.com", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "wildcard no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: "*.aliyuncs.com", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "exact host no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: host, protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "star no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: "*", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "port-bearing no_proxy entry does not match",
+			httpsProxy: proxyURL, noProxy: host + ":443", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: true, wantProxyURL: proxyURL, wantNoProxyHost: "",
+		},
+		{
+			name:       "unmatched no_proxy routes through proxy",
+			httpsProxy: proxyURL, noProxy: "other.example.com", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: true, wantProxyURL: proxyURL, wantNoProxyHost: "",
+		},
+		{
+			name:       "HTTP protocol reads HTTP_PROXY",
+			httpsProxy: "http://p.example.com:3128", noProxy: "", protocol: "HTTP", endpoint: host,
+			wantUseProxy: true, wantProxyURL: "http://p.example.com:3128", wantNoProxyHost: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// env is process-global; subtests run sequentially to avoid races.
+			t.Setenv("HTTPS_PROXY", tc.httpsProxy)
+			t.Setenv("https_proxy", "")
+			t.Setenv("HTTP_PROXY", tc.httpsProxy)
+			t.Setenv("http_proxy", "")
+			t.Setenv("NO_PROXY", tc.noProxy)
+			t.Setenv("no_proxy", "")
+
+			client := &AliyunClient{config: &Config{Protocol: tc.protocol}}
+			useProxy, proxyURL, noProxyHost, err := client.resolveTeaProxy(tc.endpoint)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantUseProxy, useProxy)
+			assert.Equal(t, tc.wantProxyURL, proxyURL)
+			assert.Equal(t, tc.wantNoProxyHost, noProxyHost)
+		})
+	}
+}
