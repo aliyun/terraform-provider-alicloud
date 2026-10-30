@@ -7,19 +7,36 @@ an instrumented client. Normal testing remains live by default.
 
 ## Running a supported test
 
-The test must use a recording-enabled `TestMain` and deterministic randomness.
-The root test package and the legacy DNS record tests are wired in as an initial
-pilot. After moving tests to a service package, keep the exact test function name
-and use the shared helpers:
+The root acceptance package and all 30 existing service packages with Go tests
+have a recording-enabled `TestMain`. Ordinary resource tests can keep using the
+existing HashiCorp `acctest.RandInt`, `RandIntRange`, `RandString`,
+`RandStringFromCharSet` and `RandomWithPrefix` functions: the single-case recording
+entry seeds the standard `math/rand` source from the saved seed before tests run.
+Direct standard `math/rand` calls and `helper.RandIntRange` use that same source.
+Go 1.24+ needs `GODEBUG=randseednop=0` for this; the recorder sets it for the session
+and restores the previous GODEBUG value afterward. Live mode does not change the
+random source or GODEBUG. Crypto randomness is never seeded or replaced.
+
+The public `helper.BuildClientToken` also uses the session seed while recording,
+so resources can keep their existing calls. Tokens remain distinct per call,
+within 64 characters, and are matched as business parameters instead of ignored.
+No per-resource recording branch or replacement random helper is needed for
+these common paths. Existing explicit `RecordingRandInt` callers remain supported.
+
+For a **new test package**, add its standard package-level recording entry once:
 
 ```go
 func TestMain(m *testing.M) {
-    acctest.RecordingTestMain(m)
+    os.Exit(recording.RunMain(m))
 }
-
-// Inside the test, instead of the testing SDK's unseeded RandInt:
-r := acctest.RecordingRandInt()
 ```
+
+If the package already has a sweeper-aware TestMain, retain its ordinary live
+execution and use `recording.RunMain` for the recording path (or use the existing
+`alicloud/acctest.RecordingTestMain` helper). Individual resource tests in that
+package then inherit the common behavior. Run one explicit package per process;
+do not use `go test ./alicloud/...`, because unmatched packages would create empty
+sessions and compete for the same recording directory.
 
 Run exactly one anchored top-level test per process: `-run '^TestExample$'`.
 The recorder infers its identity from this selector. Prefixes, regular-expression
@@ -27,17 +44,21 @@ alternatives, subtests and multiple cases are rejected. No
 `TF_ACC_RECORDING_CASE` is required. For older callers it remains an optional
 assertion and must match `-run` when present.
 
+For existing suites, retain their normal test-tool settings too (for example,
+`TF_ACC_TERRAFORM_PATH` can select a preinstalled Terraform CLI). Use the same
+Terraform version for recording and replay.
+
 Only two recording settings are required: `TF_ACC_RECORDING_MODE=record|replay`
 and `TF_ACC_RECORDING_PATH`. `TF_ACC=1` is the standard acceptance-test switch;
-credentials remain the normal Provider configuration. Set `account_type`
-explicitly in the test's Provider configuration (`Domestic` or `International`),
-or use the existing `ALIBABA_CLOUD_ACCOUNT_TYPE` setting for older test suites.
-This prevents an unrelated account-type discovery API call. Do not change the
-account type between recording and replay.
+credentials remain the normal Provider configuration. Account-type discovery
+now uses the instrumented Tea RPC path too, so an existing test does not need a
+new `account_type` attribute or environment variable. An explicitly configured
+account type retains its normal behavior. Keep the same Provider configuration
+between phases; replay consumes discovery responses from the cassette.
 
-The live Cloud DNS group pilot below already declares `account_type = "Domestic"`
-in its Provider configuration and generates its resource name from the saved
-seed. It needs neither `TF_ACC_LIVE_RECORDING` nor `TF_RECORDING_GROUP_NAME`.
+The Cloud DNS group pilot generates its name from the ordinary HashiCorp random
+helper and saved seed. Neither `TF_ACC_LIVE_RECORDING` nor
+`TF_RECORDING_GROUP_NAME` is required.
 With installed Go and Terraform, run from the repository root:
 
 ```sh
@@ -95,18 +116,38 @@ Transport errors poison the recording rather than produce an incomplete tape.
 
 The transport serializes interactions within a process. Single-case execution
 avoids sharing random streams or clients between cases. Concurrent requests whose
-order varies are not supported; adapt the test or use live acceptance testing.
-Existing state refreshes still execute. `recording.Wait` provides cancellable
-no-delay waiting for explicitly adapted polling loops; unadapted waits retain
-their delay. Replay does not claim to measure live retry timing.
+order varies are not supported. Timed/random choices made before TestMain,
+`math/rand/v2`, user-created random sources, direct crypto UUIDs or Terraform
+`uuid()`/`timestamp()` values used in business fields, and test-local reseeding are not controlled by this entry. Such cases
+still require an explicit adaptation or live acceptance testing. Existing waits
+retain their timing; `recording.Wait` can accelerate explicitly adapted waits.
+Replay does not measure live retry timing.
 
-The legacy Alibaba Cloud SDK clients using `getSdkConfig` and Darabonba OpenAPI
-v2 clients using the shared configurations are instrumented, including their
-existing check functions when those functions use the same connectivity clients.
-Legacy Tea RPC/ROA, legacy OSS/data-plane, MNS, TableStore and other uninstrumented
-connectivity factories explicitly reject recording. This is not blanket support
-for every resource or SDK. Tests constructing their own SDK clients must be
-adapted and reviewed; the runner must enforce network isolation for replay.
+## Shared client coverage
+
+| Common client path | Recording behavior |
+| --- | --- |
+| Alibaba Cloud Go SDK clients built through `getSdkConfig` | Wraps the configured HTTP transport |
+| `RpcPost`, `RpcGet`, `RpcPostWithEndpoint` | Legacy Tea RPC adapter preserves HTTP serialization/signing/retries/error decoding and injects the recording client |
+| `RoaPost`, `RoaPut`, `RoaGet`, `RoaDelete`, `RoaPatch`, including WithApiName variants | Equivalent legacy Tea ROA HTTP adapter, including action headers and 204 responses |
+| Shared Darabonba OpenAPI v2 configs and `AliyunClient.Do` | Injects the SDK HTTP client, including RPC and JSON ROA APIs |
+| `WithLogClient` | Wraps the legacy SLS SDK HTTP client and preserves its default request timeout |
+
+The legacy Tea RPC/ROA methods do not expose an HTTP-client injection field.
+`connectivity/recording_tea.go` adapts their v1.3.4 request methods to add
+`runtime["httpClient"]`, while reusing upstream clients, signing utilities,
+serialization, retry and SDK-error types. Ordinary execution still invokes the
+upstream methods. Parity and closed-server replay tests cover the adapter and
+account discovery. Review the adapter alongside any upstream Tea SDK upgrade;
+its Apache-2.0 license and attribution are included next to the source.
+
+The common transport accepts case-insensitive SDK header spelling and retains
+business parameters such as ClientToken. Authentication material is removed
+before persistence. Unsupported direct Tea factories, OSS/data-plane, MNS,
+TableStore and other uninstrumented factories still fail explicitly. XML,
+protobuf, streaming bodies and independent HTTP clients are not covered by this
+JSON/form pilot. No claim of blanket support for every resource is made; enforce
+network isolation for replay even when a resource uses a supported common path.
 
 Only JSON and form bodies are accepted. Authentication material is removed
 before persistence. Sensitive business fields such as passwords, private keys,
@@ -182,7 +223,7 @@ verifies import, renames it with `-u`, and destroys it. No domains or DNS record
 are added. Without `TF_ACC` or without record/replay mode the pilot skips and
 creates no resources. A skipped run cannot produce a successful recording.
 
-The group name is drawn deterministically from the recording seed and printed as
+The group name is drawn by the existing HashiCorp random helper from the recording seed and printed as
 `Recording DNS group: ...` in verbose output. The same seed generates the same
 name during replay, even after the real group is deleted. Keep `cassette.json`
 and `seed` together. Use a fresh directory for each new recording, including
@@ -239,6 +280,7 @@ a fresh environment, without real credentials, tokens, profiles or proxies:
 ```sh
 env -i PATH="$PATH" HOME="$replay_home" TMPDIR="${TMPDIR:-/tmp}" \
   TF_ACC=1 \
+  TF_ACC_TERRAFORM_PATH="$(command -v terraform)" \
   TF_ACC_RECORDING_MODE=replay \
   TF_ACC_RECORDING_PATH=/absolute/private/path/new-dns-group-case \
   TF_ACC_RECORDING_RESULT_PATH="$recording_work/replay-result.json" \
@@ -253,11 +295,41 @@ the input baseline. Require the exact test to PASS, report success with zero
 unmatched/unused requests, and unchanged SHA-256 hashes of `cassette.json` and
 `seed` before and after replay. Compare the logged resource name in both phases.
 Other people can replay a privately shared `cassette.json` and `seed` using the
-same case/source and account type, without real credentials or cloud resources.
+same case/source and Provider configuration, without real credentials or cloud resources.
 Preinstall Terraform and compile/download Go dependencies before isolation.
 Never publish real cassette payloads in a public repository.
 
-The pilot was validated against real Cloud DNS APIs and externally isolated
-local replay. This is a supported-client pilot, not blanket support for all
-resources. Empty VPCs currently use an unsupported legacy Tea RPC path and are
-rejected before creation.
+## Cross-SDK live validation cases
+
+These cases use real registered resources and the production Configure function.
+Run each separately with the same MODE/PATH interface, and replay each in its own
+network-isolated process. The verbose log prints `Recording resource: ... name=...`
+for independent cleanup inventory. Each creates, reads, verifies import, updates,
+and destroys its resource.
+
+| Test selector | Resource / SDK path | Verified interactions | Independent cleanup check |
+| --- | --- | --- | --- |
+| `^TestRecordingAlidnsGroupLiveTerraformCLI$` | Empty DNS group / legacy Alibaba Cloud Go SDK | 20 | DescribeDomainGroups: exact logged name and `-u` variant, domain count zero before any fallback deletion |
+| `^TestRecordingVpcLiveTerraformCLI$` | Empty VPC / legacy Tea RPC, shared ClientToken | 38 | DescribeVpcs: exact logged name, reject default/pre-existing VPCs, no force-delete |
+| `^TestRecordingSaeNamespaceLiveTerraformCLI$` | Empty SAE namespace with micro-registration disabled / legacy Tea ROA | 27 | DescribeNamespaces: exact logged name; delete only this run's newly created empty namespace |
+| `^TestRecordingSlsProjectLiveTerraformCLI$` | Empty SLS project / OpenAPI v2 plus legacy SLS policy read | 39 | ListProject: exact logged name; check empty Logstores before fallback deletion |
+
+An additional unmodified existing case, `TestAccAliCloudALBAcl_basic1` in
+`./alicloud/service/alb`, passed real recording and isolated replay with 37
+interactions, including its original random-name call, data source, import and
+CheckDestroy. It creates only an unattached ACL. Independent ListAcls queries
+confirmed no remaining newly created test ACL. None of that resource's existing
+test source was changed. All five verifications had zero unmatched/unused
+interactions, permission-denied external probes, unchanged cassette/seed hashes,
+credential scans, and zero residual resources. Counts include account discovery.
+
+The four explicit SDK-matrix cases are in `./alicloud/service/alidns` so one precompiled test binary can
+exercise the SDK matrix. This is test-fixture organization; each resource still
+uses its own production implementation without resource-specific recording
+changes. The existing ordinary HashiCorp random calls demonstrate shared seeding.
+Recordings require the normal permissions for the selected resource and account
+discovery. Record one case into a new private directory, check cleanup, then
+replay that case with dummy credentials and no external networking. Retain real
+recordings privately and verify cleanup again from a separate credentialed
+process. Passing this matrix establishes those resource/SDK paths; it does not
+certify every resource or sensitive-payload case.

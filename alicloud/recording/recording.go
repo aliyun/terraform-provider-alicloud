@@ -74,6 +74,7 @@ type Session struct {
 	next, unmatched int
 	failure         error
 	random          *mathrand.Rand
+	seed            int64
 	secrets         []string
 	closed          bool
 }
@@ -144,6 +145,7 @@ func New(mode, dir, testCase string) (*Session, error) {
 			return nil, errors.New("invalid recording seed")
 		}
 	}
+	s.seed = seed
 	s.random = mathrand.New(mathrand.NewSource(seed))
 	return s, nil
 }
@@ -173,6 +175,12 @@ func (r mainRunner) Run() int {
 		fmt.Fprintln(os.Stderr, "recording initialization failed:", err)
 		return 1
 	}
+	restoreRandom, err := seedGlobalRandom(s.seed)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	defer restoreRandom()
 	active.Lock()
 	active.session = s
 	active.Unlock()
@@ -185,6 +193,67 @@ func (r mainRunner) Run() int {
 		return 1
 	}
 	return code
+}
+
+// RunMain lets service-package TestMain functions use the same recording entry
+// without importing the aggregate Provider. Ordinary execution is unchanged.
+func RunMain(m interface{ Run() int }) int {
+	flag.Parse()
+	if f := flag.Lookup("sweep"); Enabled() && f != nil && f.Value.String() != "" {
+		fmt.Fprintln(os.Stderr, "recording cannot be combined with resource sweeping")
+		return 1
+	}
+	return WrapMain(m).Run()
+}
+
+// Seed the legacy math/rand source used by both HashiCorp acceptance helper
+// packages and existing tests. Go 1.24+ requires randseednop=0 for Seed to act.
+// Crypto randomness and ordinary live-mode tests are never changed.
+func seedGlobalRandom(seed int64) (func(), error) {
+	previous, existed := os.LookupEnv("GODEBUG")
+	if err := os.Setenv("GODEBUG", previous+",randseednop=0"); err != nil {
+		return nil, err
+	}
+	mathrand.Seed(seed)
+	return func() {
+		if existed {
+			os.Setenv("GODEBUG", previous)
+		} else {
+			os.Unsetenv("GODEBUG")
+		}
+	}, nil
+}
+
+// RequireSession prevents SDK configuration/discovery before an opt-in TestMain.
+func RequireSession() error {
+	if !Enabled() {
+		return nil
+	}
+	active.RLock()
+	defer active.RUnlock()
+	if active.session == nil {
+		return errors.New("recording requires a recording-enabled TestMain")
+	}
+	return nil
+}
+
+// ClientToken preserves idempotency values in strict matching. Only an active
+// session replaces the live generator; unique tokens replay from the saved seed.
+func ClientToken(action string, live func() string) string {
+	active.RLock()
+	s := active.session
+	active.RUnlock()
+	if s == nil {
+		return live()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var entropy [16]byte
+	s.random.Read(entropy[:])
+	if len(action) > 28 {
+		action = action[:28]
+	}
+	return "TF-" + action + "-" + hex.EncodeToString(entropy[:])
 }
 
 // Only a literal top-level Go test identifier is accepted. Regex groups,
@@ -247,10 +316,10 @@ func (t transport) Call(r *http.Request, _ *http.Transport) (*http.Response, err
 	return t.RoundTrip(r)
 }
 
-type HTTPClient struct{}
+type HTTPClient struct{ Timeout time.Duration }
 
-func (HTTPClient) Call(r *http.Request, base *http.Transport) (*http.Response, error) {
-	return Transport(base).RoundTrip(r)
+func (client HTTPClient) Call(r *http.Request, base *http.Transport) (*http.Response, error) {
+	return (&http.Client{Transport: Transport(base), Timeout: client.Timeout}).Do(r)
 }
 
 func (t transport) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -400,7 +469,7 @@ func Wait(done <-chan struct{}, delay time.Duration) error {
 
 func ignoredHeader(key string) bool {
 	switch strings.ToLower(key) {
-	case "authorization", "x-acs-security-token", "securitytoken", "accesskeyid", "signature", "signaturenonce", "signaturemethod", "signatureversion", "timestamp", "date", "x-acs-date", "x-acs-signature-nonce", "x-acs-signature-method", "x-acs-signature-version", "x-acs-credentials-provider", "user-agent", "x-acs-client-version", "x-sdk-client", "x-acs-content-sha256", "accept-encoding", "content-length", "connection":
+	case "proxy-authorization", "x-acs-accesskey-id", "x-log-date", "x-log-security-token", "x-log-credential", "x-log-signature", "authorization", "x-acs-security-token", "securitytoken", "accesskeyid", "signature", "signaturenonce", "signaturemethod", "signatureversion", "timestamp", "date", "x-acs-date", "x-acs-signature-nonce", "x-acs-signature-method", "x-acs-signature-version", "x-acs-credentials-provider", "user-agent", "x-acs-client-version", "x-sdk-client", "x-acs-content-sha256", "accept-encoding", "content-length", "connection":
 		return true
 	}
 	return false
@@ -601,7 +670,7 @@ func (s *Session) normalize(r *http.Request, body []byte) (request, error) {
 	if err != nil {
 		return request{}, err
 	}
-	clean, err := s.payload(body, r.Header.Get("Content-Type"), false)
+	clean, err := s.payload(body, headers.Get("Content-Type"), false)
 	if err != nil {
 		return request{}, err
 	}

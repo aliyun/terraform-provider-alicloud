@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -33,6 +34,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if recording.Enabled() {
+		os.Exit(recording.RunMain(m))
+	}
 	resource.TestMain(m)
 }
 

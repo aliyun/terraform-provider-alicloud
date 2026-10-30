@@ -226,11 +226,12 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if recording.Enabled() && (c.EcsRoleName != "" || c.RamRoleArn != "" || c.AssumeRoleWithOidc != nil || c.AccessKey == "" || c.SecretKey == "") {
 		return nil, recording.Unsupported("non-static credential source")
 	}
-	if recording.Enabled() && c.AccountType == "" {
-		return nil, fmt.Errorf("recording requires an explicit account_type (ALIBABA_CLOUD_ACCOUNT_TYPE)")
-	}
 	if recording.Replaying() && (c.AccessKey != "recording-access-key" || c.SecretKey != "recording-secret-key" || c.SecurityToken != "" || c.EcsRoleName != "" || c.RamRoleArn != "" || c.AssumeRoleWithOidc != nil) {
 		return nil, fmt.Errorf("replay requires static recording dummy credentials and forbids role, OIDC, and metadata credential sources")
+	}
+
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
 	}
 
 	// Get the auth and region. This can fail if keys/regions were not
@@ -1179,8 +1180,8 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 }
 
 func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, error)) (interface{}, error) {
-	if recording.Enabled() {
-		return nil, recording.Unsupported("WithLogClient")
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
 	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -1221,6 +1222,15 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 		client.logconn.Region = region
 	}
 	applyLogClientSignVersion(client.logconn, client.config.SignVersion, "sls")
+	if recording.Enabled() {
+		base := http.DefaultTransport
+		if transport, ok := base.(*http.Transport); ok {
+			cloned := transport.Clone()
+			cloned.IdleConnTimeout = 55 * time.Second // upstream SLS SDK default
+			base = cloned
+		}
+		client.logconn.HTTPClient = &http.Client{Timeout: 60 * time.Second, Transport: recording.Transport(base)}
+	}
 
 	return do(client.logconn)
 }
@@ -2647,8 +2657,8 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
-	if recording.Enabled() {
-		return nil, recording.Unsupported("legacy Tea RPC client")
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
 	}
 	var err error
 	if endpoint == "" {
@@ -2673,7 +2683,12 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	var response map[string]interface{}
+	if recording.Enabled() {
+		response, err = recordingRPCRequest(conn, tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	} else {
+		response, err = conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	}
 	return response, formatError(response, err)
 }
 
@@ -2821,8 +2836,8 @@ func (client *AliyunClient) RoaPatchWithApiName(apiProductCode string, apiVersio
 }
 
 func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
-	if recording.Enabled() {
-		return nil, recording.Unsupported("legacy Tea ROA client")
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
 	}
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
@@ -2845,7 +2860,9 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	var response map[string]interface{}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	if apiName != "" {
+	if recording.Enabled() {
+		response, err = recordingROARequest(conn, tea.String(apiName), tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
+	} else if apiName != "" {
 		response, err = conn.DoRequestWithAction(tea.String(apiName), tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
 	} else {
 		response, err = conn.DoRequest(tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)

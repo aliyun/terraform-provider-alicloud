@@ -22,21 +22,21 @@ func TestRecordingClientRejectsUnsafeCredentialSources(t *testing.T) {
 		}
 	}
 }
-func TestRecordingClientRequiresExplicitAccountType(t *testing.T) {
+func TestRecordingClientRequiresTestMain(t *testing.T) {
 	t.Setenv(recording.ModeEnv, "record")
 	c := &Config{AccessKey: "test-key", SecretKey: "test-secret"}
-	if _, err := c.Client(); err == nil || !strings.Contains(err.Error(), "account_type") {
-		t.Fatalf("unexpected account discovery result: %v", err)
+	if _, err := c.Client(); err == nil || !strings.Contains(err.Error(), "TestMain") {
+		t.Fatalf("unexpected session validation result: %v", err)
 	}
 }
 func TestRecordingUnsupportedClientsFailBeforeRequests(t *testing.T) {
 	t.Setenv(recording.ModeEnv, "record")
 	c := &AliyunClient{}
 	if _, err := c.RpcPost("Product", "2020-01-01", "Action", nil, nil, true); err == nil {
-		t.Fatal("unsupported Tea RPC accepted")
+		t.Fatal("Tea RPC accepted a missing session")
 	}
 	if _, err := c.RoaGet("Product", "2020-01-01", "/", nil, nil, nil); err == nil {
-		t.Fatal("unsupported Tea ROA accepted")
+		t.Fatal("Tea ROA accepted a missing session")
 	}
 	if _, err := c.NewTeaCommonClient("https://example.invalid"); err == nil {
 		t.Fatal("unsupported direct Tea factory accepted")

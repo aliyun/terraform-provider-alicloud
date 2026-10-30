@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"io"
+	mathrand "math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -290,5 +292,46 @@ func TestSelectedCaseFromExactRun(t *testing.T) {
 	}
 	if got, err := selectedCase("^TestExample$", "TestExample"); err != nil || got != "TestExample" {
 		t.Fatalf("legacy compatibility: %q %v", got, err)
+	}
+}
+
+func TestGlobalAcceptanceRandomSourceReplays(t *testing.T) {
+	t.Setenv("GODEBUG", "randseednop=1")
+	generate := func() string {
+		restore, err := seedGlobalRandom(987654321)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer restore()
+		return fmt.Sprintf("%d/%d/%s/%s", mathrand.Int(), sdkacctest.RandIntRange(10, 100), sdkacctest.RandString(24), sdkacctest.RandomWithPrefix("test"))
+	}
+	first, second := generate(), generate()
+	if first != second {
+		t.Fatal("existing acceptance-library random calls did not replay")
+	}
+	if os.Getenv("GODEBUG") != "randseednop=1" {
+		t.Fatal("GODEBUG was not restored")
+	}
+}
+
+func TestClientTokensReplayWithoutDroppingBusinessParameters(t *testing.T) {
+	generate := func() []string {
+		active.Lock()
+		active.session = &Session{random: mathrand.New(mathrand.NewSource(123))}
+		active.Unlock()
+		defer func() { active.Lock(); active.session = nil; active.Unlock() }()
+		return []string{ClientToken("CreateVpc", nil), ClientToken("CreateVpc", nil), ClientToken(strings.Repeat("LongAction", 20), nil)}
+	}
+	first, second := generate(), generate()
+	for i, token := range first {
+		if token != second[i] || len(token) > 64 {
+			t.Fatal("token did not replay or exceeded length limit")
+		}
+	}
+	if first[0] == first[1] {
+		t.Fatal("idempotency tokens were reused")
+	}
+	if ClientToken("CreateVpc", func() string { return "live" }) != "live" {
+		t.Fatal("live generator changed")
 	}
 }
