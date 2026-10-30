@@ -7,11 +7,11 @@ description: |-
   Provides a list of Nas Lifecycle Policies to the user.
 ---
 
-# alicloud\_nas\_lifecycle\_policies
+# alicloud_nas_lifecycle_policies
 
 This data source provides the Nas Lifecycle Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0+.
 
 ## Example Usage
 
@@ -44,16 +44,16 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Lifecycle Policy name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Lifecycle Policy names.
 * `policies` - A list of Nas Lifecycle Policies. Each element contains the following attributes:
-	* `create_time` - The time when the lifecycle management policy was created.
-	* `file_system_id` - The ID of the file system.
-	* `id` - The ID of the Lifecycle Policy. Its value is same as Queue Name.
-	* `lifecycle_policy_name` - The name of the lifecycle management policy.
-	* `lifecycle_rule_name` - The rules in the lifecycle management policy.
-	* `paths` - The list of absolute paths for multiple directories. In this case, you can associate a lifecycle management policy with each directory.
-	* `storage_type` - The storage type of the data that is dumped to the IA storage medium.
+  * `create_time` - The time when the lifecycle management policy was created.
+  * `file_system_id` - The ID of the file system.
+  * `id` - The ID of the Lifecycle Policy. Its value is same as Queue Name.
+  * `lifecycle_policy_name` - The name of the lifecycle management policy.
+  * `lifecycle_rule_name` - The rules in the lifecycle management policy.
+  * `paths` - The list of absolute paths for multiple directories. In this case, you can associate a lifecycle management policy with each directory.
+  * `storage_type` - The storage type of the data that is dumped to the IA storage medium.
