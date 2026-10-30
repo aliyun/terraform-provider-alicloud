@@ -1,0 +1,240 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package esa
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	convert "github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	helper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudEsaOriginClientCertificate() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudEsaOriginClientCertificateCreate,
+		Read:   resourceAliCloudEsaOriginClientCertificateRead,
+		Update: resourceAliCloudEsaOriginClientCertificateUpdate,
+		Delete: resourceAliCloudEsaOriginClientCertificateDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"certificate": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"hostnames": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"origin_client_certificate_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"origin_client_certificate_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"private_key": {
+				Type:      schema.TypeString,
+				Required:  true,
+				ForceNew:  true,
+				Sensitive: true,
+			},
+			"site_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudEsaOriginClientCertificateCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "UploadOriginClientCertificate"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("site_id"); ok {
+		request["SiteId"] = v
+	}
+
+	if v, ok := d.GetOk("origin_client_certificate_name"); ok {
+		request["Name"] = v
+	}
+	request["Certificate"] = d.Get("certificate")
+	request["PrivateKey"] = d.Get("private_key")
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_esa_origin_client_certificate", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprintf("%v:%v", request["SiteId"], response["Id"]))
+
+	return resourceAliCloudEsaOriginClientCertificateUpdate(d, meta)
+}
+
+func resourceAliCloudEsaOriginClientCertificateRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	esaServiceV2 := EsaServiceV2{client}
+
+	objectRaw, err := esaServiceV2.DescribeEsaOriginClientCertificate(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_esa_origin_client_certificate DescribeEsaOriginClientCertificate Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("certificate", objectRaw["Certificate"])
+	d.Set("status", objectRaw["Status"])
+	if v, ok := objectRaw["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
+
+	resultRawObj, _ := jsonpath.Get("$.Result", objectRaw)
+	resultRaw := make(map[string]interface{})
+	if resultRawObj != nil {
+		resultRaw = resultRawObj.(map[string]interface{})
+	}
+	d.Set("create_time", resultRaw["CreateTime"])
+	d.Set("origin_client_certificate_name", resultRaw["Name"])
+	d.Set("origin_client_certificate_id", resultRaw["Id"])
+
+	hostnamesRaw, _ := jsonpath.Get("$.Result.Hostnames", objectRaw)
+	d.Set("hostnames", hostnamesRaw)
+
+	return nil
+}
+
+func resourceAliCloudEsaOriginClientCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "SetOriginClientCertificateHostnames"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SiteId"] = parts[0]
+	request["Id"] = parts[1]
+
+	if d.HasChange("hostnames") {
+		update = true
+	}
+	if v, ok := d.GetOk("hostnames"); ok || d.HasChange("hostnames") {
+		hostnamesMapsArray := convert.ConvertToInterfaceArray(v)
+
+		hostnamesMapsJson, err := json.Marshal(hostnamesMapsArray)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		request["Hostnames"] = string(hostnamesMapsJson)
+	}
+
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudEsaOriginClientCertificateRead(d, meta)
+}
+
+func resourceAliCloudEsaOriginClientCertificateDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteOriginClientCertificate"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	query["SiteId"] = parts[0]
+	query["Id"] = parts[1]
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcGet("ESA", "2024-09-10", action, query, request)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
