@@ -28,6 +28,7 @@ var (
 	validateYamlString               = validators.ValidateYamlString
 	validateNormalName               = validators.ValidateNormalName
 	skipResourceSchemaValidation     = validators.SkipResourceSchemaValidation
+	setSkipResourceSchemaValidation  = validators.SetSkipResourceSchemaValidation
 
 	IntBetween                 = validators.IntBetween
 	ValidateNullableIntBetween = validators.ValidateNullableIntBetween

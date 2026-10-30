@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -198,19 +197,17 @@ func ValidateNormalName(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-var resourceSchemaValidationSkipped bool
+var skipResourceSchemaValidation bool
 
-func SkipResourceSchemaValidation() bool {
-	if resourceSchemaValidationSkipped {
-		return resourceSchemaValidationSkipped
-	}
-	if os.Getenv("TF_SKIP_RESOURCE_SCHEMA_VALIDATION") == "true" {
-		resourceSchemaValidationSkipped = true
-	}
-	return resourceSchemaValidationSkipped
+func SetSkipResourceSchemaValidation(skip bool) {
+	skipResourceSchemaValidation = skip
 }
 
-const skipResourceSchemaValidationWarning = "\n[NOTE] set env variable TF_SKIP_RESOURCE_SCHEMA_VALIDATION to true can skip the error and get a warning"
+func SkipResourceSchemaValidation() bool {
+	return skipResourceSchemaValidation
+}
+
+const skipResourceSchemaValidationWarning = "\n[NOTE] this validation can be skipped via the provider argument skip_resource_schema_validation or the environment variable TF_SKIP_RESOURCE_SCHEMA_VALIDATION"
 
 // IntBetween returns a SchemaValidateFunc which tests if the provided value
 // is of type int and is between min and max (inclusive)

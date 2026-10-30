@@ -104,9 +104,13 @@ func TestValidateStringConvertInt64(t *testing.T) {
 
 }
 
+func resetSkipResourceSchemaValidationForTest() {
+	skipResourceSchemaValidation = false
+}
+
 func TestValidateIntBetween(t *testing.T) {
-	resourceSchemaValidationSkipped = false
-	defer func() { resourceSchemaValidationSkipped = false }()
+	SetSkipResourceSchemaValidation(false)
+	defer resetSkipResourceSchemaValidationForTest()
 
 	min := 0
 	max := 10
@@ -123,7 +127,7 @@ func TestValidateIntBetween(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be in the range (%d - %d), got %d %s", attribute, min, max, check, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = IntBetween(min, max)(check, attribute)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -132,8 +136,8 @@ func TestValidateIntBetween(t *testing.T) {
 }
 
 func TestValidateNullableIntBetween(t *testing.T) {
-	resourceSchemaValidationSkipped = false
-	defer func() { resourceSchemaValidationSkipped = false }()
+	SetSkipResourceSchemaValidation(false)
+	defer resetSkipResourceSchemaValidationForTest()
 
 	attribute := "size"
 	largeRange := ValidateNullableIntBetween(0, 9007199254740991)
@@ -149,7 +153,7 @@ func TestValidateNullableIntBetween(t *testing.T) {
 	// format errors are hard errors regardless of skip flag
 	hardErrorValues := []string{"abc", "+10", "010", " 10", "1.5", "-0"}
 	for _, skip := range []bool{false, true} {
-		resourceSchemaValidationSkipped = skip
+		SetSkipResourceSchemaValidation(skip)
 		for _, v := range hardErrorValues {
 			s, es := largeRange(v, attribute)
 			assert.NotNil(t, es, "value %q should be a hard error (skip=%v)", v, skip)
@@ -158,7 +162,7 @@ func TestValidateNullableIntBetween(t *testing.T) {
 	}
 
 	// range violation with skip disabled: hard error carrying the skip hint
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 	for _, v := range []string{"-1", "51"} {
 		s, es := smallRange(v, attribute)
 		assert.NotNil(t, es, "value %q should be a range error", v)
@@ -169,7 +173,7 @@ func TestValidateNullableIntBetween(t *testing.T) {
 	}
 
 	// range violation with skip enabled: downgraded to a warning
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	for _, v := range []string{"-1", "51"} {
 		s, es := smallRange(v, attribute)
 		assert.Nil(t, es, "value %q should be downgraded to a warning", v)
@@ -185,7 +189,7 @@ func TestValidateNullableIntBetween(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), "canonical decimal integer string"))
 
 	// non-string input is a hard error
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 	s, es = smallRange(10, attribute)
 	assert.NotNil(t, es)
 	assert.Nil(t, s)
@@ -193,8 +197,8 @@ func TestValidateNullableIntBetween(t *testing.T) {
 }
 
 func TestValidateNullableBool(t *testing.T) {
-	resourceSchemaValidationSkipped = false
-	defer func() { resourceSchemaValidationSkipped = false }()
+	SetSkipResourceSchemaValidation(false)
+	defer resetSkipResourceSchemaValidationForTest()
 
 	attribute := "enabled"
 
@@ -216,7 +220,7 @@ func TestValidateNullableBool(t *testing.T) {
 	}
 
 	// invalid value with skip enabled: downgraded to a warning
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es := ValidateNullableBool("True", attribute)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -231,7 +235,7 @@ func TestValidateNullableBool(t *testing.T) {
 }
 
 func TestValidateIntAtLeast(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := 10
 	v := 10
@@ -247,7 +251,7 @@ func TestValidateIntAtLeast(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be at least (%d), got %d %s", k, limit, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = IntAtLeast(limit)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -256,7 +260,7 @@ func TestValidateIntAtLeast(t *testing.T) {
 }
 
 func TestValidateIntAtMost(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := 10
 	v := 10
@@ -272,7 +276,7 @@ func TestValidateIntAtMost(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be at most (%d), got %d %s", k, limit, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = IntAtMost(limit)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -281,7 +285,7 @@ func TestValidateIntAtMost(t *testing.T) {
 }
 
 func TestValidateIntInSlice(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := []int{1, 3, 6, 9, 12}
 	v := 6
@@ -297,7 +301,7 @@ func TestValidateIntInSlice(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be one of %v, got %d %s", k, limit, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = IntInSlice(limit)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -306,7 +310,7 @@ func TestValidateIntInSlice(t *testing.T) {
 }
 
 func TestValidateStringInSlice(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := []string{"IPV4", "IPV6"}
 	v := "IPV4"
@@ -327,7 +331,7 @@ func TestValidateStringInSlice(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be one of %v, got %s %s", k, limit, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringInSlice(limit, false)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -336,7 +340,7 @@ func TestValidateStringInSlice(t *testing.T) {
 }
 
 func TestValidateStringLenBetween(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	min := 2
 	max := 10
@@ -353,7 +357,7 @@ func TestValidateStringLenBetween(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected length of %s to be in the range (%d - %d), got %s %s", k, min, max, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringLenBetween(min, max)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -362,7 +366,7 @@ func TestValidateStringLenBetween(t *testing.T) {
 }
 
 func TestValidateStringMatch(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_.-]{1,127}$`)
 	message := "The name must be 2 to 128 characters in length, and must start with a letter. It can contain digits, periods (.), underscores (_), and hyphens (-)."
@@ -379,14 +383,14 @@ func TestValidateStringMatch(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"invalid value for %s (%s) %s", k, message, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringMatch(limit, message)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
 	assert.True(t, strings.Contains(s[0], fmt.Sprintf(
 		"invalid value for %s (%s)", k, message)))
 
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 	v = "tf-#testAcc-update"
 	s, es = StringMatch(limit, "")(v, k)
 	assert.NotNil(t, es)
@@ -394,7 +398,7 @@ func TestValidateStringMatch(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected value of %s to match regular expression %q %s", k, limit, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringMatch(limit, "")(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -403,7 +407,7 @@ func TestValidateStringMatch(t *testing.T) {
 }
 
 func TestValidateStringDoesNotMatch(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := regexp.MustCompile(`(^http://.*)|(^https://.*)`)
 	message := "It must cannot start with `https://`, `https://`"
@@ -420,14 +424,14 @@ func TestValidateStringDoesNotMatch(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"invalid value for %s (%s) %s", k, message, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringDoesNotMatch(limit, message)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
 	assert.True(t, strings.Contains(s[0], fmt.Sprintf(
 		"invalid value for %s (%s)", k, message)))
 
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 	v = "http://tf-testAcc-update.com"
 	s, es = StringDoesNotMatch(limit, "")(v, k)
 	assert.NotNil(t, es)
@@ -435,7 +439,7 @@ func TestValidateStringDoesNotMatch(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected value of %s to not match regular expression %q %s", k, limit, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringDoesNotMatch(limit, "")(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -444,7 +448,7 @@ func TestValidateStringDoesNotMatch(t *testing.T) {
 }
 
 func TestValidateFloatBetween(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	min := 2.1
 	max := 10.9
@@ -461,7 +465,7 @@ func TestValidateFloatBetween(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be in the range (%f - %f), got %f %s", k, min, max, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = FloatBetween(min, max)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -470,7 +474,7 @@ func TestValidateFloatBetween(t *testing.T) {
 }
 
 func TestValidateFloatAtLeast(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := 2.1
 	v := 5.3
@@ -486,7 +490,7 @@ func TestValidateFloatAtLeast(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be at least (%f), got %f %s", k, limit, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = FloatAtLeast(limit)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -495,7 +499,7 @@ func TestValidateFloatAtLeast(t *testing.T) {
 }
 
 func TestValidateFloatAtMost(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := 10.9
 	v := 5.3
@@ -511,7 +515,7 @@ func TestValidateFloatAtMost(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected %s to be at most (%f), got %f %s", k, limit, v, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = FloatAtMost(limit)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -520,7 +524,7 @@ func TestValidateFloatAtMost(t *testing.T) {
 }
 
 func TestValidateStringDoesNotContainAny(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	limit := ",."
 	v := "tf-testAcc"
@@ -536,7 +540,7 @@ func TestValidateStringDoesNotContainAny(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"expected value of %s to not contain any of %q %s", k, limit, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = StringDoesNotContainAny(limit)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -545,7 +549,7 @@ func TestValidateStringDoesNotContainAny(t *testing.T) {
 }
 
 func TestValidateRFC3339TimeString(t *testing.T) {
-	resourceSchemaValidationSkipped = false
+	SetSkipResourceSchemaValidation(false)
 
 	v := "2023-07-26T23:50:22Z"
 	k := "auto_release_time"
@@ -578,7 +582,7 @@ func TestValidateRFC3339TimeString(t *testing.T) {
 	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
 		"%q: invalid RFC3339 timestamp %s", k, skipResourceSchemaValidationWarning)))
 
-	resourceSchemaValidationSkipped = true
+	SetSkipResourceSchemaValidation(true)
 	s, es = ValidateRFC3339TimeString(false)(v, k)
 	assert.Nil(t, es)
 	assert.NotNil(t, s)
@@ -831,7 +835,7 @@ func TestUnitCommonValidateNormalName(t *testing.T) {
 func TestUnitCommonStringLenAtLeast(t *testing.T) {
 	// Reset to default (no-skip) before each subtest.
 	t.Run("Error_Mode", func(t *testing.T) {
-		resourceSchemaValidationSkipped = false
+		SetSkipResourceSchemaValidation(false)
 		validate := StringLenAtLeast(5)
 
 		testCases := []struct {
@@ -893,13 +897,42 @@ func TestUnitCommonStringLenAtLeast(t *testing.T) {
 	})
 
 	t.Run("Warn_Mode", func(t *testing.T) {
-		resourceSchemaValidationSkipped = true
-		defer func() { resourceSchemaValidationSkipped = false }()
+		SetSkipResourceSchemaValidation(true)
+		defer resetSkipResourceSchemaValidationForTest()
 		validate := StringLenAtLeast(5)
 
 		ws, es := validate("hi", "field")
 		assert.Empty(t, es, "In skip mode, errors should be downgraded to warnings")
 		assert.NotEmpty(t, ws, "In skip mode, violation should produce a warning")
 		assert.Contains(t, ws[0], "expected length of")
+	})
+}
+
+// TestSkipResourceSchemaValidationSwitch pins the contract of the switch behind
+// skip_resource_schema_validation: Provider() seeds it from
+// TF_SKIP_RESOURCE_SCHEMA_VALIDATION, and the provider argument's validator
+// overwrites it during PrepareProviderConfig. The value is live, not a latch.
+func TestSkipResourceSchemaValidationSwitch(t *testing.T) {
+	t.Cleanup(resetSkipResourceSchemaValidationForTest)
+
+	t.Run("not a latch: publishing again takes effect", func(t *testing.T) {
+		resetSkipResourceSchemaValidationForTest()
+		SetSkipResourceSchemaValidation(true)
+		assert.True(t, SkipResourceSchemaValidation())
+
+		SetSkipResourceSchemaValidation(false)
+		assert.False(t, SkipResourceSchemaValidation(), "an explicit false must re-enable the errors")
+	})
+
+	t.Run("switch controls the validators", func(t *testing.T) {
+		resetSkipResourceSchemaValidationForTest()
+		SetSkipResourceSchemaValidation(false)
+		_, es := IntBetween(0, 10)(20, "port")
+		assert.NotEmpty(t, es)
+
+		SetSkipResourceSchemaValidation(true)
+		ws, es := IntBetween(0, 10)(20, "port")
+		assert.Empty(t, es, "the violation must be downgraded to a warning")
+		assert.NotEmpty(t, ws)
 	})
 }

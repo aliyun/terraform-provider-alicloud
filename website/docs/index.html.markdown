@@ -367,6 +367,10 @@ In addition to [generic `provider` arguments](https://developer.hashicorp.com/te
 * `skip_region_validation` - (Optional, Available since v1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
   Can also be set with the `ALICLOUD_SKIP_REGION_VALIDATION` environment variable since v1.287.0.
 
+* `skip_resource_schema_validation` - (Optional, Available since v1.295.0) Skip the provider side validation of resource attribute limitations, so that out-of-range, out-of-enum and out-of-length values are reported as warnings instead of errors. Focused only on attribute value limitations: malformed values, such as an attribute declared as a string that receives a list, are still rejected.
+  Use it only when the AlibabaCloud API accepts a value that the provider still rejects, since it also hides genuine configuration mistakes. Can also be set with the `TF_SKIP_RESOURCE_SCHEMA_VALIDATION` environment variable, which remains the effective source when the `provider` block is absent or empty.
+  The switch applies to the whole provider process: when several `provider` blocks (aliases) are in use, set the same value on all of them, otherwise the last prepared block wins.
+
 * `features` - (Optional, Available since v1.289.0) A [`features`](#features) block that changes how certain resources behave. Only one `features` block may be in the configuration.
 
 * `configuration_source` - (Optional, Available since v1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
