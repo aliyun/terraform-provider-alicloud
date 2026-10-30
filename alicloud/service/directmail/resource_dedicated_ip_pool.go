@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package directmail. This file is generated automatically. Please do not modify it manually, thank you!
+package directmail
 
 import (
 	"fmt"
@@ -9,16 +9,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDirectMailDedicatedIpPool() *schema.Resource {
+func ResourceDedicatedIpPool() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDirectMailDedicatedIpPoolCreate,
-		Read:   resourceAliCloudDirectMailDedicatedIpPoolRead,
-		Update: resourceAliCloudDirectMailDedicatedIpPoolUpdate,
-		Delete: resourceAliCloudDirectMailDedicatedIpPoolDelete,
+		Create: ResourceDedicatedIpPoolCreate,
+		Read:   ResourceDedicatedIpPoolRead,
+		Update: ResourceDedicatedIpPoolUpdate,
+		Delete: ResourceDedicatedIpPoolDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,7 +38,7 @@ func resourceAliCloudDirectMailDedicatedIpPool() *schema.Resource {
 					// Member order is insignificant to the API; compare the
 					// normalized (trimmed, sorted) sets to avoid a permanent
 					// update loop when the configuration lists IDs unordered.
-					return fmt.Sprint(directMailBuyResourceIdSet(old)) == fmt.Sprint(directMailBuyResourceIdSet(new))
+					return fmt.Sprint(DirectMailBuyResourceIdSet(old)) == fmt.Sprint(DirectMailBuyResourceIdSet(new))
 				},
 			},
 			"create_time": {
@@ -75,7 +78,7 @@ func resourceAliCloudDirectMailDedicatedIpPool() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDirectMailDedicatedIpPoolCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceDedicatedIpPoolCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -88,14 +91,14 @@ func resourceAliCloudDirectMailDedicatedIpPoolCreate(d *schema.ResourceData, met
 	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("buy_resource_ids"); ok {
-		request["BuyResourceIds"] = strings.Join(directMailBuyResourceIdSet(v.(string)), ",")
+		request["BuyResourceIds"] = strings.Join(DirectMailBuyResourceIdSet(v.(string)), ",")
 	}
 	request["Name"] = d.Get("name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -103,29 +106,29 @@ func resourceAliCloudDirectMailDedicatedIpPoolCreate(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_direct_mail_dedicated_ip_pool", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_direct_mail_dedicated_ip_pool", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAliCloudDirectMailDedicatedIpPoolRead(d, meta)
+	return ResourceDedicatedIpPoolRead(d, meta)
 }
 
-func resourceAliCloudDirectMailDedicatedIpPoolRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceDedicatedIpPoolRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	directMailServiceV2 := DirectMailServiceV2{client}
+	directMailServiceV2 := NewDirectMailServiceV2(client)
 
 	objectRaw, err := directMailServiceV2.DescribeDirectMailDedicatedIpPool(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_direct_mail_dedicated_ip_pool DescribeDirectMailDedicatedIpPool Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -156,13 +159,13 @@ func resourceAliCloudDirectMailDedicatedIpPoolRead(d *schema.ResourceData, meta 
 	// empty one, so drift is reconciled by a regular update.
 	sort.Strings(buyResourceIds)
 	if err := d.Set("buy_resource_ids", strings.Join(buyResourceIds, ",")); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
 }
 
-func resourceAliCloudDirectMailDedicatedIpPoolUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceDedicatedIpPoolUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DedicatedIpPoolUpdate"
 	var request map[string]interface{}
@@ -174,17 +177,17 @@ func resourceAliCloudDirectMailDedicatedIpPoolUpdate(d *schema.ResourceData, met
 	request["RegionId"] = client.RegionId
 
 	if d.HasChange("buy_resource_ids") {
-		request["BuyResourceIds"] = strings.Join(directMailBuyResourceIdSet(d.Get("buy_resource_ids").(string)), ",")
+		request["BuyResourceIds"] = strings.Join(DirectMailBuyResourceIdSet(d.Get("buy_resource_ids").(string)), ",")
 		request["UpdateResource"] = true
 	} else {
-		return resourceAliCloudDirectMailDedicatedIpPoolRead(d, meta)
+		return ResourceDedicatedIpPoolRead(d, meta)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -192,19 +195,19 @@ func resourceAliCloudDirectMailDedicatedIpPoolUpdate(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	directMailServiceV2 := DirectMailServiceV2{client}
+	directMailServiceV2 := NewDirectMailServiceV2(client)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		objectRaw, err := directMailServiceV2.DescribeDirectMailDedicatedIpPool(d.Id())
 		if err != nil {
 			return retry.NonRetryableError(err)
 		}
 		ipsRaw, _ := objectRaw["Ips"].([]interface{})
-		want := directMailBuyResourceIdSet(d.Get("buy_resource_ids").(string))
+		want := DirectMailBuyResourceIdSet(d.Get("buy_resource_ids").(string))
 		got := make([]string, 0)
 		for _, item := range ipsRaw {
 			if ipItem, ok := item.(map[string]interface{}); ok {
@@ -220,15 +223,15 @@ func resourceAliCloudDirectMailDedicatedIpPoolUpdate(d *schema.ResourceData, met
 		return nil
 	})
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// Refresh Computed fields (create_time, ip_count, ips) from the converged
-	// pool so state reflects the update result.
-	return resourceAliCloudDirectMailDedicatedIpPoolRead(d, meta)
+	// pool so state reflect the update result.
+	return ResourceDedicatedIpPoolRead(d, meta)
 }
 
-func resourceAliCloudDirectMailDedicatedIpPoolDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceDedicatedIpPoolDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DedicatedIpPoolDelete"
@@ -240,11 +243,11 @@ func resourceAliCloudDirectMailDedicatedIpPoolDelete(d *schema.ResourceData, met
 	request["Id"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -252,22 +255,22 @@ func resourceAliCloudDirectMailDedicatedIpPoolDelete(d *schema.ResourceData, met
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
 }
 
-// directMailBuyResourceIdSet splits a comma-separated BuyResourceIds value,
+// DirectMailBuyResourceIdSet splits a comma-separated BuyResourceIds value,
 // trims surrounding spaces from each member, drops empty members and sorts
 // the result so configuration and state comparisons are order-insensitive.
-func directMailBuyResourceIdSet(value string) []string {
+func DirectMailBuyResourceIdSet(value string) []string {
 	items := make([]string, 0)
 	for _, item := range strings.Split(value, ",") {
 		if trimmed := strings.TrimSpace(item); trimmed != "" {

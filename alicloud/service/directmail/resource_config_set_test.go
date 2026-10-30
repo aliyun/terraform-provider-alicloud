@@ -1,4 +1,4 @@
-package alicloud
+package directmail_test
 
 import (
 	"encoding/json"
@@ -11,11 +11,17 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/directmail"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -29,7 +35,7 @@ func init() {
 }
 
 func testSweepDirectMailConfigSet(region string) error {
-	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DmSupportRegions)
+	rawClient, err := sweep.SharedClientForRegionWithBackendRegions(region, true, connectivity.DmSupportRegions)
 	if err != nil {
 		log.Printf("error getting Alicloud client: %s", err)
 		return nil
@@ -38,15 +44,15 @@ func testSweepDirectMailConfigSet(region string) error {
 	action := "ConfigSetList"
 	request := map[string]interface{}{
 		"PageIndex": 1,
-		"PageSize":  PageSizeLarge,
+		"PageSize":  helper.PageSizeLarge,
 	}
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -54,9 +60,9 @@ func testSweepDirectMailConfigSet(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				log.Printf("[INFO] DirectMail Config Set list reported not found; nothing to sweep: %s", err)
 				return nil
 			}
@@ -81,7 +87,7 @@ func testSweepDirectMailConfigSet(region string) error {
 			}
 			_, err = client.RpcPost("Dm", "2015-11-23", action, nil, deleteRequest, true)
 			if err != nil {
-				if NotFoundError(err) {
+				if errs.NotFoundError(err) {
 					log.Printf("[INFO] DirectMail Config Set %s was already removed: %s", name, err)
 				} else {
 					log.Printf("[ERROR] Failed to delete DirectMail Config Set (%s): %s", name, err)
@@ -90,7 +96,7 @@ func testSweepDirectMailConfigSet(region string) error {
 				log.Printf("[INFO] Delete DirectMail Config Set success: %s", name)
 			}
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageIndex"] = request["PageIndex"].(int) + 1
@@ -101,23 +107,23 @@ func testSweepDirectMailConfigSet(region string) error {
 func TestAccAliCloudDirectMailConfigSet_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_config_set.default"
-	ra := resourceAttrInit(resourceId, AlicloudDirectMailConfigSetMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DirectMailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDirectMailConfigSetMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return directmail.NewDirectMailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDirectMailConfigSet")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-direct-mail-cs-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDirectMailConfigSetBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDirectMailConfigSetBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 		},
-		IDRefreshName:     resourceId,
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		IDRefreshName:            resourceId,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -294,15 +300,15 @@ func TestAccAliCloudDirectMailConfigSet_basic(t *testing.T) {
 					"name":              name,
 					"description":       "tf-testAcc-description-update",
 					"is_force":          "true",
-					"validation_option": REMOVEKEY,
+					"validation_option": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                        name,
 						"description":                 "tf-testAcc-description-update",
 						"validation_option.#":         "0",
-						"validation_option.0.enabled": REMOVEKEY,
-						"validation_option.0.forbidden_status_list.#": REMOVEKEY,
+						"validation_option.0.enabled": acctest.REMOVEKEY,
+						"validation_option.0.forbidden_status_list.#": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -328,25 +334,25 @@ func TestAccAliCloudDirectMailConfigSet_withIpPool(t *testing.T) {
 	}
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_config_set.default"
-	ra := resourceAttrInit(resourceId, AlicloudDirectMailConfigSetMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DirectMailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDirectMailConfigSetMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return directmail.NewDirectMailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDirectMailConfigSet")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-direct-mail-cs-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDirectMailConfigSetWithIpPoolDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDirectMailConfigSetWithIpPoolDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 		},
 		// No IDRefreshName here: the SDK v2 ID-only refresh rebuilds a minimal
 		// provider config, which would drop the assume_role block and query the
 		// base test account instead of the target role account.
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -356,15 +362,15 @@ func TestAccAliCloudDirectMailConfigSet_withIpPool(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"ip_pool_id":   CHECKSET,
-						"ip_pool_name": CHECKSET,
+						"ip_pool_id":   acctest.CHECKSET,
+						"ip_pool_name": acctest.CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":       name,
-					"ip_pool_id": REMOVEKEY,
+					"ip_pool_id": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -422,7 +428,7 @@ func TestUnitDirectMailConfigSetWaitForValidationOption(t *testing.T) {
 		"ForbiddenStatusList": []interface{}{"DO_NOT_MAIL", "INVALID"},
 	}}
 	client := directMailConfigSetPropagationClient(t, stale, fresh, &calls)
-	d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, map[string]interface{}{
 		"name":        "cs",
 		"description": "desc",
 		"validation_option": []interface{}{map[string]interface{}{
@@ -431,8 +437,8 @@ func TestUnitDirectMailConfigSetWaitForValidationOption(t *testing.T) {
 		}},
 	})
 	d.SetId("cs-1")
-	service := DirectMailServiceV2{client}
-	if err := waitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
+	service := directmail.NewDirectMailServiceV2(client)
+	if err := directmail.WaitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
 		t.Fatal(err)
 	}
 	if atomic.LoadInt32(&calls) < 2 {
@@ -455,14 +461,14 @@ func TestUnitDirectMailConfigSetWaitForValidationListOrder(t *testing.T) {
 				"Enabled": true, field: []interface{}{"SECOND", "FIRST"},
 			}}
 			client := directMailConfigSetPropagationClient(t, stale, fresh, &calls)
-			d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, map[string]interface{}{
+			d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, map[string]interface{}{
 				"name": "cs",
 				"validation_option": []interface{}{map[string]interface{}{
 					"enabled": true, configField: []interface{}{"SECOND", "FIRST"},
 				}},
 			})
 			d.SetId("cs-1")
-			if err := waitForDirectMailConfigSetUpdatePropagated(d, DirectMailServiceV2{client}); err != nil {
+			if err := directmail.WaitForDirectMailConfigSetUpdatePropagated(d, directmail.NewDirectMailServiceV2(client)); err != nil {
 				t.Fatal(err)
 			}
 			if got := atomic.LoadInt32(&calls); got < 2 {
@@ -477,13 +483,13 @@ func TestUnitDirectMailConfigSetWaitForIpPoolAssociation(t *testing.T) {
 	stale := map[string]interface{}{"Id": "cs-1", "Name": "cs"}
 	fresh := map[string]interface{}{"Id": "cs-1", "Name": "cs", "IpPool": map[string]interface{}{"IpPoolId": "pool-1", "IpPoolName": "pool"}}
 	client := directMailConfigSetPropagationClient(t, stale, fresh, &calls)
-	d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, map[string]interface{}{
 		"name":       "cs",
 		"ip_pool_id": "pool-1",
 	})
 	d.SetId("cs-1")
-	service := DirectMailServiceV2{client}
-	if err := waitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
+	service := directmail.NewDirectMailServiceV2(client)
+	if err := directmail.WaitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
 		t.Fatal(err)
 	}
 	if atomic.LoadInt32(&calls) < 2 {
@@ -496,10 +502,10 @@ func TestUnitDirectMailConfigSetWaitForIpPoolRemoval(t *testing.T) {
 	stale := map[string]interface{}{"Id": "cs-1", "Name": "cs", "IpPool": map[string]interface{}{"IpPoolId": "pool-1"}}
 	fresh := map[string]interface{}{"Id": "cs-1", "Name": "cs"}
 	client := directMailConfigSetPropagationClient(t, stale, fresh, &calls)
-	d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, map[string]interface{}{"name": "cs"})
+	d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, map[string]interface{}{"name": "cs"})
 	d.SetId("cs-1")
-	service := DirectMailServiceV2{client}
-	if err := waitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
+	service := directmail.NewDirectMailServiceV2(client)
+	if err := directmail.WaitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
 		t.Fatal(err)
 	}
 	if atomic.LoadInt32(&calls) < 2 {
@@ -521,9 +527,9 @@ func TestUnitDirectMailConfigSetReadDisabledEmptyValidation(t *testing.T) {
 			config["validation_option"] = []interface{}{map[string]interface{}{"enabled": false}}
 			wantCount = 1
 		}
-		d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, config)
+		d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, config)
 		d.SetId("cs-1")
-		if err := resourceAliCloudDirectMailConfigSetRead(d, client); err != nil {
+		if err := directmail.ResourceConfigSetRead(d, client); err != nil {
 			t.Fatal(err)
 		}
 		if got := len(d.Get("validation_option").([]interface{})); got != wantCount {
@@ -568,14 +574,14 @@ func TestUnitDirectMailConfigSetUpdateClearsValidation(t *testing.T) {
 	}
 	diff := sdktf.NewInstanceDiff()
 	diff.Attributes["validation_option.#"] = &sdktf.ResourceAttrDiff{Old: "1", New: "0"}
-	d, err := schema.InternalMap(resourceAliCloudDirectMailConfigSet().Schema).Data(&sdktf.InstanceState{ID: "cs-1", Attributes: attrs}, diff)
+	d, err := schema.InternalMap(directmail.ResourceConfigSet().Schema).Data(&sdktf.InstanceState{ID: "cs-1", Attributes: attrs}, diff)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := directMailConfiguredValidationOptionKey(d); got != "false||" {
+	if got := directmail.DirectMailConfiguredValidationOptionKey(d); got != "false||" {
 		t.Fatalf("removed validation block must ignore stale SDK children, got %q", got)
 	}
-	if err := resourceAliCloudDirectMailConfigSetUpdate(d, client); err != nil {
+	if err := directmail.ResourceConfigSetUpdate(d, client); err != nil {
 		t.Fatal(err)
 	}
 	if updates.Load() != 1 || len(d.Get("validation_option").([]interface{})) != 0 {
@@ -588,14 +594,14 @@ func TestUnitDirectMailConfigSetWaitForBackoffPropagation(t *testing.T) {
 	stale := map[string]interface{}{"Id": "cs-1", "Name": "cs", "Description": "desc"}
 	fresh := map[string]interface{}{"Id": "cs-1", "Name": "cs", "Description": "desc", "IsPublicChannelBackoff": true}
 	client := directMailConfigSetPropagationClient(t, stale, fresh, &calls)
-	d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, map[string]interface{}{
 		"name":                      "cs",
 		"description":               "desc",
 		"is_public_channel_backoff": true,
 	})
 	d.SetId("cs-1")
-	service := DirectMailServiceV2{client}
-	if err := waitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
+	service := directmail.NewDirectMailServiceV2(client)
+	if err := directmail.WaitForDirectMailConfigSetUpdatePropagated(d, service); err != nil {
 		t.Fatal(err)
 	}
 	if atomic.LoadInt32(&calls) < 2 {
@@ -606,11 +612,11 @@ func TestUnitDirectMailConfigSetWaitForBackoffPropagation(t *testing.T) {
 func TestUnitDirectMailConfigSetEmptyValidationOptionBlock(t *testing.T) {
 	// An empty validation_option {} block can surface as a nil list element; the
 	// configured key must normalize it as disabled-empty instead of panicking.
-	d := schema.TestResourceDataRaw(t, resourceAliCloudDirectMailConfigSet().Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, directmail.ResourceConfigSet().Schema, map[string]interface{}{
 		"name":              "cs",
 		"validation_option": []interface{}{nil},
 	})
-	if got := directMailConfiguredValidationOptionKey(d); got != "false||" {
+	if got := directmail.DirectMailConfiguredValidationOptionKey(d); got != "false||" {
 		t.Fatalf("an empty validation block must normalize to disabled-empty, got %q", got)
 	}
 
@@ -646,11 +652,11 @@ func TestUnitDirectMailConfigSetEmptyValidationOptionBlock(t *testing.T) {
 	}
 	diff := sdktf.NewInstanceDiff()
 	diff.Attributes["description"] = &sdktf.ResourceAttrDiff{Old: "cs", New: "updated"}
-	state, err := schema.InternalMap(resourceAliCloudDirectMailConfigSet().Schema).Data(&sdktf.InstanceState{ID: "cs-1", Attributes: attrs}, diff)
+	state, err := schema.InternalMap(directmail.ResourceConfigSet().Schema).Data(&sdktf.InstanceState{ID: "cs-1", Attributes: attrs}, diff)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := resourceAliCloudDirectMailConfigSetUpdate(state, client); err != nil {
+	if err := directmail.ResourceConfigSetUpdate(state, client); err != nil {
 		t.Fatal(err)
 	}
 	if updates.Load() != 1 {

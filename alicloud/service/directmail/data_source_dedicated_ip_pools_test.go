@@ -1,4 +1,4 @@
-package alicloud
+package directmail_test
 
 import (
 	"fmt"
@@ -9,9 +9,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/directmail"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -21,25 +24,25 @@ const testAccDirectMailDedicatedIpPoolsOutputFile = "./tf-testAcc-direct-mail-po
 func TestAccAliCloudDirectMailDedicatedIpPoolsDataSource_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_dedicated_ip_pool.default"
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DirectMailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return directmail.NewDirectMailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDirectMailDedicatedIpPool")
-	ra := resourceAttrInit(resourceId, map[string]string{})
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, map[string]string{})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-direct-mail-pool-%d", rand)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudDirectMailDedicatedIpPoolsDataSourceConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_direct_mail_dedicated_ip_pools.default"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_direct_mail_dedicated_ip_pools.default"),
 					resource.TestCheckResourceAttrSet("data.alicloud_direct_mail_dedicated_ip_pools.default", "ids.#"),
 					resource.TestCheckResourceAttrSet("data.alicloud_direct_mail_dedicated_ip_pools.default", "pools.#"),
 				),
@@ -125,20 +128,20 @@ func TestAccAliCloudDirectMailDedicatedIpPoolsDataSource_poolId(t *testing.T) {
 	var firstId string
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_dedicated_ip_pool.first"
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DirectMailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return directmail.NewDirectMailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDirectMailDedicatedIpPool")
-	ra := resourceAttrInit(resourceId, map[string]string{})
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandIntRange(10000, 99999)
+	ra := acctest.ResourceAttrInit(resourceId, map[string]string{})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-direct-mail-pool-%d", rand)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudDirectMailDedicatedIpPoolsDataSourcePoolIdConfig(name),
@@ -213,15 +216,15 @@ func testAccCheckDirectMailOutputFileContent(path string, want ...string) resour
 
 func testAccCheckDirectMailDedicatedIpPoolGone(t *testing.T, poolId *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		service := DirectMailServiceV2{client}
-		if _, err := service.DescribeDirectMailDedicatedIpPool(*poolId); !NotFoundError(err) {
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		service := directmail.NewDirectMailServiceV2(client)
+		if _, err := service.DescribeDirectMailDedicatedIpPool(*poolId); !errs.NotFoundError(err) {
 			return fmt.Errorf("deleted pool %s must be not found, got: %v", *poolId, err)
 		}
-		d := schema.TestResourceDataRaw(t, dataSourceAliCloudDirectMailDedicatedIpPools().Schema, map[string]interface{}{
+		d := schema.TestResourceDataRaw(t, directmail.DataSourceDedicatedIpPools().Schema, map[string]interface{}{
 			"pool_id": *poolId,
 		})
-		if err := dataSourceAliCloudDirectMailDedicatedIpPoolRead(d, client); err != nil {
+		if err := directmail.DataSourceDedicatedIpPoolRead(d, client); err != nil {
 			return err
 		}
 		if pools := d.Get("pools").([]interface{}); len(pools) != 0 {
@@ -317,11 +320,11 @@ func TestUnitDirectMailDedicatedIpPoolsDataSourcePoolIdAndOutputFile(t *testing.
 		})
 	})
 	output := filepath.Join(t.TempDir(), "pools.json")
-	d := schema.TestResourceDataRaw(t, dataSourceAliCloudDirectMailDedicatedIpPools().Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, directmail.DataSourceDedicatedIpPools().Schema, map[string]interface{}{
 		"pool_id":     "pool-2",
 		"output_file": output,
 	})
-	if err := dataSourceAliCloudDirectMailDedicatedIpPoolRead(d, client); err != nil {
+	if err := directmail.DataSourceDedicatedIpPoolRead(d, client); err != nil {
 		t.Fatal(err)
 	}
 	pools := d.Get("pools").([]interface{})
@@ -336,11 +339,11 @@ func TestUnitDirectMailDedicatedIpPoolsDataSourcePoolIdAndOutputFile(t *testing.
 		t.Fatalf("unexpected output_file content: %s", content)
 	}
 
-	unwritable := schema.TestResourceDataRaw(t, dataSourceAliCloudDirectMailDedicatedIpPools().Schema, map[string]interface{}{
+	unwritable := schema.TestResourceDataRaw(t, directmail.DataSourceDedicatedIpPools().Schema, map[string]interface{}{
 		"pool_id":     "pool-2",
 		"output_file": filepath.Join(t.TempDir(), "missing-dir", "pools.json"),
 	})
-	if err := dataSourceAliCloudDirectMailDedicatedIpPoolRead(unwritable, client); err == nil {
+	if err := directmail.DataSourceDedicatedIpPoolRead(unwritable, client); err == nil {
 		t.Fatal("an unwritable output_file must return an error")
 	}
 }

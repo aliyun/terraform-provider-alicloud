@@ -1,4 +1,4 @@
-package alicloud
+package directmail_test
 
 import (
 	"fmt"
@@ -10,9 +10,11 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/directmail"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -21,25 +23,25 @@ const testAccDirectMailConfigSetsOutputFile = "./tf-testAcc-direct-mail-config-s
 func TestAccAliCloudDirectMailConfigSetsDataSource_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_config_set.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-direct-mail-cs-%d", rand)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DirectMailServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return directmail.NewDirectMailServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDirectMailConfigSet")
-	ra := resourceAttrInit(resourceId, map[string]string{})
-	rac := resourceAttrCheckInit(rc, ra)
+	ra := acctest.ResourceAttrInit(resourceId, map[string]string{})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudDirectMailConfigSetsDataSourceConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.0.name", name),
 					resource.TestCheckResourceAttrSet("data.alicloud_direct_mail_config_sets.default", "ids.#"),
@@ -53,7 +55,7 @@ func TestAccAliCloudDirectMailConfigSetsDataSource_basic(t *testing.T) {
 				},
 				Config: testAccCheckAlicloudDirectMailConfigSetsDataSourceAllConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "all", "true"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "output_file", testAccDirectMailConfigSetsOutputFile),
@@ -70,7 +72,7 @@ func TestAccAliCloudDirectMailConfigSetsDataSource_basic(t *testing.T) {
 				// ids filters client-side by exact ID.
 				Config: testAccCheckAlicloudDirectMailConfigSetsDataSourceIdsConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "ids.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.0.name", name),
@@ -80,7 +82,7 @@ func TestAccAliCloudDirectMailConfigSetsDataSource_basic(t *testing.T) {
 				// A non-matching ID must yield an empty result.
 				Config: testAccCheckAlicloudDirectMailConfigSetsDataSourceIdsMissingConfig(name, rand),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.#", "0"),
 				),
 			},
@@ -94,7 +96,7 @@ func TestAccAliCloudDirectMailConfigSetsDataSource_basic(t *testing.T) {
 				// a real in-place update, not a test reset.
 				Config: testAccCheckAlicloudDirectMailConfigSetsDataSourceDetailsConfig(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
+					acctest.CheckAlicloudDataSourceID("data.alicloud_direct_mail_config_sets.default"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "enable_details", "true"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.#", "1"),
 					resource.TestCheckResourceAttr("data.alicloud_direct_mail_config_sets.default", "sets.0.name", name),
@@ -230,10 +232,10 @@ func TestUnitDirectMailConfigSetsDataSourceEnableDetails(t *testing.T) {
 				t.Errorf("unexpected action %s", r.Form.Get("Action"))
 			}
 		})
-		d := schema.TestResourceDataRaw(t, dataSourceAliCloudDirectMailConfigSets().Schema, map[string]interface{}{
+		d := schema.TestResourceDataRaw(t, directmail.DataSourceConfigSets().Schema, map[string]interface{}{
 			"enable_details": enableDetails,
 		})
-		if err := dataSourceAliCloudDirectMailConfigSetRead(d, client); err != nil {
+		if err := directmail.DataSourceConfigSetRead(d, client); err != nil {
 			t.Fatal(err)
 		}
 		set := d.Get("sets").([]interface{})[0].(map[string]interface{})
@@ -254,8 +256,8 @@ func TestUnitDirectMailConfigSetsDataSourceOutputFile(t *testing.T) {
 		})
 	})
 	output := filepath.Join(t.TempDir(), "sets.json")
-	d := schema.TestResourceDataRaw(t, dataSourceAliCloudDirectMailConfigSets().Schema, map[string]interface{}{"output_file": output})
-	if err := dataSourceAliCloudDirectMailConfigSetRead(d, client); err != nil {
+	d := schema.TestResourceDataRaw(t, directmail.DataSourceConfigSets().Schema, map[string]interface{}{"output_file": output})
+	if err := directmail.DataSourceConfigSetRead(d, client); err != nil {
 		t.Fatal(err)
 	}
 	content, err := os.ReadFile(output)
@@ -265,10 +267,10 @@ func TestUnitDirectMailConfigSetsDataSourceOutputFile(t *testing.T) {
 	if !strings.Contains(string(content), `"cs-1"`) {
 		t.Fatalf("unexpected output_file content: %s", content)
 	}
-	unwritable := schema.TestResourceDataRaw(t, dataSourceAliCloudDirectMailConfigSets().Schema, map[string]interface{}{
+	unwritable := schema.TestResourceDataRaw(t, directmail.DataSourceConfigSets().Schema, map[string]interface{}{
 		"output_file": filepath.Join(t.TempDir(), "missing-dir", "sets.json"),
 	})
-	if err := dataSourceAliCloudDirectMailConfigSetRead(unwritable, client); err == nil {
+	if err := directmail.DataSourceConfigSetRead(unwritable, client); err == nil {
 		t.Fatal("an unwritable output_file must return an error")
 	}
 }

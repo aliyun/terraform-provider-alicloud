@@ -1,4 +1,4 @@
-package alicloud
+package directmail
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudDirectMailReceiverses() *schema.Resource {
+func DataSourceReceiverses() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDirectMailReceiversesRead,
+		Read: DataSourceReceiversesRead,
 		Schema: map[string]*schema.Schema{
 			"key_word": {
 				Type:     schema.TypeString,
@@ -85,12 +89,12 @@ func dataSourceAlicloudDirectMailReceiverses() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta interface{}) error {
+func DataSourceReceiversesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "QueryReceiverByParam"
 	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNo"] = 1
 	if v, ok := d.GetOk("key_word"); ok {
 		request["KeyWord"] = v
@@ -103,7 +107,7 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		receiversNameRegex = r
 	}
@@ -120,11 +124,11 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -132,13 +136,13 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_direct_mail_receiverses", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_direct_mail_receiverses", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.data.receiver", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.data.receiver", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.data.receiver", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -155,7 +159,7 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNo"] = request["PageNo"].(int) + 1
@@ -166,7 +170,7 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		statusVal, err := formatInt(object["ReceiversStatus"])
+		statusVal, err := convert.FormatInt(object["ReceiversStatus"])
 		if err != nil {
 			return err
 		}
@@ -184,20 +188,20 @@ func dataSourceAlicloudDirectMailReceiversesRead(d *schema.ResourceData, meta in
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("receiverses", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

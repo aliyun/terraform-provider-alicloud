@@ -1,4 +1,4 @@
-package alicloud
+package directmail_test
 
 import (
 	"fmt"
@@ -14,10 +14,16 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/directmail"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +37,7 @@ func init() {
 		})
 }
 func testSweepDirectMailAddress(region string) error {
-	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.DmSupportRegions)
+	rawClient, err := sweep.SharedClientForRegionWithBackendRegions(region, true, connectivity.DmSupportRegions)
 	if err != nil {
 		log.Printf("error getting Alicloud client: %s", err)
 		return nil
@@ -43,15 +49,15 @@ func testSweepDirectMailAddress(region string) error {
 	}
 	action := "QueryMailAddressByParam"
 	request := map[string]interface{}{
-		"PageSize": PageSizeLarge,
+		"PageSize": helper.PageSizeLarge,
 	}
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -59,18 +65,18 @@ func testSweepDirectMailAddress(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] Failed to fetch DirectMail Mail Address: %s", WrapErrorf(err, DataDefaultErrorMsg, "alicloud_direct_mail_mail_addresss", action, AlibabaCloudSdkGoERROR))
+			log.Printf("[ERROR] Failed to fetch DirectMail Mail Address: %s", errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_direct_mail_mail_addresss", action, errs.AlibabaCloudSdkGoERROR))
 			return nil
 		}
 		v, err := jsonpath.Get("$.data.mailAddress", response)
 		if err != nil {
-			log.Printf("[ERROR] Failed to parse DirectMail Mail Address: %s", WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups", response))
+			log.Printf("[ERROR] Failed to parse DirectMail Mail Address: %s", errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Groups", response))
 			return nil
 		}
 		if len(v.([]interface{})) < 1 {
-			log.Printf("[ERROR] Failed to fetch DirectMail Mail Address: %s", WrapErrorf(err, DataDefaultErrorMsg, "alicloud_direct_mail_mail_addresss", action, AlibabaCloudSdkGoERROR))
+			log.Printf("[ERROR] Failed to fetch DirectMail Mail Address: %s", errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_direct_mail_mail_addresss", action, errs.AlibabaCloudSdkGoERROR))
 			return nil
 		}
 
@@ -110,25 +116,25 @@ func testSweepDirectMailAddress(region string) error {
 }
 
 // this resource depends on user's account which tf account not support
-func SkipTestAccAlicloudDirectMailMailAddress_basic0(t *testing.T) {
+func SkipTestAccAliCloudDirectMailMailAddress_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_mail_address.default"
-	ra := resourceAttrInit(resourceId, AlicloudDirectMailMailAddressMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DmService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDirectMailMailAddressMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return directmail.NewDmService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDirectMailMailAddress")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdirectmailmailaddress%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDirectMailMailAddressBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdirectmailmailaddress%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDirectMailMailAddressBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DmSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DmSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -184,11 +190,11 @@ func SkipTestAccAlicloudDirectMailMailAddress_basic0(t *testing.T) {
 }
 
 var AlicloudDirectMailMailAddressMap0 = map[string]string{
-	"status": CHECKSET,
+	"status": acctest.CHECKSET,
 }
 
 func AlicloudDirectMailMailAddressBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -197,8 +203,8 @@ variable "name" {
 
 // lintignore: R001
 func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
-	p := Provider().ResourcesMap
-	checkoutSupportedRegions(t, true, connectivity.DmSupportRegions)
+	p := acctest.Provider.ResourcesMap
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DmSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_direct_mail_mail_address"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_direct_mail_mail_address"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -217,7 +223,7 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -244,30 +250,30 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_direct_mail_mail_address", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_direct_mail_mail_address", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
 
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDmClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDirectMailMailAddressCreate(dInit, rawClient)
+	err = directmail.ResourceMailAddressCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -292,7 +298,7 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDirectMailMailAddressCreate(dInit, rawClient)
+		err := directmail.ResourceMailAddressCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -313,12 +319,12 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDmClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDirectMailMailAddressUpdate(dExisted, rawClient)
+	err = directmail.ResourceMailAddressUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyMailAddress
@@ -326,7 +332,7 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 		"password":      "ModifyMailAddressValue",
 		"reply_address": "ModifyMailAddressValue",
 	}
-	diff, err := newInstanceDiff("alicloud_direct_mail_mail_address", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_direct_mail_mail_address", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
@@ -359,7 +365,7 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDirectMailMailAddressUpdate(dExisted, rawClient)
+		err := directmail.ResourceMailAddressUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -397,7 +403,7 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDirectMailMailAddressRead(dExisted, rawClient)
+		err := directmail.ResourceMailAddressRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -409,12 +415,12 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDmClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:    String("loadEndpoint error"),
-			Data:    String("loadEndpoint error"),
-			Message: String("loadEndpoint error"),
+			Code:    helper.String("loadEndpoint error"),
+			Data:    helper.String("loadEndpoint error"),
+			Message: helper.String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDirectMailMailAddressDelete(dExisted, rawClient)
+	err = directmail.ResourceMailAddressDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidMailAddressId.Malformed"}
@@ -438,7 +444,7 @@ func TestUnitAlicloudDirectMailMailAddress(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDirectMailMailAddressDelete(dExisted, rawClient)
+		err := directmail.ResourceMailAddressDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

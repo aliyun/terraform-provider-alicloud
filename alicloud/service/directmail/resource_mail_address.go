@@ -1,4 +1,4 @@
-package alicloud
+package directmail
 
 import (
 	"fmt"
@@ -6,16 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudDirectMailMailAddress() *schema.Resource {
+func ResourceMailAddress() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDirectMailMailAddressCreate,
-		Read:   resourceAlicloudDirectMailMailAddressRead,
-		Update: resourceAlicloudDirectMailMailAddressUpdate,
-		Delete: resourceAlicloudDirectMailMailAddressDelete,
+		Create: ResourceMailAddressCreate,
+		Read:   ResourceMailAddressRead,
+		Update: ResourceMailAddressUpdate,
+		Delete: ResourceMailAddressDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -38,7 +42,7 @@ func resourceAlicloudDirectMailMailAddress() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"batch", "trigger"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"batch", "trigger"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -48,7 +52,7 @@ func resourceAlicloudDirectMailMailAddress() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDirectMailMailAddressCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceMailAddressCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateMailAddress"
@@ -59,11 +63,11 @@ func resourceAlicloudDirectMailMailAddressCreate(d *schema.ResourceData, meta in
 		request["ReplyAddress"] = v
 	}
 	request["Sendtype"] = d.Get("sendtype")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -71,26 +75,26 @@ func resourceAlicloudDirectMailMailAddressCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_direct_mail_mail_address", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_direct_mail_mail_address", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["MailAddressId"]))
 
-	return resourceAlicloudDirectMailMailAddressUpdate(d, meta)
+	return ResourceMailAddressUpdate(d, meta)
 }
-func resourceAlicloudDirectMailMailAddressRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceMailAddressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dmService := DmService{client}
+	dmService := NewDmService(client)
 	object, err := dmService.DescribeDirectMailMailAddress(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_direct_mail_mail_address dmService.DescribeDirectMailMailAddress Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("account_name", object["AccountName"])
 	d.Set("reply_address", object["ReplyAddress"])
@@ -98,7 +102,7 @@ func resourceAlicloudDirectMailMailAddressRead(d *schema.ResourceData, meta inte
 	d.Set("status", object["AccountStatus"])
 	return nil
 }
-func resourceAlicloudDirectMailMailAddressUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceMailAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
@@ -120,11 +124,11 @@ func resourceAlicloudDirectMailMailAddressUpdate(d *schema.ResourceData, meta in
 	}
 	if update {
 		action := "ModifyMailAddress"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -132,14 +136,14 @@ func resourceAlicloudDirectMailMailAddressUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudDirectMailMailAddressRead(d, meta)
+	return ResourceMailAddressRead(d, meta)
 }
-func resourceAlicloudDirectMailMailAddressDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceMailAddressDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMailAddress"
 	var response map[string]interface{}
@@ -148,11 +152,11 @@ func resourceAlicloudDirectMailMailAddressDelete(d *schema.ResourceData, meta in
 		"MailAddressId": d.Id(),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -160,12 +164,12 @@ func resourceAlicloudDirectMailMailAddressDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidMailAddressId.Malformed"}) {
+		if errs.IsExpectedErrors(err, []string{"InvalidMailAddressId.Malformed"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

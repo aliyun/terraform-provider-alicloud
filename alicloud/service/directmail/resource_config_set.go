@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package directmail. This file is generated automatically. Please do not modify it manually, thank you!
+package directmail
 
 import (
 	"encoding/json"
@@ -10,17 +10,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDirectMailConfigSet() *schema.Resource {
+func ResourceConfigSet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDirectMailConfigSetCreate,
-		Read:   resourceAliCloudDirectMailConfigSetRead,
-		Update: resourceAliCloudDirectMailConfigSetUpdate,
-		Delete: resourceAliCloudDirectMailConfigSetDelete,
+		Create: ResourceConfigSetCreate,
+		Read:   ResourceConfigSetRead,
+		Update: ResourceConfigSetUpdate,
+		Delete: ResourceConfigSetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -81,7 +85,7 @@ func resourceAliCloudDirectMailConfigSet() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDirectMailConfigSetCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceConfigSetCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -111,7 +115,7 @@ func resourceAliCloudDirectMailConfigSetCreate(d *schema.ResourceData, meta inte
 	}
 	validationOption := make(map[string]interface{})
 
-	if v := d.Get("validation_option"); !IsNil(v) {
+	if v := d.Get("validation_option"); !helper.IsNil(v) {
 		enabled1, _ := jsonpath.Get("$[0].enabled", v)
 		if enabled1 != nil && enabled1 != "" {
 			validationOption["Enabled"] = enabled1
@@ -127,16 +131,16 @@ func resourceAliCloudDirectMailConfigSetCreate(d *schema.ResourceData, meta inte
 
 		validationOptionJson, err := json.Marshal(validationOption)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["ValidationOption"] = string(validationOptionJson)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -144,29 +148,29 @@ func resourceAliCloudDirectMailConfigSetCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_direct_mail_config_set", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_direct_mail_config_set", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAliCloudDirectMailConfigSetRead(d, meta)
+	return ResourceConfigSetRead(d, meta)
 }
 
-func resourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceConfigSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	directMailServiceV2 := DirectMailServiceV2{client}
+	directMailServiceV2 := NewDirectMailServiceV2(client)
 
 	objectRaw, err := directMailServiceV2.DescribeDirectMailConfigSet(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_direct_mail_config_set DescribeDirectMailConfigSet Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	detailRawObj, _ := jsonpath.Get("$.Detail", objectRaw)
@@ -201,13 +205,13 @@ func resourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta interf
 
 		forbiddenStatusListRaw := make([]interface{}, 0)
 		if validationOptionRaw["ForbiddenStatusList"] != nil {
-			forbiddenStatusListRaw = convertToInterfaceArray(validationOptionRaw["ForbiddenStatusList"])
+			forbiddenStatusListRaw = convert.ConvertToInterfaceArray(validationOptionRaw["ForbiddenStatusList"])
 		}
 
 		validationOptionMap["forbidden_status_list"] = forbiddenStatusListRaw
 		forbiddenSubStatusListRaw := make([]interface{}, 0)
 		if validationOptionRaw["ForbiddenSubStatusList"] != nil {
-			forbiddenSubStatusListRaw = convertToInterfaceArray(validationOptionRaw["ForbiddenSubStatusList"])
+			forbiddenSubStatusListRaw = convert.ConvertToInterfaceArray(validationOptionRaw["ForbiddenSubStatusList"])
 		}
 
 		validationOptionMap["forbidden_sub_status_list"] = forbiddenSubStatusListRaw
@@ -220,7 +224,7 @@ func resourceAliCloudDirectMailConfigSetRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAliCloudDirectMailConfigSetUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceConfigSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -270,17 +274,17 @@ func resourceAliCloudDirectMailConfigSetUpdate(d *schema.ResourceData, meta inte
 		}
 		validationOptionJson, err := json.Marshal(validationOption)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["ValidationOption"] = string(validationOptionJson)
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -288,16 +292,16 @@ func resourceAliCloudDirectMailConfigSetUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		if err := waitForDirectMailConfigSetUpdatePropagated(d, DirectMailServiceV2{client}); err != nil {
-			return WrapError(err)
+		if err := WaitForDirectMailConfigSetUpdatePropagated(d, NewDirectMailServiceV2(client)); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 
-	return resourceAliCloudDirectMailConfigSetRead(d, meta)
+	return ResourceConfigSetRead(d, meta)
 }
 
 // directMailDetailString returns the string form of a detail field, treating an
@@ -313,7 +317,7 @@ func directMailDetailString(detail map[string]interface{}, key string) string {
 // ConfigSetDetail is eventually consistent after ConfigSetUpdate; wait until the
 // detail reflects the updated configuration before refreshing state. Propagation
 // has been observed to take up to ~5 minutes, so allow a generous window.
-func waitForDirectMailConfigSetUpdatePropagated(d *schema.ResourceData, service DirectMailServiceV2) error {
+func WaitForDirectMailConfigSetUpdatePropagated(d *schema.ResourceData, service *DirectMailServiceV2) error {
 	return retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		object, err := service.DescribeDirectMailConfigSet(d.Id())
 		if err != nil {
@@ -343,7 +347,7 @@ func waitForDirectMailConfigSetUpdatePropagated(d *schema.ResourceData, service 
 			return retry.RetryableError(fmt.Errorf("waiting for ConfigSet %s update to propagate", d.Id()))
 		}
 		validationOption, _ := detail["ValidationOption"].(map[string]interface{})
-		want := directMailConfiguredValidationOptionKey(d)
+		want := DirectMailConfiguredValidationOptionKey(d)
 		got := directMailValidationOptionKey(validationOption)
 		if got != want {
 			return retry.RetryableError(fmt.Errorf("waiting for ConfigSet %s validation options: expected %s, got %s", d.Id(), want, got))
@@ -361,7 +365,7 @@ func directMailValidationOptionKey(option map[string]interface{}) string {
 	return directMailValidationOptionKeyOf(enabled, option["ForbiddenStatusList"], option["ForbiddenSubStatusList"])
 }
 
-func directMailConfiguredValidationOptionKey(d *schema.ResourceData) string {
+func DirectMailConfiguredValidationOptionKey(d *schema.ResourceData) string {
 	options, _ := d.Get("validation_option").([]interface{})
 	// Removed blocks can leave stale child attributes in the SDK diff, and an
 	// empty block can surface as a nil or non-map element; both mean disabled.
@@ -379,7 +383,7 @@ func directMailValidationOptionKeyOf(enabled string, statusList, subStatusList i
 	normalize := func(raw interface{}) string {
 		items := make([]string, 0)
 		if raw != nil {
-			for _, item := range convertToInterfaceArray(raw) {
+			for _, item := range convert.ConvertToInterfaceArray(raw) {
 				items = append(items, fmt.Sprint(item))
 			}
 		}
@@ -388,7 +392,7 @@ func directMailValidationOptionKeyOf(enabled string, statusList, subStatusList i
 	return enabled + "|" + normalize(statusList) + "|" + normalize(subStatusList)
 }
 
-func resourceAliCloudDirectMailConfigSetDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceConfigSetDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "ConfigSetDelete"
@@ -404,11 +408,11 @@ func resourceAliCloudDirectMailConfigSetDelete(d *schema.ResourceData, meta inte
 	// value) rather than the raw config: the raw config is unavailable when a
 	// removed block is destroyed. Explicit false is equivalent to the default.
 	request["IsForce"] = d.Get("is_force")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Dm", "2015-11-23", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -416,20 +420,20 @@ func resourceAliCloudDirectMailConfigSetDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	directMailServiceV2 := DirectMailServiceV2{client}
+	directMailServiceV2 := NewDirectMailServiceV2(client)
 	return retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		_, err := directMailServiceV2.DescribeDirectMailConfigSet(d.Id())
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
 			return retry.NonRetryableError(err)
