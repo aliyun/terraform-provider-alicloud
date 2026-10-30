@@ -133,7 +133,7 @@ resource "alicloud_kvstore_instance" "default" {
   config = {
     appendonly             = "no"
     lazyfree-lazy-eviction = "no"
-    EvictionPolicy         = "volatile-lru"
+    maxmemory-policy       = "volatile-lru"
   }
   tags = {
     Created = "TF",
@@ -202,7 +202,7 @@ resource "alicloud_kvstore_instance" "default" {
   config = {
     appendonly             = "yes"
     lazyfree-lazy-eviction = "yes"
-    EvictionPolicy         = "volatile-lru"
+    maxmemory-policy       = "volatile-lru"
   }
   tags = {
     Created = "TF",
