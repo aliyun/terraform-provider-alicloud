@@ -1,0 +1,490 @@
+package ros
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func resourceAlicloudRosTemplateScratch() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudRosTemplateScratchCreate,
+		Read:   resourceAlicloudRosTemplateScratchRead,
+		Update: resourceAlicloudRosTemplateScratchUpdate,
+		Delete: resourceAlicloudRosTemplateScratchDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"execution_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Async", "Sync"}, false),
+			},
+			"logical_id_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"LongTypePrefixAndIndexSuffix", "LongTypePrefixAndHashSuffix", "ShortTypePrefixAndHashSuffix"}, false),
+			},
+			"preference_parameters": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"parameter_key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"parameter_value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			// lintignore: S018
+			"source_tag": {
+				Type:         schema.TypeSet,
+				Optional:     true,
+				MaxItems:     1,
+				ExactlyOneOf: []string{"source_resource_group", "source_tag", "source_resources"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						// lintignore: S006
+						"resource_tags": {
+							Type:     schema.TypeMap,
+							Required: true,
+						},
+						"resource_type_filter": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							MaxItems: 20,
+						},
+					},
+				},
+			},
+			// lintignore: S018
+			"source_resource_group": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"resource_type_filter": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							MaxItems: 20,
+						},
+					},
+				},
+			},
+			"source_resources": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"resource_type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"template_scratch_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ResourceImport", "ArchitectureReplication"}, false),
+			},
+		},
+	}
+}
+
+func resourceAlicloudRosTemplateScratchCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateTemplateScratch"
+	request := make(map[string]interface{})
+	var err error
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	if v, ok := d.GetOk("execution_mode"); ok {
+		request["ExecutionMode"] = v
+	}
+	if v, ok := d.GetOk("logical_id_strategy"); ok {
+		request["LogicalIdStrategy"] = v
+	}
+	if v, ok := d.GetOk("preference_parameters"); ok {
+		preferenceParametersMaps := make([]map[string]interface{}, 0)
+		for _, preferenceParameters := range v.(*schema.Set).List() {
+			preferenceParametersArg := preferenceParameters.(map[string]interface{})
+			preferenceParametersMap := map[string]interface{}{}
+			preferenceParametersMap["ParameterKey"] = preferenceParametersArg["parameter_key"]
+			preferenceParametersMap["ParameterValue"] = preferenceParametersArg["parameter_value"]
+			preferenceParametersMaps = append(preferenceParametersMaps, preferenceParametersMap)
+		}
+		if v, err := convert.ConvertListMapToJsonString(preferenceParametersMaps); err != nil {
+			return errs.WrapError(err)
+		} else {
+			request["PreferenceParameters"] = v
+		}
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("source_resource_group"); ok {
+		sourceResourceGroupMap := map[string]interface{}{}
+		for _, sourceResourceGroup := range v.(*schema.Set).List() {
+			sourceResourceGroupArg := sourceResourceGroup.(map[string]interface{})
+			sourceResourceGroupMap["ResourceGroupId"] = sourceResourceGroupArg["resource_group_id"]
+			resourceTypeFilterList := make([]string, 0)
+			for _, v := range sourceResourceGroupArg["resource_type_filter"].([]interface{}) {
+				resourceTypeFilterList = append(resourceTypeFilterList, v.(string))
+			}
+			sourceResourceGroupMap["ResourceTypeFilter"] = resourceTypeFilterList
+		}
+		if v, err := convert.ConvertMaptoJsonString(sourceResourceGroupMap); err != nil {
+			return errs.WrapError(err)
+		} else {
+			request["SourceResourceGroup"] = v
+		}
+	}
+	if v, ok := d.GetOk("source_resources"); ok {
+		sourceResourcesMaps := make([]map[string]interface{}, 0)
+		for _, sourceResources := range v.(*schema.Set).List() {
+			sourceResourcesArg := sourceResources.(map[string]interface{})
+			sourceResourcesMap := map[string]interface{}{}
+			sourceResourcesMap["ResourceId"] = sourceResourcesArg["resource_id"]
+			sourceResourcesMap["ResourceType"] = sourceResourcesArg["resource_type"]
+			sourceResourcesMaps = append(sourceResourcesMaps, sourceResourcesMap)
+		}
+		if v, err := convert.ConvertListMapToJsonString(sourceResourcesMaps); err != nil {
+			return errs.WrapError(err)
+		} else {
+			request["SourceResources"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("source_tag"); ok {
+		sourceTagMap := map[string]interface{}{}
+		for _, sourceResources := range v.(*schema.Set).List() {
+			sourceTagArg := sourceResources.(map[string]interface{})
+			sourceTagMap["ResourceTags"] = sourceTagArg["resource_tags"]
+			resourceTypeFilterList := make([]string, 0)
+			for _, v := range sourceTagArg["resource_type_filter"].([]interface{}) {
+				resourceTypeFilterList = append(resourceTypeFilterList, v.(string))
+			}
+			sourceTagMap["ResourceTypeFilter"] = resourceTypeFilterList
+		}
+		if v, err := convert.ConvertMaptoJsonString(sourceTagMap); err != nil {
+			return errs.WrapError(err)
+		} else {
+			request["SourceTag"] = v
+		}
+	}
+	request["TemplateScratchType"] = d.Get("template_scratch_type")
+	request["ClientToken"] = helper.BuildClientToken("CreateTemplateScratch")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ros_template_scratch", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["TemplateScratchId"]))
+	rosService := RosService{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"GENERATE_COMPLETE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, rosService.RosTemplateScratchStateRefreshFunc(d.Id(), []string{"GENERATE_FAILED"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return resourceAlicloudRosTemplateScratchRead(d, meta)
+}
+func resourceAlicloudRosTemplateScratchRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rosService := RosService{client}
+	object, err := rosService.DescribeRosTemplateScratch(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ros_template_scratch rosService.DescribeRosTemplateScratch Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	d.Set("description", object["Description"])
+	d.Set("logical_id_strategy", object["LogicalIdStrategy"])
+
+	if preferenceParametersList, ok := object["PreferenceParameters"]; ok && preferenceParametersList != nil {
+		preferenceParametersMaps := make([]map[string]interface{}, 0)
+		for _, preferenceParametersListItem := range preferenceParametersList.([]interface{}) {
+			if preferenceParametersListItemMap, ok := preferenceParametersListItem.(map[string]interface{}); ok {
+				if v, ok := preferenceParametersListItemMap["ParameterValue"]; ok && fmt.Sprint(v) != "" {
+					preferenceParametersListItemArg := make(map[string]interface{}, 0)
+					preferenceParametersListItemArg["parameter_key"] = preferenceParametersListItemMap["ParameterKey"]
+					preferenceParametersListItemArg["parameter_value"] = v
+					preferenceParametersMaps = append(preferenceParametersMaps, preferenceParametersListItemArg)
+				}
+			}
+		}
+		d.Set("preference_parameters", preferenceParametersMaps)
+	}
+
+	sourceTagSli := make([]map[string]interface{}, 0)
+	if v, ok := object["SourceTag"]; ok {
+		if sourceTag, ok := v.(map[string]interface{}); ok && len(sourceTag) > 0 {
+			sourceTagMap := make(map[string]interface{})
+			sourceTagMap["resource_tags"] = sourceTag["ResourceTags"]
+			resourceTypeFilter := make([]interface{}, 0)
+			if v, ok := sourceTag["ResourceTypeFilter"]; ok {
+				if vv, ok := v.([]interface{}); ok && len(vv) > 0 {
+					resourceTypeFilter = append(resourceTypeFilter, vv...)
+				}
+			}
+			sourceTagMap["resource_type_filter"] = resourceTypeFilter
+			sourceTagSli = append(sourceTagSli, sourceTagMap)
+		}
+	}
+
+	d.Set("source_tag", sourceTagSli)
+
+	sourceResourceGroupSli := make([]map[string]interface{}, 0)
+	if v, ok := object["SourceResourceGroup"]; ok {
+		if sourceResourceGroup, ok := v.(map[string]interface{}); ok && len(sourceResourceGroup) > 0 {
+			sourceResourceGroupMap := make(map[string]interface{})
+			sourceResourceGroupMap["resource_group_id"] = sourceResourceGroup["ResourceGroupId"]
+			resourceTypeFilter := make([]interface{}, 0)
+			if v, ok := sourceResourceGroup["ResourceTypeFilter"]; ok {
+				if vv, ok := v.([]interface{}); ok && len(vv) > 0 {
+					resourceTypeFilter = append(resourceTypeFilter, vv...)
+				}
+			}
+			sourceResourceGroupMap["resource_type_filter"] = resourceTypeFilter
+			sourceResourceGroupSli = append(sourceResourceGroupSli, sourceResourceGroupMap)
+		}
+	}
+
+	d.Set("source_resource_group", sourceResourceGroupSli)
+	if sourceResourcesList, ok := object["SourceResources"]; ok && sourceResourcesList != nil {
+		sourceResourcesMaps := make([]map[string]interface{}, 0)
+		for _, sourceResourcesListItem := range sourceResourcesList.([]interface{}) {
+			if sourceResourcesListItemMap, ok := sourceResourcesListItem.(map[string]interface{}); ok {
+				sourceResourcesListItemArg := make(map[string]interface{}, 0)
+				sourceResourcesListItemArg["resource_id"] = sourceResourcesListItemMap["ResourceId"]
+				sourceResourcesListItemArg["resource_type"] = sourceResourcesListItemMap["ResourceType"]
+				sourceResourcesMaps = append(sourceResourcesMaps, sourceResourcesListItemArg)
+			}
+		}
+		d.Set("source_resources", sourceResourcesMaps)
+	}
+
+	d.Set("status", object["Status"])
+	d.Set("template_scratch_type", object["TemplateScratchType"])
+	return nil
+}
+func resourceAlicloudRosTemplateScratchUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rosService := RosService{client}
+	var response map[string]interface{}
+	var err error
+	update := false
+	request := map[string]interface{}{
+		"TemplateScratchId": d.Id(),
+	}
+	request["RegionId"] = client.RegionId
+	if d.HasChange("description") {
+		update = true
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
+	}
+	if d.HasChange("logical_id_strategy") {
+		update = true
+		if v, ok := d.GetOk("logical_id_strategy"); ok {
+			request["LogicalIdStrategy"] = v
+		}
+	}
+	if d.HasChange("source_tag") {
+		update = true
+		if v, ok := d.GetOkExists("source_tag"); ok {
+			sourceTagMap := map[string]interface{}{}
+			for _, sourceResources := range v.(*schema.Set).List() {
+				sourceTagArg := sourceResources.(map[string]interface{})
+				if len(sourceTagArg["resource_tags"].(map[string]interface{})) > 0 {
+					sourceTagMap["ResourceTags"] = sourceTagArg["resource_tags"]
+					resourceTypeFilterList := make([]string, 0)
+					for _, v := range sourceTagArg["resource_type_filter"].([]interface{}) {
+						resourceTypeFilterList = append(resourceTypeFilterList, v.(string))
+					}
+					sourceTagMap["ResourceTypeFilter"] = resourceTypeFilterList
+				}
+			}
+			if v, err := convert.ConvertMaptoJsonString(sourceTagMap); err != nil {
+				return errs.WrapError(err)
+			} else {
+				request["SourceTag"] = v
+			}
+		}
+	}
+
+	if d.HasChange("preference_parameters") {
+		update = true
+	}
+	if v, ok := d.GetOk("preference_parameters"); ok {
+		preferenceParametersMaps := make([]map[string]interface{}, 0)
+		for _, preferenceParameters := range v.(*schema.Set).List() {
+			preferenceParametersArg := preferenceParameters.(map[string]interface{})
+			preferenceParametersMap := map[string]interface{}{}
+			preferenceParametersMap["ParameterKey"] = preferenceParametersArg["parameter_key"]
+			preferenceParametersMap["ParameterValue"] = preferenceParametersArg["parameter_value"]
+			preferenceParametersMaps = append(preferenceParametersMaps, preferenceParametersMap)
+		}
+		if v, err := convert.ConvertListMapToJsonString(preferenceParametersMaps); err != nil {
+			return errs.WrapError(err)
+		} else {
+			request["PreferenceParameters"] = v
+		}
+	}
+
+	if d.HasChange("source_resource_group") {
+		update = true
+		if v, ok := d.GetOk("source_resource_group"); ok {
+			sourceResourceGroupMap := map[string]interface{}{}
+			for _, sourceResourceGroup := range v.(*schema.Set).List() {
+				sourceResourceGroupArg := sourceResourceGroup.(map[string]interface{})
+				sourceResourceGroupMap["ResourceGroupId"] = sourceResourceGroupArg["resource_group_id"]
+				resourceTypeFilterList := make([]string, 0)
+				for _, v := range sourceResourceGroupArg["resource_type_filter"].([]interface{}) {
+					resourceTypeFilterList = append(resourceTypeFilterList, v.(string))
+				}
+				sourceResourceGroupMap["ResourceTypeFilter"] = resourceTypeFilterList
+			}
+			if v, err := convert.ConvertMaptoJsonString(sourceResourceGroupMap); err != nil {
+				return errs.WrapError(err)
+			} else {
+				request["SourceResourceGroup"] = v
+			}
+		}
+	}
+	if d.HasChange("source_resources") {
+		update = true
+		if v, ok := d.GetOk("source_resources"); ok {
+			sourceResourcesMaps := make([]map[string]interface{}, 0)
+			for _, sourceResources := range v.(*schema.Set).List() {
+				sourceResourcesArg := sourceResources.(map[string]interface{})
+				sourceResourcesMap := map[string]interface{}{}
+				sourceResourcesMap["ResourceId"] = sourceResourcesArg["resource_id"]
+				sourceResourcesMap["ResourceType"] = sourceResourcesArg["resource_type"]
+				sourceResourcesMaps = append(sourceResourcesMaps, sourceResourcesMap)
+			}
+			if v, err := convert.ConvertListMapToJsonString(sourceResourcesMaps); err != nil {
+				return errs.WrapError(err)
+			} else {
+				request["SourceResources"] = v
+			}
+		}
+	}
+	if update {
+		if v, ok := d.GetOk("execution_mode"); ok {
+			request["ExecutionMode"] = v
+		}
+		action := "UpdateTemplateScratch"
+		request["ClientToken"] = helper.BuildClientToken("UpdateTemplateScratch")
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"GENERATE_COMPLETE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rosService.RosTemplateScratchStateRefreshFunc(d.Id(), []string{"GENERATE_FAILED"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+	return resourceAlicloudRosTemplateScratchRead(d, meta)
+}
+func resourceAlicloudRosTemplateScratchDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rosService := RosService{client}
+	action := "DeleteTemplateScratch"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"TemplateScratchId": d.Id(),
+	}
+	request["RegionId"] = client.RegionId
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, rosService.RosTemplateScratchStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+	return nil
+}

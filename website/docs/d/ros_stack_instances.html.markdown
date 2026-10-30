@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ros Stack Instances to the user.
 ---
 
-# alicloud\_ros\_stack\_instances
+# alicloud_ros_stack_instances
 
 This data source provides the Ros Stack Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.145.0+.
+-> **NOTE:** Available since v1.145.0.
 
 ## Example Usage
 
@@ -73,7 +73,7 @@ The following arguments are supported:
     * When the UpdateStackInstances or UpdateStackGroup operation is called to update stack instances, the corresponding stacks fail to be updated, or only some of the stack instances are updated. 
     * The create or update operation is not complete.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -87,10 +87,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `stack_id` - The ID of the stack corresponding to the stack instance.
   * `stack_instance_account_id` - The account to which the stack instance belongs.
   * `stack_instance_region_id` - The region of the stack instance.
-  * `status` - The status of the stack instance. Valid values: `CURRENT` or `OUTDATED`. 
-    * `CURRENT`: The stack corresponding to the stack instance is up to date with the stack group. 
-    * `OUTDATED`: The stack corresponding to the stack instance is not up to date with the stack group. The `OUTDATED` state has the following possible causes: 
-      * When the CreateStackInstances operation is called to create stack instances, the corresponding stacks fail to be created. 
-      * When the UpdateStackInstances or UpdateStackGroup operation is called to update stack instances, the corresponding stacks fail to be updated, or only some of the stack instances are updated. 
-      * The create or update operation is not complete.
+  * `status` - The status of the stack instance. Valid values: `CURRENT` or `OUTDATED`. `CURRENT` means the stack corresponding to the stack instance is up to date with the stack group. `OUTDATED` means the stack corresponding to the stack instance is not up to date with the stack group, which may be caused by: stack creation failures when CreateStackInstances is called; stack update failures or partial updates when UpdateStackInstances or UpdateStackGroup is called; or the create or update operation is not complete.
   * `status_reason` - The reason why the stack is in its current state.
