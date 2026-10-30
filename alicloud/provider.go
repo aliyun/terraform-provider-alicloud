@@ -1801,7 +1801,6 @@ func Provider() *schema.Provider {
 			"alicloud_mhub_app":     resourceAlicloudMhubApp(),
 
 			// milvus
-			"alicloud_milvus_instance": resourceAliCloudMilvusInstance(),
 
 			// mns
 			// mongodb

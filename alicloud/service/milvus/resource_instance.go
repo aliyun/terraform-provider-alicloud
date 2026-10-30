@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package milvus. This file is generated automatically. Please do not modify it manually, thank you!
+package milvus
 
 import (
 	"fmt"
@@ -8,16 +8,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudMilvusInstance() *schema.Resource {
+func ResourceInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudMilvusInstanceCreate,
-		Read:   resourceAliCloudMilvusInstanceRead,
-		Update: resourceAliCloudMilvusInstanceUpdate,
-		Delete: resourceAliCloudMilvusInstanceDelete,
+		Create: resourceInstanceCreate,
+		Read:   resourceInstanceRead,
+		Update: resourceInstanceUpdate,
+		Delete: resourceInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +51,7 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
-				Set:      milvusComponentsHash,
+				Set:      componentsHash,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cu_type": {
@@ -95,7 +101,7 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"Normal", "Large"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Normal", "Large"}, false),
 						},
 						"pay_type": {
 							Type:     schema.TypeString,
@@ -174,7 +180,7 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 			"payment_duration_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"month", "year"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"month", "year"}, false),
 			},
 			"payment_type": {
 				Type:     schema.TypeString,
@@ -208,7 +214,7 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vswitch_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -242,7 +248,7 @@ func resourceAliCloudMilvusInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -253,19 +259,19 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 	body := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["RegionId"] = StringPointer(client.RegionId)
-	query["clientToken"] = StringPointer(buildClientToken(action))
+	query["RegionId"] = helper.StringPointer(client.RegionId)
+	query["clientToken"] = helper.StringPointer(helper.BuildClientToken(action))
 
 	if v, ok := d.GetOkExists("load_replicas"); ok {
 		request["loadReplicas"] = v
 	}
 	if v, ok := d.GetOk("components"); ok {
 		componentsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["cuNum"] = dataLoopTmp["cu_num"]
-			for _, dataDisks := range convertToInterfaceArray(dataLoopTmp["data_disk"]) {
+			for _, dataDisks := range convert.ConvertToInterfaceArray(dataLoopTmp["data_disk"]) {
 				dataDisksMap := map[string]interface{}{}
 				dataDisksArg := dataDisks.(map[string]interface{})
 
@@ -310,7 +316,7 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("vswitch_ids"); ok {
 		vSwitchIdsMapsArray := make([]interface{}, 0)
-		for _, dataLoop2 := range convertToInterfaceArray(v) {
+		for _, dataLoop2 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop2Tmp := dataLoop2.(map[string]interface{})
 			dataLoop2Map := make(map[string]interface{})
 			dataLoop2Map["zoneId"] = dataLoop2Tmp["zone_id"]
@@ -327,7 +333,7 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 		request["paymentDurationUnit"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
@@ -363,11 +369,11 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 		request["paymentDuration"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("milvus", "2023-10-12", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -375,36 +381,36 @@ func resourceAliCloudMilvusInstanceCreate(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_milvus_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_milvus_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.data.instanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	milvusServiceV2 := MilvusServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 4*time.Minute, milvusServiceV2.MilvusInstanceStateRefreshFunc(d.Id(), "status", []string{"creating_failed"}))
+	milvusService := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 4*time.Minute, milvusService.InstanceStateRefreshFunc(d.Id(), "status", []string{"creating_failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudMilvusInstanceRead(d, meta)
+	return resourceInstanceRead(d, meta)
 }
 
-func resourceAliCloudMilvusInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	milvusServiceV2 := MilvusServiceV2{client}
+	milvusService := NewService(client)
 
-	objectRaw, err := milvusServiceV2.DescribeMilvusInstance(d.Id())
+	objectRaw, err := milvusService.DescribeInstance(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_milvus_instance DescribeMilvusInstance Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_milvus_instance DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("auto_backup", objectRaw["autoBackup"])
@@ -429,7 +435,7 @@ func resourceAliCloudMilvusInstanceRead(d *schema.ResourceData, meta interface{}
 	componentsRaw := objectRaw["components"]
 	componentsMaps := make([]map[string]interface{}, 0)
 	if componentsRaw != nil {
-		for _, componentsChildRaw := range convertToInterfaceArray(componentsRaw) {
+		for _, componentsChildRaw := range convert.ConvertToInterfaceArray(componentsRaw) {
 			componentsMap := make(map[string]interface{})
 			componentsChildRaw := componentsChildRaw.(map[string]interface{})
 			componentsMap["cu_num"] = componentsChildRaw["cuNum"]
@@ -462,16 +468,16 @@ func resourceAliCloudMilvusInstanceRead(d *schema.ResourceData, meta interface{}
 	}
 	securityGroupIdsRaw := make([]interface{}, 0)
 	if objectRaw["securityGroupIds"] != nil {
-		securityGroupIdsRaw = convertToInterfaceArray(objectRaw["securityGroupIds"])
+		securityGroupIdsRaw = convert.ConvertToInterfaceArray(objectRaw["securityGroupIds"])
 	}
 
 	d.Set("security_group_ids", securityGroupIdsRaw)
 	tagsMaps := objectRaw["tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 	vSwitchIdsRaw := objectRaw["vSwitchIds"]
 	vSwitchIdsMaps := make([]map[string]interface{}, 0)
 	if vSwitchIdsRaw != nil {
-		for _, vSwitchIdsChildRaw := range convertToInterfaceArray(vSwitchIdsRaw) {
+		for _, vSwitchIdsChildRaw := range convert.ConvertToInterfaceArray(vSwitchIdsRaw) {
 			vSwitchIdsMap := make(map[string]interface{})
 			vSwitchIdsChildRaw := vSwitchIdsChildRaw.(map[string]interface{})
 			vSwitchIdsMap["vsw_id"] = vSwitchIdsChildRaw["vswId"]
@@ -487,7 +493,7 @@ func resourceAliCloudMilvusInstanceRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -501,19 +507,19 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	request["instanceId"] = d.Id()
-	query["RegionId"] = StringPointer(client.RegionId)
-	query["clientToken"] = StringPointer(buildClientToken(action))
+	query["RegionId"] = helper.StringPointer(client.RegionId)
+	query["clientToken"] = helper.StringPointer(helper.BuildClientToken(action))
 	if d.HasChange("components") {
 		update = true
 	}
 	if v, ok := d.GetOk("components"); ok && d.HasChange("components") {
 		componentsMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["type"] = dataLoopTmp["type"]
 
-			for _, dataDisks := range convertToInterfaceArray(dataLoopTmp["data_disk"]) {
+			for _, dataDisks := range convert.ConvertToInterfaceArray(dataLoopTmp["data_disk"]) {
 				dataDisksMap := map[string]interface{}{}
 				dataDisksArg := dataDisks.(map[string]interface{})
 
@@ -573,11 +579,11 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 	}
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("milvus", "2023-10-12", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -585,14 +591,14 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		milvusServiceV2 := MilvusServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, milvusServiceV2.MilvusInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		milvusService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, milvusService.InstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -600,23 +606,23 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	query["ResourceId"] = StringPointer(d.Id())
-	query["RegionId"] = StringPointer(client.RegionId)
+	query["ResourceId"] = helper.StringPointer(d.Id())
+	query["RegionId"] = helper.StringPointer(client.RegionId)
 	if d.HasChange("resource_group_id") {
 		update = true
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		query["NewResourceGroupId"] = StringPointer(v.(string))
+		query["NewResourceGroupId"] = helper.StringPointer(v.(string))
 	}
 
-	query["ResourceType"] = StringPointer("instance")
+	query["ResourceType"] = helper.StringPointer("instance")
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("milvus", "2023-10-12", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -624,26 +630,26 @@ func resourceAliCloudMilvusInstanceUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		milvusServiceV2 := MilvusServiceV2{client}
-		if err := milvusServiceV2.SetResourceTags(d, "instance"); err != nil {
-			return WrapError(err)
+		milvusService := NewService(client)
+		if err := milvusService.SetResourceTags(d, "instance"); err != nil {
+			return errs.WrapError(err)
 		}
 	}
-	return resourceAliCloudMilvusInstanceRead(d, meta)
+	return resourceInstanceRead(d, meta)
 }
 
-func resourceAliCloudMilvusInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	enableDelete := true
 	if v, ok := d.GetOk("payment_type"); ok {
-		if InArray(fmt.Sprint(v), []string{"Subscription"}) {
+		if helper.InArray(fmt.Sprint(v), []string{"Subscription"}) {
 			enableDelete = false
 			log.Printf("[WARN] Cannot destroy resource alicloud_milvus_instance which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
 		}
@@ -656,14 +662,14 @@ func resourceAliCloudMilvusInstanceDelete(d *schema.ResourceData, meta interface
 		query := make(map[string]*string)
 		var err error
 		request = make(map[string]interface{})
-		query["instanceId"] = StringPointer(d.Id())
-		query["RegionId"] = StringPointer(client.RegionId)
+		query["instanceId"] = helper.StringPointer(d.Id())
+		query["RegionId"] = helper.StringPointer(client.RegionId)
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RoaDelete("milvus", "2023-10-12", action, query, nil, nil, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -671,26 +677,26 @@ func resourceAliCloudMilvusInstanceDelete(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		milvusServiceV2 := MilvusServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 4*time.Minute, milvusServiceV2.MilvusInstanceStateRefreshFunc(d.Id(), "status", []string{"deleting_failed"}))
+		milvusService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 4*time.Minute, milvusService.InstanceStateRefreshFunc(d.Id(), "status", []string{"deleting_failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
 
 	enableDelete = false
 	if v, ok := d.GetOk("payment_type"); ok {
-		if InArray(fmt.Sprint(v), []string{"Subscription"}) {
+		if helper.InArray(fmt.Sprint(v), []string{"Subscription"}) {
 			enableDelete = true
 		}
 	}
@@ -701,27 +707,27 @@ func resourceAliCloudMilvusInstanceDelete(d *schema.ResourceData, meta interface
 		var response map[string]interface{}
 		var err error
 		request = make(map[string]interface{})
-		request["InstanceId"] = StringPointer(d.Id())
+		request["InstanceId"] = helper.StringPointer(d.Id())
 
-		request["clientToken"] = buildClientToken(action)
+		request["clientToken"] = helper.BuildClientToken(action)
 
-		request["ImmediatelyRelease"] = StringPointer("1")
+		request["ImmediatelyRelease"] = helper.StringPointer("1")
 		var endpoint string
-		request["ProductCode"] = StringPointer("milvus")
-		request["ProductType"] = StringPointer("milvus_milvuspre_public_cn")
+		request["ProductCode"] = helper.StringPointer("milvus")
+		request["ProductType"] = helper.StringPointer("milvus_milvuspre_public_cn")
 		if client.IsInternationalAccount() {
 			request["ProductType"] = ""
 		}
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
-				if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{""}) {
+				if !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{""}) {
 					request["ProductCode"] = ""
 					request["ProductType"] = ""
 					endpoint = connectivity.BssOpenAPIEndpointInternational
@@ -731,36 +737,36 @@ func resourceAliCloudMilvusInstanceDelete(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		milvusServiceV2 := MilvusServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 4*time.Minute, milvusServiceV2.MilvusInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+		milvusService := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 4*time.Minute, milvusService.InstanceStateRefreshFunc(d.Id(), "status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
 	return nil
 }
 
-// milvusComponentsHash computes the set identity hash for a Milvus instance
+// componentsHash computes the set identity hash for a Milvus instance
 // component. It intentionally excludes data_disk (Optional+Computed, populated
 // with server defaults by the API even when the user leaves it unset), pay_type
 // (Computed only) and cu_type (Optional+Computed, defaulted to "general" by the
 // API when the user leaves it unset) so that a component written in config
 // without those fields still hashes identically to the same component read back
 // from the API. Without this the TypeSet would show a perpetual diff, because
-// the default schema.HashResource hashes Computed fields that are empty in
+// the default schema.hashResource hashes Computed fields that are empty in
 // config but populated in state. The remaining identity fields are sufficient
 // to uniquely distinguish a component within one instance.
-func milvusComponentsHash(i interface{}) int {
+func componentsHash(i interface{}) int {
 	m, ok := i.(map[string]interface{})
 	if !ok {
 		return 0
