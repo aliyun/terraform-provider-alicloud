@@ -5,6 +5,51 @@ external HTTP boundary. Record mode provisions real infrastructure; replay mode
 only consumes a fixed local baseline and never falls back to the network through
 an instrumented client. Normal testing remains live by default.
 
+## Quick start: two commands
+
+From the repository root, with Go, Terraform and Python 3 installed:
+
+```sh
+# Uses existing static ALICLOUD_* or ALIBABA_CLOUD_* test credentials.
+# Also requires aliyun CLI for independent cleanup checks.
+python3 scripts/recording.py record
+
+# Copy the replay command printed by record, or pass a shared recording directory.
+# No real credentials or aliyun CLI are needed for replay.
+python3 scripts/recording.py replay .terraform-recordings/<recording-id>
+```
+
+The pilot automatically selects the empty DNS group test, generates its unique
+name, compiles the test, records into a new private directory, and checks/cleans
+up only that test's empty groups even when the test fails. A recording becomes
+ready only after the test PASSes, independent cleanup succeeds, and the cassette
+passes a scan against available credential values. This scan supplements the
+Provider sanitizer; recordings remain private artifacts.
+
+Replay reads the saved parameters and baseline hashes, compiles the current
+checkout, removes inherited credentials/proxies, uses a temporary empty HOME and
+dummy credentials, and isolates the test process. An external-IP probe must
+return permission denied before the test starts. It verifies test PASS, complete
+interaction consumption and unchanged baseline hashes. The script currently
+supports automatic replay isolation on macOS; other platforms fail explicitly
+without running an unisolated test. Build tools may need network access before
+the isolated test starts. The host network configuration is never modified.
+
+Default output is under the root `.terraform-recordings/` directory, ignored by
+Git. `record /private/new/path` selects a different new output directory. To
+share a baseline, privately copy the complete directory including `manifest.json`
+and `cassette/`; start from its recorded `sourceCommit`. The replay command also
+supports testing subsequent code changes against that same baseline. The
+manifest and hashes detect accidental modifications, not a malicious artifact;
+accept recordings only from a trusted source. No upload or remote service is
+involved. Repeated replay refreshes its local logs/report without changing the
+cassette, seed or manifest. Build logs, cloud API payloads and recordings must
+never be committed to a public repository.
+
+The first version supports only `alicloud_alidns_domain_group` in `cn-hangzhou`.
+Lower-level integration and additional test/client adaptation are described
+below; they are not required to run the pilot commands.
+
 ## Running a supported test
 
 The test must use a recording-enabled `TestMain` and deterministic randomness.
