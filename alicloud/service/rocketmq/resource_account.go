@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package rocketmq. This file is generated automatically. Please do not modify it manually, thank you!
+package rocketmq
 
 import (
 	"fmt"
@@ -8,16 +8,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudRocketmqAccount() *schema.Resource {
+func ResourceAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudRocketmqAccountCreate,
-		Read:   resourceAliCloudRocketmqAccountRead,
-		Update: resourceAliCloudRocketmqAccountUpdate,
-		Delete: resourceAliCloudRocketmqAccountDelete,
+		Create: resourceAccountCreate,
+		Read:   resourceAccountRead,
+		Update: resourceAccountUpdate,
+		Delete: resourceAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -31,7 +35,7 @@ func resourceAliCloudRocketmqAccount() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"DISABLE", "ENABLE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"DISABLE", "ENABLE"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -51,7 +55,7 @@ func resourceAliCloudRocketmqAccount() *schema.Resource {
 	}
 }
 
-func resourceAliCloudRocketmqAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAccountCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -66,11 +70,11 @@ func resourceAliCloudRocketmqAccountCreate(d *schema.ResourceData, meta interfac
 	request["username"] = d.Get("username")
 	request["password"] = d.Get("password")
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("RocketMQ", "2022-08-01", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -78,29 +82,29 @@ func resourceAliCloudRocketmqAccountCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_rocketmq_account", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_rocketmq_account", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", instanceId, request["username"]))
 
-	return resourceAliCloudRocketmqAccountUpdate(d, meta)
+	return resourceAccountUpdate(d, meta)
 }
 
-func resourceAliCloudRocketmqAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	rocketmqServiceV2 := RocketmqServiceV2{client}
+	rocketmqService := NewService(client)
 
-	objectRaw, err := rocketmqServiceV2.DescribeRocketmqAccount(d.Id())
+	objectRaw, err := rocketmqService.DescribeAccount(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_rocketmq_account DescribeRocketmqAccount Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_rocketmq_account DescribeAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("account_status", objectRaw["accountStatus"])
@@ -113,7 +117,7 @@ func resourceAliCloudRocketmqAccountRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAliCloudRocketmqAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -134,23 +138,23 @@ func resourceAliCloudRocketmqAccountUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 	if v, ok := d.GetOk("account_status"); ok {
-		query["accountStatus"] = StringPointer(v.(string))
+		query["accountStatus"] = helper.StringPointer(v.(string))
 	}
 
 	if !d.IsNewResource() && d.HasChange("password") {
 		update = true
 	}
 	if v, ok := d.GetOk("password"); ok {
-		query["password"] = StringPointer(v.(string))
+		query["password"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPatch("RocketMQ", "2022-08-01", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -158,16 +162,16 @@ func resourceAliCloudRocketmqAccountUpdate(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudRocketmqAccountRead(d, meta)
+	return resourceAccountRead(d, meta)
 }
 
-func resourceAliCloudRocketmqAccountDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAccountDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -180,12 +184,12 @@ func resourceAliCloudRocketmqAccountDelete(d *schema.ResourceData, meta interfac
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("RocketMQ", "2022-08-01", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -193,13 +197,13 @@ func resourceAliCloudRocketmqAccountDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

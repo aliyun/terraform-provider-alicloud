@@ -2025,13 +2025,6 @@ func Provider() *schema.Provider {
 			"alicloud_resource_manager_service_linked_role":            resourceAliCloudResourceManagerServiceLinkedRole(),
 			"alicloud_resource_manager_delegated_administrator":        resourceAliCloudResourceManagerDelegatedAdministrator(),
 
-			// rocketmq
-			"alicloud_rocketmq_acl":            resourceAliCloudRocketmqAcl(),
-			"alicloud_rocketmq_account":        resourceAliCloudRocketmqAccount(),
-			"alicloud_rocketmq_topic":          resourceAliCloudRocketmqTopic(),
-			"alicloud_rocketmq_consumer_group": resourceAliCloudRocketmqConsumerGroup(),
-			"alicloud_rocketmq_instance":       resourceAliCloudRocketmqInstance(),
-
 			// ros
 			"alicloud_ros_change_set":       resourceAlicloudRosChangeSet(),
 			"alicloud_ros_stack":            resourceAlicloudRosStack(),
