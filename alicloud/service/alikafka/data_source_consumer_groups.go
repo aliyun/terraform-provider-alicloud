@@ -1,18 +1,22 @@
-package alicloud
+package alikafka
 
 import (
 	"fmt"
 	"regexp"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	alikafkasdk "github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudAlikafkaConsumerGroups() *schema.Resource {
+func DataSourceConsumerGroups() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAlikafkaConsumerGroupsRead,
+		Read: dataSourceConsumerGroupsRead,
 
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
@@ -67,7 +71,7 @@ func dataSourceAlicloudAlikafkaConsumerGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": tags.TagsSchema(),
 					},
 				},
 			},
@@ -75,11 +79,11 @@ func dataSourceAlicloudAlikafkaConsumerGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAlikafkaConsumerGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceConsumerGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
+	alikafkaService := NewAlikafkaService(client)
 
-	request := alikafka.CreateGetConsumerListRequest()
+	request := alikafkasdk.CreateGetConsumerListRequest()
 	request.InstanceId = d.Get("instance_id").(string)
 	request.RegionId = client.RegionId
 
@@ -93,16 +97,16 @@ func dataSourceAlicloudAlikafkaConsumerGroupsRead(d *schema.ResourceData, meta i
 		}
 	}
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 		return alikafkaClient.GetConsumerList(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_consumer_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_alikafka_consumer_groups", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*alikafka.GetConsumerListResponse)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*alikafkasdk.GetConsumerListResponse)
 
-	var filteredConsumerGroups []alikafka.ConsumerVO
+	var filteredConsumerGroups []alikafkasdk.ConsumerVO
 	nameRegex, ok := d.GetOk("consumer_id_regex")
 	for _, consumer := range response.ConsumerList.ConsumerVO {
 		var r *regexp.Regexp
@@ -111,7 +115,7 @@ func dataSourceAlicloudAlikafkaConsumerGroupsRead(d *schema.ResourceData, meta i
 			if nameRegex != "" {
 				r, err = regexp.Compile(nameRegex.(string))
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 			}
 		}
@@ -132,9 +136,9 @@ func dataSourceAlicloudAlikafkaConsumerGroupsRead(d *schema.ResourceData, meta i
 	return alikafkaConsumerGroupsDecriptionAttributes(d, filteredConsumerGroups, meta)
 }
 
-func alikafkaConsumerGroupsDecriptionAttributes(d *schema.ResourceData, consumerGroupsInfo []alikafka.ConsumerVO, meta interface{}) error {
+func alikafkaConsumerGroupsDecriptionAttributes(d *schema.ResourceData, consumerGroupsInfo []alikafkasdk.ConsumerVO, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
+	alikafkaService := NewAlikafkaService(client)
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
@@ -155,18 +159,18 @@ func alikafkaConsumerGroupsDecriptionAttributes(d *schema.ResourceData, consumer
 	d.SetId(dataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), ids)
+		helper.WriteToFile(output.(string), ids)
 	}
 	return nil
 

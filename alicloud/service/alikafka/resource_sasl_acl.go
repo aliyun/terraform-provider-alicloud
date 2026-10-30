@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package alikafka. This file is generated automatically. Please do not modify it manually, thank you!
+package alikafka
 
 import (
 	"fmt"
@@ -8,16 +8,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudAlikafkaSaslAcl() *schema.Resource {
+func ResourceSaslAcl() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAlikafkaSaslAclCreate,
-		Read:   resourceAliCloudAlikafkaSaslAclRead,
-		Update: resourceAliCloudAlikafkaSaslAclUpdate,
-		Delete: resourceAliCloudAlikafkaSaslAclDelete,
+		Create: resourceSaslAclCreate,
+		Read:   resourceSaslAclRead,
+		Update: resourceSaslAclUpdate,
+		Delete: resourceSaslAclDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -31,7 +35,7 @@ func resourceAliCloudAlikafkaSaslAcl() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Write", "Read", "Describe", "IdempotentWrite", "IDEMPOTENT_WRITE", "DESCRIBE_CONFIGS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Write", "Read", "Describe", "IdempotentWrite", "IDEMPOTENT_WRITE", "DESCRIBE_CONFIGS"}, false),
 			},
 			"acl_operation_types": {
 				Type:     schema.TypeString,
@@ -57,7 +61,7 @@ func resourceAliCloudAlikafkaSaslAcl() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Topic", "Group", "Cluster", "TransactionalId"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Topic", "Group", "Cluster", "TransactionalId"}, false),
 			},
 			"host": {
 				Type:     schema.TypeString,
@@ -79,7 +83,7 @@ func resourceAliCloudAlikafkaSaslAcl() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSaslAclCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -118,11 +122,11 @@ func resourceAliCloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("acl_operation_types"); ok {
 		request["AclOperationTypes"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_FIND_CONSUMER_GROUP_INFO_ERROR"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL", "BIZ_FIND_CONSUMER_GROUP_INFO_ERROR"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -130,10 +134,10 @@ func resourceAliCloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_acl", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_alikafka_sasl_acl", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	// Server may have cache, sleep a while.
@@ -141,21 +145,21 @@ func resourceAliCloudAlikafkaSaslAclCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v:%v", request["InstanceId"], request["Username"], request["AclResourceType"], request["AclResourceName"], request["AclResourcePatternType"], request["AclOperationType"]))
 
-	return resourceAliCloudAlikafkaSaslAclRead(d, meta)
+	return resourceSaslAclRead(d, meta)
 }
 
-func resourceAliCloudAlikafkaSaslAclRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSaslAclRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaServiceV2 := AlikafkaServiceV2{client}
+	alikafkaServiceV2 := NewAlikafkaServiceV2(client)
 
 	objectRaw, err := alikafkaServiceV2.DescribeAlikafkaSaslAcl(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alikafka_sasl_acl DescribeAlikafkaSaslAcl Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("acl_permission_type", objectRaw["AclPermissionType"])
@@ -172,12 +176,12 @@ func resourceAliCloudAlikafkaSaslAclRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAliCloudAlikafkaSaslAclUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSaslAclUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] Cannot update resource Alicloud Resource Sasl Acl.")
 	return nil
 }
 
-func resourceAliCloudAlikafkaSaslAclDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSaslAclDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -195,11 +199,11 @@ func resourceAliCloudAlikafkaSaslAclDelete(d *schema.ResourceData, meta interfac
 	request["AclOperationType"] = parts[5]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -207,13 +211,13 @@ func resourceAliCloudAlikafkaSaslAclDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

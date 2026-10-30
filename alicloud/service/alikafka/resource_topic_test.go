@@ -1,4 +1,4 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
@@ -8,10 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	alikafkasdk "github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	alikafka "github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -23,29 +27,28 @@ func init() {
 }
 
 func testSweepAlikafkaTopic(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "error getting AliCloud client.")
+		return errs.WrapErrorf(err, "error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testacc",
 	}
 
-	instanceListReq := alikafka.CreateGetInstanceListRequest()
+	instanceListReq := alikafkasdk.CreateGetInstanceListRequest()
 	instanceListReq.RegionId = region
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+	raw, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 		return alikafkaClient.GetInstanceList(instanceListReq)
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve alikafka instance in service list: %s", err)
 	}
 
-	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
+	instanceListResp, _ := raw.(*alikafkasdk.GetInstanceListResponse)
 
 	var instanceIds []string
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
@@ -57,10 +60,10 @@ func testSweepAlikafkaTopic(region string) error {
 		// Control the topic list request rate.
 		time.Sleep(time.Duration(400) * time.Millisecond)
 
-		request := alikafka.CreateGetTopicListRequest()
+		request := alikafkasdk.CreateGetTopicListRequest()
 		request.InstanceId = instanceId
-		request.RegionId = defaultRegionToTest
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		request.RegionId = acctest.DefaultRegionToTest
+		raw, err = client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 			return alikafkaClient.GetTopicList(request)
 		})
 
@@ -69,7 +72,7 @@ func testSweepAlikafkaTopic(region string) error {
 			continue
 		}
 
-		topicListResp, _ := raw.(*alikafka.GetTopicListResponse)
+		topicListResp, _ := raw.(*alikafkasdk.GetTopicListResponse)
 		topics := topicListResp.TopicList.TopicVO
 
 		for _, v := range topics {
@@ -90,12 +93,12 @@ func testSweepAlikafkaTopic(region string) error {
 			// Control the topic delete rate
 			time.Sleep(time.Duration(400) * time.Millisecond)
 
-			request := alikafka.CreateDeleteTopicRequest()
+			request := alikafkasdk.CreateDeleteTopicRequest()
 			request.InstanceId = instanceId
 			request.Topic = v.Topic
-			request.RegionId = defaultRegionToTest
+			request.RegionId = acctest.DefaultRegionToTest
 
-			_, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+			_, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 				return alikafkaClient.DeleteTopic(request)
 			})
 			if err != nil {
@@ -112,22 +115,22 @@ func testSweepAlikafkaTopic(region string) error {
 func TestAccAliCloudAlikafkaTopic_basic10065(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_topic.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaTopic")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -137,7 +140,7 @@ func TestAccAliCloudAlikafkaTopic_basic10065(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"instance_id": acctest.CHECKSET,
 						"topic":       name,
 						"remark":      name,
 					}),
@@ -195,13 +198,13 @@ func TestAccAliCloudAlikafkaTopic_basic10065(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -218,22 +221,22 @@ func TestAccAliCloudAlikafkaTopic_basic10065(t *testing.T) {
 func TestAccAliCloudAlikafkaTopic_basic10065_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_topic.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaTopic")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -250,7 +253,7 @@ func TestAccAliCloudAlikafkaTopic_basic10065_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"topic":         name,
 						"remark":        name,
 						"local_topic":   "false",
@@ -275,22 +278,22 @@ func TestAccAliCloudAlikafkaTopic_basic10065_twin(t *testing.T) {
 func TestAccAliCloudAlikafkaTopic_basic10066(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_topic.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaTopic")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -301,7 +304,7 @@ func TestAccAliCloudAlikafkaTopic_basic10066(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"instance_id": acctest.CHECKSET,
 						"topic":       name,
 						"remark":      name,
 						"local_topic": "true",
@@ -334,7 +337,7 @@ func TestAccAliCloudAlikafkaTopic_basic10066(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"configs": CHECKSET,
+						"configs": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -344,7 +347,7 @@ func TestAccAliCloudAlikafkaTopic_basic10066(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"configs": CHECKSET,
+						"configs": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -380,13 +383,13 @@ func TestAccAliCloudAlikafkaTopic_basic10066(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "0",
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -403,22 +406,22 @@ func TestAccAliCloudAlikafkaTopic_basic10066(t *testing.T) {
 func TestAccAliCloudAlikafkaTopic_basic10066_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_topic.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaTopic")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -436,12 +439,12 @@ func TestAccAliCloudAlikafkaTopic_basic10066_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"topic":         name,
 						"remark":        name,
 						"local_topic":   "true",
 						"compact_topic": "true",
-						"configs":       CHECKSET,
+						"configs":       acctest.CHECKSET,
 						"partition_num": "18",
 						"tags.%":        "2",
 						"tags.Created":  "TF",
@@ -462,22 +465,22 @@ func TestAccAliCloudAlikafkaTopic_basic10066_twin(t *testing.T) {
 func TestAccAliCloudAlikafkaTopic_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_topic.default.5"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaTopicMap10065)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaTopic")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaTopicBasicDependence10065)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -496,12 +499,12 @@ func TestAccAliCloudAlikafkaTopic_multi(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":   CHECKSET,
+						"instance_id":   acctest.CHECKSET,
 						"topic":         name + fmt.Sprint(-5),
 						"remark":        name + fmt.Sprint(-5),
 						"local_topic":   "true",
 						"compact_topic": "true",
-						"configs":       CHECKSET,
+						"configs":       acctest.CHECKSET,
 						"partition_num": "18",
 						"tags.%":        "2",
 						"tags.Created":  "TF",
@@ -514,9 +517,9 @@ func TestAccAliCloudAlikafkaTopic_multi(t *testing.T) {
 }
 
 var AliCloudAlikafkaTopicMap10065 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
 }
 
 func AliCloudAlikafkaTopicBasicDependence10065(name string) string {
@@ -566,7 +569,7 @@ func AliCloudAlikafkaTopicBasicDependence10065(name string) string {
 // TestUnitAlikafkaTopicConfigsSchemaDiffSuppress drives the comparison through the resource
 // schema so that the configs attribute is proven to stay wired to the subset comparator.
 func TestUnitAlikafkaTopicConfigsSchemaDiffSuppress(t *testing.T) {
-	configsSchema := resourceAliCloudAlikafkaTopic().Schema["configs"]
+	configsSchema := alikafka.ResourceTopic().Schema["configs"]
 	if configsSchema.DiffSuppressFunc == nil {
 		t.Fatal("configs has no DiffSuppressFunc")
 	}
@@ -611,9 +614,9 @@ func TestUnitAlikafkaTopicConfigsSchemaDiffSuppress(t *testing.T) {
 }
 
 var AliCloudAlikafkaTopicServerlessConfigsMap = map[string]string{
-	"instance_id": CHECKSET,
-	"create_time": CHECKSET,
-	"status":      CHECKSET,
+	"instance_id": acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"status":      acctest.CHECKSET,
 }
 
 func AliCloudAlikafkaTopicServerlessConfigsDependence(name string) string {
@@ -664,15 +667,15 @@ func AliCloudAlikafkaTopicServerlessConfigsDependence(name string) string {
 func TestAccAliCloudAlikafkaTopic_serverlessConfigs(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_topic.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaTopicServerlessConfigsMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaTopicServerlessConfigsMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaTopic")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc-alikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaTopicServerlessConfigsDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaTopicServerlessConfigsDependence)
 
 	// Only keys accepted by a serverless instance are declared: retention.hours allows 24-8760
 	// and max.message.bytes allows 1048576-10485760.
@@ -687,11 +690,11 @@ func TestAccAliCloudAlikafkaTopic_serverlessConfigs(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -702,10 +705,10 @@ func TestAccAliCloudAlikafkaTopic_serverlessConfigs(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id": CHECKSET,
+						"instance_id": acctest.CHECKSET,
 						"topic":       name,
 						"remark":      name,
-						"configs":     REGEXMATCH + `"max\.message\.bytes":\s*"?1048576"?[,}]`,
+						"configs":     acctest.REGEXMATCH + `"max\.message\.bytes":\s*"?1048576"?[,}]`,
 					}),
 					// The service reports keys that were never declared, which is the
 					// precondition that makes the following empty-plan step discriminate
@@ -729,7 +732,7 @@ func TestAccAliCloudAlikafkaTopic_serverlessConfigs(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"configs": REGEXMATCH + `"max\.message\.bytes":\s*"?10485760"?[,}]`,
+						"configs": acctest.REGEXMATCH + `"max\.message\.bytes":\s*"?10485760"?[,}]`,
 					}),
 				),
 			},

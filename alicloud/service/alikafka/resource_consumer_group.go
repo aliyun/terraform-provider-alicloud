@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package alikafka. This file is generated automatically. Please do not modify it manually, thank you!
+package alikafka
 
 import (
 	"fmt"
@@ -9,16 +9,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudAliKafkaConsumerGroup() *schema.Resource {
+func ResourceConsumerGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAliKafkaConsumerGroupCreate,
-		Read:   resourceAliCloudAliKafkaConsumerGroupRead,
-		Update: resourceAliCloudAliKafkaConsumerGroupUpdate,
-		Delete: resourceAliCloudAliKafkaConsumerGroupDelete,
+		Create: resourceConsumerGroupCreate,
+		Read:   resourceConsumerGroupRead,
+		Update: resourceConsumerGroupUpdate,
+		Delete: resourceConsumerGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -52,7 +56,7 @@ func resourceAliCloudAliKafkaConsumerGroup() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"description": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -64,7 +68,7 @@ func resourceAliCloudAliKafkaConsumerGroup() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAliKafkaConsumerGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -88,15 +92,15 @@ func resourceAliCloudAliKafkaConsumerGroupCreate(d *schema.ResourceData, meta in
 		request["Remark"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -104,29 +108,29 @@ func resourceAliCloudAliKafkaConsumerGroupCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_consumer_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_alikafka_consumer_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], request["ConsumerId"]))
 
-	return resourceAliCloudAliKafkaConsumerGroupRead(d, meta)
+	return resourceConsumerGroupRead(d, meta)
 }
 
-func resourceAliCloudAliKafkaConsumerGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaServiceV2 := AlikafkaServiceV2{client}
+	alikafkaServiceV2 := NewAlikafkaServiceV2(client)
 
 	objectRaw, err := alikafkaServiceV2.DescribeAliKafkaConsumerGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alikafka_consumer_group DescribeAliKafkaConsumerGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -137,24 +141,24 @@ func resourceAliCloudAliKafkaConsumerGroupRead(d *schema.ResourceData, meta inte
 	d.Set("description", objectRaw["Remark"])
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.TagVO", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudAliKafkaConsumerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	if d.HasChange("tags") {
-		alikafkaServiceV2 := AlikafkaServiceV2{client}
+		alikafkaServiceV2 := NewAlikafkaServiceV2(client)
 		if err := alikafkaServiceV2.SetResourceTags(d, "CONSUMERGROUP"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
-	return resourceAliCloudAliKafkaConsumerGroupRead(d, meta)
+	return resourceConsumerGroupRead(d, meta)
 }
 
-func resourceAliCloudAliKafkaConsumerGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceConsumerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -168,11 +172,11 @@ func resourceAliCloudAliKafkaConsumerGroupDelete(d *schema.ResourceData, meta in
 	request["ConsumerId"] = parts[1]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -180,19 +184,19 @@ func resourceAliCloudAliKafkaConsumerGroupDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	aliKafkaServiceV2 := AlikafkaServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, aliKafkaServiceV2.AliKafkaConsumerGroupStateRefreshFunc(d.Id(), "ConsumerId", []string{}))
+	aliKafkaServiceV2 := NewAlikafkaServiceV2(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, aliKafkaServiceV2.AliKafkaConsumerGroupStateRefreshFunc(d.Id(), "ConsumerId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil
