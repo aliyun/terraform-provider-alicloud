@@ -186,18 +186,6 @@ func Provider() *schema.Provider {
 			"alicloud_adb_db_cluster_lake_versions": dataSourceAlicloudAdbDbClusterLakeVersions(),
 			"alicloud_adb_resource_groups":          dataSourceAlicloudAdbResourceGroups(),
 
-			// alb
-			"alicloud_alb_security_policies":        dataSourceAlicloudAlbSecurityPolicies(),
-			"alicloud_alb_system_security_policies": dataSourceAlicloudAlbSystemSecurityPolicies(),
-			"alicloud_alb_server_groups":            dataSourceAlicloudAlbServerGroups(),
-			"alicloud_alb_load_balancers":           dataSourceAliCloudAlbLoadBalancers(),
-			"alicloud_alb_zones":                    dataSourceAlicloudAlbZones(),
-			"alicloud_alb_acls":                     dataSourceAlicloudAlbAcls(),
-			"alicloud_alb_listeners":                dataSourceAlicloudAlbListeners(),
-			"alicloud_alb_rules":                    dataSourceAliCloudAlbRules(),
-			"alicloud_alb_health_check_templates":   dataSourceAlicloudAlbHealthCheckTemplates(),
-			"alicloud_alb_ascripts":                 dataSourceAlicloudAlbAscripts(),
-
 			// alidns
 			"alicloud_alidns_domain_groups":     dataSourceAlicloudAlidnsDomainGroups(),
 			"alicloud_alidns_records":           dataSourceAlicloudAlidnsRecords(),
@@ -1266,20 +1254,6 @@ func Provider() *schema.Provider {
 			"alicloud_adb_db_cluster":              resourceAliCloudAdbDbCluster(),
 			"alicloud_adb_db_cluster_lake_version": resourceAliCloudAdbDbClusterLakeVersion(),
 			"alicloud_adb_resource_group":          resourceAliCloudAdbResourceGroup(),
-
-			// alb
-			"alicloud_alb_load_balancer_zone_shifted_attachment":             resourceAliCloudAlbLoadBalancerZoneShiftedAttachment(),
-			"alicloud_alb_load_balancer_access_log_config_attachment":        resourceAliCloudAlbLoadBalancerAccessLogConfigAttachment(),
-			"alicloud_alb_load_balancer_security_group_attachment":           resourceAliCloudAlbLoadBalancerSecurityGroupAttachment(),
-			"alicloud_alb_security_policy":                                   resourceAlicloudAlbSecurityPolicy(),
-			"alicloud_alb_server_group":                                      resourceAliCloudAlbServerGroup(),
-			"alicloud_alb_load_balancer":                                     resourceAliCloudAlbLoadBalancer(),
-			"alicloud_alb_listener":                                          resourceAliCloudAlbListener(),
-			"alicloud_alb_rule":                                              resourceAliCloudAlbRule(),
-			"alicloud_alb_health_check_template":                             resourceAliCloudAlbHealthCheckTemplate(),
-			"alicloud_alb_listener_additional_certificate_attachment":        resourceAlicloudAlbListenerAdditionalCertificateAttachment(),
-			"alicloud_alb_ascript":                                           resourceAliCloudAlbAScript(),
-			"alicloud_alb_load_balancer_common_bandwidth_package_attachment": resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment(),
 
 			// alidns
 			"alicloud_alidns_cloud_gtm_instance_config":  resourceAliCloudAlidnsCloudGtmInstanceConfig(),
