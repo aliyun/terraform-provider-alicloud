@@ -1,4 +1,4 @@
-package alicloud
+package wafopenapi
 
 import (
 	"fmt"
@@ -7,15 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudWafv3Instance() *schema.Resource {
+func ResourceWafv3Instance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudWafv3InstanceCreate,
-		Read:   resourceAlicloudWafv3InstanceRead,
-		Delete: resourceAlicloudWafv3InstanceDelete,
+		Create: resourceWafv3InstanceCreate,
+		Read:   resourceWafv3InstanceRead,
+		Delete: resourceWafv3InstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,7 +43,7 @@ func resourceAlicloudWafv3Instance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudWafv3InstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3InstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
 	wafOpenapiService := WafOpenapiService{client}
@@ -48,48 +51,48 @@ func resourceAlicloudWafv3InstanceCreate(d *schema.ResourceData, meta interface{
 
 	var response map[string]interface{}
 	action := "CreatePostpaidInstance"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_wafv3_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_wafv3_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if v, err := jsonpath.Get("$.InstanceId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_wafv3_instance")
+		return errs.WrapErrorf(err, errs.IdMsg, "alicloud_wafv3_instance")
 	} else {
 		d.SetId(fmt.Sprint(v))
 	}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, wafOpenapiService.Wafv3InstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, wafOpenapiService.Wafv3InstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudWafv3InstanceRead(d, meta)
+	return resourceWafv3InstanceRead(d, meta)
 }
 
-func resourceAlicloudWafv3InstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3InstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafOpenapiService := WafOpenapiService{client}
 
 	object, err := wafOpenapiService.DescribeWafv3Instance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_wafv3_instance wafOpenapiService.DescribeWafv3Instance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	startTime91 := object["StartTime"]
@@ -102,7 +105,7 @@ func resourceAlicloudWafv3InstanceRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAlicloudWafv3InstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3InstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafOpenapiService := WafOpenapiService{client}
 	var response map[string]interface{}
@@ -115,28 +118,28 @@ func resourceAlicloudWafv3InstanceDelete(d *schema.ResourceData, meta interface{
 	}
 
 	action := "ReleaseInstance"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafOpenapiService.Wafv3InstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafOpenapiService.Wafv3InstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }

@@ -1,12 +1,14 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudWafv3AddressBook_basic12719(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_address_book.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3AddressBookMap12719)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3AddressBookMap12719)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3AddressBook")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3AddressBookBasicDependence12719)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3AddressBookBasicDependence12719)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -44,7 +46,7 @@ func TestAccAliCloudWafv3AddressBook_basic12719(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "test",
-						"instance_id":       CHECKSET,
+						"instance_id":       acctest.CHECKSET,
 						"address_book_name": name,
 						"address_list.#":    "3",
 						"address_book_type": "ip",
@@ -100,8 +102,8 @@ func TestAccAliCloudWafv3AddressBook_basic12719(t *testing.T) {
 }
 
 var AlicloudWafv3AddressBookMap12719 = map[string]string{
-	"id":              CHECKSET,
-	"address_book_id": CHECKSET,
+	"id":              acctest.CHECKSET,
+	"address_book_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3AddressBookBasicDependence12719(name string) string {
@@ -121,22 +123,22 @@ data "alicloud_wafv3_instances" "default" {
 func TestAccAliCloudWafv3AddressBook_basic12702(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_address_book.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3AddressBookMap12702)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3AddressBookMap12702)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3AddressBook")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccwafv3%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3AddressBookBasicDependence12702)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3AddressBookBasicDependence12702)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -150,7 +152,7 @@ func TestAccAliCloudWafv3AddressBook_basic12702(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "创建",
-						"instance_id":       CHECKSET,
+						"instance_id":       acctest.CHECKSET,
 						"address_book_name": name,
 						"address_list.#":    "3",
 					}),
@@ -226,8 +228,8 @@ func TestAccAliCloudWafv3AddressBook_basic12702(t *testing.T) {
 }
 
 var AlicloudWafv3AddressBookMap12702 = map[string]string{
-	"id":              CHECKSET,
-	"address_book_id": CHECKSET,
+	"id":              acctest.CHECKSET,
+	"address_book_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3AddressBookBasicDependence12702(name string) string {
@@ -247,22 +249,22 @@ data "alicloud_wafv3_instances" "default" {
 func TestAccAliCloudWafv3AddressBook_basic12677(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_address_book.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3AddressBookMap12677)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3AddressBookMap12677)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3AddressBook")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3AddressBookBasicDependence12677)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3AddressBookBasicDependence12677)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -276,7 +278,7 @@ func TestAccAliCloudWafv3AddressBook_basic12677(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":       "test",
-						"instance_id":       CHECKSET,
+						"instance_id":       acctest.CHECKSET,
 						"address_book_name": name,
 						"address_list.#":    "3",
 					}),
@@ -370,8 +372,8 @@ func TestAccAliCloudWafv3AddressBook_basic12677(t *testing.T) {
 }
 
 var AlicloudWafv3AddressBookMap12677 = map[string]string{
-	"id":              CHECKSET,
-	"address_book_id": CHECKSET,
+	"id":              acctest.CHECKSET,
+	"address_book_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3AddressBookBasicDependence12677(name string) string {
