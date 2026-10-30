@@ -114,6 +114,9 @@ resource "alicloud_oss_bucket_replication" "cross-region-replication" {
     sse_kms_encrypted_objects {
       status = "Enabled"
     }
+    incremental_delete_marker {
+      status = "Enabled"
+    }
   }
 }
 ```
@@ -159,12 +162,21 @@ The destination configuration block supports the following:
 The source_selection_criteria configuration block supports the following:
 
 * `sse_kms_encrypted_objects` - (Optional, ForceNew) Filter source objects encrypted by using SSE-KMS. See [`sse_kms_encrypted_objects`](#source_selection_criteria-sse_kms_encrypted_objects) below.
+* `incremental_delete_marker` - (Optional, ForceNew, Available since v1.295.0) Specifies whether to replicate the incremental delete markers to the destination bucket. See [`incremental_delete_marker`](#source_selection_criteria-incremental_delete_marker) below.
 
 ### `source_selection_criteria-sse_kms_encrypted_objects`
 
 The sse_kms_encrypted_objects configuration block supports the following:
 
 * `status` - (Optional, ForceNew) Specifies whether to replicate objects encrypted by using SSE-KMS. Can be `Enabled` or `Disabled`.
+
+### `source_selection_criteria-incremental_delete_marker`
+
+The incremental_delete_marker configuration block supports the following:
+
+* `status` - (Optional, ForceNew, Available since v1.295.0) Specifies whether to replicate the incremental delete markers, which are the delete markers generated after the data replication rule takes effect. Can be `Enabled` or `Disabled`. If it is set to `Disabled`, the incremental delete markers are not replicated to the destination bucket.
+
+`NOTE`: If the incremental_delete_marker block is not specified, OSS replicates the incremental delete markers by default.
 
 ### `encryption_configuration`
 
