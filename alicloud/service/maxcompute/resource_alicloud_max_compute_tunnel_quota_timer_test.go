@@ -1,11 +1,13 @@
-package alicloud
+package maxcompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func SkipTestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_tunnel_quota_timer.default"
-	ra := resourceAttrInit(resourceId, AliCloudMaxComputeTunnelQuotaTimerMap9976)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMaxComputeTunnelQuotaTimerMap9976)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeTunnelQuotaTimer")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smaxcomputetunnelquotatimer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeTunnelQuotaTimerBasicDependence9976)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smaxcomputetunnelquotatimer%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMaxComputeTunnelQuotaTimerBasicDependence9976)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -194,7 +196,7 @@ func SkipTestAccAliCloudMaxComputeTunnelQuotaTimer_basic9976(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"quota_timer": REMOVEKEY,
+					"quota_timer": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

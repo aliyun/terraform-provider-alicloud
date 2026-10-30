@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package maxcompute. This file is generated automatically. Please do not modify it manually, thank you!
+package maxcompute
 
 import (
 	"fmt"
@@ -9,6 +9,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -131,7 +134,7 @@ func resourceAliCloudMaxComputeQuotaPlanCreate(d *schema.ResourceData, meta inte
 
 	objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("quota"); !IsNil(v) {
+	if v := d.Get("quota"); !helper.IsNil(v) {
 		parameter := make(map[string]interface{})
 		elasticReservedCu, _ := jsonpath.Get("$[0].parameter[0].elastic_reserved_cu", v)
 		if elasticReservedCu != nil && elasticReservedCu != "" {
@@ -175,11 +178,11 @@ func resourceAliCloudMaxComputeQuotaPlanCreate(d *schema.ResourceData, meta inte
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("MaxCompute", "2022-01-04", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -187,10 +190,10 @@ func resourceAliCloudMaxComputeQuotaPlanCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_max_compute_quota_plan", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_max_compute_quota_plan", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", nickname, request["name"]))
@@ -204,12 +207,12 @@ func resourceAliCloudMaxComputeQuotaPlanRead(d *schema.ResourceData, meta interf
 
 	objectRaw, err := maxComputeServiceV2.DescribeMaxComputeQuotaPlan(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_max_compute_quota_plan DescribeMaxComputeQuotaPlan Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["isEffective"] != nil {
@@ -293,7 +296,7 @@ func resourceAliCloudMaxComputeQuotaPlanUpdate(d *schema.ResourceData, meta inte
 		maxComputeServiceV2 := MaxComputeServiceV2{client}
 		object, err := maxComputeServiceV2.DescribeMaxComputeQuotaPlan(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("is_effective").(bool)
@@ -308,11 +311,11 @@ func resourceAliCloudMaxComputeQuotaPlanUpdate(d *schema.ResourceData, meta inte
 				body = make(map[string]interface{})
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -320,9 +323,9 @@ func resourceAliCloudMaxComputeQuotaPlanUpdate(d *schema.ResourceData, meta inte
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -363,7 +366,7 @@ func resourceAliCloudMaxComputeQuotaPlanUpdate(d *schema.ResourceData, meta inte
 					dataLoopTmp = dataLoop.(map[string]interface{})
 				}
 				dataLoopMap := make(map[string]interface{})
-				if !IsNil(dataLoopTmp["parameter"]) {
+				if !helper.IsNil(dataLoopTmp["parameter"]) {
 					localData1 := make(map[string]interface{})
 					elasticReservedCu1, _ := jsonpath.Get("$[0].elastic_reserved_cu", dataLoopTmp["parameter"])
 					if elasticReservedCu1 != nil && elasticReservedCu1 != "" {
@@ -390,11 +393,11 @@ func resourceAliCloudMaxComputeQuotaPlanUpdate(d *schema.ResourceData, meta inte
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -402,9 +405,9 @@ func resourceAliCloudMaxComputeQuotaPlanUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -424,12 +427,12 @@ func resourceAliCloudMaxComputeQuotaPlanDelete(d *schema.ResourceData, meta inte
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("MaxCompute", "2022-01-04", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -437,13 +440,13 @@ func resourceAliCloudMaxComputeQuotaPlanDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

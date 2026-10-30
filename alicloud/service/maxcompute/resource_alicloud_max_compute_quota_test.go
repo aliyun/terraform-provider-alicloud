@@ -1,11 +1,13 @@
-package alicloud
+package maxcompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,21 +17,21 @@ import (
 func TestAccAliCloudMaxComputeQuota_basic10404(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_quota.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxComputeQuotaMap10404)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeQuotaMap10404)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeQuota")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmaxcompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaBasicDependence10404)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeQuotaBasicDependence10404)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -84,8 +86,8 @@ func TestAccAliCloudMaxComputeQuota_basic10404(t *testing.T) {
 					testAccCheck(map[string]string{
 						"sub_quota_info_list.#": "3",
 						"payment_type":          "Subscription",
-						"part_nick_name":        CHECKSET,
-						"commodity_data":        CHECKSET,
+						"part_nick_name":        acctest.CHECKSET,
+						"commodity_data":        acctest.CHECKSET,
 						"commodity_code":        "odpsplus",
 					}),
 				),
@@ -217,21 +219,21 @@ variable "sub_quota_nickname_2" {
 func TestAccAliCloudMaxComputeQuota_basic6979(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_quota.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxComputeQuotaMap6979)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeQuotaMap6979)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeQuota")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccmaxcompute%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeQuotaBasicDependence6979)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeQuotaBasicDependence6979)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
