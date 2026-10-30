@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -64,7 +72,7 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The ID of the Container Registry instance.
 * `repo_name` - (Required, ForceNew) The name of the repository that you want to create.
-* `repo_namespace_name` - (Required, ForceNew) The namespace to which the repository belongs.
+* `repo_namespace_name` - (Required, ForceNew, String) The name of the namespace.
 * `repo_type` - (Optional) The default repository type. Valid values: `PUBLIC`,`PRIVATE`.
 * `summary` - (Optional) The summary about the repository.
 
@@ -73,6 +81,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Chart Repository. The value formats as `<instance_id>:<repo_namespace_name>:<repo_name>`.
+* `resource_group_id` - (String, Available since v2.2.0) The ID of the resource group.
 
 ## Import
 

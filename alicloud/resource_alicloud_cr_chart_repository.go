@@ -22,29 +22,39 @@ func resourceAlicloudCrChartRepository() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The ID of the Container Registry instance.",
 			},
 			"repo_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The name of the repository.",
 			},
 			"repo_namespace_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The name of the namespace.",
 			},
 			"repo_type": {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+				Description:  "The type of the repository. Valid values: `PUBLIC`, `PRIVATE`.",
 			},
 			"summary": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The summary of the repository.",
+			},
+			"resource_group_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The ID of the resource group.",
 			},
 		},
 	}
@@ -107,6 +117,7 @@ func resourceAlicloudCrChartRepositoryRead(d *schema.ResourceData, meta interfac
 	d.Set("instance_id", parts[0])
 	d.Set("repo_type", object["RepoType"])
 	d.Set("summary", object["Summary"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	return nil
 }
 func resourceAlicloudCrChartRepositoryUpdate(d *schema.ResourceData, meta interface{}) error {
