@@ -1,31 +1,35 @@
-package alicloud
+package clickhouse_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudClickHouseBackupPoliciesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudClickHouseBackupPoliciesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudClickHouseBackupPoliciesDataSourceName(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_click_house_backup_policy.default.db_cluster_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudClickHouseBackupPoliciesDataSourceName(rand, map[string]string{
-			"db_cluster_id": `"${alicloud_click_house_backup_policy.default.db_cluster_id}_fake"`,
+		FakeConfig: testAccCheckAlicloudClickHouseBackupPoliciesDataSourceName(rand, map[string]string{
+			// Use a valid-format non-existent cluster id: the DescribeBackupPolicy
+			// API format-validates DBClusterId, so a "_fake" suffix yields
+			// InvalidDBClusterId.Malformed (400) instead of NotFound->empty.
+			"db_cluster_id": `"cc-tffakeclusteridx0"`,
 		}),
 	}
 	var existAlicloudClickHouseBackupPoliciesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"policies.#":                           "1",
 			"policies.0.backup_retention_period":   "7",
-			"policies.0.db_cluster_id":             CHECKSET,
-			"policies.0.id":                        CHECKSET,
+			"policies.0.db_cluster_id":             acctest.CHECKSET,
+			"policies.0.id":                        acctest.CHECKSET,
 			"policies.0.preferred_backup_period.#": "2",
 			"policies.0.preferred_backup_time":     "00:00Z-01:00Z",
 			"policies.0.status":                    "true",
@@ -37,16 +41,16 @@ func TestAccAlicloudClickHouseBackupPoliciesDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudClickHouseBackupPoliciesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_click_house_backup_policies.default",
-		existMapFunc: existAlicloudClickHouseBackupPoliciesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudClickHouseBackupPoliciesDataSourceNameMapFunc,
+	var alicloudClickHouseBackupPoliciesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_click_house_backup_policies.default",
+		ExistMapFunc: existAlicloudClickHouseBackupPoliciesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudClickHouseBackupPoliciesDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudClickHouseBackupPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
+	alicloudClickHouseBackupPoliciesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
 }
 
 func testAccCheckAlicloudClickHouseBackupPoliciesDataSourceName(rand int, attrMap map[string]string) string {
@@ -78,7 +82,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "23.8"
+  db_cluster_version      = "25.3"
   status                  = "Running"
   category                = "Basic"
   db_cluster_class        = "S8"

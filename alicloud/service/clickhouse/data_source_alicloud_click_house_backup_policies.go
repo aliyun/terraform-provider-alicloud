@@ -1,4 +1,4 @@
-package alicloud
+package clickhouse
 
 import (
 	"fmt"
@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudClickHouseBackupPolicies() *schema.Resource {
+func DataSourceClickHouseBackupPolicies() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudClickHouseBackupPoliciesRead,
 		Schema: map[string]*schema.Schema{
@@ -62,18 +65,18 @@ func dataSourceAlicloudClickHouseBackupPolicies() *schema.Resource {
 func dataSourceAlicloudClickHouseBackupPoliciesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dbClusterId := d.Get("db_cluster_id")
-	clickhouseService := ClickhouseService{client}
+	clickhouseService := NewService(client)
 	object, err := clickhouseService.DescribeClickHouseBackupPolicy(dbClusterId.(string))
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("ClickHouseBackupPolicy")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	s := make([]map[string]interface{}, 0)
 
-	backup_retention_periodVal, err := formatInt(object["BackupRetentionPeriod"])
+	backup_retention_periodVal, err := convert.FormatInt(object["BackupRetentionPeriod"])
 	if err != nil {
 		return err
 	}
@@ -89,10 +92,10 @@ func dataSourceAlicloudClickHouseBackupPoliciesRead(d *schema.ResourceData, meta
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 	if err := d.Set("policies", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

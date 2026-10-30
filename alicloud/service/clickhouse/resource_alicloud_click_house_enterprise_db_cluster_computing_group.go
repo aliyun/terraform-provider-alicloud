@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package clickhouse
 
 import (
 	"fmt"
@@ -9,11 +9,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroup() *schema.Resource {
+func ResourceClickHouseEnterpriseDbClusterComputingGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupCreate,
 		Read:   resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupRead,
@@ -102,11 +106,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupCreate(d *schema
 	if v, ok := d.GetOk("computing_group_description"); ok {
 		request["ComputingGroupDescription"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -114,20 +118,20 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupCreate(d *schema
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster_computing_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster_computing_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	DataDBInstanceNameVar, _ := jsonpath.Get("$.Data.DBInstanceName", response)
 	DataComputingGroupIdVar, _ := jsonpath.Get("$.Data.ComputingGroupId", response)
 	d.SetId(fmt.Sprintf("%v:%v", DataDBInstanceNameVar, DataComputingGroupIdVar))
 
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
+	clickHouseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d, meta)
@@ -135,16 +139,16 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupCreate(d *schema
 
 func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
+	clickHouseServiceV2 := NewService(client)
 
 	objectRaw, err := clickHouseServiceV2.DescribeClickHouseEnterpriseDbClusterComputingGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_click_house_enterprise_db_cluster_computing_group DescribeClickHouseEnterpriseDbClusterComputingGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("computing_group_description", objectRaw["ComputingGroupDescription"])
@@ -157,19 +161,19 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupRead(d *schema.R
 
 	computingGroupEndpointNamesRaw := make([]interface{}, 0)
 	if objectRaw["ComputingGroupEndpointNames"] != nil {
-		computingGroupEndpointNamesRaw = convertToInterfaceArray(objectRaw["ComputingGroupEndpointNames"])
+		computingGroupEndpointNamesRaw = convert.ConvertToInterfaceArray(objectRaw["ComputingGroupEndpointNames"])
 	}
 
 	d.Set("computing_group_endpoint_names", computingGroupEndpointNamesRaw)
 	computingGroupEndpointsRaw := make([]interface{}, 0)
 	if objectRaw["ComputingGroupEndpoints"] != nil {
-		computingGroupEndpointsRaw = convertToInterfaceArray(objectRaw["ComputingGroupEndpoints"])
+		computingGroupEndpointsRaw = convert.ConvertToInterfaceArray(objectRaw["ComputingGroupEndpoints"])
 	}
 
 	d.Set("computing_group_endpoints", computingGroupEndpointsRaw)
 	computingGroupPublicEndpointsRaw := make([]interface{}, 0)
 	if objectRaw["ComputingGroupPublicEndpoints"] != nil {
-		computingGroupPublicEndpointsRaw = convertToInterfaceArray(objectRaw["ComputingGroupPublicEndpoints"])
+		computingGroupPublicEndpointsRaw = convert.ConvertToInterfaceArray(objectRaw["ComputingGroupPublicEndpoints"])
 	}
 
 	d.Set("computing_group_public_endpoints", computingGroupPublicEndpointsRaw)
@@ -209,11 +213,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 	}
 	request["NodeCount"] = d.Get("node_count")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -221,14 +225,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
+		clickHouseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -245,11 +249,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -257,9 +261,9 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -275,11 +279,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 	}
 	request["IsReadonly"] = d.Get("is_readonly")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -287,14 +291,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupUpdate(d *schema
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
+		clickHouseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"activation"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d.Id(), "ComputingGroupStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
@@ -316,11 +320,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupDelete(d *schema
 	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -328,19 +332,19 @@ func resourceAliCloudClickHouseEnterpriseDbClusterComputingGroupDelete(d *schema
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidComputingGroupId.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidComputingGroupId.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d, response, "$.Data.Status", []string{}))
+	clickHouseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterComputingGroupStateRefreshFunc(d, response, "$.Data.Status", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil

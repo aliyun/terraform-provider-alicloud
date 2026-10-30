@@ -309,10 +309,7 @@ func Provider() *schema.Provider {
 			// chatbot
 
 			// click
-			"alicloud_click_house_db_clusters":     dataSourceAlicloudClickHouseDbClusters(),
-			"alicloud_click_house_accounts":        dataSourceAlicloudClickHouseAccounts(),
-			"alicloud_click_house_regions":         dataSourceAlicloudClickHouseRegions(),
-			"alicloud_click_house_backup_policies": dataSourceAlicloudClickHouseBackupPolicies(),
+			// clickhouse resources/data sources migrated to alicloud/service/clickhouse
 
 			// cloud
 			"alicloud_cloud_firewall_tls_inspect_ca_certificates":   dataSourceAliCloudCloudFirewallTlsInspectCaCertificates(),
@@ -1205,15 +1202,7 @@ func Provider() *schema.Provider {
 			// chatbot
 
 			// click
-			"alicloud_click_house_enterprise_db_cluster_computing_group": resourceAliCloudClickHouseEnterpriseDbClusterComputingGroup(),
-			"alicloud_click_house_enterprise_db_cluster_security_ip":     resourceAliCloudClickHouseEnterpriseDbClusterSecurityIP(),
-			"alicloud_click_house_enterprise_db_cluster_backup_policy":   resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicy(),
-			"alicloud_click_house_enterprise_db_cluster_public_endpoint": resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpoint(),
-			"alicloud_click_house_enterprise_db_cluster_account":         resourceAliCloudClickHouseEnterpriseDBClusterAccount(),
-			"alicloud_click_house_enterprise_db_cluster":                 resourceAliCloudClickHouseEnterpriseDbCluster(),
-			"alicloud_click_house_db_cluster":                            resourceAlicloudClickHouseDbCluster(),
-			"alicloud_click_house_account":                               resourceAlicloudClickHouseAccount(),
-			"alicloud_click_house_backup_policy":                         resourceAlicloudClickHouseBackupPolicy(),
+			// clickhouse resources migrated to alicloud/service/clickhouse
 
 			// cloud
 			"alicloud_cloud_monitor_service_metric_alarm_rule":              resourceAliCloudCloudMonitorServiceMetricAlarmRule(),
