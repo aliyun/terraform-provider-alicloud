@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"fmt"
@@ -7,17 +7,22 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudPvtzZoneRecord() *schema.Resource {
+func ResourceZoneRecord() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPvtzZoneRecordCreate,
-		Read:   resourceAlicloudPvtzZoneRecordRead,
-		Update: resourceAlicloudPvtzZoneRecordUpdate,
-		Delete: resourceAlicloudPvtzZoneRecordDelete,
+		Create: resourceZoneRecordCreate,
+		Read:   resourceZoneRecordRead,
+		Update: resourceZoneRecordUpdate,
+		Delete: resourceZoneRecordDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -94,7 +99,7 @@ func resourceAlicloudPvtzZoneRecord() *schema.Resource {
 	}
 }
 
-func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceZoneRecordCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AddZoneRecord"
@@ -113,7 +118,7 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 	} else if v, ok := d.GetOk("resource_record"); ok {
 		request["Rr"] = v
 	} else {
-		return WrapError(Error(`[ERROR] Argument "resource_record" or "rr" must be set one!`))
+		return errs.WrapError(errs.Error(`[ERROR] Argument "resource_record" or "rr" must be set one!`))
 	}
 
 	if v, ok := d.GetOk("ttl"); ok {
@@ -127,11 +132,11 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 
 	request["Value"] = d.Get("value")
 	request["ZoneId"] = d.Get("zone_id")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -139,37 +144,37 @@ func resourceAlicloudPvtzZoneRecordCreate(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_zone_record", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pvtz_zone_record", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["RecordId"], ":", request["ZoneId"]))
 
-	return resourceAlicloudPvtzZoneRecordUpdate(d, meta)
+	return resourceZoneRecordUpdate(d, meta)
 }
-func resourceAlicloudPvtzZoneRecordRead(d *schema.ResourceData, meta interface{}) error {
+func resourceZoneRecordRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	object, err := pvtzService.DescribePvtzZoneRecord(d.Id())
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeZoneRecord(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_private_zone_zone_record pvtzService.DescribePvtzZoneRecord Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_private_zone_zone_record pvtzService.DescribeZoneRecord Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if strings.Split(d.Id(), ":")[0] != fmt.Sprint(object["RecordId"]) {
 		d.SetId(fmt.Sprintf("%v:%v", fmt.Sprint(object["RecordId"]), fmt.Sprint(object["ZoneId"])))
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("record_id", fmt.Sprint(parts[0]))
 	d.Set("zone_id", parts[1])
-	priorityVal, err := formatInt(object["Priority"])
+	priorityVal, err := convert.FormatInt(object["Priority"])
 	if err != nil {
 		return err
 	}
@@ -178,7 +183,7 @@ func resourceAlicloudPvtzZoneRecordRead(d *schema.ResourceData, meta interface{}
 	d.Set("rr", object["Rr"])
 	d.Set("resource_record", object["Rr"])
 	d.Set("status", object["Status"])
-	ttlVal, err := formatInt(object["Ttl"])
+	ttlVal, err := convert.FormatInt(object["Ttl"])
 	if err != nil {
 		return err
 	}
@@ -187,20 +192,20 @@ func resourceAlicloudPvtzZoneRecordRead(d *schema.ResourceData, meta interface{}
 	d.Set("value", object["Value"])
 	return nil
 }
-func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceZoneRecordUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	pvtzService := PvtzService{client}
-	object, err := pvtzService.DescribePvtzZoneRecord(d.Id())
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeZoneRecord(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if strings.Split(d.Id(), ":")[0] != fmt.Sprint(object["RecordId"]) {
 		d.SetId(fmt.Sprintf("%v:%v", fmt.Sprint(object["RecordId"]), fmt.Sprint(object["ZoneId"])))
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Partial(true)
 
@@ -217,11 +222,11 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			request["Lang"] = d.Get("lang")
 		}
 		action := "UpdateRecordRemark"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -229,9 +234,9 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -250,11 +255,11 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			setZoneRecordStatusReq["UserClientIp"] = d.Get("user_client_ip")
 		}
 		action := "SetZoneRecordStatus"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, setZoneRecordStatusReq, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -262,9 +267,9 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -306,11 +311,11 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			updateZoneRecordReq["UserClientIp"] = d.Get("user_client_ip")
 		}
 		action := "UpdateZoneRecord"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, updateZoneRecordReq, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ServiceUnavailable", "System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -318,27 +323,27 @@ func resourceAlicloudPvtzZoneRecordUpdate(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudPvtzZoneRecordRead(d, meta)
+	return resourceZoneRecordRead(d, meta)
 }
-func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceZoneRecordDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	object, err := pvtzService.DescribePvtzZoneRecord(d.Id())
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeZoneRecord(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if strings.Split(d.Id(), ":")[0] != fmt.Sprint(object["RecordId"]) {
 		d.SetId(fmt.Sprintf("%v:%v", fmt.Sprint(object["RecordId"]), fmt.Sprint(object["ZoneId"])))
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "DeleteZoneRecord"
 	var response map[string]interface{}
@@ -352,11 +357,11 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("user_client_ip"); ok {
 		request["UserClientIp"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"System.Busy", "Throttling.User"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"System.Busy", "Throttling.User"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -364,12 +369,12 @@ func resourceAlicloudPvtzZoneRecordDelete(d *schema.ResourceData, meta interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
+		if errs.IsExpectedErrors(err, []string{"Zone.Invalid.Id", "Zone.Invalid.UserId", "Zone.NotExists", "ZoneVpc.NotExists.VpcId"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

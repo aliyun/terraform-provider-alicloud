@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"fmt"
@@ -7,14 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudPvtzRules() *schema.Resource {
+func DataSourceRules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudPvtzRulesRead,
+		Read: dataSourceRulesRead,
 		Schema: map[string]*schema.Schema{
 			"endpoint_id": {
 				Type:     schema.TypeString,
@@ -124,7 +129,7 @@ func dataSourceAlicloudPvtzRules() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeResolverRules"
@@ -134,7 +139,7 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	request["Lang"] = "en"
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	request["NeedDetailAttributes"] = true
 	var objects []map[string]interface{}
@@ -142,7 +147,7 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		ruleNameRegex = r
 	}
@@ -159,11 +164,11 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -171,13 +176,13 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_rules", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_pvtz_rules", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Rules", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Rules", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Rules", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -192,7 +197,7 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -217,7 +222,7 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 				forwardConfigArg := forwardConfigArgs.(map[string]interface{})
 				forwardConfigsMap := make(map[string]interface{})
 				forwardConfigsMap["ip"] = forwardConfigArg["Ip"]
-				forwardConfigArgPort, err := formatInt(forwardConfigArg["Port"])
+				forwardConfigArgPort, err := convert.FormatInt(forwardConfigArg["Port"])
 				if err != nil {
 					return err
 				}
@@ -245,20 +250,20 @@ func dataSourceAlicloudPvtzRulesRead(d *schema.ResourceData, meta interface{}) e
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("rules", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

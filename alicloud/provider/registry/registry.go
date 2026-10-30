@@ -130,7 +130,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardbx"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatelink"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/pvtz"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quickbi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quotas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
@@ -307,7 +307,7 @@ var servicePackages = []conns.ServicePackage{
 	polardb.ServicePackage(),
 	polardbx.ServicePackage(),
 	privatelink.ServicePackage(),
-	pvtz.ServicePackage(),
+	privatezone.ServicePackage(),
 	quickbi.ServicePackage(),
 	quotas.ServicePackage(),
 	ram.ServicePackage(),
