@@ -794,22 +794,42 @@ func (s *RdsService) DescribeDBConnection(id string) (map[string]interface{}, er
 	object, err := s.DescribeDBInstanceNetInfo(parts[0])
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound"}) {
+		// The connection is gone together with its instance: DescribeDBInstanceNetInfo
+		// answers InvalidDBInstanceName.NotFound once the instance has been released.
+		if IsExpectedErrors(err, []string{"InvalidCurrentConnectionString.NotFound", "InvalidDBInstanceName.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapError(err)
 	}
 
 	if object != nil {
-		for _, o := range object {
-			o := o.(map[string]interface{})
-			if strings.HasPrefix(o["ConnectionString"].(string), parts[1]) {
-				return o, nil
-			}
+		if netInfo, ok := matchDBConnectionNetInfo(object, parts[1]); ok {
+			return netInfo, nil
 		}
 	}
 
 	return nil, WrapErrorf(NotFoundErr("DBConnection", id), NotFoundMsg, ProviderERROR)
+}
+
+// matchDBConnectionNetInfo returns the connection whose first DNS label equals
+// the connection prefix exactly. A prefix match would let "abc" select
+// "abcdef" depending on the response order, and the same object is used to
+// update and release the connection.
+func matchDBConnectionNetInfo(netInfos []interface{}, prefix string) (map[string]interface{}, bool) {
+	for _, item := range netInfos {
+		netInfo, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		connectionString, ok := netInfo["ConnectionString"].(string)
+		if !ok {
+			continue
+		}
+		if strings.Split(connectionString, ".")[0] == prefix {
+			return netInfo, true
+		}
+	}
+	return nil, false
 }
 func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[string]interface{}, error) {
 	object, err := s.DescribeDBInstanceRwNetInfoByMssql(id)

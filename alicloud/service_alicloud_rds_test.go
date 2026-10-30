@@ -3,12 +3,13 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"net/http"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 )
@@ -1035,5 +1036,51 @@ func TestRdsMutationRejectsParentHTTPNotFound(t *testing.T) {
 				t.Fatalf("failed parent query must fail deletion without retry: err=%v mutations=%d confirmations=%d", err, mutations, confirmations)
 			}
 		})
+	}
+}
+
+// TestUnitMatchDBConnectionNetInfo covers the connection identity match used by
+// DescribeDBConnection: the first DNS label must equal the requested prefix
+// exactly, otherwise "abc" could select "abcdef" depending on response order.
+func TestUnitMatchDBConnectionNetInfo(t *testing.T) {
+	netInfos := []interface{}{
+		map[string]interface{}{"ConnectionString": "abcdef.mysql.rds.aliyuncs.com", "Port": "3306"},
+		"unexpected non-map entry",
+		map[string]interface{}{"ConnectionString": "abc.mysql.rds.aliyuncs.com", "Port": "3307"},
+	}
+
+	got, ok := matchDBConnectionNetInfo(netInfos, "abc")
+	if !ok {
+		t.Fatalf("expected to find the connection with prefix %q", "abc")
+	}
+	if got["Port"] != "3307" {
+		t.Fatalf("matched connection Port = %v, want 3307 (a prefix match would have selected abcdef)", got["Port"])
+	}
+
+	for _, prefix := range []string{"ab", "abcdefg", "Abc"} {
+		if _, ok := matchDBConnectionNetInfo(netInfos, prefix); ok {
+			t.Fatalf("prefix %q must not match any connection", prefix)
+		}
+	}
+}
+
+// TestUnitDBConnectionAllocateTransientError pins the retry classification of
+// AllocateInstancePublicConnection: a connection that is still being created
+// (NetworkConnectionCreating) and a busy instance are transient, a permission or
+// not-found error is not.
+func TestUnitDBConnectionAllocateTransientError(t *testing.T) {
+	cases := []struct {
+		code string
+		want bool
+	}{
+		{code: "NetworkConnectionCreating", want: true},
+		{code: "OperationDenied.DBInstanceStatus", want: true},
+		{code: "InvalidDBInstanceId.NotFound", want: false},
+	}
+	for _, c := range cases {
+		err := newTestServerError(t, 400, c.code, "synthetic failure")
+		if got := isDBConnectionAllocateTransientError(err); got != c.want {
+			t.Fatalf("isDBConnectionAllocateTransientError(%s) = %v, want %v", c.code, got, c.want)
+		}
 	}
 }
