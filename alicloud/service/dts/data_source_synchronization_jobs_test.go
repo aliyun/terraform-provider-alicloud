@@ -1,60 +1,101 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const dtsSynchronizationJobsDataSourceId = "data.alicloud_dts_synchronization_jobs.default"
+
 func TestAccAlicloudDTSSynchronizationJobsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	synchronizationJobidconf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_dts_synchronization_job.default.id}"]`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_dts_synchronization_job.default.id}_fake"]`,
-		}),
-	}
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}_fake"`,
-		}),
-	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			// synchronizationJobidconf
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"ids": `["${alicloud_dts_synchronization_job.default.id}"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"ids": `["${alicloud_dts_synchronization_job.default.id}_fake"]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobFakeChecks()...),
+			},
+			// nameRegexConf
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}_fake"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobFakeChecks()...),
+			},
+			// statusConf
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"ids":    `["${alicloud_dts_synchronization_job.default.id}"]`,
+					"status": `"${alicloud_dts_synchronization_job.default.status}"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"ids":    `["${alicloud_dts_synchronization_job.default.id}"]`,
+					"status": `"Failed"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobFakeChecks()...),
+			},
+			// allConf
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"ids":        `["${alicloud_dts_synchronization_job.default.id}"]`,
+					"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
+					"status":     `"${alicloud_dts_synchronization_job.default.status}"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobExistChecks()...),
+			},
+			{
+				Config: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
+					"ids":        `["${alicloud_dts_synchronization_job.default.id}"]`,
+					"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
+					"status":     `"Failed"`,
+				}),
+				Check: resource.ComposeTestCheckFunc(dtsSynchronizationJobFakeChecks()...),
+			},
+		},
+	})
+}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"ids":    `["${alicloud_dts_synchronization_job.default.id}"]`,
-			"status": `"${alicloud_dts_synchronization_job.default.status}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"ids":    `["${alicloud_dts_synchronization_job.default.id}"]`,
-			"status": `"Failed"`,
-		}),
+func dtsSynchronizationJobExistChecks() []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(dtsSynchronizationJobsDataSourceId, "jobs.#", "1"),
+		resource.TestCheckResourceAttrSet(dtsSynchronizationJobsDataSourceId, "jobs.0.dts_job_id"),
 	}
+}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_dts_synchronization_job.default.id}"]`,
-			"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
-			"status":     `"${alicloud_dts_synchronization_job.default.status}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_dts_synchronization_job.default.id}"]`,
-			"name_regex": `"${alicloud_dts_synchronization_job.default.dts_job_name}"`,
-			"status":     `"Failed"`,
-		}),
+func dtsSynchronizationJobFakeChecks() []resource.TestCheckFunc {
+	return []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(dtsSynchronizationJobsDataSourceId, "jobs.#", "0"),
 	}
-
-	DtsSynchronizationJobCheckInfo.dataSourceTestCheck(t, rand, synchronizationJobidconf, nameRegexConf, statusConf, allConf)
 }
 
 func testAccCheckAlicloudDtsSynchronizationJobSourceConfig(rand int, attrMap map[string]string) string {
@@ -179,7 +220,7 @@ resource "alicloud_db_account_privilege" "privilege_r" {
 
 resource "alicloud_dts_synchronization_job" "default" {
   dts_instance_id                     = alicloud_dts_synchronization_instance.default.id
-  dts_job_name                        = "tf-testAccCase1"
+  dts_job_name                        = "tf-testAccCase1-%d"
   source_endpoint_instance_type       = "RDS"
   source_endpoint_instance_id         = alicloud_db_instance.source.id
   source_endpoint_engine_name         = "MySQL"
@@ -195,6 +236,7 @@ resource "alicloud_dts_synchronization_job" "default" {
   destination_endpoint_user_name      = "tftestdts"
   destination_endpoint_password       = "Test12345"
   db_list                             = "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}"
+  depends_on                          = [alicloud_db_database.db, alicloud_db_database.db_r, alicloud_db_account_privilege.privilege, alicloud_db_account_privilege.privilege_r]
   structure_initialization            = "true"
   data_initialization                 = "true"
   data_synchronization                = "true"
@@ -203,25 +245,6 @@ resource "alicloud_dts_synchronization_job" "default" {
 data "alicloud_dts_synchronization_jobs" "default" {
 %s
 }
-`, rand, strings.Join(pairs, "\n   "))
+`, rand, rand, strings.Join(pairs, "\n   "))
 	return config
-}
-
-var existDtsSynchronizationJobMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"jobs.#":            "1",
-		"jobs.0.dts_job_id": CHECKSET,
-	}
-}
-
-var fakeDtsSynchronizationJobMapFunc = func(rand int) map[string]string {
-	return map[string]string{
-		"jobs.#": "0",
-	}
-}
-
-var DtsSynchronizationJobCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_dts_synchronization_jobs.default",
-	existMapFunc: existDtsSynchronizationJobMapFunc,
-	fakeMapFunc:  fakeDtsSynchronizationJobMapFunc,
 }

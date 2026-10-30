@@ -1,4 +1,4 @@
-package alicloud
+package dts
 
 import (
 	"fmt"
@@ -6,13 +6,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudDtsConsumerChannels() *schema.Resource {
+func DataSourceConsumerChannels() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudDtsConsumerChannelsRead,
+		Read: dataSourceConsumerChannelsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -68,14 +72,14 @@ func dataSourceAlicloudDtsConsumerChannels() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceConsumerChannelsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeConsumerChannel"
 	request := make(map[string]interface{})
 	request["DtsInstanceId"] = d.Get("dts_instance_id")
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeMedium
+	request["PageSize"] = helper.PageSizeMedium
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 
@@ -91,13 +95,13 @@ func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 
 			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
 			if err != nil {
 
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 
 					wait()
 					return retry.RetryableError(err)
@@ -106,13 +110,13 @@ func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dts_consumer_channels", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_dts_consumer_channels", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.ConsumerChannels", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ConsumerChannels", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ConsumerChannels", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -124,7 +128,7 @@ func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta inte
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -133,11 +137,11 @@ func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta inte
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		message_delayVal, err := formatInt(object["MessageDelay"])
+		message_delayVal, err := convert.FormatInt(object["MessageDelay"])
 		if err != nil {
 			return err
 		}
-		unconsumed_dataVal, err := formatInt(object["UnconsumedData"])
+		unconsumed_dataVal, err := convert.FormatInt(object["UnconsumedData"])
 		if err != nil {
 			return err
 		}
@@ -154,16 +158,16 @@ func dataSourceAlicloudDtsConsumerChannelsRead(d *schema.ResourceData, meta inte
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("channels", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

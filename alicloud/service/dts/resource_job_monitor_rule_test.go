@@ -1,8 +1,7 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -11,92 +10,84 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
+const jobMonitorRuleResourceId = "alicloud_dts_job_monitor_rule.default"
+
 func TestAccAlicloudDTSJobMonitorRule_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dts_job_monitor_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSJobMonitorRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsJobMonitorRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtsjobmonitorrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSJobMonitorRuleBasicDependence0)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsjobmonitorrule%d", dtsTestRegion(), rand)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"dts_job_id": "${alicloud_dts_migration_job.default.id}",
-					"type":       "delay",
-				}),
+				Config: jobMonitorRuleBasicDependence0(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_migration_job.default.id}"
+  type       = "delay"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dts_job_id": CHECKSET,
-						"type":       "delay",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "state"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"state": "Y",
-				}),
+				Config: jobMonitorRuleBasicDependence0(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_migration_job.default.id}"
+  type       = "delay"
+  state      = "Y"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"state": "Y",
-					}),
-				),
-			},
-			// There needs a real phone number
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"phone": "12345678987",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"phone": "12345678987",
-			//		}),
-			//	),
-			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delay_rule_time": "233",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delay_rule_time": "233",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "Y"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"type":            "delay",
-					"state":           "N",
-					"delay_rule_time": "234",
-				}),
+				Config: jobMonitorRuleBasicDependence0(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_migration_job.default.id}"
+  type       = "delay"
+  state      = "Y"
+  delay_rule_time = "233"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"type":            "delay",
-						"state":           "N",
-						"delay_rule_time": "234",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "Y"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "delay_rule_time", "233"),
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				Config: jobMonitorRuleBasicDependence0(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_migration_job.default.id}"
+  type            = "delay"
+  state           = "N"
+  delay_rule_time = "234"
+`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "N"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "delay_rule_time", "234"),
+				),
+			},
+			{
+				ResourceName:      jobMonitorRuleResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -104,13 +95,15 @@ func TestAccAlicloudDTSJobMonitorRule_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudDTSJobMonitorRuleMap0 = map[string]string{
-	"dts_job_id": CHECKSET,
-	"state":      CHECKSET,
+func jobMonitorRuleBody(extra string) string {
+	return fmt.Sprintf(`
+resource "alicloud_dts_job_monitor_rule" "default" {
+%s}
+`, extra)
 }
 
-func AlicloudDTSJobMonitorRuleBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+func jobMonitorRuleBasicDependence0(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -213,92 +206,76 @@ resource "alicloud_dts_migration_job" "default" {
   structure_initialization           = true
   data_initialization                = true
   data_synchronization               = true
-//   status                             = "Migrating"
   depends_on                         = [alicloud_db_account_privilege.default]
 }
-
 `, name)
 }
 
 func TestAccAlicloudDTSJobMonitorRule_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dts_job_monitor_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSJobMonitorRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsJobMonitorRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtsjobmonitorrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSJobMonitorRuleBasicDependence1)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsjobmonitorrule%d", dtsTestRegion(), rand)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"dts_job_id": "${alicloud_dts_synchronization_job.default.id}",
-					"type":       "delay",
-				}),
+				Config: jobMonitorRuleBasicDependence1(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_synchronization_job.default.id}"
+  type       = "delay"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dts_job_id": CHECKSET,
-						"type":       "delay",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "state"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"state": "Y",
-				}),
+				Config: jobMonitorRuleBasicDependence1(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_synchronization_job.default.id}"
+  type       = "delay"
+  state      = "Y"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"state": "Y",
-					}),
-				),
-			},
-			// There needs a real phone number
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"phone": "12345678987",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"phone": "12345678987",
-			//		}),
-			//	),
-			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delay_rule_time": "233",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delay_rule_time": "233",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "Y"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"type":            "delay",
-					"state":           "N",
-					"delay_rule_time": "234",
-				}),
+				Config: jobMonitorRuleBasicDependence1(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_synchronization_job.default.id}"
+  type       = "delay"
+  state      = "Y"
+  delay_rule_time = "233"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"type":            "delay",
-						"state":           "N",
-						"delay_rule_time": "234",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "Y"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "delay_rule_time", "233"),
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				Config: jobMonitorRuleBasicDependence1(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_synchronization_job.default.id}"
+  type            = "delay"
+  state           = "N"
+  delay_rule_time = "234"
+`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "N"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "delay_rule_time", "234"),
+				),
+			},
+			{
+				ResourceName:      jobMonitorRuleResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -306,8 +283,8 @@ func TestAccAlicloudDTSJobMonitorRule_basic1(t *testing.T) {
 	})
 }
 
-func AlicloudDTSJobMonitorRuleBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
+func jobMonitorRuleBasicDependence1(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -419,89 +396,74 @@ resource "alicloud_dts_synchronization_job" "default" {
   destination_endpoint_database_name = "test_database"
   db_list = "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}"
 }
-
 `, name)
 }
 
 func TestAccAlicloudDTSJobMonitorRule_basic2(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dts_job_monitor_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSJobMonitorRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsJobMonitorRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdtsjobmonitorrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSJobMonitorRuleBasicDependence2)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdtsjobmonitorrule%d", dtsTestRegion(), rand)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"dts_job_id": "${alicloud_dts_subscription_job.default.id}",
-					"type":       "delay",
-				}),
+				Config: jobMonitorRuleBasicDependence2(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_subscription_job.default.id}"
+  type       = "delay"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dts_job_id": CHECKSET,
-						"type":       "delay",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "state"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"state": "Y",
-				}),
+				Config: jobMonitorRuleBasicDependence2(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_subscription_job.default.id}"
+  type       = "delay"
+  state      = "Y"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"state": "Y",
-					}),
-				),
-			},
-			// There needs a real phone number
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"phone": "12345678987",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"phone": "12345678987",
-			//		}),
-			//	),
-			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delay_rule_time": "233",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delay_rule_time": "233",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "Y"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"type":            "delay",
-					"state":           "N",
-					"delay_rule_time": "234",
-				}),
+				Config: jobMonitorRuleBasicDependence2(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_subscription_job.default.id}"
+  type       = "delay"
+  state      = "Y"
+  delay_rule_time = "233"
+`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"type":            "delay",
-						"state":           "N",
-						"delay_rule_time": "234",
-					}),
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "Y"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "delay_rule_time", "233"),
 				),
 			},
 			{
-				ResourceName:      resourceId,
+				Config: jobMonitorRuleBasicDependence2(name) + jobMonitorRuleBody(`
+  dts_job_id = "${alicloud_dts_subscription_job.default.id}"
+  type            = "delay"
+  state           = "N"
+  delay_rule_time = "234"
+`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(jobMonitorRuleResourceId, "dts_job_id"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "type", "delay"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "state", "N"),
+					resource.TestCheckResourceAttr(jobMonitorRuleResourceId, "delay_rule_time", "234"),
+				),
+			},
+			{
+				ResourceName:      jobMonitorRuleResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -509,8 +471,8 @@ func TestAccAlicloudDTSJobMonitorRule_basic2(t *testing.T) {
 	})
 }
 
-func AlicloudDTSJobMonitorRuleBasicDependence2(name string) string {
-	return fmt.Sprintf(` 
+func jobMonitorRuleBasicDependence2(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -605,15 +567,14 @@ resource "alicloud_dts_subscription_job" "default" {
     subscription_instance_vswitch_id    = data.alicloud_vswitches.default.ids[0]
     status                              = "Normal"
 }
-
 `, name)
 }
 
 // lintignore: R001
 func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(nil, nil)
+	resourceSchema := dts.ResourceJobMonitorRule()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"dts_job_id":      "CreateJobMonitorRuleValue",
@@ -627,17 +588,13 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 		assert.Nil(t, err)
 		err = dExisted.Set(key, value)
 		assert.Nil(t, err)
-		if err != nil {
-			log.Printf("[ERROR] the field %s setting error", key)
-		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := dtsTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeJobMonitorRule
 		"DtsJobId": "CreateJobMonitorRuleValue",
@@ -657,32 +614,34 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 	ReadMockResponseDiff := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dts_job_monitor_rule", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dts_job_monitor_rule", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			for k, v := range operationMockResponse {
+				ReadMockResponse[k] = v
+			}
 		}
 		return ReadMockResponse, nil
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsJobMonitorRuleCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -704,14 +663,14 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsJobMonitorRuleCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -723,15 +682,15 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsJobMonitorRuleUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// CreateJobMonitorRule
@@ -741,11 +700,16 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 		"state":           "UpdateValue",
 		"type":            "UpdateValue",
 	}
-	diff, err := newInstanceDiff("alicloud_dts_job_monitor_rule", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
+	// newInstanceDiff merged attributesDiff into attributes in-place, so the dCompare loop below
+	// compares against the updated values. Replicate that merge here.
+	for k, v := range attributesDiff {
+		attributes[k] = v
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(dInit.State(), diff)
+	diff := sdkterraform.NewInstanceDiff()
+	for _, key := range []string{"delay_rule_time", "phone", "state", "type"} {
+		diff.Attributes[key] = &sdkterraform.ResourceAttrDiff{Old: dInit.Get(key).(string), New: attributesDiff[key].(string)}
+	}
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeJobMonitorRule Response
 		"MonitorRules": []interface{}{
@@ -775,14 +739,14 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsJobMonitorRuleUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -814,7 +778,7 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsJobMonitorRuleRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -825,7 +789,6 @@ func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudDtsJobMonitorRuleDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	assert.Nil(t, err)
-
 }

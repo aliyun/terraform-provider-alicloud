@@ -1,8 +1,7 @@
-package alicloud
+package dts_test
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -11,58 +10,64 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
+const consumerChannelResourceId = "alicloud_dts_consumer_channel.default"
+
 func TestAccAlicloudDTSConsumerChannel_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_dts_consumer_channel.default"
-	ra := resourceAttrInit(resourceId, AlicloudDTSConsumerChannelMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDtsConsumerChannel")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tftest%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDTSConsumerChannelBasicDependence0)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			os.Setenv("ALICLOUD_REGION", "cn-hangzhou")
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkConsumerChannelDestroy(consumerChannelResourceId),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"consumer_group_password":  "tftestAcc123",
-					"consumer_group_user_name": name,
-					"consumer_group_name":      name,
-					"dts_instance_id":          "${alicloud_dts_subscription_job.default.dts_instance_id}",
-				}),
+				Config: consumerChannelBasicDependence0(name) + fmt.Sprintf(`
+resource "alicloud_dts_consumer_channel" "default" {
+  consumer_group_password  = "tftestAcc123"
+  consumer_group_user_name = "%s"
+  consumer_group_name      = "%s"
+  dts_instance_id          = "${alicloud_dts_subscription_job.default.dts_instance_id}"
+}
+`, name, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"consumer_group_user_name": name,
-						"consumer_group_name":      name,
-						"dts_instance_id":          CHECKSET,
-					}),
+					resource.TestCheckResourceAttr(consumerChannelResourceId, "consumer_group_user_name", name),
+					resource.TestCheckResourceAttr(consumerChannelResourceId, "consumer_group_name", name),
+					resource.TestCheckResourceAttrSet(consumerChannelResourceId, "dts_instance_id"),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"consumer_group_password": "tftestAcc123" + "update",
-				}),
+				Config: consumerChannelBasicDependence0(name) + fmt.Sprintf(`
+resource "alicloud_dts_consumer_channel" "default" {
+  consumer_group_password  = "tftestAcc123update"
+  consumer_group_user_name = "%s"
+  consumer_group_name      = "%s"
+  dts_instance_id          = "${alicloud_dts_subscription_job.default.dts_instance_id}"
+}
+`, name, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					resource.TestCheckResourceAttr(consumerChannelResourceId, "consumer_group_user_name", name),
+					resource.TestCheckResourceAttr(consumerChannelResourceId, "consumer_group_name", name),
+					resource.TestCheckResourceAttrSet(consumerChannelResourceId, "dts_instance_id"),
 				),
 			},
 			{
-				ResourceName:            resourceId,
+				ResourceName:            consumerChannelResourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"consumer_group_password"},
@@ -71,10 +76,27 @@ func TestAccAlicloudDTSConsumerChannel_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudDTSConsumerChannelMap0 = map[string]string{}
+func checkConsumerChannelDestroy(resourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "alicloud_dts_consumer_channel" {
+				continue
+			}
+			client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+			if _, err := dts.NewService(client).DescribeDtsConsumerChannel(rs.Primary.ID); err != nil {
+				if errs.NotFoundError(err) {
+					continue
+				}
+				return err
+			}
+			return fmt.Errorf("the resource %s %s was not destroyed", resourceId, rs.Primary.ID)
+		}
+		return nil
+	}
+}
 
-func AlicloudDTSConsumerChannelBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
+func consumerChannelBasicDependence0(name string) string {
+	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
 }
@@ -174,9 +196,9 @@ resource "alicloud_dts_subscription_job" "default" {
 
 // lintignore: R001
 func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(nil, nil)
+	resourceSchema := dts.ResourceConsumerChannel()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"consumer_group_password":  "CreateConsumerChannelValue",
@@ -189,17 +211,13 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 		assert.Nil(t, err)
 		err = dExisted.Set(key, value)
 		assert.Nil(t, err)
-		if err != nil {
-			log.Printf("[ERROR] the field %s setting error", key)
-		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := dtsTestClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeConsumerChannel
 		"ConsumerChannels": []interface{}{
@@ -218,32 +236,34 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       tea.String(errorCode),
+			Data:       tea.String(errorCode),
+			Message:    tea.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dts_consumer_channel", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_dts_consumer_channel", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			for k, v := range operationMockResponse {
+				ReadMockResponse[k] = v
+			}
 		}
 		return ReadMockResponse, nil
 	}
 
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsConsumerChannelCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -268,14 +288,14 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsConsumerChannelCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -287,26 +307,29 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 	}
 
 	// Update
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsConsumerChannelUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyConsumerChannel
 	attributesDiff := map[string]interface{}{
 		"consumer_group_password": "ModifyConsumerChannelValue",
 	}
-	diff, err := newInstanceDiff("alicloud_dts_consumer_channel", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
+	// newInstanceDiff merged attributesDiff into attributes in-place; replicate that merge so the
+	// dCompare loop below compares against the updated value.
+	for k, v := range attributesDiff {
+		attributes[k] = v
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(dInit.State(), diff)
+	diff := sdkterraform.NewInstanceDiff()
+	diff.Attributes["consumer_group_password"] = &sdkterraform.ResourceAttrDiff{Old: dInit.Get("consumer_group_password").(string), New: "ModifyConsumerChannelValue"}
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeConsumerChannel Response
 
@@ -329,14 +352,14 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsConsumerChannelUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -348,7 +371,7 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 	}
 
 	// Read
-	dExisted, _ = schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -369,7 +392,7 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsConsumerChannelRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -380,18 +403,18 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDtsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       tea.String("loadEndpoint error"),
+			Data:       tea.String("loadEndpoint error"),
+			Message:    tea.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDtsConsumerChannelDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
-	dExisted, _ = schema.InternalMap(p["alicloud_dts_consumer_channel"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "OperationDenied.JobStatus", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -411,7 +434,7 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDtsConsumerChannelDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -420,5 +443,4 @@ func TestUnitAlicloudDTSConsumerChannel(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
-
 }
