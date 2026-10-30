@@ -1,4 +1,4 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
@@ -7,9 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	alikafkasdk "github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	alikafka "github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -21,29 +25,28 @@ func init() {
 }
 
 func testSweepAlikafkaSaslAcl(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "error getting AliCloud client.")
+		return errs.WrapErrorf(err, "error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
 
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testacc",
 	}
 
-	instanceListReq := alikafka.CreateGetInstanceListRequest()
-	instanceListReq.RegionId = defaultRegionToTest
+	instanceListReq := alikafkasdk.CreateGetInstanceListRequest()
+	instanceListReq.RegionId = acctest.DefaultRegionToTest
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+	raw, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 		return alikafkaClient.GetInstanceList(instanceListReq)
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve alikafka instance in service list: %s", err)
 	}
 
-	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
+	instanceListResp, _ := raw.(*alikafkasdk.GetInstanceListResponse)
 
 	for _, v := range instanceListResp.InstanceList.InstanceVO {
 
@@ -56,11 +59,11 @@ func testSweepAlikafkaSaslAcl(region string) error {
 		time.Sleep(time.Duration(400) * time.Millisecond)
 
 		// Query users to delete
-		userListReq := alikafka.CreateDescribeSaslUsersRequest()
+		userListReq := alikafkasdk.CreateDescribeSaslUsersRequest()
 		userListReq.InstanceId = v.InstanceId
-		userListReq.RegionId = defaultRegionToTest
+		userListReq.RegionId = acctest.DefaultRegionToTest
 
-		saslUserRaw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		saslUserRaw, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 			return alikafkaClient.DescribeSaslUsers(userListReq)
 		})
 
@@ -69,7 +72,7 @@ func testSweepAlikafkaSaslAcl(region string) error {
 			continue
 		}
 
-		saslUserListResp, _ := saslUserRaw.(*alikafka.DescribeSaslUsersResponse)
+		saslUserListResp, _ := saslUserRaw.(*alikafkasdk.DescribeSaslUsersResponse)
 		var usersToDelete []string
 		for _, saslUser := range saslUserListResp.SaslUserList.SaslUserVO {
 			name := saslUser.Username
@@ -92,11 +95,11 @@ func testSweepAlikafkaSaslAcl(region string) error {
 		}
 
 		// Query All topic resource
-		topicListReq := alikafka.CreateGetTopicListRequest()
+		topicListReq := alikafkasdk.CreateGetTopicListRequest()
 		topicListReq.InstanceId = v.InstanceId
-		topicListReq.RegionId = defaultRegionToTest
+		topicListReq.RegionId = acctest.DefaultRegionToTest
 
-		topicRaw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		topicRaw, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 			return alikafkaClient.GetTopicList(topicListReq)
 		})
 
@@ -104,22 +107,22 @@ func testSweepAlikafkaSaslAcl(region string) error {
 			log.Printf("[ERROR] Failed to retrieve alikafka topics on instance (%s): %s", v.InstanceId, err)
 			continue
 		}
-		topicListResp, _ := topicRaw.(*alikafka.GetTopicListResponse)
+		topicListResp, _ := topicRaw.(*alikafkasdk.GetTopicListResponse)
 		topics := topicListResp.TopicList.TopicVO
 
 		// Query all consumer groups
-		consumerListReq := alikafka.CreateGetConsumerListRequest()
+		consumerListReq := alikafkasdk.CreateGetConsumerListRequest()
 		consumerListReq.InstanceId = v.InstanceId
-		consumerListReq.RegionId = defaultRegionToTest
+		consumerListReq.RegionId = acctest.DefaultRegionToTest
 
-		consumerRaw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		consumerRaw, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 			return alikafkaClient.GetConsumerList(consumerListReq)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve alikafka consumer groups on instance (%s): %s", v.InstanceId, err)
 			continue
 		}
-		consumerListResp, _ := consumerRaw.(*alikafka.GetConsumerListResponse)
+		consumerListResp, _ := consumerRaw.(*alikafkasdk.GetConsumerListResponse)
 		consumers := consumerListResp.ConsumerList.ConsumerVO
 
 		// If there is no resource, skip
@@ -132,12 +135,12 @@ func testSweepAlikafkaSaslAcl(region string) error {
 
 			for _, topic := range topics {
 
-				deleteAcl(alikafkaService, v.InstanceId, username, "Topic", topic.Topic)
+				deleteAcl(client, v.InstanceId, username, "Topic", topic.Topic)
 			}
 
 			for _, consumer := range consumers {
 
-				deleteAcl(alikafkaService, v.InstanceId, username, "Group", consumer.ConsumerId)
+				deleteAcl(client, v.InstanceId, username, "Group", consumer.ConsumerId)
 			}
 		}
 	}
@@ -145,26 +148,26 @@ func testSweepAlikafkaSaslAcl(region string) error {
 	return nil
 }
 
-func deleteAcl(alikafkaService AlikafkaService, instanceId string, username string, resourceType string, resourceName string) {
+func deleteAcl(client *connectivity.AliyunClient, instanceId string, username string, resourceType string, resourceName string) {
 
 	// Control the sasl username delete rate
 	time.Sleep(time.Duration(400) * time.Millisecond)
 
-	describeAclReq := alikafka.CreateDescribeAclsRequest()
+	describeAclReq := alikafkasdk.CreateDescribeAclsRequest()
 	describeAclReq.InstanceId = instanceId
 	describeAclReq.Username = username
-	describeAclReq.RegionId = defaultRegionToTest
+	describeAclReq.RegionId = acctest.DefaultRegionToTest
 	describeAclReq.AclResourceName = resourceName
 	describeAclReq.AclResourceType = resourceType
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+	raw, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 		return alikafkaClient.DescribeAcls(describeAclReq)
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to query alikafka acl username (%s), resourceType (%s), "+
 			"resourceName (%s) instanceId (%s): %s", username, resourceType, resourceName, instanceId, err)
 	}
-	aclListResp, _ := raw.(*alikafka.DescribeAclsResponse)
+	aclListResp, _ := raw.(*alikafkasdk.DescribeAclsResponse)
 
 	for _, kafkaAcl := range aclListResp.KafkaAclList.KafkaAclVO {
 
@@ -172,8 +175,8 @@ func deleteAcl(alikafkaService AlikafkaService, instanceId string, username stri
 			continue
 		}
 		log.Printf("[INFO] delete alikafka acl: %s, ", kafkaAcl)
-		deleteAclReq := alikafka.CreateDeleteAclRequest()
-		deleteAclReq.RegionId = defaultRegionToTest
+		deleteAclReq := alikafkasdk.CreateDeleteAclRequest()
+		deleteAclReq.RegionId = acctest.DefaultRegionToTest
 		deleteAclReq.InstanceId = instanceId
 		deleteAclReq.Username = username
 		deleteAclReq.AclResourceType = kafkaAcl.AclResourceType
@@ -181,7 +184,7 @@ func deleteAcl(alikafkaService AlikafkaService, instanceId string, username stri
 		deleteAclReq.AclResourcePatternType = kafkaAcl.AclResourcePatternType
 		deleteAclReq.AclOperationType = kafkaAcl.AclOperationType
 
-		_, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		_, err := client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 			return alikafkaClient.DeleteAcl(deleteAclReq)
 		})
 		if err != nil {
@@ -195,22 +198,22 @@ func deleteAcl(alikafkaService AlikafkaService, instanceId string, username stri
 func TestAccAliCloudAlikafkaSaslAcl_basic12413(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_acl.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12413)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12413)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaSaslAcl")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12413)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12413)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -224,11 +227,11 @@ func TestAccAliCloudAlikafkaSaslAcl_basic12413(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"acl_operation_type":        "Write",
-						"acl_resource_name":         CHECKSET,
+						"acl_resource_name":         acctest.CHECKSET,
 						"acl_resource_pattern_type": "LITERAL",
 						"acl_resource_type":         "Topic",
-						"instance_id":               CHECKSET,
-						"username":                  CHECKSET,
+						"instance_id":               acctest.CHECKSET,
+						"username":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -245,22 +248,22 @@ func TestAccAliCloudAlikafkaSaslAcl_basic12413(t *testing.T) {
 func TestAccAliCloudAlikafkaSaslAcl_basic12413_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_acl.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12413)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12413)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaSaslAcl")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12413)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12413)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -277,11 +280,11 @@ func TestAccAliCloudAlikafkaSaslAcl_basic12413_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"acl_operation_type":        "Write",
-						"acl_resource_name":         CHECKSET,
+						"acl_resource_name":         acctest.CHECKSET,
 						"acl_resource_pattern_type": "LITERAL",
 						"acl_resource_type":         "Topic",
-						"instance_id":               CHECKSET,
-						"username":                  CHECKSET,
+						"instance_id":               acctest.CHECKSET,
+						"username":                  acctest.CHECKSET,
 						"acl_permission_type":       "DENY",
 						"host":                      "127.0.0.1",
 					}),
@@ -298,8 +301,8 @@ func TestAccAliCloudAlikafkaSaslAcl_basic12413_twin(t *testing.T) {
 }
 
 var AliCloudAlikafkaSaslAclMap12413 = map[string]string{
-	"acl_permission_type": CHECKSET,
-	"host":                CHECKSET,
+	"acl_permission_type": acctest.CHECKSET,
+	"host":                acctest.CHECKSET,
 }
 
 func AliCloudAlikafkaSaslAclBasicDependence12413(name string) string {
@@ -353,22 +356,22 @@ func AliCloudAlikafkaSaslAclBasicDependence12413(name string) string {
 func TestAccAliCloudAlikafkaSaslAcl_basic12414(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_acl.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12414)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12414)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaSaslAcl")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12414)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12414)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -382,11 +385,11 @@ func TestAccAliCloudAlikafkaSaslAcl_basic12414(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"acl_operation_type":        "Write",
-						"acl_resource_name":         CHECKSET,
+						"acl_resource_name":         acctest.CHECKSET,
 						"acl_resource_pattern_type": "LITERAL",
 						"acl_resource_type":         "Topic",
-						"instance_id":               CHECKSET,
-						"username":                  CHECKSET,
+						"instance_id":               acctest.CHECKSET,
+						"username":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -403,22 +406,22 @@ func TestAccAliCloudAlikafkaSaslAcl_basic12414(t *testing.T) {
 func TestAccAliCloudAlikafkaSaslAcl_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_sasl_acl.default.2"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12414)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaSaslAclMap12414)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaSaslAcl")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12414)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaSaslAclBasicDependence12414)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -433,11 +436,11 @@ func TestAccAliCloudAlikafkaSaslAcl_multi(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"acl_operation_type":        "Describe",
-						"acl_resource_name":         CHECKSET,
+						"acl_resource_name":         acctest.CHECKSET,
 						"acl_resource_pattern_type": "LITERAL",
 						"acl_resource_type":         "Topic",
-						"instance_id":               CHECKSET,
-						"username":                  CHECKSET,
+						"instance_id":               acctest.CHECKSET,
+						"username":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -446,7 +449,7 @@ func TestAccAliCloudAlikafkaSaslAcl_multi(t *testing.T) {
 }
 
 var AliCloudAlikafkaSaslAclMap12414 = map[string]string{
-	"host": CHECKSET,
+	"host": acctest.CHECKSET,
 }
 
 func AliCloudAlikafkaSaslAclBasicDependence12414(name string) string {

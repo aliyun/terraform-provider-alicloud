@@ -210,11 +210,6 @@ func Provider() *schema.Provider {
 			"alicloud_alidns_access_strategies": dataSourceAlicloudAlidnsAccessStrategies(),
 
 			// alikafka
-			"alicloud_alikafka_consumer_groups": dataSourceAlicloudAlikafkaConsumerGroups(),
-			"alicloud_alikafka_instances":       dataSourceAlicloudAlikafkaInstances(),
-			"alicloud_alikafka_topics":          dataSourceAlicloudAlikafkaTopics(),
-			"alicloud_alikafka_sasl_users":      dataSourceAliCloudAlikafkaSaslUsers(),
-			"alicloud_alikafka_sasl_acls":       dataSourceAlicloudAlikafkaSaslAcls(),
 
 			// amqp
 
@@ -1088,13 +1083,6 @@ func Provider() *schema.Provider {
 			// aligreen
 
 			// alikafka
-			"alicloud_alikafka_scheduled_scaling_rule":         resourceAliCloudAlikafkaScheduledScalingRule(),
-			"alicloud_alikafka_consumer_group":                 resourceAliCloudAliKafkaConsumerGroup(),
-			"alicloud_alikafka_instance":                       resourceAliCloudAlikafkaInstance(),
-			"alicloud_alikafka_topic":                          resourceAliCloudAlikafkaTopic(),
-			"alicloud_alikafka_sasl_user":                      resourceAliCloudAliKafkaSaslUser(),
-			"alicloud_alikafka_sasl_acl":                       resourceAliCloudAlikafkaSaslAcl(),
-			"alicloud_alikafka_instance_allowed_ip_attachment": resourceAliCloudAliKafkaInstanceAllowedIpAttachment(),
 
 			// amqp
 

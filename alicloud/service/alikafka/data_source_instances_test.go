@@ -1,47 +1,48 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_alikafka_instances.default"
 	name := fmt.Sprintf("tf-testacc-alikafkainstance%v", rand)
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAlikafkaInstancesConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceAlikafkaInstancesConfigDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"name_regex":     "${alicloud_alikafka_instance.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "fake_tf-testacc*",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_alikafka_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_alikafka_instance.default.id}_fake"},
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_alikafka_instance.default.id}"},
 			"name_regex":     "${alicloud_alikafka_instance.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_alikafka_instance.default.id}_fake"},
 			"name_regex": "${alicloud_alikafka_instance.default.name}_fake",
 		}),
@@ -53,33 +54,33 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 			"instances.#":                               "1",
 			"instances.0.name":                          fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
 			"instances.0.partition_num":                 "50",
-			"instances.0.topic_quota":                   CHECKSET,
+			"instances.0.topic_quota":                   acctest.CHECKSET,
 			"instances.0.disk_type":                     "1",
 			"instances.0.disk_size":                     "500",
 			"instances.0.deploy_type":                   "5",
 			"instances.0.io_max":                        "20",
 			"instances.0.paid_type":                     "PostPaid",
 			"instances.0.spec_type":                     "normal",
-			"instances.0.service_version":               CHECKSET,
-			"instances.0.config":                        CHECKSET,
-			"instances.0.security_group":                CHECKSET,
-			"instances.0.vpc_id":                        CHECKSET,
-			"instances.0.zone_id":                       CHECKSET,
-			"instances.0.end_point":                     CHECKSET,
-			"instances.0.expired_time":                  CHECKSET,
-			"instances.0.msg_retain":                    CHECKSET,
+			"instances.0.service_version":               acctest.CHECKSET,
+			"instances.0.config":                        acctest.CHECKSET,
+			"instances.0.security_group":                acctest.CHECKSET,
+			"instances.0.vpc_id":                        acctest.CHECKSET,
+			"instances.0.zone_id":                       acctest.CHECKSET,
+			"instances.0.end_point":                     acctest.CHECKSET,
+			"instances.0.expired_time":                  acctest.CHECKSET,
+			"instances.0.msg_retain":                    acctest.CHECKSET,
 			"instances.0.ssl_end_point":                 "",
 			"instances.0.tags.%":                        "2",
 			"instances.0.tags.Created":                  "TF",
 			"instances.0.tags.For":                      "Test",
 			"instances.0.upgrade_service_detail_info.#": "1",
-			"instances.0.upgrade_service_detail_info.0.current2_open_source_version": CHECKSET,
-			"instances.0.domain_endpoint":                                            CHECKSET,
+			"instances.0.upgrade_service_detail_info.0.current2_open_source_version": acctest.CHECKSET,
+			"instances.0.domain_endpoint":                                            acctest.CHECKSET,
 			"instances.0.ssl_domain_endpoint":                                        "",
 			"instances.0.sasl_domain_endpoint":                                       "",
-			"instances.0.allowed_list.0.deploy_type":                                 CHECKSET,
-			"instances.0.allowed_list.0.vpc_list.0.allowed_ip_list.#":                CHECKSET,
-			"instances.0.allowed_list.0.vpc_list.0.port_range":                       CHECKSET,
+			"instances.0.allowed_list.0.deploy_type":                                 acctest.CHECKSET,
+			"instances.0.allowed_list.0.vpc_list.0.allowed_ip_list.#":                acctest.CHECKSET,
+			"instances.0.allowed_list.0.vpc_list.0.port_range":                       acctest.CHECKSET,
 		}
 	}
 
@@ -90,12 +91,12 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var alikafkaInstancesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existAlikafkaInstancesMapFunc,
-		fakeMapFunc:  fakeAlikafkaInstancesMapFunc,
+	var alikafkaInstancesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existAlikafkaInstancesMapFunc,
+		FakeMapFunc:  fakeAlikafkaInstancesMapFunc,
 	}
-	alikafkaInstancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	alikafkaInstancesCheckInfo.DataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 
 }
 

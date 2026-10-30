@@ -1,128 +1,38 @@
-package alicloud
+// collection-order: bypass selected_zones -- pre-existing attribute outside this change
+// collection-order: bypass vswitch_ids -- pre-existing attribute outside this change
+
+package alikafka_test
 
 import (
 	"fmt"
-	"log"
-	"strings"
 	"testing"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
-
-func init() {
-	resource.AddTestSweepers("alicloud_alikafka_instance", &resource.Sweeper{
-		Name: "alicloud_alikafka_instance",
-		F:    testSweepAlikafkaInstance,
-		// When implemented, these should be removed firstly
-		Dependencies: []string{
-			"alicloud_alikafka_consumer_group",
-			"alicloud_alikafka_sasl_acl",
-			"alicloud_alikafka_topic",
-			"alicloud_alikafka_sasl_user",
-		},
-	})
-}
-
-func testSweepAlikafkaInstance(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "error getting AliCloud client.")
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testacc",
-	}
-
-	instanceListReq := alikafka.CreateGetInstanceListRequest()
-	instanceListReq.RegionId = region
-
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-		return alikafkaClient.GetInstanceList(instanceListReq)
-	})
-	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve alikafka instance in service list: %s", err)
-	}
-
-	instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
-	service := VpcService{client}
-	for _, v := range instanceListResp.InstanceList.InstanceVO {
-
-		name := v.Name
-		skip := true
-		for _, prefix := range prefixes {
-
-			// ServiceStatus equals 5 means the instance is in running status.
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
-		if skip {
-			if need, err := service.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
-				skip = !need
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping alikafka instance: %s ", name)
-			continue
-		}
-		if v.ServiceStatus != 10 {
-			log.Printf("[INFO] release alikafka instance: %s ", name)
-
-			request := alikafka.CreateReleaseInstanceRequest()
-			request.InstanceId = v.InstanceId
-			request.ForceDeleteInstance = requests.NewBoolean(true)
-			_, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-				return alikafkaClient.ReleaseInstance(request)
-			})
-
-			if err != nil {
-				log.Printf("[ERROR] Failed to release alikafka instance (%s): %s", name, err)
-			}
-		}
-
-		log.Printf("[INFO] Delete alikafka instance: %s ", name)
-		request2 := alikafka.CreateDeleteInstanceRequest()
-		request2.InstanceId = v.InstanceId
-		_, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-			return alikafkaClient.DeleteInstance(request2)
-		})
-
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete alikafka instance (%s): %s", name, err)
-		}
-	}
-
-	return nil
-}
 
 func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
-	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return alikafka.NewAlikafkaService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandInt()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rc.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rc.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -163,8 +73,8 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":           name,
-						"security_group": CHECKSET,
-						"kms_key_id":     CHECKSET,
+						"security_group": acctest.CHECKSET,
+						"kms_key_id":     acctest.CHECKSET,
 						"partition_num":  "0",
 						"topic_quota":    "1000",
 					}),
@@ -265,7 +175,7 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"config": CHECKSET,
+						"config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -331,13 +241,13 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": REMOVEKEY,
+					"tags": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"tags.%":       acctest.REMOVEKEY,
+						"tags.Created": acctest.REMOVEKEY,
+						"tags.For":     acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -348,22 +258,22 @@ func TestAccAliCloudAlikafkaInstance_basic(t *testing.T) {
 func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
-	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return alikafka.NewAlikafkaService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandInt()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstanceconvert%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
@@ -401,7 +311,7 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 						"paid_type":         "PostPaid",
 						"spec_type":         "normal",
 						"service_version":   "2.2.0",
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 						//"config":          "{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}",
 						"tags.%":       "2",
 						"tags.Created": "TF",
@@ -431,22 +341,22 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
-	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return alikafka.NewAlikafkaService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandInt()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
@@ -503,22 +413,22 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
-	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
+	ra := acctest.ResourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return alikafka.NewAlikafkaService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandInt()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -562,15 +472,15 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 						"enable_auto_group":           "true",
 						"enable_auto_topic":           "enable",
 						"default_topic_partition_num": "6",
-						"config":                      CHECKSET,
+						"config":                      acctest.CHECKSET,
 						"vswitch_ids.#":               "2",
 						"tags.%":                      "2",
 						"tags.Created":                "TF",
 						"tags.For":                    "acceptance test",
-						"ssl_endpoint":                CHECKSET,
-						"ssl_domain_endpoint":         CHECKSET,
-						"sasl_domain_endpoint":        CHECKSET,
-						"vpc_sasl_domain_endpoint":    CHECKSET,
+						"ssl_endpoint":                acctest.CHECKSET,
+						"ssl_domain_endpoint":         acctest.CHECKSET,
+						"sasl_domain_endpoint":        acctest.CHECKSET,
+						"vpc_sasl_domain_endpoint":    acctest.CHECKSET,
 					}),
 				),
 			},
@@ -601,7 +511,7 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -617,24 +527,24 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 
 func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_alikafka_instance.default"
-	ra := resourceAttrInit(resourceId, alikafkaInstanceServerlessMap)
+	ra := acctest.ResourceAttrInit(resourceId, alikafkaInstanceServerlessMap)
 	serviceFunc := func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return alikafka.NewAlikafkaService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandInt()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceAlikafkaInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -666,16 +576,16 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 						"paid_type":                "PostPaid",
 						"spec_type":                "normal",
 						"service_version":          "3.3.1",
-						"config":                   CHECKSET,
+						"config":                   acctest.CHECKSET,
 						"vswitch_ids.#":            "2",
 						"serverless_config.#":      "1",
 						"tags.%":                   "2",
 						"tags.Created":             "TF",
 						"tags.For":                 "acceptance test",
-						"ssl_endpoint":             CHECKSET,
-						"ssl_domain_endpoint":      CHECKSET,
-						"sasl_domain_endpoint":     CHECKSET,
-						"vpc_sasl_domain_endpoint": CHECKSET,
+						"ssl_endpoint":             acctest.CHECKSET,
+						"ssl_domain_endpoint":      acctest.CHECKSET,
+						"sasl_domain_endpoint":     acctest.CHECKSET,
+						"vpc_sasl_domain_endpoint": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -701,8 +611,8 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deploy_type":         "5",
-						"ssl_endpoint":        REMOVEKEY,
-						"ssl_domain_endpoint": REMOVEKEY,
+						"ssl_endpoint":        acctest.REMOVEKEY,
+						"ssl_domain_endpoint": acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -718,23 +628,23 @@ func TestAccAliCloudAlikafkaInstance_Serverless(t *testing.T) {
 
 func SkipTestAccAliCloudAlikafkaInstance_Confluent(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_alikafka_instance.default"
-	ra := resourceAttrInit(resourceId, alikafkaInstanceServerlessMap)
+	ra := acctest.ResourceAttrInit(resourceId, alikafkaInstanceServerlessMap)
 	serviceFunc := func() interface{} {
-		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return alikafka.NewAlikafkaService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandInt()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
@@ -840,11 +750,11 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+	  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+	  		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 
 	resource "alicloud_security_group" "default" {
@@ -853,10 +763,10 @@ func resourceAlikafkaInstanceConfigDependence(name string) string {
 	}
 
 	resource "alicloud_kms_key" "key" {
-  		description            = var.name
-  		pending_window_in_days = "7"
-  		status                 = "Enabled"
-	}
+	  		description            = var.name
+	  		pending_window_in_days = "7"
+	  		status                 = "Enabled"
+		}
 `, name)
 }
 
@@ -870,51 +780,51 @@ func resourceAlikafkaInstancePrePaidConfigDependence(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+	  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
-	}
+	  		vpc_id = data.alicloud_vpcs.default.ids.0
+		}
 `, name)
 }
 
 var alikafkaInstanceBasicMap = map[string]string{
-	"topic_quota":      CHECKSET,
-	"partition_num":    CHECKSET,
-	"disk_type":        CHECKSET,
-	"disk_size":        CHECKSET,
-	"deploy_type":      CHECKSET,
-	"instance_type":    CHECKSET,
-	"io_max":           CHECKSET,
-	"vswitch_id":       CHECKSET,
-	"paid_type":        CHECKSET,
-	"spec_type":        CHECKSET,
-	"vpc_id":           CHECKSET,
-	"zone_id":          CHECKSET,
-	"service_version":  CHECKSET,
-	"config":           CHECKSET,
-	"end_point":        CHECKSET,
-	"domain_endpoint":  CHECKSET,
-	"topic_num_of_buy": CHECKSET,
-	"topic_used":       CHECKSET,
-	"topic_left":       CHECKSET,
-	"partition_used":   CHECKSET,
-	"partition_left":   CHECKSET,
-	"group_used":       CHECKSET,
-	"group_left":       CHECKSET,
-	"is_partition_buy": CHECKSET,
-	"status":           CHECKSET,
+	"topic_quota":      acctest.CHECKSET,
+	"partition_num":    acctest.CHECKSET,
+	"disk_type":        acctest.CHECKSET,
+	"disk_size":        acctest.CHECKSET,
+	"deploy_type":      acctest.CHECKSET,
+	"instance_type":    acctest.CHECKSET,
+	"io_max":           acctest.CHECKSET,
+	"vswitch_id":       acctest.CHECKSET,
+	"paid_type":        acctest.CHECKSET,
+	"spec_type":        acctest.CHECKSET,
+	"vpc_id":           acctest.CHECKSET,
+	"zone_id":          acctest.CHECKSET,
+	"service_version":  acctest.CHECKSET,
+	"config":           acctest.CHECKSET,
+	"end_point":        acctest.CHECKSET,
+	"domain_endpoint":  acctest.CHECKSET,
+	"topic_num_of_buy": acctest.CHECKSET,
+	"topic_used":       acctest.CHECKSET,
+	"topic_left":       acctest.CHECKSET,
+	"partition_used":   acctest.CHECKSET,
+	"partition_left":   acctest.CHECKSET,
+	"group_used":       acctest.CHECKSET,
+	"group_left":       acctest.CHECKSET,
+	"is_partition_buy": acctest.CHECKSET,
+	"status":           acctest.CHECKSET,
 }
 
 var alikafkaInstanceServerlessMap = map[string]string{
-	"deploy_type":   CHECKSET,
-	"instance_type": CHECKSET,
-	"io_max":        CHECKSET,
-	"vswitch_id":    CHECKSET,
-	"paid_type":     CHECKSET,
-	"spec_type":     CHECKSET,
-	"vpc_id":        CHECKSET,
-	"zone_id":       CHECKSET,
-	"status":        CHECKSET,
+	"deploy_type":   acctest.CHECKSET,
+	"instance_type": acctest.CHECKSET,
+	"io_max":        acctest.CHECKSET,
+	"vswitch_id":    acctest.CHECKSET,
+	"paid_type":     acctest.CHECKSET,
+	"spec_type":     acctest.CHECKSET,
+	"vpc_id":        acctest.CHECKSET,
+	"zone_id":       acctest.CHECKSET,
+	"status":        acctest.CHECKSET,
 }
