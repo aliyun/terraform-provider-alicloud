@@ -646,16 +646,7 @@ func Provider() *schema.Provider {
 
 			// governance
 
-			// gpdb
-			"alicloud_gpdb_data_backups":      dataSourceAliCloudGpdbDataBackups(),
-			"alicloud_gpdb_log_backups":       dataSourceAliCloudGpdbLogbackups(),
-			"alicloud_gpdb_db_extensions":     dataSourceAliCloudGpdbDbExtensions(),
-			"alicloud_gpdb_instances":         dataSourceAlicloudGpdbInstances(),
-			"alicloud_gpdb_zones":             dataSourceAlicloudGpdbZones(),
-			"alicloud_gpdb_accounts":          dataSourceAlicloudGpdbAccounts(),
-			"alicloud_gpdb_api_keys":          dataSourceAliCloudGpdbApiKeys(),
-			"alicloud_gpdb_db_instance_plans": dataSourceAlicloudGpdbDbInstancePlans(),
-
+			// gpdb (registered via alicloud/service/gpdb.ServicePackage)
 			// graph (gdb migrated to alicloud/service/gdb)
 
 			// havips
@@ -1706,27 +1697,7 @@ func Provider() *schema.Provider {
 
 			// governance
 
-			// gpdb
-			"alicloud_gpdb_db_extension":           resourceAliCloudGpdbDbExtension(),
-			"alicloud_gpdb_api_key":                resourceAliCloudGpdbApiKey(),
-			"alicloud_gpdb_supabase_project":       resourceAliCloudGpdbSupabaseProject(),
-			"alicloud_gpdb_database":               resourceAliCloudGpdbDatabase(),
-			"alicloud_gpdb_db_instance_ip_array":   resourceAliCloudGpdbDBInstanceIPArray(),
-			"alicloud_gpdb_hadoop_data_source":     resourceAliCloudGpdbHadoopDataSource(),
-			"alicloud_gpdb_jdbc_data_source":       resourceAliCloudGpdbJdbcDataSource(),
-			"alicloud_gpdb_streaming_job":          resourceAliCloudGpdbStreamingJob(),
-			"alicloud_gpdb_streaming_data_source":  resourceAliCloudGpdbStreamingDataSource(),
-			"alicloud_gpdb_streaming_data_service": resourceAliCloudGpdbStreamingDataService(),
-			"alicloud_gpdb_external_data_service":  resourceAliCloudGpdbExternalDataService(),
-			"alicloud_gpdb_remote_adb_data_source": resourceAliCloudGpdbRemoteADBDataSource(),
-			"alicloud_gpdb_db_resource_group":      resourceAliCloudGpdbDbResourceGroup(),
-			"alicloud_gpdb_backup_policy":          resourceAliCloudGpdbBackupPolicy(),
-			"alicloud_gpdb_instance":               resourceAliCloudGpdbInstance(),
-			"alicloud_gpdb_elastic_instance":       resourceAlicloudGpdbElasticInstance(),
-			"alicloud_gpdb_connection":             resourceAlicloudGpdbConnection(),
-			"alicloud_gpdb_account":                resourceAliCloudGpdbAccount(),
-			"alicloud_gpdb_db_instance_plan":       resourceAliCloudGpdbDbInstancePlan(),
-
+			// gpdb (registered via alicloud/service/gpdb.ServicePackage)
 			// graph (gdb migrated to alicloud/service/gdb)
 
 			// havip
