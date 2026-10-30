@@ -1,4 +1,4 @@
-package alicloud
+package mhub_test
 
 import (
 	"fmt"
@@ -15,10 +15,16 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mhub"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +39,7 @@ func init() {
 }
 
 func testSweepMHUBApp(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -50,15 +56,15 @@ func testSweepMHUBApp(region string) error {
 
 	request["Simple"] = false
 
-	request["Size"] = PageSizeMedium
+	request["Size"] = helper.PageSizeMedium
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -66,7 +72,7 @@ func testSweepMHUBApp(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -84,16 +90,16 @@ func testSweepMHUBApp(region string) error {
 			request := map[string]interface{}{}
 
 			request["ProductId"] = item["ProductId"]
-			request["PageSize"] = PageSizeLarge
+			request["PageSize"] = helper.PageSizeLarge
 			request["Page"] = 1
 
 			var response map[string]interface{}
 			for {
-				wait := incrementalWait(3*time.Second, 3*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 				err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 					response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -101,7 +107,7 @@ func testSweepMHUBApp(region string) error {
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
 					log.Printf("[ERROR] %s get an error: %#v", action, err)
 					return nil
@@ -138,13 +144,13 @@ func testSweepMHUBApp(region string) error {
 					}
 					log.Printf("[INFO] Delete MHUB App success: %s ", item["AppKey"])
 				}
-				if len(result) < PageSizeLarge {
+				if len(result) < helper.PageSizeLarge {
 					break
 				}
 				request["Page"] = request["Page"].(int) + 1
 			}
 		}
-		if len(result) < PageSizeMedium {
+		if len(result) < helper.PageSizeMedium {
 			break
 		}
 		request["Offset"] = request["Offset"].(int) + 1
@@ -155,22 +161,22 @@ func testSweepMHUBApp(region string) error {
 func TestAccAliCloudMHUBApp_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mhub_app.default"
-	ra := resourceAttrInit(resourceId, AlicloudMHUBAppMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MhubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMHUBAppMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mhub.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMhubApp")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccmhubapp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMHUBAppBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMHUBAppBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -182,7 +188,7 @@ func TestAccAliCloudMHUBApp_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"app_name":     name,
-						"product_id":   CHECKSET,
+						"product_id":   acctest.CHECKSET,
 						"type":         "Android",
 						"package_name": "com.test.android",
 					}),
@@ -231,7 +237,7 @@ func TestAccAliCloudMHUBApp_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"app_name":     "tf_testaccmhubapp",
 						"industry_id":  "1",
-						"encoded_icon": CHECKSET,
+						"encoded_icon": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -242,7 +248,7 @@ func TestAccAliCloudMHUBApp_basic0(t *testing.T) {
 				// plan before the placeholder reaches the API.
 				Config: testAccConfig(map[string]interface{}{
 					"bundle_id": "com.example.tfacc",
-					"type":      REMOVEKEY,
+					"type":      acctest.REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
@@ -273,10 +279,10 @@ resource "alicloud_mhub_product" "default"{
 
 // lintignore: R001
 func TestUnitAlicloudMHUBApp(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.MHUBSupportRegions)
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(nil, nil)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MHUBSupportRegions)
+	resourceSchema := mhub.ResourceApp()
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"app_name":     "CreateAppValue",
@@ -294,7 +300,7 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -329,18 +335,18 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_mhub_app", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_mhub_app", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -348,13 +354,13 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMhubClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMhubAppCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -379,14 +385,14 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMhubAppCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -400,13 +406,13 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMhubClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMhubAppUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyApp
@@ -415,11 +421,11 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 		"encoded_icon": "ModifyAppValue",
 		"industry_id":  "2",
 	}
-	diff, err := newInstanceDiff("alicloud_mhub_app", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_mhub_app", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// ListApps Response
 		"AppInfos": map[string]interface{}{
@@ -450,14 +456,14 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMhubAppUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -470,11 +476,11 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 
 	// Read
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_mhub_app", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_mhub_app", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "ProductNotExist", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -495,7 +501,7 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMhubAppRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -508,21 +514,21 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMhubClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMhubAppDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_mhub_app", attributes, attributesDiff, dInit.State())
+	diff, err = acctest.NewInstanceDiff("alicloud_mhub_app", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mhub_app"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -544,7 +550,7 @@ func TestUnitAlicloudMHUBApp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMhubAppDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

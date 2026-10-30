@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Mhub Products of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
@@ -47,12 +47,12 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Product name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Product names.
 * `products` - A list of Mhub Products. Each element contains the following attributes:
-	* `id` - The ID of the Product.
-	* `product_id` - The ID of the Product.
-	* `product_name` - The name of the Product.
+  * `id` - The ID of the Product.
+  * `product_id` - The ID of the Product.
+  * `product_name` - The name of the Product.

@@ -711,10 +711,6 @@ func Provider() *schema.Provider {
 			"alicloud_message_service_topics":        dataSourceAlicloudMessageServiceTopics(),
 			"alicloud_message_service_subscriptions": dataSourceAlicloudMessageServiceSubscriptions(),
 
-			// mhub
-			"alicloud_mhub_products": dataSourceAlicloudMhubProducts(),
-			"alicloud_mhub_apps":     dataSourceAlicloudMhubApps(),
-
 			// mns
 
 			// mongo
@@ -1783,10 +1779,6 @@ func Provider() *schema.Provider {
 			"alicloud_message_service_queue":           resourceAliCloudMessageServiceQueue(),
 			"alicloud_message_service_topic":           resourceAliCloudMessageServiceTopic(),
 			"alicloud_message_service_subscription":    resourceAliCloudMessageServiceSubscription(),
-
-			// mhub
-			"alicloud_mhub_product": resourceAlicloudMhubProduct(),
-			"alicloud_mhub_app":     resourceAlicloudMhubApp(),
 
 			// milvus
 			"alicloud_milvus_instance": resourceAliCloudMilvusInstance(),
