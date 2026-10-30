@@ -37,6 +37,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `instances` - A list of Sddp Instances. Each element contains the following attributes:
   * `authed` - Whether the required RAM authorization is configured.
+  * `id` - The ID of the instance.
   * `instance_id` - The ID of the instance.
   * `instance_num` - The number of instances.
   * `odps_set` - Whether the authorized MaxCompute (ODPS) assets.

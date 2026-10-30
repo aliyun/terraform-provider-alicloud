@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"context"
@@ -7,12 +7,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudSddpConfigs() *schema.Resource {
+func DataSourceSddpConfigs() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSddpConfigsRead,
 		Schema: map[string]*schema.Schema{
@@ -88,11 +91,11 @@ func dataSourceAlicloudSddpConfigsRead(d *schema.ResourceData, meta interface{})
 	}
 	var response map[string]interface{}
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.RetryContext(context.Background(), 5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -100,13 +103,13 @@ func dataSourceAlicloudSddpConfigsRead(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sddp_configs", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_sddp_configs", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$", response)
 	}
 	var configlistMap map[string]interface{}
 	if _, ok := resp.(map[string]interface{}); ok {
@@ -137,17 +140,17 @@ func dataSourceAlicloudSddpConfigsRead(d *schema.ResourceData, meta interface{})
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("configs", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

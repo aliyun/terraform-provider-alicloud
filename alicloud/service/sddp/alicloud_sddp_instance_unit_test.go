@@ -1,7 +1,6 @@
-package alicloud
+package sddp
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -12,124 +11,18 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudSDDPInstance_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_sddp_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudSDDPInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddpinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSDDPInstanceBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{30})
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dataphin_count": "CreateInstance",
-					"logistics":      "yes",
-					"oss_size":       "3000",
-					"renew_period":   "1",
-					"renewal_status": "CreateInstance",
-					"payment_type":   "Subscription",
-					"sddp_version":   "version_company",
-					"sdc":            "3",
-					"sd_cbool":       "no",
-					"period":         "1",
-					"ud_cbool":       "yes",
-					"udc":            "2000",
-					"dataphin":       "yes",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type": "Subscription",
-						"sddp_version": "version_company",
-						"sd_cbool":     "no",
-						"sdc":          "3",
-						"ud_cbool":     "yes",
-						"udc":          "2000",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dataphin_count": "ModifyInstance",
-					"logistics":      "no",
-					"oss_size":       "3001",
-					"renew_period":   "2",
-					"renewal_status": "AutoRenewal",
-					"sddp_version":   "version_audit",
-					"modify_type":    "Upgrade",
-					"sdc":            "8",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"sdc": "8",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modify_type": "Upgrade",
-					"sd_cbool":    "no",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"sd_cbool": "no",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modify_type": "Upgrade",
-					"udc":         "3000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"udc": "3000",
-					}),
-				),
-			},
-
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"sd_cbool", "period", "ud_cbool", "udc", "dataphin", "modify_type"},
-			},
-		},
-	})
-}
-
-var AlicloudSDDPInstanceMap0 = map[string]string{}
-
-func AlicloudSDDPInstanceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAlicloudSDDPInstance(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(nil, nil)
+	r := ResourceSddpInstance()
+	dInit, _ := schema.InternalMap(r.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(r.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"payment_type":   "Subscription",
@@ -153,7 +46,7 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -186,18 +79,18 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_sddp_instance", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_sddp_instance", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -205,9 +98,9 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBssopenapiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -246,7 +139,7 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(r.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -260,9 +153,9 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBssopenapiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -284,7 +177,7 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(r.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"UserStatus": map[string]interface{}{
 			"Version":        "ModifyInstance",
@@ -322,7 +215,7 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(r.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -339,7 +232,7 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_sddp_instance"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(r.Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1

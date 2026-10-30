@@ -1052,12 +1052,6 @@ func Provider() *schema.Provider {
 			// scdn
 			"alicloud_scdn_domains": dataSourceAlicloudScdnDomains(),
 
-			// sddp
-			"alicloud_sddp_rules":       dataSourceAlicloudSddpRules(),
-			"alicloud_sddp_configs":     dataSourceAlicloudSddpConfigs(),
-			"alicloud_sddp_instances":   dataSourceAlicloudSddpInstances(),
-			"alicloud_sddp_data_limits": dataSourceAlicloudSddpDataLimits(),
-
 			// security
 			"alicloud_security_groups":        dataSourceAlicloudSecurityGroups(),
 			"alicloud_security_group_rules":   dataSourceAlicloudSecurityGroupRules(),
@@ -2433,12 +2427,6 @@ func Provider() *schema.Provider {
 			// scdn
 			"alicloud_scdn_domain":        resourceAlicloudScdnDomain(),
 			"alicloud_scdn_domain_config": resourceAlicloudScdnDomainConfig(),
-
-			// sddp
-			"alicloud_sddp_rule":       resourceAliCloudSddpRule(),
-			"alicloud_sddp_config":     resourceAlicloudSddpConfig(),
-			"alicloud_sddp_instance":   resourceAlicloudSddpInstance(),
-			"alicloud_sddp_data_limit": resourceAlicloudSddpDataLimit(),
 
 			// security
 			"alicloud_security_group":                      resourceAliCloudEcsSecurityGroup(),

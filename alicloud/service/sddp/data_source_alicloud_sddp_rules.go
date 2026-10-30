@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"fmt"
@@ -7,12 +7,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudSddpRules() *schema.Resource {
+func DataSourceSddpRules() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSddpRulesRead,
 		Schema: map[string]*schema.Schema{
@@ -218,14 +222,14 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("warn_level"); ok {
 		request["WarnLevel"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["CurrentPage"] = 1
 	var objects []map[string]interface{}
 	var ruleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		ruleNameRegex = r
 	}
@@ -242,11 +246,11 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -254,13 +258,13 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sddp_rules", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_sddp_rules", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Items", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Items", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -275,7 +279,7 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
@@ -285,22 +289,22 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		categoryVal, err := formatInt(object["Category"])
+		categoryVal, err := convert.FormatInt(object["Category"])
 		if err != nil {
 			return err
 		}
 
-		custom_typeVal, err := formatInt(object["CustomType"])
+		custom_typeVal, err := convert.FormatInt(object["CustomType"])
 		if err != nil {
 			return err
 		}
 
-		statusVal, err := formatInt(object["Status"])
+		statusVal, err := convert.FormatInt(object["Status"])
 		if err != nil {
 			return err
 		}
 
-		warn_levelVal, err := formatInt(object["WarnLevel"])
+		warn_levelVal, err := convert.FormatInt(object["WarnLevel"])
 		if err != nil {
 			return err
 		}
@@ -333,20 +337,20 @@ func dataSourceAlicloudSddpRulesRead(d *schema.ResourceData, meta interface{}) e
 		names = append(names, object["name"])
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("rules", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

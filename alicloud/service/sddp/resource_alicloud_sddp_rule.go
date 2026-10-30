@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"fmt"
@@ -6,11 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudSddpRule() *schema.Resource {
+func ResourceSddpRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudSddpRuleCreate,
 		Read:   resourceAliCloudSddpRuleRead,
@@ -27,13 +32,13 @@ func resourceAliCloudSddpRule() *schema.Resource {
 			"category": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: IntInSlice([]int{0, 2}),
+				ValidateFunc: validators.IntInSlice([]int{0, 2}),
 			},
 			"content": {
 				Type:     schema.TypeString,
 				Required: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareArrayJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareArrayJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -46,27 +51,27 @@ func resourceAliCloudSddpRule() *schema.Resource {
 			"risk_level_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"2", "3", "4", "5"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"2", "3", "4", "5"}, false),
 			},
 			"rule_type": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3}),
 			},
 			"product_code": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ODPS", "OSS", "RDS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ODPS", "OSS", "RDS"}, false),
 			},
 			"product_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"1", "2", "5"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"1", "2", "5"}, false),
 			},
 			"warn_level": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3}),
 			},
 			"stat_express": {
 				Type:     schema.TypeString,
@@ -82,7 +87,7 @@ func resourceAliCloudSddpRule() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntInSlice([]int{0, 1}),
+				ValidateFunc: validators.IntInSlice([]int{0, 1}),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -93,7 +98,7 @@ func resourceAliCloudSddpRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "zh",
-				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"zh", "en"}, false),
 			},
 			"custom_type": {
 				Type:     schema.TypeInt,
@@ -158,11 +163,11 @@ func resourceAliCloudSddpRuleCreate(d *schema.ResourceData, meta interface{}) er
 		request["Lang"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -170,10 +175,10 @@ func resourceAliCloudSddpRuleCreate(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sddp_rule", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_sddp_rule", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
@@ -183,20 +188,20 @@ func resourceAliCloudSddpRuleCreate(d *schema.ResourceData, meta interface{}) er
 
 func resourceAliCloudSddpRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	sddpService := SddpService{client}
+	sddpService := NewService(client)
 
 	object, err := sddpService.DescribeSddpRule(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_sddp_rule sddpService.DescribeSddpRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("rule_name", object["Name"])
-	actualCategory, err := formatInt(object["Category"])
+	actualCategory, err := convert.FormatInt(object["Category"])
 	if err != nil {
 		return err
 	}
@@ -204,20 +209,20 @@ func resourceAliCloudSddpRuleRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("content", object["Content"])
 	d.Set("content_category", object["ContentCategory"])
 	d.Set("product_code", object["ProductCode"])
-	warn_levelVal, err := formatInt(object["WarnLevel"])
+	warn_levelVal, err := convert.FormatInt(object["WarnLevel"])
 	if err != nil {
 		return err
 	}
 	d.Set("warn_level", warn_levelVal)
 	d.Set("stat_express", object["StatExpress"])
 	d.Set("target", object["Target"])
-	statusVal, err := formatInt(object["Status"])
+	statusVal, err := convert.FormatInt(object["Status"])
 	if err != nil {
 		return err
 	}
 	d.Set("status", statusVal)
 	d.Set("description", object["Description"])
-	custom_typeVal, err := formatInt(object["CustomType"])
+	custom_typeVal, err := convert.FormatInt(object["CustomType"])
 	if err != nil {
 		return err
 	}
@@ -303,11 +308,11 @@ func resourceAliCloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 	if update {
 		action := "ModifyRule"
 		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, modifyRuleReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -315,10 +320,10 @@ func resourceAliCloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 			return nil
 		})
-		addDebug(action, response, modifyRuleReq)
+		logs.AddDebug(action, response, modifyRuleReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
@@ -343,11 +348,11 @@ func resourceAliCloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 	if update {
 		action := "ModifyRuleStatus"
 		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, modifyRuleStatusReq, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -355,10 +360,10 @@ func resourceAliCloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 			return nil
 		})
-		addDebug(action, response, modifyRuleStatusReq)
+		logs.AddDebug(action, response, modifyRuleStatusReq)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
@@ -381,11 +386,11 @@ func resourceAliCloudSddpRuleDelete(d *schema.ResourceData, meta interface{}) er
 		request["Lang"] = v
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -393,13 +398,13 @@ func resourceAliCloudSddpRuleDelete(d *schema.ResourceData, meta interface{}) er
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
