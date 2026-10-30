@@ -55,7 +55,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbasic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbgp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/devopsrdc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dm"
@@ -112,6 +111,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/milvus"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mnsopen"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mongodb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mscopensubscription"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/nas"
@@ -232,7 +232,7 @@ var servicePackages = []conns.ServicePackage{
 	ddosbasic.ServicePackage(),
 	ddosbgp.ServicePackage(),
 	ddoscoo.ServicePackage(),
-	dds.ServicePackage(),
+	mongodb.ServicePackage(),
 	devopsrdc.ServicePackage(),
 	dfs.ServicePackage(),
 	databasegateway.ServicePackage(),

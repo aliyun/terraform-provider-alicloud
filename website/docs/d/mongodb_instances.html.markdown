@@ -96,15 +96,15 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The instance status.
   * `tags` - (Available since v1.66.0) The details of the resource tags.
   * `mongos` - The mongo nodes of the instance. **Note:** `mongos` takes effect only if `instance_type` is set to `sharding`.
-      * `node_id` - The ID of the Mongos node.
-      * `class` - The instance type of the Mongos node.
-      * `description` - The description of the Mongos node.
+    * `node_id` - The ID of the Mongos node.
+    * `class` - The instance type of the Mongos node.
+    * `description` - The description of the Mongos node.
   * `shards` - The information of the shard node. **Note:** `shards` takes effect only if `instance_type` is set to `sharding`.
-      * `node_id` - The ID of the shard node.
-      * `class` - The instance type of the shard node.
-      * `storage` - The storage space of the shard node.
-      * `description` - The description of the shard node.
+    * `node_id` - The ID of the shard node.
+    * `class` - The instance type of the shard node.
+    * `storage` - The storage space of the shard node.
+    * `description` - The description of the shard node.
   * `restore_ranges` - (Available since v1.271.0) A list of time ranges available for point-in-time recovery. **Note:** `restore_ranges` takes effect only if `enable_details` is set to `true`.
-      * `restore_type` - The restoration method.
-      * `restore_begin_time` - The beginning of the recoverable time range.
-      * `restore_end_time` - The end of the recoverable time range.
+    * `restore_type` - The restoration method.
+    * `restore_begin_time` - The beginning of the recoverable time range.
+    * `restore_end_time` - The end of the recoverable time range.

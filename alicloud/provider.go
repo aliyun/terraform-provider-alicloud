@@ -723,20 +723,6 @@ func Provider() *schema.Provider {
 
 			// mns
 
-			// mongo
-			"alicloud_mongo_instances": dataSourceAliCloudMongoDBInstances(),
-
-			// mongodb
-			"alicloud_mongodb_instances":                          dataSourceAliCloudMongoDBInstances(),
-			"alicloud_mongodb_zones":                              dataSourceAlicloudMongoDBZones(),
-			"alicloud_mongodb_audit_policies":                     dataSourceAlicloudMongodbAuditPolicies(),
-			"alicloud_mongodb_accounts":                           dataSourceAlicloudMongodbAccounts(),
-			"alicloud_mongodb_serverless_instances":               dataSourceAlicloudMongodbServerlessInstances(),
-			"alicloud_mongodb_sharding_network_public_addresses":  dataSourceAlicloudMongodbShardingNetworkPublicAddresses(),
-			"alicloud_mongodb_sharding_network_private_addresses": dataSourceAlicloudMongodbShardingNetworkPrivateAddresses(),
-			"alicloud_mongodb_sharding_audit_filters":             dataSourceAlicloudMongodbShardingAuditFilters(),
-			"alicloud_mongodb_backups":                            dataSourceAliCloudMongodbBackups(),
-
 			// mse
 
 			// nas
@@ -1804,21 +1790,6 @@ func Provider() *schema.Provider {
 			"alicloud_milvus_instance": resourceAliCloudMilvusInstance(),
 
 			// mns
-			// mongodb
-			"alicloud_mongodb_node":                             resourceAliCloudMongodbNode(),
-			"alicloud_mongodb_global_security_ip_group":         resourceAliCloudMongodbGlobalSecurityIPGroup(),
-			"alicloud_mongodb_private_srv_network_address":      resourceAliCloudMongodbPrivateSrvNetworkAddress(),
-			"alicloud_mongodb_instance":                         resourceAliCloudMongoDBInstance(),
-			"alicloud_mongodb_sharding_instance":                resourceAliCloudMongoDBShardingInstance(),
-			"alicloud_mongodb_audit_policy":                     resourceAliCloudMongodbAuditPolicy(),
-			"alicloud_mongodb_sharding_audit_filter":            resourceAliCloudMongodbShardingAuditFilter(),
-			"alicloud_mongodb_account":                          resourceAliCloudMongodbAccount(),
-			"alicloud_mongodb_serverless_instance":              resourceAlicloudMongodbServerlessInstance(),
-			"alicloud_mongodb_public_network_address":           resourceAlicloudMongoDBPublicNetworkAddress(),
-			"alicloud_mongodb_replica_set_role":                 resourceAlicloudMongoDBReplicaSetRole(),
-			"alicloud_mongodb_sharding_network_public_address":  resourceAlicloudMongodbShardingNetworkPublicAddress(),
-			"alicloud_mongodb_sharding_network_private_address": resourceAliCloudMongodbShardingNetworkPrivateAddress(),
-			"alicloud_mongodb_backup":                           resourceAliCloudMongodbBackup(),
 
 			// mse
 
