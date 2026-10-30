@@ -1,4 +1,4 @@
-package alicloud
+package emr_test
 
 import (
 	"fmt"
@@ -9,8 +9,13 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/emr"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -22,7 +27,7 @@ func init() {
 }
 
 func testSweepEmrV2Cluster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -37,17 +42,17 @@ func testSweepEmrV2Cluster(region string) error {
 		"RegionId":      client.RegionId,
 		"ClusterStates": []string{"STARTING, START_FAILED", "RUNNING"},
 		"NextToken":     "0",
-		"MaxResults":    PageSizeMedium,
+		"MaxResults":    helper.PageSizeMedium,
 	}
 
 	for {
 		listClustersResponse, err := client.RpcPost("Emr", "2021-03-20", listClustersAction, nil, listClustersRequest, true)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_emrv2_cluster", listClustersAction, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_emrv2_cluster", listClustersAction, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Clusters", listClustersResponse)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, listClustersAction, "$.Clusters", listClustersResponse)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, listClustersAction, "$.Clusters", listClustersResponse)
 		}
 		if resp == nil || len(resp.([]interface{})) == 0 {
 			break
@@ -55,7 +60,7 @@ func testSweepEmrV2Cluster(region string) error {
 		for _, item := range resp.([]interface{}) {
 			skip := true
 			cluster := item.(map[string]interface{})
-			if !sweepAll() {
+			if !sweep.SweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(cluster["ClusterName"].(string), prefix) {
 						skip = false
@@ -73,7 +78,7 @@ func testSweepEmrV2Cluster(region string) error {
 			}
 			_, err = client.RpcPost("Emr", "2021-03-20", deleteClusterAction, nil, deleteClusterRequest, true)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, "alicloud_emrv2_cluster", deleteClusterAction, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_emrv2_cluster", deleteClusterAction, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 		nextToken := listClustersResponse["NextToken"]
@@ -88,13 +93,13 @@ func testSweepEmrV2Cluster(region string) error {
 func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 	v := map[string]interface{}{}
 	resourceId := "alicloud_emrv2_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return emr.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "GetEmrV2Cluster")
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	getTomorrowHourTimestamp := func(hour int) string {
 		loc, _ := time.LoadLocation("Europe/Berlin")
 		tomorrow := time.Now().In(loc).AddDate(0, 0, 1)
@@ -103,16 +108,16 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 	}
 	startTime := getTomorrowHourTimestamp(15)
 	endTime := getTomorrowHourTimestamp(17)
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -535,26 +540,222 @@ func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
+// collection-order: bypass bootstrap_scripts -- the read path sets bootstrap_scripts in API response order without normalizing to the configured order; convergent reorder coverage depends on the EMR v2 API echoing the submitted script order, which a pure directory migration cannot assert, and a DiffSuppressFunc would be a schema/state change outside migration scope.
+// collection-order: bypass bootstrap_scripts.node_selector.node_names -- scalar string list nested under bootstrap_scripts.node_selector (TypeSet, MaxItems:1); the read preserves API order without normalization, sharing the same API-contract convergence dependency as bootstrap_scripts; no schema suppressor is added in this pure migration.
+// collection-order: bypass bootstrap_scripts.node_selector.node_group_ids -- scalar string list nested under bootstrap_scripts.node_selector; the read preserves API order without normalization; same API-contract convergence dependency as bootstrap_scripts; no schema suppressor is added in this pure migration.
+// collection-order: bypass bootstrap_scripts.node_selector.node_group_types -- scalar string list nested under bootstrap_scripts.node_selector; the read preserves API order without normalization; same API-contract convergence dependency as bootstrap_scripts; no schema suppressor is added in this pure migration.
+// collection-order: bypass bootstrap_scripts.node_selector.node_group_names -- scalar string list nested under bootstrap_scripts.node_selector; the read preserves API order without normalization; same API-contract convergence dependency as bootstrap_scripts; no schema suppressor is added in this pure migration.
+// collection-order: bypass node_groups.auto_scaling_policy.scaling_rules -- auto-scaling policy requires a cluster with auto-scaling enabled and valid scaling-rule/metric/condition values; the standard acceptance fixture (resourceEmrV2ClusterCommonConfigDependence, DATAFLOW cluster) does not provision auto-scaling, so a convergent reorder cannot be exercised without expanding the fixture beyond minimal migration scope.
+// collection-order: bypass node_groups.auto_scaling_policy.scaling_rules.metrics_trigger.time_constraints -- nested under auto_scaling_policy.scaling_rules; requires the auto-scaling fixture that the standard DATAFLOW cluster fixture does not provision; convergent reorder not exercisable in this pure directory migration.
+// collection-order: bypass node_groups.auto_scaling_policy.scaling_rules.metrics_trigger.conditions -- nested under auto_scaling_policy.scaling_rules.metrics_trigger; requires the auto-scaling fixture that the standard DATAFLOW cluster fixture does not provision; convergent reorder not exercisable in this pure directory migration.
+// collection-order: bypass node_groups.auto_scaling_policy.scaling_rules.metrics_trigger.conditions.tags -- nested under auto_scaling_policy.scaling_rules.metrics_trigger.conditions; requires the auto-scaling fixture that the standard DATAFLOW cluster fixture does not provision; convergent reorder not exercisable in this pure directory migration.
+// collection-order: bypass node_groups.ack_config.tolerations -- ack_config requires ack_instance_id backed by a live ACK cluster (resourceEmrV2ClusterAckConfigDependence), which the standard fixture does not provision; a convergent reorder of tolerations cannot be established without an ACK environment in this pure directory migration.
+// collection-order: bypass node_groups.ack_config.pvcs -- ack_config requires ack_instance_id backed by a live ACK cluster, which the standard fixture does not provision; a convergent reorder of pvcs cannot be established without an ACK environment in this pure directory migration.
+// collection-order: bypass node_groups.ack_config.volumes -- ack_config requires ack_instance_id backed by a live ACK cluster, which the standard fixture does not provision; a convergent reorder of volumes cannot be established without an ACK environment in this pure directory migration.
+// collection-order: bypass node_groups.ack_config.volume_mounts -- ack_config requires ack_instance_id backed by a live ACK cluster, which the standard fixture does not provision; a convergent reorder of volume_mounts cannot be established without an ACK environment in this pure directory migration.
+// collection-order: bypass node_groups.ack_config.pre_start_command -- scalar string list nested under ack_config; requires ack_instance_id backed by a live ACK cluster, which the standard fixture does not provision; a convergent reorder cannot be established without an ACK environment in this pure directory migration.
+func TestAccAliCloudEmrV2Cluster_nodeGroupsReorder(t *testing.T) {
 	v := map[string]interface{}{}
 	resourceId := "alicloud_emrv2_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return emr.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "GetEmrV2Cluster")
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterAckConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterReorder%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			// Step 1: apply node_groups in the [MASTER, CORE] order.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"payment_type":      "PayAsYouGo",
+					"cluster_type":      "DATAFLOW",
+					"release_version":   "EMR-5.10.0",
+					"cluster_name":      name,
+					"deploy_mode":       "NORMAL",
+					"applications":      []string{"HADOOP-COMMON", "HDFS", "YARN"},
+					"node_attributes": []map[string]interface{}{
+						{
+							"vpc_id":            "${alicloud_vpc.default.id}",
+							"ram_role":          "${alicloud_ram_role.default.role_name}",
+							"security_group_id": "${alicloud_security_group.default.id}",
+							"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
+							"key_pair_name":     "${alicloud_ecs_key_pair.default.id}",
+						},
+					},
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":      "MASTER",
+							"node_group_name":      "emr-master",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "CORE",
+							"node_group_name":      "emr-core",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "2",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+					},
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_name":  name,
+						"cluster_type":  "DATAFLOW",
+						"node_groups.#": "2",
+					}),
+				),
+			},
+			// Step 2: convergent apply with node_groups reordered to [CORE, MASTER];
+			// the read path normalizes the API response to the configured order, so the
+			// post-apply plan converges (membership unchanged).
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":      "CORE",
+							"node_group_name":      "emr-core",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "2",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "MASTER",
+							"node_group_name":      "emr-master",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_name":  name,
+						"node_groups.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
+	v := map[string]interface{}{}
+	resourceId := "alicloud_emrv2_cluster.default"
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return emr.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "GetEmrV2Cluster")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrV2ClusterAckConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1257,7 +1458,7 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 							},
 						},
 					},
-					"cluster_name": REMOVEKEY,
+					"cluster_name": acctest.REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
@@ -1274,23 +1475,23 @@ func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 	v := map[string]interface{}{}
 	resourceId := "alicloud_emrv2_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return emr.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "GetEmrV2Cluster")
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1778,23 +1979,23 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 func TestAccAliCloudEmrV2Cluster_basic3(t *testing.T) {
 	v := map[string]interface{}{}
 	resourceId := "alicloud_emrv2_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return emr.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "GetEmrV2Cluster")
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

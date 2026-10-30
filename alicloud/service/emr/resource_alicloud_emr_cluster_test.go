@@ -1,4 +1,4 @@
-package alicloud
+package emr_test
 
 import (
 	"fmt"
@@ -10,10 +10,18 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	emrsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/emr"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// collection-order: bypass option_software_list -- alicloud_emr_cluster is deprecated by the provider since v1.204.0 (DeprecationMessage: "use 'alicloud_emrv2_cluster' instead"; baseline b5d337ad), and option_software_list is ForceNew (creation-only), so a convergent reorder would destroy and recreate a deprecated v1 cluster; the standard fixture does not provision a v1 environment, and the EMR v1 (Emr/2016-04-08) API retirement status is under separate evidence collection, so convergent reorder coverage is deferred pending an available v1 environment or official retirement ruling.
 
 func init() {
 	resource.AddTestSweepers("alicloud_emr_cluster", &resource.Sweeper{
@@ -23,7 +31,7 @@ func init() {
 }
 
 func testSweepEmrCluster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -38,7 +46,7 @@ func testSweepEmrCluster(region string) error {
 	statusList := []string{"CREATING", "RUNNING", "IDLE"}
 	req.StatusList = &statusList
 	req.PageNumber = requests.Integer(strconv.Itoa(1))
-	req.PageSize = requests.Integer(strconv.Itoa(PageSizeMedium))
+	req.PageSize = requests.Integer(strconv.Itoa(helper.PageSizeMedium))
 	req.DefaultStatus = requests.Boolean(strconv.FormatBool(true))
 	//vpcService := VpcService{client}
 	for {
@@ -56,7 +64,7 @@ func testSweepEmrCluster(region string) error {
 		}
 		for _, v := range resp.Clusters.ClusterInfo {
 			skip := true
-			if !sweepAll() {
+			if !sweep.SweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(v.Id, prefix) {
 						skip = false
@@ -83,13 +91,13 @@ func testSweepEmrCluster(region string) error {
 			})
 
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, v.Id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, v.Id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
 
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
-		if page, err := getNextpageNumber(req.PageNumber); err != nil {
+		if page, err := helper.GetNextpageNumber(req.PageNumber); err != nil {
 			return err
 		} else {
 			req.PageNumber = page
@@ -102,24 +110,24 @@ func TestAccAliCloudEmrCluster_basic(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInit(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return emrsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	})
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -170,10 +178,10 @@ func TestAccAliCloudEmrCluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      CHECKSET,
-						"cluster_type": CHECKSET,
+						"emr_ver":      acctest.CHECKSET,
+						"cluster_type": acctest.CHECKSET,
 						"charge_type":  "PostPaid",
-						"zone_id":      CHECKSET,
+						"zone_id":      acctest.CHECKSET,
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test",
@@ -253,7 +261,7 @@ func TestAccAliCloudEmrCluster_basic(t *testing.T) {
 							"sys_disk_capacity":            "80",
 						},
 					},
-					"vswitch_id": REMOVEKEY,
+					"vswitch_id": acctest.REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
@@ -271,23 +279,23 @@ func TestAccAliCloudEmrCluster_hadoop_cluster(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInit(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return emrsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	})
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrHadoopClusterConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrHadoopClusterConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -361,10 +369,10 @@ func TestAccAliCloudEmrCluster_hadoop_cluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      CHECKSET,
-						"cluster_type": CHECKSET,
+						"emr_ver":      acctest.CHECKSET,
+						"cluster_type": acctest.CHECKSET,
 						"charge_type":  "PostPaid",
-						"zone_id":      CHECKSET,
+						"zone_id":      acctest.CHECKSET,
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test",
@@ -379,24 +387,24 @@ func TestAccAliCloudEmrCluster_local_storage(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInit(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return emrsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	})
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterLocalStorageConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrClusterLocalStorageConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -455,10 +463,10 @@ func TestAccAliCloudEmrCluster_local_storage(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      CHECKSET,
-						"cluster_type": CHECKSET,
+						"emr_ver":      acctest.CHECKSET,
+						"cluster_type": acctest.CHECKSET,
 						"charge_type":  "PostPaid",
-						"zone_id":      CHECKSET,
+						"zone_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -470,24 +478,24 @@ func TestAccAliCloudEmrCluster_gateway(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default_gateway"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInit(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return emrsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	})
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterGatewayConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrClusterGatewayConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
-		CheckDestroy: rac.checkResourceDestroy(),
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -522,10 +530,10 @@ func TestAccAliCloudEmrCluster_gateway(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      CHECKSET,
+						"emr_ver":      acctest.CHECKSET,
 						"cluster_type": "GATEWAY",
 						"charge_type":  "PostPaid",
-						"zone_id":      CHECKSET,
+						"zone_id":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -537,23 +545,23 @@ func TestAccAliCloudEmrCluster_multicluster(t *testing.T) {
 	t.Skip("EMR v1 cluster has been offline: CreateClusterV2 rejects all cluster types with 'The cluster type XXX is no longer supported'. Please use alicloud_emrv2_cluster instead.")
 	var v *emr.DescribeClusterV2Response
 	resourceId := "alicloud_emr_cluster.default.0"
-	ra := resourceAttrInit(resourceId, nil)
-	rc := resourceCheckInit(resourceId, &v, func() interface{} {
-		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, nil)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return emrsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	})
-	rac := resourceAttrCheckInit(rc, ra)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrClusterCommonConfigDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceEmrClusterCommonConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -600,13 +608,13 @@ func TestAccAliCloudEmrCluster_multicluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":         name,
-						"emr_ver":      CHECKSET,
-						"cluster_type": CHECKSET,
+						"emr_ver":      acctest.CHECKSET,
+						"cluster_type": acctest.CHECKSET,
 						"charge_type":  "PostPaid",
-						"zone_id":      CHECKSET,
-						"tags.%":       NOSET,
-						"tags.Created": NOSET,
-						"tags.For":     NOSET,
+						"zone_id":      acctest.CHECKSET,
+						"tags.%":       acctest.NOSET,
+						"tags.Created": acctest.NOSET,
+						"tags.For":     acctest.NOSET,
 					}),
 				),
 			},

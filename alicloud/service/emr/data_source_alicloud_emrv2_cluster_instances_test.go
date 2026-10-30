@@ -1,32 +1,33 @@
-package alicloud
+package emr_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudEmrV2ClusterInstancesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
 			"cluster_id":       `"${alicloud_emrv2_cluster.default.id}"`,
 			"node_group_names": `["${alicloud_emrv2_cluster.default.node_groups.0.node_group_name}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
 			"cluster_id":       `"${alicloud_emrv2_cluster.default.id}_fake"`,
 			"node_group_names": `["${alicloud_emrv2_cluster.default.node_groups.0.node_group_name}_fake"]`,
 		}),
 	}
 
-	clusterStatesConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
+	clusterStatesConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
 			"cluster_id":      `"${alicloud_emrv2_cluster.default.id}"`,
 			"instance_states": `["Running"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand, map[string]string{
 			"cluster_id":      `"${alicloud_emrv2_cluster.default.id}_fake"`,
 			"instance_states": `["Stopped"]`,
 		}),
@@ -39,10 +40,10 @@ func TestAccAlicloudEmrV2ClusterInstancesDataSource(t *testing.T) {
 			"names.#":                     "1",
 			"total_count":                 "1",
 			"instances.0.instance_state":  "Running",
-			"instances.0.create_time":     CHECKSET,
-			"instances.0.instance_id":     CHECKSET,
-			"instances.0.instance_name":   CHECKSET,
-			"instances.0.node_group_id":   CHECKSET,
+			"instances.0.create_time":     acctest.CHECKSET,
+			"instances.0.instance_id":     acctest.CHECKSET,
+			"instances.0.instance_name":   acctest.CHECKSET,
+			"instances.0.node_group_id":   acctest.CHECKSET,
 			"instances.0.node_group_type": "MASTER",
 		}
 	}
@@ -54,12 +55,12 @@ func TestAccAlicloudEmrV2ClusterInstancesDataSource(t *testing.T) {
 			"total_count": "0",
 		}
 	}
-	var alicloudEmrClustersCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_emrv2_cluster_instances.default",
-		existMapFunc: existAlicloudEmrClustersDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEmrClustersDataSourceNameMapFunc,
+	var alicloudEmrClustersCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_emrv2_cluster_instances.default",
+		ExistMapFunc: existAlicloudEmrClustersDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEmrClustersDataSourceNameMapFunc,
 	}
-	alicloudEmrClustersCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, clusterStatesConf)
+	alicloudEmrClustersCheckInfo.DataSourceTestCheck(t, rand, nameRegexConf, clusterStatesConf)
 }
 
 func testAccCheckAlicloudEmrV2ClusterInstancesDataSourceName(rand int, attrMap map[string]string) string {
