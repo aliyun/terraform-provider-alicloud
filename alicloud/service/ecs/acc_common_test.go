@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -68,6 +69,23 @@ func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject inter
 		additionalAttrs: additionalAttrs,
 	}
 	return rc
+}
+
+// resourceCheckInit is the no-describe-method variant ported from the root
+// alicloud/service_alicloud_common_test.go (baseline 09cf367). The
+// flat-layout original additionally resolved additional-attribute types via
+// Provider().ResourcesMap in setAdditionalAttrsType; this split package omits
+// that step (consistent with resourceCheckInitWithDescribeMethod above), and
+// no call site in this package passes additionalAttrs, so behaviour for actual
+// usage is preserved. The variadic signature is retained for source
+// compatibility.
+func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, additionalAttrs ...string) *resourceCheck {
+	return &resourceCheck{
+		resourceId:      resourceId,
+		resourceObject:  resourceObject,
+		serviceFunc:     serviceFunc,
+		additionalAttrs: additionalAttrs,
+	}
 }
 
 type resourceAttr struct {
@@ -327,6 +345,25 @@ func resourceTestAccConfigFunc(resourceId string,
 	return basicInfo.configBuild(false)
 }
 
+// dataSourceTestAccConfigFunc is the data-source twin of
+// resourceTestAccConfigFunc: it builds a config function whose attributeMap is
+// overwritten (configBuild(true)) by each step's changeMap, matching the
+// semantics of the migrated data-source tests that build dataSourceAttr
+// literals and call dataSourceTestCheck. Ported verbatim from root
+// service_alicloud_common_test.go (package alicloud) since ecs_test cannot
+// import the root test package.
+func dataSourceTestAccConfigFunc(resourceId string,
+	name string,
+	configDependence func(name string) string) ResourceTestAccConfigFunc {
+	basicInfo := resourceConfig{
+		name:             name,
+		resourceId:       resourceId,
+		attributeMap:     make(map[string]interface{}),
+		configDependence: configDependence,
+	}
+	return basicInfo.configBuild(true)
+}
+
 type resourceConfig struct {
 	// the resource name
 	name string
@@ -488,4 +525,194 @@ func getRealValueType(value reflect.Value) reflect.Value {
 
 func addIndentation(indentation int) string {
 	return strings.Repeat(INDENTATIONSYMBOL, indentation)
+}
+
+// dataSourceAttr is the data-source reflection engine. Verbatim from root
+// service_alicloud_common_test.go; the migrated ECS data-source tests build
+// dataSourceAttr{...} literals and call dataSourceTestCheck on them. Root
+// alicloud_test cannot be imported from ecs_test, so the subset used here is
+// kept with the same semantics as the resourceAttr engine above.
+type dataSourceAttr struct {
+	// IDRefreshName, like "data.alicloud_dns_records.record"
+	resourceId string
+
+	// get existMap function
+	existMapFunc func(rand int) map[string]string
+
+	// get fakeMap function
+	fakeMapFunc func(rand int) map[string]string
+}
+
+// get exist and empty resourceAttrMapUpdate function
+func (dsa *dataSourceAttr) checkDataSourceAttr(rand int) (exist, empty resourceAttrMapUpdate) {
+	exist = resourceAttrInit(dsa.resourceId, dsa.existMapFunc(rand)).resourceAttrMapUpdateSet()
+	empty = resourceAttrInit(dsa.resourceId, dsa.fakeMapFunc(rand)).resourceAttrMapUpdateSet()
+	return
+}
+
+// according to configs generate step list and execute the test
+// lintignore: AT001
+func (dsa *dataSourceAttr) dataSourceTestCheck(t *testing.T, rand int, configs ...dataSourceTestAccConfig) {
+	var steps []resource.TestStep
+	for _, conf := range configs {
+		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		Steps:             steps,
+	})
+}
+
+// according to configs generate step list and execute the test with preCheck
+// lintignore: AT001
+func (dsa *dataSourceAttr) dataSourceTestCheckWithPreCheck(t *testing.T, rand int, preCheck func(), configs ...dataSourceTestAccConfig) {
+	var steps []resource.TestStep
+	for _, conf := range configs {
+		steps = append(steps, conf.buildDataSourceSteps(t, dsa, rand)...)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:          preCheck,
+		ProviderFactories: testAccProviderFactory,
+		Steps:             steps,
+	})
+}
+
+// per schema attribute test config
+type dataSourceTestAccConfig struct {
+	// be equal to testCase config string,but the result has only one record
+	existConfig string
+
+	// if the dataSourceAttr.existMapFunc returned map value not match we want, existChangMap can alter checkMap for existConfig
+	existChangMap map[string]string
+
+	// be equal to testCase config string,but the result is empty
+	fakeConfig string
+
+	// if the dataSourceAttr.fakeMapFunc returned map value not match we want, fakeChangMap can alter checkMap for fakeConfig
+	fakeChangMap map[string]string
+}
+
+// build test cases for each attribute
+func (conf *dataSourceTestAccConfig) buildDataSourceSteps(t *testing.T, info *dataSourceAttr, rand int) []resource.TestStep {
+	testAccCheckExist, testAccCheckEmpty := info.checkDataSourceAttr(rand)
+	var steps []resource.TestStep
+	if conf.existConfig != "" {
+		step := resource.TestStep{
+			Config: conf.existConfig,
+			Check: resource.ComposeTestCheckFunc(
+				testAccCheckExist(conf.existChangMap),
+			),
+		}
+		steps = append(steps, step)
+	}
+	if conf.fakeConfig != "" {
+		step := resource.TestStep{
+			Config: conf.fakeConfig,
+			Check: resource.ComposeTestCheckFunc(
+				testAccCheckEmpty(conf.fakeChangMap),
+			),
+		}
+		steps = append(steps, step)
+	}
+	return steps
+}
+
+// EcsInstanceCommonNoZonesTestCase and EcsInstanceCommonTestCase are shared ECS
+// acceptance test fixtures (vpcs/vswitch/security_group/rule, instance types and
+// images) ported verbatim from the root alicloud/service_alicloud_common_test.go
+// (baseline 09cf367). They are referenced by the data_source_alicloud_instances
+// and resource_alicloud_auto_provisioning_group acceptance tests in this package.
+const EcsInstanceCommonNoZonesTestCase = `
+data "alicloud_instance_types" "default" {
+  instance_type_family = "ecs.sn1ne"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
+  owners      = "system"
+}
+
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
+	cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+	vswitch_name = var.name
+	cidr_block = "172.16.1.0/24"
+	vpc_id = alicloud_vpc.default.id
+	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+}
+
+resource "alicloud_security_group" "default" {
+  	name   = "${var.name}"
+	vpc_id = alicloud_vpc.default.id
+}
+resource "alicloud_security_group_rule" "default" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${alicloud_security_group.default.id}"
+  	cidr_ip = "172.16.0.0/24"
+}
+`
+
+const EcsInstanceCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu"
+  most_recent = true
+  owners      = "system"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name              = "${var.name}"
+}
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_security_group_rule" "default" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${alicloud_security_group.default.id}"
+  	cidr_ip = "172.16.0.0/24"
+}
+`
+
+// testAccClassicNetworkResources skips the calling test unless the
+// ENABLE_CLASSIC_NETWORK environment variable is "true". Ported verbatim from
+// the root alicloud/provider_test.go (baseline 09cf367); referenced by
+// resource_alicloud_instance_test.go.
+func testAccClassicNetworkResources(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ENABLE_CLASSIC_NETWORK")); v != "true" {
+		t.Skip("Skipping testing classic resources, otherwise setting environment parameter 'ENABLE_CLASSIC_NETWORK'.")
+		t.Skipped()
+	}
 }

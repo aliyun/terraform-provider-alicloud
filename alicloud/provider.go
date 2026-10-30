@@ -447,7 +447,6 @@ func Provider() *schema.Provider {
 			"alicloud_direct_mail_dedicated_ip_pools": dataSourceAliCloudDirectMailDedicatedIpPools(),
 
 			// disks
-			"alicloud_disks": dataSourceAliCloudEcsDisks(),
 
 			// dms
 			"alicloud_dms_enterprise_instances":       dataSourceAlicloudDmsEnterpriseInstances(),
@@ -502,27 +501,6 @@ func Provider() *schema.Provider {
 			// ecp
 
 			// ecs
-			"alicloud_ecs_dedicated_hosts":               dataSourceAliCloudEcsDedicatedHosts(),
-			"alicloud_ecs_commands":                      dataSourceAlicloudEcsCommands(),
-			"alicloud_ecs_hpc_clusters":                  dataSourceAlicloudEcsHpcClusters(),
-			"alicloud_ecs_auto_snapshot_policies":        dataSourceAlicloudEcsAutoSnapshotPolicies(),
-			"alicloud_ecs_launch_templates":              dataSourceAlicloudEcsLaunchTemplates(),
-			"alicloud_ecs_snapshots":                     dataSourceAliCloudEcsSnapshots(),
-			"alicloud_ecs_key_pairs":                     dataSourceAliCloudEcsKeyPairs(),
-			"alicloud_ecs_disks":                         dataSourceAliCloudEcsDisks(),
-			"alicloud_ecs_network_interfaces":            dataSourceAlicloudEcsNetworkInterfaces(),
-			"alicloud_ecs_deployment_sets":               dataSourceAlicloudEcsDeploymentSets(),
-			"alicloud_ecs_dedicated_host_clusters":       dataSourceAlicloudEcsDedicatedHostClusters(),
-			"alicloud_ecs_prefix_lists":                  dataSourceAlicloudEcsPrefixLists(),
-			"alicloud_ecs_storage_capacity_units":        dataSourceAlicloudEcsStorageCapacityUnits(),
-			"alicloud_ecs_image_components":              dataSourceAlicloudEcsImageComponents(),
-			"alicloud_ecs_snapshot_groups":               dataSourceAlicloudEcsSnapshotGroups(),
-			"alicloud_ecs_image_pipelines":               dataSourceAlicloudEcsImagePipelines(),
-			"alicloud_ecs_network_interface_permissions": dataSourceAlicloudEcsNetworkInterfacePermissions(),
-			"alicloud_ecs_invocations":                   dataSourceAlicloudEcsInvocations(),
-			"alicloud_ecs_activations":                   dataSourceAlicloudEcsActivations(),
-			"alicloud_ecs_capacity_reservations":         dataSourceAlicloudEcsCapacityReservations(),
-			"alicloud_ecs_elasticity_assurances":         dataSourceAlicloudEcsElasticityAssurances(),
 
 			// edas
 			"alicloud_edas_service":       dataSourceAlicloudEdasService(),
@@ -676,18 +654,13 @@ func Provider() *schema.Provider {
 			"alicloud_hbr_hana_backup_clients":       dataSourceAlicloudHbrHanaBackupClients(),
 
 			// images
-			"alicloud_images": dataSourceAlicloudImages(),
 
 			// instance
-			"alicloud_instance_type_families": dataSourceAlicloudInstanceTypeFamilies(),
-			"alicloud_instance_types":         dataSourceAliCloudInstanceTypes(),
-			"alicloud_instance_keywords":      dataSourceAlicloudInstanceKeywords(),
+			"alicloud_instance_keywords": dataSourceAlicloudInstanceKeywords(),
 
 			// instances
-			"alicloud_instances": dataSourceAlicloudInstances(),
 
 			// key
-			"alicloud_key_pairs": dataSourceAliCloudEcsKeyPairs(),
 
 			// kms
 
@@ -757,8 +730,7 @@ func Provider() *schema.Provider {
 			// nat
 
 			// network
-			"alicloud_network_interfaces": dataSourceAlicloudEcsNetworkInterfaces(),
-			"alicloud_network_acls":       dataSourceAlicloudNetworkAcls(),
+			"alicloud_network_acls": dataSourceAlicloudNetworkAcls(),
 
 			// ocean
 			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
@@ -910,8 +882,6 @@ func Provider() *schema.Provider {
 			"alicloud_sddp_data_limits": dataSourceAlicloudSddpDataLimits(),
 
 			// security
-			"alicloud_security_groups":        dataSourceAlicloudSecurityGroups(),
-			"alicloud_security_group_rules":   dataSourceAlicloudSecurityGroupRules(),
 			"alicloud_security_center_groups": dataSourceAlicloudSecurityCenterGroups(),
 
 			// selectdb
@@ -959,7 +929,6 @@ func Provider() *schema.Provider {
 			"alicloud_smartag_flow_logs": dataSourceAlicloudSmartagFlowLogs(),
 
 			// snapshots
-			"alicloud_snapshots": dataSourceAliCloudEcsSnapshots(),
 
 			// snat
 
@@ -1046,7 +1015,6 @@ func Provider() *schema.Provider {
 			"alicloud_yundun_bastionhost_instances": dataSourceAlicloudBastionhostInstances(),
 
 			// zones
-			"alicloud_zones": dataSourceAlicloudZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			// ack
@@ -1146,7 +1114,6 @@ func Provider() *schema.Provider {
 			"alicloud_arms_notification_policy":   resourceAliCloudArmsNotificationPolicy(),
 
 			// auto
-			"alicloud_auto_provisioning_group": resourceAlicloudAutoProvisioningGroup(),
 
 			// bastionhost
 			"alicloud_bastionhost_instance":                                 resourceAliCloudBastionhostInstance(),
@@ -1307,7 +1274,6 @@ func Provider() *schema.Provider {
 			"alicloud_config_aggregate_delivery":        resourceAliCloudConfigAggregateDelivery(),
 
 			// copy
-			"alicloud_copy_image": resourceAliCloudImageCopy(),
 
 			// cr
 			"alicloud_cr_instance_customized_domain":  resourceAliCloudCrInstanceCustomizedDomain(),
@@ -1395,7 +1361,6 @@ func Provider() *schema.Provider {
 			"alicloud_direct_mail_dedicated_ip_pool": resourceAliCloudDirectMailDedicatedIpPool(),
 
 			// disk
-			"alicloud_disk_attachment": resourceAlicloudEcsDiskAttachment(),
 
 			// dms
 			"alicloud_dms_enterprise_workspace":          resourceAliCloudDmsEnterpriseWorkspace(),
@@ -1445,36 +1410,6 @@ func Provider() *schema.Provider {
 			// ecp
 
 			// ecs
-			"alicloud_ecs_disk_default_kms_key":            resourceAliCloudEcsDiskDefaultKmsKey(),
-			"alicloud_ecs_disk_encryption_by_default":      resourceAliCloudEcsDiskEncryptionByDefault(),
-			"alicloud_ecs_ram_role_attachment":             resourceAliCloudEcsRamRoleAttachment(),
-			"alicloud_ecs_image_pipeline_execution":        resourceAliCloudEcsImagePipelineExecution(),
-			"alicloud_ecs_dedicated_host":                  resourceAlicloudEcsDedicatedHost(),
-			"alicloud_ecs_command":                         resourceAlicloudEcsCommand(),
-			"alicloud_ecs_hpc_cluster":                     resourceAlicloudEcsHpcCluster(),
-			"alicloud_ecs_auto_snapshot_policy":            resourceAliCloudEcsAutoSnapshotPolicy(),
-			"alicloud_ecs_launch_template":                 resourceAliCloudEcsLaunchTemplate(),
-			"alicloud_ecs_snapshot":                        resourceAliCloudEcsSnapshot(),
-			"alicloud_ecs_key_pair":                        resourceAliCloudEcsKeyPair(),
-			"alicloud_ecs_key_pair_attachment":             resourceAliCloudEcsKeyPairAttachment(),
-			"alicloud_ecs_disk_attachment":                 resourceAlicloudEcsDiskAttachment(),
-			"alicloud_ecs_auto_snapshot_policy_attachment": resourceAliCloudEcsAutoSnapshotPolicyAttachment(),
-			"alicloud_ecs_network_interface":               resourceAliCloudEcsNetworkInterface(),
-			"alicloud_ecs_network_interface_attachment":    resourceAliCloudEcsNetworkInterfaceAttachment(),
-			"alicloud_ecs_deployment_set":                  resourceAliCloudEcsDeploymentSet(),
-			"alicloud_ecs_dedicated_host_cluster":          resourceAlicloudEcsDedicatedHostCluster(),
-			"alicloud_ecs_session_manager_status":          resourceAliCloudEcsSessionManagerStatus(),
-			"alicloud_ecs_prefix_list":                     resourceAlicloudEcsPrefixList(),
-			"alicloud_ecs_storage_capacity_unit":           resourceAlicloudEcsStorageCapacityUnit(),
-			"alicloud_ecs_image_component":                 resourceAliCloudEcsImageComponent(),
-			"alicloud_ecs_snapshot_group":                  resourceAlicloudEcsSnapshotGroup(),
-			"alicloud_ecs_image_pipeline":                  resourceAlicloudEcsImagePipeline(),
-			"alicloud_ecs_network_interface_permission":    resourceAlicloudEcsNetworkInterfacePermission(),
-			"alicloud_ecs_invocation":                      resourceAlicloudEcsInvocation(),
-			"alicloud_ecs_instance_set":                    resourceAliCloudEcsInstanceSet(),
-			"alicloud_ecs_activation":                      resourceAlicloudEcsActivation(),
-			"alicloud_ecs_capacity_reservation":            resourceAlicloudEcsCapacityReservation(),
-			"alicloud_ecs_elasticity_assurance":            resourceAliCloudEcsElasticityAssurance(),
 
 			// edas
 			"alicloud_edas_application":                 resourceAlicloudEdasApplication(),
@@ -1725,18 +1660,10 @@ func Provider() *schema.Provider {
 			"alicloud_hbr_hana_backup_client": resourceAlicloudHbrHanaBackupClient(),
 
 			// image
-			"alicloud_image":                  resourceAliCloudEcsImage(),
-			"alicloud_image_export":           resourceAliCloudImageExport(),
-			"alicloud_image_copy":             resourceAliCloudImageCopy(),
-			"alicloud_image_import":           resourceAliCloudImageImport(),
-			"alicloud_image_share_permission": resourceAliCloudImageSharePermission(),
 
 			// instance
-			"alicloud_instance": resourceAliCloudInstance(),
 
 			// key
-			"alicloud_key_pair":            resourceAliCloudEcsKeyPair(),
-			"alicloud_key_pair_attachment": resourceAliCloudEcsKeyPairAttachment(),
 
 			// kms
 
@@ -1748,7 +1675,6 @@ func Provider() *schema.Provider {
 			"alicloud_kvstore_audit_log_config": resourceAlicloudKvstoreAuditLogConfig(),
 
 			// launch
-			"alicloud_launch_template": resourceAliCloudEcsLaunchTemplate(),
 
 			// live
 
@@ -1842,11 +1768,9 @@ func Provider() *schema.Provider {
 			// nat
 
 			// network
-			"alicloud_network_interface":            resourceAliCloudEcsNetworkInterface(),
-			"alicloud_network_interface_attachment": resourceAliCloudEcsNetworkInterfaceAttachment(),
-			"alicloud_network_acl":                  resourceAliCloudVpcNetworkAcl(),
-			"alicloud_network_acl_attachment":       resourceAliyunNetworkAclAttachment(),
-			"alicloud_network_acl_entries":          resourceAliyunNetworkAclEntries(),
+			"alicloud_network_acl":            resourceAliCloudVpcNetworkAcl(),
+			"alicloud_network_acl_attachment": resourceAliyunNetworkAclAttachment(),
+			"alicloud_network_acl_entries":    resourceAliyunNetworkAclEntries(),
 
 			// ocean
 			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
@@ -1959,7 +1883,6 @@ func Provider() *schema.Provider {
 			// ram
 			"alicloud_ram_password_policy":         resourceAliCloudRamPasswordPolicy(),
 			"alicloud_ram_user_group_attachment":   resourceAliCloudRamUserGroupAttachment(),
-			"alicloud_ram_role_attachment":         resourceAlicloudRamRoleAttachment(),
 			"alicloud_ram_user":                    resourceAlicloudRamUser(),
 			"alicloud_ram_account_password_policy": resourceAlicloudRamAccountPasswordPolicy(),
 			"alicloud_ram_access_key":              resourceAliCloudRamAccessKey(),
@@ -2009,7 +1932,6 @@ func Provider() *schema.Provider {
 			"alicloud_redis_tair_instance":            resourceAliCloudRedisTairInstance(),
 
 			// reserved
-			"alicloud_reserved_instance": resourceAliCloudReservedInstance(),
 
 			// resource
 			"alicloud_resource_manager_resource_directory_sharing":     resourceAliCloudResourceManagerResourceDirectorySharing(),
@@ -2091,8 +2013,6 @@ func Provider() *schema.Provider {
 			"alicloud_sddp_data_limit": resourceAlicloudSddpDataLimit(),
 
 			// security
-			"alicloud_security_group":                      resourceAliCloudEcsSecurityGroup(),
-			"alicloud_security_group_rule":                 resourceAliyunSecurityGroupRule(),
 			"alicloud_security_center_group":               resourceAlicloudSecurityCenterGroup(),
 			"alicloud_security_center_service_linked_role": resourceAlicloudSecurityCenterServiceLinkedRole(),
 
@@ -2144,8 +2064,6 @@ func Provider() *schema.Provider {
 			// sms
 
 			// snapshot
-			"alicloud_snapshot":        resourceAliCloudEcsSnapshot(),
-			"alicloud_snapshot_policy": resourceAliCloudEcsAutoSnapshotPolicy(),
 
 			// snat
 

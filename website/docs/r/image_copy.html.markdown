@@ -116,10 +116,14 @@ The following arguments are supported:
 * `encrypted` - (Optional, ForceNew) Indicates whether to encrypt the image.
 * `kms_key_id` - (Optional, ForceNew) Key ID used to encrypt the image.
 * `tags` - (Optional) The tag value of an image. The value of N ranges from 1 to 20.
-* `force` - (Optional) Indicates whether to force delete the custom image, Default is `false`. 
+* `force` - (Optional) Indicates whether to force delete the custom image, Default is `false`.
   - true：Force deletes the custom image, regardless of whether the image is currently being used by other instances.
   - false：Verifies that the image is not currently in use by any other instances before deleting the image.
-  
+* `delete_auto_snapshot` - (Optional) Not the public attribute and it used to automatically delete dependence snapshots while deleting the image.
+
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `name` - (Optional, Deprecated) Attribute 'name' has been deprecated, please use `image_name` instead.
+
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
@@ -128,7 +132,7 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `delete` - (Defaults to 10 mins) Used when terminating the image.
    
    
-## Attributes Reference0
+## Attributes Reference
  
  The following attributes are exported:
  

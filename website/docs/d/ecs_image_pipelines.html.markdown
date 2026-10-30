@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Image Pipelines of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.163.0+.
+-> **NOTE:** Available since v1.163.0.
 
 ## Example Usage
 
@@ -37,14 +37,14 @@ output "ecs_image_pipeline_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Image Pipeline IDs.
-* `name` - (Optional, ForceNew) The name of the image template.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Image Pipeline name.
+* `ids` - (Optional, Computed)  A list of Image Pipeline IDs.
+* `name` - (Optional) The name of the image template.
+* `name_regex` - (Optional) A regex string to filter results by Image Pipeline name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which the image template belongs.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional) The ID of the resource group to which the image template belongs.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -68,4 +68,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `vswitch_id` - The vswitch id.
   * `add_account` - The IDs of Alibaba Cloud accounts to which the image was shared.
   * `to_region_id` - The IDs of regions to which to distribute the created image.
-  * `tags` - A mapping of tags to assign to the resource.
+  * `tags` - (Optional) A mapping of tags to assign to the resource.

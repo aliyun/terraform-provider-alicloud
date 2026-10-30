@@ -20,7 +20,7 @@ Basic usage
 ```terraform
 # Create a new ECS disk-attachment and use it attach one disk to a new instance.
 resource "alicloud_security_group" "ecs_sg" {
-  name        = "terraform-test-group"
+  name        = "terraform-demo-group"
   description = "New security group"
 }
 
@@ -59,15 +59,19 @@ resource "alicloud_disk_attachment" "ecs_disk_att" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, Forces new resource) ID of the Instance to attach to.
-* `disk_id` - (Required, Forces new resource) ID of the Disk to be attached.
-* `device_name` - (Deprecated) The device name has been deprecated, and when attaching disk, it will be allocated automatically by system according to default order from /dev/xvdb to /dev/xvdz.
+* `instance_id` - (Required, ForceNew) ID of the Instance to attach to.
+* `disk_id` - (Required, ForceNew) ID of the Disk to be attached.
+* `bootable` - (Optional, ForceNew) Whether the disk is bootable.
+* `delete_with_instance` - (Optional) Whether to delete the disk with the instance.
+* `key_pair_name` - (Optional, ForceNew) The name of the key pair.
+* `password` - (Optional, ForceNew) The password of the instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The Disk Attachment ID and it formats as `<disk_id>:<instance_id>`.
+* `device` - The device name allocated to the disk.
 
 ## Import
 
