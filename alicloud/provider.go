@@ -540,16 +540,6 @@ func Provider() *schema.Provider {
 
 			// elasticsearch
 
-			// emr
-			"alicloud_emr_instance_types": dataSourceAlicloudEmrInstanceTypes(),
-			"alicloud_emr_disk_types":     dataSourceAlicloudEmrDiskTypes(),
-			"alicloud_emr_main_versions":  dataSourceAlicloudEmrMainVersions(),
-			"alicloud_emr_clusters":       dataSourceAlicloudEmrClusters(),
-
-			// emrv2
-			"alicloud_emrv2_clusters":          dataSourceAlicloudEmrV2Clusters(),
-			"alicloud_emrv2_cluster_instances": dataSourceAlicloudEmrV2ClusterInstances(),
-
 			// enhanced
 			"alicloud_enhanced_nat_available_zones": dataSourceAlicloudEnhancedNatAvailableZones(),
 
@@ -1503,12 +1493,6 @@ func Provider() *schema.Provider {
 			// eip
 
 			// elasticsearch
-
-			// emr
-			"alicloud_emr_cluster": resourceAlicloudEmrCluster(),
-
-			// emrv2
-			"alicloud_emrv2_cluster": resourceAlicloudEmrV2Cluster(),
 
 			// ens
 			"alicloud_ens_load_balancer_udp_listener":         resourceAliCloudEnsLoadBalancerUdpListener(),

@@ -1,4 +1,4 @@
-package alicloud
+package emr
 
 import (
 	"fmt"
@@ -7,14 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEmrV2Clusters() *schema.Resource {
+func DataSourceEmrV2Clusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEmrV2ClustersRead,
+		Read: dataSourceEmrV2ClustersRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -61,7 +66,7 @@ func dataSourceAlicloudEmrV2Clusters() *schema.Resource {
 					ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -73,7 +78,7 @@ func dataSourceAlicloudEmrV2Clusters() *schema.Resource {
 			"max_results": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  PageSizeLarge,
+				Default:  helper.PageSizeLarge,
 			},
 			"clusters": {
 				Type:     schema.TypeList,
@@ -160,13 +165,13 @@ func dataSourceAlicloudEmrV2Clusters() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEmrV2ClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListClusters"
 	request := map[string]interface{}{
 		"NextToken":  "0",
-		"MaxResults": PageSizeXLarge,
+		"MaxResults": helper.PageSizeXLarge,
 		"RegionId":   client.RegionId,
 	}
 	if v, ok := d.GetOk("cluster_name"); ok {
@@ -203,7 +208,7 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 		request["NextToken"] = v
 	}
 	if v, ok := d.GetOk("max_results"); ok {
-		maxResults, err := formatInt(v)
+		maxResults, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -214,7 +219,7 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		clusterNameRegex = r
 	}
@@ -224,11 +229,11 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 	var objects []interface{}
 
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Emr", "2021-03-20", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -236,16 +241,16 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			if errs.IsExpectedErrors(err, []string{"ResourceNotFound"}) {
 				break
 			}
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emrv2_clusters", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_emrv2_clusters", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Clusters", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Clusters", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Clusters", response)
 		}
 		result, _ := resp.([]interface{})
 		if _, ok := d.GetOkExists("next_token"); ok {
@@ -266,7 +271,7 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 		}
 		nextToken, err := jsonpath.Get("$.NextToken", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NextToken", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.NextToken", response)
 		}
 		request["NextToken"] = nextToken
 	}
@@ -290,21 +295,21 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 			"emr_default_role":  object["EmrDefaultRole"],
 		}
 
-		var tags []map[string]interface{}
+		var tagsMaps []map[string]interface{}
 		t, _ := jsonpath.Get("$.Tags", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags = append(tags, map[string]interface{}{
+				if !tags.IgnoredTags(key, value) {
+					tagsMaps = append(tagsMaps, map[string]interface{}{
 						"key":   key,
 						"value": value,
 					})
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagsMaps
 		if object["StateChangeReason"] != nil {
 			mapping["state_change_reason"] = object["StateChangeReason"].(map[string]interface{})
 		}
@@ -314,28 +319,28 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["TotalCount"])
+	total_countVal, err := convert.FormatInt(response["TotalCount"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

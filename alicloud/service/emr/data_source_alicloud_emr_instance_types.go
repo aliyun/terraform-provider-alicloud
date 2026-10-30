@@ -1,4 +1,4 @@
-package alicloud
+package emr
 
 import (
 	"sort"
@@ -6,13 +6,15 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
+func DataSourceEmrInstanceTypes() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEmrInstanceTypesRead,
+		Read: dataSourceEmrInstanceTypesRead,
 
 		Schema: map[string]*schema.Schema{
 			"destination_resource": {
@@ -89,7 +91,7 @@ func dataSourceAlicloudEmrInstanceTypes() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEmrInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEmrInstanceTypesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := emr.CreateListEmrAvailableResourceRequest()
@@ -111,8 +113,8 @@ func dataSourceAlicloudEmrInstanceTypesRead(d *schema.ResourceData, meta interfa
 		return emrClient.ListEmrAvailableResource(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emr_instance_types",
-			request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_emr_instance_types",
+			request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	supportedResources := make(map[string][]emr.SupportedResource)
 	resourceResponse, _ := raw.(*emr.ListEmrAvailableResourceResponse)
@@ -232,19 +234,19 @@ func emrClusterInstanceTypesAttributes(d *schema.ResourceData,
 		}
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("types", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }
