@@ -692,13 +692,6 @@ func Provider() *schema.Provider {
 			// kms
 
 			// kvstore
-			"alicloud_kvstore_instances":        dataSourceAlicloudKvstoreInstances(),
-			"alicloud_kvstore_zones":            dataSourceAlicloudKVStoreZones(),
-			"alicloud_kvstore_permission":       dataSourceAlicloudKVStorePermission(),
-			"alicloud_kvstore_instance_classes": dataSourceAlicloudKVStoreInstanceClasses(),
-			"alicloud_kvstore_instance_engines": dataSourceAlicloudKVStoreInstanceEngines(),
-			"alicloud_kvstore_connections":      dataSourceAlicloudKvstoreConnections(),
-			"alicloud_kvstore_accounts":         dataSourceAlicloudKvstoreAccounts(),
 
 			// log
 			"alicloud_log_alert_resource": dataSourceAlicloudLogAlertResource(),
@@ -851,7 +844,6 @@ func Provider() *schema.Provider {
 			// realtime
 
 			// redis
-			"alicloud_redis_global_security_ip_groups": dataSourceAliCloudRedisGlobalSecurityIpGroups(),
 
 			// resource
 			"alicloud_resource_manager_folders":                     dataSourceAliCloudResourceManagerFolders(),
@@ -1741,11 +1733,6 @@ func Provider() *schema.Provider {
 			// kms
 
 			// kvstore
-			"alicloud_kvstore_instance":         resourceAliCloudKvstoreInstance(),
-			"alicloud_kvstore_backup_policy":    resourceAliCloudKvStoreBackupPolicy(),
-			"alicloud_kvstore_account":          resourceAliCloudRedisAccount(),
-			"alicloud_kvstore_connection":       resourceAlicloudKvstoreConnection(),
-			"alicloud_kvstore_audit_log_config": resourceAlicloudKvstoreAuditLogConfig(),
 
 			// launch
 			"alicloud_launch_template": resourceAliCloudEcsLaunchTemplate(),
@@ -2004,9 +1991,6 @@ func Provider() *schema.Provider {
 			// realtime
 
 			// redis
-			"alicloud_redis_global_security_ip_group": resourceAliCloudRedisGlobalSecurityIpGroup(),
-			"alicloud_redis_backup":                   resourceAliCloudRedisBackup(),
-			"alicloud_redis_tair_instance":            resourceAliCloudRedisTairInstance(),
 
 			// reserved
 			"alicloud_reserved_instance": resourceAliCloudReservedInstance(),
