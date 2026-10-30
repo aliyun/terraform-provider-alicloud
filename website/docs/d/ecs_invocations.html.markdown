@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Invocations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.168.0+.
+-> **NOTE:** Available since v1.168.0.
 
 ## Example Usage
 
@@ -30,13 +30,13 @@ output "ecs_invocation_id_1" {
 
 The following arguments are supported:
 
-* `command_id` - (Optional, ForceNew) The execution ID of the command.
-* `content_encoding` - (Optional, ForceNew) The encoding mode of the CommandContent and Output response parameters. Valid values: `PlainText`, `Base64`.
-* `ids` - (Optional, ForceNew, Computed)  A list of Invocation IDs.
-* `invoke_status` - (Optional, ForceNew) The overall execution state of the command. The value of this parameter depends on the execution states on all the involved instances. Valid values: `Running`, `Finished`, `Failed`, `PartialFailed`, `Stopped`.
+* `command_id` - (Optional) The execution ID of the command.
+* `content_encoding` - (Optional) The encoding mode of the CommandContent and Output response parameters. Valid values: `PlainText`, `Base64`.
+* `ids` - (Optional, Computed)  A list of Invocation IDs.
+* `invoke_status` - (Optional) The overall execution state of the command. The value of this parameter depends on the execution states on all the involved instances. Valid values: `Running`, `Finished`, `Failed`, `PartialFailed`, `Stopped`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -69,5 +69,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `start_time` - The time when the command started to be run on the instance.
     * `error_info` - Details about the reason why the command failed to be sent or run.
     * `timed` - Indicates whether the commands are to be automatically run.
-    * `error_code	` - The code that indicates why the command failed to be sent or run. 
-    * `instance_invoke_status	` - **Note:** We recommend that you ignore this parameter and check the value of the `invocation_status` response parameter for the overall execution state.
+    * `error_code` - The code that indicates why the command failed to be sent or run.
+    * `instance_invoke_status` - **Note:** We recommend that you ignore this parameter and check the value of the `invocation_status` response parameter for the overall execution state.

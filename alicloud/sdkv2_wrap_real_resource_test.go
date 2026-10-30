@@ -9,9 +9,26 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
+	ecs "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+// resourceAliCloudInstance returns the alicloud_instance *schema.Resource factory.
+// The factory moved to alicloud/service/ecs (package ecs, unexported) with the
+// ECS sub-package migration; this root framework test (package alicloud) reaches
+// it through the registered ecs.ServicePackage() so the factory does not need to
+// be exported solely for this sdkv2 wrap example. Factory() is the same function
+// registered for "alicloud_instance", so the behavior is identical to the
+// pre-migration direct call.
+var resourceAliCloudInstance = func() *schema.Resource {
+	for _, r := range ecs.ServicePackage().SDKResources {
+		if r.TypeName == "alicloud_instance" {
+			return r.Factory()
+		}
+	}
+	panic("alicloud_instance resource not registered in ecs.ServicePackage()")
+}
 
 var crudFields = map[string]bool{
 	"Create": true, "Read": true, "Update": true, "Delete": true,

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
+func TestAccAliCloudRegionsDataSource_regions(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
@@ -29,7 +29,7 @@ func TestAccAlicloudRegionsDataSource_regions(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRegionsDataSource_name(t *testing.T) {
+func TestAccAliCloudRegionsDataSource_name(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
@@ -46,7 +46,7 @@ func TestAccAlicloudRegionsDataSource_name(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRegionsDataSource_current(t *testing.T) {
+func TestAccAliCloudRegionsDataSource_current(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
@@ -63,7 +63,7 @@ func TestAccAlicloudRegionsDataSource_current(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRegionsDataSource_empty(t *testing.T) {
+func TestAccAliCloudRegionsDataSource_empty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),

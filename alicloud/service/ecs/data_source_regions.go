@@ -6,9 +6,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -71,9 +68,9 @@ func dataSourceRegionsRead(d *schema.ResourceData, meta interface{}) error {
 		return ecsClient.DescribeRegions(request)
 	})
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	logs.AddDebug(request.GetActionName(), raw, request)
+	addDebug(request.GetActionName(), raw, request)
 	resp, _ := raw.(*ecs.DescribeRegionsResponse)
 	if resp == nil || len(resp.Regions.Region) == 0 {
 		return fmt.Errorf("no matching regions found")
@@ -126,7 +123,7 @@ func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.Region) 
 		s = append(s, mapping)
 	}
 
-	d.SetId(helper.DataResourceIdHash(ids))
+	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("regions", s); err != nil {
 		return err
 	}
@@ -136,7 +133,7 @@ func regionsDescriptionAttributes(d *schema.ResourceData, regions []ecs.Region) 
 
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		helper.WriteToFile(output.(string), s)
+		writeToFile(output.(string), s)
 	}
 	return nil
 }

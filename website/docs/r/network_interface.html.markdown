@@ -61,21 +61,36 @@ resource "alicloud_network_interface" "default" {
 The following arguments are supported:
 
 * `vswitch_id` - (Required, ForceNew) The VSwitch to create the ENI in.
-* `security_groups` - (Require) A list of security group ids to associate with.
-* `private_ip` - (Optional, ForceNew) The primary private IP of the ENI.
-* `name` - (Optional) Name of the ENI. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-", ".", "_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Default value is null.
+* `network_interface_name` - (Optional) Name of the ENI.
 * `description` - (Optional) Description of the ENI. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
-* `private_ips`  - (Optional) List of secondary private IPs to assign to the ENI. Don't use both private_ips and private_ips_count in the same ENI resource block.
-* `private_ips_count` - (Optional) Number of secondary private IPs to assign to the ENI. Don't use both private_ips and private_ips_count in the same ENI resource block.
+* `primary_ip_address` - (Optional, ForceNew) The primary private IP of the ENI.
+* `private_ip` - (Optional, ForceNew, Deprecated) Deprecated, use `primary_ip_address` instead.
+* `private_ip_addresses` - (Optional) List of secondary private IPs to assign to the ENI.
+* `private_ips` - (Optional, Deprecated) Deprecated, use `private_ip_addresses` instead.
+* `queue_number` - (Optional) The queue number of the ENI.
+* `resource_group_id` - (Optional, ForceNew) The Id of resource group which the network interface belongs.
+* `secondary_private_ip_address_count` - (Optional) Number of secondary private IPs to assign to the ENI.
+* `private_ips_count` - (Optional, Deprecated) Deprecated, use `secondary_private_ip_address_count` instead.
+* `security_group_ids` - (Optional) A list of security group ids to associate with.
+* `security_groups` - (Optional, Deprecated) Deprecated, use `security_group_ids` instead.
+* `name` - (Optional, Deprecated) Deprecated, use `network_interface_name` instead.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `resource_group_id` - (ForceNew, ForceNew, Available in 1.57.0+) The Id of resource group which the network interface belongs.
+* `ipv6_address_count` - (Optional) The number of IPv6 addresses to assign to the ENI.
+* `ipv6_addresses` - (Optional) A list of IPv6 addresses to assign to the ENI.
+* `ipv4_prefix_count` - (Optional) The number of IPv4 prefixes to assign to the ENI.
+* `ipv4_prefixes` - (Optional) A list of IPv4 prefixes to assign to the ENI.
+* `instance_type` - (Optional, ForceNew) The instance type of the ENI.
+* `network_interface_traffic_mode` - (Optional, ForceNew) The traffic mode of the ENI.
+* `source_dest_check` - (Optional) Whether to enable SourceDestCheck of the ENI.
+* `delete_on_release` - (Optional) Whether to delete the ENI when it is released.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ENI ID.
-* `mac` - (Available in 1.54.0+) The MAC address of an ENI.
+* `mac` - (Available since v1.54.0) The MAC address of an ENI.
+* `status` - The status of the ENI.
 
 ## Import
 

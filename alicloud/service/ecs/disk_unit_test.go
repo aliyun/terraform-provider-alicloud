@@ -788,10 +788,24 @@ var unitTestSignVersion sync.Map
 
 // unitTestProviderResources supplies the schema the migrated tests inspect;
 // the root alicloud package cannot be imported here.
+// unitTestProviderResources returns every ECS SDKv2 resource and data-source
+// schema registered in this sub-package. The disk entry is kept explicit for
+// continuity; ServicePackage iteration adds the rest so that the migrated
+// white-box TestUnit functions (in package ecs) and newInstanceDiff can
+// resolve any ECS type by name without importing the root alicloud package
+// (which would form an import cycle: alicloud -> service/ecs).
 func unitTestProviderResources() map[string]*schema.Resource {
-	return map[string]*schema.Resource{
+	m := map[string]*schema.Resource{
 		"alicloud_ecs_disk": ResourceDisk(),
 	}
+	sp := ServicePackage()
+	for _, r := range sp.SDKResources {
+		m[r.TypeName] = r.Factory()
+	}
+	for _, d := range sp.SDKDataSources {
+		m[d.TypeName] = d.Factory()
+	}
+	return m
 }
 
 // unitTestSharedClientForRegion mirrors the root test helper so the unit test
