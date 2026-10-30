@@ -1,4 +1,4 @@
-package alicloud
+package dbfs_test
 
 import (
 	"fmt"
@@ -8,9 +8,14 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -24,7 +29,7 @@ func init() {
 }
 
 func testSweepDBFSInstance(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -36,17 +41,17 @@ func testSweepDBFSInstance(region string) error {
 	action := "ListDbfs"
 	request := map[string]interface{}{}
 
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	request["RegionId"] = client.RegionId
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -54,7 +59,7 @@ func testSweepDBFSInstance(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
@@ -73,7 +78,7 @@ func testSweepDBFSInstance(region string) error {
 				continue
 			}
 			skip := true
-			if !sweepAll() {
+			if !sweep.SweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(strings.ToLower(item["FsName"].(string)), strings.ToLower(prefix)) {
 						skip = false
@@ -88,7 +93,7 @@ func testSweepDBFSInstance(region string) error {
 			request := map[string]interface{}{
 				"FsId": item["FsId"],
 			}
-			request["ClientToken"] = buildClientToken("DeleteDbfs")
+			request["ClientToken"] = helper.BuildClientToken("DeleteDbfs")
 			_, err = client.RpcPost("DBFS", "2020-04-18", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete DBFSDbfs Instance (%s): %s", item["FsId"].(string), err)
@@ -96,7 +101,7 @@ func testSweepDBFSInstance(region string) error {
 			log.Printf("[INFO] Delete DBFSDbfs Instance success: %s ", item["FsId"].(string))
 		}
 
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -108,22 +113,22 @@ func TestAccAliCloudDBFSInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDBFSInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbfsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDBFSInstanceMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dbfs.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDbfsInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdbfsinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDBFSInstanceBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdbfsinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDBFSInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -206,7 +211,7 @@ func TestAccAliCloudDBFSInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ecs_list": REMOVEKEY,
+					"ecs_list": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -289,22 +294,22 @@ func TestAccAliCloudDbfsDbfsInstance_basic5069(t *testing.T) {
 	var v map[string]interface{}
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dbfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDbfsDbfsInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdbfsdbfsinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDbfsDbfsInstanceBasicDependence5069)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdbfsdbfsinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDbfsDbfsInstanceBasicDependence5069)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -483,9 +488,9 @@ func TestAccAliCloudDbfsDbfsInstance_basic5069(t *testing.T) {
 }
 
 var AlicloudDbfsDbfsInstanceMap5069 = map[string]string{
-	"status":            CHECKSET,
+	"status":            acctest.CHECKSET,
 	"performance_level": "PL1",
-	"create_time":       CHECKSET,
+	"create_time":       acctest.CHECKSET,
 	"snapshot_id":       "none",
 	"advanced_features": "{}",
 }
@@ -505,22 +510,22 @@ func TestAccAliCloudDbfsDbfsInstance_basic5069_twin(t *testing.T) {
 	var v map[string]interface{}
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
 	resourceId := "alicloud_dbfs_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dbfs.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDbfsDbfsInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdbfsdbfsinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDbfsDbfsInstanceBasicDependence5069)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdbfsdbfsinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDbfsDbfsInstanceBasicDependence5069)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
