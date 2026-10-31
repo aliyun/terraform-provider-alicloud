@@ -904,9 +904,8 @@ func Provider() *schema.Provider {
 			"alicloud_sddp_data_limits": dataSourceAlicloudSddpDataLimits(),
 
 			// security
-			"alicloud_security_groups":        dataSourceAlicloudSecurityGroups(),
-			"alicloud_security_group_rules":   dataSourceAlicloudSecurityGroupRules(),
-			"alicloud_security_center_groups": dataSourceAlicloudSecurityCenterGroups(),
+			"alicloud_security_groups":      dataSourceAlicloudSecurityGroups(),
+			"alicloud_security_group_rules": dataSourceAlicloudSecurityGroupRules(),
 
 			// selectdb
 			"alicloud_selectdb_db_clusters":  dataSourceAlicloudSelectDBDbClusters(),
@@ -964,23 +963,6 @@ func Provider() *schema.Provider {
 			// tag
 
 			// threat
-			"alicloud_threat_detection_attack_path_whitelists": dataSourceAliCloudThreatDetectionAttackPathWhitelists(),
-			"alicloud_threat_detection_check_item_configs":     dataSourceAliCloudThreatDetectionCheckItemConfigs(),
-			"alicloud_threat_detection_check_structures":       dataSourceAliCloudThreatDetectionCheckStructures(),
-			"alicloud_threat_detection_web_lock_configs":       dataSourceAlicloudThreatDetectionWebLockConfigs(),
-			"alicloud_threat_detection_backup_policies":        dataSourceAlicloudThreatDetectionBackupPolicies(),
-			"alicloud_threat_detection_vul_whitelists":         dataSourceAlicloudThreatDetectionVulWhitelists(),
-			"alicloud_threat_detection_honeypot_nodes":         dataSourceAlicloudThreatDetectionHoneypotNodes(),
-			"alicloud_threat_detection_baseline_strategies":    dataSourceAlicloudThreatDetectionBaselineStrategies(),
-			"alicloud_threat_detection_assets":                 dataSourceAlicloudThreatDetectionAssets(),
-			"alicloud_threat_detection_log_shipper":            dataSourceAlicloudThreatDetectionLogShipper(),
-			"alicloud_threat_detection_rd_default_sync_list":   dataSourceAliCloudThreatDetectionRdDefaultSyncList(),
-			"alicloud_threat_detection_anti_brute_force_rules": dataSourceAlicloudThreatDetectionAntiBruteForceRules(),
-			"alicloud_threat_detection_honeypot_images":        dataSourceAlicloudThreatDetectionHoneypotImages(),
-			"alicloud_threat_detection_honey_pots":             dataSourceAlicloudThreatDetectionHoneyPots(),
-			"alicloud_threat_detection_honeypot_probes":        dataSourceAlicloudThreatDetectionHoneypotProbes(),
-			"alicloud_threat_detection_honeypot_presets":       dataSourceAlicloudThreatDetectionHoneypotPresets(),
-			"alicloud_threat_detection_instances":              dataSourceAlicloudThreatDetectionInstances(),
 
 			// tsdb
 
@@ -2079,10 +2061,8 @@ func Provider() *schema.Provider {
 			"alicloud_sddp_data_limit": resourceAlicloudSddpDataLimit(),
 
 			// security
-			"alicloud_security_group":                      resourceAliCloudEcsSecurityGroup(),
-			"alicloud_security_group_rule":                 resourceAliyunSecurityGroupRule(),
-			"alicloud_security_center_group":               resourceAlicloudSecurityCenterGroup(),
-			"alicloud_security_center_service_linked_role": resourceAlicloudSecurityCenterServiceLinkedRole(),
+			"alicloud_security_group":      resourceAliCloudEcsSecurityGroup(),
+			"alicloud_security_group_rule": resourceAliyunSecurityGroupRule(),
 
 			// selectdb
 			"alicloud_selectdb_db_cluster":  resourceAliCloudSelectDBDbCluster(),
@@ -2150,33 +2130,6 @@ func Provider() *schema.Provider {
 			// tag
 
 			// threat
-			"alicloud_threat_detection_attack_path_whitelist":              resourceAliCloudThreatDetectionAttackPathWhitelist(),
-			"alicloud_threat_detection_service_linked_role":                resourceAliCloudThreatDetectionServiceLinkedRole(),
-			"alicloud_threat_detection_check_config":                       resourceAliCloudThreatDetectionCheckConfig(),
-			"alicloud_threat_detection_attack_path_sensitive_asset_config": resourceAliCloudThreatDetectionAttackPathSensitiveAssetConfig(),
-			"alicloud_threat_detection_cycle_task":                         resourceAliCloudThreatDetectionCycleTask(),
-			"alicloud_threat_detection_asset_bind":                         resourceAliCloudThreatDetectionAssetBind(),
-			"alicloud_threat_detection_log_meta":                           resourceAliCloudThreatDetectionLogMeta(),
-			"alicloud_threat_detection_asset_selection_config":             resourceAliCloudThreatDetectionAssetSelectionConfig(),
-			"alicloud_threat_detection_oss_scan_config":                    resourceAliCloudThreatDetectionOssScanConfig(),
-			"alicloud_threat_detection_malicious_file_whitelist_config":    resourceAliCloudThreatDetectionMaliciousFileWhitelistConfig(),
-			"alicloud_threat_detection_monitor_account":                    resourceAliCloudThreatDetectionMonitorAccount(),
-			"alicloud_threat_detection_sas_trail":                          resourceAliCloudThreatDetectionSasTrail(),
-			"alicloud_threat_detection_image_event_operation":              resourceAliCloudThreatDetectionImageEventOperation(),
-			"alicloud_threat_detection_file_upload_limit":                  resourceAliCloudThreatDetectionFileUploadLimit(),
-			"alicloud_threat_detection_rd_default_sync_list":               resourceAliCloudThreatDetectionRdDefaultSyncList(),
-			"alicloud_threat_detection_client_file_protect":                resourceAliCloudThreatDetectionClientFileProtect(),
-			"alicloud_threat_detection_client_user_define_rule":            resourceAliCloudThreatDetectionClientUserDefineRule(),
-			"alicloud_threat_detection_web_lock_config":                    resourceAlicloudThreatDetectionWebLockConfig(),
-			"alicloud_threat_detection_backup_policy":                      resourceAlicloudThreatDetectionBackupPolicy(),
-			"alicloud_threat_detection_vul_whitelist":                      resourceAlicloudThreatDetectionVulWhitelist(),
-			"alicloud_threat_detection_honeypot_node":                      resourceAlicloudThreatDetectionHoneypotNode(),
-			"alicloud_threat_detection_baseline_strategy":                  resourceAlicloudThreatDetectionBaselineStrategy(),
-			"alicloud_threat_detection_anti_brute_force_rule":              resourceAliCloudThreatDetectionAntiBruteForceRule(),
-			"alicloud_threat_detection_honey_pot":                          resourceAlicloudThreatDetectionHoneyPot(),
-			"alicloud_threat_detection_honeypot_probe":                     resourceAlicloudThreatDetectionHoneypotProbe(),
-			"alicloud_threat_detection_honeypot_preset":                    resourceAlicloudThreatDetectionHoneypotPreset(),
-			"alicloud_threat_detection_instance":                           resourceAliCloudThreatDetectionInstance(),
 
 			// tsdb
 

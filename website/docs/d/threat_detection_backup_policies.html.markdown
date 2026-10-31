@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Threat Detection Backup Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -44,6 +44,7 @@ The following arguments are supported:
 * `name` - (Optional, ForceNew) The name of the anti-ransomware policy that you want to query.
 * `machine_remark` - (Optional, ForceNew) The information that you want to use to identify the servers protected by the anti-ransomware policy. You can enter the IP address or ID of a server.
 * `status` - (Optional, ForceNew) The status of the anti-ransomware policy. Valid Value: `enabled`, `disabled`, `closed`.
+* `current_page` - (Optional) The page number. Must be greater than 0.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -52,12 +53,11 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Threat Detection Backup Policy names.
 * `policies` - A list of Threat Detection Backup policies. Each element contains the following attributes:
-	* `id` - The ID of the anti-ransomware policy.
-	* `backup_policy_id` - The ID of the anti-ransomware policy.
-	* `backup_policy_name` - The name of the anti-ransomware policy.
-	* `policy` - The configurations of the anti-ransomware policy.
-	* `policy_region_id` - The ID of the region that you specified for data backup when you installed the anti-ransomware agent for the server not deployed on Alibaba Cloud.
-	* `policy_version` - The version of the anti-ransomware policy.
-	* `uuid_list` - The UUIDs of the servers to which the anti-ransomware policy is applied.
-	* `status` - The status of the anti-ransomware policy.
-	
+  * `id` - The ID of the anti-ransomware policy.
+  * `backup_policy_id` - The ID of the anti-ransomware policy.
+  * `backup_policy_name` - The name of the anti-ransomware policy.
+  * `policy` - The configurations of the anti-ransomware policy.
+  * `policy_region_id` - The ID of the region that you specified for data backup when you installed the anti-ransomware agent for the server not deployed on Alibaba Cloud.
+  * `policy_version` - The version of the anti-ransomware policy.
+  * `uuid_list` - The UUIDs of the servers to which the anti-ransomware policy is applied.
+  * `status` - The status of the anti-ransomware policy.

@@ -11,13 +11,13 @@ description: |-
 
 This data source provides Threat Detection Honeypot Probe available to the user.[What is Honeypot Probe](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createhoneypotprobe)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
-  default = "tf-testAccThreatDetectionHoneypotProbe"
+  default = "tf-exampleThreatDetectionHoneypotProbe"
 }
 
 resource "alicloud_threat_detection_honeypot_probe" "default" {
@@ -53,6 +53,7 @@ output "alicloud_threat_detection_honeypot_probe_example_id" {
 The following arguments are supported:
 * `display_name` - (ForceNew, Optional) Probe name
 * `probe_type` - (ForceNew, Optional) Probe type
+* `probe_status` - (Optional) The status of the honeypot probe.
 * `ids` - (Optional, ForceNew, Computed) A list of Honeypot Probe IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional, ForceNew) Default to `false`. Set it to `true` can output more details about resource attributes.
@@ -64,21 +65,22 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Honeypot Probe IDs.
 * `probes` - A list of Honeypot Probe Entries. Each element contains the following attributes:
-    * `id` - The ID of the honeypot probe. Its value is the same as `honeypot_probe_id`.
-    * `control_node_id` - The ID of the management node.
-    * `display_name` - Probe name.
-    * `honeypot_probe_id` - The first ID of the resource
-    * `probe_type` - Probe type, support `host_probe` and `vpc_black_hole_probe`.
-    * `status` - The status of the resource.
-    * `uuid` - Machine uuid. Has a value when the type is `host_probe`.
-    * `vpc_id` - The ID of the VPC. Has a value when the type is `vpc_black_hole_probe`.
-    * `ping` - Ping scan detection. Value:**true**: Enable **false**: Disabled. Available when `enable_details` is on.
-    * `arp` - ARP spoofing detection.-**true**: Enable-**false**: Disabled. Available when `enable_details` is on.
-    * `service_ip_list` - Listen to the IP address list. Available when `enable_details` is on.
-    * `proxy_ip` - Proxy IP. Available when `enable_details` is on.
+  * `id` - The ID of the honeypot probe. Its value is the same as `honeypot_probe_id`.
+  * `control_node_id` - The ID of the management node.
+  * `display_name` - Probe name.
+  * `honeypot_probe_id` - The first ID of the resource
+  * `probe_type` - Probe type, support `host_probe` and `vpc_black_hole_probe`.
+  * `status` - The status of the resource.
+  * `uuid` - Machine uuid. Has a value when the type is `host_probe`.
+  * `vpc_id` - The ID of the VPC. Has a value when the type is `vpc_black_hole_probe`.
+  * `ping` - Ping scan detection. Value:**true**: Enable **false**: Disabled. Available when `enable_details` is on.
+  * `arp` - ARP spoofing detection.-**true**: Enable-**false**: Disabled. Available when `enable_details` is on.
+  * `service_ip_list` - Listen to the IP address list. Available when `enable_details` is on.
+  * `honeypot_bind_list` - A list of honeypot bind. Available when `enable_details` is on.
     * `bind_port_list` - List of listening ports. Available when `enable_details` is on.
       * `bind_port` - Whether to bind the port.
       * `end_port` - End port.
       * `fixed` - Whether the port is fixed.
       * `start_port` - Start port.
       * `target_port` - Destination port.
+    * `honeypot_id` - Honeypot ID.
