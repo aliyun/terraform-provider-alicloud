@@ -177,7 +177,7 @@ func dataSourceAlicloudRdsCrossRegionBackupsRead(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("backup_id"); ok {
 		request["BackupId"] = v
 	}
-	if v, ok := d.GetOk("resource__group_id"); ok {
+	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 	request["PageSize"] = PageSizeLarge

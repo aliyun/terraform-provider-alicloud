@@ -1,11 +1,18 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	credentials "github.com/aliyun/credentials-go/credentials"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
@@ -162,7 +169,109 @@ resource "alicloud_rds_instance_cross_backup_policy" "policy" {
   cross_backup_region = data.alicloud_rds_cross_regions.regions.ids.0
 }
 
-data "alicloud_rds_cross_region_backups" "default" {	
+data "alicloud_rds_cross_region_backups" "default" {
   %s
 }`, startTime, endTime, errEndTime, strings.Join(pairs, "\n"))
+}
+
+// rdsCrossRegionBackupsTestClient returns a client whose Rds RPC calls go to a
+// local httptest server, so request parameters and responses are observable
+// without cloud credentials.
+func rdsCrossRegionBackupsTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		handler(w, r)
+	}))
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("rds", endpoint)
+	return client
+}
+
+func writeCrossRegionBackupsJSON(t *testing.T, w http.ResponseWriter, body map[string]interface{}) {
+	t.Helper()
+	body["RequestId"] = "test-request"
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		t.Error(err)
+	}
+}
+
+// TestUnitAlicloudRdsCrossRegionBackupsDataSourceResourceGroupId locks the fix
+// for the misspelled schema key (resource__group_id): the Read must forward the
+// configured resource_group_id to DescribeCrossRegionBackups as
+// ResourceGroupId, and must omit it when the field is not set. DBInstanceId is
+// always forwarded so the query stays bounded to the configured instance.
+func TestUnitAlicloudRdsCrossRegionBackupsDataSourceResourceGroupId(t *testing.T) {
+	const (
+		dbInstanceID    = "rm-test-instance"
+		resourceGroupID = "rg-test-filter"
+	)
+
+	assertRequest := func(t *testing.T, raw map[string]interface{}, wantResourceGroupID string) {
+		var seenResourceGroupID, seenDBInstanceID string
+		var resourceGroupIDPresent bool
+		client := rdsCrossRegionBackupsTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+			switch r.Form.Get("Action") {
+			case "DescribeCrossRegionBackups":
+				if _, ok := r.Form["ResourceGroupId"]; ok {
+					resourceGroupIDPresent = true
+					seenResourceGroupID = r.Form.Get("ResourceGroupId")
+				} else {
+					resourceGroupIDPresent = false
+				}
+				seenDBInstanceID = r.Form.Get("DBInstanceId")
+				writeCrossRegionBackupsJSON(t, w, map[string]interface{}{
+					"Items": map[string]interface{}{"Item": []interface{}{}},
+				})
+			default:
+				t.Errorf("unexpected action %s", r.Form.Get("Action"))
+			}
+		})
+		d := schema.TestResourceDataRaw(t, dataSourceAlicloudRdsCrossRegionBackups().Schema, raw)
+		if err := dataSourceAlicloudRdsCrossRegionBackupsRead(d, client); err != nil {
+			t.Fatalf("read returned error: %s", err)
+		}
+		if seenDBInstanceID != dbInstanceID {
+			t.Errorf("DBInstanceId = %q, want %q", seenDBInstanceID, dbInstanceID)
+		}
+		if wantResourceGroupID == "" {
+			if resourceGroupIDPresent {
+				t.Errorf("ResourceGroupId should be omitted, got %q", seenResourceGroupID)
+			}
+		} else if !resourceGroupIDPresent || seenResourceGroupID != wantResourceGroupID {
+			t.Errorf("ResourceGroupId = %q (present=%v), want %q", seenResourceGroupID, resourceGroupIDPresent, wantResourceGroupID)
+		}
+	}
+
+	t.Run("with resource_group_id", func(t *testing.T) {
+		assertRequest(t, map[string]interface{}{
+			"db_instance_id":    dbInstanceID,
+			"resource_group_id": resourceGroupID,
+		}, resourceGroupID)
+	})
+	t.Run("without resource_group_id", func(t *testing.T) {
+		assertRequest(t, map[string]interface{}{
+			"db_instance_id": dbInstanceID,
+		}, "")
+	})
 }
