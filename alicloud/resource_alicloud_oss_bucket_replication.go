@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"log"
@@ -23,6 +24,7 @@ func resourceAlicloudOssBucketReplication() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: resourceAlicloudOssBucketReplicationCustomizeDiff,
 		Timeouts: &schema.ResourceTimeout{
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
@@ -126,6 +128,25 @@ func resourceAlicloudOssBucketReplication() *schema.Resource {
 								},
 							},
 						},
+						"incremental_delete_marker": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+										ValidateFunc: validation.StringInSlice([]string{
+											"Enabled",
+											"Disabled",
+										}, false),
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -184,6 +205,37 @@ func resourceAlicloudOssBucketReplication() *schema.Resource {
 	}
 }
 
+// The IncrementalDeleteMarker node is only sent when its status is set, so an
+// empty block is never echoed back by GetBucketReplication: the state loses the
+// block and, source_selection_criteria being ForceNew, every following plan asks
+// for a replacement. OSS also rejects the node without a Status, so report the
+// missing value at plan time instead of silently dropping the node.
+func resourceAlicloudOssBucketReplicationCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	criteria, ok := d.Get("source_selection_criteria").([]interface{})
+	if !ok || len(criteria) == 0 {
+		return nil
+	}
+	head, ok := criteria[0].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	// An unspecified block reads back as an empty list; a block written without
+	// any attribute reads back as a single nil element.
+	markers, ok := head["incremental_delete_marker"].([]interface{})
+	if !ok || len(markers) == 0 {
+		return nil
+	}
+	for _, marker := range markers {
+		block, _ := marker.(map[string]interface{})
+		if status, _ := block["status"].(string); status == "" {
+			return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is specified",
+				"source_selection_criteria.0.incremental_delete_marker.0.status",
+				"source_selection_criteria.incremental_delete_marker"))
+		}
+	}
+	return nil
+}
+
 type PrefixSetType struct {
 	Prefixes []string `xml:"Prefix"`
 }
@@ -198,8 +250,13 @@ type SseKmsEncryptedObjectsType struct {
 	Status string `xml:"Status"`
 }
 
+type IncrementalDeleteMarkerType struct {
+	Status string `xml:"Status"`
+}
+
 type SourceSelectionCriteriaType struct {
-	SseKmsEncryptedObjects *SseKmsEncryptedObjectsType `xml:"SseKmsEncryptedObjects,omitempty"`
+	SseKmsEncryptedObjects  *SseKmsEncryptedObjectsType  `xml:"SseKmsEncryptedObjects,omitempty"`
+	IncrementalDeleteMarker *IncrementalDeleteMarkerType `xml:"IncrementalDeleteMarker,omitempty"`
 }
 
 type EncryptionConfigurationType struct {
@@ -311,6 +368,15 @@ func expandReplicationRule(d *schema.ResourceData) ReplicationRule {
 			}
 			i.SseKmsEncryptedObjects = &j
 		}
+		//IncrementalDeleteMarker
+		if val1, ok := e["incremental_delete_marker"].([]interface{}); ok && len(val1) > 0 && val1[0] != nil {
+			s := val1[0].(map[string]interface{})
+			j := IncrementalDeleteMarkerType{}
+			if v, ok := s["status"].(string); ok && v != "" {
+				j.Status = v
+				i.IncrementalDeleteMarker = &j
+			}
+		}
 		rule.SourceSelectionCriteria = &i
 	}
 
@@ -411,6 +477,13 @@ func flattenReplicationRule(d *schema.ResourceData, rc *ReplicationConfiguration
 					sseKmsEncryptedObjects["status"] = r.SourceSelectionCriteria.SseKmsEncryptedObjects.Status
 				}
 				sourceSelectionCriteria["sse_kms_encrypted_objects"] = []interface{}{sseKmsEncryptedObjects}
+			}
+			if r.SourceSelectionCriteria.IncrementalDeleteMarker != nil {
+				incrementalDeleteMarker := make(map[string]interface{})
+				if r.SourceSelectionCriteria.IncrementalDeleteMarker.Status != "" {
+					incrementalDeleteMarker["status"] = r.SourceSelectionCriteria.IncrementalDeleteMarker.Status
+				}
+				sourceSelectionCriteria["incremental_delete_marker"] = []interface{}{incrementalDeleteMarker}
 			}
 			rule["source_selection_criteria"] = []interface{}{sourceSelectionCriteria}
 		}
