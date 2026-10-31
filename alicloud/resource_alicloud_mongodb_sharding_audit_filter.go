@@ -36,6 +36,15 @@ func resourceAliCloudMongodbShardingAuditFilter() *schema.Resource {
 				Required:     true,
 				ValidateFunc: StringInSlice([]string{"enable", "disabled"}, false),
 			},
+			// Write-only API parameter: ModifyAuditPolicy accepts it as an optional request source and
+			// none of the describe APIs return it, so Read must neither backfill nor clear an explicitly
+			// configured value. No schema Default supplies it: when it is not configured the request
+			// parameter is left out instead of being sent as an empty or provider-chosen value.
+			"audit_log_switch_source": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Console"}, false),
+			},
 			"filter": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -80,7 +89,7 @@ func mongodbShardingAuditFilterServiceTypeDiffSuppress(k, old, new string, d *sc
 func resourceAliCloudMongodbShardingAuditFilterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	// 1. ModifyAuditPolicy — audit_status / storage_period / hot_storage_period / service_type.
+	// 1. ModifyAuditPolicy — audit_status / audit_log_switch_source / storage_period / hot_storage_period / service_type.
 	action := "ModifyAuditPolicy"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -89,6 +98,11 @@ func resourceAliCloudMongodbShardingAuditFilterCreate(d *schema.ResourceData, me
 	request = make(map[string]interface{})
 	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["RegionId"] = client.RegionId
+	// Optional request attribution: omit the parameter entirely when it is not configured rather than
+	// sending an empty value.
+	if v, ok := d.GetOk("audit_log_switch_source"); ok {
+		request["AuditLogSwitchSource"] = v
+	}
 	if v, ok := d.GetOkExists("storage_period"); ok {
 		request["StoragePeriod"] = v
 	}
@@ -176,17 +190,23 @@ func resourceAliCloudMongodbShardingAuditFilterRead(d *schema.ResourceData, meta
 		return WrapError(err)
 	}
 
-	// While the audit log is disabled, DescribeMongoDBLogConfig omits TtlForStandard /
-	// HotTtlForV2Standard from the response; unconditionally Set-ing them would write 0 over the
-	// configured value and produce a perpetual diff on every Refresh. Keep the state value when the
-	// field is absent so re-enabling can restore it (mirrors the service_type retention below).
-	if v, ok := objectRaw["TtlForStandard"]; ok && v != nil {
-		d.Set("storage_period", v)
-	}
-	if v, ok := objectRaw["HotTtlForV2Standard"]; ok && v != nil {
-		d.Set("hot_storage_period", v)
-	}
+	// DescribeMongoDBLogConfig reports the retention in edition-specific fields: the Standard edition
+	// keeps it in TtlForStandard, while the V2_Standard edition reports the cold storage duration
+	// (ModifyAuditPolicy's StoragePeriod for that edition) in TtlForV2Standard together with the hot
+	// storage duration in HotTtlForV2Standard. Reading TtlForStandard for a V2_Standard audit log
+	// returns the untouched Standard-edition default instead of the configured value.
 	serviceType := objectRaw["ServiceType"]
+	storagePeriod, hotStoragePeriod := mongodbShardingAuditFilterStorageValues(objectRaw, fmt.Sprint(serviceType), d.Get("service_type").(string))
+	// While the audit log is disabled the server reports the Trial edition and may omit the retention
+	// fields; unconditionally Set-ing them would write 0 over the configured value and produce a
+	// perpetual diff on every Refresh. Keep the state value when the field is absent so re-enabling
+	// can restore it (mirrors the service_type retention below).
+	if storagePeriod != nil {
+		d.Set("storage_period", storagePeriod)
+	}
+	if hotStoragePeriod != nil {
+		d.Set("hot_storage_period", hotStoragePeriod)
+	}
 
 	objectRaw, err = mongodbServiceV2.DescribeAuditPolicyDescribeAuditPolicy(d.Id())
 	if err != nil && !NotFoundError(err) {
@@ -273,6 +293,21 @@ func parseMongodbShardingAuditFilter(filter, roleType string) string {
 	return filter
 }
 
+// mongodbShardingAuditFilterStorageValues picks the retention values that match the audit log edition
+// in use. The reported edition wins; when the server reports a different one (it reports Trial while
+// the audit log is disabled), the declared edition decides. A missing field yields nil so the caller
+// keeps the state value.
+func mongodbShardingAuditFilterStorageValues(objectRaw map[string]interface{}, reportedServiceType, declaredServiceType string) (storagePeriod, hotStoragePeriod interface{}) {
+	edition := reportedServiceType
+	if edition != "Standard" && edition != "V2_Standard" {
+		edition = declaredServiceType
+	}
+	if edition == "V2_Standard" {
+		return objectRaw["TtlForV2Standard"], objectRaw["HotTtlForV2Standard"]
+	}
+	return objectRaw["TtlForStandard"], nil
+}
+
 func resourceAliCloudMongodbShardingAuditFilterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	mongodbServiceV2 := MongodbServiceV2{client}
@@ -283,12 +318,20 @@ func resourceAliCloudMongodbShardingAuditFilterUpdate(d *schema.ResourceData, me
 	d.Partial(true)
 
 	var err error
-	// 1. ModifyAuditPolicy — audit_status / storage_period / hot_storage_period / service_type.
+	// 1. ModifyAuditPolicy — audit_status / audit_log_switch_source / storage_period / hot_storage_period / service_type.
 	action := "ModifyAuditPolicy"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
+	// audit_log_switch_source is request attribution, not a policy value: send it with a real policy
+	// change only when it is configured, and never rewrite the whole policy because of it alone. An
+	// imported state has no service_type while the audit log is disabled (Read keeps the declared
+	// value only when enabled) and the disabled diff suppression hides the declared edition, so such
+	// a write would fall back to ServiceType=Standard and could switch editions.
+	if v, ok := d.GetOk("audit_log_switch_source"); ok {
+		request["AuditLogSwitchSource"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("storage_period") {
 		update = true
 	}

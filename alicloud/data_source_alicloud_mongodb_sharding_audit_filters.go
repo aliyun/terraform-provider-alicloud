@@ -96,15 +96,30 @@ func dataSourceAlicloudMongodbShardingAuditFiltersRead(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 
+	// DescribeMongoDBLogConfig reports the retention in edition-specific fields: the Standard edition
+	// keeps it in TtlForStandard, while the V2_Standard edition reports the cold storage duration in
+	// TtlForV2Standard together with the hot storage duration in HotTtlForV2Standard. Reading
+	// TtlForStandard for a V2_Standard audit log returns the untouched Standard-edition default, so the
+	// data source selects the pair that belongs to the reported edition. The data source has no
+	// declared edition of its own, so an unrecognised reported edition (the Trial value seen while the
+	// audit log is disabled) falls back to the Standard fields.
+	storagePeriod, hotStoragePeriod := mongodbShardingAuditFilterStorageValues(logConfig, fmt.Sprint(logConfig["ServiceType"]), "")
+
 	mapping := map[string]interface{}{
-		"id":                 dbInstanceId,
-		"db_instance_id":     dbInstanceId,
-		"service_type":       logConfig["ServiceType"],
-		"storage_period":     logConfig["TtlForStandard"],
-		"hot_storage_period": logConfig["HotTtlForV2Standard"],
-		"region_id":          client.RegionId,
-		"filter":             parseMongodbShardingAuditFilter(fmt.Sprint(auditLogFilter["Filter"]), ""),
-		"role_type":          auditLogFilter["RoleType"],
+		"id":             dbInstanceId,
+		"db_instance_id": dbInstanceId,
+		"service_type":   logConfig["ServiceType"],
+		"region_id":      client.RegionId,
+		"filter":         parseMongodbShardingAuditFilter(fmt.Sprint(auditLogFilter["Filter"]), ""),
+		"role_type":      auditLogFilter["RoleType"],
+	}
+	// When the API omits a retention field, the edition selection yields no value and the computed
+	// attribute reads back as zero; setting it is unconditional only for the fields the edition owns.
+	if storagePeriod != nil {
+		mapping["storage_period"] = storagePeriod
+	}
+	if hotStoragePeriod != nil {
+		mapping["hot_storage_period"] = hotStoragePeriod
 	}
 	if v, ok := auditPolicy["LogAuditStatus"].(string); ok {
 		mapping["audit_status"] = convertMongodbAuditPolicyResponse(v)
