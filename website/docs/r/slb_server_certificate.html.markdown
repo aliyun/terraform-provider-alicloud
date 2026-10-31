@@ -7,7 +7,7 @@ description: |-
   Provides a Load Banlancer Server Certificate resource.
 ---
 
-# alicloud\_slb\_server\_certificate
+# alicloud_slb_server_certificate
 
 A Load Balancer Server Certificate is an ssl Certificate used by the listener of the protocol https.
 
@@ -15,6 +15,7 @@ For information about slb and how to use it, see [What is Server Load Balancer](
 
 For information about Server Certificate and how to use it, see [Configure Server Certificate](https://www.alibabacloud.com/help/doc-detail/85968.htm).
 
+-> **NOTE:** Available since v1.21.0.
 
 ## Example Usage
 
@@ -37,7 +38,7 @@ resource "alicloud_slb_server_certificate" "foo" {
 
 * using server_certificate/private file example
 
-```
+```terraform
 # create a server certificate
 resource "alicloud_slb_server_certificate" "foo" {
   name               = "slbservercertificate"
@@ -55,11 +56,14 @@ The following arguments are supported:
 * `name` - (Optional) Name of the Server Certificate.
 * `server_certificate` - (Optional, ForceNew) the content of the ssl certificate. where `alicloud_certificate_id` is null, it is required, otherwise it is ignored.
 * `private_key` - (Optional, ForceNew) the content of privat key of the ssl certificate specified by `server_certificate`. where `alicloud_certificate_id` is null, it is required, otherwise it is ignored.
+* `alicloud_certifacte_id` - (Optional, ForceNew, Deprecated from v1.68.0) Field 'alicloud_certifacte_id' has been deprecated from provider version 1.68.0. Use 'alicloud_certificate_id' replaces it.
 * `alicloud_certificate_id` - (Optional, ForceNew) an id of server certificate ssued/proxied by alibaba cloud. but it is not supported on the international site of alibaba cloud now.
+* `alicloud_certifacte_name` - (Optional, ForceNew, Deprecated from v1.68.0) Field 'alicloud_certifacte_name' has been deprecated from provider version 1.68.0. Use 'alicloud_certificate_name' replaces it.
 * `alicloud_certificate_name` - (Optional, ForceNew) the name of the certificate specified by `alicloud_certificate_id`.but it is not supported on the international site of alibaba cloud now.
 * `alicloud_certificate_region_id` - (Optional, ForceNew, Available in 1.69.0+) the region of the certificate specified by `alicloud_certificate_id`. but it is not supported on the international site of alibaba cloud now.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb server certificate belongs.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
+
 ## Attributes Reference
 
 The following attributes are exported:
