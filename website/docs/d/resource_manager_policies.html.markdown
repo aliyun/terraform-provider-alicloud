@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Resource Manager Policies of the current Alibaba Cloud user.
 
--> **NOTE:**  Available in 1.86.0+.
+-> **NOTE:** Available since v1.86.0.
 
 ## Example Usage
 
@@ -43,11 +43,10 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of policy IDs.
 * `names` - A list of policy names.
 * `policies` - A list of policies. Each element contains the following attributes:
-    * `id` - The ID of the policy.
-    * `policy_name`- The name of the policy.
-    * `policy_type`- The type of the policy.
-    * `description` - The description of the policy.
-    * `create_date` - The time when the policy was created.
-    * `update_date` - The time when the policy was updated.
-    * `default_version` - The default version of the policy.
-    * `attachment_count` - The number of times the policy is referenced.
+  * `id` - The ID of the policy.
+  * `policy_name`- The name of the policy.
+  * `policy_type`- The type of the policy.
+  * `description` - The description of the policy.
+  * `update_date` - The time when the policy was updated.
+  * `default_version` - The default version of the policy.
+  * `attachment_count` - The number of times the policy is referenced.

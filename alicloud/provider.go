@@ -848,22 +848,6 @@ func Provider() *schema.Provider {
 			"alicloud_redis_global_security_ip_groups": dataSourceAliCloudRedisGlobalSecurityIpGroups(),
 
 			// resource
-			"alicloud_resource_manager_folders":                     dataSourceAliCloudResourceManagerFolders(),
-			"alicloud_resource_manager_policies":                    dataSourceAlicloudResourceManagerPolicies(),
-			"alicloud_resource_manager_resource_groups":             dataSourceAlicloudResourceManagerResourceGroups(),
-			"alicloud_resource_manager_roles":                       dataSourceAlicloudResourceManagerRoles(),
-			"alicloud_resource_manager_policy_versions":             dataSourceAlicloudResourceManagerPolicyVersions(),
-			"alicloud_resource_manager_accounts":                    dataSourceAliCloudResourceManagerAccounts(),
-			"alicloud_resource_manager_resource_directories":        dataSourceAlicloudResourceManagerResourceDirectories(),
-			"alicloud_resource_manager_handshakes":                  dataSourceAlicloudResourceManagerHandshakes(),
-			"alicloud_resource_manager_policy_attachments":          dataSourceAlicloudResourceManagerPolicyAttachments(),
-			"alicloud_resource_manager_resource_shares":             dataSourceAlicloudResourceManagerResourceShares(),
-			"alicloud_resource_manager_shared_resources":            dataSourceAliCloudResourceManagerSharedResources(),
-			"alicloud_resource_manager_shared_targets":              dataSourceAliCloudResourceManagerSharedTargets(),
-			"alicloud_resource_manager_control_policies":            dataSourceAlicloudResourceManagerControlPolicies(),
-			"alicloud_resource_manager_control_policy_attachments":  dataSourceAlicloudResourceManagerControlPolicyAttachments(),
-			"alicloud_resource_manager_delegated_administrators":    dataSourceAlicloudResourceManagerDelegatedAdministrators(),
-			"alicloud_resource_manager_account_deletion_check_task": dataSourceAlicloudResourceManagerAccountDeletionCheckTask(),
 
 			// ros
 			"alicloud_ros_change_sets":        dataSourceAlicloudRosChangeSets(),
@@ -2000,30 +1984,6 @@ func Provider() *schema.Provider {
 			"alicloud_reserved_instance": resourceAliCloudReservedInstance(),
 
 			// resource
-			"alicloud_resource_manager_resource_directory_sharing":     resourceAliCloudResourceManagerResourceDirectorySharing(),
-			"alicloud_resource_manager_delivery_channel":               resourceAliCloudResourceManagerDeliveryChannel(),
-			"alicloud_resource_manager_multi_account_delivery_channel": resourceAliCloudResourceManagerMultiAccountDeliveryChannel(),
-			"alicloud_resource_manager_message_contact":                resourceAliCloudResourceManagerMessageContact(),
-			"alicloud_resource_manager_auto_grouping_rule":             resourceAliCloudResourceManagerAutoGroupingRule(),
-			"alicloud_resource_manager_saved_query":                    resourceAliCloudResourceManagerSavedQuery(),
-			"alicloud_resource_manager_role":                           resourceAlicloudResourceManagerRole(),
-			"alicloud_resource_manager_resource_group":                 resourceAliCloudResourceManagerResourceGroup(),
-			"alicloud_resource_manager_resource_group_settings":        resourceAliCloudResourceManagerResourceGroupSettings(),
-			"alicloud_resource_manager_folder":                         resourceAliCloudResourceManagerFolder(),
-			"alicloud_resource_manager_handshake":                      resourceAliCloudResourceManagerHandshake(),
-			"alicloud_resource_manager_handshake_acceptance":           resourceAliCloudResourceManagerHandshakeAcceptance(),
-			"alicloud_resource_manager_policy":                         resourceAlicloudResourceManagerPolicy(),
-			"alicloud_resource_manager_account":                        resourceAliCloudResourceManagerAccount(),
-			"alicloud_resource_manager_resource_directory":             resourceAliCloudResourceManagerResourceDirectory(),
-			"alicloud_resource_manager_policy_version":                 resourceAlicloudResourceManagerPolicyVersion(),
-			"alicloud_resource_manager_policy_attachment":              resourceAlicloudResourceManagerPolicyAttachment(),
-			"alicloud_resource_manager_resource_share":                 resourceAliCloudResourceManagerResourceShare(),
-			"alicloud_resource_manager_shared_resource":                resourceAliCloudResourceManagerSharedResource(),
-			"alicloud_resource_manager_shared_target":                  resourceAliCloudResourceManagerSharedTarget(),
-			"alicloud_resource_manager_control_policy":                 resourceAliCloudResourceManagerControlPolicy(),
-			"alicloud_resource_manager_control_policy_attachment":      resourceAliCloudResourceManagerControlPolicyAttachment(),
-			"alicloud_resource_manager_service_linked_role":            resourceAliCloudResourceManagerServiceLinkedRole(),
-			"alicloud_resource_manager_delegated_administrator":        resourceAliCloudResourceManagerDelegatedAdministrator(),
 
 			// rocketmq
 			"alicloud_rocketmq_acl":            resourceAliCloudRocketmqAcl(),
