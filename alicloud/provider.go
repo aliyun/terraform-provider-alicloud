@@ -882,15 +882,6 @@ func Provider() *schema.Provider {
 			"alicloud_router_interfaces": dataSourceAlicloudRouterInterfaces(),
 
 			// sae
-			"alicloud_sae_application_groups":        dataSourceAliCloudSaeApplicationGroups(),
-			"alicloud_sae_service":                   dataSourceAlicloudSaeService(),
-			"alicloud_sae_namespaces":                dataSourceAlicloudSaeNamespaces(),
-			"alicloud_sae_config_maps":               dataSourceAlicloudSaeConfigMaps(),
-			"alicloud_sae_applications":              dataSourceAlicloudSaeApplications(),
-			"alicloud_sae_ingresses":                 dataSourceAlicloudSaeIngresses(),
-			"alicloud_sae_instance_specifications":   dataSourceAlicloudSaeInstanceSpecifications(),
-			"alicloud_sae_application_scaling_rules": dataSourceAlicloudSaeApplicationScalingRules(),
-			"alicloud_sae_grey_tag_routes":           dataSourceAlicloudSaeGreyTagRoutes(),
 
 			// sag
 			"alicloud_sag_acls": dataSourceAlicloudSagAcls(),
@@ -2051,14 +2042,6 @@ func Provider() *schema.Provider {
 			"alicloud_router_interface_connection": resourceAlicloudRouterInterfaceConnection(),
 
 			// sae
-			"alicloud_sae_namespace":                resourceAlicloudSaeNamespace(),
-			"alicloud_sae_config_map":               resourceAlicloudSaeConfigMap(),
-			"alicloud_sae_application":              resourceAliCloudSaeApplication(),
-			"alicloud_sae_ingress":                  resourceAlicloudSaeIngress(),
-			"alicloud_sae_application_scaling_rule": resourceAlicloudSaeApplicationScalingRule(),
-			"alicloud_sae_grey_tag_route":           resourceAliCloudSaeGreyTagRoute(),
-			"alicloud_sae_load_balancer_internet":   resourceAlicloudSaeLoadBalancerInternet(),
-			"alicloud_sae_load_balancer_intranet":   resourceAlicloudSaeLoadBalancerIntranet(),
 
 			// sag
 			"alicloud_sag_acl":         resourceAlicloudSagAcl(),
