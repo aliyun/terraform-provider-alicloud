@@ -703,8 +703,6 @@ func Provider() *schema.Provider {
 			// market
 
 			// maxcompute
-			"alicloud_maxcompute_service":  dataSourceAlicloudMaxcomputeService(),
-			"alicloud_maxcompute_projects": dataSourceAliCloudMaxComputeProjects(),
 
 			// message
 			"alicloud_message_service_queues":        dataSourceAlicloudMessageServiceQueues(),
@@ -1762,17 +1760,7 @@ func Provider() *schema.Provider {
 
 			// market
 
-			// max
-			"alicloud_max_compute_tenant_role_user_attachment": resourceAliCloudMaxComputeTenantRoleUserAttachment(),
-			"alicloud_max_compute_quota":                       resourceAliCloudMaxComputeQuota(),
-			"alicloud_max_compute_tunnel_quota_timer":          resourceAliCloudMaxComputeTunnelQuotaTimer(),
-			"alicloud_max_compute_role_user_attachment":        resourceAliCloudMaxComputeRoleUserAttachment(),
-			"alicloud_max_compute_quota_schedule":              resourceAliCloudMaxComputeQuotaSchedule(),
-			"alicloud_max_compute_role":                        resourceAliCloudMaxComputeRole(),
-			"alicloud_max_compute_quota_plan":                  resourceAliCloudMaxComputeQuotaPlan(),
-
 			// maxcompute
-			"alicloud_maxcompute_project": resourceAliCloudMaxComputeProject(),
 
 			// message
 			"alicloud_message_service_account_logging": resourceAliCloudMessageServiceAccountLogging(),

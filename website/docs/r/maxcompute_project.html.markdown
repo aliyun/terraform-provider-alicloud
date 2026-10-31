@@ -50,6 +50,7 @@ If the calculation Quota is not specified, the default Quota resource will be co
 
   -> **NOTE:** -- ture: In this case, the project status will be changed to' deleting' and completely deleted after 14 days. -- false: delete immediately, that is, completely deleted and permanently irrecoverable.
 
+* `product_type` - (Optional) The product type of the MaxCompute project.
 * `project_name` - (Optional, ForceNew, Computed) The name begins with a letter, containing letters, digits, and underscores (_). It can be 3 to 28 characters in length and is globally unique.
 * `properties` - (Optional, List) Project base attributes See [`properties`](#properties) below.
 * `security_properties` - (Optional, List) Security-related attributes See [`security_properties`](#security_properties) below.
@@ -124,7 +125,7 @@ The security_properties supports the following:
 * `object_creator_has_grant_permission` - (Optional, Bool) The ObjectCreatorHasGrantPermission attribute is set to allow the object creator to have the authorization permission on the object. The default is the allowed state.
 * `project_protection` - (Optional, List) Project protection See [`project_protection`](#security_properties-project_protection) below.
 * `using_acl` - (Optional, Bool) Set whether to use the [ACL permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/maxcompute-permissions), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
-* `using_policy` - (Optional, Bool) Set whether to use the Policy permission control function (https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
+* `using_policy` - (Optional, Bool) Set whether to use the [Policy permission control function](https://www.alibabacloud.com/help/en/maxcompute/user-guide/policy-based-access-control-1), that is, set the CheckPermissionUsingACL attribute, which is in use by default.
 
 ### `security_properties-project_protection`
 

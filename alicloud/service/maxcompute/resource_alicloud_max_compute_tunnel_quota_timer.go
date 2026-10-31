@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package maxcompute. This file is generated automatically. Please do not modify it manually, thank you!
+package maxcompute
 
 import (
 	"fmt"
@@ -8,6 +8,9 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -113,15 +116,15 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerCreate(d *schema.ResourceData, me
 	}
 
 	if v, ok := d.GetOk("time_zone"); ok {
-		query["timezone"] = StringPointer(v.(string))
+		query["timezone"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body["body"], true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -129,10 +132,10 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerCreate(d *schema.ResourceData, me
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_max_compute_tunnel_quota_timer", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_max_compute_tunnel_quota_timer", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(nickname))
@@ -146,12 +149,12 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerRead(d *schema.ResourceData, meta
 
 	objectRaw, err := maxComputeServiceV2.DescribeMaxComputeTunnelQuotaTimer(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_max_compute_tunnel_quota_timer DescribeMaxComputeTunnelQuotaTimer Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	data1Raw, _ := jsonpath.Get("$.data", objectRaw)
@@ -217,7 +220,7 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerUpdate(d *schema.ResourceData, me
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["beginTime"] = dataLoopTmp["begin_time"]
 			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
-			if !IsNil(dataLoopTmp["tunnel_quota_parameter"]) {
+			if !helper.IsNil(dataLoopTmp["tunnel_quota_parameter"]) {
 				localData1 := make(map[string]interface{})
 				slotNum1, _ := jsonpath.Get("$[0].slot_num", dataLoopTmp["tunnel_quota_parameter"])
 				if slotNum1 != nil && slotNum1 != "" {
@@ -235,16 +238,16 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerUpdate(d *schema.ResourceData, me
 	}
 
 	if v, ok := d.GetOk("time_zone"); ok {
-		query["timezone"] = StringPointer(v.(string))
+		query["timezone"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("MaxCompute", "2022-01-04", action, query, nil, body["body"], true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -252,9 +255,9 @@ func resourceAliCloudMaxComputeTunnelQuotaTimerUpdate(d *schema.ResourceData, me
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
