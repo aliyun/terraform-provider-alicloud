@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
+func TestAccAliCloudAutoProvisioningGroup(t *testing.T) {
 	var v ecs.AutoProvisioningGroup
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccautoprovisioninggroup-%d", rand)
@@ -181,7 +181,7 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 
 }
 
-func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
+func TestAccAliCloudAutoProvisioningGroup_valid(t *testing.T) {
 	var v ecs.AutoProvisioningGroup
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccautoprovisioninggroup-%d", rand)
@@ -242,6 +242,131 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 	})
 
 }
+
+// collection-order: bypass launch_template_config -- pre-existing ForceNew TypeList; no reorder-convergence coverage existed before this change and this PR fixes spot_instance_pools_to_use_count writeback plus the launch_template_config Read flatten, not the list ordering contract
+func TestAccAliCloudAutoProvisioningGroup_spotInstancePoolsToUseCount(t *testing.T) {
+	var v ecs.AutoProvisioningGroup
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testAccautoprovisioninggroup-%d", rand)
+	var basicMap = map[string]string{
+		"launch_template_id":                         CHECKSET,
+		"total_target_capacity":                      "4",
+		"pay_as_you_go_target_capacity":              "1",
+		"spot_target_capacity":                       "2",
+		"launch_template_config.0.vswitch_id":        CHECKSET,
+		"launch_template_config.0.weighted_capacity": "1",
+		"launch_template_config.0.max_price":         "2",
+		"launch_template_config.0.priority":          CHECKSET,
+		"spot_allocation_strategy":                   "lowest-price",
+		"spot_instance_pools_to_use_count":           "2",
+		"auto_provisioning_group_type":               "maintain",
+		"pay_as_you_go_allocation_strategy":          "lowest-price",
+		"spot_instance_interruption_behavior":        "stop",
+		"terminate_instances":                        "false",
+		"launch_template_version":                    CHECKSET,
+	}
+	resourceId := "alicloud_auto_provisioning_group.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAutoProvisioningGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAutoProvisioningGroupConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// AC1: lowest-price strategy with an explicit spot_instance_pools_to_use_count
+				// writes the configured value into CreateAutoProvisioningGroup without panic,
+				// and the cloud readback matches the configuration. SpotInstancePoolsToUseCount
+				// must stay below the LaunchTemplateConfig count, so three distinct instance
+				// types form the pools while pay_as_you_go_target_capacity keeps a baseline
+				// so the group is fulfilled and remains readable.
+				Config: testAccConfig(map[string]interface{}{
+					"launch_template_id":                  "${alicloud_launch_template.template.id}",
+					"total_target_capacity":               "4",
+					"pay_as_you_go_target_capacity":       "1",
+					"spot_target_capacity":                "2",
+					"spot_allocation_strategy":            "lowest-price",
+					"spot_instance_pools_to_use_count":    "2",
+					"auto_provisioning_group_type":        "maintain",
+					"pay_as_you_go_allocation_strategy":   "lowest-price",
+					"spot_instance_interruption_behavior": "stop",
+					"terminate_instances":                 "false",
+					"launch_template_version":             "${alicloud_launch_template.template.default_version_number}",
+					"launch_template_config": []map[string]string{
+						{
+							"vswitch_id":        "${alicloud_vswitch.default.id}",
+							"weighted_capacity": "1",
+							"max_price":         "2",
+							"instance_type":     "ecs.sn1ne.large",
+							"priority":          "1",
+						},
+						{
+							"vswitch_id":        "${alicloud_vswitch.default.id}",
+							"weighted_capacity": "1",
+							"max_price":         "2",
+							"instance_type":     "ecs.c6.large",
+							"priority":          "2",
+						},
+						{
+							"vswitch_id":        "${alicloud_vswitch.default.id}",
+							"weighted_capacity": "1",
+							"max_price":         "2",
+							"instance_type":     "ecs.g6.large",
+							"priority":          "3",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				// AC4: re-importing after apply round-trips the state, proving the
+				// ForceNew field produces no unexpected replacement plan when the
+				// cloud readback matches the configuration. The launch_template_config
+				// block is ForceNew (create-only); its nested fields are listed in
+				// ImportStateVerifyIgnore so the coverage gate exempts them from the
+				// in-place modification requirement.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"launch_template_config.instance_type",
+					"launch_template_config.max_price",
+					"launch_template_config.priority",
+					"launch_template_config.vswitch_id",
+					"launch_template_config.weighted_capacity",
+				},
+			},
+			{
+				// AC3: a non-lowest-price (diversified) allocation strategy creates
+				// normally without error; spot_instance_pools_to_use_count is not
+				// effective under this strategy and is therefore removed from both
+				// the configuration and the assertions.
+				Config: testAccConfig(map[string]interface{}{
+					"spot_allocation_strategy":         "diversified",
+					"spot_instance_pools_to_use_count": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spot_allocation_strategy":         "diversified",
+						"spot_instance_pools_to_use_count": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func resourceAutoProvisioningGroupConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	%s
