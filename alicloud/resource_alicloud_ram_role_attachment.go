@@ -5,6 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -35,7 +36,7 @@ func resourceAlicloudRamRoleAttachment() *schema.Resource {
 
 func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	ramService := ram.NewRamService(client)
 
 	instanceIds := convertListToJsonString(d.Get("instance_ids").(*schema.Set).List())
 
@@ -76,7 +77,7 @@ func resourceAlicloudInstanceRoleAttachmentRead(d *schema.ResourceData, meta int
 	}
 	roleName := parts[0]
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	ramService := ram.NewRamService(client)
 	object, err := ramService.DescribeRamRoleAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -100,7 +101,7 @@ func resourceAlicloudInstanceRoleAttachmentRead(d *schema.ResourceData, meta int
 
 func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	ramService := ram.NewRamService(client)
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -129,5 +130,5 @@ func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta i
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(ramService.WaitForRamRoleAttachment(d.Id(), Deleted, DefaultTimeout))
+	return WrapError(ramService.WaitForRamRoleAttachment(d.Id(), ram.Deleted, DefaultTimeout))
 }

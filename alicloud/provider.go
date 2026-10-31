@@ -814,18 +814,6 @@ func Provider() *schema.Provider {
 			"alicloud_quotas_template_applications": dataSourceAliCloudQuotasTemplateApplications(),
 
 			// ram
-			"alicloud_ram_role_policy_attachments": dataSourceAliCloudRamRolePolicyAttachments(),
-			"alicloud_ram_system_policys":          dataSourceAliCloudRamSystemPolicys(),
-			// alicloud_ram_account_alias has been deprecated
-			"alicloud_ram_account_alias":     dataSourceAlicloudRamAccountAlias(),
-			"alicloud_ram_account_aliases":   dataSourceAlicloudRamAccountAlias(),
-			"alicloud_ram_groups":            dataSourceAlicloudRamGroups(),
-			"alicloud_ram_users":             dataSourceAlicloudRamUsers(),
-			"alicloud_ram_roles":             dataSourceAliCloudRamRoles(),
-			"alicloud_ram_policies":          dataSourceAliCloudRamPolicies(),
-			"alicloud_ram_policy_document":   dataSourceAliCloudRamPolicyDocument(),
-			"alicloud_ram_access_key_policy": dataSourceAlicloudRamAccessKeyPolicy(),
-			"alicloud_ram_saml_providers":    dataSourceAlicloudRamSamlProviders(),
 
 			// rdc
 			"alicloud_rdc_organizations": dataSourceAlicloudRdcOrganizations(),
@@ -1945,26 +1933,7 @@ func Provider() *schema.Provider {
 			"alicloud_quotas_quota_application":     resourceAliCloudQuotasQuotaApplication(),
 
 			// ram
-			"alicloud_ram_password_policy":         resourceAliCloudRamPasswordPolicy(),
-			"alicloud_ram_user_group_attachment":   resourceAliCloudRamUserGroupAttachment(),
-			"alicloud_ram_role_attachment":         resourceAlicloudRamRoleAttachment(),
-			"alicloud_ram_user":                    resourceAlicloudRamUser(),
-			"alicloud_ram_account_password_policy": resourceAlicloudRamAccountPasswordPolicy(),
-			"alicloud_ram_access_key":              resourceAliCloudRamAccessKey(),
-			"alicloud_ram_access_key_policy":       resourceAliCloudRamAccessKeyPolicy(),
-			"alicloud_ram_login_profile":           resourceAliCloudRamLoginProfile(),
-			"alicloud_ram_group":                   resourceAliCloudRamGroup(),
-			"alicloud_ram_role":                    resourceAliCloudRamRole(),
-			"alicloud_ram_policy":                  resourceAliCloudRamPolicy(),
-			// alicloud_ram_alias has been deprecated
-			"alicloud_ram_alias":                   resourceAliCloudRamAccountAlias(),
-			"alicloud_ram_account_alias":           resourceAliCloudRamAccountAlias(),
-			"alicloud_ram_group_membership":        resourceAlicloudRamGroupMembership(),
-			"alicloud_ram_user_policy_attachment":  resourceAliCloudRamUserPolicyAttachment(),
-			"alicloud_ram_role_policy_attachment":  resourceAliCloudRamRolePolicyAttachment(),
-			"alicloud_ram_group_policy_attachment": resourceAliCloudRamGroupPolicyAttachment(),
-			"alicloud_ram_saml_provider":           resourceAliCloudRamSamlProvider(),
-			"alicloud_ram_security_preference":     resourceAliCloudRamSecurityPreference(),
+			"alicloud_ram_role_attachment": resourceAlicloudRamRoleAttachment(),
 
 			// rdc
 			"alicloud_rdc_organization": resourceAlicloudRdcOrganization(),

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -14,7 +15,7 @@ func TestAccAliCloudRamRoleAttachment_basic0(t *testing.T) {
 	resourceId := "alicloud_ram_role_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudRamRoleAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ram.NewRamService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRamRoleAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -49,7 +50,7 @@ func TestAccAliCloudRamRoleAttachment_basic0_twin(t *testing.T) {
 	resourceId := "alicloud_ram_role_attachment.default"
 	ra := resourceAttrInit(resourceId, AliCloudRamRoleAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ram.NewRamService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeRamRoleAttachment")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
