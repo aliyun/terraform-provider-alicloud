@@ -1049,6 +1049,9 @@ func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, er
 	}
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	if err := client.applyTeaProxyConfig(&sdkConfig, endpoint); err != nil {
+		return nil, err
+	}
 	accessKey, secretKey, securityToken := client.config.GetRefreshCredential()
 	sdkConfig.SetAccessKeyId(accessKey)
 	sdkConfig.SetAccessKeySecret(secretKey)
@@ -1415,6 +1418,9 @@ func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, er
 func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client, error) {
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	if err := client.applyTeaProxyConfig(&sdkConfig, endpoint); err != nil {
+		return nil, err
+	}
 	credential, err := client.config.Credential.GetCredential()
 	if err == nil && credential != nil {
 		sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
@@ -1850,6 +1856,77 @@ func (client *AliyunClient) skipProxy(endpoint string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// teaNoProxyHost extracts the bare hostname from an endpoint so that tea's
+// runtime can match it against its NO_PROXY list. tea performs only exact
+// string comparison against the request host (no scheme, no port), so entries
+// such as ".aliyuncs.com", "*.aliyuncs.com" or "host:443" never match. The
+// provider's regexp-based skipProxy decision is applied separately; this
+// helper only normalizes the host handed to tea when a direct connection is
+// desired.
+func teaNoProxyHost(endpoint string) string {
+	raw := endpoint
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+	if u, err := url.Parse(raw); err == nil && u.Hostname() != "" {
+		return u.Hostname()
+	}
+	return endpoint
+}
+
+// resolveTeaProxy reuses the provider's existing proxy decision (getHttpProxy
+// + skipProxy) to determine whether tea-roa requests to the given endpoint
+// should go through the proxy or connect directly. It returns the proxy URL to
+// apply when proxying, or the precise hostname to bypass when direct
+// connecting. The decision mirrors the V1 SDK path (e.g. WithOtsClient) so
+// tea-roa control-plane calls honor NO_PROXY suffix/wildcard entries that tea's
+// own exact-match comparison would otherwise miss.
+func (client *AliyunClient) resolveTeaProxy(endpoint string) (useProxy bool, proxyURL string, noProxyHost string, err error) {
+	proxy, proxyErr := client.getHttpProxy()
+	if proxyErr != nil {
+		return false, "", "", proxyErr
+	}
+	// No proxy configured in the environment: tea reads the environment itself
+	// and, finding none, connects directly. Nothing to override.
+	if proxy == nil {
+		return false, "", "", nil
+	}
+	skip, skipErr := client.skipProxy(endpoint)
+	if skipErr != nil {
+		return false, "", "", skipErr
+	}
+	if skip {
+		// Direct connect: instruct tea to bypass the proxy for this exact host.
+		return false, "", teaNoProxyHost(endpoint), nil
+	}
+	return true, proxy.String(), "", nil
+}
+
+// applyTeaProxyConfig translates the provider's proxy decision into tea-roa
+// runtime configuration on the given roa.Config. It must be called after
+// SetEndpoint so the endpoint host is known. tea falls back to reading
+// environment variables when proxy fields are empty, so a direct connection
+// must be expressed via SetNoProxy with the precise hostname rather than an
+// empty HttpsProxy (which would leave tea reading HTTPS_PROXY from the
+// environment and proxying the request anyway).
+func (client *AliyunClient) applyTeaProxyConfig(sdkConfig *roa.Config, endpoint string) error {
+	useProxy, proxyURL, noProxyHost, err := client.resolveTeaProxy(endpoint)
+	if err != nil {
+		return err
+	}
+	switch {
+	case useProxy:
+		if client.config.Protocol == "HTTPS" {
+			sdkConfig.SetHttpsProxy(proxyURL)
+		} else {
+			sdkConfig.SetHttpProxy(proxyURL)
+		}
+	case noProxyHost != "":
+		sdkConfig.SetNoProxy(noProxyHost)
+	}
+	return nil
 }
 
 func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
@@ -2740,6 +2817,9 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	}
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	if err := client.applyTeaProxyConfig(&sdkConfig, endpoint); err != nil {
+		return nil, err
+	}
 	credential, err := client.config.Credential.GetCredential()
 	if err != nil || credential == nil {
 		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
