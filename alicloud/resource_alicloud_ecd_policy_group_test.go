@@ -543,6 +543,120 @@ var AlicloudECDPolicyGroupMap0 = map[string]string{
 	"policy_group_name": "tf-testaccPolicyGroupName",
 }
 
+func TestAccAliCloudECDPolicyGroup_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_policy_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdPolicyGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdpolicygroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDPolicyGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_group_name":               "tf-testaccPolicyGroupName",
+					"internet_communication_protocol": "TCP",
+					"recording":                       "alltime",
+					"recording_duration":              "30",
+					"client_types": []map[string]interface{}{
+						{
+							"client_type": "html5",
+							"status":      "off",
+						},
+					},
+					"end_user_apply_admin_coordinate": "on",
+					"end_user_group_coordinate":       "on",
+				}),
+				// DescribePolicyGroups returns the full client set (every type ON by
+				// default, plus the disabled html5 OFF), a superset of the configured
+				// entry. The refresh plan is intentionally non-empty: the API owns the
+				// full set and the config only asserts the user-configured member, so the
+				// real create (html5 off) is verified without synthesizing API-defaulted
+				// types into state.
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_group_name":               "tf-testaccPolicyGroupName",
+						"internet_communication_protocol": "TCP",
+						"recording_duration":              "30",
+						"end_user_apply_admin_coordinate": "on",
+						"end_user_group_coordinate":       "on",
+					}),
+					// F1: client_types read back from the plural "ClientTypes" key.
+					// F2: status lowercased on read (OFF -> off); html5 disabled via ToUpper on write.
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "html5",
+						"status":      "off",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_communication_protocol": "BOTH",
+					"recording":                       "alltime",
+					"recording_duration":              "60",
+					"client_types": []map[string]interface{}{
+						{
+							"client_type": "html5",
+							"status":      "on",
+						},
+						{
+							"client_type": "windows",
+							"status":      "on",
+						},
+					},
+					"end_user_apply_admin_coordinate": "off",
+					"end_user_group_coordinate":       "off",
+				}),
+				// When no client type is disabled (all ON), DescribePolicyGroups returns
+				// the full default client set (every type ON), a superset of the configured
+				// entries. The refresh plan is intentionally non-empty: the API owns the
+				// full ON set and the config only asserts the user-configured members, so the
+				// real update (html5 off->on) is verified without synthesizing API-defaulted
+				// types into state.
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_communication_protocol": "BOTH",
+						"recording_duration":              "60",
+						"end_user_apply_admin_coordinate": "off",
+						"end_user_group_coordinate":       "off",
+					}),
+					// F2: html5 re-enabled (on -> ON on write, ON -> on on read).
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "html5",
+						"status":      "on",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "client_types.*", map[string]string{
+						"client_type": "windows",
+						"status":      "on",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// client_types reflects whatever DescribePolicyGroups returns (the disabled
+				// subset, or the full ON set when nothing is disabled), which is a superset
+				// of the user's config; verified in the apply steps above.
+				ImportStateVerifyIgnore: []string{"client_types"},
+			},
+		},
+	})
+}
+
 func AlicloudECDPolicyGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {

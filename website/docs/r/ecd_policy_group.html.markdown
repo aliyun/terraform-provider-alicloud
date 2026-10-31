@@ -61,7 +61,7 @@ The following arguments are supported:
 * `domain_list` - (Optional) The list of domain.
 * `html_access` - (Optional, Computed) The access of html5. Valid values: `off`, `on`.
 * `html_file_transfer` - (Optional, Computed) The html5 file transfer. Valid values: `all`, `download`, `off`, `upload`.
-* `local_drive` - (Optional, Computed) Local drive redirect policy. Valid values: ` readwrite`, `off`, `read`.
+* `local_drive` - (Optional, Computed) Local drive redirect policy. Valid values: `readwrite`, `off`, `read`.
 * `policy_group_name` - (Optional) The name of policy group.
 * `usb_redirect` - (Optional, Computed) The usb redirect policy. Valid values: `off`, `on`.
 * `visual_quality` - (Optional, Computed) The quality of visual. Valid values: `high`, `lossless`, `low`, `medium`.
@@ -74,6 +74,18 @@ The following arguments are supported:
 * `recording_fps` - (Optional, Computed, Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
 * `camera_redirect` - (Optional, Computed, Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.
 * `recording_expires` - (Optional, Available in 1.186.0+) The screen recording video retention. Valid values between 30 and 180. This return value is meaningful only when the value of `recording` is `period` or `all-time`.
+* `internet_communication_protocol` - (Optional, Computed) The network communication protocol. Valid values: `BOTH`, `TCP`.
+* `recording_duration` - (Optional, Computed) The recording duration. Valid values: `10`, `20`, `30`, `60`.
+* `client_types` - (Optional) The list of client type access rules used to control which clients can access cloud desktops. See [`client_types`](#client_types) below.
+* `end_user_apply_admin_coordinate` - (Optional, Computed) Whether to allow end users to apply for administrator assistance. Valid values: `off`, `on`.
+* `end_user_group_coordinate` - (Optional, Computed) Whether to allow end users to join user groups. Valid values: `off`, `on`.
+
+### `client_types`
+
+The client_types supports the following:
+
+* `client_type` - (Optional) The client type. Valid values: `android`, `html5`, `ios`, `macos`, `windows`.
+* `status` - (Optional) Whether to allow the client type to access. Valid values: `off`, `on`.
 
 ### `authorize_security_policy_rules`
 

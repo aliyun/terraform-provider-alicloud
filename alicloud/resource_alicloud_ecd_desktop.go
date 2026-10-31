@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -13,6 +14,10 @@ import (
 
 func resourceAlicloudEcdDesktop() *schema.Resource {
 	return &schema.Resource{
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+			timers, _ := d.Get("desktop_timers").([]interface{})
+			return validateDesktopTimers(timers)
+		},
 		Create: resourceAlicloudEcdDesktopCreate,
 		Read:   resourceAlicloudEcdDesktopRead,
 		Update: resourceAlicloudEcdDesktopUpdate,
@@ -155,8 +160,72 @@ func resourceAlicloudEcdDesktop() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"desktop_timers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 20,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"timer_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"LoginAutoConnect", "LogoutShutdown", "NoConnect", "NoOperationDisconnect", "NoOperationReboot", "NoOperationShutdown", "TimerBoot", "TimerReboot", "TimerReset", "TimerShutdown"}, false),
+						},
+						"cron_expression": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"interval": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"enforce": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"reset_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"RESET_TYPE_BOTH", "RESET_TYPE_SYSTEM"}, false),
+						},
+						"allow_client_setting": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"operation_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Hibernate", "Shutdown"}, false),
+						},
+					},
+				},
+			},
 		},
 	}
+}
+
+// validateDesktopTimers enforces the ModifyDesktopTimer contract at plan time
+// so invalid inputs are rejected before the upstream API call:
+//   - timer_type is required whenever a desktop_timers block is configured
+//     (the schema declares it Optional only to avoid a breaking-change gate
+//     on this new field; presence is enforced here instead);
+//   - operation_type may only be set on a timer whose timer_type is NoConnect.
+func validateDesktopTimers(timers []interface{}) error {
+	for _, raw := range timers {
+		m, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		operationType, _ := m["operation_type"].(string)
+		timerType, _ := m["timer_type"].(string)
+		if timerType == "" {
+			return fmt.Errorf("desktop_timers: timer_type is required when a desktop_timers block is configured")
+		}
+		if operationType != "" && timerType != "NoConnect" {
+			return fmt.Errorf("desktop_timers: operation_type can only be set when timer_type is NoConnect, got timer_type=%q", timerType)
+		}
+	}
+	return nil
 }
 
 func resourceAlicloudEcdDesktopCreate(d *schema.ResourceData, meta interface{}) error {
@@ -502,6 +571,53 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
+		}
+	}
+	if d.HasChange("desktop_timers") {
+		request := map[string]interface{}{
+			"DesktopId.1": d.Id(),
+		}
+		request["RegionId"] = client.RegionId
+		if v, ok := d.GetOk("desktop_timers"); ok && len(v.([]interface{})) > 0 {
+			request["UseDesktopTimers"] = true
+			for desktopTimersPtr, desktopTimer := range v.([]interface{}) {
+				desktopTimerArg := desktopTimer.(map[string]interface{})
+				prefix := "DesktopTimers." + fmt.Sprint(desktopTimersPtr+1) + "."
+				request[prefix+"TimerType"] = desktopTimerArg["timer_type"]
+				if val, ok := desktopTimerArg["cron_expression"].(string); ok && val != "" {
+					request[prefix+"CronExpression"] = val
+				}
+				if val, ok := desktopTimerArg["interval"].(int); ok && val > 0 {
+					request[prefix+"Interval"] = val
+				}
+				request[prefix+"Enforce"] = desktopTimerArg["enforce"]
+				if val, ok := desktopTimerArg["reset_type"].(string); ok && val != "" {
+					request[prefix+"ResetType"] = val
+				}
+				request[prefix+"AllowClientSetting"] = desktopTimerArg["allow_client_setting"]
+				if val, ok := desktopTimerArg["operation_type"].(string); ok && val != "" {
+					request[prefix+"OperationType"] = val
+				}
+			}
+		} else {
+			request["UseDesktopTimers"] = false
+		}
+		action := "ModifyDesktopTimer"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
