@@ -3,16 +3,22 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -47,6 +53,123 @@ func TestUnitPolarDBDistributedNodeSchema(t *testing.T) {
 		if _, ok := clusterSchema[key]; ok {
 			t.Fatalf("command-style field %s must not be part of desired state", key)
 		}
+	}
+}
+
+func TestUnitPolarDBClusterEncryptNewTablesSchema(t *testing.T) {
+	field := resourceAlicloudPolarDBCluster().Schema["encrypt_new_tables"]
+	if field == nil {
+		t.Fatal("encrypt_new_tables must be defined in alicloud_polardb_cluster schema")
+	}
+	// Read unconditionally stores the value reported by DescribeDBClusterTDE, including for
+	// configurations that never set this attribute; Computed keeps that value from planning a diff.
+	if !field.Optional || !field.Computed {
+		t.Fatalf("encrypt_new_tables must be Optional and Computed, got Optional=%v Computed=%v", field.Optional, field.Computed)
+	}
+}
+
+// polarDBClusterTDEHTTPClient returns a client whose polardb endpoint is a local server. The server
+// records the serialized ModifyDBClusterTDE request and rejects it, so the update returns before the
+// provider's hardcoded three minute TDE state wait; assertions run on the request that was sent.
+func polarDBClusterTDEHTTPClient(t *testing.T, capture func(url.Values)) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request form: %s", err)
+		}
+		if action := r.Form.Get("Action"); action != "ModifyDBClusterTDE" {
+			t.Errorf("TDE-only update sent unexpected action %q", action)
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"Code":"UnexpectedAction","Message":"unexpected action"}`))
+			return
+		}
+		capture(r.Form)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"Code":"InvalidParameter","Message":"unit test stops the update after the TDE request","RequestId":"polar-db-tde-unit-test"}`))
+	}))
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatalf("build dummy credential: %s", err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("build client: %s", err)
+	}
+	endpoints.Store("polardb", endpoint)
+	return client
+}
+
+func TestUnitPolarDBClusterTDEEncryptNewTablesRequest(t *testing.T) {
+	cases := []struct {
+		name       string
+		stateValue string
+		newValue   string
+		wantSent   bool
+		wantValue  string
+	}{
+		// Config omits the attribute while Read already stored a value.
+		{"unset config keeps read back value", "OFF", "", false, ""},
+		// Config changes the value, so it must be sent.
+		{"explicit value change is sent", "OFF", "ON", true, "ON"},
+		// Config keeps the read back value, either set explicitly or removed:
+		// Optional+Computed produces no diff for the attribute in both cases, so only
+		// another TDE parameter changes and EncryptNewTables must not be sent.
+		{"unchanged value is omitted", "ON", "", false, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var captured []url.Values
+			client := polarDBClusterTDEHTTPClient(t, func(form url.Values) {
+				captured = append(captured, form)
+			})
+
+			clusterResource := resourceAlicloudPolarDBCluster()
+			state := &sdktf.InstanceState{
+				ID: "pc-polar-tde-unit",
+				Attributes: map[string]string{
+					"id":                        "pc-polar-tde-unit",
+					"tde_status":                "Enabled",
+					"encrypt_new_tables":        tc.stateValue,
+					"enable_automatic_rotation": "false",
+				},
+			}
+			diff := sdktf.NewInstanceDiff()
+			diff.Attributes["enable_automatic_rotation"] = &sdktf.ResourceAttrDiff{Old: "false", New: "true"}
+			if tc.newValue != "" {
+				diff.Attributes["encrypt_new_tables"] = &sdktf.ResourceAttrDiff{Old: tc.stateValue, New: tc.newValue}
+			}
+			d, err := schema.InternalMap(clusterResource.Schema).Data(state, diff)
+			if err != nil {
+				t.Fatalf("build resource data: %s", err)
+			}
+			d.SetId("pc-polar-tde-unit")
+
+			if err := resourceAlicloudPolarDBClusterUpdate(d, client); err == nil {
+				t.Fatal("update should return the mocked ModifyDBClusterTDE rejection")
+			}
+			if len(captured) != 1 {
+				t.Fatalf("want exactly one ModifyDBClusterTDE request, got %d", len(captured))
+			}
+			values, sent := captured[0]["EncryptNewTables"]
+			if sent != tc.wantSent {
+				t.Fatalf("EncryptNewTables sent = %v, want %v (form: %v)", sent, tc.wantSent, captured[0].Encode())
+			}
+			if tc.wantSent && (len(values) != 1 || values[0] != tc.wantValue) {
+				t.Fatalf("EncryptNewTables = %v, want %q", values, tc.wantValue)
+			}
+		})
 	}
 }
 
@@ -720,10 +843,9 @@ func TestAccAliCloudPolarDBCluster_TDEAutomaticRotationIncremental(t *testing.T)
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					// Align with the API default for a TDE-disabled cluster:
-					// DescribeDBClusterTDE returns EncryptNewTables="OFF", but the
-					// schema field is Optional (not Computed), so an unset config
-					// (value="") would produce a perpetual diff OFF=>"" at step0.
+					// DescribeDBClusterTDE reports EncryptNewTables="OFF" for a TDE-disabled
+					// cluster. The schema field is Optional+Computed, so an unset config no
+					// longer drifts; the explicit value is kept to document the intent.
 					"encrypt_new_tables": "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -839,10 +961,9 @@ func TestAccAliCloudPolarDBCluster_TDEAutomaticRotationOracle(t *testing.T) {
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					// Align with the API default for a TDE-disabled cluster:
-					// DescribeDBClusterTDE returns EncryptNewTables="OFF", but the
-					// schema field is Optional (not Computed), so an unset config
-					// (value="") would produce a perpetual diff OFF=>"" at step0.
+					// DescribeDBClusterTDE reports EncryptNewTables="OFF" for a TDE-disabled
+					// cluster. The schema field is Optional+Computed, so an unset config no
+					// longer drifts; the explicit value is kept to document the intent.
 					"encrypt_new_tables": "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1688,7 +1809,7 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
-					"db_node_class":     "polar.mysql.x4.large",
+					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -1717,6 +1838,17 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					testAccCheck(map[string]string{
 						"target_db_revision_version_code": "20230707",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.3.db_node_class}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_class": CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "db_node_class", "data.alicloud_polardb_node_classes.this", "classes.0.supported_engines.0.available_resources.3.db_node_class"),
 				),
 			},
 		},

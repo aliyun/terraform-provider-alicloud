@@ -242,6 +242,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
+				Computed:     true,
 			},
 			"encryption_key": {
 				Type:             schema.TypeString,
@@ -1013,7 +1014,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				"DBClusterId": d.Id(),
 				"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
 			}
-			if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
+			if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" && d.HasChange("encrypt_new_tables") {
 				request["EncryptNewTables"] = s.(string)
 			}
 			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
