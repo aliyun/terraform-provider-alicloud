@@ -1,20 +1,15 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
-	"sort"
 	"strings"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"gopkg.in/yaml.v2"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // The utilities below moved to the leaf packages helper, convert, tags and
@@ -513,45 +508,4 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 		}
 	}
 	return diff, nil
-}
-
-func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bool, error) {
-	type MetricList struct {
-		MetricList []string `yaml:"metric_list"`
-	}
-	type Product struct {
-		MetricInfo []MetricList `yaml:"metric_info"`
-		Namespace  string       `yaml:"namespace"`
-	}
-	type Products struct {
-		Products []Product
-	}
-
-	var P1 Products
-	err := yaml.Unmarshal([]byte(tem1), &P1)
-	if err != nil {
-		return false, err
-	}
-
-	y1 := make([]string, 0)
-	for _, product := range P1.Products {
-		s1, _ := json.Marshal(product)
-		y1 = append(y1, string(s1))
-	}
-
-	var P2 Products
-	err = yaml.Unmarshal([]byte(tem2), &P2)
-	if err != nil {
-		return false, err
-	}
-
-	y2 := make([]string, 0)
-	for _, product := range P2.Products {
-		s2, _ := json.Marshal(product)
-		y2 = append(y2, string(s2))
-	}
-
-	sort.Strings(y1)
-	sort.Strings(y2)
-	return reflect.DeepEqual(y1, y2), nil
 }
