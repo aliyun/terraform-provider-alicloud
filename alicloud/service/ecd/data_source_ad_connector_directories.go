@@ -1,0 +1,299 @@
+package ecd
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceAdConnectorDirectories() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAdConnectorDirectoriesRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"REGISTERING", "REGISTERED", "DEREGISTERING", "NEEDCONFIGTRUST", "CONFIGTRUSTFAILED", "DEREGISTERED", "ERROR", "CONFIGTRUSTING", "NEEDCONFIGUSER"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"directories": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ad_connectors": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"ad_connector_address": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"connector_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"network_interface_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vswitch_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"trust_key": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"specification": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ad_connector_directory_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"custom_security_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"directory_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"directory_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"dns_address": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"dns_user_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"domain_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"domain_user_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"enable_admin_access": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"mfa_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"sub_dns_address": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"sub_domain_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"trust_password": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_ids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAdConnectorDirectoriesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeDirectories"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("status"); ok {
+		request["DirectoryStatus"] = v
+	}
+	request["DirectoryType"] = "AD_CONNECTOR"
+	request["RegionId"] = client.RegionId
+	request["MaxResults"] = helper.PageSizeLarge
+	var objects []map[string]interface{}
+	var adDirectoryNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		adDirectoryNameRegex = r
+	}
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecd_ad_connector_directories", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Directories", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Directories", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if adDirectoryNameRegex != nil && !adDirectoryNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["DirectoryId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":                        fmt.Sprint(object["DirectoryId"]),
+			"ad_connector_directory_id": fmt.Sprint(object["DirectoryId"]),
+			"create_time":               object["CreationTime"],
+			"directory_name":            object["Name"],
+			"directory_type":            object["DirectoryType"],
+			"dns_address":               object["DnsAddress"],
+			"dns_user_name":             object["DnsUserName"],
+			"domain_name":               object["DomainName"],
+			"domain_user_name":          object["DomainUserName"],
+			"status":                    object["Status"],
+			"sub_dns_address":           object["SubDnsAddress"],
+			"trust_password":            object["TrustPassword"],
+			"vswitch_ids":               object["VSwitchIds"],
+			"vpc_id":                    object["VpcId"],
+			"sub_domain_name":           object["SubDomainName"],
+			"enable_admin_access":       object["EnableAdminAccess"],
+			"mfa_enabled":               object["MfaEnabled"],
+			"custom_security_group_id":  object["CustomSecurityGroupId"],
+		}
+		aDConnectors := make([]map[string]interface{}, 0)
+		if aDConnectorsList, ok := object["ADConnectors"].([]interface{}); ok {
+			for _, v := range aDConnectorsList {
+				if m1, ok := v.(map[string]interface{}); ok {
+					temp1 := map[string]interface{}{
+						"ad_connector_address": m1["ADConnectorAddress"],
+						"connector_status":     m1["ConnectorStatus"],
+						"network_interface_id": m1["NetworkInterfaceId"],
+						"vswitch_id":           m1["VSwitchId"],
+						"specification":        m1["Specification"],
+						"trust_key":            m1["TrustKey"],
+					}
+					aDConnectors = append(aDConnectors, temp1)
+				}
+			}
+		}
+		mapping["ad_connectors"] = aDConnectors
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("directories", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

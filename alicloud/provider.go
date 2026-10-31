@@ -555,23 +555,6 @@ func Provider() *schema.Provider {
 			"alicloud_ebs_disk_replica_pairs":               dataSourceAlicloudEbsDiskReplicaPairs(),
 
 			// ecd
-			"alicloud_ecd_desktop_groups":            dataSourceAliCloudEcdDesktopGroups(),
-			"alicloud_ecd_policy_groups":             dataSourceAlicloudEcdPolicyGroups(),
-			"alicloud_ecd_simple_office_sites":       dataSourceAlicloudEcdSimpleOfficeSites(),
-			"alicloud_ecd_nas_file_systems":          dataSourceAlicloudEcdNasFileSystems(),
-			"alicloud_ecd_users":                     dataSourceAlicloudEcdUsers(),
-			"alicloud_ecd_network_packages":          dataSourceAlicloudEcdNetworkPackages(),
-			"alicloud_ecd_bundles":                   dataSourceAlicloudEcdBundles(),
-			"alicloud_ecd_desktops":                  dataSourceAlicloudEcdDesktops(),
-			"alicloud_ecd_images":                    dataSourceAlicloudEcdImages(),
-			"alicloud_ecd_commands":                  dataSourceAlicloudEcdCommands(),
-			"alicloud_ecd_snapshots":                 dataSourceAlicloudEcdSnapshots(),
-			"alicloud_ecd_desktop_types":             dataSourceAlicloudEcdDesktopTypes(),
-			"alicloud_ecd_ram_directories":           dataSourceAlicloudEcdRamDirectories(),
-			"alicloud_ecd_zones":                     dataSourceAlicloudEcdZones(),
-			"alicloud_ecd_ad_connector_directories":  dataSourceAlicloudEcdAdConnectorDirectories(),
-			"alicloud_ecd_custom_properties":         dataSourceAlicloudEcdCustomProperties(),
-			"alicloud_ecd_ad_connector_office_sites": dataSourceAlicloudEcdAdConnectorOfficeSites(),
 
 			// eci
 			"alicloud_eci_image_caches":     dataSourceAlicloudEciImageCaches(),
@@ -1729,21 +1712,6 @@ func Provider() *schema.Provider {
 			"alicloud_ebs_disk_replica_pair":                     resourceAliCloudEbsDiskReplicaPair(),
 
 			// ecd
-			"alicloud_ecd_desktop_group":            resourceAliCloudEcdDesktopGroup(),
-			"alicloud_ecd_policy_group":             resourceAlicloudEcdPolicyGroup(),
-			"alicloud_ecd_simple_office_site":       resourceAlicloudEcdSimpleOfficeSite(),
-			"alicloud_ecd_nas_file_system":          resourceAlicloudEcdNasFileSystem(),
-			"alicloud_ecd_user":                     resourceAlicloudEcdUser(),
-			"alicloud_ecd_network_package":          resourceAlicloudEcdNetworkPackage(),
-			"alicloud_ecd_desktop":                  resourceAlicloudEcdDesktop(),
-			"alicloud_ecd_image":                    resourceAlicloudEcdImage(),
-			"alicloud_ecd_command":                  resourceAlicloudEcdCommand(),
-			"alicloud_ecd_snapshot":                 resourceAlicloudEcdSnapshot(),
-			"alicloud_ecd_bundle":                   resourceAlicloudEcdBundle(),
-			"alicloud_ecd_ram_directory":            resourceAlicloudEcdRamDirectory(),
-			"alicloud_ecd_ad_connector_directory":   resourceAlicloudEcdAdConnectorDirectory(),
-			"alicloud_ecd_custom_property":          resourceAlicloudEcdCustomProperty(),
-			"alicloud_ecd_ad_connector_office_site": resourceAlicloudEcdAdConnectorOfficeSite(),
 
 			// eci
 			"alicloud_eci_openapi_image_cache": resourceAlicloudEciImageCache(),

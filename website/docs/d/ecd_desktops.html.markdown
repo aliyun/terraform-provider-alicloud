@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd Desktops to the user.
 ---
 
-# alicloud\_ecd\_desktops
+# alicloud_ecd_desktops
 
 This data source provides the Ecd Desktops of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.144.0+.
+-> **NOTE:** Available since v1.144.0.
 
 ## Example Usage
 
@@ -87,27 +87,28 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Desktop name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `policy_group_id` - (Optional, ForceNew) The policy group id of the Desktop.
+* `end_user_ids` - (Optional) A list of end user IDs used to filter the results.
 * `status` - (Optional, ForceNew) The status of the Desktop. Valid values: `Deleted`, `Expired`, `Pending`, `Running`, `Starting`, `Stopped`, `Stopping`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Desktop names.
 * `desktops` - A list of Ecd Desktops. Each element contains the following attributes:
-	* `cpu` - The number of CPUs.
-	* `create_time` - The creation time of the Desktop.
-	* `desktop_id` - The desktop id of the Desktop.
-	* `desktop_name` - The desktop name of the Desktop.
-	* `desktop_type` - The desktop type of the Desktop.
-	* `directory_id` - The directory id of the Desktop.
-	* `end_user_ids` - The desktop end user id of the Desktop.
-	* `expired_time` - The expired time of the Desktop.
-	* `id` - The ID of the Desktop.
-	* `image_id` - The image id of the Desktop.
-	* `memory` - The memory of the Desktop.
-	* `network_interface_id` - The network interface id of the Desktop.
-	* `payment_type` - The payment type of the Desktop.
-	* `policy_group_id` - The policy group id of the Desktop.
-	* `status` - The status of the Desktop. Valid values: `Deleted`, `Expired`, `Pending`, `Running`, `Starting`, `Stopped`, `Stopping`.
-	* `system_disk_size` - The system disk size of the Desktop.
+  * `cpu` - The number of CPUs.
+  * `create_time` - The creation time of the Desktop.
+  * `desktop_id` - The desktop id of the Desktop.
+  * `desktop_name` - The desktop name of the Desktop.
+  * `desktop_type` - The desktop type of the Desktop.
+  * `directory_id` - The directory id of the Desktop.
+  * `end_user_ids` - The desktop end user id of the Desktop.
+  * `expired_time` - The expired time of the Desktop.
+  * `id` - The ID of the Desktop.
+  * `image_id` - The image id of the Desktop.
+  * `memory` - The memory of the Desktop.
+  * `network_interface_id` - The network interface id of the Desktop.
+  * `payment_type` - The payment type of the Desktop.
+  * `policy_group_id` - The policy group id of the Desktop.
+  * `status` - The status of the Desktop. Valid values: `Deleted`, `Expired`, `Pending`, `Running`, `Starting`, `Stopped`, `Stopping`.
+  * `system_disk_size` - The system disk size of the Desktop.
