@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,12 @@ import (
 
 type ArmsService struct {
 	client *connectivity.AliyunClient
+}
+
+// armsListNotificationPoliciesRequest is a seam for tests; it must not be
+// reassigned outside of test code.
+var armsListNotificationPoliciesRequest = func(client *connectivity.AliyunClient, request map[string]interface{}) (map[string]interface{}, error) {
+	return client.RpcPost("ARMS", "2019-08-08", "ListNotificationPolicies", nil, request, true)
 }
 
 func (s *ArmsService) DescribeArmsAlertContact(id string) (object map[string]interface{}, err error) {
@@ -217,45 +224,62 @@ func (s *ArmsService) DescribeArmsPrometheusAlertRule(id string) (object map[str
 	return object, nil
 }
 
-func (s *ArmsService) ListArmsNotificationPolicies(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
+func (s *ArmsService) ListArmsNotificationPolicies() (objects []map[string]interface{}, err error) {
 	client := s.client
 	action := "ListNotificationPolicies"
-	request := map[string]interface{}{
-		"Page":     1,
-		"Size":     PageSizeXLarge,
-		"IsDetail": true,
-		"RegionId": s.client.RegionId,
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
+	return listArmsNotificationPolicies(s.client.RegionId, func(request map[string]interface{}) (map[string]interface{}, error) {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("ARMS", "2019-08-08", action, nil, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
 			}
-			return retry.NonRetryableError(err)
-		}
-		return nil
+			return nil
+		})
+		addDebug(action, response, request)
+		return response, err
 	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	v, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageBean.NotificationPolicies", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
-	}
-	for _, v := range v.([]interface{}) {
-		if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
-			return v.(map[string]interface{}), nil
+}
+
+func listArmsNotificationPolicies(regionID string, fetch func(map[string]interface{}) (map[string]interface{}, error)) (objects []map[string]interface{}, err error) {
+	for page := 1; page <= 10000; page++ {
+		request := map[string]interface{}{"Page": page, "Size": PageSizeXLarge, "IsDetail": true, "RegionId": regionID}
+		response, fetchErr := fetch(request)
+		err = fetchErr
+		if err != nil {
+			return nil, err
+		}
+		v, err := jsonpath.Get("$.PageBean.NotificationPolicies", response)
+		if err != nil {
+			return nil, err
+		}
+		items, ok := v.([]interface{})
+		if !ok {
+			return nil, Error("invalid notification policies response")
+		}
+		for _, item := range items {
+			object, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, Error("invalid notification policy item")
+			}
+			objects = append(objects, object)
+		}
+		if len(items) < PageSizeXLarge {
+			return objects, nil
+		}
+		if total, err := jsonpath.Get("$.PageBean.Total", response); err == nil {
+			totalCount, parseErr := strconv.Atoi(fmt.Sprint(total))
+			if parseErr == nil && page*PageSizeXLarge >= totalCount {
+				return objects, nil
+			}
 		}
 	}
-	return object, WrapErrorf(NotFoundErr("ARMS", id), NotFoundWithResponse, response)
+	return nil, Error("ARMS notification policy pagination exceeded maximum pages")
 }
 
 func (s *ArmsService) ArmsDispatchRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) retry.StateRefreshFunc {
