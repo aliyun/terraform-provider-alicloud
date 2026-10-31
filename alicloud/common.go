@@ -433,6 +433,13 @@ func ParseSlbListenerId(id string) (parts []string, err error) {
 	return parts, err
 }
 
+// CEN child-instance kind constants. The canonical definitions now live in
+// alicloud/service/cen; these root-package copies keep the legacy root
+// GetCenChildInstanceType helper compiling without importing the subpackage.
+const ChildInstanceTypeVpc = "VPC"
+const ChildInstanceTypeVbr = "VBR"
+const ChildInstanceTypeCcn = "CCN"
+
 func GetCenChildInstanceType(id string) (c string, e error) {
 	if strings.HasPrefix(id, "vpc") {
 		return ChildInstanceTypeVpc, nil

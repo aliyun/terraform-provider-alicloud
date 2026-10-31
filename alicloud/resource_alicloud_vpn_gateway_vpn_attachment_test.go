@@ -25,6 +25,7 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cen"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -3715,10 +3716,10 @@ func TestAccAliCloudVPNGatewayVpnAttachment_tunnelOrder(t *testing.T) {
 			service    func() interface{}
 		}{
 			{vpn, "DescribeVpnGatewayVpnAttachment", func() interface{} { return &VPNGatewayServiceV2{client()} }},
-			{"alicloud_cen_transit_router_vpn_attachment.default", "DescribeCenTransitRouterVpnAttachment", func() interface{} { return &CbnService{client()} }},
-			{"alicloud_cen_transit_router_cidr.default", "DescribeCenTransitRouterCidr", func() interface{} { return &CbnService{client()} }},
-			{"alicloud_cen_transit_router.default", "DescribeCenTransitRouter", func() interface{} { return &CenServiceV2{client()} }},
-			{"alicloud_cen_instance.default", "DescribeCenInstance", func() interface{} { return &CbnService{client()} }},
+			{"alicloud_cen_transit_router_vpn_attachment.default", "DescribeCenTransitRouterVpnAttachment", func() interface{} { return cen.NewCbnService(client()) }},
+			{"alicloud_cen_transit_router_cidr.default", "DescribeCenTransitRouterCidr", func() interface{} { return cen.NewCbnService(client()) }},
+			{"alicloud_cen_transit_router.default", "DescribeCenTransitRouter", func() interface{} { return cen.NewCenServiceV2(client()) }},
+			{"alicloud_cen_instance.default", "DescribeCenInstance", func() interface{} { return cen.NewCbnService(client()) }},
 		}
 		for _, check := range checks {
 			var object map[string]interface{}
