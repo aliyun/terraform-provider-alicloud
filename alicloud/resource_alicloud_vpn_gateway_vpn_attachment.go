@@ -460,7 +460,14 @@ func resourceAliCloudVpnGatewayVpnAttachment() *schema.Resource {
 	}
 	// Role is returned by the service but is not accepted by either attachment
 	// write API. Retain its configuration syntax for compatibility, while the
-	// hash includes every other writable field and excludes service-only values.
+	// hash includes every other writable field and excludes this service-only
+	// value. local_id is writable and updatable, so it stays in the hash: a
+	// user-initiated local_id edit produces a real set diff that reaches Update.
+	// The service may backfill local_id (for example deriving it from the
+	// customer gateway), but CustomizeDiff merges an omitted Optional+Computed
+	// local_id back from state before hashing, so a refreshed backfill no longer
+	// changes the tunnel's hash and the misleading -/+ drift for the whole block
+	// is gone.
 	tunnels := r.Schema["tunnel_options_specification"]
 	fields := tunnels.Elem.(*schema.Resource).Schema
 	hashFields := make(map[string]*schema.Schema, len(fields))
@@ -1379,6 +1386,12 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 	}
 	seen := make(map[int]bool)
 	fields := resourceAliCloudVpnGatewayVpnAttachment().Schema[key].Elem.(*schema.Resource).Schema
+	// local_id stays in the set hash. A server-side backfill only drifts when
+	// the configuration omits local_id; vpnAttachmentInheritComputed merges an
+	// omitted Optional+Computed local_id back from state here, so the merged
+	// tunnel hashes match state and no -/+ drift is produced. A
+	// user-initiated local_id edit keeps the config value, which changes the
+	// hash and produces a real set diff that reaches Update naturally.
 	for _, raw := range planned {
 		next := raw.(map[string]interface{})
 		index, indexErr := formatInt(next["tunnel_index"])
@@ -1407,7 +1420,9 @@ func vpnAttachmentValidateTunnelChanges(ctx context.Context, d *schema.ResourceD
 		}
 	}
 	if !reflect.DeepEqual(planned, plannedSet.List()) {
-		return d.SetNew(key, planned)
+		if err := d.SetNew(key, planned); err != nil {
+			return err
+		}
 	}
 	return nil
 }
