@@ -344,7 +344,7 @@ func dataSourceAlicloudSaeApplicationsRead(d *schema.ResourceData, meta interfac
 		request["OrderBy"] = StringPointer(v.(string))
 	}
 	if v, ok := d.GetOkExists("reverse"); ok {
-		request["Reverse"] = StringPointer(v.(string))
+		request["Reverse"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
 	request["PageSize"] = StringPointer(strconv.Itoa(PageSizeLarge))
 	request["CurrentPage"] = StringPointer("1")
