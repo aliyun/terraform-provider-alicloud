@@ -1,16 +1,18 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
+	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"log"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/aliyun/fc-go-sdk"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func init() {
@@ -23,11 +25,11 @@ func init() {
 }
 
 func testSweepFcTrigger(region string) error {
-	if testSweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, false, connectivity.ApiGatewayNoSupportedRegions) {
 		log.Printf("[INFO] Skipping API Gateway unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -62,7 +64,7 @@ func testSweepFcTrigger(region string) error {
 				nextToken := ""
 				for {
 					request := fc.NewListTriggersInput(serviceName, functionName)
-					request.WithHeader(HeaderEnableEBTrigger, "enable")
+					request.WithHeader(fcsvc.HeaderEnableEBTrigger, "enable")
 					if nextToken != "" {
 						request.NextToken = &nextToken
 					}
@@ -87,7 +89,7 @@ func testSweepFcTrigger(region string) error {
 							if strings.HasPrefix(strings.ToLower(*trigger.TriggerName), strings.ToLower(prefix)) {
 								_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 									deleteTriggerInput := fc.NewDeleteTriggerInput(serviceName, functionName, *trigger.TriggerName)
-									deleteTriggerInput.WithHeader(HeaderEnableEBTrigger, "enable")
+									deleteTriggerInput.WithHeader(fcsvc.HeaderEnableEBTrigger, "enable")
 									return fcClient.DeleteTrigger(deleteTriggerInput)
 								})
 
@@ -117,30 +119,30 @@ func testSweepFcTrigger(region string) error {
 
 func TestAccAlicloudFCTrigger_log(t *testing.T) {
 	var v *fc.GetTriggerOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"name":   name,
-		"config": CHECKSET,
+		"config": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_trigger.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"config": CHECKSET,
+						"config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -154,7 +156,7 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"config": CHECKSET,
+						"config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -164,26 +166,26 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 
 func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
 	var v *fc.GetTriggerOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"name":       name,
-		"source_arn": CHECKSET,
+		"source_arn": acctest.CHECKSET,
 		"config_mns": testTriggerMnsTopicTemplate,
 		"type":       "mns_topic",
 	}
 	resourceId := "alicloud_fc_trigger.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerMnsTopic(testTriggerMnsTopicTemplate, testFCMnsTopicRoleTemplate, testFCMnsTopicPolicyTemplate, name),
@@ -197,29 +199,29 @@ func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
 
 func TestAccAlicloudFCTrigger_cdn_events(t *testing.T) {
 	var v *fc.GetTriggerOutput
-	rand := acctest.RandIntRange(100000, 9999999)
-	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(100000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
-		"service":       CHECKSET,
-		"function":      CHECKSET,
-		"source_arn":    CHECKSET,
+		"service":       acctest.CHECKSET,
+		"function":      acctest.CHECKSET,
+		"source_arn":    acctest.CHECKSET,
 		"name":          name,
-		"config":        CHECKSET,
+		"config":        acctest.CHECKSET,
 		"type":          "cdn_events",
-		"last_modified": CHECKSET,
+		"last_modified": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_trigger.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerCdnEvents(testTriggerCdnEventsTemplate, testFCcdnRoleTemplate, testFCcdnPolicyTemplate, name),
@@ -245,29 +247,29 @@ func TestAccAlicloudFCTrigger_cdn_events(t *testing.T) {
 
 func TestAccAlicloudFCTrigger_eventbridge_With_Default_EventSource(t *testing.T) {
 	var v *fc.GetTriggerOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
-		"service":       CHECKSET,
-		"function":      CHECKSET,
-		"source_arn":    CHECKSET,
+		"service":       acctest.CHECKSET,
+		"function":      acctest.CHECKSET,
+		"source_arn":    acctest.CHECKSET,
 		"name":          name,
-		"config":        CHECKSET,
+		"config":        acctest.CHECKSET,
 		"type":          "eventbridge",
-		"last_modified": CHECKSET,
+		"last_modified": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_trigger.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerEventBridge(testTriggerEventBridgeWithDefaultSourceTemplate, name),
@@ -293,28 +295,28 @@ func TestAccAlicloudFCTrigger_eventbridge_With_Default_EventSource(t *testing.T)
 
 func TestAccAlicloudFCTrigger_eventbridge_With_MNS_EventSource(t *testing.T) {
 	var v *fc.GetTriggerOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%s-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
-		"service":       CHECKSET,
-		"function":      CHECKSET,
+		"service":       acctest.CHECKSET,
+		"function":      acctest.CHECKSET,
 		"name":          name,
-		"config":        CHECKSET,
+		"config":        acctest.CHECKSET,
 		"type":          "eventbridge",
-		"last_modified": CHECKSET,
+		"last_modified": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_trigger.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAlicloudFCTriggerEventBridge(testTriggerEventBridgeWithMNSSourceTemplate, name),

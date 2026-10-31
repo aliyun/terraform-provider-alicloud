@@ -1,36 +1,37 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"testing"
 )
 
 func TestAccAlicloudFCAliasUpdate(t *testing.T) {
 	var v *fc.GetAliasOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc-%s-alicloudfcalias-%d-cd", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc-%s-alicloudfcalias-%d-cd", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
-		"alias_name": CHECKSET,
+		"alias_name": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_alias.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcAliasConfigDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcAliasConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

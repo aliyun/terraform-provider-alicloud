@@ -1,4 +1,4 @@
-package alicloud
+package fc
 
 import (
 	"encoding/json"
@@ -9,6 +9,10 @@ import (
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -181,55 +185,55 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	request := &fc.CreateFunctionInput{
-		ServiceName: StringPointer(serviceName),
+		ServiceName: helper.StringPointer(serviceName),
 	}
 	object := fc.FunctionCreateObject{
-		FunctionName:          StringPointer(name),
-		Description:           StringPointer(d.Get("description").(string)),
-		Runtime:               StringPointer(d.Get("runtime").(string)),
-		Handler:               StringPointer(d.Get("handler").(string)),
-		Timeout:               Int32Pointer(int32(d.Get("timeout").(int))),
-		MemorySize:            Int32Pointer(int32(d.Get("memory_size").(int))),
-		Initializer:           StringPointer(d.Get("initializer").(string)),
-		InitializationTimeout: Int32Pointer(int32(d.Get("initialization_timeout").(int))),
-		InstanceType:          StringPointer(d.Get("instance_type").(string)),
+		FunctionName:          helper.StringPointer(name),
+		Description:           helper.StringPointer(d.Get("description").(string)),
+		Runtime:               helper.StringPointer(d.Get("runtime").(string)),
+		Handler:               helper.StringPointer(d.Get("handler").(string)),
+		Timeout:               helper.Int32Pointer(int32(d.Get("timeout").(int))),
+		MemorySize:            helper.Int32Pointer(int32(d.Get("memory_size").(int))),
+		Initializer:           helper.StringPointer(d.Get("initializer").(string)),
+		InitializationTimeout: helper.Int32Pointer(int32(d.Get("initialization_timeout").(int))),
+		InstanceType:          helper.StringPointer(d.Get("instance_type").(string)),
 	}
 	// Set function environment variables.
 	if variables := d.Get("environment_variables").(map[string]interface{}); len(variables) > 0 {
 		byteVar, err := json.Marshal(variables)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		err = json.Unmarshal(byteVar, &object.EnvironmentVariables)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	if strings.EqualFold(*object.Runtime, "custom-container") {
 		// Set custom container config.
 		cfg, err := parseCustomContainerConfig(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		object.CustomContainerConfig = cfg
 	} else {
 		// Set function code.
 		code, err := getFunctionCode(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		object.Code = code
 	}
 	// Set CA port if the runtime is custom runtime or custom container.
 	if strings.EqualFold(*object.Runtime, "custom") || strings.EqualFold(*object.Runtime, "custom-container") {
-		object.CAPort = Int32Pointer(int32(d.Get("ca_port").(int)))
+		object.CAPort = helper.Int32Pointer(int32(d.Get("ca_port").(int)))
 	}
 	// Disable instance concurrency for python runtime.
 	if !strings.EqualFold(*object.Runtime, "python2.7") && !strings.EqualFold(*object.Runtime, "python3") {
-		object.InstanceConcurrency = Int32Pointer(int32(d.Get("instance_concurrency").(int)))
+		object.InstanceConcurrency = helper.Int32Pointer(int32(d.Get("instance_concurrency").(int)))
 	}
 	if layers, ok := d.GetOk("layers"); ok {
-		object.Layers = expandStringList(layers.([]interface{}))
+		object.Layers = convert.ExpandStringList(layers.([]interface{}))
 	}
 
 	request.FunctionCreateObject = object
@@ -242,21 +246,21 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 			return fcClient.CreateFunction(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied"}) {
-				return retry.RetryableError(WrapError(err))
+			if errs.IsExpectedErrors(err, []string{"AccessDenied"}) {
+				return retry.RetryableError(errs.WrapError(err))
 			}
-			return retry.NonRetryableError(WrapError(err))
+			return retry.NonRetryableError(errs.WrapError(err))
 		}
-		addDebug("CreateFunction", raw, requestInfo, request)
+		logs.AddDebug("CreateFunction", raw, requestInfo, request)
 		function, _ = raw.(*fc.CreateFunctionOutput)
 		return nil
 
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_function", "CreateFunction", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_function", "CreateFunction", errs.FcGoSdk)
 	}
 
 	if function == nil {
-		return WrapError(Error("Creating function compute function got a empty response"))
+		return errs.WrapError(errs.Error("Creating function compute function got a empty response"))
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", serviceName, COLON_SEPARATED, *function.FunctionName))
@@ -266,27 +270,27 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 
 	object, err := fcService.DescribeFcFunction(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("service", parts[0])
 	d.Set("code_checksum", object.CodeChecksum)
 	d.Set("name", object.FunctionName)
 	d.Set("function_id", object.FunctionID)
 	if accountId, err := client.AccountId(); err != nil {
-		log.Print(WrapError(err))
+		log.Print(errs.WrapError(err))
 	} else {
 		d.Set("function_arn", fmt.Sprintf("acs:fc:%s:%s:services/%s.LATEST/functions/%s", client.RegionId, accountId, parts[0], parts[1]))
 	}
@@ -312,7 +316,7 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 		})
 	}
 	if err := d.Set("custom_container_config", customContainerConfig); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
@@ -329,21 +333,21 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if d.HasChange("description") {
 		update = true
-		request.Description = StringPointer(d.Get("description").(string))
+		request.Description = helper.StringPointer(d.Get("description").(string))
 	}
 	if d.HasChange("handler") {
 		update = true
-		request.Handler = StringPointer(d.Get("handler").(string))
+		request.Handler = helper.StringPointer(d.Get("handler").(string))
 	}
 	if d.HasChange("memory_size") {
 		update = true
-		request.MemorySize = Int32Pointer(int32(d.Get("memory_size").(int)))
+		request.MemorySize = helper.Int32Pointer(int32(d.Get("memory_size").(int)))
 	}
 	if d.HasChange("timeout") {
 		update = true
-		request.Timeout = Int32Pointer(int32(d.Get("timeout").(int)))
+		request.Timeout = helper.Int32Pointer(int32(d.Get("timeout").(int)))
 	}
-	runtime := StringPointer(d.Get("runtime").(string))
+	runtime := helper.StringPointer(d.Get("runtime").(string))
 	if d.HasChange("runtime") {
 		update = true
 		request.Runtime = runtime
@@ -352,45 +356,45 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		byteVar, err := json.Marshal(d.Get("environment_variables").(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		err = json.Unmarshal(byteVar, &request.EnvironmentVariables)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	if d.HasChange("initializer") {
 		update = true
-		request.Initializer = StringPointer(d.Get("initializer").(string))
+		request.Initializer = helper.StringPointer(d.Get("initializer").(string))
 	}
 	if d.HasChange("initialization_timeout") {
 		update = true
-		request.InitializationTimeout = Int32Pointer(int32(d.Get("initialization_timeout").(int)))
+		request.InitializationTimeout = helper.Int32Pointer(int32(d.Get("initialization_timeout").(int)))
 	}
 	if d.HasChange("instance_concurrency") {
 		update = true
-		request.InstanceConcurrency = Int32Pointer(int32(d.Get("instance_concurrency").(int)))
+		request.InstanceConcurrency = helper.Int32Pointer(int32(d.Get("instance_concurrency").(int)))
 	}
 	if d.HasChange("instance_type") {
 		update = true
-		request.InstanceType = StringPointer(d.Get("instance_type").(string))
+		request.InstanceType = helper.StringPointer(d.Get("instance_type").(string))
 	}
 	if d.HasChange("ca_port") {
 		update = true
-		request.CAPort = Int32Pointer(int32(d.Get("ca_port").(int)))
+		request.CAPort = helper.Int32Pointer(int32(d.Get("ca_port").(int)))
 	}
 	if d.HasChange("custom_container_config") {
 		update = true
 		config, err := parseCustomContainerConfig(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.CustomContainerConfig = config
 	}
 	if d.HasChange("layers") {
 		update = true
 		if layers, ok := d.GetOk("layers"); ok {
-			request.Layers = expandStringList(layers.([]interface{}))
+			request.Layers = convert.ExpandStringList(layers.([]interface{}))
 		} else {
 			request.Layers = make([]string, 0, 0)
 		}
@@ -398,12 +402,12 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if update {
 		split := strings.Split(d.Id(), COLON_SEPARATED)
-		request.ServiceName = StringPointer(split[0])
-		request.FunctionName = StringPointer(split[1])
+		request.ServiceName = helper.StringPointer(split[0])
+		request.FunctionName = helper.StringPointer(split[1])
 		if !strings.EqualFold(*runtime, "custom-container") {
 			code, err := getFunctionCode(d)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request.Code = code
 		}
@@ -413,9 +417,9 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 			return fcClient.UpdateFunction(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateFunction", FcGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateFunction", errs.FcGoSdk)
 		}
-		addDebug("UpdateFunction", raw, requestInfo, request)
+		logs.AddDebug("UpdateFunction", raw, requestInfo, request)
 	}
 
 	return resourceAlicloudFCFunctionRead(d, meta)
@@ -423,10 +427,10 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
+	fcService := Service{client}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := fc.NewDeleteFunctionInput(parts[0], parts[1])
 	request.WithHeader(HeaderEnableEBTrigger, "enable")
@@ -436,21 +440,21 @@ func resourceAlicloudFCFunctionDelete(d *schema.ResourceData, meta interface{}) 
 		return fcClient.DeleteFunction(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceNotFound", "FunctionNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"ServiceNotFound", "FunctionNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteFunction", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteFunction", errs.FcGoSdk)
 	}
-	addDebug("DeleteFunction", raw, requestInfo, request)
-	return WrapError(fcService.WaitForFcFunction(d.Id(), Deleted, DefaultTimeout))
+	logs.AddDebug("DeleteFunction", raw, requestInfo, request)
+	return errs.WrapError(fcService.WaitForFcFunction(d.Id(), Deleted, DefaultTimeout))
 }
 
 func getFunctionCode(d *schema.ResourceData) (*fc.Code, error) {
 	code := fc.NewCode()
 	if filename, ok := d.GetOk("filename"); ok && filename.(string) != "" {
-		file, err := loadFileContent(filename.(string))
+		file, err := helper.LoadFileContent(filename.(string))
 		if err != nil {
-			return code, WrapError(err)
+			return code, errs.WrapError(err)
 		}
 		code.WithZipFile(file)
 	} else {
@@ -472,7 +476,7 @@ func parseCustomContainerConfig(d *schema.ResourceData) (config *fc.CustomContai
 		if ok {
 			return c.WithImage(config["image"].(string)).WithCommand(config["command"].(string)).WithArgs(config["args"].(string)), nil
 		} else {
-			return nil, Error("Failed to parse custom_container_config")
+			return nil, errs.Error("Failed to parse custom_container_config")
 		}
 	}
 	// The "custom_container_config" has not been set.
