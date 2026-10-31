@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cms Dynamic Tag Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0+.
 
 ## Example Usage
 
@@ -51,17 +51,17 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `RUNNING`, `FINISH`.
 * `tag_key` - (Optional, ForceNew) The tag key of the tag.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `groups` - A list of Cms Dynamic Tag Groups. Each element contains the following attributes:
-	* `dynamic_tag_rule_id` - The ID of the tag rule.
-	* `id` - The ID of the Dynamic Tag Group.
-	* `match_express_filter_relation` - The relationship between conditional expressions. Valid values: `and`, `or`.
-	* `match_express` - The label generates a matching expression that applies the grouping. See the following `Block match_express`.
-		* `tag_value` - The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
-		* `tag_value_match_function` - Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
-	* `status` -  The status of the resource. Valid values: `RUNNING`, `FINISH`.
-	* `tag_key` - The tag key of the tag.
-	
+  * `dynamic_tag_rule_id` - The ID of the tag rule.
+  * `id` - The ID of the Dynamic Tag Group.
+  * `match_express_filter_relation` - The relationship between conditional expressions. Valid values: `and`, `or`.
+  * `match_express` - The label generates a matching expression that applies the grouping. See the following `Block match_express`.
+    * `tag_value` - The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
+    * `tag_value_match_function` - Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
+  * `status` -  The status of the resource. Valid values: `RUNNING`, `FINISH`.
+  * `tag_key` - The tag key of the tag.
+

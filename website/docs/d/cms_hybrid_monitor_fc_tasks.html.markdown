@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cms Hybrid Monitor Fc Tasks of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.179.0+.
+-> **NOTE:** Available since v1.179.0+.
 
 ## Example Usage
 
@@ -31,18 +31,17 @@ output "cms_hybrid_monitor_fc_task_id_1" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Hybrid Monitor Fc Task IDs.
-* `keyword` - (Optional, ForceNew) The keyword.
 * `namespace` - (Optional, ForceNew) The name of the namespace.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `tasks` - A list of Cms Hybrid Monitor Fc Tasks. Each element contains the following attributes:
- * `create_time` - Create the timestamp of the monitoring task. Unit: milliseconds.
- * `hybrid_monitor_fc_task_id` - The ID of the monitoring task.
- * `id` - The ID of the Hybrid Monitor Fc Task. The value formats as `<hybrid_monitor_fc_task_id>:<namespace>`.
- * `namespace` - The index warehouse where the host belongs.
- * `target_user_id` - The ID of the member account.
- * `yarm_config` - The configuration file of the Alibaba Cloud service that you want to monitor by using Hybrid Cloud Monitoring.
+  * `create_time` - Create the timestamp of the monitoring task. Unit: milliseconds.
+  * `hybrid_monitor_fc_task_id` - The ID of the monitoring task.
+  * `id` - The ID of the Hybrid Monitor Fc Task. The value formats as `<hybrid_monitor_fc_task_id>:<namespace>`.
+  * `namespace` - The index warehouse where the host belongs.
+  * `target_user_id` - The ID of the member account.
+  * `yarm_config` - The configuration file of the Alibaba Cloud service that you want to monitor by using Hybrid Cloud Monitoring.
