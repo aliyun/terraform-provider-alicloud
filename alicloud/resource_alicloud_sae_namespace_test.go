@@ -15,6 +15,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_sae_namespace",
+		&resource.Sweeper{
+			Name:         "alicloud_sae_namespace",
+			F:            testSweepSaeNamespace,
+			// namespace delete fails if it still has apps or config maps;
+			// declare dependencies so the app + config_map sweepers run first (children before parent)
+			Dependencies: []string{"alicloud_sae_application", "alicloud_sae_config_map"},
+		})
+}
+
 func testSweepSaeNamespace(region string) error {
 	prefixes := []string{
 		"tftestacc",
@@ -36,7 +48,9 @@ func testSweepSaeNamespace(region string) error {
 	}
 	resp, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+		// empty-list guard: treat missing/malformed list key as empty (no namespaces to sweep)
+		log.Printf("[WARN] %s: $.Data not found or malformed, treating as empty list", action)
+		return nil
 	}
 	namespace, _ := resp.([]interface{})
 
@@ -44,21 +58,27 @@ func testSweepSaeNamespace(region string) error {
 		// item namespace
 		item := v.(map[string]interface{})
 
+		nsName := ""
+		if val, exist := item["NamespaceName"]; exist {
+			nsName = val.(string)
+		}
+		// red-line #2: skip NODELETING + do-not-delete markers (both sweepAll + normal mode)
+		if protectedSweepVpcName(nsName) {
+			log.Printf("[INFO] Skipping Sae Namespace (NODELETING): %s", nsName)
+			continue
+		}
 		skip := true
 		for _, prefix := range prefixes {
-			app_name := ""
-			if val, exist := item["NamespaceName"]; exist {
-				app_name = val.(string)
-			}
-			if strings.Contains(strings.ToLower(app_name), strings.ToLower(prefix)) {
+			if strings.Contains(strings.ToLower(nsName), strings.ToLower(prefix)) {
 				skip = false
 			}
 		}
 		if skip {
-			log.Printf("[INFO] Skipping Sae Namespace: %s", item["NamespaceName"])
+			log.Printf("[INFO] Skipping Sae Namespace: %s", nsName)
 			continue
 		}
 
+		log.Printf("[INFO] Deleting Sae Namespace: %s (NamespaceId: %v)", nsName, item["NamespaceId"])
 		action := "/pop/v1/paas/namespace"
 		request = map[string]*string{
 			"NamespaceId": StringPointer(fmt.Sprint(item["NamespaceId"])),
@@ -76,10 +96,19 @@ func testSweepSaeNamespace(region string) error {
 			}
 			return nil
 		})
-		if err != nil && !IsExpectedErrors(err, []string{"Namespace.AppExists"}) {
+		if err != nil && !IsExpectedErrors(err, []string{
+			"Namespace.AppExists",
+			// namespace still has config maps (config_map sweeper should have run first via Dependencies,
+			// but non-test config maps may remain) — record as leftover, do not fail the sweep
+			"sae.errorcode.namespace.has.configmap.when.delete.message",
+		}) {
 			return WrapError(err)
 		}
-		log.Printf("[INFO] Delete Sae Namespace success: %v ", item["NamespaceName"])
+		if err != nil {
+			log.Printf("[WARN] Sae Namespace not empty (apps/configmaps exist), skipping: %v", nsName)
+		} else {
+			log.Printf("[INFO] Delete Sae Namespace success: %v", nsName)
+		}
 	}
 	return nil
 }

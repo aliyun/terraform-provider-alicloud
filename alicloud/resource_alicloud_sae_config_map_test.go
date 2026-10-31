@@ -15,6 +15,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_sae_config_map",
+		&resource.Sweeper{
+			Name: "alicloud_sae_config_map",
+			F:    testSweepSaeConfigMap,
+		})
+}
+
 func testSweepSaeConfigMap(region string) error {
 	prefixes := []string{
 		"tftestacc",
@@ -36,7 +45,9 @@ func testSweepSaeConfigMap(region string) error {
 	}
 	resp, err := jsonpath.Get("$.Data", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+		// empty-list guard: treat missing/malformed namespace list as empty
+		log.Printf("[WARN] %s: $.Data not found or malformed, treating as empty list", action)
+		return nil
 	}
 	namespace, _ := resp.([]interface{})
 
@@ -48,27 +59,33 @@ func testSweepSaeConfigMap(region string) error {
 		request["NamespaceId"] = StringPointer(item["NamespaceId"].(string))
 		response, err = client.RoaGet("sae", "2019-05-06", action, request, nil, nil)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_application", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sae_config_map", action, AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Data.ConfigMaps", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.ConfigMaps", response)
+			// empty-list guard: namespace has no config maps → continue to next namespace
+			continue
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			cmName := ""
+			if val, exist := item["Name"]; exist {
+				cmName = val.(string)
+			}
+			// red-line #2: skip NODELETING + do-not-delete markers
+			if protectedSweepVpcName(cmName) {
+				log.Printf("[INFO] Skipping Sae Config Map (NODELETING): %s (%s)", cmName, item["ConfigMapId"])
+				continue
+			}
 			skip := true
 			for _, prefix := range prefixes {
-				app_name := ""
-				if val, exist := item["Name"]; exist {
-					app_name = val.(string)
-				}
-				if strings.Contains(strings.ToLower(app_name), strings.ToLower(prefix)) {
+				if strings.Contains(strings.ToLower(cmName), strings.ToLower(prefix)) {
 					skip = false
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping Sae Config Map: %s (%s)", item["Name"], item["ConfigMapId"])
+				log.Printf("[INFO] Skipping Sae Config Map: %s (%s)", cmName, item["ConfigMapId"])
 				continue
 			}
 			action := "/pop/v1/sam/configmap/configMap"
@@ -91,7 +108,7 @@ func testSweepSaeConfigMap(region string) error {
 			if err != nil && !IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) {
 				return WrapError(err)
 			}
-			log.Printf("[INFO] Delete Sae Config Map success: %v ", item["Name"])
+			log.Printf("[INFO] Delete Sae Config Map success: %v", cmName)
 		}
 	}
 	return nil
