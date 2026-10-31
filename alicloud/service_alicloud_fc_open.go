@@ -8,6 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
+// Migrated to alicloud/service/fc.FcOpenService. This root copy is retained
+// for in-package root test consumers; the product subpackage holds the
+// migrated implementation.
 type FcOpenService struct {
 	client *connectivity.AliyunClient
 }

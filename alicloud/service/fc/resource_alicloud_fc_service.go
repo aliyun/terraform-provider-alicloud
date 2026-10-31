@@ -1,4 +1,4 @@
-package alicloud
+package fc
 
 import (
 	"encoding/json"
@@ -9,6 +9,11 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -48,7 +53,7 @@ func resourceAlicloudFCService() *schema.Resource {
 				Optional: true,
 			},
 
-			"tags": tagsSchemaWithIgnore(),
+			"tags": tags.TagsSchemaWithIgnore(),
 			"internet_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -192,33 +197,33 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 
 	project, logstore, enable_request_metrics, enable_instance_metrics, err := parseLogConfig(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request := &fc.CreateServiceInput{
-		ServiceName:    StringPointer(name),
-		Description:    StringPointer(d.Get("description").(string)),
-		InternetAccess: BoolPointer(d.Get("internet_access").(bool)),
-		Role:           StringPointer(d.Get("role").(string)),
+		ServiceName:    helper.StringPointer(name),
+		Description:    helper.StringPointer(d.Get("description").(string)),
+		InternetAccess: helper.BoolPointer(d.Get("internet_access").(bool)),
+		Role:           helper.StringPointer(d.Get("role").(string)),
 		LogConfig: &fc.LogConfig{
-			Project:               StringPointer(project),
-			Logstore:              StringPointer(logstore),
-			EnableRequestMetrics:  BoolPointer(enable_request_metrics),
-			EnableInstanceMetrics: BoolPointer(enable_instance_metrics),
+			Project:               helper.StringPointer(project),
+			Logstore:              helper.StringPointer(logstore),
+			EnableRequestMetrics:  helper.BoolPointer(enable_request_metrics),
+			EnableInstanceMetrics: helper.BoolPointer(enable_instance_metrics),
 		},
 	}
 	vpcConfig, err := parseVpcConfig(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request.VPCConfig = vpcConfig
 	nasConfig, err := parseNasConfig(d)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request.NASConfig = nasConfig
 	tracingConfig, err := parseTracingConfig(d)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request.TracingConfig = tracingConfig
 	var requestInfo *fc.Client
@@ -229,7 +234,7 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			return fcClient.CreateService(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied", "does not exist"}) {
+			if errs.IsExpectedErrors(err, []string{"AccessDenied", "does not exist"}) {
 				return retry.RetryableError(err)
 			}
 			// Work around the "log project doest not exist" error since SLS log project CRUD is not strong consistency.
@@ -240,12 +245,12 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("CreateService", raw, requestInfo, request)
+		logs.AddDebug("CreateService", raw, requestInfo, request)
 		response, _ = raw.(*fc.CreateServiceOutput)
 		return nil
 
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "CreateService", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_service", "CreateService", errs.FcGoSdk)
 	}
 
 	d.SetId(*response.ServiceName)
@@ -263,28 +268,28 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 				return fcClient.PublishServiceVersion(input)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
+				if errs.IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug("PublishServiceVersion", raw, requestInfo, request)
+			logs.AddDebug("PublishServiceVersion", raw, requestInfo, request)
 			return nil
 
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", errs.FcGoSdk)
 		}
 	}
 	if _, ok := d.GetOk("tags"); ok {
 		resourceArn, err := parseResourceArn(d, meta)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		fcService := FcService{client}
+		fcService := Service{client}
 
 		err = fcService.SetResourceTags(d, &resourceArn)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	return resourceAlicloudFCServiceRead(d, meta)
@@ -292,15 +297,15 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 
 func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 
 	object, err := fcService.DescribeFcService(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("name", object.ServiceName)
@@ -308,8 +313,8 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("description", object.Description)
 	d.Set("internet_access", object.InternetAccess)
 	d.Set("role", object.Role)
-	if tags := object.Tags; tags != nil {
-		d.Set("tags", tagsToMap(tags))
+	if t := object.Tags; t != nil {
+		d.Set("tags", tags.TagsToMap(t))
 	}
 	var logConfigs []map[string]interface{}
 	if logconfig := object.LogConfig; logconfig != nil && *logconfig.Project != "" {
@@ -321,18 +326,18 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 		})
 	}
 	if err := d.Set("log_config", logConfigs); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	var vpcConfigs []map[string]interface{}
 	if vpcConfig := object.VPCConfig; vpcConfig != nil && *vpcConfig.VPCID != "" {
 		vpcConfigs = append(vpcConfigs, map[string]interface{}{
-			"vswitch_ids":       schema.NewSet(schema.HashString, convertListStringToListInterface(vpcConfig.VSwitchIDs)),
+			"vswitch_ids":       schema.NewSet(schema.HashString, convert.ConvertListStringToListInterface(vpcConfig.VSwitchIDs)),
 			"security_group_id": *vpcConfig.SecurityGroupID,
 			"vpc_id":            *vpcConfig.VPCID,
 		})
 	}
 	if err := d.Set("vpc_config", vpcConfigs); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	var nasConfigs []map[string]interface{}
 	if cfg := object.NASConfig; cfg != nil && len(cfg.MountPoints) != 0 {
@@ -351,7 +356,7 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 		nasConfigs = append(nasConfigs, dstCfg)
 	}
 	if err := d.Set("nas_config", nasConfigs); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	var tracingConfigs []map[string]interface{}
@@ -362,7 +367,7 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 		})
 	}
 	if err := d.Set("tracing_config", tracingConfigs); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("last_modified", object.LastModifiedTime)
@@ -370,8 +375,8 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	// Get the latest version of the service.
 	input := &fc.ListServiceVersionsInput{
 		ServiceName: object.ServiceName,
-		Limit:       Int32Pointer(1),
-		Direction:   StringPointer("BACKWARD"),
+		Limit:       helper.Int32Pointer(1),
+		Direction:   helper.StringPointer("BACKWARD"),
 	}
 	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
 		var requestInfo *fc.Client
@@ -380,19 +385,19 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 			return fcClient.ListServiceVersions(input)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
+			if errs.IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug("ListServiceVersions", raw, requestInfo, input)
+		logs.AddDebug("ListServiceVersions", raw, requestInfo, input)
 		output, _ := raw.(*fc.ListServiceVersionsOutput)
 		if len(output.Versions) > 0 {
 			d.Set("version", output.Versions[0].VersionID)
 		}
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", errs.FcGoSdk)
 	}
 
 	return nil
@@ -403,46 +408,46 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	d.Partial(true)
 
 	if d.HasChange("tags") {
-		fcService := FcService{client}
+		fcService := Service{client}
 		resourceArn, err := parseResourceArn(d, meta)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		err = fcService.SetResourceTags(d, &resourceArn)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	request := &fc.UpdateServiceInput{}
 
 	if d.HasChange("role") {
-		request.Role = StringPointer(d.Get("role").(string))
+		request.Role = helper.StringPointer(d.Get("role").(string))
 	}
 	if d.HasChange("internet_access") {
-		request.InternetAccess = BoolPointer(d.Get("internet_access").(bool))
+		request.InternetAccess = helper.BoolPointer(d.Get("internet_access").(bool))
 	}
 	if d.HasChange("description") {
-		request.Description = StringPointer(d.Get("description").(string))
+		request.Description = helper.StringPointer(d.Get("description").(string))
 	}
 	if d.HasChange("log_config") {
 		project, logstore, enable_request_metrics, enable_instance_metrics, err := parseLogConfig(d, meta)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.LogConfig = &fc.LogConfig{
-			Project:               StringPointer(project),
-			Logstore:              StringPointer(logstore),
-			EnableRequestMetrics:  BoolPointer(enable_request_metrics),
-			EnableInstanceMetrics: BoolPointer(enable_instance_metrics),
+			Project:               helper.StringPointer(project),
+			Logstore:              helper.StringPointer(logstore),
+			EnableRequestMetrics:  helper.BoolPointer(enable_request_metrics),
+			EnableInstanceMetrics: helper.BoolPointer(enable_instance_metrics),
 		}
 	}
 
 	if d.HasChange("vpc_config") {
 		vpcConfig, err := parseVpcConfig(d, meta)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.VPCConfig = vpcConfig
 	}
@@ -450,7 +455,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("nas_config") {
 		nasConfig, err := parseNasConfig(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.NASConfig = nasConfig
 	}
@@ -458,13 +463,13 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("tracing_config") {
 		tracingConfig, err := parseTracingConfig(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.TracingConfig = tracingConfig
 	}
 
 	if request != nil {
-		request.ServiceName = StringPointer(d.Id())
+		request.ServiceName = helper.StringPointer(d.Id())
 		var requestInfo *fc.Client
 		var response *fc.UpdateServiceOutput
 		if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
@@ -481,11 +486,11 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug("UpdateService", raw, requestInfo, request)
+			logs.AddDebug("UpdateService", raw, requestInfo, request)
 			response, _ = raw.(*fc.UpdateServiceOutput)
 			return nil
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "UpdateService", FcGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_service", "UpdateService", errs.FcGoSdk)
 		}
 
 		etag := response.Header.Get("ETag")
@@ -501,16 +506,16 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 					return fcClient.PublishServiceVersion(input)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
+					if errs.IsExpectedErrors(err, []string{"AccessDenied", "ServiceNotFound"}) {
 						return retry.RetryableError(err)
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug("PublishServiceVersion", raw, requestInfo, request)
+				logs.AddDebug("PublishServiceVersion", raw, requestInfo, request)
 				return nil
 
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", errs.FcGoSdk)
 			}
 		}
 	}
@@ -521,21 +526,21 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 
 func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcService := FcService{client}
+	fcService := Service{client}
 
 	// Delete the service versions.
 	var nextToken *string
 	for {
 		input := &fc.ListServiceVersionsInput{
-			ServiceName: StringPointer(d.Id()),
-			Limit:       Int32Pointer(100),
+			ServiceName: helper.StringPointer(d.Id()),
+			Limit:       helper.Int32Pointer(100),
 			NextToken:   nextToken,
 		}
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.ListServiceVersions(input)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ListServiceVersions", FcGoSdk)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "ListServiceVersions", errs.FcGoSdk)
 		}
 
 		output := raw.(*fc.ListServiceVersionsOutput)
@@ -543,14 +548,14 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 		for _, v := range output.Versions {
 			// Delete the service version.
 			input := &fc.DeleteServiceVersionInput{
-				ServiceName: StringPointer(d.Id()),
+				ServiceName: helper.StringPointer(d.Id()),
 				VersionID:   v.VersionID,
 			}
 			_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 				return fcClient.DeleteServiceVersion(input)
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), v.VersionID, "DeleteServiceVersion", FcGoSdk)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), v.VersionID, "DeleteServiceVersion", errs.FcGoSdk)
 			}
 		}
 
@@ -561,7 +566,7 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 
 	// Delete the service.
 	request := &fc.DeleteServiceInput{
-		ServiceName: StringPointer(d.Id()),
+		ServiceName: helper.StringPointer(d.Id()),
 	}
 	var requestInfo *fc.Client
 	raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
@@ -569,18 +574,17 @@ func resourceAlicloudFCServiceDelete(d *schema.ResourceData, meta interface{}) e
 		return fcClient.DeleteService(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"ServiceNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteService", FcGoSdk)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteService", errs.FcGoSdk)
 	}
-	addDebug("DeleteService", raw, requestInfo, request)
-	return WrapError(fcService.WaitForFcService(d.Id(), Deleted, DefaultTimeout))
+	logs.AddDebug("DeleteService", raw, requestInfo, request)
+	return errs.WrapError(fcService.WaitForFcService(d.Id(), Deleted, DefaultTimeout))
 }
 
 func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCConfig, err error) {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 	if v, ok := d.GetOk("vpc_config"); ok {
 
 		confs := v.([]interface{})
@@ -590,20 +594,20 @@ func parseVpcConfig(d *schema.ResourceData, meta interface{}) (config *fc.VPCCon
 			return
 		}
 		if role, ok := d.GetOk("role"); !ok || role.(string) == "" {
-			err = WrapError(Error("'role' is required when 'vpc_config' is set."))
+			err = errs.WrapError(errs.Error("'role' is required when 'vpc_config' is set."))
 			return
 		}
 		if conf != nil {
 			vswitchIds := conf["vswitch_ids"].(*schema.Set).List()
-			vsw, e := vpcService.DescribeVSwitch(vswitchIds[0].(string))
+			vsw, e := describeVSwitch(client, vswitchIds[0].(string))
 			if e != nil {
-				err = WrapError(e)
+				err = errs.WrapError(e)
 				return
 			}
 			config = &fc.VPCConfig{
-				VSwitchIDs:      expandStringList(vswitchIds),
-				SecurityGroupID: StringPointer(conf["security_group_id"].(string)),
-				VPCID:           StringPointer(vsw.VpcId),
+				VSwitchIDs:      convert.ExpandStringList(vswitchIds),
+				SecurityGroupID: helper.StringPointer(conf["security_group_id"].(string)),
+				VPCID:           helper.StringPointer(vsw.VpcId),
 			}
 		}
 	}
@@ -636,18 +640,18 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 				return slsClient.CheckProjectExist(project)
 			})
 			if e != nil {
-				if NotFoundError(e) {
+				if errs.NotFoundError(e) {
 					return retry.RetryableError(e)
 				}
 				return retry.NonRetryableError(e)
 			}
-			addDebug("CheckProjectExist", raw, requestInfo, project)
+			logs.AddDebug("CheckProjectExist", raw, requestInfo, project)
 			return nil
 		})
 	}
 
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, d.Id(), "CheckProjectExist", FcGoSdk)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "CheckProjectExist", errs.FcGoSdk)
 		return
 	}
 
@@ -657,12 +661,12 @@ func parseLogConfig(d *schema.ResourceData, meta interface{}) (project, logstore
 				return slsClient.CheckLogstoreExist(project, logstore)
 			})
 			if e != nil {
-				if NotFoundError(e) {
+				if errs.NotFoundError(e) {
 					return retry.RetryableError(e)
 				}
 				return retry.NonRetryableError(e)
 			}
-			addDebug("CheckLogstoreExist", raw)
+			logs.AddDebug("CheckLogstoreExist", raw)
 			return nil
 		})
 	}
@@ -674,10 +678,10 @@ func parseNasConfig(d *schema.ResourceData) (config *fc.NASConfig, err error) {
 		config = fc.NewNASConfig()
 		c, ok := v.([]interface{})[0].(map[string]interface{})
 		if !ok {
-			return nil, Error("Failed to parse nas config.")
+			return nil, errs.Error("Failed to parse nas config.")
 		}
-		config.UserID = Int32Pointer(int32(c["user_id"].(int)))
-		config.GroupID = Int32Pointer(int32(c["group_id"].(int)))
+		config.UserID = helper.Int32Pointer(int32(c["user_id"].(int)))
+		config.GroupID = helper.Int32Pointer(int32(c["group_id"].(int)))
 		if mps, ok := c["mount_points"].([]interface{}); ok {
 			for _, mp := range mps {
 				m := mp.(map[string]interface{})
@@ -687,7 +691,7 @@ func parseNasConfig(d *schema.ResourceData) (config *fc.NASConfig, err error) {
 				})
 			}
 		} else {
-			return nil, Error("Failed to parse mount points.")
+			return nil, errs.Error("Failed to parse mount points.")
 		}
 	}
 	return
@@ -698,20 +702,20 @@ func parseTracingConfig(d *schema.ResourceData) (tracingConfig *fc.TracingConfig
 	if v, ok := d.GetOk("tracing_config"); ok {
 		c, ok := v.([]interface{})[0].(map[string]interface{})
 		if !ok {
-			return nil, Error("Failed to parse tracing config.")
+			return nil, errs.Error("Failed to parse tracing config.")
 		}
-		tracingConfig.Type = StringPointer(c["type"].(string))
+		tracingConfig.Type = helper.StringPointer(c["type"].(string))
 		if params := c["params"].(map[string]interface{}); len(params) > 0 {
 			byteVar, err := json.Marshal(params)
 			if err != nil {
-				return nil, WrapError(err)
+				return nil, errs.WrapError(err)
 			}
 			err = json.Unmarshal(byteVar, &tracingConfig.Params)
 			if err != nil {
-				return nil, WrapError(err)
+				return nil, errs.WrapError(err)
 			}
 		} else {
-			return nil, Error("Failed to parse tracing config, params must be set.")
+			return nil, errs.Error("Failed to parse tracing config, params must be set.")
 		}
 	}
 	return tracingConfig, nil

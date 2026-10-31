@@ -1,16 +1,19 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
+	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"log"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/aliyun/fc-go-sdk"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func init() {
@@ -21,11 +24,11 @@ func init() {
 }
 
 func testSweepFCCustomDomain(region string) error {
-	if testSweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
 		log.Printf("[INFO] Skipping Function Compute unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -104,7 +107,7 @@ func testSweepFCCustomDomain(region string) error {
 						triggerDeleted = true
 						if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 							return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
-								ServiceName:  StringPointer(name),
+								ServiceName:  helper.StringPointer(name),
 								FunctionName: function.FunctionName,
 								TriggerName:  trigger.TriggerName,
 							})
@@ -127,7 +130,7 @@ func testSweepFCCustomDomain(region string) error {
 				}
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
-						ServiceName:  StringPointer(name),
+						ServiceName:  helper.StringPointer(name),
 						FunctionName: function.FunctionName,
 					})
 				}); err != nil {
@@ -147,7 +150,7 @@ func testSweepFCCustomDomain(region string) error {
 		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
 		_, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.DeleteService(&fc.DeleteServiceInput{
-				ServiceName: StringPointer(name),
+				ServiceName: helper.StringPointer(name),
 			})
 		})
 		if err != nil {
@@ -187,29 +190,29 @@ func testSweepFCCustomDomain(region string) error {
 }
 
 func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.FCV2FunctionSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.FCV2FunctionSupportRegions)
 	var v *fc.GetCustomDomainOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc-%s-alicloudfccustomdomain-%d-cd", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc-%s-alicloudfccustomdomain-%d-cd", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
-		"domain_name":        CHECKSET,
-		"created_time":       CHECKSET,
-		"last_modified_time": CHECKSET,
+		"domain_name":        acctest.CHECKSET,
+		"created_time":       acctest.CHECKSET,
+		"last_modified_time": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_custom_domain.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcCustomDomainConfigDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcCustomDomainConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
