@@ -694,12 +694,6 @@ func Provider() *schema.Provider {
 			"alicloud_kvstore_connections":      dataSourceAlicloudKvstoreConnections(),
 			"alicloud_kvstore_accounts":         dataSourceAlicloudKvstoreAccounts(),
 
-			// log
-			"alicloud_log_alert_resource": dataSourceAlicloudLogAlertResource(),
-			"alicloud_log_service":        dataSourceAlicloudLogService(),
-			"alicloud_log_projects":       dataSourceAlicloudLogProjects(),
-			"alicloud_log_stores":         dataSourceAlicloudLogStores(),
-
 			// market
 
 			// maxcompute
@@ -940,14 +934,6 @@ func Provider() *schema.Provider {
 
 			// slbs
 			"alicloud_slbs": dataSourceAlicloudSlbLoadBalancers(),
-
-			// sls
-			"alicloud_sls_indexs":          dataSourceAliCloudSlsIndexs(),
-			"alicloud_sls_machine_groups":  dataSourceAliCloudSlsMachineGroups(),
-			"alicloud_sls_logtail_configs": dataSourceAliCloudSlsLogtailConfigs(),
-			"alicloud_sls_etls":            dataSourceAliCloudSlsEtls(),
-			"alicloud_sls_alerts":          dataSourceAliCloudSlsAlerts(),
-			"alicloud_sls_metric_stores":   dataSourceAliCloudSlsMetricStores(),
 
 			// smartag
 			"alicloud_smartag_flow_logs": dataSourceAlicloudSmartagFlowLogs(),
@@ -1740,26 +1726,6 @@ func Provider() *schema.Provider {
 
 			// live
 
-			// log
-			"alicloud_log_alert":           resourceAlicloudLogAlert(),
-			"alicloud_log_alert_resource":  resourceAlicloudLogAlertResource(),
-			"alicloud_log_audit":           resourceAlicloudLogAudit(),
-			"alicloud_log_dashboard":       resourceAlicloudLogDashboard(),
-			"alicloud_log_etl":             resourceAlicloudLogETL(),
-			"alicloud_log_ingestion":       resourceAlicloudLogIngestion(),
-			"alicloud_log_machine_group":   resourceAlicloudLogMachineGroup(),
-			"alicloud_log_oss_export":      resourceAlicloudLogOssExport(),
-			"alicloud_log_oss_shipper":     resourceAlicloudLogOssShipper(),
-			"alicloud_log_project":         resourceAliCloudSlsProject(),
-			"alicloud_log_resource":        resourceAlicloudLogResource(),
-			"alicloud_log_resource_record": resourceAlicloudLogResourceRecord(),
-			"alicloud_log_store":           resourceAliCloudSlsLogStore(),
-			"alicloud_log_store_index":     resourceAlicloudLogStoreIndex(),
-
-			// logtail
-			"alicloud_logtail_config":     resourceAlicloudLogtailConfig(),
-			"alicloud_logtail_attachment": resourceAlicloudLogtailAttachment(),
-
 			// market
 
 			// max
@@ -2113,18 +2079,6 @@ func Provider() *schema.Provider {
 			"alicloud_slb_tls_cipher_policy":              resourceAlicloudSlbTlsCipherPolicy(),
 			"alicloud_slb_acl_entry_attachment":           resourceAlicloudSlbAclEntryAttachment(),
 			"alicloud_slb_server_group_server_attachment": resourceAliCloudSlbServerGroupServerAttachment(),
-
-			// sls
-			"alicloud_sls_logtail_pipeline_config": resourceAliCloudSlsLogtailPipelineConfig(),
-			"alicloud_sls_index":                   resourceAliCloudSlsIndex(),
-			"alicloud_sls_machine_group":           resourceAliCloudSlsMachineGroup(),
-			"alicloud_sls_logtail_config":          resourceAliCloudSlsLogtailConfig(),
-			"alicloud_sls_etl":                     resourceAliCloudSlsEtl(),
-			"alicloud_sls_oss_export_sink":         resourceAliCloudSlsOssExportSink(),
-			"alicloud_sls_collection_policy":       resourceAliCloudSlsCollectionPolicy(),
-			"alicloud_sls_scheduled_sql":           resourceAliCloudSlsScheduledSql(),
-			"alicloud_sls_alert":                   resourceAliCloudSlsAlert(),
-			"alicloud_sls_metric_store":            resourceAliCloudSlsMetricStore(),
 
 			// smartag
 			"alicloud_smartag_flow_log": resourceAlicloudSmartagFlowLog(),
