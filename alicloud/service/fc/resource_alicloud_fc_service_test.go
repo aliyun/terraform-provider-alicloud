@@ -1,4 +1,4 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
@@ -9,8 +9,14 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/fc-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -25,11 +31,11 @@ func init() {
 }
 
 func testSweepFCServices(region string) error {
-	if testSweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
+	if sweep.SweepPreCheckWithRegions(region, false, connectivity.FcNoSupportedRegions) {
 		log.Printf("[INFO] Skipping Function Compute unsupported region: %s", region)
 		return nil
 	}
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -107,7 +113,7 @@ func testSweepFCServices(region string) error {
 						triggerDeleted = true
 						if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 							return fcClient.DeleteTrigger(&fc.DeleteTriggerInput{
-								ServiceName:  StringPointer(name),
+								ServiceName:  helper.StringPointer(name),
 								FunctionName: function.FunctionName,
 								TriggerName:  trigger.TriggerName,
 							})
@@ -130,7 +136,7 @@ func testSweepFCServices(region string) error {
 				}
 				if _, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 					return fcClient.DeleteFunction(&fc.DeleteFunctionInput{
-						ServiceName:  StringPointer(name),
+						ServiceName:  helper.StringPointer(name),
 						FunctionName: function.FunctionName,
 					})
 				}); err != nil {
@@ -155,16 +161,16 @@ func testSweepFCServices(region string) error {
 			request["VpcId"] = *v.VPCConfig.VPCID
 			request["VSwitchId"] = v.VPCConfig.VSwitchIDs[0]
 			request["RegionId"] = client.RegionId
-			request["PageSize"] = PageSizeLarge
+			request["PageSize"] = helper.PageSizeLarge
 			request["PageNumber"] = 1
 			response, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 			if err != nil {
-				return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
+				return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
@@ -179,7 +185,7 @@ func testSweepFCServices(region string) error {
 				request["NetworkInterfaceId"] = fmt.Sprint(item["NetworkInterfaceId"])
 				_, err := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 				if err != nil {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 			}
 		}
@@ -187,13 +193,13 @@ func testSweepFCServices(region string) error {
 		log.Printf("[INFO] Prepare to delete FC versions...")
 		input := &fc.ListServiceVersionsInput{
 			ServiceName: v.ServiceName,
-			Limit:       Int32Pointer(100),
+			Limit:       helper.Int32Pointer(100),
 		}
 		raw, err := client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.ListServiceVersions(input)
 		})
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		output := raw.(*fc.ListServiceVersionsOutput)
@@ -207,13 +213,13 @@ func testSweepFCServices(region string) error {
 				return fcClient.DeleteServiceVersion(input)
 			})
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		log.Printf("[INFO] Deleting FC services: %s (%s)", name, id)
 		_, err = client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
 			return fcClient.DeleteService(&fc.DeleteServiceInput{
-				ServiceName: StringPointer(name),
+				ServiceName: helper.StringPointer(name),
 			})
 		})
 		if err != nil {
@@ -225,26 +231,26 @@ func testSweepFCServices(region string) error {
 
 func TestAccAliCloudFCServiceUpdate(t *testing.T) {
 	var v *fc.GetServiceOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"name":          name,
-		"last_modified": CHECKSET,
+		"last_modified": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_service.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcServiceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -292,7 +298,7 @@ func TestAccAliCloudFCServiceUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"role":    CHECKSET,
+						"role":    acctest.CHECKSET,
 						"version": "4",
 					}),
 				),
@@ -329,28 +335,28 @@ func TestAccAliCloudFCServiceUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"log_config.0.project":                 name,
 						"log_config.0.logstore":                name,
-						"log_config.0.enable_request_metrics":  CHECKSET,
-						"log_config.0.enable_instance_metrics": CHECKSET,
+						"log_config.0.enable_request_metrics":  acctest.CHECKSET,
+						"log_config.0.enable_instance_metrics": acctest.CHECKSET,
 						"version":                              "6",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_config":      REMOVEKEY,
-					"role":            REMOVEKEY,
-					"internet_access": REMOVEKEY,
-					"description":     REMOVEKEY,
+					"log_config":      acctest.REMOVEKEY,
+					"role":            acctest.REMOVEKEY,
+					"internet_access": acctest.REMOVEKEY,
+					"description":     acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_config.0.project":                 REMOVEKEY,
-						"log_config.0.logstore":                REMOVEKEY,
-						"log_config.0.enable_request_metrics":  REMOVEKEY,
-						"log_config.0.enable_instance_metrics": REMOVEKEY,
-						"role":                                 REMOVEKEY,
-						"internet_access":                      REMOVEKEY,
-						"description":                          REMOVEKEY,
+						"log_config.0.project":                 acctest.REMOVEKEY,
+						"log_config.0.logstore":                acctest.REMOVEKEY,
+						"log_config.0.enable_request_metrics":  acctest.REMOVEKEY,
+						"log_config.0.enable_instance_metrics": acctest.REMOVEKEY,
+						"role":                                 acctest.REMOVEKEY,
+						"internet_access":                      acctest.REMOVEKEY,
+						"description":                          acctest.REMOVEKEY,
 						"version":                              "7",
 					}),
 				),
@@ -376,29 +382,29 @@ func TestAccAliCloudFCServiceUpdate(t *testing.T) {
 
 func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 	var v *fc.GetServiceOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"name":          name,
-		"role":          CHECKSET,
+		"role":          acctest.CHECKSET,
 		"vpc_config.#":  "1",
 		"nas_config.#":  "1",
-		"last_modified": CHECKSET,
+		"last_modified": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_service.default"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigVpcDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcServiceConfigVpcDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -469,25 +475,25 @@ func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"log_config.0.project":                 name,
 						"log_config.0.logstore":                name,
-						"log_config.0.enable_request_metrics":  CHECKSET,
-						"log_config.0.enable_instance_metrics": CHECKSET,
+						"log_config.0.enable_request_metrics":  acctest.CHECKSET,
+						"log_config.0.enable_instance_metrics": acctest.CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_config":      REMOVEKEY,
-					"internet_access": REMOVEKEY,
-					"description":     REMOVEKEY,
+					"log_config":      acctest.REMOVEKEY,
+					"internet_access": acctest.REMOVEKEY,
+					"description":     acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_config.0.project":                 REMOVEKEY,
-						"log_config.0.logstore":                REMOVEKEY,
-						"log_config.0.enable_request_metrics":  REMOVEKEY,
-						"log_config.0.enable_instance_metrics": REMOVEKEY,
-						"internet_access":                      REMOVEKEY,
-						"description":                          REMOVEKEY,
+						"log_config.0.project":                 acctest.REMOVEKEY,
+						"log_config.0.logstore":                acctest.REMOVEKEY,
+						"log_config.0.enable_request_metrics":  acctest.REMOVEKEY,
+						"log_config.0.enable_instance_metrics": acctest.REMOVEKEY,
+						"internet_access":                      acctest.REMOVEKEY,
+						"description":                          acctest.REMOVEKEY,
 					}),
 				),
 			},
@@ -510,8 +516,8 @@ func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"nas_config.0.user_id":                    "9527",
 						"nas_config.0.group_id":                   "9528",
-						"nas_config.0.mount_points.0.server_addr": CHECKSET,
-						"nas_config.0.mount_points.0.mount_dir":   CHECKSET,
+						"nas_config.0.mount_points.0.server_addr": acctest.CHECKSET,
+						"nas_config.0.mount_points.0.mount_dir":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -538,10 +544,10 @@ func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"nas_config.0.user_id":                    "9627",
 						"nas_config.0.group_id":                   "9628",
-						"nas_config.0.mount_points.0.server_addr": CHECKSET,
-						"nas_config.0.mount_points.0.mount_dir":   CHECKSET,
-						"nas_config.0.mount_points.1.server_addr": CHECKSET,
-						"nas_config.0.mount_points.1.mount_dir":   CHECKSET,
+						"nas_config.0.mount_points.0.server_addr": acctest.CHECKSET,
+						"nas_config.0.mount_points.0.mount_dir":   acctest.CHECKSET,
+						"nas_config.0.mount_points.1.server_addr": acctest.CHECKSET,
+						"nas_config.0.mount_points.1.mount_dir":   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -551,27 +557,27 @@ func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 
 func TestAccAliCloudFCServiceMulti(t *testing.T) {
 	var v *fc.GetServiceOutput
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
+	rand := tfacctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", acctest.DefaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"name":          name + "_9",
-		"role":          CHECKSET,
-		"last_modified": CHECKSET,
+		"role":          acctest.CHECKSET,
+		"last_modified": acctest.CHECKSET,
 	}
 	resourceId := "alicloud_fc_service.default.9"
-	ra := resourceAttrInit(resourceId, basicMap)
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcServiceConfigDependence)
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceFcServiceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		PreCheck:          func() { acctest.PreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

@@ -1,59 +1,60 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudFCTriggersDataSource_basic(t *testing.T) {
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_fc_triggers.default"
-	name := fmt.Sprintf("tf-testacc%sfctriggerbasic-%d", defaultRegionToTest, rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceFCtriggerLogConfigDependence)
+	name := fmt.Sprintf("tf-testacc%sfctriggerbasic-%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceFCtriggerLogConfigDependence)
 
-	basicConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	basicConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
 			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
 			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}-fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}",
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}_fake",
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}",
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
 			"ids":           []string{"${alicloud_fc_trigger.default.trigger_id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_fc_trigger.default.name}_fake",
 			"service_name":  "${alicloud_fc_trigger.default.service}",
 			"function_name": "${alicloud_fc_trigger.default.function}",
@@ -66,14 +67,14 @@ func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 			"triggers.#":                        "1",
 			"ids.#":                             "1",
 			"names.#":                           "1",
-			"triggers.0.id":                     CHECKSET,
+			"triggers.0.id":                     acctest.CHECKSET,
 			"triggers.0.name":                   name,
 			"triggers.0.type":                   "log",
-			"triggers.0.source_arn":             CHECKSET,
-			"triggers.0.invocation_role":        CHECKSET,
-			"triggers.0.config":                 CHECKSET,
-			"triggers.0.creation_time":          CHECKSET,
-			"triggers.0.last_modification_time": CHECKSET,
+			"triggers.0.source_arn":             acctest.CHECKSET,
+			"triggers.0.invocation_role":        acctest.CHECKSET,
+			"triggers.0.config":                 acctest.CHECKSET,
+			"triggers.0.creation_time":          acctest.CHECKSET,
+			"triggers.0.last_modification_time": acctest.CHECKSET,
 		}
 	}
 
@@ -85,13 +86,13 @@ func TestAccAlicloudFCTriggersDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fcTriggerRecordsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existFCtriggerMapFunc,
-		fakeMapFunc:  fakeFCtriggerMapFunc,
+	var fcTriggerRecordsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existFCtriggerMapFunc,
+		FakeMapFunc:  fakeFCtriggerMapFunc,
 	}
 
-	fcTriggerRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, idsConf, nameRegexConf, allConf)
+	fcTriggerRecordsCheckInfo.DataSourceTestCheck(t, rand, basicConf, idsConf, nameRegexConf, allConf)
 
 }
 

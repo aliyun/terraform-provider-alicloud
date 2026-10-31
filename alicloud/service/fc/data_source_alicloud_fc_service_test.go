@@ -1,25 +1,26 @@
-package alicloud
+package fc_test
 
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudFCServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_fc_service.current"
-	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
+	testAccCheck := acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAlicloudFcServiceDataSource,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"id":     CHECKSET,
+						"id":     acctest.CHECKSET,
 						"status": "Opened",
 					}),
 				),

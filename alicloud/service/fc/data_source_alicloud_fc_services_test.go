@@ -1,40 +1,41 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudFCServicesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_fc_services.default"
 	name := fmt.Sprintf("tf-testacc-fc-service-ds-basic-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceFCServicesConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceFCServicesConfigDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_service.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_service.default.name}_fake",
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_fc_service.default.service_id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_fc_service.default.service_id}_fake"},
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_service.default.name}",
 			"ids":        []string{"${alicloud_fc_service.default.service_id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_fc_service.default.name}_fake",
 			"ids":        []string{"${alicloud_fc_service.default.service_id}"},
 		}),
@@ -45,13 +46,13 @@ func TestAccAliCloudFCServicesDataSource(t *testing.T) {
 			"services.#":                                         "1",
 			"ids.#":                                              "1",
 			"names.#":                                            "1",
-			"services.0.id":                                      CHECKSET,
+			"services.0.id":                                      acctest.CHECKSET,
 			"services.0.name":                                    name,
 			"services.0.description":                             name + "-description",
-			"services.0.role":                                    CHECKSET,
+			"services.0.role":                                    acctest.CHECKSET,
 			"services.0.internet_access":                         "true",
-			"services.0.creation_time":                           CHECKSET,
-			"services.0.last_modification_time":                  CHECKSET,
+			"services.0.creation_time":                           acctest.CHECKSET,
+			"services.0.last_modification_time":                  acctest.CHECKSET,
 			"services.0.log_config.#":                            "1",
 			"services.0.log_config.0.project":                    name + "-project",
 			"services.0.log_config.0.logstore":                   name + "-store",
@@ -70,13 +71,13 @@ func TestAccAliCloudFCServicesDataSource(t *testing.T) {
 		}
 	}
 
-	var fcServicesRecordsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existFCServicesMapFunc,
-		fakeMapFunc:  fakeFCServicesMapFunc,
+	var fcServicesRecordsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existFCServicesMapFunc,
+		FakeMapFunc:  fakeFCServicesMapFunc,
 	}
 
-	fcServicesRecordsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	fcServicesRecordsCheckInfo.DataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceFCServicesConfigDependence(name string) string {

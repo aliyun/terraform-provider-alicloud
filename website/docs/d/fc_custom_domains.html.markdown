@@ -7,11 +7,11 @@ description: |-
     Provides a list of FC custom domains to the user.
 ---
 
-# alicloud\_fc_custom_domains
+# alicloud_fc_custom_domains
 
 This data source provides the Function Compute custom domains of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.98.0+
+-> **NOTE:** Available since v1.98.0
 
 ## Example Usage
 
@@ -55,6 +55,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `methods` - The requests of the specified HTTP methos are routed from. Valid method: GET, POST, DELETE, HEAD, PUT and PATCH. For example, "GET, HEAD" methods indicate that only requests from GET and HEAD methods are routed.
   * `cert_config` - The configuration of HTTPS certificate.
     * `cert_name` - The name of the certificate.
-    * `private_key` - Private key of the HTTPS certificates, follow the 'pem' format.
     * `certificate` - Certificate data of the HTTPS certificates, follow the 'pem'.
       
