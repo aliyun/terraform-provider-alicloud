@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package ehpc. This file is generated automatically. Please do not modify it manually, thank you!
+package ehpc_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ehpc"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudEhpcUser_basic13038(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcUser")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEhpcUserBasicDependence13038)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEhpcUserBasicDependence13038)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -43,7 +45,7 @@ func TestAccAliCloudEhpcUser_basic13038(t *testing.T) {
 					testAccCheck(map[string]string{
 						"group":      "users",
 						"user_name":  name,
-						"cluster_id": CHECKSET,
+						"cluster_id": acctest.CHECKSET,
 						"password":   "YourPassword1234!",
 					}),
 				),
@@ -91,22 +93,22 @@ func TestAccAliCloudEhpcUser_basic13038(t *testing.T) {
 func TestAccAliCloudEhpcUser_basic13038_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcUser")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEhpcUserBasicDependence13038)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEhpcUserBasicDependence13038)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -119,7 +121,7 @@ func TestAccAliCloudEhpcUser_basic13038_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"group":      "users",
 						"user_name":  name,
-						"cluster_id": CHECKSET,
+						"cluster_id": acctest.CHECKSET,
 						"password":   "YourPassword1234!",
 					}),
 				),
@@ -135,8 +137,8 @@ func TestAccAliCloudEhpcUser_basic13038_twin(t *testing.T) {
 }
 
 var AliCloudEhpcUserMap13038 = map[string]string{
-	"user_id":  CHECKSET,
-	"group_id": CHECKSET,
+	"user_id":  acctest.CHECKSET,
+	"group_id": acctest.CHECKSET,
 }
 
 func AliCloudEhpcUserBasicDependence13038(name string) string {
@@ -472,22 +474,22 @@ resource "alicloud_ehpc_cluster_v2" "user_cluster_test_key_pair_name" {
 func TestAccAliCloudEhpcUser_basic13039(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcUser")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEhpcUserBasicDependence13038)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEhpcUserBasicDependence13038)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -500,8 +502,8 @@ func TestAccAliCloudEhpcUser_basic13039(t *testing.T) {
 					testAccCheck(map[string]string{
 						"group":         "users",
 						"user_name":     name,
-						"cluster_id":    CHECKSET,
-						"key_pair_name": CHECKSET,
+						"cluster_id":    acctest.CHECKSET,
+						"key_pair_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -538,22 +540,22 @@ func TestAccAliCloudEhpcUser_basic13039(t *testing.T) {
 func TestAccAliCloudEhpcUser_basic13039_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_user.default"
-	ra := resourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudEhpcUserMap13038)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcUser")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 100)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEhpcUserBasicDependence13038)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudEhpcUserBasicDependence13038)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -566,8 +568,8 @@ func TestAccAliCloudEhpcUser_basic13039_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"group":         "users",
 						"user_name":     name,
-						"cluster_id":    CHECKSET,
-						"key_pair_name": CHECKSET,
+						"cluster_id":    acctest.CHECKSET,
+						"key_pair_name": acctest.CHECKSET,
 					}),
 				),
 			},

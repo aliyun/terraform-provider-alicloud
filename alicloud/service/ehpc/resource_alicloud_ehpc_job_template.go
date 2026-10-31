@@ -1,4 +1,4 @@
-package alicloud
+package ehpc
 
 import (
 	"fmt"
@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -147,11 +151,11 @@ func resourceAlicloudEhpcJobTemplateCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("variables"); ok {
 		request["Variables"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -159,9 +163,9 @@ func resourceAlicloudEhpcJobTemplateCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ehpc_job_template", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ehpc_job_template", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["TemplateId"]))
@@ -173,18 +177,18 @@ func resourceAlicloudEhpcJobTemplateRead(d *schema.ResourceData, meta interface{
 	ehpcService := EhpcService{client}
 	object, err := ehpcService.DescribeEhpcJobTemplate(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ehpc_job_template ehpcService.DescribeEhpcJobTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("array_request", object["ArrayRequest"])
 	d.Set("clock_time", object["ClockTime"])
 	d.Set("command_line", object["CommandLine"])
 	if v, ok := object["Gpu"]; ok && fmt.Sprint(v) != "0" {
-		gpuVal, err := formatInt(v)
+		gpuVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -192,7 +196,7 @@ func resourceAlicloudEhpcJobTemplateRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("mem", object["Mem"])
 	if v, ok := object["Node"]; ok && fmt.Sprint(v) != "0" {
-		nodeVal, err := formatInt(v)
+		nodeVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -200,7 +204,7 @@ func resourceAlicloudEhpcJobTemplateRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("package_path", object["PackagePath"])
 	if v, ok := object["Priority"]; ok {
-		priorityVal, err := formatInt(v)
+		priorityVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -218,14 +222,14 @@ func resourceAlicloudEhpcJobTemplateRead(d *schema.ResourceData, meta interface{
 	d.Set("stderr_redirect_path", object["StderrRedirectPath"])
 	d.Set("stdout_redirect_path", object["StdoutRedirectPath"])
 	if v, ok := object["Task"]; ok && fmt.Sprint(v) != "0" {
-		taskVal, err := formatInt(v)
+		taskVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
 		d.Set("task", taskVal)
 	}
 	if v, ok := object["Thread"]; ok && fmt.Sprint(v) != "0" {
-		threadVal, err := formatInt(v)
+		threadVal, err := convert.FormatInt(v)
 		if err != nil {
 			return err
 		}
@@ -307,11 +311,11 @@ func resourceAlicloudEhpcJobTemplateUpdate(d *schema.ResourceData, meta interfac
 
 	action := "EditJobTemplate"
 	var err error
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 		response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -319,9 +323,9 @@ func resourceAlicloudEhpcJobTemplateUpdate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAlicloudEhpcJobTemplateRead(d, meta)
@@ -335,11 +339,11 @@ func resourceAlicloudEhpcJobTemplateDelete(d *schema.ResourceData, meta interfac
 		"Templates": fmt.Sprintf("[{\"Id\":\"%s\"}]", d.Id()),
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -347,9 +351,9 @@ func resourceAlicloudEhpcJobTemplateDelete(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

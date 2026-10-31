@@ -1,4 +1,4 @@
-package alicloud
+package ehpc
 
 import (
 	"encoding/json"
@@ -9,6 +9,11 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -634,7 +639,7 @@ func resourceAliCloudEhpcClusterV2() *schema.Resource {
 					},
 				},
 			},
-			"tags": tagsSchemaForceNew(),
+			"tags": tags.TagsSchemaForceNew(),
 		},
 	}
 }
@@ -652,7 +657,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 
 	manager := make(map[string]interface{})
 
-	if v := d.Get("manager"); !IsNil(v) {
+	if v := d.Get("manager"); !helper.IsNil(v) {
 		managerNode := make(map[string]interface{})
 		enableHt, _ := jsonpath.Get("$[0].manager_node[0].enable_ht", d.Get("manager"))
 		if enableHt != nil && enableHt != "" {
@@ -761,14 +766,14 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 
 		managerJson, err := json.Marshal(manager)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Manager"] = string(managerJson)
 	}
 
 	if v, ok := d.GetOk("shared_storages"); ok {
 		sharedStoragesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["MountTargetDomain"] = dataLoopTmp["mount_target_domain"]
@@ -781,7 +786,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		}
 		sharedStoragesMapsJson, err := json.Marshal(sharedStoragesMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["SharedStorages"] = string(sharedStoragesMapsJson)
 	}
@@ -794,7 +799,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOk("addons"); ok {
 		addonsMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range convertToInterfaceArray(v) {
+		for _, dataLoop1 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["Name"] = dataLoop1Tmp["name"]
@@ -805,7 +810,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		}
 		addonsMapsJson, err := json.Marshal(addonsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Addons"] = string(addonsMapsJson)
 	}
@@ -830,7 +835,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 
 		clusterCredentialsJson, err := json.Marshal(clusterCredentials)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["ClusterCredentials"] = string(clusterCredentialsJson)
 	}
@@ -856,7 +861,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOkExists("is_enterprise_security_group"); ok {
 		request["IsEnterpriseSecurityGroup"] = v
 	}
-	if v := d.Get("cluster_custom_configuration"); len(convertToInterfaceArray(v)) > 0 {
+	if v := d.Get("cluster_custom_configuration"); len(convert.ConvertToInterfaceArray(v)) > 0 {
 		clusterCustomConfiguration := make(map[string]interface{})
 		script1, _ := jsonpath.Get("$[0].script", v)
 		if script1 != nil && script1 != "" {
@@ -870,7 +875,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		if len(clusterCustomConfiguration) > 0 {
 			clusterCustomConfigurationJson, err := json.Marshal(clusterCustomConfiguration)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["ClusterCustomConfiguration"] = string(clusterCustomConfigurationJson)
 		}
@@ -899,13 +904,13 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		}
 		tagsMapsJson, err := json.Marshal(tagsMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Tags"] = string(tagsMapsJson)
 	}
 	if v, ok := d.GetOk("additional_packages"); ok {
 		additionalPackagesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			if rawValue, ok := dataLoopTmp["name"]; ok && rawValue != "" {
@@ -918,13 +923,13 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		}
 		additionalPackagesMapsJson, err := json.Marshal(additionalPackagesMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["AdditionalPackages"] = string(additionalPackagesMapsJson)
 	}
 	if v, ok := d.GetOk("queues"); ok {
 		queuesMapsArray := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(v) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(v) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			if rawValue, ok := dataLoopTmp["queue_name"]; ok && rawValue != "" {
@@ -948,7 +953,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 			if rawValue, ok := dataLoopTmp["inter_connect"]; ok && rawValue != "" {
 				dataLoopMap["InterConnect"] = rawValue
 			}
-			if rawValue := convertToInterfaceArray(dataLoopTmp["vswitch_ids"]); len(rawValue) > 0 {
+			if rawValue := convert.ConvertToInterfaceArray(dataLoopTmp["vswitch_ids"]); len(rawValue) > 0 {
 				dataLoopMap["VSwitchIds"] = rawValue
 			}
 			if rawValue, ok := dataLoopTmp["allocation_strategy"]; ok && rawValue != "" {
@@ -963,7 +968,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 			if rawValue, ok := dataLoopTmp["hostname_suffix"]; ok && rawValue != "" {
 				dataLoopMap["HostnameSuffix"] = rawValue
 			}
-			if rawValue := convertToInterfaceArray(dataLoopTmp["keep_alive_nodes"]); len(rawValue) > 0 {
+			if rawValue := convert.ConvertToInterfaceArray(dataLoopTmp["keep_alive_nodes"]); len(rawValue) > 0 {
 				dataLoopMap["KeepAliveNodes"] = rawValue
 			}
 			if rawValue, ok := dataLoopTmp["max_count_per_cycle"]; ok && rawValue.(int) != 0 {
@@ -973,7 +978,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 				dataLoopMap["ReservedNodePoolId"] = rawValue
 			}
 			computeNodesMapsArray := make([]interface{}, 0)
-			for _, computeNodeLoop := range convertToInterfaceArray(dataLoopTmp["compute_nodes"]) {
+			for _, computeNodeLoop := range convert.ConvertToInterfaceArray(dataLoopTmp["compute_nodes"]) {
 				computeNodeLoopTmp := computeNodeLoop.(map[string]interface{})
 				computeNodeMap := make(map[string]interface{})
 				if rawValue, ok := computeNodeLoopTmp["instance_type"]; ok && rawValue != "" {
@@ -1010,7 +1015,7 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 					computeNodeMap["EnableHT"] = rawValue
 				}
 				systemDisk := make(map[string]interface{})
-				if systemDiskLoop := convertToInterfaceArray(computeNodeLoopTmp["system_disk"]); len(systemDiskLoop) > 0 {
+				if systemDiskLoop := convert.ConvertToInterfaceArray(computeNodeLoopTmp["system_disk"]); len(systemDiskLoop) > 0 {
 					systemDiskTmp := systemDiskLoop[0].(map[string]interface{})
 					if rawValue, ok := systemDiskTmp["category"]; ok && rawValue != "" {
 						systemDisk["Category"] = rawValue
@@ -1034,15 +1039,15 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		}
 		queuesMapsJson, err := json.Marshal(queuesMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Queues"] = string(queuesMapsJson)
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1050,18 +1055,18 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ehpc_cluster_v2", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ehpc_cluster_v2", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ClusterId"]))
 
 	ehpcServiceV2 := EhpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, ehpcServiceV2.EhpcClusterV2StateRefreshFunc(d.Id(), "$.ClusterStatus", []string{"exception"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, ehpcServiceV2.EhpcClusterV2StateRefreshFunc(d.Id(), "$.ClusterStatus", []string{"exception"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	// CreateCluster ignores GrowInterval/IdleInterval and does not accept
@@ -1080,24 +1085,24 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 	if _, ok := d.GetOkExists("enable_scale_in"); ok {
 		postCreateUpdate = true
 	}
-	if len(convertToInterfaceArray(d.Get("monitor_spec"))) > 0 {
+	if len(convert.ConvertToInterfaceArray(d.Get("monitor_spec"))) > 0 {
 		postCreateUpdate = true
 	}
-	if len(convertToInterfaceArray(d.Get("scheduler_spec"))) > 0 {
+	if len(convert.ConvertToInterfaceArray(d.Get("scheduler_spec"))) > 0 {
 		postCreateUpdate = true
 	}
 	if postCreateUpdate {
 		updateRequest, err := ehpcClusterV2UpdatableRequest(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		updateRequest["ClusterId"] = d.Id()
 		action = "UpdateCluster"
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("EHPC", "2024-07-30", action, query, updateRequest, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1105,9 +1110,9 @@ func resourceAliCloudEhpcClusterV2Create(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, updateRequest)
+		logs.AddDebug(action, response, updateRequest)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1120,12 +1125,12 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 
 	objectRaw, err := ehpcServiceV2.DescribeEhpcClusterV2(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ehpc_cluster_v2 DescribeEhpcClusterV2 Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("client_version", objectRaw["ClientVersion"])
@@ -1137,7 +1142,7 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	d.Set("cluster_vpc_id", objectRaw["ClusterVpcId"])
 	d.Set("create_time", objectRaw["ClusterCreateTime"])
 	deletionProtection := fmt.Sprint(objectRaw["DeleteProtection"])
-	deletion_protectionVal, formatErr := formatBool(deletionProtection)
+	deletion_protectionVal, formatErr := convert.FormatBool(deletionProtection)
 	if formatErr != nil {
 		return formatErr
 	}
@@ -1145,22 +1150,22 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	d.Set("ehpc_version", objectRaw["EhpcVersion"])
 	d.Set("enable_scale_in", objectRaw["EnableScaleIn"])
 	d.Set("enable_scale_out", objectRaw["EnableScaleOut"])
-	grow_intervalVal, formatErr := formatInt(objectRaw["GrowInterval"])
+	grow_intervalVal, formatErr := convert.FormatInt(objectRaw["GrowInterval"])
 	if formatErr != nil {
 		return formatErr
 	}
 	d.Set("grow_interval", grow_intervalVal)
-	idle_intervalVal, formatErr := formatInt(objectRaw["IdleInterval"])
+	idle_intervalVal, formatErr := convert.FormatInt(objectRaw["IdleInterval"])
 	if formatErr != nil {
 		return formatErr
 	}
 	d.Set("idle_interval", idle_intervalVal)
-	max_core_countVal, formatErr := formatInt(objectRaw["MaxCoreCount"])
+	max_core_countVal, formatErr := convert.FormatInt(objectRaw["MaxCoreCount"])
 	if formatErr != nil {
 		return formatErr
 	}
 	d.Set("max_core_count", max_core_countVal)
-	max_countVal, formatErr := formatInt(objectRaw["MaxCount"])
+	max_countVal, formatErr := convert.FormatInt(objectRaw["MaxCount"])
 	if formatErr != nil {
 		return formatErr
 	}
@@ -1307,8 +1312,8 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	}
 
 	objectRaw, err = ehpcServiceV2.DescribeClusterV2ListSharedStorages(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	// 从 ListSharedStorages API 获取 SharedStorages 数组
@@ -1316,7 +1321,7 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 	sharedStoragesMaps := make([]map[string]interface{}, 0)
 
 	if sharedStoragesRawObj != nil {
-		sharedStoragesRaw := convertToInterfaceArray(sharedStoragesRawObj)
+		sharedStoragesRaw := convert.ConvertToInterfaceArray(sharedStoragesRawObj)
 		// 遍历每个 SharedStorage，将其中的 MountInfo 数组铺平
 		for _, sharedStorageRaw := range sharedStoragesRaw {
 			sharedStorage := sharedStorageRaw.(map[string]interface{})
@@ -1325,7 +1330,7 @@ func resourceAliCloudEhpcClusterV2Read(d *schema.ResourceData, meta interface{})
 			// 获取当前 SharedStorage 下的 MountInfo 数组
 			mountInfoRawObj, _ := jsonpath.Get("$.MountInfo[*]", sharedStorage)
 			if mountInfoRawObj != nil {
-				mountInfoArray := convertToInterfaceArray(mountInfoRawObj)
+				mountInfoArray := convert.ConvertToInterfaceArray(mountInfoRawObj)
 
 				// 将 MountInfo 数组中的每一项展开到结果数组中
 				for _, mountInfoRaw := range mountInfoArray {
@@ -1403,7 +1408,7 @@ func ehpcClusterV2UpdatableRequest(d *schema.ResourceData) (map[string]interface
 	if len(clusterCustomConfiguration) > 0 {
 		clusterCustomConfigurationJson, err := json.Marshal(clusterCustomConfiguration)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		request["ClusterCustomConfiguration"] = string(clusterCustomConfigurationJson)
 	}
@@ -1416,7 +1421,7 @@ func ehpcClusterV2UpdatableRequest(d *schema.ResourceData) (map[string]interface
 	if len(monitorSpec) > 0 {
 		monitorSpecJson, err := json.Marshal(monitorSpec)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		request["MonitorSpec"] = string(monitorSpecJson)
 	}
@@ -1429,7 +1434,7 @@ func ehpcClusterV2UpdatableRequest(d *schema.ResourceData) (map[string]interface
 	if len(schedulerSpec) > 0 {
 		schedulerSpecJson, err := json.Marshal(schedulerSpec)
 		if err != nil {
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 		request["SchedulerSpec"] = string(schedulerSpecJson)
 	}
@@ -1459,7 +1464,7 @@ func resourceAliCloudEhpcClusterV2Update(d *schema.ResourceData, meta interface{
 	if update {
 		fullRequest, err := ehpcClusterV2UpdatableRequest(d)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		for k, v := range fullRequest {
 			request[k] = v
@@ -1467,11 +1472,11 @@ func resourceAliCloudEhpcClusterV2Update(d *schema.ResourceData, meta interface{
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1479,9 +1484,9 @@ func resourceAliCloudEhpcClusterV2Update(d *schema.ResourceData, meta interface{
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1499,11 +1504,11 @@ func resourceAliCloudEhpcClusterV2Delete(d *schema.ResourceData, meta interface{
 	request = make(map[string]interface{})
 	request["ClusterId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidClusterStatus"}) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InvalidClusterStatus"}) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1511,13 +1516,13 @@ func resourceAliCloudEhpcClusterV2Delete(d *schema.ResourceData, meta interface{
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ClusterNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"ClusterNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

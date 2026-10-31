@@ -530,9 +530,6 @@ func Provider() *schema.Provider {
 			"alicloud_eflo_subnets": dataSourceAlicloudEfloSubnets(),
 
 			// ehpc
-			"alicloud_ehpc_users":         dataSourceAliCloudEhpcUsers(),
-			"alicloud_ehpc_job_templates": dataSourceAlicloudEhpcJobTemplates(),
-			"alicloud_ehpc_clusters":      dataSourceAlicloudEhpcClusters(),
 
 			// eip
 
@@ -1494,11 +1491,6 @@ func Provider() *schema.Provider {
 			"alicloud_eflo_subnet":                   resourceAlicloudEfloSubnet(),
 
 			// ehpc
-			"alicloud_ehpc_user":         resourceAliCloudEhpcUser(),
-			"alicloud_ehpc_queue":        resourceAliCloudEhpcQueue(),
-			"alicloud_ehpc_cluster_v2":   resourceAliCloudEhpcClusterV2(),
-			"alicloud_ehpc_job_template": resourceAlicloudEhpcJobTemplate(),
-			"alicloud_ehpc_cluster":      resourceAlicloudEhpcCluster(),
 
 			// eip
 

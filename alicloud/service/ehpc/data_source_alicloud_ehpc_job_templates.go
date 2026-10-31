@@ -1,4 +1,4 @@
-package alicloud
+package ehpc
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -118,7 +122,7 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 	action := "ListJobTemplates"
 	request := make(map[string]interface{})
 
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
 
@@ -134,11 +138,11 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -146,13 +150,13 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ehpc_job_templates", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ehpc_job_templates", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Templates.JobTemplates", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Templates.JobTemplates", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Templates.JobTemplates", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -164,7 +168,7 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -173,26 +177,26 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		gpuVal, err := formatInt(object["Gpu"])
+		gpuVal, err := convert.FormatInt(object["Gpu"])
 		if err != nil {
 			return err
 		}
 
-		nodeVal, err := formatInt(object["Node"])
+		nodeVal, err := convert.FormatInt(object["Node"])
 		if err != nil {
 			return err
 		}
 
-		priorityVal, err := formatInt(object["Priority"])
+		priorityVal, err := convert.FormatInt(object["Priority"])
 		if err != nil {
 			return err
 		}
 
-		taskVal, err := formatInt(object["Task"])
+		taskVal, err := convert.FormatInt(object["Task"])
 		if err != nil {
 			return err
 		}
-		threadVal, err := formatInt(object["Thread"])
+		threadVal, err := convert.FormatInt(object["Thread"])
 		if err != nil {
 			return err
 		}
@@ -221,16 +225,16 @@ func dataSourceAlicloudEhpcJobTemplatesRead(d *schema.ResourceData, meta interfa
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("templates", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

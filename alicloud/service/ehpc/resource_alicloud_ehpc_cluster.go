@@ -1,4 +1,4 @@
-package alicloud
+package ehpc
 
 import (
 	"fmt"
@@ -7,6 +7,11 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -33,7 +38,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"nis", "ldap"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"nis", "ldap"}, false),
 			},
 			"additional_volumes": {
 				Type:     schema.TypeSet,
@@ -86,7 +91,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 						"volume_protocol": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"nfs", "smb"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"nfs", "smb"}, false),
 						},
 						"volume_type": {
 							Type:     schema.TypeString,
@@ -127,7 +132,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			"cluster_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringLenBetween(2, 64),
+				ValidateFunc: validators.StringLenBetween(2, 64),
 			},
 			"cluster_version": {
 				Type:     schema.TypeString,
@@ -138,7 +143,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: IntBetween(1, 99),
+				ValidateFunc: validators.IntBetween(1, 99),
 			},
 			"compute_enable_ht": {
 				Type:     schema.TypeBool,
@@ -156,20 +161,20 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			"compute_spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
 			},
 			"deploy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Standard", "Simple", "Tiny"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Standard", "Simple", "Tiny"}, false),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It must be `2` to `256` characters in length and cannot start with `https://` or `https://`.")),
+				ValidateFunc: validation.All(validators.StringLenBetween(2, 256), validators.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It must be `2` to `256` characters in length and cannot start with `https://` or `https://`.")),
 			},
 			"domain": {
 				Type:     schema.TypeString,
@@ -186,7 +191,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 			},
 			"manager_count": {
 				Type:         schema.TypeInt,
@@ -215,7 +220,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"marketplace", "others", "self", "system"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"marketplace", "others", "self", "system"}, false),
 			},
 			"input_file_url": {
 				Type:     schema.TypeString,
@@ -245,7 +250,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: IntInSlice([]int{1}),
+				ValidateFunc: validators.IntInSlice([]int{1}),
 			},
 			"login_instance_type": {
 				Type:     schema.TypeString,
@@ -264,13 +269,13 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
 				Optional:     true,
 			},
 			"period_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Year", "Month", "Hour", "Week"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Year", "Month", "Hour", "Week"}, false),
 			},
 			"plugin": {
 				Type:     schema.TypeString,
@@ -287,7 +292,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"pbs", "slurm", "opengridscheduler", "deadline"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"pbs", "slurm", "opengridscheduler", "deadline"}, false),
 			},
 			"post_install_script": {
 				Type:     schema.TypeSet,
@@ -358,17 +363,17 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			"system_disk_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(40, 500),
+				ValidateFunc: validators.IntBetween(40, 500),
 			},
 			"system_disk_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud"}, false),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -397,7 +402,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"nfs", "smb"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"nfs", "smb"}, false),
 			},
 			"volume_type": {
 				Type:     schema.TypeString,
@@ -570,7 +575,7 @@ func resourceAlicloudEhpcClusterCreate(d *schema.ResourceData, meta interface{})
 		request["PostInstallScript"] = postInstallScriptArr
 	}
 	if v, ok := d.GetOk("ram_node_types"); ok {
-		request["RamNodeTypes"] = convertArrayToString(v, ",")
+		request["RamNodeTypes"] = convert.ConvertArrayToString(v, ",")
 	}
 	if v, ok := d.GetOk("ram_role_name"); ok {
 		request["RamRoleName"] = v
@@ -636,12 +641,12 @@ func resourceAlicloudEhpcClusterCreate(d *schema.ResourceData, meta interface{})
 		request["VpcId"] = v
 	}
 
-	request["ClientToken"] = buildClientToken("CreateCluster")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateCluster")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -650,16 +655,16 @@ func resourceAlicloudEhpcClusterCreate(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ehpc_cluster", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ehpc_cluster", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprint(response["ClusterId"]))
 
 	ehpcService := EhpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ehpcService.EhpcClusterStateRefreshFunc(d.Id(), []string{"exception"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ehpcService.EhpcClusterStateRefreshFunc(d.Id(), []string{"exception"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAlicloudEhpcClusterRead(d, meta)
@@ -669,12 +674,12 @@ func resourceAlicloudEhpcClusterRead(d *schema.ResourceData, meta interface{}) e
 	ehpcService := EhpcService{client}
 	object, err := ehpcService.DescribeEhpcCluster(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ehpc_cluster ehpcService.DescribeEhpcCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("account_type", object["AccountType"])
 	d.Set("client_version", object["ClientVersion"])
@@ -774,11 +779,11 @@ func resourceAlicloudEhpcClusterUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if update {
 		action := "ModifyClusterAttributes"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -786,14 +791,14 @@ func resourceAlicloudEhpcClusterUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		ehpcService := EhpcService{client}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ehpcService.EhpcClusterStateRefreshFunc(d.Id(), []string{"exception"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ehpcService.EhpcClusterStateRefreshFunc(d.Id(), []string{"exception"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudEhpcClusterRead(d, meta)
@@ -810,11 +815,11 @@ func resourceAlicloudEhpcClusterDelete(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOkExists("release_instance"); ok {
 		request["ReleaseInstance"] = fmt.Sprintf("%v", v.(bool))
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -822,17 +827,17 @@ func resourceAlicloudEhpcClusterDelete(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ClusterNotFound"}) {
+		if errs.IsExpectedErrors(err, []string{"ClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	ehpcService := EhpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ehpcService.EhpcClusterStateRefreshFunc(d.Id(), []string{"exception"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ehpcService.EhpcClusterStateRefreshFunc(d.Id(), []string{"exception"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }
