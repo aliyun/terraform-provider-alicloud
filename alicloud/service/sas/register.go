@@ -8,5 +8,11 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Sas",
+		DataSources: []conns.DataSource{
+			{
+				TypeName: "alicloud_threat_detection_sca_details",
+				Factory:  NewScaDetailsDataSource,
+			},
+		},
 	}
 }
