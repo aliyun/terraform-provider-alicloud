@@ -1,0 +1,230 @@
+package cr_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	crsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestAccAliCloudCREERepo_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_ee_repo.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCREERepoMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return crsvc.NewCrService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCrEERepo")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-repo-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCREERepoBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${alicloud_cr_ee_instance.default.id}",
+					"namespace":   "${alicloud_cr_ee_namespace.default.name}",
+					"name":        name,
+					"repo_type":   "PUBLIC",
+					"summary":     name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": acctest.CHECKSET,
+						"namespace":   acctest.CHECKSET,
+						"name":        name,
+						"repo_type":   "PUBLIC",
+						"summary":     name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repo_type": "PRIVATE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repo_type": "PRIVATE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"summary": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"summary": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"detail": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"detail": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_immutability": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_immutability": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_immutability": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_immutability": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCREERepo_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_ee_repo.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCREERepoMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return crsvc.NewCrService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCrEERepo")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-repo-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCREERepoBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":      "${alicloud_cr_ee_instance.default.id}",
+					"namespace":        "${alicloud_cr_ee_namespace.default.name}",
+					"name":             name,
+					"repo_type":        "PUBLIC",
+					"summary":          name,
+					"detail":           name,
+					"tag_immutability": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":      acctest.CHECKSET,
+						"namespace":        acctest.CHECKSET,
+						"name":             name,
+						"repo_type":        "PUBLIC",
+						"summary":          name,
+						"detail":           name,
+						"tag_immutability": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCREERepo_Multi(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_ee_repo.default.5"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudCREERepoMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return crsvc.NewCrService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCrEERepo")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-repo-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudCREERepoBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":       "6",
+					"instance_id": "${alicloud_cr_ee_instance.default.id}",
+					"namespace":   "${alicloud_cr_ee_namespace.default.name}",
+					"name":        name + "-${count.index}",
+					"repo_type":   "PUBLIC",
+					"summary":     name,
+					"detail":      name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id": acctest.CHECKSET,
+						"namespace":   acctest.CHECKSET,
+						"name":        name + fmt.Sprint(-5),
+						"repo_type":   "PUBLIC",
+						"summary":     name,
+						"detail":      name,
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AliCloudCREERepoMap0 = map[string]string{
+	"repo_id": acctest.CHECKSET,
+}
+
+func AliCloudCREERepoBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	resource "alicloud_cr_ee_instance" "default" {
+		payment_type   = "Subscription"
+		period         = 1
+		renewal_status = "ManualRenewal"
+		instance_type  = "Basic"
+		instance_name  = var.name
+	}
+
+	resource "alicloud_cr_ee_namespace" "default" {
+  		instance_id        = alicloud_cr_ee_instance.default.id
+  		name               = var.name
+  		auto_create        = false
+  		default_visibility = "PRIVATE"
+	}
+`, name)
+}
