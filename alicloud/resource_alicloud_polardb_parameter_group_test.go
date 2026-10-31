@@ -445,8 +445,85 @@ variable "name" {
     default = "%s"
 }
 
-
 `, name)
 }
 
 // Test PolarDb ParameterGroup. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
+	// resource_group_id is create-only and never returned by
+	// DescribeParameterGroup, so the request body is the only place that can
+	// show the value reaching the API boundary; enable provider request
+	// logging to make that observable in the debug log.
+	t.Setenv("DEBUG", "terraform")
+	var v map[string]interface{}
+	resourceId := "alicloud_polardb_parameter_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudPolarDbParameterGroupResourceGroupIdMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PolarDbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePolarDbParameterGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPolarDbParameterGroupResourceGroupIdDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_version":           "8.0",
+					"parameter_group_name": name,
+					"db_type":              "MySQL",
+					"parameters": []map[string]interface{}{
+						{
+							"param_name":  "wait_timeout",
+							"param_value": "86400",
+						},
+					},
+					"description":       "tf_testAcc",
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_version":           CHECKSET,
+						"parameter_group_name": name,
+						"db_type":              "MySQL",
+						"parameters.#":         "1",
+						"description":          "tf_testAcc",
+						"resource_group_id":    CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default", "id"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+		},
+	})
+}
+
+var AlicloudPolarDbParameterGroupResourceGroupIdMap = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudPolarDbParameterGroupResourceGroupIdDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "default" {
+  resource_group_name = replace(var.name, "_", "-")
+  display_name        = var.name
+}
+`, name)
+}
