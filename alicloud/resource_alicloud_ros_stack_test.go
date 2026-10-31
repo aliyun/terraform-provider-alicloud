@@ -55,11 +55,13 @@ func testSweepRosStack(region string) error {
 	for {
 		response, err = client.RpcPost("ROS", "2019-09-10", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ros_stack", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list Ros Stack: %s", err)
+			break
 		}
 		resp, err := jsonpath.Get("$.Stacks", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Stacks", response)
+			log.Printf("[ERROR] Failed to parse Ros Stack ($.Stacks): %s", err)
+			break
 		}
 		sweeped := false
 		result, _ := resp.([]interface{})
