@@ -1,14 +1,18 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -22,6 +26,7 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: customizeDiffAdbDbClusterLakeVersionAutoRenewal,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(50 * time.Minute),
 			Update: schema.DefaultTimeout(72 * time.Minute),
@@ -195,6 +200,100 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"db_cluster_network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"VPC"}, false),
+			},
+			"audit_log_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+			},
+			"used_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"essd_cache_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"capacity": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"auto_renewal_period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Year", "Month"}, false),
+			},
+			"switch_mode": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
+			},
+			"db_cluster_ip_array_attribute": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"auto_renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "Normal", "NotRenewal"}, false),
+			},
+			"maintain_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validateAdbDbClusterLakeVersionMaintainTime,
+			},
+			"auto_renewal_period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(1, 11),
+			},
+			"enable_compaction_service": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"modify_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+			},
+			"db_cluster_ip_array_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"db_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"enable_essd_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"enable_lake_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"engine_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"XIHE", "SPARK"}, false),
+			},
 		},
 	}
 }
@@ -259,6 +358,10 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("db_cluster_network_type"); ok {
+		request["DBClusterNetworkType"] = v
 	}
 
 	if request["PayType"] == string(Prepaid) {
@@ -367,13 +470,87 @@ func resourceAliCloudAdbDbClusterLakeVersionRead(d *schema.ResourceData, meta in
 	d.Set("create_time", object["CreationTime"])
 	d.Set("expire_time", object["ExpireTime"])
 	d.Set("status", object["DBClusterStatus"])
+	d.Set("db_cluster_network_type", object["DBClusterNetworkType"])
+	d.Set("maintain_time", object["MaintainTime"])
 
-	SecurityIPsObject, err := adbService.DescribeClusterAccessWhiteList(d.Id())
-	if err != nil {
-		return WrapError(err)
+	// used_time is derived from period and only meaningful for a subscription cluster.
+	if fmt.Sprint(d.Get("payment_type")) == "Subscription" {
+		if v, ok := d.GetOk("period"); ok {
+			d.Set("used_time", v)
+		} else {
+			d.Set("used_time", 0)
+		}
+	} else {
+		d.Set("used_time", 0)
 	}
 
-	d.Set("security_ips", SecurityIPsObject["SecurityIPList"])
+	if essdCacheObject, err := adbService.DescribeAdbDbClusterLakeVersionEssdCacheConfig(d.Id()); err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] Resource alicloud_adb_db_cluster_lake_version DescribeEssdCacheConfig not found: %s", err)
+	} else {
+		d.Set("enable_essd_cache", essdCacheObject["EnableEssdCache"])
+		d.Set("essd_cache_size", essdCacheObject["EssdCacheSize"])
+	}
+
+	if lakeCacheObject, err := adbService.DescribeAdbDbClusterLakeVersionLakeCacheSize(d.Id()); err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] Resource alicloud_adb_db_cluster_lake_version DescribeLakeCacheSize not found: %s", err)
+	} else {
+		d.Set("enable_lake_cache", lakeCacheObject["EnableLakeCache"])
+		d.Set("capacity", lakeCacheObject["Capacity"])
+	}
+
+	if compactionObject, err := adbService.DescribeAdbDbClusterLakeVersionCompactionServiceSwitch(d.Id()); err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] Resource alicloud_adb_db_cluster_lake_version DescribeCompactionServiceSwitch not found: %s", err)
+	} else {
+		d.Set("enable_compaction_service", compactionObject["EnableCompactionService"])
+	}
+
+	if autoRenewObject, err := adbService.DescribeAdbDbClusterLakeVersionAutoRenewalAttribute(d.Id()); err != nil {
+		// PayAsYouGo clusters are not listed by this API, which is the only
+		// NotFound case allowed to skip a partial read.
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] Resource alicloud_adb_db_cluster_lake_version DescribeAutoRenewalAttribute not found: %s", err)
+	} else {
+		d.Set("auto_renewal_status", autoRenewObject["AutoRenewalStatus"])
+		d.Set("auto_renewal_period", autoRenewObject["AutoRenewalPeriod"])
+		d.Set("auto_renewal_period_unit", autoRenewObject["AutoRenewalPeriodUnit"])
+	}
+
+	if auditLogObject, err := adbService.DescribeAdbDbClusterLakeVersionAuditLogConfig(d.Id()); err != nil {
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] Resource alicloud_adb_db_cluster_lake_version DescribeAuditLogConfig not found: %s", err)
+	} else {
+		d.Set("audit_log_status", auditLogObject["AuditLogStatus"])
+	}
+
+	ipArrayName := "default"
+	if v, ok := d.GetOk("db_cluster_ip_array_name"); ok {
+		ipArrayName = v.(string)
+	}
+	if ipArrayObject, err := adbService.DescribeClusterAccessWhiteList(d.Id(), ipArrayName); err != nil {
+		// Groups tagged as hidden are not returned by the list API, so the
+		// configured group cannot be resolved back here. Keep the state values
+		// already known instead of overwriting them with another group.
+		if !NotFoundError(err) {
+			return WrapError(err)
+		}
+		log.Printf("[DEBUG] Resource alicloud_adb_db_cluster_lake_version whitelist group %s not found: %s", ipArrayName, err)
+	} else {
+		d.Set("db_cluster_ip_array_name", ipArrayObject["DBClusterIPArrayName"])
+		d.Set("security_ips", ipArrayObject["SecurityIPList"])
+	}
 
 	sslObject, err := adbService.DescribeAdbDbClusterLakeVersionDBClusterSSL(d.Id())
 	if err != nil {
@@ -465,6 +642,38 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 	}
 	if v, ok := d.GetOk("security_ips"); ok {
 		modifyClusterAccessWhiteListReq["SecurityIps"] = v
+	}
+
+	// The group selector and the modification mode are not values of their own:
+	// they decide which whitelist group receives SecurityIps. They must be sent
+	// whenever they are configured, otherwise the API falls back to the default
+	// group and the configured group is never updated.
+	if v, ok := d.GetOk("db_cluster_ip_array_name"); ok {
+		modifyClusterAccessWhiteListReq["DBClusterIPArrayName"] = v
+		if d.HasChange("db_cluster_ip_array_name") {
+			update = true
+		}
+	}
+
+	if v, ok := d.GetOk("db_cluster_ip_array_attribute"); ok {
+		modifyClusterAccessWhiteListReq["DBClusterIPArrayAttribute"] = v
+		if d.HasChange("db_cluster_ip_array_attribute") {
+			update = true
+		}
+	}
+
+	if v, ok := d.GetOk("modify_mode"); ok {
+		modifyClusterAccessWhiteListReq["ModifyMode"] = v
+		if d.HasChange("modify_mode") {
+			update = true
+		}
+	}
+
+	if update {
+		// SecurityIps is required by ModifyClusterAccessWhiteList.
+		if _, ok := modifyClusterAccessWhiteListReq["SecurityIps"]; !ok {
+			return WrapErrorf(Error("security_ips must be set when the IP whitelist group is changed"), DefaultErrorMsg, d.Id(), "ModifyClusterAccessWhiteList", AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	if update {
@@ -667,6 +876,312 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 	}
 
+	update = false
+	modifyAuditLogConfigReq := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DBClusterId": d.Id(),
+	}
+
+	if d.HasChange("audit_log_status") || d.HasChange("engine_type") {
+		// AuditLogStatus is a required parameter of ModifyAuditLogConfig and
+		// EngineType defaults to XIHE when omitted, so the current status must
+		// always be carried to avoid resetting it while only changing the engine.
+		status := fmt.Sprint(d.Get("audit_log_status"))
+		if status == "" {
+			return WrapErrorf(Error("audit_log_status must be set when engine_type is changed"), DefaultErrorMsg, d.Id(), "ModifyAuditLogConfig", AlibabaCloudSdkGoERROR)
+		}
+		update = true
+		modifyAuditLogConfigReq["AuditLogStatus"] = status
+		if v, ok := d.GetOk("engine_type"); ok {
+			modifyAuditLogConfigReq["EngineType"] = v
+		}
+	}
+
+	if update {
+		action := "ModifyAuditLogConfig"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyAuditLogConfigReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyAuditLogConfigReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		if succeeded, present := adbAuditLogUpdateSucceeded(response); present && !succeeded {
+			return WrapErrorf(Error("ModifyAuditLogConfig reported UpdateSucceed=false"), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	modifyEssdCacheConfigReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	// EnableEssdCache is a required parameter of ModifyEssdCacheConfig, so the
+	// current switch state is always carried when the request is needed.
+	if v, ok := adbBoolConfigValue(d.GetRawConfig(), "enable_essd_cache"); ok {
+		modifyEssdCacheConfigReq["EnableEssdCache"] = v
+		if d.HasChange("enable_essd_cache") {
+			update = true
+		}
+	} else {
+		// A size change still needs the required switch, so carry the value
+		// already known from the configuration or the last read.
+		modifyEssdCacheConfigReq["EnableEssdCache"] = d.Get("enable_essd_cache")
+	}
+
+	if v, ok := d.GetOk("essd_cache_size"); ok {
+		modifyEssdCacheConfigReq["EssdCacheSize"] = v
+		if d.HasChange("essd_cache_size") {
+			update = true
+		}
+	}
+
+	if update {
+		action := "ModifyEssdCacheConfig"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyEssdCacheConfigReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyEssdCacheConfigReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	modifyLakeCacheSizeReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	// EnableLakeCache is a required parameter of ModifyLakeCacheSize, so the
+	// current switch state is always carried when the request is needed.
+	if v, ok := adbBoolConfigValue(d.GetRawConfig(), "enable_lake_cache"); ok {
+		modifyLakeCacheSizeReq["EnableLakeCache"] = v
+		if d.HasChange("enable_lake_cache") {
+			update = true
+		}
+	} else {
+		modifyLakeCacheSizeReq["EnableLakeCache"] = d.Get("enable_lake_cache")
+	}
+
+	if v, ok := d.GetOk("capacity"); ok {
+		modifyLakeCacheSizeReq["Capacity"] = v
+		if d.HasChange("capacity") {
+			update = true
+		}
+	}
+
+	if update {
+		action := "ModifyLakeCacheSize"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyLakeCacheSizeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyLakeCacheSizeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		if ok, present := adbLakeCacheResponseCodeOK(response); present && !ok {
+			return WrapErrorf(Error(fmt.Sprintf("ModifyLakeCacheSize reported Code=%v", response["Code"])), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	update = false
+	modifyCompactionServiceSwitchReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	if v, ok := adbBoolConfigValue(d.GetRawConfig(), "enable_compaction_service"); ok {
+		modifyCompactionServiceSwitchReq["EnableCompactionService"] = v
+		if d.HasChange("enable_compaction_service") {
+			update = true
+		}
+	}
+
+	if update {
+		action := "ModifyCompactionServiceSwitch"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyCompactionServiceSwitchReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyCompactionServiceSwitchReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	modifyMaintainTimeReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	if v, ok := d.GetOk("maintain_time"); ok && d.HasChange("maintain_time") {
+		update = true
+		modifyMaintainTimeReq["MaintainTime"] = v
+	}
+
+	if update {
+		action := "ModifyDBClusterMaintainTime"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyMaintainTimeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyMaintainTimeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	modifyAutoRenewalAttributeReq := map[string]interface{}{
+		"RegionId":    client.RegionId,
+		"DBClusterId": d.Id(),
+	}
+
+	if fmt.Sprint(d.Get("payment_type")) == "Subscription" {
+		if v, ok := d.GetOk("auto_renewal_status"); ok && d.HasChange("auto_renewal_status") {
+			update = true
+			modifyAutoRenewalAttributeReq["AutoRenewalStatus"] = v
+		}
+
+		if v, ok := d.GetOk("auto_renewal_period"); ok && d.HasChange("auto_renewal_period") {
+			update = true
+			modifyAutoRenewalAttributeReq["AutoRenewalPeriod"] = strconv.Itoa(v.(int))
+		}
+
+		if v, ok := d.GetOk("auto_renewal_period_unit"); ok && d.HasChange("auto_renewal_period_unit") {
+			update = true
+			modifyAutoRenewalAttributeReq["AutoRenewalPeriodUnit"] = v
+		}
+	}
+
+	if update {
+		action := "ModifyAutoRenewalAttribute"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyAutoRenewalAttributeReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyAutoRenewalAttributeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	update = false
+	upgradeKernelVersionReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	if !d.IsNewResource() && (d.HasChange("db_version") || d.HasChange("switch_mode")) {
+		v, ok := d.GetOk("db_version")
+		if !ok {
+			return WrapErrorf(Error("db_version must be set when the kernel version is changed"), DefaultErrorMsg, d.Id(), "UpgradeKernelVersion", AlibabaCloudSdkGoERROR)
+		}
+		update = true
+		upgradeKernelVersionReq["DBVersion"] = v
+		if switchMode, ok := d.GetOk("switch_mode"); ok {
+			upgradeKernelVersionReq["SwitchMode"] = switchMode
+		}
+	}
+
+	if update {
+		action := "UpgradeKernelVersion"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, upgradeKernelVersionReq, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, upgradeKernelVersionReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	d.Partial(false)
 
 	return resourceAliCloudAdbDbClusterLakeVersionRead(d, meta)
@@ -693,6 +1208,12 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
+			if IsExpectedErrors(err, []string{"ACS.Cluster.InvalidState"}) {
+				// The cluster can still be finishing a previous operation (for example
+				// right after a failed apply), which is transient for deletion.
+				wait()
+				return retry.RetryableError(err)
+			}
 			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
@@ -710,7 +1231,7 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	}
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) || NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -739,4 +1260,73 @@ func convertAdbDbClusterLakeVersionPaymentTypeResponse(source interface{}) inter
 	}
 
 	return source
+}
+
+func adbBoolConfigValue(rawConfig cty.Value, key string) (bool, bool) {
+	if rawConfig == cty.NilVal || !rawConfig.IsKnown() || rawConfig.IsNull() {
+		return false, false
+	}
+	if !rawConfig.Type().IsObjectType() || !rawConfig.Type().HasAttribute(key) {
+		return false, false
+	}
+	value := rawConfig.GetAttr(key)
+	if value.IsNull() || !value.IsKnown() || value.Type() != cty.Bool {
+		return false, false
+	}
+	return value.True(), true
+}
+
+func adbAuditLogUpdateSucceeded(response map[string]interface{}) (bool, bool) {
+	if response == nil {
+		return false, false
+	}
+	value, ok := response["UpdateSucceed"]
+	if !ok || value == nil {
+		return false, false
+	}
+	switch typed := value.(type) {
+	case bool:
+		return typed, true
+	case string:
+		return strings.EqualFold(typed, "true"), true
+	}
+	return strings.EqualFold(fmt.Sprint(value), "true"), true
+}
+
+func validateAdbDbClusterLakeVersionMaintainTime(i interface{}, k string) ([]string, []error) {
+	value, ok := i.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("expected type of %s to be string", k)}
+	}
+	matched := regexp.MustCompile(`^(\d{2}):00Z-(\d{2}):00Z$`).FindStringSubmatch(value)
+	if matched == nil {
+		return nil, []error{fmt.Errorf("%s must be an hourly window in the format HH:00Z-HH:00Z, for example 04:00Z-05:00Z", k)}
+	}
+	start, _ := strconv.Atoi(matched[1])
+	end, _ := strconv.Atoi(matched[2])
+	if start > 23 || end > 23 || end != (start+1)%24 {
+		return nil, []error{fmt.Errorf("%s must start on the hour and span exactly one hour, for example 04:00Z-05:00Z", k)}
+	}
+	return nil, nil
+}
+
+func customizeDiffAdbDbClusterLakeVersionAutoRenewal(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	// Only validate a value the configuration actually sets; values restored from
+	// state (import/refresh) must not block planning or destroying.
+	if !diff.HasChange("auto_renewal_period") && !diff.HasChange("auto_renewal_period_unit") {
+		return nil
+	}
+	period, ok := diff.Get("auto_renewal_period").(int)
+	if !ok || period == 0 {
+		return nil
+	}
+	if fmt.Sprint(diff.Get("auto_renewal_period_unit")) != "Year" {
+		return nil
+	}
+	switch period {
+	case 1, 2, 3, 5:
+		return nil
+	default:
+		return fmt.Errorf("auto_renewal_period must be 1, 2, 3 or 5 when auto_renewal_period_unit is Year")
+	}
 }
