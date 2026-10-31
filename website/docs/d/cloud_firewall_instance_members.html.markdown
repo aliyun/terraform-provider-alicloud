@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cloud_firewall_instance_members
 
-This data source provides Cloud Firewall Instance Member available to the user.[What is Instance Member](https://help.aliyun.com/document_detail/261237.html)
+This data source provides Cloud Firewall Instance Member available to the user.[What is Instance Member](https://www.alibabacloud.com/help/doc-detail/261237.htm)
 
 -> **NOTE:** Available since v1.194.0.
 
@@ -28,6 +28,7 @@ output "alicloud_cloud_firewall_instance_member_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+* `current_page` - (Optional) The current page number.
 * `ids` - (Optional, ForceNew, Computed) A list of Instance Member IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
