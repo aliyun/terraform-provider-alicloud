@@ -5,12 +5,15 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -373,4 +376,201 @@ func TestUnitAlicloudSDDPInstance(t *testing.T) {
 	// Delete
 	err = resourceAlicloudSddpInstanceDelete(dExisted, rawClient)
 	assert.Nil(t, err)
+}
+
+// TestUnitAlicloudSDDPInstanceRenewPeriodCreateContract verifies that Create assembles
+// the real BssOpenApi CreateInstance request body correctly for renewal semantics,
+// using a normally-initialized client with static fake credentials and a fail-closed
+// DoRequest interception. No real network, AK, or payment is involved.
+//
+// Cases:
+//  1. AutoRenewal + renew_period=1  -> body.RenewalStatus=AutoRenewal, body.RenewPeriod=1
+//  2. AutoRenewal without renew_period -> rejected before any RPC (error names renew_period)
+//  3. ManualRenewal + renew_period=2 -> body.RenewalStatus=ManualRenewal, body.RenewPeriod=2
+//  4. ManualRenewal without renew_period -> accepted, body carries no RenewPeriod
+//
+// On the pre-fix source (which read the non-existent "renewal_duration" schema key),
+// cases 1, 2 and 3 fail; after the fix switches to "renew_period" they pass,
+// preserving fix-before-fail / fix-after-pass regression semantics.
+//
+// lintignore: R001
+func TestUnitAlicloudSDDPInstanceRenewPeriodCreateContract(t *testing.T) {
+	p := Provider().ResourcesMap
+	resourceSchema := p["alicloud_sddp_instance"].Schema
+
+	// Build a normally-initialized AliyunClient with static fake credentials and
+	// pre-stored non-routable local endpoints. SkipRegionValidation avoids the
+	// region network check; AccountType="Domestic" short-circuits getAccountType's
+	// QueryAvailableInstances probe; pre-stored endpoints avoid loadEndpoint
+	// discovery. Construction is fully offline.
+	endpoints := &sync.Map{}
+	endpoints.Store("bssopenapi", "127.0.0.1:0") // SDDP Create via BssOpenApi
+	endpoints.Store("sddp", "127.0.0.1:0")       // Read via Sddp/DescribeUserStatus
+	conf := connectivity.Config{
+		Region:               connectivity.Region("cn-hangzhou"),
+		RegionId:             "cn-hangzhou",
+		AccessKey:            "FakeAccessKeyID",
+		SecretKey:            "FakeAccessKeySecret",
+		Protocol:             "HTTPS",
+		Endpoints:            endpoints,
+		SignVersion:          &sync.Map{},
+		SkipRegionValidation: true,
+		AccountId:            "0000000000000000",
+		AccountType:          "Domestic",
+	}
+	credConfig := new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("FakeAccessKeyID").
+		SetAccessKeySecret("FakeAccessKeySecret")
+	cred, err := credentials.NewCredential(credConfig)
+	assert.Nil(t, err)
+	conf.Credential = cred
+	rawClient, err := conf.Client()
+	assert.Nil(t, err)
+
+	readMock := map[string]interface{}{
+		"Code": "Success",
+		"UserStatus": map[string]interface{}{
+			"ChargeType":     "PREPAY",
+			"Version":        "version_dlp",
+			"InstanceNum":    3,
+			"Authed":         "CreateInstance",
+			"RenewStatus":    "AutoRenewal",
+			"OdpsSet":        "CreateInstance",
+			"OssBucketSet":   "CreateInstance",
+			"OssSize":        2000,
+			"RdsSet":         "CreateInstance",
+			"InstanceStatus": 1,
+			"RemainDays":     "CreateInstance",
+		},
+	}
+
+	// baseAttributes are the non-renewal required Create inputs. version_dlp does
+	// not require dataphin, keeping the fixture minimal. Each case layers renewal
+	// fields on top of these.
+	baseAttributes := map[string]interface{}{
+		"payment_type": "Subscription",
+		"period":       1,
+		"sddp_version": "version_dlp",
+		"sdc":          "3",
+		"sd_cbool":     "no",
+		"ud_cbool":     "yes",
+		"udc":          "2000",
+	}
+
+	newResourceData := func(t *testing.T, extra map[string]interface{}) *schema.ResourceData {
+		d, _ := schema.InternalMap(resourceSchema).Data(nil, nil)
+		d.MarkNewResource()
+		for k, v := range baseAttributes {
+			assert.Nil(t, d.Set(k, v))
+		}
+		for k, v := range extra {
+			assert.Nil(t, d.Set(k, v))
+		}
+		return d
+	}
+
+	createInstanceMock := func(instanceId string) map[string]interface{} {
+		return map[string]interface{}{
+			"Code": "Success",
+			"Data": map[string]interface{}{
+				"InstanceId": instanceId,
+			},
+		}
+	}
+
+	// failClosedMock intercepts every DoRequest: CreateInstance returns a success
+	// mock (and exposes the request body), DescribeUserStatus returns the Read
+	// mock, and any other action fails closed so no unexpected external call can
+	// ever escape. Because DoRequest is a large leaf method it is not inlined, so
+	// the gomonkey patch reliably intercepts real tea-rpc calls.
+	failClosedMock := func(capturedBody *map[string]interface{}) func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		return func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, body map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			switch *action {
+			case "CreateInstance":
+				if capturedBody != nil {
+					*capturedBody = body
+				}
+				return createInstanceMock("mock-sddp-instance"), nil
+			case "DescribeUserStatus":
+				return readMock, nil
+			default:
+				return nil, fmt.Errorf("fail-closed: unexpected DoRequest action %q", *action)
+			}
+		}
+	}
+
+	// Case 1: AutoRenewal + renew_period=1 -> Create succeeds, body carries
+	// RenewalStatus=AutoRenewal and RenewPeriod=1.
+	t.Run("AutoRenewalWithRenewPeriodAssemblesBody", func(t *testing.T) {
+		var capturedBody map[string]interface{}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", failClosedMock(&capturedBody))
+		defer patches.Reset()
+
+		d := newResourceData(t, map[string]interface{}{
+			"renewal_status": "AutoRenewal",
+			"renew_period":   1,
+		})
+		err := resourceAlicloudSddpInstanceCreate(d, rawClient)
+		assert.Nil(t, err, "AutoRenewal+renew_period Create should succeed")
+		assert.NotNil(t, capturedBody, "CreateInstance DoRequest should be invoked")
+		assert.Equal(t, "AutoRenewal", fmt.Sprint(capturedBody["RenewalStatus"]))
+		assert.Equal(t, "1", fmt.Sprint(capturedBody["RenewPeriod"]))
+	})
+
+	// Case 2: AutoRenewal without renew_period -> rejected before any RPC, error
+	// names renew_period (not the non-existent renewal_duration).
+	t.Run("AutoRenewalMissingRenewPeriodRejectedPreRPC", func(t *testing.T) {
+		var doRequestCalls int
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			doRequestCalls++
+			return nil, fmt.Errorf("fail-closed: DoRequest must not be called for missing renew_period")
+		})
+		defer patches.Reset()
+
+		d := newResourceData(t, map[string]interface{}{
+			"renewal_status": "AutoRenewal",
+		})
+		err := resourceAlicloudSddpInstanceCreate(d, rawClient)
+		assert.NotNil(t, err, "AutoRenewal without renew_period must be rejected")
+		assert.Equal(t, 0, doRequestCalls, "rejection must occur before any RPC")
+		assert.True(t, strings.Contains(err.Error(), "renew_period"), "error must name renew_period, got: %v", err)
+		assert.False(t, strings.Contains(err.Error(), "renewal_duration"), "error must not mention the non-existent renewal_duration key, got: %v", err)
+	})
+
+	// Case 3: ManualRenewal + renew_period=2 -> Create succeeds, body carries
+	// RenewalStatus=ManualRenewal and RenewPeriod=2.
+	t.Run("ManualRenewalWithRenewPeriodAssemblesBody", func(t *testing.T) {
+		var capturedBody map[string]interface{}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", failClosedMock(&capturedBody))
+		defer patches.Reset()
+
+		d := newResourceData(t, map[string]interface{}{
+			"renewal_status": "ManualRenewal",
+			"renew_period":   2,
+		})
+		err := resourceAlicloudSddpInstanceCreate(d, rawClient)
+		assert.Nil(t, err, "ManualRenewal+renew_period Create should succeed")
+		assert.NotNil(t, capturedBody, "CreateInstance DoRequest should be invoked")
+		assert.Equal(t, "ManualRenewal", fmt.Sprint(capturedBody["RenewalStatus"]))
+		assert.Equal(t, "2", fmt.Sprint(capturedBody["RenewPeriod"]))
+	})
+
+	// Case 4: ManualRenewal without renew_period -> accepted (not rejected),
+	// body carries RenewalStatus=ManualRenewal but no RenewPeriod key.
+	t.Run("ManualRenewalWithoutRenewPeriodAccepted", func(t *testing.T) {
+		var capturedBody map[string]interface{}
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", failClosedMock(&capturedBody))
+		defer patches.Reset()
+
+		d := newResourceData(t, map[string]interface{}{
+			"renewal_status": "ManualRenewal",
+		})
+		err := resourceAlicloudSddpInstanceCreate(d, rawClient)
+		assert.Nil(t, err, "ManualRenewal without renew_period should be accepted")
+		assert.NotNil(t, capturedBody, "CreateInstance DoRequest should be invoked")
+		assert.Equal(t, "ManualRenewal", fmt.Sprint(capturedBody["RenewalStatus"]))
+		_, hasRenewPeriod := capturedBody["RenewPeriod"]
+		assert.False(t, hasRenewPeriod, "body must not carry RenewPeriod when renew_period unset")
+	})
 }
