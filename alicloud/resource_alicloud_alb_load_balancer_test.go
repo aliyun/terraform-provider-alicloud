@@ -67,32 +67,47 @@ func testSweepAlbLoadBalancer(region string) error {
 		return nil
 	}
 	result, _ := resp.([]interface{})
+	if len(result) == 0 {
+		log.Printf("[INFO] ALB LoadBalancer: 0 load balancers in region %s", client.RegionId)
+		return nil
+	}
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if _, ok := item["LoadBalancerName"]; !ok {
+		lbName := fmt.Sprint(item["LoadBalancerName"])
+		lbId := fmt.Sprint(item["LoadBalancerId"])
+		if lbName == "" || lbId == "" {
 			continue
 		}
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["LoadBalancerName"].(string)), strings.ToLower(prefix)) {
-				skip = false
+		// NODELETING guard — always-active (both NORMAL and SWEEP_ALL).
+		if protectedSweepVpcName(lbName) {
+			log.Printf("[INFO] Skipping ALB LoadBalancer (NODELETING): %s (%s)", lbName, lbId)
+			continue
+		}
+		if !sweepAll() {
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(lbName), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping ALB LoadBalancer (no prefix): %s (%s)", lbName, lbId)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping ALB LoadBalancer: %s", item["LoadBalancerName"].(string))
-			continue
-		}
-
+		log.Printf("[INFO] Deleting ALB LoadBalancer: %s (%s)", lbName, lbId)
 		action := "DeleteLoadBalancer"
 		request := map[string]interface{}{
-			"LoadBalancerId": item["LoadBalancerId"],
+			"LoadBalancerId": lbId,
 		}
 		request["ClientToken"] = buildClientToken("DeleteLoadBalancer")
-		_, err = client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
-		if err != nil {
-			log.Printf("[ERROR] Failed to delete ALB LoadBalancer (%s): %s", item["LoadBalancerId"].(string), err)
+		_, e := client.RpcPost("Alb", "2020-06-16", action, nil, request, false)
+		if e != nil {
+			log.Printf("[ERROR] Failed to delete ALB LoadBalancer (%s): %s", lbId, e)
+			continue
 		}
-		log.Printf("[INFO] Delete ALB LoadBalancer success: %s ", item["LoadBalancerId"].(string))
+		log.Printf("[INFO] Delete ALB LoadBalancer success: %s (%s)", lbName, lbId)
 	}
 	return nil
 }
