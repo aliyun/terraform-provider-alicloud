@@ -1,0 +1,154 @@
+package apigateway_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAlicloudApiGatewayPluginsDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ApiGatewaySupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_api_gateway_plugin.default.id}"]`,
+		}),
+		FakeConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_api_gateway_plugin.default.id}_fake"]`,
+		}),
+	}
+	pluginNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"plugin_name": `"${alicloud_api_gateway_plugin.default.plugin_name}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"plugin_name": `"${alicloud_api_gateway_plugin.default.plugin_name}_fake"`,
+		}),
+	}
+	pluginTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"plugin_type": `"${alicloud_api_gateway_plugin.default.plugin_type}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"plugin_type": `"backendSignature"`,
+		}),
+	}
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"tags": `{
+				"Created" = "TF"
+				"For" = "Acceptance-test"
+		}`,
+		}),
+		FakeConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"tags": `{
+				"Created" = "TF-fake"
+				"For" = "Acceptance-test"
+			}`,
+		}),
+	}
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"name_regex": `"${alicloud_api_gateway_plugin.default.plugin_name}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"name_regex": `"${alicloud_api_gateway_plugin.default.plugin_name}_fake"`,
+		}),
+	}
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_api_gateway_plugin.default.id}"]`,
+			"name_regex":  `"${alicloud_api_gateway_plugin.default.plugin_name}"`,
+			"plugin_name": `"${alicloud_api_gateway_plugin.default.plugin_name}"`,
+			"plugin_type": `"${alicloud_api_gateway_plugin.default.plugin_type}"`,
+			"tags": `{
+				"Created" = "TF"
+				"For" = "Acceptance-test"
+		}`,
+		}),
+		FakeConfig: testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand, map[string]string{
+			"ids":         `["${alicloud_api_gateway_plugin.default.id}_fake"]`,
+			"name_regex":  `"${alicloud_api_gateway_plugin.default.plugin_name}_fake"`,
+			"plugin_name": `"${alicloud_api_gateway_plugin.default.plugin_name}_fake"`,
+			"plugin_type": `"backendSignature"`,
+			"tags": `{
+				"Created" = "TF-fake"
+				"For" = "Acceptance-test"
+			}`,
+		}),
+	}
+	var existAlicloudApiGatewayPluginsDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                   "1",
+			"names.#":                 "1",
+			"plugins.#":               "1",
+			"plugins.0.description":   fmt.Sprintf("tf_testAccPlugin_%d", rand),
+			"plugins.0.plugin_data":   "{\"allowOrigins\": \"api.foo.com\",\"allowMethods\": \"GET,POST,PUT,DELETE,HEAD,OPTIONS,PATCH\",\"allowHeaders\": \"Authorization,Accept,Accept-Ranges,Cache-Control,Range,Date,Content-Type,Content-Length,Content-MD5,User-Agent,X-Ca-Signature,X-Ca-Signature-Headers,X-Ca-Signature-Method,X-Ca-Key,X-Ca-Timestamp,X-Ca-Nonce,X-Ca-Stage,X-Ca-Request-Mode,x-ca-deviceid\",\"exposeHeaders\": \"Content-MD5,Server,Date,Latency,X-Ca-Request-Id,X-Ca-Error-Code,X-Ca-Error-Message\",\"maxAge\": 172800,\"allowCredentials\": true}",
+			"plugins.0.plugin_name":   fmt.Sprintf("tf_testAccPlugin_%d", rand),
+			"plugins.0.plugin_type":   "cors",
+			"plugins.0.tags.%":        "2",
+			"plugins.0.tags.Created":  "TF",
+			"plugins.0.tags.For":      "Acceptance-test",
+			"plugins.0.id":            acctest.CHECKSET,
+			"plugins.0.plugin_id":     acctest.CHECKSET,
+			"plugins.0.create_time":   acctest.CHECKSET,
+			"plugins.0.modified_time": acctest.CHECKSET,
+		}
+	}
+	var fakeAlicloudApiGatewayPluginsDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":   "0",
+			"names.#": "0",
+		}
+	}
+	var alicloudApiGatewayPluginsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_api_gateway_plugins.default",
+		ExistMapFunc: existAlicloudApiGatewayPluginsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudApiGatewayPluginsDataSourceNameMapFunc,
+	}
+
+	preCheck := func() {
+		acctest.PreCheck(t)
+	}
+	alicloudApiGatewayPluginsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, pluginNameConf, pluginTypeConf, tagsConf, nameRegexConf, allConf)
+}
+func testAccCheckAlicloudApiGatewayPluginsDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+
+variable "name" {	
+	default = "tf_testAccPlugin_%d"
+}
+
+resource "alicloud_api_gateway_plugin" "default" {
+	description = var.name
+	plugin_name = var.name
+	plugin_data = "{\"allowOrigins\": \"api.foo.com\",\"allowMethods\": \"GET,POST,PUT,DELETE,HEAD,OPTIONS,PATCH\",\"allowHeaders\": \"Authorization,Accept,Accept-Ranges,Cache-Control,Range,Date,Content-Type,Content-Length,Content-MD5,User-Agent,X-Ca-Signature,X-Ca-Signature-Headers,X-Ca-Signature-Method,X-Ca-Key,X-Ca-Timestamp,X-Ca-Nonce,X-Ca-Stage,X-Ca-Request-Mode,x-ca-deviceid\",\"exposeHeaders\": \"Content-MD5,Server,Date,Latency,X-Ca-Request-Id,X-Ca-Error-Code,X-Ca-Error-Message\",\"maxAge\": 172800,\"allowCredentials\": true}"
+	plugin_type = "cors"
+	tags = {
+		Created = "TF"
+		For = "Acceptance-test"
+	}
+}
+
+data "alicloud_api_gateway_plugins" "default" {	
+	%s
+}
+`, rand, strings.Join(pairs, " \n "))
+	return config
+}

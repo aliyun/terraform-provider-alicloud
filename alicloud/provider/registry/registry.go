@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqpopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apigateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
@@ -198,6 +199,7 @@ var servicePackages = []conns.ServicePackage{
 	alikafka.ServicePackage(),
 	amqpopen.ServicePackage(),
 	apig.ServicePackage(),
+	apigateway.ServicePackage(),
 	arms.ServicePackage(),
 	bpstudio.ServicePackage(),
 	brainindustrial.ServicePackage(),
