@@ -99,8 +99,12 @@ func qualify(path string, names map[string]bool) map[string]bool {
 	return out
 }
 
-// Select maps both changed implementations and tests to current registrations. A deleted
-// implementation is ignored only when its constructors are no longer registered.
+// Select maps both changed implementations and tests to current registrations.
+// A deleted flat implementation is ignored when its constructors were never
+// registered (a dead factory's file moved with the product split) or are still
+// registered under moved type names; it fails closed when a constructor was
+// registered and its type name is no longer registered, distinguishing a real
+// registration deletion from an unregistered relocation.
 func Select(changed []string, before, after map[string]string, sources map[string][]byte, oldSource func(string) ([]byte, error)) (map[string]string, error) {
 	functions := map[string]string{}
 	fileFunctions := map[string]map[string]bool{}
@@ -190,13 +194,35 @@ func Select(changed []string, before, after map[string]string, sources map[strin
 			return nil, fmt.Errorf("changed resource file %s has no current ResourcesMap registration", path)
 		}
 		if !matched && !exists && flat {
-			removed := false
-			for _, constructor := range before {
-				removed = removed || names[constructor]
+			// The flat implementation file is gone from the current snapshot.
+			// Its constructors are bare, pre-split names tied to type names
+			// through the before registry; the type name — not the factory
+			// name, which a split move renames and qualifies — is the stable
+			// link. Distinguish the relocations a filename-guessing gate
+			// conflated:
+			//   - a constructor never registered in before: a dead,
+			//     unregistered factory's file moved with the product split
+			//     (alicloud_havip's resourceAlicloudHavip was never
+			//     registered; the registered resourceAliCloudVpcHaVip lives in
+			//     a different file). Not a deletion — no error, no selection.
+			//   - a constructor registered in before whose type name is still
+			//     in after: a registered implementation moved, often with an
+			//     export rename so bare and qualified factories no longer
+			//     match. The moved file carries selection; no error here.
+			//   - a constructor registered in before whose type name is no
+			//     longer in after: a real public registration deletion. Fail
+			//     closed rather than waive it as a relocation.
+			for typeName, constructor := range before {
+				if !names[constructor] {
+					continue
+				}
+				if _, ok := after[typeName]; !ok {
+					return nil, fmt.Errorf("registered resource %s removed without a moved registration in %s", typeName, path)
+				}
 			}
-			if !removed {
-				return nil, fmt.Errorf("cannot establish deletion of registered resource %s", path)
-			}
+			// No before-registered constructor declared by this file had its type
+			// name removed from after: the deletion is a dead-factory relocation,
+			// not a registration deletion.
 		}
 		// A changed split file with no registration is a framework resource,
 		// data source or helper outside this checker: the product's
