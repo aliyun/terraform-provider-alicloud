@@ -1,0 +1,102 @@
+package ecd_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAlicloudECDSimpleOfficeSitesDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_ecd_simple_office_site.default.id}"]`,
+		}),
+		FakeConfig: testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand, map[string]string{
+			"ids": `["${alicloud_ecd_simple_office_site.default.id}_fake"]`,
+		}),
+	}
+
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand, map[string]string{
+			"ids":        `["${alicloud_ecd_simple_office_site.default.id}"]`,
+			"name_regex": `"${alicloud_ecd_simple_office_site.default.office_site_name}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand, map[string]string{
+			"ids":        `["${alicloud_ecd_simple_office_site.default.id}"]`,
+			"name_regex": `"${alicloud_ecd_simple_office_site.default.office_site_name}_fake"`,
+		}),
+	}
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand, map[string]string{
+			"ids":        `["${alicloud_ecd_simple_office_site.default.id}"]`,
+			"name_regex": `"${alicloud_ecd_simple_office_site.default.office_site_name}"`,
+		}),
+		FakeConfig: testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand, map[string]string{
+			"ids":        `["${alicloud_ecd_simple_office_site.default.id}_fake"]`,
+			"name_regex": `"${alicloud_ecd_simple_office_site.default.office_site_name}_fake"`,
+		}),
+	}
+	var existAlicloudEventBridgeEventBusesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                               "1",
+			"names.#":                             "1",
+			"sites.#":                             "1",
+			"sites.0.cidr_block":                  "172.16.0.0/12",
+			"sites.0.desktop_access_type":         "Internet",
+			"sites.0.status":                      "REGISTERED",
+			"sites.0.office_site_id":              acctest.CHECKSET,
+			"sites.0.enable_cross_desktop_access": "false",
+			// todo: need to check the `bandwidth` and `enable_internet_access` after fixing the issue occurred in ap-southeast-1
+			//"sites.0.bandwidth": "10",
+		}
+	}
+	var fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":   "0",
+			"names.#": "0",
+			"sites.#": "0",
+		}
+	}
+	var alicloudEventBridgeEventBusesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ecd_simple_office_sites.default",
+		ExistMapFunc: existAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc,
+	}
+	preCheck := func() {
+		acctest.PreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
+	}
+
+	alicloudEventBridgeEventBusesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+}
+func testAccCheckAlicloudSimpleOfficeSitesDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+
+variable "name" {
+	default = "tf-testAccSimpleOfficeSite-%d"
+}
+
+resource "alicloud_ecd_simple_office_site" "default" {
+  cidr_block = "172.16.0.0/12"
+  desktop_access_type = "Internet"
+  office_site_name    = var.name
+  #  bandwidth           = 10
+  # enable_internet_access= true
+  enable_internet_access = false
+}
+
+data "alicloud_ecd_simple_office_sites" "default" {
+	%s
+}
+`, rand, strings.Join(pairs, " \n "))
+	return config
+}

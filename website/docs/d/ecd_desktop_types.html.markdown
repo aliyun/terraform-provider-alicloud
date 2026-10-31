@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd Desktop Types to the user.
 ---
 
-# alicloud\_ecd\_desktop\_types
+# alicloud_ecd_desktop_types
 
 This data source provides the Ecd Desktop Types of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.170.0+.
+-> **NOTE:** Available since v1.170.0.
 
 ## Example Usage
 
@@ -38,19 +38,19 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `SUFFICIENT`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Desktop Type IDs.
 * `types` - A list of Ecd Desktop Types. Each element contains the following attributes:
-	* `cpu_count` - The CPU cores.
-	* `data_disk_size` - The size of the data disk. Unit: GiB.
-	* `desktop_type_id` - Specification ID.
-	* `gpu_count` - The GPU cores.
-	* `gpu_spec` - The GPU video memory.
-	* `id` - The ID of the Desktop Type.
-	* `instance_type_family` - The Specification family.
-	* `memory_size` - The Memory size. Unit: MiB.
-	* `status` - The status of the resource.
-	* `system_disk_size` - The size of the system disk. Unit: GiB.
+  * `cpu_count` - The CPU cores.
+  * `data_disk_size` - The size of the data disk. Unit: GiB.
+  * `desktop_type_id` - Specification ID.
+  * `gpu_count` - The GPU cores.
+  * `gpu_spec` - The GPU video memory.
+  * `id` - The ID of the Desktop Type.
+  * `instance_type_family` - The Specification family.
+  * `memory_size` - The Memory size. Unit: MiB.
+  * `status` - The status of the resource.
+  * `system_disk_size` - The size of the system disk. Unit: GiB.
