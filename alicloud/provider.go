@@ -363,16 +363,6 @@ func Provider() *schema.Provider {
 			// compute
 
 			// config
-			"alicloud_config_rules":                      dataSourceAlicloudConfigRules(),
-			"alicloud_config_configuration_recorders":    dataSourceAlicloudConfigConfigurationRecorders(),
-			"alicloud_config_delivery_channels":          dataSourceAlicloudConfigDeliveryChannels(),
-			"alicloud_config_aggregators":                dataSourceAlicloudConfigAggregators(),
-			"alicloud_config_aggregate_config_rules":     dataSourceAlicloudConfigAggregateConfigRules(),
-			"alicloud_config_aggregate_compliance_packs": dataSourceAlicloudConfigAggregateCompliancePacks(),
-			"alicloud_config_compliance_packs":           dataSourceAlicloudConfigCompliancePacks(),
-			"alicloud_config_deliveries":                 dataSourceAlicloudConfigDeliveries(),
-			"alicloud_config_aggregate_deliveries":       dataSourceAlicloudConfigAggregateDeliveries(),
-
 			// cr
 			"alicloud_cr_artifact_subscription_rules": dataSourceAliCloudCrArtifactSubscriptionRules(),
 			"alicloud_cr_artifact_lifecycle_rules":    dataSourceAliCloudCrArtifactLifecycleRules(),
@@ -1287,19 +1277,6 @@ func Provider() *schema.Provider {
 			// compute
 
 			// config
-			"alicloud_config_aggregate_remediation":     resourceAliCloudConfigAggregateRemediation(),
-			"alicloud_config_report_template":           resourceAliCloudConfigReportTemplate(),
-			"alicloud_config_remediation":               resourceAliCloudConfigRemediation(),
-			"alicloud_config_rule":                      resourceAliCloudConfigRule(),
-			"alicloud_config_configuration_recorder":    resourceAlicloudConfigConfigurationRecorder(),
-			"alicloud_config_delivery_channel":          resourceAlicloudConfigDeliveryChannel(),
-			"alicloud_config_aggregator":                resourceAliCloudConfigAggregator(),
-			"alicloud_config_aggregate_config_rule":     resourceAliCloudConfigAggregateConfigRule(),
-			"alicloud_config_aggregate_compliance_pack": resourceAliCloudConfigAggregateCompliancePack(),
-			"alicloud_config_compliance_pack":           resourceAliCloudConfigCompliancePack(),
-			"alicloud_config_delivery":                  resourceAliCloudConfigDelivery(),
-			"alicloud_config_aggregate_delivery":        resourceAliCloudConfigAggregateDelivery(),
-
 			// copy
 			"alicloud_copy_image": resourceAliCloudImageCopy(),
 
