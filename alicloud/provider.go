@@ -199,16 +199,6 @@ func Provider() *schema.Provider {
 			"alicloud_alb_health_check_templates":   dataSourceAlicloudAlbHealthCheckTemplates(),
 			"alicloud_alb_ascripts":                 dataSourceAlicloudAlbAscripts(),
 
-			// alidns
-			"alicloud_alidns_domain_groups":     dataSourceAlicloudAlidnsDomainGroups(),
-			"alicloud_alidns_records":           dataSourceAlicloudAlidnsRecords(),
-			"alicloud_alidns_instances":         dataSourceAlicloudAlidnsInstances(),
-			"alicloud_alidns_domains":           dataSourceAlicloudAlidnsDomains(),
-			"alicloud_alidns_custom_lines":      dataSourceAlicloudAlidnsCustomLines(),
-			"alicloud_alidns_gtm_instances":     dataSourceAlicloudAlidnsGtmInstances(),
-			"alicloud_alidns_address_pools":     dataSourceAlicloudAlidnsAddressPools(),
-			"alicloud_alidns_access_strategies": dataSourceAlicloudAlidnsAccessStrategies(),
-
 			// alikafka
 			"alicloud_alikafka_consumer_groups": dataSourceAlicloudAlikafkaConsumerGroups(),
 			"alicloud_alikafka_instances":       dataSourceAlicloudAlikafkaInstances(),
@@ -451,17 +441,6 @@ func Provider() *schema.Provider {
 			"alicloud_dms_enterprise_proxy_accesses":  dataSourceAlicloudDmsEnterpriseProxyAccesses(),
 			"alicloud_dms_enterprise_logic_databases": dataSourceAlicloudDmsEnterpriseLogicDatabases(),
 			"alicloud_dms_enterprise_databases":       dataSourceAlicloudDmsEnterpriseDatabases(),
-
-			// dns
-			"alicloud_dns_resolution_lines": dataSourceAlicloudDnsResolutionLines(),
-			"alicloud_dns_domains":          dataSourceAlicloudAlidnsDomains(),
-			"alicloud_dns_groups":           dataSourceAlicloudDnsGroups(),
-			"alicloud_dns_records":          dataSourceAlicloudDnsRecords(),
-			// alicloud_dns_domain_groups, alicloud_dns_domain_records have been deprecated.
-			"alicloud_dns_domain_groups":   dataSourceAlicloudDnsGroups(),
-			"alicloud_dns_domain_records":  dataSourceAlicloudDnsRecords(),
-			"alicloud_dns_domain_txt_guid": dataSourceAlicloudDnsDomainTxtGuid(),
-			"alicloud_dns_instances":       dataSourceAlicloudAlidnsInstances(),
 
 			// drds
 
@@ -1069,22 +1048,6 @@ func Provider() *schema.Provider {
 			"alicloud_alb_ascript":                                           resourceAliCloudAlbAScript(),
 			"alicloud_alb_load_balancer_common_bandwidth_package_attachment": resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment(),
 
-			// alidns
-			"alicloud_alidns_cloud_gtm_instance_config":  resourceAliCloudAlidnsCloudGtmInstanceConfig(),
-			"alicloud_alidns_cloud_gtm_monitor_template": resourceAliCloudAlidnsCloudGtmMonitorTemplate(),
-			"alicloud_alidns_cloud_gtm_address":          resourceAliCloudAlidnsCloudGtmAddress(),
-			"alicloud_alidns_cloud_gtm_address_pool":     resourceAliCloudAlidnsCloudGtmAddressPool(),
-			"alicloud_alidns_domain_attachment":          resourceAlicloudAlidnsDomainAttachment(),
-			"alicloud_alidns_domain_group":               resourceAlicloudAlidnsDomainGroup(),
-			"alicloud_alidns_record":                     resourceAliCloudAlidnsRecord(),
-			"alicloud_alidns_domain":                     resourceAlicloudAlidnsDomain(),
-			"alicloud_alidns_instance":                   resourceAlicloudAlidnsInstance(),
-			"alicloud_alidns_custom_line":                resourceAlicloudAlidnsCustomLine(),
-			"alicloud_alidns_gtm_instance":               resourceAlicloudAlidnsGtmInstance(),
-			"alicloud_alidns_address_pool":               resourceAlicloudAlidnsAddressPool(),
-			"alicloud_alidns_access_strategy":            resourceAlicloudAlidnsAccessStrategy(),
-			"alicloud_alidns_monitor_config":             resourceAlicloudAlidnsMonitorConfig(),
-
 			// aligreen
 
 			// alikafka
@@ -1393,14 +1356,6 @@ func Provider() *schema.Provider {
 			"alicloud_dms_enterprise_proxy":              resourceAlicloudDmsEnterpriseProxy(),
 			"alicloud_dms_enterprise_proxy_access":       resourceAlicloudDmsEnterpriseProxyAccess(),
 			"alicloud_dms_enterprise_logic_database":     resourceAlicloudDmsEnterpriseLogicDatabase(),
-
-			// dns
-			"alicloud_dns_record":            resourceAlicloudDnsRecord(),
-			"alicloud_dns":                   resourceAlicloudDns(),
-			"alicloud_dns_group":             resourceAlicloudDnsGroup(),
-			"alicloud_dns_instance":          resourceAlicloudAlidnsInstance(),
-			"alicloud_dns_domain_attachment": resourceAlicloudAlidnsDomainAttachment(),
-			"alicloud_dns_domain":            resourceAlicloudAlidnsDomain(),
 
 			// drds
 

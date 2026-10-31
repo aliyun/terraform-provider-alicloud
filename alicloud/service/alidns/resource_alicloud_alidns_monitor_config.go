@@ -1,0 +1,243 @@
+package alidns
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func resourceAlicloudAlidnsMonitorConfig() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudAlidnsMonitorConfigCreate,
+		Read:   resourceAlicloudAlidnsMonitorConfigRead,
+		Update: resourceAlicloudAlidnsMonitorConfigUpdate,
+		Delete: resourceAlicloudAlidnsMonitorConfigDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"addr_pool_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"evaluation_count": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 2, 3}),
+			},
+			"interval": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntInSlice([]int{60}),
+			},
+			"isp_city_node": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"city_code": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"isp_code": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"monitor_extend_info": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringIsJSON,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+			},
+			"protocol_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS", "PING", "TCP"}, false),
+			},
+			"timeout": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntInSlice([]int{2000, 3000, 5000, 10000}),
+			},
+		},
+	}
+}
+
+func resourceAlicloudAlidnsMonitorConfigCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "AddDnsGtmMonitor"
+	request := make(map[string]interface{})
+	var err error
+	request["AddrPoolId"] = d.Get("addr_pool_id")
+	request["EvaluationCount"] = d.Get("evaluation_count")
+	request["Interval"] = d.Get("interval")
+	if v, ok := d.GetOk("isp_city_node"); ok {
+		for i, ispCityNode := range v.(*schema.Set).List() {
+			ispCityNodeArg := ispCityNode.(map[string]interface{})
+			request[fmt.Sprintf("IspCityNode.%d.CityCode", i+1)] = ispCityNodeArg["city_code"]
+			request[fmt.Sprintf("IspCityNode.%d.IspCode", i+1)] = ispCityNodeArg["isp_code"]
+		}
+	}
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+	request["MonitorExtendInfo"] = d.Get("monitor_extend_info")
+	request["ProtocolType"] = d.Get("protocol_type")
+	request["Timeout"] = d.Get("timeout")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_alidns_monitor_config", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["MonitorConfigId"]))
+	return resourceAlicloudAlidnsMonitorConfigRead(d, meta)
+}
+func resourceAlicloudAlidnsMonitorConfigRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	alidnsService := NewAlidnsService(client)
+	object, err := alidnsService.DescribeAlidnsMonitorConfig(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alidns_monitor_config alidnsService.DescribeAlidnsMonitorConfig Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	if v, ok := object["EvaluationCount"]; ok {
+		evaluation_countVal, err := convert.FormatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("evaluation_count", evaluation_countVal)
+	}
+	if v, ok := object["Interval"]; ok {
+		intervalVal, err := convert.FormatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("interval", intervalVal)
+	}
+	d.Set("monitor_extend_info", object["MonitorExtendInfo"])
+	d.Set("protocol_type", object["ProtocolType"])
+	if v, ok := object["Timeout"]; ok {
+		timeoutVal, err := convert.FormatInt(v)
+		if err != nil {
+			return err
+		}
+		d.Set("timeout", timeoutVal)
+	}
+	if ispCityNodesList, ok := object["IspCityNodes"]; ok {
+		ispCityNodesArg := ispCityNodesList.(map[string]interface{})
+		if ispCityNodeConfig, ok := ispCityNodesArg["IspCityNode"]; ok {
+			ispCityNodeConfigArgs := ispCityNodeConfig.([]interface{})
+			ispCityNodesMaps := make([]map[string]interface{}, 0)
+			for _, ispCityNodeMapArgitem := range ispCityNodeConfigArgs {
+				ispCityNodeMapArg := ispCityNodeMapArgitem.(map[string]interface{})
+				ispCityNodesMap := map[string]interface{}{}
+				ispCityNodesMap["city_code"] = ispCityNodeMapArg["CityCode"]
+				ispCityNodesMap["isp_code"] = ispCityNodeMapArg["IspCode"]
+				ispCityNodesMaps = append(ispCityNodesMaps, ispCityNodesMap)
+			}
+			d.Set("isp_city_node", ispCityNodesMaps)
+		}
+	}
+	return nil
+}
+func resourceAlicloudAlidnsMonitorConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+	var response map[string]interface{}
+	update := false
+	request := map[string]interface{}{
+		"MonitorConfigId": d.Id(),
+	}
+	if d.HasChange("isp_city_node") {
+		update = true
+	}
+	if v, ok := d.GetOk("isp_city_node"); ok {
+		for i, ispCityNode := range v.(*schema.Set).List() {
+			ispCityNodeArg := ispCityNode.(map[string]interface{})
+			request[fmt.Sprintf("IspCityNode.%d.CityCode", i+1)] = ispCityNodeArg["city_code"]
+			request[fmt.Sprintf("IspCityNode.%d.IspCode", i+1)] = ispCityNodeArg["isp_code"]
+		}
+	}
+	if d.HasChange("monitor_extend_info") {
+		update = true
+	}
+	request["MonitorExtendInfo"] = d.Get("monitor_extend_info")
+	if d.HasChange("protocol_type") {
+		update = true
+	}
+	request["ProtocolType"] = d.Get("protocol_type")
+	if d.HasChange("evaluation_count") {
+		update = true
+		request["EvaluationCount"] = d.Get("evaluation_count")
+	}
+	if d.HasChange("interval") {
+		update = true
+		request["Interval"] = d.Get("interval")
+	}
+	if d.HasChange("timeout") {
+		update = true
+		request["Timeout"] = d.Get("timeout")
+	}
+	if update {
+		action := "UpdateDnsGtmMonitor"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Alidns", "2015-01-09", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	return resourceAlicloudAlidnsMonitorConfigRead(d, meta)
+}
+func resourceAlicloudAlidnsMonitorConfigDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceAlicloudAlidnsMonitorConfig. Terraform will remove this resource from the state file, however resources may remain.")
+	return nil
+}

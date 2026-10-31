@@ -1,0 +1,136 @@
+package alidns
+
+import (
+	"time"
+
+	alidnssdk "github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func resourceAlicloudDns() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudDnsCreate,
+		Read:   resourceAlicloudDnsRead,
+		Update: resourceAlicloudDnsUpdate,
+		Delete: resourceAlicloudDnsDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
+		DeprecationMessage: "This resource has been deprecated since v1.95.0 and will be removed in the future. Please use 'alicloud_alidns_domain' instead.",
+
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringLenBetween(5, 67),
+				ForceNew:     true,
+			},
+			"domain_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"dns_server": {
+				Type:     schema.TypeSet,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAlicloudDnsCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	request := alidnssdk.CreateAddDomainRequest()
+	request.RegionId = client.RegionId
+	request.DomainName = d.Get("name").(string)
+	request.ResourceGroupId = d.Get("resource_group_id").(string)
+
+	raw, err := client.WithDnsClient(func(dnsClient *alidnssdk.Client) (interface{}, error) {
+		return dnsClient.AddDomain(request)
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dns", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*alidnssdk.AddDomainResponse)
+	d.SetId(response.DomainName)
+	return resourceAlicloudDnsUpdate(d, meta)
+}
+
+func resourceAlicloudDnsUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	request := alidnssdk.CreateChangeDomainGroupRequest()
+	request.RegionId = client.RegionId
+	request.DomainName = d.Id()
+	request.GroupId = d.Get("group_id").(string)
+
+	if d.HasChange("group_id") {
+		raw, err := client.WithDnsClient(func(dnsClient *alidnssdk.Client) (interface{}, error) {
+			return dnsClient.ChangeDomainGroup(request)
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+	return resourceAlicloudDnsRead(d, meta)
+}
+
+func resourceAlicloudDnsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	dnsService := NewDnsService(client)
+	object, err := dnsService.DescribeDns(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	d.Set("group_id", object.GroupId)
+	d.Set("domain_id", object.DomainId)
+	d.Set("name", object.DomainName)
+	d.Set("dns_server", object.DnsServers.DnsServer)
+	return nil
+}
+
+func resourceAlicloudDnsDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	request := alidnssdk.CreateDeleteDomainRequest()
+	request.DomainName = d.Id()
+	request.RegionId = client.RegionId
+	return retry.Retry(5*time.Minute, func() *retry.RetryError {
+		raw, err := client.WithDnsClient(func(dnsClient *alidnssdk.Client) (interface{}, error) {
+			return dnsClient.DeleteDomain(request)
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"RecordForbidden.DNSChange", "InternalError", "DnsSystemBusyness"}) {
+				return retry.RetryableError(errs.WrapErrorf(err, errs.DefaultTimeoutMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR))
+			}
+			return retry.NonRetryableError(errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR))
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+}
