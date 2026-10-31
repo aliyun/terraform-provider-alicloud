@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,12 +14,15 @@ import (
 
 // The generic validators below moved to the leaf package validators; these
 // aliases keep the flat layout compiling unchanged. Product-specific
-// validators (OTS, Ons, DNS RR, OSS date, DB port, SSL VPN port, Redis
+// validators (OTS, Ons, DNS RR, OSS date, SSL VPN port, Redis
 // config) stay in this file and migrate with their products.
+// validateDBConnectionPort is shared by gpdb and rds connection resources,
+// so it moved to the leaf package and is aliased here for the flat layout.
 var (
 	validateCIDRNetworkAddress       = validators.ValidateCIDRNetworkAddress
 	validateVpnCIDRNetworkAddress    = validators.ValidateVpnCIDRNetworkAddress
 	validateSwitchCIDRNetworkAddress = validators.ValidateSwitchCIDRNetworkAddress
+	validateDBConnectionPort         = validators.ValidateDBConnectionPort
 	validateAllowedSplitStringValue  = validators.ValidateAllowedSplitStringValue
 	validateStringConvertInt64       = validators.ValidateStringConvertInt64
 	normalizeYamlString              = validators.NormalizeYamlString
@@ -79,18 +81,8 @@ func validateRR(v interface{}, k string) (ws []string, errors []error) {
 	return
 }
 
-func validateDBConnectionPort(v interface{}, k string) (ws []string, errors []error) {
-	if value := v.(string); value != "" {
-		port, err := strconv.Atoi(value)
-		if err != nil {
-			errors = append(errors, err)
-		}
-		if port < 1000 || port > 5999 {
-			errors = append(errors, fmt.Errorf("%q cannot be less than 3001 and larger than 3999.", k))
-		}
-	}
-	return
-}
+// validateDBConnectionPort moved to alicloud/validators.ValidateDBConnectionPort;
+// the alias above keeps the flat layout (rds db_connection) compiling unchanged.
 
 func validateSslVpnPortValue(is []int) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (ws []string, errors []error) {
