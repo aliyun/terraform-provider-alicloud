@@ -140,10 +140,14 @@ func resourceAlicloudCrVpcEndpointLinkedVpcRead(d *schema.ResourceData, meta int
 
 func resourceAlicloudCrVpcEndpointLinkedVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	// The baseline borrowed resourceAlicloudHbrHanaBackupClientRead (an HBR
-	// product read outside the cr subpackage's visibility) to realize a no-op
-	// Update. Keep that no-op behavior without the cross-product dependency.
-	return nil
+	// The baseline realized Update by borrowing resourceAlicloudHbrHanaBackupClientRead
+	// (an HBR read outside package cr's visibility): a copy-paste defect that called
+	// HBR's DescribeHbrHanaBackupClient with this resource's CR id and could drop it
+	// from state on NotFound. Migration into package cr made the HBR read unreachable.
+	// Per the provider's standard no-update pattern (an Update delegates to its own
+	// Read), delegate to this resource's own Read to preserve Read-based refresh.
+	// Authorized production fix scoped to this Update only; no other behavior changed.
+	return resourceAlicloudCrVpcEndpointLinkedVpcRead(d, meta)
 }
 
 func resourceAlicloudCrVpcEndpointLinkedVpcDelete(d *schema.ResourceData, meta interface{}) error {
