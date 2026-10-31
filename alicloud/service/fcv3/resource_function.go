@@ -1,4 +1,4 @@
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -8,16 +8,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3Function() *schema.Resource {
+func ResourceFunction() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3FunctionCreate,
-		Read:   resourceAliCloudFcv3FunctionRead,
-		Update: resourceAliCloudFcv3FunctionUpdate,
-		Delete: resourceAliCloudFcv3FunctionDelete,
+		Create: resourceFunctionCreate,
+		Read:   resourceFunctionRead,
+		Update: resourceFunctionUpdate,
+		Delete: resourceFunctionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -61,7 +67,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:         schema.TypeFloat,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: FloatBetween(0.05, 16),
+				ValidateFunc: validators.FloatBetween(0.05, 16),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -110,7 +116,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Deprecated:   "Field 'acceleration_type' has been deprecated from provider version 1.228.0. Whether to enable Image acceleration. Default: The Default value, indicating that image acceleration is enabled. None: indicates that image acceleration is disabled. (Obsolete)",
-							ValidateFunc: StringInSlice([]string{"Default", "None"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"Default", "None"}, false),
 						},
 						"port": {
 							Type:     schema.TypeInt,
@@ -127,13 +133,13 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 									"timeout_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 3),
+										ValidateFunc: validators.IntBetween(0, 3),
 									},
 									"http_get_url": {
 										Type:     schema.TypeString,
@@ -144,19 +150,19 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 									"failure_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 									"success_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 								},
 							},
@@ -290,7 +296,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(0, 65535),
+							ValidateFunc: validators.IntBetween(0, 65535),
 						},
 						"health_check_config": {
 							Type:     schema.TypeList,
@@ -303,13 +309,13 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 									"timeout_seconds": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 3),
+										ValidateFunc: validators.IntBetween(0, 3),
 									},
 									"http_get_url": {
 										Type:     schema.TypeString,
@@ -320,19 +326,19 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 									"failure_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 									"success_threshold": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										Computed:     true,
-										ValidateFunc: IntBetween(0, 120),
+										ValidateFunc: validators.IntBetween(0, 120),
 									},
 								},
 							},
@@ -348,7 +354,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntAtLeast(512),
+				ValidateFunc: validators.IntAtLeast(512),
 			},
 			// lintignore: S006
 			"environment_variables": {
@@ -368,7 +374,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "The function name. Consists of uppercase and lowercase letters, digits (0 to 9), underscores (_), and dashes (-). It must begin with an English letter (a ~ z), (A ~ Z), or an underscore (_). Case sensitive. The length is 1~128 characters."),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "The function name. Consists of uppercase and lowercase letters, digits (0 to 9), underscores (_), and dashes (-). It must begin with an English letter (a ~ z), (A ~ Z), or an underscore (_). Case sensitive. The length is 1~128 characters."),
 			},
 			"gpu_config": {
 				Type:     schema.TypeList,
@@ -383,7 +389,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 						"gpu_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"fc.gpu.tesla.1", "fc.gpu.ampere.1", "fc.gpu.ada.1", "g1"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"fc.gpu.tesla.1", "fc.gpu.ampere.1", "fc.gpu.ada.1", "g1"}, false),
 						},
 					},
 				},
@@ -401,7 +407,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(0, 200),
+				ValidateFunc: validators.IntBetween(0, 200),
 			},
 			"instance_isolation_mode": {
 				Type:     schema.TypeString,
@@ -423,7 +429,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 									"timeout": {
 										Type:         schema.TypeInt,
 										Optional:     true,
-										ValidateFunc: IntBetween(0, 900),
+										ValidateFunc: validators.IntBetween(0, 900),
 									},
 									"handler": {
 										Type:     schema.TypeString,
@@ -446,7 +452,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 									"timeout": {
 										Type:         schema.TypeInt,
 										Optional:     true,
-										ValidateFunc: IntBetween(0, 600),
+										ValidateFunc: validators.IntBetween(0, 600),
 									},
 									"handler": {
 										Type:     schema.TypeString,
@@ -519,7 +525,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"None", "DefaultRegex"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"None", "DefaultRegex"}, false),
 						},
 						"logstore": {
 							Type:     schema.TypeString,
@@ -542,7 +548,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(64, 32768),
+				ValidateFunc: validators.IntBetween(64, 32768),
 			},
 			"nas_config": {
 				Type:     schema.TypeList,
@@ -634,7 +640,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 			"runtime": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"python3.10", "python3.9", "python3", "nodejs20", "nodejs18", "nodejs16", "nodejs14", "java11", "java8", "php7.2", "dotnetcore3.1", "go1", "custom.debian10", "custom", "custom-container", "python3.12", "custom.debian11", "custom.debian12"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"python3.10", "python3.9", "python3", "nodejs20", "nodejs18", "nodejs16", "nodejs14", "java11", "java8", "php7.2", "dotnetcore3.1", "go1", "custom.debian10", "custom", "custom-container", "python3.12", "custom.debian11", "custom.debian12"}, false),
 			},
 			"session_affinity": {
 				Type:     schema.TypeString,
@@ -657,12 +663,12 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"timeout": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(0, 86400),
+				ValidateFunc: validators.IntBetween(0, 86400),
 			},
 			"tracing_config": {
 				Type:     schema.TypeList,
@@ -710,7 +716,7 @@ func resourceAliCloudFcv3Function() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -727,7 +733,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 
 	gpuConfig := make(map[string]interface{})
 
-	if v := d.Get("gpu_config"); !IsNil(v) {
+	if v := d.Get("gpu_config"); !helper.IsNil(v) {
 		gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
 		if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
 			gpuConfig["gpuMemorySize"] = gpuMemorySize1
@@ -742,7 +748,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 
 	logConfig := make(map[string]interface{})
 
-	if v := d.Get("log_config"); !IsNil(v) {
+	if v := d.Get("log_config"); !helper.IsNil(v) {
 		logBeginRule1, _ := jsonpath.Get("$[0].log_begin_rule", v)
 		if logBeginRule1 != nil && logBeginRule1 != "" {
 			logConfig["logBeginRule"] = logBeginRule1
@@ -775,7 +781,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 	customRuntimeConfig := make(map[string]interface{})
 
-	if v := d.Get("custom_runtime_config"); !IsNil(v) {
+	if v := d.Get("custom_runtime_config"); !helper.IsNil(v) {
 		healthCheckConfig := make(map[string]interface{})
 		timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_runtime_config"))
 		if timeoutSeconds1 != nil && timeoutSeconds1 != "" && timeoutSeconds1.(int) > 0 {
@@ -823,7 +829,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 
 	customContainerConfig := make(map[string]interface{})
 
-	if v := d.Get("custom_container_config"); !IsNil(v) {
+	if v := d.Get("custom_container_config"); !helper.IsNil(v) {
 		accelerationType1, _ := jsonpath.Get("$[0].acceleration_type", v)
 		if accelerationType1 != nil && accelerationType1 != "" {
 			customContainerConfig["accelerationType"] = accelerationType1
@@ -929,7 +935,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 	instanceLifecycleConfig := make(map[string]interface{})
 
-	if v := d.Get("instance_lifecycle_config"); !IsNil(v) {
+	if v := d.Get("instance_lifecycle_config"); !helper.IsNil(v) {
 		preStop := make(map[string]interface{})
 		timeout1, _ := jsonpath.Get("$[0].pre_stop[0].timeout", d.Get("instance_lifecycle_config"))
 		if timeout1 != nil && timeout1 != "" && timeout1.(int) > 0 {
@@ -969,14 +975,14 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 	ossMountConfig := make(map[string]interface{})
 
-	if v := d.Get("oss_mount_config"); !IsNil(v) {
+	if v := d.Get("oss_mount_config"); !helper.IsNil(v) {
 		if v, ok := d.GetOk("oss_mount_config"); ok {
 			localData, err := jsonpath.Get("$[0].mount_points", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
+			for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -1001,7 +1007,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 	code := make(map[string]interface{})
 
-	if v := d.Get("code"); !IsNil(v) {
+	if v := d.Get("code"); !helper.IsNil(v) {
 		ossBucketName1, _ := jsonpath.Get("$[0].oss_bucket_name", v)
 		if ossBucketName1 != nil && ossBucketName1 != "" {
 			code["ossBucketName"] = ossBucketName1
@@ -1026,12 +1032,12 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		request["role"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
 	if v, ok := d.GetOk("layers"); ok {
-		layersMapsArray := convertToInterfaceArray(v)
+		layersMapsArray := convert.ConvertToInterfaceArray(v)
 
 		request["layers"] = layersMapsArray
 	}
@@ -1053,7 +1059,7 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	}
 	vpcConfig := make(map[string]interface{})
 
-	if v := d.Get("vpc_config"); !IsNil(v) {
+	if v := d.Get("vpc_config"); !helper.IsNil(v) {
 		vpcId1, _ := jsonpath.Get("$[0].vpc_id", v)
 		if vpcId1 != nil && vpcId1 != "" {
 			vpcConfig["vpcId"] = vpcId1
@@ -1081,11 +1087,11 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		request["memorySize"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1093,29 +1099,29 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_function", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_function", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["functionName"]))
 
-	return resourceAliCloudFcv3FunctionUpdate(d, meta)
+	return resourceFunctionUpdate(d, meta)
 }
 
-func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3Function(d.Id())
+	objectRaw, err := service.DescribeFunction(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_function DescribeFcv3Function Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_function DescribeFunction Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("code_size", objectRaw["codeSize"])
@@ -1173,13 +1179,13 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customContainerConfigMap["acceleration_info"] = accelerationInfoMaps
 		commandRaw := make([]interface{}, 0)
 		if customContainerConfigRaw["command"] != nil {
-			commandRaw = convertToInterfaceArray(customContainerConfigRaw["command"])
+			commandRaw = convert.ConvertToInterfaceArray(customContainerConfigRaw["command"])
 		}
 
 		customContainerConfigMap["command"] = commandRaw
 		entrypointRaw := make([]interface{}, 0)
 		if customContainerConfigRaw["entrypoint"] != nil {
-			entrypointRaw = convertToInterfaceArray(customContainerConfigRaw["entrypoint"])
+			entrypointRaw = convert.ConvertToInterfaceArray(customContainerConfigRaw["entrypoint"])
 		}
 
 		customContainerConfigMap["entrypoint"] = entrypointRaw
@@ -1279,7 +1285,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		dnsOptionsRaw := customDNSRaw["dnsOptions"]
 		dnsOptionsMaps := make([]map[string]interface{}, 0)
 		if dnsOptionsRaw != nil {
-			for _, dnsOptionsChildRaw := range convertToInterfaceArray(dnsOptionsRaw) {
+			for _, dnsOptionsChildRaw := range convert.ConvertToInterfaceArray(dnsOptionsRaw) {
 				dnsOptionsMap := make(map[string]interface{})
 				dnsOptionsChildRaw := dnsOptionsChildRaw.(map[string]interface{})
 				dnsOptionsMap["name"] = dnsOptionsChildRaw["name"]
@@ -1291,13 +1297,13 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customDnsMap["dns_options"] = dnsOptionsMaps
 		nameServersRaw := make([]interface{}, 0)
 		if customDNSRaw["nameServers"] != nil {
-			nameServersRaw = convertToInterfaceArray(customDNSRaw["nameServers"])
+			nameServersRaw = convert.ConvertToInterfaceArray(customDNSRaw["nameServers"])
 		}
 
 		customDnsMap["name_servers"] = nameServersRaw
 		searchesRaw := make([]interface{}, 0)
 		if customDNSRaw["searches"] != nil {
-			searchesRaw = convertToInterfaceArray(customDNSRaw["searches"])
+			searchesRaw = convert.ConvertToInterfaceArray(customDNSRaw["searches"])
 		}
 
 		customDnsMap["searches"] = searchesRaw
@@ -1317,13 +1323,13 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 		argsRaw := make([]interface{}, 0)
 		if customRuntimeConfigRaw["args"] != nil {
-			argsRaw = convertToInterfaceArray(customRuntimeConfigRaw["args"])
+			argsRaw = convert.ConvertToInterfaceArray(customRuntimeConfigRaw["args"])
 		}
 
 		customRuntimeConfigMap["args"] = argsRaw
 		commandRaw := make([]interface{}, 0)
 		if customRuntimeConfigRaw["command"] != nil {
-			commandRaw = convertToInterfaceArray(customRuntimeConfigRaw["command"])
+			commandRaw = convert.ConvertToInterfaceArray(customRuntimeConfigRaw["command"])
 		}
 
 		customRuntimeConfigMap["command"] = commandRaw
@@ -1384,7 +1390,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 			commandRaw := make([]interface{}, 0)
 			if initializerRaw["command"] != nil {
-				commandRaw = convertToInterfaceArray(initializerRaw["command"])
+				commandRaw = convert.ConvertToInterfaceArray(initializerRaw["command"])
 			}
 
 			initializerMap["command"] = commandRaw
@@ -1456,7 +1462,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		mountPointsRaw := nasConfigRaw["mountPoints"]
 		mountPointsMaps := make([]map[string]interface{}, 0)
 		if mountPointsRaw != nil {
-			for _, mountPointsChildRaw := range convertToInterfaceArray(mountPointsRaw) {
+			for _, mountPointsChildRaw := range convert.ConvertToInterfaceArray(mountPointsRaw) {
 				mountPointsMap := make(map[string]interface{})
 				mountPointsChildRaw := mountPointsChildRaw.(map[string]interface{})
 				mountPointsMap["enable_tls"] = mountPointsChildRaw["enableTLS"]
@@ -1478,7 +1484,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 	mountPointsMaps := make([]map[string]interface{}, 0)
 	if mountPointsRaw != nil {
-		for _, mountPointsChildRaw := range convertToInterfaceArray(mountPointsRaw) {
+		for _, mountPointsChildRaw := range convert.ConvertToInterfaceArray(mountPointsRaw) {
 			mountPointsMap := make(map[string]interface{})
 			mountPointsChildRaw := mountPointsChildRaw.(map[string]interface{})
 			mountPointsMap["bucket_name"] = mountPointsChildRaw["bucketName"]
@@ -1496,7 +1502,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 		return err
 	}
 	tagsMaps := objectRaw["tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 	tracingConfigMaps := make([]map[string]interface{}, 0)
 	tracingConfigMap := make(map[string]interface{})
 	tracingConfigRaw := make(map[string]interface{})
@@ -1524,7 +1530,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 
 		vSwitchIdsRaw := make([]interface{}, 0)
 		if vpcConfigRaw["vSwitchIds"] != nil {
-			vSwitchIdsRaw = convertToInterfaceArray(vpcConfigRaw["vSwitchIds"])
+			vSwitchIdsRaw = convert.ConvertToInterfaceArray(vpcConfigRaw["vSwitchIds"])
 		}
 
 		vpcConfigMap["vswitch_ids"] = vSwitchIdsRaw
@@ -1539,7 +1545,7 @@ func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -1551,15 +1557,15 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	if d.HasChange("invocation_restriction.0.disable") {
 		var err error
-		fcv3ServiceV2 := Fcv3ServiceV2{client}
-		object, err := fcv3ServiceV2.DescribeFcv3Function(d.Id())
+		service := NewService(client)
+		object, err := service.DescribeFunction(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		target := d.Get("invocation_restriction.0.disable").(bool)
 		disable, _ := jsonpath.Get("$.invocationRestriction.disable", object)
-		disableValue, formatErr := formatBool(disable)
+		disableValue, formatErr := convert.FormatBool(disable)
 		if formatErr != nil {
 			return formatErr
 		}
@@ -1579,11 +1585,11 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					}
 				}
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"500"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1591,9 +1597,9 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -1606,11 +1612,11 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 				request["functionName"] = d.Id()
 
 				body = request
-				wait := incrementalWait(3*time.Second, 5*time.Second)
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RoaPost("FC", "2023-03-30", action, query, header, body, true)
 					if err != nil {
-						if NeedRetry(err) {
+						if helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -1618,9 +1624,9 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 
 			}
@@ -1704,7 +1710,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					localData = make([]interface{}, 0)
 				}
 				localMaps := make([]interface{}, 0)
-				for _, dataLoop := range convertToInterfaceArray(localData) {
+				for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 					dataLoopTmp := make(map[string]interface{})
 					if dataLoop != nil {
 						dataLoopTmp = dataLoop.(map[string]interface{})
@@ -1914,7 +1920,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					localData1 = make([]interface{}, 0)
 				}
 				localMaps1 := make([]interface{}, 0)
-				for _, dataLoop1 := range convertToInterfaceArray(localData1) {
+				for _, dataLoop1 := range convert.ConvertToInterfaceArray(localData1) {
 					dataLoop1Tmp := make(map[string]interface{})
 					if dataLoop1 != nil {
 						dataLoop1Tmp = dataLoop1.(map[string]interface{})
@@ -1992,7 +1998,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 					localData2 = make([]interface{}, 0)
 				}
 				localMaps2 := make([]interface{}, 0)
-				for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+				for _, dataLoop2 := range convert.ConvertToInterfaceArray(localData2) {
 					dataLoop2Tmp := make(map[string]interface{})
 					if dataLoop2 != nil {
 						dataLoop2Tmp = dataLoop2.(map[string]interface{})
@@ -2055,7 +2061,7 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && d.HasChange("layers") {
 		update = true
 		if v, ok := d.GetOk("layers"); ok || d.HasChange("layers") {
-			layersMapsArray := convertToInterfaceArray(v)
+			layersMapsArray := convert.ConvertToInterfaceArray(v)
 
 			request["layers"] = layersMapsArray
 		}
@@ -2129,11 +2135,11 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2141,9 +2147,9 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -2161,11 +2167,11 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	request["resourceType"] = "function"
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -2173,23 +2179,23 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		fcv3ServiceV2 := Fcv3ServiceV2{client}
-		if err := fcv3ServiceV2.SetResourceTags(d, "function"); err != nil {
-			return WrapError(err)
+		service := NewService(client)
+		if err := service.SetResourceTags(d, "function"); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudFcv3FunctionRead(d, meta)
+	return resourceFunctionRead(d, meta)
 }
 
-func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	functionName := d.Id()
@@ -2200,11 +2206,11 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"429", "ProvisionConfigExist"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"429", "ProvisionConfigExist"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -2212,13 +2218,13 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"FunctionNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"FunctionNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	// DeleteFunction returns success before the function is fully removed.
@@ -2227,21 +2233,21 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	// the function when registry_config.network_config is set. Without this
 	// wait the dependent security group and vSwitch destroy immediately
 	// afterwards fails with DependencyViolation on the still-attached ENI.
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
-	waitFunc := incrementalWait(3*time.Second, 5*time.Second)
+	service := NewService(client)
+	waitFunc := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		_, e := fcv3ServiceV2.DescribeFcv3Function(functionName)
+		_, e := service.DescribeFunction(functionName)
 		if e == nil {
 			waitFunc()
 			return retry.RetryableError(fmt.Errorf("fcv3 function [%s] is still being deleted", functionName))
 		}
-		if NotFoundError(e) {
+		if errs.NotFoundError(e) {
 			return nil
 		}
 		return retry.NonRetryableError(e)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	// When registry_config.network_config is configured, FC creates an ENI in
@@ -2257,7 +2263,7 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	vswId, _ := vSwitchId.(string)
 	if sgId != "" || vswId != "" {
 		eniAction := "DescribeNetworkInterfaces"
-		eniWait := incrementalWait(5*time.Second, 10*time.Second)
+		eniWait := helper.IncrementalWait(5*time.Second, 10*time.Second)
 		eniErr := retry.Retry(10*time.Minute, func() *retry.RetryError {
 			eniReq := make(map[string]interface{})
 			eniReq["RegionId"] = client.RegionId
@@ -2267,17 +2273,17 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 			if vswId != "" {
 				eniReq["VSwitchId"] = vswId
 			}
-			eniReq["PageSize"] = PageSizeLarge
+			eniReq["PageSize"] = helper.PageSizeLarge
 			eniReq["PageNumber"] = 1
 			eniResp, e := client.RpcPost("Ecs", "2014-05-26", eniAction, nil, eniReq, true)
 			if e != nil {
-				if NeedRetry(e) {
+				if helper.NeedRetry(e) {
 					eniWait()
 					return retry.RetryableError(e)
 				}
 				return retry.NonRetryableError(e)
 			}
-			addDebug(eniAction, eniResp, eniReq)
+			logs.AddDebug(eniAction, eniResp, eniReq)
 			eniSet, _ := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", eniResp)
 			count := 0
 			if arr, ok := eniSet.([]interface{}); ok {
@@ -2290,7 +2296,7 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 			return nil
 		})
 		if eniErr != nil {
-			addDebug(eniAction, fmt.Sprintf("wait for ENI release timed out for fcv3 function [%s]: %s", functionName, eniErr), nil)
+			logs.AddDebug(eniAction, fmt.Sprintf("wait for ENI release timed out for fcv3 function [%s]: %s", functionName, eniErr), nil)
 		}
 	}
 

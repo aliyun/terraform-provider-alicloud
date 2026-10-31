@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -8,15 +8,18 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3FunctionVersion() *schema.Resource {
+func ResourceFunctionVersion() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3FunctionVersionCreate,
-		Read:   resourceAliCloudFcv3FunctionVersionRead,
-		Delete: resourceAliCloudFcv3FunctionVersionDelete,
+		Create: resourceFunctionVersionCreate,
+		Read:   resourceFunctionVersionRead,
+		Delete: resourceFunctionVersionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -51,7 +54,7 @@ func resourceAliCloudFcv3FunctionVersion() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3FunctionVersionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionVersionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -68,11 +71,11 @@ func resourceAliCloudFcv3FunctionVersionCreate(d *schema.ResourceData, meta inte
 		request["description"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -80,29 +83,29 @@ func resourceAliCloudFcv3FunctionVersionCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_function_version", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_function_version", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", functionName, response["versionId"]))
 
-	return resourceAliCloudFcv3FunctionVersionRead(d, meta)
+	return resourceFunctionVersionRead(d, meta)
 }
 
-func resourceAliCloudFcv3FunctionVersionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionVersionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3FunctionVersion(d.Id())
+	objectRaw, err := service.DescribeFunctionVersion(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_function_version DescribeFcv3FunctionVersion Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_function_version DescribeFunctionVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["createdTime"] != nil {
@@ -124,7 +127,7 @@ func resourceAliCloudFcv3FunctionVersionRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAliCloudFcv3FunctionVersionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceFunctionVersionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -137,12 +140,12 @@ func resourceAliCloudFcv3FunctionVersionDelete(d *schema.ResourceData, meta inte
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -150,13 +153,13 @@ func resourceAliCloudFcv3FunctionVersionDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,11 +1,13 @@
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudFcv3ConcurrencyConfig_basic7303(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_concurrency_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7303)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ConcurrencyConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7303)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7303)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeConcurrencyConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7303)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,7 +39,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7303(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "100",
 					}),
 				),
@@ -59,7 +61,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7303(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "210",
 					}),
 				),
@@ -103,21 +105,21 @@ resource "alicloud_fcv3_function" "function" {
 func TestAccAliCloudFcv3ConcurrencyConfig_basic7180(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_concurrency_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7180)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ConcurrencyConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7180)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7180)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeConcurrencyConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7180)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -126,7 +128,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7180(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "200",
 					}),
 				),
@@ -158,7 +160,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7180(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "100",
 					}),
 				),
@@ -202,21 +204,21 @@ resource "alicloud_fcv3_function" "function" {
 func TestAccAliCloudFcv3ConcurrencyConfig_basic7303_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_concurrency_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7303)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ConcurrencyConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7303)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7303)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeConcurrencyConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7303)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -225,7 +227,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7303_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "200",
 					}),
 				),
@@ -244,21 +246,21 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7303_twin(t *testing.T) {
 func TestAccAliCloudFcv3ConcurrencyConfig_basic7180_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_concurrency_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7180)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ConcurrencyConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7180)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7180)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeConcurrencyConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7180)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -267,7 +269,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7180_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "143",
 					}),
 				),
@@ -286,21 +288,21 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7180_twin(t *testing.T) {
 func TestAccAliCloudFcv3ConcurrencyConfig_basic7303_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_concurrency_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7303)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ConcurrencyConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7303)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7303)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeConcurrencyConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7303)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -309,7 +311,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7303_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "200",
 					}),
 				),
@@ -338,21 +340,21 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7303_raw(t *testing.T) {
 func TestAccAliCloudFcv3ConcurrencyConfig_basic7180_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_concurrency_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7180)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ConcurrencyConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7180)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ConcurrencyConfigMap7180)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeConcurrencyConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3concurrencyconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ConcurrencyConfigBasicDependence7180)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -361,7 +363,7 @@ func TestAccAliCloudFcv3ConcurrencyConfig_basic7180_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":        CHECKSET,
+						"function_name":        acctest.CHECKSET,
 						"reserved_concurrency": "200",
 					}),
 				),

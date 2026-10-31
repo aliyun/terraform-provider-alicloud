@@ -1,11 +1,13 @@
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudFcv3ProvisionConfig_basic7182(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_provision_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7182)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3ProvisionConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7182)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7182)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeProvisionConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7182)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -95,7 +97,7 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7182(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":              CHECKSET,
+						"function_name":              acctest.CHECKSET,
 						"always_allocate_cpu":        "true",
 						"target":                     "1",
 						"target_tracking_policies.#": "3",
@@ -199,3 +201,105 @@ resource "alicloud_fcv3_function" "function" {
 }
 
 // Test Fcv3 ProvisionConfig. <<< Resource test cases, automatically generated.
+
+// Case ProvisionConfig_Basic 7183
+// Hand-written representative ACC covering the account-supported basic
+// ProvisionConfig lifecycle (create/read/update/import/destroy) with a minimal
+// target-only configuration. The full-coverage case basic7182 exercises every
+// optional field but cannot pass on this account: its target_tracking_policies
+// use metric_type=CPUUtilization (CPU autoScaling requires an account-side
+// allowlist), and its dependency creates an alicloud_log_project which now
+// hits ProjectQuotaExceed (account at the 300-project SLS quota). This case
+// deliberately omits CPU/GPU autoScaling policies and uses a minimal function
+// dependency without an SLS log_project, relying only on the always-available
+// `target` + `qualifier` fields. basic7182 step 1 already proved the account
+// and API accept a basic provision config, so this case provides a real,
+// non-empty ProvisionConfig PASS for the provision_config type.
+func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_provision_config.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeProvisionConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": "${alicloud_fcv3_function.function.function_name}",
+					"target":        "1",
+					"qualifier":     "LATEST",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name": acctest.CHECKSET,
+						"target":        "1",
+						"qualifier":     "LATEST",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"function_name": acctest.CHECKSET,
+						"target":        "2",
+						"qualifier":     "LATEST",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"qualifier"},
+			},
+		},
+	})
+}
+
+var AlicloudFcv3ProvisionConfigMap7183 = map[string]string{}
+
+// AlicloudFcv3ProvisionConfigBasicDependence7183 creates a minimal fcv3
+// function without an SLS log_project/log_store (the function carries a
+// log_config with only log_begin_rule, which does not require a separate SLS
+// project). This avoids the account-side ProjectQuotaExceed (300-project SLS
+// quota) that blocks the basic7182 dependency, while still providing a real
+// function for the provision-config lifecycle target.
+func AlicloudFcv3ProvisionConfigBasicDependence7183(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_fcv3_function" "function" {
+  memory_size = "512"
+  cpu         = 0.5
+  handler     = "index.Handler"
+  code {
+    zip_file = "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZTCJOooIwDMwNXLqXnnQlaalUhU5lRj2KZ/FOXkESGR114bJ/P/7jV4b1xRq1hijtFpM1682cuNgPmgysbRulPT0fRxXnMtwrSPyeCdYRokSLnuMLJTTkbUqEvDMbxm1VdcRD6Tk+T1LW2ldB66knsYdA5iNX17ebm6tN2VnPhcswMPmREPuBacb+CiapLarAj9gT6/H97dVlCNScY3mtYvRkxdZlwDKDEnanPWVLdrdkeXEGlFEazVdfPVHaVeHc3N15CUwppwOJXeK7HshAB8NuOU7J6sP4SRXuH/EvbUfMiqMmDqv5M5FNSfAj/wgAAP//UEsHCPl//NYAAQAArwEAAFBLAQIUABQACAAIAAAAAAD5f/zWAAEAAK8BAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5weVBLBQYAAAAAAQABADYAAAA2AQAAAAA="
+  }
+  function_name = var.name
+  runtime       = "python3.9"
+  disk_size     = "512"
+  log_config {
+    log_begin_rule = "None"
+  }
+}
+
+
+`, name)
+}

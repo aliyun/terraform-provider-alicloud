@@ -1,18 +1,20 @@
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 var AlicloudFcv3TriggerMap6980 = map[string]string{
 
-	"create_time":  CHECKSET,
-	"trigger_name": CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"trigger_name": acctest.CHECKSET,
 }
 
 func AlicloudFcv3TriggerBasicDependence6980(name string) string {
@@ -48,8 +50,8 @@ resource "alicloud_fcv3_function" "function" {
 
 var AlicloudFcv3TriggerMap6982 = map[string]string{
 
-	"create_time":  CHECKSET,
-	"trigger_name": CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"trigger_name": acctest.CHECKSET,
 }
 
 func AlicloudFcv3TriggerBasicDependence6982(name string) string {
@@ -85,8 +87,8 @@ resource "alicloud_fcv3_function" "function" {
 }
 
 var AlicloudFcv3TriggerMap6981 = map[string]string{
-	"create_time":  CHECKSET,
-	"trigger_name": CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"trigger_name": acctest.CHECKSET,
 }
 
 func AlicloudFcv3TriggerBasicDependence6981(name string) string {
@@ -133,8 +135,8 @@ resource "alicloud_fcv3_function" "function" {
 
 var AlicloudFcv3TriggerMap6983 = map[string]string{
 
-	"create_time":  CHECKSET,
-	"trigger_name": CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"trigger_name": acctest.CHECKSET,
 }
 
 func AlicloudFcv3TriggerBasicDependence6983(name string) string {
@@ -196,8 +198,8 @@ resource "alicloud_fcv3_function" "function" {
 }
 
 var AlicloudFcv3TriggerMap6985 = map[string]string{
-	"create_time":  CHECKSET,
-	"trigger_name": CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"trigger_name": acctest.CHECKSET,
 }
 
 func AlicloudFcv3TriggerBasicDependence6985(name string) string {
@@ -237,21 +239,21 @@ resource "alicloud_fcv3_function" "function" {
 func TestAccAliCloudFcv3Trigger_basic6980_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_trigger.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6980)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3Trigger")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3TriggerBasicDependence6980)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3TriggerMap6980)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTrigger")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3TriggerBasicDependence6980)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -264,7 +266,7 @@ func TestAccAliCloudFcv3Trigger_basic6980_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":  CHECKSET,
+						"function_name":  acctest.CHECKSET,
 						"trigger_type":   "http",
 						"trigger_name":   name,
 						"description":    "create",
@@ -299,21 +301,21 @@ func TestAccAliCloudFcv3Trigger_basic6980_raw(t *testing.T) {
 func TestAccAliCloudFcv3Trigger_basic6982_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_trigger.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6982)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3Trigger")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3TriggerBasicDependence6982)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3TriggerMap6982)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTrigger")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3TriggerBasicDependence6982)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -326,7 +328,7 @@ func TestAccAliCloudFcv3Trigger_basic6982_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":  CHECKSET,
+						"function_name":  acctest.CHECKSET,
 						"trigger_type":   "timer",
 						"trigger_name":   name,
 						"description":    "create",
@@ -361,22 +363,22 @@ func TestAccAliCloudFcv3Trigger_basic6982_raw(t *testing.T) {
 func TestAccAliCloudFcv3Trigger_basic6981_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_trigger.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6981)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3Trigger")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3TriggerBasicDependence6981)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3TriggerMap6981)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTrigger")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3TriggerBasicDependence6981)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -391,13 +393,13 @@ func TestAccAliCloudFcv3Trigger_basic6981_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":   CHECKSET,
+						"function_name":   acctest.CHECKSET,
 						"trigger_type":    "oss",
 						"trigger_name":    name,
 						"description":     "create",
 						"qualifier":       "LATEST",
 						"trigger_config":  "{\"events\":[\"oss:ObjectCreated:PutObject\",\"oss:ObjectCreated:PostObject\",\"oss:ObjectCreated:CompleteMultipartUpload\",\"oss:ObjectCreated:PutSymlink\"],\"filter\":{\"key\":{\"prefix\":\"fc_oss_trigger_api_test\",\"suffix\":\".zip1\"}}}",
-						"source_arn":      CHECKSET,
+						"source_arn":      acctest.CHECKSET,
 						"invocation_role": "acs:ram::1511928242963727:role/aliyunosseventnotificationrole",
 					}),
 				),
@@ -430,22 +432,22 @@ func TestAccAliCloudFcv3Trigger_basic6981_raw(t *testing.T) {
 func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_trigger.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6983)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3Trigger")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3TriggerBasicDependence6983)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3TriggerMap6983)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTrigger")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3TriggerBasicDependence6983)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -464,13 +466,13 @@ func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":   CHECKSET,
+						"function_name":   acctest.CHECKSET,
 						"trigger_type":    "log",
 						"trigger_name":    name,
 						"description":     "create",
 						"qualifier":       "LATEST",
-						"trigger_config":  CHECKSET,
-						"source_arn":      CHECKSET,
+						"trigger_config":  acctest.CHECKSET,
+						"source_arn":      acctest.CHECKSET,
 						"invocation_role": "acs:ram::1511928242963727:role/aliyunlogetlrole",
 					}),
 				),
@@ -490,7 +492,7 @@ func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":    "update",
-						"trigger_config": CHECKSET,
+						"trigger_config": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -508,21 +510,21 @@ func TestAccAliCloudFcv3Trigger_basic6983_raw(t *testing.T) {
 func TestAccAliCloudFcv3Trigger_basic6985_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_trigger.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3TriggerMap6985)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3Trigger")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3TriggerBasicDependence6985)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3TriggerMap6985)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeTrigger")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3trigger%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3TriggerBasicDependence6985)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -537,7 +539,7 @@ func TestAccAliCloudFcv3Trigger_basic6985_raw(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name":   CHECKSET,
+						"function_name":   acctest.CHECKSET,
 						"trigger_type":    "cdn_events",
 						"trigger_name":    name,
 						"description":     "create",

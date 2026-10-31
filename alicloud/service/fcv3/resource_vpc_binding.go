@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -8,15 +8,18 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3VpcBinding() *schema.Resource {
+func ResourceVpcBinding() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3VpcBindingCreate,
-		Read:   resourceAliCloudFcv3VpcBindingRead,
-		Delete: resourceAliCloudFcv3VpcBindingDelete,
+		Create: resourceVpcBindingCreate,
+		Read:   resourceVpcBindingRead,
+		Delete: resourceVpcBindingDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,7 +43,7 @@ func resourceAliCloudFcv3VpcBinding() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3VpcBindingCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcBindingCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -55,41 +58,41 @@ func resourceAliCloudFcv3VpcBindingCreate(d *schema.ResourceData, meta interface
 	request["vpcId"] = d.Get("vpc_id")
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_vpc_binding", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_vpc_binding", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", functionName, request["vpcId"]))
 
-	return resourceAliCloudFcv3VpcBindingRead(d, meta)
+	return resourceVpcBindingRead(d, meta)
 }
 
-func resourceAliCloudFcv3VpcBindingRead(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcBindingRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3VpcBinding(d.Id())
+	objectRaw, err := service.DescribeVpcBinding(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_vpc_binding DescribeFcv3VpcBinding Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_vpc_binding DescribeVpcBinding Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["objectChild"] != nil {
@@ -103,7 +106,7 @@ func resourceAliCloudFcv3VpcBindingRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAliCloudFcv3VpcBindingDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceVpcBindingDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -116,23 +119,23 @@ func resourceAliCloudFcv3VpcBindingDelete(d *schema.ResourceData, meta interface
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

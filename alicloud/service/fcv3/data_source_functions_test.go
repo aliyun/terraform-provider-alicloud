@@ -1,94 +1,95 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudFcv3FunctionDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	PrefixIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+	PrefixIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"prefix": `"terraform-example-for"`,
 		}),
-		fakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"prefix": `"terraform-example-for_fake"`,
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"ids": `["terraform-example-for-function-alias"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"ids": `["terraform-example-for-function-alias_fake"]`,
 		}),
 	}
 
-	ResourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+	ResourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"ids":               `["terraform-example-for-function-alias"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"ids":               `["terraform-example-for-function-alias_fake"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"ids":               `["terraform-example-for-function-alias"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudFcv3FunctionSourceConfig(rand, map[string]string{
 			"ids":               `["terraform-example-for-function-alias_fake"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 		}),
 	}
 
-	Fcv3FunctionCheckInfo.dataSourceTestCheck(t, rand, PrefixIdConf, idsConf, ResourceGroupIdConf, allConf)
+	Fcv3FunctionCheckInfo.DataSourceTestCheck(t, rand, PrefixIdConf, idsConf, ResourceGroupIdConf, allConf)
 }
 
 var existFcv3FunctionMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"functions.#":                           "1",
-		"functions.0.id":                        CHECKSET,
-		"functions.0.resource_group_id":         CHECKSET,
-		"functions.0.vpc_config.#":              CHECKSET,
-		"functions.0.tracing_config.#":          CHECKSET,
+		"functions.0.id":                        acctest.CHECKSET,
+		"functions.0.resource_group_id":         acctest.CHECKSET,
+		"functions.0.vpc_config.#":              acctest.CHECKSET,
+		"functions.0.tracing_config.#":          acctest.CHECKSET,
 		"functions.0.cpu":                       "0.5",
-		"functions.0.idle_timeout":              CHECKSET,
-		"functions.0.function_name":             CHECKSET,
-		"functions.0.runtime":                   CHECKSET,
-		"functions.0.custom_dns.#":              CHECKSET,
+		"functions.0.idle_timeout":              acctest.CHECKSET,
+		"functions.0.function_name":             acctest.CHECKSET,
+		"functions.0.runtime":                   acctest.CHECKSET,
+		"functions.0.custom_dns.#":              acctest.CHECKSET,
 		"functions.0.disk_size":                 "512",
-		"functions.0.instance_concurrency":      CHECKSET,
-		"functions.0.layers.#":                  CHECKSET,
-		"functions.0.nas_config.#":              CHECKSET,
-		"functions.0.tags.%":                    CHECKSET,
-		"functions.0.function_id":               CHECKSET,
+		"functions.0.instance_concurrency":      acctest.CHECKSET,
+		"functions.0.layers.#":                  acctest.CHECKSET,
+		"functions.0.nas_config.#":              acctest.CHECKSET,
+		"functions.0.tags.%":                    acctest.CHECKSET,
+		"functions.0.function_id":               acctest.CHECKSET,
 		"functions.0.memory_size":               "512",
-		"functions.0.function_arn":              CHECKSET,
-		"functions.0.timeout":                   CHECKSET,
-		"functions.0.create_time":               CHECKSET,
-		"functions.0.handler":                   CHECKSET,
-		"functions.0.custom_container_config.#": CHECKSET,
+		"functions.0.function_arn":              acctest.CHECKSET,
+		"functions.0.timeout":                   acctest.CHECKSET,
+		"functions.0.create_time":               acctest.CHECKSET,
+		"functions.0.handler":                   acctest.CHECKSET,
+		"functions.0.custom_container_config.#": acctest.CHECKSET,
 		"functions.0.internet_access":           "true",
-		"functions.0.invocation_restriction.#":  CHECKSET,
-		"functions.0.code_size":                 CHECKSET,
-		"functions.0.custom_runtime_config.#":   CHECKSET,
-		"functions.0.gpu_config.#":              CHECKSET,
-		"functions.0.oss_mount_config.#":        CHECKSET,
-		"functions.0.last_modified_time":        CHECKSET,
-		"functions.0.log_config.#":              CHECKSET,
+		"functions.0.invocation_restriction.#":  acctest.CHECKSET,
+		"functions.0.code_size":                 acctest.CHECKSET,
+		"functions.0.custom_runtime_config.#":   acctest.CHECKSET,
+		"functions.0.gpu_config.#":              acctest.CHECKSET,
+		"functions.0.oss_mount_config.#":        acctest.CHECKSET,
+		"functions.0.last_modified_time":        acctest.CHECKSET,
+		"functions.0.log_config.#":              acctest.CHECKSET,
 	}
 }
 
@@ -98,10 +99,10 @@ var fakeFcv3FunctionMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var Fcv3FunctionCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_fcv3_functions.default",
-	existMapFunc: existFcv3FunctionMapFunc,
-	fakeMapFunc:  fakeFcv3FunctionMapFunc,
+var Fcv3FunctionCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_fcv3_functions.default",
+	ExistMapFunc: existFcv3FunctionMapFunc,
+	FakeMapFunc:  fakeFcv3FunctionMapFunc,
 }
 
 func testAccCheckAlicloudFcv3FunctionSourceConfig(rand int, attrMap map[string]string) string {

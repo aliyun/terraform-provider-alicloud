@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3ProvisionConfig() *schema.Resource {
+func ResourceProvisionConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3ProvisionConfigCreate,
-		Read:   resourceAliCloudFcv3ProvisionConfigRead,
-		Update: resourceAliCloudFcv3ProvisionConfigUpdate,
-		Delete: resourceAliCloudFcv3ProvisionConfigDelete,
+		Create: resourceProvisionConfigCreate,
+		Read:   resourceProvisionConfigRead,
+		Update: resourceProvisionConfigUpdate,
+		Delete: resourceProvisionConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -90,7 +94,7 @@ func resourceAliCloudFcv3ProvisionConfig() *schema.Resource {
 			"target": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 10000),
+				ValidateFunc: validators.IntBetween(0, 10000),
 			},
 			"target_tracking_policies": {
 				Type:     schema.TypeList,
@@ -136,7 +140,7 @@ func resourceAliCloudFcv3ProvisionConfig() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -153,7 +157,7 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 	}
 
 	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = StringPointer(v.(string))
+		query["qualifier"] = helper.StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("target_tracking_policies"); ok {
@@ -200,11 +204,11 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 		request["alwaysAllocateGPU"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -212,29 +216,29 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_provision_config", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_provision_config", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(functionName))
 
-	return resourceAliCloudFcv3ProvisionConfigRead(d, meta)
+	return resourceProvisionConfigRead(d, meta)
 }
 
-func resourceAliCloudFcv3ProvisionConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceProvisionConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3ProvisionConfig(d.Id())
+	objectRaw, err := service.DescribeProvisionConfig(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_provision_config DescribeFcv3ProvisionConfig Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_provision_config DescribeProvisionConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["alwaysAllocateCPU"] != nil {
@@ -306,7 +310,7 @@ func resourceAliCloudFcv3ProvisionConfigRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAliCloudFcv3ProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -322,7 +326,7 @@ func resourceAliCloudFcv3ProvisionConfigUpdate(d *schema.ResourceData, meta inte
 	request["functionName"] = d.Id()
 
 	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = StringPointer(v.(string))
+		query["qualifier"] = helper.StringPointer(v.(string))
 	}
 
 	if d.HasChange("target_tracking_policies") {
@@ -382,11 +386,11 @@ func resourceAliCloudFcv3ProvisionConfigUpdate(d *schema.ResourceData, meta inte
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -394,16 +398,16 @@ func resourceAliCloudFcv3ProvisionConfigUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudFcv3ProvisionConfigRead(d, meta)
+	return resourceProvisionConfigRead(d, meta)
 }
 
-func resourceAliCloudFcv3ProvisionConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceProvisionConfigDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	functionName := d.Id()
@@ -416,15 +420,15 @@ func resourceAliCloudFcv3ProvisionConfigDelete(d *schema.ResourceData, meta inte
 	request["functionName"] = d.Id()
 
 	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = StringPointer(v.(string))
+		query["qualifier"] = helper.StringPointer(v.(string))
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -432,21 +436,21 @@ func resourceAliCloudFcv3ProvisionConfigDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
-	deleteWait := incrementalWait(3*time.Second, 5*time.Second)
+	service := NewService(client)
+	deleteWait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	return retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		object, err := fcv3ServiceV2.DescribeFcv3ProvisionConfig(functionName)
+		object, err := service.DescribeProvisionConfig(functionName)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil
 			}
 			return retry.NonRetryableError(err)
@@ -455,6 +459,6 @@ func resourceAliCloudFcv3ProvisionConfigDelete(d *schema.ResourceData, meta inte
 			return nil
 		}
 		deleteWait()
-		return retry.RetryableError(WrapErrorf(Error("ProvisionConfig [%s] deletion is in progress", functionName), "please wait a moment and try again"))
+		return retry.RetryableError(errs.WrapErrorf(errs.Error("ProvisionConfig [%s] deletion is in progress", functionName), "please wait a moment and try again"))
 	})
 }

@@ -1,11 +1,13 @@
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudFcv3LayerVersion_basic6990(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_layer_version.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap6990)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3LayerVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3LayerVersionBasicDependence6990)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap6990)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLayerVersion")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3LayerVersionBasicDependence6990)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -49,7 +51,7 @@ func TestAccAliCloudFcv3LayerVersion_basic6990(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description": "luoni.fz",
 						//"compatible_runtime.#": "3",
-						"layer_name": CHECKSET,
+						"layer_name": acctest.CHECKSET,
 						"license":    "Apache2.0",
 						"acl":        "0",
 					}),
@@ -86,8 +88,8 @@ func TestAccAliCloudFcv3LayerVersion_basic6990(t *testing.T) {
 }
 
 var AlicloudFcv3LayerVersionMap6990 = map[string]string{
-	"create_time": CHECKSET,
-	"version":     CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"version":     acctest.CHECKSET,
 }
 
 func AlicloudFcv3LayerVersionBasicDependence6990(name string) string {
@@ -104,21 +106,21 @@ variable "name" {
 func TestAccAliCloudFcv3LayerVersion_basic7069(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_layer_version.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap7069)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3LayerVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3LayerVersionBasicDependence7069)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap7069)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLayerVersion")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3LayerVersionBasicDependence7069)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -140,7 +142,7 @@ func TestAccAliCloudFcv3LayerVersion_basic7069(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":          "luoni.fz",
 						"compatible_runtime.#": "3",
-						"layer_name":           CHECKSET,
+						"layer_name":           acctest.CHECKSET,
 						"license":              "Apache2.0",
 						"acl":                  "0",
 					}),
@@ -177,8 +179,8 @@ func TestAccAliCloudFcv3LayerVersion_basic7069(t *testing.T) {
 }
 
 var AlicloudFcv3LayerVersionMap7069 = map[string]string{
-	"create_time": CHECKSET,
-	"version":     CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"version":     acctest.CHECKSET,
 }
 
 func AlicloudFcv3LayerVersionBasicDependence7069(name string) string {
@@ -204,21 +206,21 @@ resource "alicloud_oss_bucket_object" "default" {
 func TestAccAliCloudFcv3LayerVersion_basic7337(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_layer_version.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap7337)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3LayerVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3LayerVersionBasicDependence7337)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap7337)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLayerVersion")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3LayerVersionBasicDependence7337)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -240,7 +242,7 @@ func TestAccAliCloudFcv3LayerVersion_basic7337(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":          "luoni.fz",
 						"compatible_runtime.#": "3",
-						"layer_name":           CHECKSET,
+						"layer_name":           acctest.CHECKSET,
 						"license":              "Apache2.0",
 						"acl":                  "0",
 					}),
@@ -277,8 +279,8 @@ func TestAccAliCloudFcv3LayerVersion_basic7337(t *testing.T) {
 }
 
 var AlicloudFcv3LayerVersionMap7337 = map[string]string{
-	"create_time": CHECKSET,
-	"version":     CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"version":     acctest.CHECKSET,
 }
 
 func AlicloudFcv3LayerVersionBasicDependence7337(name string) string {
@@ -303,21 +305,21 @@ resource "alicloud_oss_bucket_object" "default" {
 func TestAccAliCloudFcv3LayerVersion_basic7336(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_layer_version.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap7336)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3LayerVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3LayerVersionBasicDependence7336)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3LayerVersionMap7336)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeLayerVersion")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3layerversion%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3LayerVersionBasicDependence7336)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -337,7 +339,7 @@ func TestAccAliCloudFcv3LayerVersion_basic7336(t *testing.T) {
 					testAccCheck(map[string]string{
 						"description":          "luoni.fz",
 						"compatible_runtime.#": "3",
-						"layer_name":           CHECKSET,
+						"layer_name":           acctest.CHECKSET,
 						"license":              "Apache2.0",
 						"acl":                  "0",
 					}),
@@ -374,8 +376,8 @@ func TestAccAliCloudFcv3LayerVersion_basic7336(t *testing.T) {
 }
 
 var AlicloudFcv3LayerVersionMap7336 = map[string]string{
-	"create_time": CHECKSET,
-	"version":     CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"version":     acctest.CHECKSET,
 }
 
 func AlicloudFcv3LayerVersionBasicDependence7336(name string) string {
