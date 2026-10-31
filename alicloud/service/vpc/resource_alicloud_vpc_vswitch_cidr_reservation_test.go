@@ -1,0 +1,420 @@
+package vpc_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Test Vpc VswitchCidrReservation. >>> Resource test cases, automatically generated.
+// Case 3117
+func TestAccAliCloudVPCVswitchCidrReservation_basic3117(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3117)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcVswitchCidrReservation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sVpcVswitchCidrReservation%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcVswitchCidrReservationBasicDependence3117)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_cidr":         "172.16.10.0/24",
+					"vswitch_cidr_reservation_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_id":                    acctest.CHECKSET,
+						"cidr_reservation_cidr":         "172.16.10.0/24",
+						"vswitch_cidr_reservation_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_reservation_description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_reservation_description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_cidr_reservation_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_cidr_reservation_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_reservation_description": "testupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_reservation_description": "testupdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_cidr_reservation_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_cidr_reservation_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_reservation_description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_reservation_description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_cidr_reservation_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_cidr_reservation_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_version":                    "IPv4",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_description":  "test",
+					"cidr_reservation_cidr":         "172.16.10.0/24",
+					"vswitch_cidr_reservation_name": name + "_update",
+					"cidr_reservation_type":         "Prefix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_version":                    "IPv4",
+						"vswitch_id":                    acctest.CHECKSET,
+						"cidr_reservation_description":  "test",
+						"cidr_reservation_cidr":         "172.16.10.0/24",
+						"vswitch_cidr_reservation_name": name + "_update",
+						"cidr_reservation_type":         "Prefix",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cidr_reservation_mask"},
+			},
+		},
+	})
+}
+
+var AlicloudVpcVswitchCidrReservationMap3117 = map[string]string{}
+
+func AlicloudVpcVswitchCidrReservationBasicDependence3117(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_instance_type = "ecs.g6.large"
+}
+
+resource "alicloud_vpc" "test" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "test" {
+  vpc_id       = alicloud_vpc.test.id
+  cidr_block   = "172.16.0.0/20"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+`, name)
+}
+
+// Case 3138
+func TestAccAliCloudVPCVswitchCidrReservation_basic3138(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3138)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcVswitchCidrReservation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sVpcVswitchCidrReservation%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcVswitchCidrReservationBasicDependence3138)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_mask":         "24",
+					"vswitch_cidr_reservation_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_id":                    acctest.CHECKSET,
+						"cidr_reservation_mask":         "24",
+						"vswitch_cidr_reservation_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_reservation_description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_reservation_description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_cidr_reservation_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_cidr_reservation_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_reservation_description": "testupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_reservation_description": "testupdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_cidr_reservation_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_cidr_reservation_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cidr_reservation_description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cidr_reservation_description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_cidr_reservation_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_cidr_reservation_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_version":                    "IPv4",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_description":  "test",
+					"vswitch_cidr_reservation_name": name + "_update",
+					"cidr_reservation_mask":         "24",
+					"cidr_reservation_type":         "Prefix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_version":                    "IPv4",
+						"vswitch_id":                    acctest.CHECKSET,
+						"cidr_reservation_description":  "test",
+						"vswitch_cidr_reservation_name": name + "_update",
+						"cidr_reservation_mask":         "24",
+						"cidr_reservation_type":         "Prefix",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cidr_reservation_mask"},
+			},
+		},
+	})
+}
+
+var AlicloudVpcVswitchCidrReservationMap3138 = map[string]string{}
+
+func AlicloudVpcVswitchCidrReservationBasicDependence3138(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_instance_type = "ecs.g6.large"
+}
+
+resource "alicloud_vpc" "test" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "test" {
+  vpc_id       = alicloud_vpc.test.id
+  cidr_block   = "172.16.0.0/20"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+`, name)
+}
+
+// Case 3117  twin
+func TestAccAliCloudVPCVswitchCidrReservation_basic3117_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3117)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcVswitchCidrReservation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sVpcVswitchCidrReservation%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcVswitchCidrReservationBasicDependence3117)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_version":                    "IPv4",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_description":  "test",
+					"cidr_reservation_cidr":         "172.16.10.0/24",
+					"vswitch_cidr_reservation_name": name,
+					"cidr_reservation_type":         "Prefix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_version":                    "IPv4",
+						"vswitch_id":                    acctest.CHECKSET,
+						"cidr_reservation_description":  "test",
+						"cidr_reservation_cidr":         "172.16.10.0/24",
+						"vswitch_cidr_reservation_name": name,
+						"cidr_reservation_type":         "Prefix",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cidr_reservation_mask"},
+			},
+		},
+	})
+}
+
+// Case 3138  twin
+func TestAccAliCloudVPCVswitchCidrReservation_basic3138_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_vswitch_cidr_reservation.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcVswitchCidrReservationMap3138)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcVswitchCidrReservation")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sVpcVswitchCidrReservation%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcVswitchCidrReservationBasicDependence3138)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.VpcVSwitchCidrReservationSupportRegions)
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_version":                    "IPv4",
+					"vswitch_id":                    "${alicloud_vswitch.test.id}",
+					"cidr_reservation_description":  "test",
+					"vswitch_cidr_reservation_name": name,
+					"cidr_reservation_mask":         "24",
+					"cidr_reservation_type":         "Prefix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_version":                    "IPv4",
+						"vswitch_id":                    acctest.CHECKSET,
+						"cidr_reservation_description":  "test",
+						"vswitch_cidr_reservation_name": name,
+						"cidr_reservation_mask":         "24",
+						"cidr_reservation_type":         "Prefix",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cidr_reservation_mask"},
+			},
+		},
+	})
+}
+
+// Test Vpc VswitchCidrReservation. <<< Resource test cases, automatically generated.

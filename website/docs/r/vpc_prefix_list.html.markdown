@@ -67,7 +67,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the PrefixList belongs.
 * `tags` - (Optional, Map, Available since v1.205.0) The tags of PrefixList.
 
-#### Block Entrys
+### `entrys`
 
 The Entries supports the following:
 * `cidr` - (Optional) The CIDR address block of the prefix list.

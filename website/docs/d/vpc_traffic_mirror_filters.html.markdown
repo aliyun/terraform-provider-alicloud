@@ -56,7 +56,6 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Traffic Mirror Filter name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The state of the filter. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`. `Creating`: The filter is being created. `Created`: The filter is created. `Modifying`: The filter is being modified. `Deleting`: The filter is being deleted.
-* `traffic_mirror_filter_ids` - (Optional, ForceNew) The traffic mirror filter ids.
 * `traffic_mirror_filter_name` - (Optional, ForceNew) The name of the filter. The name must be `2` to `128` characters in length, and can contain digits, periods (.), underscores (_), and hyphens (-). It must start with a letter and cannot start with `http://` or `https://`.
 
 ## Attributes Reference
