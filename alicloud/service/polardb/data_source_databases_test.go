@@ -1,0 +1,92 @@
+package polardb_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAliCloudPolarDBClusterDatabasesDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+
+	idConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
+		}),
+		FakeConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
+		}),
+	}
+
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
+			"name_regex":    `"${alicloud_polardb_database.database.db_name}"`,
+		}),
+		FakeConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
+			"name_regex":    `"^test1234"`,
+		}),
+	}
+
+	var existPolarClusterMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":                        CHECKSET,
+			"databases.0.character_set_name": CHECKSET,
+			"databases.0.db_name":            CHECKSET,
+			"databases.0.db_description":     CHECKSET,
+			"databases.0.db_status":          CHECKSET,
+			"databases.0.engine":             CHECKSET,
+			"databases.0.accounts.#":         CHECKSET,
+		}
+	}
+
+	var fakePolarClusterMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"databases.#": CHECKSET,
+		}
+	}
+
+	var PolarClusterCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_polardb_databases.default",
+		ExistMapFunc: existPolarClusterMapFunc,
+		FakeMapFunc:  fakePolarClusterMapFunc,
+	}
+
+	PolarClusterCheckInfo.DataSourceTestCheck(t, rand, idConf, allConf)
+}
+
+func testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+	config := fmt.Sprintf(`
+	%s
+	variable "name" {
+	  default = "tf-testAccPolarClusterConfig_%d"
+	}
+	resource "alicloud_polardb_cluster" "default" {
+	  db_type           = "MySQL"
+	  db_version        = "8.0"
+      pay_type          = "PostPaid"
+      db_node_class     = "polar.mysql.x4.medium"
+      vswitch_id 		= local.vswitch_id
+	  description       = "${var.name}"
+	}
+
+	resource "alicloud_polardb_database" "database" {
+	  db_cluster_id     = "${alicloud_polardb_cluster.default.id}"
+	  db_name           = "tftestdatabase"
+      db_description    = "${var.name}"
+	}
+
+	data "alicloud_polardb_databases" "default" {
+	  %s
+	}
+`, PolarDBCommonTestCase, rand, strings.Join(pairs, "\n  "))
+	return config
+}

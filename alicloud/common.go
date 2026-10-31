@@ -555,3 +555,16 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	sort.Strings(y2)
 	return reflect.DeepEqual(y1, y2), nil
 }
+
+// IsContain reports whether item is present in items. Compatibility copy kept in
+// the root package for unmigrated root consumers (e.g. cs_kubernetes_addon)
+// after the PolarDB cluster file that originally defined it was migrated to
+// the service/polardb product package. Behavior is unchanged.
+func IsContain(items []string, item string) bool {
+	for _, eachItem := range items {
+		if eachItem == item {
+			return true
+		}
+	}
+	return false
+}
