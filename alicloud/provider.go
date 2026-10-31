@@ -564,7 +564,6 @@ func Provider() *schema.Provider {
 			"alicloud_emrv2_cluster_instances": dataSourceAlicloudEmrV2ClusterInstances(),
 
 			// enhanced
-			"alicloud_enhanced_nat_available_zones": dataSourceAlicloudEnhancedNatAvailableZones(),
 
 			// ens
 			"alicloud_ens_load_balancer_udp_listeners": dataSourceAliCloudEnsLoadBalancerUdpListeners(),
@@ -659,7 +658,6 @@ func Provider() *schema.Provider {
 			// graph (gdb migrated to alicloud/service/gdb)
 
 			// havips
-			"alicloud_havips": dataSourceAlicloudHavips(),
 
 			// hbase
 			"alicloud_hbase_instances":      dataSourceAlicloudHBaseInstances(),
@@ -772,7 +770,6 @@ func Provider() *schema.Provider {
 
 			// network
 			"alicloud_network_interfaces": dataSourceAlicloudEcsNetworkInterfaces(),
-			"alicloud_network_acls":       dataSourceAlicloudNetworkAcls(),
 
 			// ocean
 			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
@@ -898,8 +895,6 @@ func Provider() *schema.Provider {
 			"alicloud_ros_template_scratches": dataSourceAlicloudRosTemplateScratches(),
 
 			// route
-			"alicloud_route_tables":  dataSourceAlicloudRouteTables(),
-			"alicloud_route_entries": dataSourceAlicloudRouteEntries(),
 
 			// router
 			"alicloud_router_interfaces": dataSourceAlicloudRouterInterfaces(),
@@ -1010,30 +1005,11 @@ func Provider() *schema.Provider {
 			// vod
 
 			// vpc
-			"alicloud_vpc_route_target_groups":                 dataSourceAliCloudVpcRouteTargetGroups(),
-			"alicloud_vpc_ipv6_cidr_blocks":                    dataSourceAliCloudVpcIpv6CidrBlocks(),
-			"alicloud_vpc_flow_logs":                           dataSourceAlicloudVpcFlowLogs(),
-			"alicloud_vpc_dhcp_options_sets":                   dataSourceAlicloudVpcDhcpOptionsSets(),
-			"alicloud_vpc_traffic_mirror_filters":              dataSourceAlicloudVpcTrafficMirrorFilters(),
-			"alicloud_vpc_traffic_mirror_filter_egress_rules":  dataSourceAlicloudVpcTrafficMirrorFilterEgressRules(),
-			"alicloud_vpc_traffic_mirror_filter_ingress_rules": dataSourceAlicloudVpcTrafficMirrorFilterIngressRules(),
-			"alicloud_vpc_traffic_mirror_service":              dataSourceAlicloudVpcTrafficMirrorService(),
-			"alicloud_vpc_traffic_mirror_sessions":             dataSourceAlicloudVpcTrafficMirrorSessions(),
-			"alicloud_vpc_ipv6_gateways":                       dataSourceAlicloudVpcIpv6Gateways(),
-			"alicloud_vpc_ipv6_egress_rules":                   dataSourceAlicloudVpcIpv6EgressRules(),
-			"alicloud_vpc_ipv6_addresses":                      dataSourceAlicloudVpcIpv6Addresses(),
-			"alicloud_vpc_ipv6_internet_bandwidths":            dataSourceAlicloudVpcIpv6InternetBandwidths(),
-			"alicloud_vpc_bgp_groups":                          dataSourceAlicloudVpcBgpGroups(),
-			"alicloud_vpc_bgp_peers":                           dataSourceAlicloudVpcBgpPeers(),
-			"alicloud_vpc_bgp_networks":                        dataSourceAlicloudVpcBgpNetworks(),
-			"alicloud_vpc_ipv4_gateways":                       dataSourceAlicloudVpcIpv4Gateways(),
-			"alicloud_vpc_prefix_lists":                        dataSourceAlicloudVpcPrefixLists(),
-			"alicloud_vpc_public_ip_address_pools":             dataSourceAlicloudVpcPublicIpAddressPools(),
-			"alicloud_vpc_public_ip_address_pool_cidr_blocks":  dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocks(),
-			"alicloud_vpc_flow_log_service":                    dataSourceAliCloudVpcFlowLogService(),
+			"alicloud_vpc_bgp_groups":   dataSourceAlicloudVpcBgpGroups(),
+			"alicloud_vpc_bgp_peers":    dataSourceAlicloudVpcBgpPeers(),
+			"alicloud_vpc_bgp_networks": dataSourceAlicloudVpcBgpNetworks(),
 
 			// vpcs
-			"alicloud_vpcs": dataSourceAlicloudVpcs(),
 
 			// vpn
 			"alicloud_vpn_gateway_enhanced_vpn_gateways": dataSourceAliCloudVpnGatewayEnhancedVpnGateways(),
@@ -1047,7 +1023,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpn_gateway_vco_routes":            dataSourceAlicloudVpnGatewayVcoRoutes(),
 
 			// vswitches
-			"alicloud_vswitches": dataSourceAlicloudVswitches(),
 
 			// waf
 			// alicloud_waf_* resources and data sources are registered via
@@ -1196,7 +1171,6 @@ func Provider() *schema.Provider {
 			"alicloud_cen_bandwidth_package_attachment":                resourceAlicloudCenBandwidthPackageAttachment(),
 			"alicloud_cen_bandwidth_limit":                             resourceAlicloudCenBandwidthLimit(),
 			"alicloud_cen_route_entry":                                 resourceAlicloudCenRouteEntry(),
-			"alicloud_cen_instance_grant":                              resourceAlicloudCenInstanceGrant(),
 			"alicloud_cen_transit_router":                              resourceAliCloudCenTransitRouter(),
 			"alicloud_cen_transit_router_route_entry":                  resourceAlicloudCenTransitRouterRouteEntry(),
 			"alicloud_cen_transit_router_route_table":                  resourceAlicloudCenTransitRouterRouteTable(),
@@ -1730,8 +1704,6 @@ func Provider() *schema.Provider {
 			// graph (gdb migrated to alicloud/service/gdb)
 
 			// havip
-			"alicloud_havip":            resourceAliCloudVpcHaVip(),
-			"alicloud_havip_attachment": resourceAliCloudVpcHaVipAttachment(),
 
 			// hbase
 			"alicloud_hbase_instance": resourceAlicloudHBaseInstance(),
@@ -1877,9 +1849,6 @@ func Provider() *schema.Provider {
 			// network
 			"alicloud_network_interface":            resourceAliCloudEcsNetworkInterface(),
 			"alicloud_network_interface_attachment": resourceAliCloudEcsNetworkInterfaceAttachment(),
-			"alicloud_network_acl":                  resourceAliCloudVpcNetworkAcl(),
-			"alicloud_network_acl_attachment":       resourceAliyunNetworkAclAttachment(),
-			"alicloud_network_acl_entries":          resourceAliyunNetworkAclEntries(),
 
 			// ocean
 			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
@@ -2093,9 +2062,6 @@ func Provider() *schema.Provider {
 			"alicloud_ros_template_scratch": resourceAlicloudRosTemplateScratch(),
 
 			// route
-			"alicloud_route_entry":            resourceAliyunRouteEntry(),
-			"alicloud_route_table":            resourceAliCloudVpcRouteTable(),
-			"alicloud_route_table_attachment": resourceAliCloudVpcRouteTableAttachment(),
 
 			// router
 			"alicloud_router_interface":            resourceAlicloudRouterInterface(),
@@ -2195,8 +2161,6 @@ func Provider() *schema.Provider {
 			// star: alicloud_star_rocks_* migrated to alicloud/service/starrocks; see starrocks.ServicePackage().
 
 			// subnet
-			// "alicloud_subnet" aims to match aws usage habit.
-			"alicloud_subnet": resourceAliCloudVpcVswitch(),
 
 			// tag
 
@@ -2234,36 +2198,10 @@ func Provider() *schema.Provider {
 			// vod
 
 			// vpc
-			"alicloud_vpc_route_target_group":                      resourceAliCloudVpcRouteTargetGroup(),
-			"alicloud_vpc_ipv6_cidr_block":                         resourceAliCloudVpcIpv6CidrBlock(),
-			"alicloud_vpc_ipv6_address":                            resourceAliCloudVpcIpv6Address(),
-			"alicloud_vpc_gateway_endpoint_route_table_attachment": resourceAliCloudVpcGatewayEndpointRouteTableAttachment(),
-			"alicloud_vpc_gateway_endpoint":                        resourceAliCloudVpcGatewayEndpoint(),
-			"alicloud_vpc_vswitch_cidr_reservation":                resourceAliCloudVpcVswitchCidrReservation(),
-			"alicloud_vpc_ha_vip":                                  resourceAliCloudVpcHaVip(),
-			"alicloud_vpc":                                         resourceAliCloudVpcVpc(),
-			"alicloud_vpc_route_entry":                             resourceAliCloudVpcRouteEntry(),
-			"alicloud_vpc_flow_log":                                resourceAliCloudVpcFlowLog(),
-			"alicloud_vpc_dhcp_options_set":                        resourceAliCloudVpcDhcpOptionsSet(),
-			"alicloud_vpc_traffic_mirror_filter":                   resourceAliCloudVpcTrafficMirrorFilter(),
-			"alicloud_vpc_traffic_mirror_filter_egress_rule":       resourceAliCloudVpcTrafficMirrorFilterEgressRule(),
-			"alicloud_vpc_traffic_mirror_filter_ingress_rule":      resourceAliCloudVpcTrafficMirrorFilterIngressRule(),
-			"alicloud_vpc_traffic_mirror_session":                  resourceAliCloudVpcTrafficMirrorSession(),
-			"alicloud_vpc_ipv6_gateway":                            resourceAliCloudVpcIpv6Gateway(),
-			"alicloud_vpc_ipv6_egress_rule":                        resourceAliCloudVpcIpv6EgressRule(),
-			"alicloud_vpc_ipv6_internet_bandwidth":                 resourceAliCloudVpcIpv6InternetBandwidth(),
-			"alicloud_vpc_vbr_ha":                                  resourceAliCloudExpressConnectVbrHa(),
-			"alicloud_vpc_bgp_group":                               resourceAliCloudExpressConnectBgpGroup(),
-			"alicloud_vpc_dhcp_options_set_attachment":             resourceAlicloudVpcDhcpOptionsSetAttachement(),
-			"alicloud_vpc_bgp_peer":                                resourceAliCloudExpressConnectBgpPeer(),
-			"alicloud_vpc_bgp_network":                             resourceAliCloudExpressConnectBgpNetwork(),
-			"alicloud_vpc_ipv4_gateway":                            resourceAliCloudVpcIpv4Gateway(),
-			"alicloud_vpc_prefix_list":                             resourceAliCloudVpcPrefixList(),
-			"alicloud_vpc_ipv4_cidr_block":                         resourceAliCloudVpcIpv4CidrBlock(),
-			"alicloud_vpc_public_ip_address_pool":                  resourceAliCloudVpcPublicIpAddressPool(),
-			"alicloud_vpc_public_ip_address_pool_cidr_block":       resourceAliCloudVpcPublicIpAddressPoolCidrBlock(),
-			"alicloud_vpc_network_acl_attachment":                  resourceAliCloudVpcNetworkAclAttachment(),
-			"alicloud_vpc_gateway_route_table_attachment":          resourceAliCloudVpcGatewayRouteTableAttachment(),
+			"alicloud_vpc_vbr_ha":      resourceAliCloudExpressConnectVbrHa(),
+			"alicloud_vpc_bgp_group":   resourceAliCloudExpressConnectBgpGroup(),
+			"alicloud_vpc_bgp_peer":    resourceAliCloudExpressConnectBgpPeer(),
+			"alicloud_vpc_bgp_network": resourceAliCloudExpressConnectBgpNetwork(),
 
 			// vpn
 			"alicloud_vpn_gateway_enhanced_vpn_gateway": resourceAliCloudVpnGatewayEnhancedVpnGateway(),
@@ -2277,7 +2215,6 @@ func Provider() *schema.Provider {
 			"alicloud_vpn_gateway_vco_route":            resourceAlicloudVpnGatewayVcoRoute(),
 
 			// vswitch
-			"alicloud_vswitch": resourceAliCloudVpcVswitch(),
 
 			// waf
 			// alicloud_waf_* resources and data sources are registered via

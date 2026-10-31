@@ -11,6 +11,8 @@ description: |-
 
 This data source provides VPCs available to the user.
 
+-> **NOTE:** Available since v1.2.0.
+
 ## Example Usage
 
 ```terraform
@@ -59,6 +61,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `cidr_block` - CIDR block of the VPC.
   * `vrouter_id` - ID of the VRouter.
   * `route_table_id` - Route table ID of the VRouter.
+  * `resource_group_id` - The ID of the resource group to which the VPC belongs.
   * `description` - Description of the VPC
   * `dhcp_options_set_id` - The ID of the DHCP options set.
   * `dhcp_options_set_status` - The status of the DHCP options set. Valid values: `Available`, `InUse`, `Deleted`, `Pending`.
