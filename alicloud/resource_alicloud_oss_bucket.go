@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -493,6 +494,9 @@ func resourceAlicloudOssBucket() *schema.Resource {
 	}
 }
 
+// ossBucketCreateWaitTimeout bounds the create-write and post-visibility retry loops.
+var ossBucketCreateWaitTimeout = 3 * time.Minute
+
 func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var bucketName string
@@ -506,18 +510,6 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	}
 	request := map[string]string{"bucketName": bucketName}
 	var requestInfo *oss.Client
-	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		requestInfo = ossClient
-		return ossClient.IsBucketExist(request["bucketName"])
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "IsBucketExist", AliyunOssGoSdk)
-	}
-	addDebug("IsBucketExist", raw, requestInfo, request)
-	isExist, _ := raw.(bool)
-	if isExist {
-		return WrapError(Error("[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", request["bucketName"]))
-	}
 	type Request struct {
 		BucketName           string
 		StorageClassOption   oss.Option
@@ -561,35 +553,70 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(req.BucketName, options...)
+	// Creation proceeds only when the target bucket is precisely confirmed absent.
+	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+		requestInfo = ossClient
+		return ossClient.GetBucketInfo(request["bucketName"])
+	})
+	if err == nil {
+		return WrapError(Error("[ERROR] The bucket %#v already exists. Import the existing bucket with 'terraform import' or choose a different bucket name.", request["bucketName"]))
+	}
+	if !ossNoSuchBucketError(err) {
+		return WrapErrorf(err, DefaultErrorMsg, request["bucketName"], "GetBucketInfo", AliyunOssGoSdk)
+	}
+
+	err = retry.RetryContext(context.Background(), ossBucketCreateWaitTimeout, func() *retry.RetryError {
+		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
+			return nil, ossClient.CreateBucket(req.BucketName, options...)
+		})
+		if err == nil {
+			return nil
+		}
+		if IsExpectedErrors(err, []string{"BucketAlreadyExists", "BucketAlreadyExistsByAnotherUser"}) || !ossRetryableServiceError(err) {
+			return retry.NonRetryableError(err)
+		}
+		_, readErr := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketInfo(request["bucketName"])
+		})
+		if readErr == nil {
+			return nil
+		}
+		if ossNoSuchBucketError(readErr) || ossRetryableServiceError(readErr) {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(readErr)
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"BucketAlreadyExists", "BucketAlreadyExistsByAnotherUser"}) {
+			return WrapErrorf(err, "[ERROR] The specified bucket name: %#v is not available. The bucket namespace is shared by all users of the OSS system. Please select a different name and try again.", req.BucketName)
+		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
 	}
 	addDebug("CreateBucket", raw, requestInfo, req)
-	err = retry.Retry(3*time.Minute, func() *retry.RetryError {
-		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-			return ossClient.IsBucketExist(request["bucketName"])
-		})
 
-		if err != nil {
-			return retry.NonRetryableError(err)
+	// Keep the created bucket tracked if the subsequent wait or update fails.
+	d.SetId(request["bucketName"])
+
+	err = retry.RetryContext(context.Background(), ossBucketCreateWaitTimeout, func() *retry.RetryError {
+		_, e := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			return ossClient.GetBucketInfo(request["bucketName"])
+		})
+		if e == nil {
+			return nil
 		}
-		isExist, _ := raw.(bool)
-		if !isExist {
+		if ossNoSuchBucketError(e) {
 			return retry.RetryableError(Error("Trying to ensure new OSS bucket %#v has been created successfully.", request["bucketName"]))
 		}
-		addDebug("IsBucketExist", raw, requestInfo, request)
-		return nil
+		if ossRetryableServiceError(e) {
+			return retry.RetryableError(e)
+		}
+		return retry.NonRetryableError(e)
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "IsBucketExist", AliyunOssGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "GetBucketInfo", AliyunOssGoSdk)
 	}
-
-	// Assign the bucket name as the resource ID
-	d.SetId(request["bucketName"])
 
 	return resourceAlicloudOssBucketUpdate(d, meta)
 }
@@ -908,16 +935,19 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	// Read Policy
+	params := map[string]interface{}{"policy": nil}
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		params := map[string]interface{}{}
-		params["policy"] = nil
 		return ossClient.Conn.Do("GET", d.Id(), "", params, nil, nil, 0, nil)
 	})
 
-	if err != nil && !ossNotFoundError(err) {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetPolicyByConn", AliyunOssGoSdk)
+	if err != nil {
+		addDebug("GetPolicyByConn", err, requestInfo, params)
+		if !ossNotFoundError(err) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetPolicyByConn", AliyunOssGoSdk)
+		}
+	} else {
+		addDebug("GetPolicyByConn", raw, requestInfo, params)
 	}
-	addDebug("GetPolicyByConn", raw, requestInfo, request)
 	policy := ""
 	if err == nil {
 		rawResp := raw.(*oss.Response)
@@ -926,6 +956,7 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapError(err)
 		}
+		addDebug("GetPolicyByConnResponseBody", string(rawData), requestInfo, params)
 		policy = string(rawData)
 	}
 
@@ -1549,7 +1580,10 @@ func resourceAlicloudOssBucketPolicyUpdate(client *connectivity.AliyunClient, d 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PutPolicyByConn", AliyunOssGoSdk)
 	}
-	addDebug("PutPolicyByConn", raw, requestInfo, params)
+	addDebug("PutPolicyByConn", raw, requestInfo, map[string]interface{}{
+		"params": params,
+		"body":   policy,
+	})
 	return nil
 }
 
@@ -1720,25 +1754,20 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
 	var requestInfo *oss.Client
-	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		requestInfo = ossClient
-		return ossClient.IsBucketExist(d.Id())
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "IsBucketExist", AliyunOssGoSdk)
-	}
-	addDebug("IsBucketExist", raw, requestInfo, map[string]string{"bucketName": d.Id()})
-
-	exist, _ := raw.(bool)
-	if !exist {
-		return nil
-	}
-
+	var raw interface{}
+	var err error
+	alreadyAbsent := false
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+			requestInfo = ossClient
 			return nil, ossClient.DeleteBucket(d.Id())
 		})
 		if err != nil {
+			if ossNoSuchBucketError(err) {
+				// The bucket is already gone; the post-delete wait is skipped.
+				alreadyAbsent = true
+				return nil
+			}
 			if IsExpectedErrors(err, []string{"BucketNotEmpty"}) {
 				if d.Get("force_destroy").(bool) {
 					raw, er := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
@@ -1774,6 +1803,9 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 					return retry.RetryableError(err)
 				}
 			}
+			if ossRetryableServiceError(err) {
+				return retry.RetryableError(err)
+			}
 			return retry.NonRetryableError(err)
 		}
 		addDebug("DeleteBucket", raw, requestInfo, map[string]string{"bucketName": d.Id()})
@@ -1781,6 +1813,9 @@ func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) e
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteBucket", AliyunOssGoSdk)
+	}
+	if alreadyAbsent {
+		return nil
 	}
 	return WrapError(ossService.WaitForOssBucket(d.Id(), Deleted, DefaultTimeoutMedium))
 }
