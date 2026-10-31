@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -127,9 +135,92 @@ resource "alicloud_rds_custom" "default" {
   support_case      = "eni"
   deployment_set_id = var.deploymentsetid
   dry_run           = false
+
+  auto_use_coupon     = true
+  deletion_protection = true
+  enable_jumbo_frame  = true
+  user_data           = "echo Hello Terraform"
+  data_disk {
+    category          = "cloud_essd"
+    size              = "50"
+    performance_level = "PL1"
+    encrypted         = "true"
+  }
+  system_disk {
+    size              = "40"
+    category          = "cloud_essd"
+    performance_level = "PL1"
+  }
 }
 ```
 
+
+### Usage with the additional attributes
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.97.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.97.1.0/24"
+  zone_id      = "cn-beijing-i"
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id              = alicloud_vpc.default.id
+  security_group_name = var.name
+}
+
+resource "alicloud_rds_custom" "default" {
+  instance_charge_type = "PostPaid"
+  instance_type        = "mysql.x2.large.9cm"
+  vswitch_id           = alicloud_vswitch.default.id
+  security_group_ids   = [alicloud_security_group.default.id]
+  auto_pay             = true
+  force                = true
+  period_unit          = "Month"
+  password             = "@MY7yxqc9YXQC"
+
+  auto_use_coupon      = true
+  deletion_protection  = true
+  enable_jumbo_frame   = true
+  user_data            = "echo Hello Terraform"
+  reboot_when_finished = true
+
+  system_disk {
+    category          = "cloud_essd"
+    size              = "40"
+    performance_level = "PL1"
+  }
+
+  data_disk {
+    category          = "cloud_essd"
+    size              = "40"
+    performance_level = "PL0"
+    encrypted         = "true"
+  }
+}
+```
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_rds_custom&spm=docs.r.rds_custom.example&intl_lang=EN_US)
 
@@ -162,6 +253,14 @@ Valid values: `1` to `5`. Default value: `1`.
 
   -> **NOTE:** This parameter is only evaluated during resource creation and update. Modifying it in isolation will not trigger any action.
 
+* `auto_use_coupon` - (Optional, ForceNew, Bool, Available since v2.2.0) Specifies whether to automatically use a coupon. Valid values:
+  - `true`: Yes.
+  - `false`: No.
+
+    Defaults to `true`.
+
+  -> **NOTE:**  If you perform a downgrade after a coupon is used, the amount deducted by the coupon is not refunded. This parameter is evaluated on creation and on a specification change order; changing it forces a new resource to be created.
+
 * `create_mode` - (Optional) Specifies whether the instance can be added to an ACK cluster. When this parameter is set to `1`, the created instance can be added to an ACK cluster by using the `AttachRCInstances` API operation, enabling efficient management of containerized applications.
   - `1`: Yes.
   - `0` (default): No.
@@ -169,6 +268,11 @@ Valid values: `1` to `5`. Default value: `1`.
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `data_disk` - (Optional, ForceNew, Computed, List) List of data disks.   See [`data_disk`](#data_disk) below.
+* `deletion_protection` - (Optional, Computed, Bool, Available since v2.2.0) Specifies whether to enable the release protection feature. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+
+    Defaults to `false`.
 * `deployment_set_id` - (Optional, ForceNew) Deployment set ID.
 * `description` - (Optional, Computed) The instance description. It must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `direction` - (Optional) The instance specification change type. Valid values:
@@ -184,6 +288,14 @@ Valid values: `1` to `5`. Default value: `1`.
   - `false` (default): sends the actual request and creates the instance if all checks pass.
 
   -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+
+* `enable_jumbo_frame` - (Optional, Computed, Bool, Available since v2.2.0) Specifies whether to enable the Jumbo frame feature. Valid values:
+  - `true`: Enable the feature. The MTU of all network interfaces of the instance is set to 8500.
+  - `false`: Disable the feature. The MTU of all network interfaces of the instance is set to 1500.
+
+    Defaults to `false`.
+
+  -> **NOTE:** Only some instance types of the eighth generation or later support the Jumbo frame feature. The value can be updated in place through `ModifyRCInstanceAttribute`.
 
 * `force` - (Optional) Specifies whether to forcibly release a running instance. Valid values:
   - `true`: Force release.
@@ -245,6 +357,27 @@ Valid values: 0 to 1024. Default value: 0.
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
 * `private_ip_address` - (Optional, ForceNew, Computed, Available since v1.279.0) The private IP address of the instance. When assigning a private IP address to an ECS instance in a Virtual Private Cloud (VPC), you must select an available IP address from the CIDR block of the specified vSwitch (VSwitchId).
+* `promotion_code` - (Optional, ForceNew, String, Available since v2.2.0) The coupon code. It is applied on creation and on a specification change order; changing it forces a new resource to be created.
+
+* `reboot` - (Optional, Bool, Available since v2.2.0) Specifies whether to restart the instance. Valid values:
+  - `true`: Restart.
+  - `false`: Do not restart.
+
+    Defaults to `false`.
+
+  -> **NOTE:** This parameter is a one-time action. A restart is triggered only when the value is changed to `true`. The API does not return the value, so it is excluded from the import state comparison.
+
+* `reboot_time` - (Optional, String, Available since v2.2.0) The restart time of the instance. Specify the time in the ISO 8601 standard in the `yyyy-MM-ddTHH:mmZ` format. The time must be in UTC+0.
+
+  -> **NOTE:** This parameter only takes effect together with a specification change of `instance_type`. When `reboot_when_finished` is `false` and the instance is Running, a restart time within 48 hours is required and is validated before the request is sent. The API does not return the value, so it is excluded from the import state comparison.
+
+* `reboot_when_finished` - (Optional, Bool, Available since v2.2.0) Specifies whether to immediately restart the instance after the specification change is complete. Valid values:
+  - `true`: Yes.
+  - `false`: No.
+
+    Defaults to `true`.
+
+  -> **NOTE:** This parameter only takes effect together with a specification change of `instance_type`. If the instance is in the Stopped state, it remains stopped even if this parameter is set to `true`. The configured value is not returned by the API.
 * `resource_group_id` - (Optional, Computed) The resource group ID. You can call ListResourceGroups to obtain it.
 * `security_enhancement_strategy` - (Optional) This is a reserved parameter and is not currently supported.
 
@@ -280,6 +413,18 @@ Default value: `NoSpot`.
   -> **NOTE:** Since v1.279.0, `system_disk` is treated as a ForceNew field. Any change to this field, including its nested `category` and `size` values, will force replacement of the `alicloud_rds_custom` resource.
 
 * `tags` - (Optional, Map) Details of the queried instances and their tags.
+* `user_data` - (Optional, ForceNew, String, Available since v2.2.0) The custom data of the instance. The raw data can be up to 32 KB.
+
+  -> **NOTE:**  Do not pass sensitive information such as passwords and private keys in plaintext. The value is sent as configured. When `user_data_in_base64` is `true` the value is treated as Base64-encoded; otherwise it is raw text. The API returns the data as a Base64 string and the provider decodes it back to the configured representation on refresh and import.
+
+* `user_data_in_base64` - (Optional, ForceNew, Bool, Available since v2.2.0) Specifies whether `user_data` is Base64-encoded. Valid values:
+  - `true`: Yes.
+  - `false`: No.
+
+    Defaults to `false`.
+
+  -> **NOTE:** This parameter is only used together with `user_data` during creation. The API does not return it, so it is excluded from the import state comparison.
+
 * `vswitch_id` - (Required, ForceNew) The virtual switch ID of the target instance. If you are creating a VPC-type RDS Custom instance, you must specify the virtual switch ID, and the security group and virtual switch must belong to the same Virtual Private Cloud (VPC).
 
   -> **NOTE:**  If you specify the VSwitchId parameter, the ZoneId parameter you set must match the zone where the virtual switch is located. Alternatively, you can omit the ZoneId parameter, and the system will automatically select the zone of the specified virtual switch.
@@ -298,7 +443,15 @@ The data_disk supports the following:
   - `cloud_ssd`: SSD cloud disk.
   - `cloud_essd` (default): ESSD cloud disk.
   - `cloud_auto`: High-performance cloud disk.
-* `performance_level` - (Optional, ForceNew) The performance level for an ESSD cloud disk. For information about performance differences among ESSD cloud disks, see [ESSD cloud disks](https://help.aliyun.com/document_detail/2859916.html). Valid values:
+* `device` - (Optional, Computed, ForceNew, String, Available since v2.2.0) The mount point of the data disk, for example `/dev/xvdb`.
+
+  -> **NOTE:** This parameter is only used in full image (complete image) scenarios. You can set it to the mount point of the data disk in the full image, and modify the corresponding `size` and `category` to change the type and size of the data disk in the full image.
+* `encrypted` - (Optional, Computed, ForceNew, String, Available since v2.2.0) Specifies whether to encrypt the data disk. Valid values:
+  - `true`: Encrypt the data disk.
+  - `false`: Do not encrypt the data disk.
+
+    Defaults to `false`.
+* `performance_level` - (Optional, ForceNew, String) The performance level for an ESSD cloud disk. For information about performance differences among ESSD cloud disks, see [ESSD cloud disks](https://help.aliyun.com/document_detail/2859916.html). Valid values:
   - `PL0`
   - `PL1` (default)
   - `PL2`
@@ -312,6 +465,9 @@ The data_disk supports the following:
   - PL1: 20 to 65,536.
   - PL2: 461 to 65,536.
   - PL3: 1,261 to 65,536.
+* `snapshot_id` - (Optional, Computed, ForceNew, String, Available since v2.2.0) The snapshot used to create the data disk.
+
+  -> **NOTE:**  If the snapshot size is greater than `size`, the created disk size is the same as the snapshot size. If the snapshot size is less than `size`, the created disk size is the value of `size`. Snapshots created on or before July 15, 2013 cannot be used to create a disk.
 
 ### `system_disk`
 
@@ -321,6 +477,11 @@ The system_disk supports the following:
   - `cloud_ssd`: standard SSD.
   - `cloud_essd` (default): ESSD.
   - `cloud_auto`: high-performance cloud disk.
+* `performance_level` - (Optional, Computed, ForceNew, String, Available since v2.2.0) The performance level for an ESSD system disk. Valid values:
+  - `PL0`
+  - `PL1` (default)
+  - `PL2`
+  - `PL3`.
 * `size` - (Optional, ForceNew) The size of the system disk, in GiB. The value must be greater than or equal to the size of the image specified by the `ImageId` parameter.
 
 ## Attributes Reference

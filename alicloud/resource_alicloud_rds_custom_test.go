@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -347,17 +348,11 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "default" {
-  ids = [data.alicloud_vswitches.default.vswitches.0.vpc_id]
-}
+data "alicloud_security_groups" "default" {}
 
 data "alicloud_vswitches" "default" {
-  status  = "Available"
-  zone_id = "cn-beijing-i"
-}
-
-data "alicloud_security_groups" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = data.alicloud_security_groups.default.groups.0.vpc_id
+  status = "Available"
 }
 
 resource "alicloud_rds_custom_deployment_set" "deploymentSet" {
@@ -560,4 +555,270 @@ data "alicloud_vswitches" "default" {
 data "alicloud_security_groups" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }`, name)
+}
+
+// collection-order: bypass security_group_ids -- pre-existing stock attribute outside this change; the returned member order is defined by the VPC security-group echo rather than by the configuration
+
+// Case property_coverage 20260817: user_data, user_data_in_base64, auto_use_coupon, promotion_code,
+// enable_jumbo_frame, deletion_protection, reboot, reboot_time, reboot_when_finished,
+// data_disk.{device,encrypted,snapshot_id} and system_disk.performance_level.
+func TestAccAliCloudRdsCustom_newAttributes(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rds_custom.default"
+	ra := resourceAttrInit(resourceId, AlicloudRdsCustomNewAttributesMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RdsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRdsCustom")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccrds%d", rand)
+	rebootTime := time.Now().Add(24 * time.Hour).UTC().Format("2006-01-02T15:04Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsCustomBasicDependenceNewAttributes)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "tf-testacc-rds-custom-attributes",
+					"instance_charge_type": "PostPaid",
+					"amount":               "1",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"security_group_ids": []string{
+						"${data.alicloud_security_groups.default.ids.0}"},
+					"auto_pay":             "true",
+					"force":                "true",
+					"instance_type":        "mysql.x2.large.9cm",
+					"create_mode":          "0",
+					"spot_strategy":        "NoSpot",
+					"host_name":            "tf-testacc-rds-custom",
+					"period_unit":          "Month",
+					"password":             "@MY7yxqc9YXQC",
+					"auto_use_coupon":      "true",
+					"deletion_protection":  "true",
+					"enable_jumbo_frame":   "true",
+					"promotion_code":       "",
+					"reboot":               "false",
+					"reboot_time":          rebootTime,
+					"reboot_when_finished": "true",
+					"user_data":            "echo Hello Terraform",
+					"create_extra_param":   "{}",
+					"system_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"size":              "40",
+							"performance_level": "PL1",
+						},
+					},
+					"data_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "40",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "50",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+					},
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "20m",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_use_coupon":                 "true",
+						"deletion_protection":             "true",
+						"enable_jumbo_frame":              "true",
+						"reboot":                          "false",
+						"reboot_when_finished":            "true",
+						"user_data":                       "echo Hello Terraform",
+						"create_extra_param":              "{}",
+						"data_disk.#":                     "2",
+						"data_disk.0.encrypted":           "true",
+						"system_disk.0.performance_level": "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "50",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "40",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disk.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_jumbo_frame": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_jumbo_frame": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reboot": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"reboot": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "mysql.x4.large.9cm",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "mysql.x4.large.9cm",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"amount", "auto_pay", "auto_renew", "auto_use_coupon", "create_extra_param", "create_mode", "direction", "dry_run", "force", "force_stop", "host_name", "image_id", "instance_charge_type", "internet_charge_type", "internet_max_bandwidth_out", "io_optimized", "key_pair_name", "password", "period", "period_unit", "promotion_code", "reboot", "reboot_time", "reboot_when_finished", "security_enhancement_strategy", "spot_strategy", "support_case", "user_data_in_base64"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data":           "IyEvYmluL3NoCmVjaG8gSGVsbG8gVGVycmFmb3Jt",
+					"user_data_in_base64": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data":           "IyEvYmluL3NoCmVjaG8gSGVsbG8gVGVycmFmb3Jt",
+						"user_data_in_base64": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudRdsCustomNewAttributesMap = map[string]string{
+	"region_id":      CHECKSET,
+	"system_disk_id": CHECKSET,
+}
+
+func AlicloudRdsCustomBasicDependenceNewAttributes(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_security_groups" "default" {}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_security_groups.default.groups.0.vpc_id
+  status = "Available"
+}`, name)
+}
+
+func TestUnitRdsCustomDataDiskOrder(t *testing.T) {
+	remote := []map[string]interface{}{
+		{"category": "cloud_essd", "performance_level": "PL0", "size": int64(40), "device": "/dev/xvdb"},
+		{"category": "cloud_essd", "performance_level": "PL0", "size": int64(50), "device": "/dev/xvdc"},
+	}
+	prior := []interface{}{
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 50, "device": "/dev/xvdc"},
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 40, "device": "/dev/xvdb"},
+	}
+	ordered := orderRdsCustomDataDisks(prior, remote)
+	if len(ordered) != 2 {
+		t.Fatalf("expected 2 data disks, got %d", len(ordered))
+	}
+	if ordered[0]["device"] != "/dev/xvdc" || ordered[1]["device"] != "/dev/xvdb" {
+		t.Fatalf("configured order is not preserved: %v", ordered)
+	}
+
+	identityPrior := []interface{}{
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 50, "device": ""},
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 40, "device": ""},
+	}
+	ordered = orderRdsCustomDataDisks(identityPrior, remote)
+	if fmt.Sprint(ordered[0]["size"]) != "50" || fmt.Sprint(ordered[1]["size"]) != "40" {
+		t.Fatalf("members were not joined by identity: %v", ordered)
+	}
+
+	importOrder := orderRdsCustomDataDisks(nil, remote)
+	if importOrder[0]["device"] != "/dev/xvdb" || importOrder[1]["device"] != "/dev/xvdc" {
+		t.Fatalf("import must fall back to the canonical device order: %v", importOrder)
+	}
+}
+
+func TestUnitRdsCustomRebootTimeValidation(t *testing.T) {
+	now := time.Now().UTC()
+	valid := now.Add(2 * time.Hour).Format("2006-01-02T15:04Z")
+	tooLate := now.Add(72 * time.Hour).Format("2006-01-02T15:04Z")
+	past := now.Add(-2 * time.Hour).Format("2006-01-02T15:04Z")
+	testCases := []struct {
+		name             string
+		rebootTime       string
+		rebootWhenFinish bool
+		expectError      bool
+	}{
+		{"RebootWhenFinishedTrueSkipsTime", "", true, false},
+		{"MissingTimeWhenNotRebooting", "", false, true},
+		{"MalformedTime", "2026/01/01 10:00", false, true},
+		{"TimeBeyondWindow", tooLate, false, true},
+		{"TimeInPast", past, false, true},
+		{"ValidTime", valid, false, false},
+	}
+	for _, tc := range testCases {
+		err := validateRdsCustomRebootTime(tc.rebootTime, tc.rebootWhenFinish)
+		if tc.expectError && err == nil {
+			t.Fatalf("case %s: expected an error", tc.name)
+		}
+		if !tc.expectError && err != nil {
+			t.Fatalf("case %s: unexpected error: %v", tc.name, err)
+		}
+	}
 }
