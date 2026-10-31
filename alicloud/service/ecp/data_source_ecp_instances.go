@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -23,7 +22,7 @@ func DataSourceEcpInstances() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -64,7 +63,7 @@ func DataSourceEcpInstances() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"Pending", "Running", "Starting", "Stopped", "Stopping"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Pending", "Running", "Starting", "Stopped", "Stopping"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
