@@ -1029,12 +1029,8 @@ func Provider() *schema.Provider {
 			// waf
 			// alicloud_waf_* resources and data sources are registered via
 			// service/waf.ServicePackage() in provider/registry/registry.go.
-
-			// wafv3
-			"alicloud_wafv3_address_books": dataSourceAliCloudWafv3AddressBooks(),
-			"alicloud_wafv3_defense_rules": dataSourceAliCloudWafv3DefenseRules(),
-			"alicloud_wafv3_instances":     dataSourceAlicloudWafv3Instances(),
-			"alicloud_wafv3_domains":       dataSourceAliCloudWafv3Domains(),
+			// alicloud_wafv3_* types are registered via
+			// service/wafopenapi.ServicePackage() in provider/registry/registry.go.
 
 			// yundun
 			"alicloud_yundun_bastionhost_instances": dataSourceAlicloudBastionhostInstances(),
@@ -2231,14 +2227,6 @@ func Provider() *schema.Provider {
 			// waf
 			// alicloud_waf_* resources and data sources are registered via
 			// service/waf.ServicePackage() in provider/registry/registry.go.
-
-			// wafv3
-			"alicloud_wafv3_address_book":           resourceAliCloudWafv3AddressBook(),
-			"alicloud_wafv3_defense_resource_group": resourceAliCloudWafv3DefenseResourceGroup(),
-			"alicloud_wafv3_defense_rule":           resourceAliCloudWafv3DefenseRule(),
-			"alicloud_wafv3_defense_template":       resourceAliCloudWafv3DefenseTemplate(),
-			"alicloud_wafv3_instance":               resourceAlicloudWafv3Instance(),
-			"alicloud_wafv3_domain":                 resourceAliCloudWafv3Domain(),
 
 			// yundun
 			"alicloud_yundun_bastionhost_instance": resourceAliCloudBastionhostInstance(),

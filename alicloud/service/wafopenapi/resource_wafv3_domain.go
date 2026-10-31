@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi
 
 import (
 	"encoding/json"
@@ -10,16 +10,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudWafv3Domain() *schema.Resource {
+func ResourceWafv3Domain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudWafv3DomainCreate,
-		Read:   resourceAliCloudWafv3DomainRead,
-		Update: resourceAliCloudWafv3DomainUpdate,
-		Delete: resourceAliCloudWafv3DomainDelete,
+		Create: resourceWafv3DomainCreate,
+		Read:   resourceWafv3DomainRead,
+		Update: resourceWafv3DomainUpdate,
+		Delete: resourceWafv3DomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -61,7 +67,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"share", "gslb"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"share", "gslb"}, false),
 						},
 						"https_ports": {
 							Type:     schema.TypeList,
@@ -76,7 +82,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"tls_version": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"tlsv1", "tlsv1.1", "tlsv1.2"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"tlsv1", "tlsv1.1", "tlsv1.2"}, false),
 						},
 						"http2_enabled": {
 							Type:     schema.TypeBool,
@@ -89,7 +95,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"cipher_suite": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntInSlice([]int{0, 1, 2, 99}),
+							ValidateFunc: validators.IntInSlice([]int{0, 1, 2, 99}),
 						},
 						"enable_tlsv3": {
 							Type:     schema.TypeBool,
@@ -115,7 +121,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"xff_header_mode": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntInSlice([]int{0, 1, 2}),
+							ValidateFunc: validators.IntInSlice([]int{0, 1, 2}),
 						},
 						"sm2_cert_id": {
 							Type:     schema.TypeString,
@@ -152,7 +158,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"connect_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(0, 3600),
+							ValidateFunc: validators.IntBetween(0, 3600),
 						},
 						"keepalive": {
 							Type:     schema.TypeBool,
@@ -171,13 +177,13 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"read_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(0, 3600),
+							ValidateFunc: validators.IntBetween(0, 3600),
 						},
 						"keepalive_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(0, 60),
+							ValidateFunc: validators.IntBetween(0, 60),
 						},
 						"http2_origin": {
 							Type:     schema.TypeBool,
@@ -200,7 +206,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"write_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: IntBetween(0, 3600),
+							ValidateFunc: validators.IntBetween(0, 3600),
 						},
 						"http2_origin_max_concurrency": {
 							Type:     schema.TypeInt,
@@ -230,7 +236,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(60, 1000),
+							ValidateFunc: validators.IntBetween(60, 1000),
 						},
 						"xff_proto": {
 							Type:     schema.TypeBool,
@@ -239,7 +245,7 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 						"loadbalance": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"iphash", "roundRobin", "leastTime"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"iphash", "roundRobin", "leastTime"}, false),
 						},
 					},
 				},
@@ -254,12 +260,12 @@ func resourceAliCloudWafv3Domain() *schema.Resource {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
-func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DomainCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -351,7 +357,7 @@ func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 
 		listenJson, err := json.Marshal(listen)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Listen"] = string(listenJson)
 	}
@@ -364,7 +370,7 @@ func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -447,14 +453,14 @@ func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 
 		redirectJson, err := json.Marshal(redirect)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Redirect"] = string(redirectJson)
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
 	if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
@@ -463,11 +469,11 @@ func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("access_type"); ok {
 		request["AccessType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -475,36 +481,36 @@ func resourceAliCloudWafv3DomainCreate(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_wafv3_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_wafv3_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	DomainInfoDomainVar, _ := jsonpath.Get("$.DomainInfo.Domain", response)
 	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], DomainInfoDomainVar))
 
 	wafv3ServiceV2 := Wafv3ServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudWafv3DomainUpdate(d, meta)
+	return resourceWafv3DomainUpdate(d, meta)
 }
 
-func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafv3ServiceV2 := Wafv3ServiceV2{client}
 
 	objectRaw, err := wafv3ServiceV2.DescribeWafv3Domain(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_wafv3_domain DescribeWafv3Domain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("cname", objectRaw["Cname"])
@@ -536,25 +542,25 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 
 		customCiphersRaw := make([]interface{}, 0)
 		if listenRaw["CustomCiphers"] != nil {
-			customCiphersRaw = convertToInterfaceArray(listenRaw["CustomCiphers"])
+			customCiphersRaw = convert.ConvertToInterfaceArray(listenRaw["CustomCiphers"])
 		}
 
 		listenMap["custom_ciphers"] = customCiphersRaw
 		httpPortsRaw := make([]interface{}, 0)
 		if listenRaw["HttpPorts"] != nil {
-			httpPortsRaw = convertToInterfaceArray(listenRaw["HttpPorts"])
+			httpPortsRaw = convert.ConvertToInterfaceArray(listenRaw["HttpPorts"])
 		}
 
 		listenMap["http_ports"] = httpPortsRaw
 		httpsPortsRaw := make([]interface{}, 0)
 		if listenRaw["HttpsPorts"] != nil {
-			httpsPortsRaw = convertToInterfaceArray(listenRaw["HttpsPorts"])
+			httpsPortsRaw = convert.ConvertToInterfaceArray(listenRaw["HttpsPorts"])
 		}
 
 		listenMap["https_ports"] = httpsPortsRaw
 		xffHeadersRaw := make([]interface{}, 0)
 		if listenRaw["XffHeaders"] != nil {
-			xffHeadersRaw = convertToInterfaceArray(listenRaw["XffHeaders"])
+			xffHeadersRaw = convert.ConvertToInterfaceArray(listenRaw["XffHeaders"])
 		}
 
 		listenMap["xff_headers"] = xffHeadersRaw
@@ -588,20 +594,20 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 
 		backendListRaw := make([]interface{}, 0)
 		if redirectRaw["BackendList"] != nil {
-			backendListRaw = convertToInterfaceArray(redirectRaw["BackendList"])
+			backendListRaw = convert.ConvertToInterfaceArray(redirectRaw["BackendList"])
 		}
 
 		redirectMap["backends"] = backendListRaw
 		backUpBackendListRaw := make([]interface{}, 0)
 		if redirectRaw["BackUpBackendList"] != nil {
-			backUpBackendListRaw = convertToInterfaceArray(redirectRaw["BackUpBackendList"])
+			backUpBackendListRaw = convert.ConvertToInterfaceArray(redirectRaw["BackUpBackendList"])
 		}
 
 		redirectMap["backup_backends"] = backUpBackendListRaw
 		requestHeadersRaw := redirectRaw["RequestHeaders"]
 		requestHeadersMaps := make([]map[string]interface{}, 0)
 		if requestHeadersRaw != nil {
-			for _, requestHeadersChildRaw := range convertToInterfaceArray(requestHeadersRaw) {
+			for _, requestHeadersChildRaw := range convert.ConvertToInterfaceArray(requestHeadersRaw) {
 				requestHeadersMap := make(map[string]interface{})
 				requestHeadersChildRaw := requestHeadersChildRaw.(map[string]interface{})
 				requestHeadersMap["key"] = requestHeadersChildRaw["Key"]
@@ -618,12 +624,12 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	objectRaw, err = wafv3ServiceV2.DescribeDomainListTagResources(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	tagsMaps := objectRaw["TagResources"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("instance_id", parts[0])
@@ -631,7 +637,7 @@ func resourceAliCloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -724,7 +730,7 @@ func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 
 		listenJson, err := json.Marshal(listen)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Listen"] = string(listenJson)
 	}
@@ -744,7 +750,7 @@ func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -823,7 +829,7 @@ func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 
 		redirectJson, err := json.Marshal(redirect)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Redirect"] = string(redirectJson)
 	}
@@ -837,11 +843,11 @@ func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 		request["AccessType"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Waf.Pullin.ResourceProcessing"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"Waf.Pullin.ResourceProcessing"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -849,28 +855,28 @@ func resourceAliCloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		wafv3ServiceV2 := Wafv3ServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("tags") {
 		wafv3ServiceV2 := Wafv3ServiceV2{client}
 		if err := wafv3ServiceV2.SetResourceTags(d, "ALIYUN::WAF::DEFENSERESOURCE"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
-	return resourceAliCloudWafv3DomainRead(d, meta)
+	return resourceWafv3DomainRead(d, meta)
 }
 
-func resourceAliCloudWafv3DomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DomainDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -890,11 +896,11 @@ func resourceAliCloudWafv3DomainDelete(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("access_type"); ok {
 		request["AccessType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -902,19 +908,19 @@ func resourceAliCloudWafv3DomainDelete(d *schema.ResourceData, meta interface{})
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	wafv3ServiceV2 := Wafv3ServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, wafv3ServiceV2.Wafv3DomainStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

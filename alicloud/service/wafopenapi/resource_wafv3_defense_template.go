@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi
 
 import (
 	"fmt"
@@ -8,16 +8,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudWafv3DefenseTemplate() *schema.Resource {
+func ResourceWafv3DefenseTemplate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudWafv3DefenseTemplateCreate,
-		Read:   resourceAliCloudWafv3DefenseTemplateRead,
-		Update: resourceAliCloudWafv3DefenseTemplateUpdate,
-		Delete: resourceAliCloudWafv3DefenseTemplateDelete,
+		Create: resourceWafv3DefenseTemplateCreate,
+		Read:   resourceWafv3DefenseTemplateRead,
+		Update: resourceWafv3DefenseTemplateUpdate,
+		Delete: resourceWafv3DefenseTemplateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -31,7 +36,7 @@ func resourceAliCloudWafv3DefenseTemplate() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle", "waf_base"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ip_blacklist", "custom_acl", "whitelist", "region_block", "cc", "tamperproof", "dlp", "spike_throttle", "waf_base"}, false),
 			},
 			"defense_template_id": {
 				Type:     schema.TypeInt,
@@ -77,13 +82,13 @@ func resourceAliCloudWafv3DefenseTemplate() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"user_default", "user_custom"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"user_default", "user_custom"}, false),
 			},
 		},
 	}
 }
 
-func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DefenseTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -109,11 +114,11 @@ func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta int
 	request["DefenseScene"] = d.Get("defense_scene")
 	request["TemplateStatus"] = d.Get("status")
 	request["TemplateOrigin"] = d.Get("template_origin")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -121,32 +126,32 @@ func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_wafv3_defense_template", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_wafv3_defense_template", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], response["TemplateId"]))
 
 	if d.Get("template_type") == "user_default" {
-		return resourceAliCloudWafv3DefenseTemplateRead(d, meta)
+		return resourceWafv3DefenseTemplateRead(d, meta)
 	}
-	return resourceAliCloudWafv3DefenseTemplateUpdate(d, meta)
+	return resourceWafv3DefenseTemplateUpdate(d, meta)
 }
 
-func resourceAliCloudWafv3DefenseTemplateRead(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DefenseTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafv3ServiceV2 := Wafv3ServiceV2{client}
 
 	objectRaw, err := wafv3ServiceV2.DescribeWafv3DefenseTemplate(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_wafv3_defense_template DescribeWafv3DefenseTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("defense_scene", objectRaw["DefenseScene"])
@@ -158,27 +163,27 @@ func resourceAliCloudWafv3DefenseTemplateRead(d *schema.ResourceData, meta inter
 	d.Set("defense_template_id", objectRaw["TemplateId"])
 
 	objectRaw, err = wafv3ServiceV2.DescribeDefenseTemplateDescribeTemplateResources(d.Id(), "single")
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	singleResourcesRaw := make([]interface{}, 0)
 	if objectRaw["Resources"] != nil {
-		singleResourcesRaw = convertToInterfaceArray(objectRaw["Resources"])
+		singleResourcesRaw = convert.ConvertToInterfaceArray(objectRaw["Resources"])
 	}
 
 	d.Set("resources", singleResourcesRaw)
 
 	objectRaw, err = wafv3ServiceV2.DescribeDefenseTemplateDescribeTemplateResources(d.Id(), "group")
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("defense_template_id", objectRaw["TemplateId"])
 
 	groupResourcesRaw := make([]interface{}, 0)
 	if objectRaw["Resources"] != nil {
-		groupResourcesRaw = convertToInterfaceArray(objectRaw["Resources"])
+		groupResourcesRaw = convert.ConvertToInterfaceArray(objectRaw["Resources"])
 	}
 
 	d.Set("resource_groups", groupResourcesRaw)
@@ -189,7 +194,7 @@ func resourceAliCloudWafv3DefenseTemplateRead(d *schema.ResourceData, meta inter
 	return nil
 }
 
-func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -218,11 +223,11 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 		request["ResourceManagerResourceGroupId"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -230,9 +235,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -251,11 +256,11 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 		request["ResourceManagerResourceGroupId"] = v
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -263,9 +268,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -291,11 +296,11 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 			if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
 				request["ResourceManagerResourceGroupId"] = v
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -303,9 +308,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -325,11 +330,11 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 			if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
 				request["ResourceManagerResourceGroupId"] = v
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -337,9 +342,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -367,11 +372,11 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 			if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
 				request["ResourceManagerResourceGroupId"] = v
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -379,9 +384,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -401,11 +406,11 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 			if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
 				request["ResourceManagerResourceGroupId"] = v
 			}
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -413,19 +418,19 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
 
 	}
 	d.Partial(false)
-	return resourceAliCloudWafv3DefenseTemplateRead(d, meta)
+	return resourceWafv3DefenseTemplateRead(d, meta)
 }
 
-func resourceAliCloudWafv3DefenseTemplateDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3DefenseTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -442,11 +447,11 @@ func resourceAliCloudWafv3DefenseTemplateDelete(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
 		request["ResourceManagerResourceGroupId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -454,13 +459,13 @@ func resourceAliCloudWafv3DefenseTemplateDelete(d *schema.ResourceData, meta int
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Defense.Control.DefenseTemplateNotExist"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"Defense.Control.DefenseTemplateNotExist"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

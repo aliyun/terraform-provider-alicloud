@@ -1,4 +1,4 @@
-package alicloud
+package wafopenapi
 
 import (
 	"fmt"
@@ -7,13 +7,16 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudWafv3Domains() *schema.Resource {
+func DataSourceWafv3Domains() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudWafv3DomainsRead,
+		Read: dataSourceWafv3DomainsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -227,14 +230,14 @@ func dataSourceAliCloudWafv3Domains() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceWafv3DomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDomains"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["InstanceId"] = d.Get("instance_id")
-	setPagingRequest(d, request, PageSizeLarge)
+	helper.SetPagingRequest(d, request, helper.PageSizeLarge)
 
 	if v, ok := d.GetOk("domain"); ok {
 		request["Domain"] = v
@@ -262,11 +265,11 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -274,15 +277,15 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_wafv3_domains", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_wafv3_domains", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Domains", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Domains", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -322,7 +325,7 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 
 		object, err = wafOpenapiService.DescribeWafv3Domain(fmt.Sprint(mapping["id"]))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		if domainId, ok := object["DomainId"]; ok && domainId != nil {
@@ -475,17 +478,17 @@ func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("domains", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

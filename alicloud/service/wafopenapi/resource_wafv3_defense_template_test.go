@@ -1,11 +1,13 @@
-package alicloud
+package wafopenapi_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudWafv3DefenseTemplate_basic12302(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_defense_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap12302)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap12302)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3DefenseTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccwafv3%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence12302)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence12302)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -46,10 +48,10 @@ func TestAccAliCloudWafv3DefenseTemplate_basic12302(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testWafBaseTP",
 						"resource_groups.#":     "1",
-						"instance_id":           CHECKSET,
+						"instance_id":           acctest.CHECKSET,
 						"template_origin":       "custom",
 						"defense_scene":         "waf_base",
 						"template_type":         "user_custom",
@@ -67,7 +69,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic12302(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testacccc",
 						"resource_groups.#":     "3",
 						"defense_template_name": name + "_update",
@@ -116,7 +118,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic12302(t *testing.T) {
 }
 
 var AlicloudWafv3DefenseTemplateMap12302 = map[string]string{
-	"defense_template_id": CHECKSET,
+	"defense_template_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3DefenseTemplateBasicDependence12302(name string) string {
@@ -205,22 +207,22 @@ resource "alicloud_wafv3_domain" "defaultYZzU91" {
 func TestAccAliCloudWafv3DefenseTemplate_basic11649(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_defense_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap11649)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap11649)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3DefenseTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccwafv3%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence11649)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence11649)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -238,11 +240,11 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11649(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testTP",
 						"resource_groups.#":     "3",
 						"resources.#":           "3",
-						"instance_id":           CHECKSET,
+						"instance_id":           acctest.CHECKSET,
 						"template_origin":       "custom",
 						"defense_scene":         "ip_blacklist",
 						"template_type":         "user_default",
@@ -260,7 +262,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11649(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testacccc",
 						"resource_groups.#":     "2",
 						"defense_template_name": name + "_update",
@@ -309,7 +311,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11649(t *testing.T) {
 }
 
 var AlicloudWafv3DefenseTemplateMap11649 = map[string]string{
-	"defense_template_id": CHECKSET,
+	"defense_template_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3DefenseTemplateBasicDependence11649(name string) string {
@@ -398,22 +400,22 @@ resource "alicloud_wafv3_domain" "defaultYZzU91" {
 func TestAccAliCloudWafv3DefenseTemplate_basic11108(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_defense_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap11108)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap11108)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3DefenseTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccwafv3%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence11108)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence11108)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -428,12 +430,12 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11108(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":           CHECKSET,
+						"instance_id":           acctest.CHECKSET,
 						"template_origin":       "custom",
 						"defense_template_name": name,
 						"defense_scene":         "ip_blacklist",
 						"template_type":         "user_custom",
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testCreate",
 						"resources.#":           "0",
 					}),
@@ -450,7 +452,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11108(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"defense_template_name": name + "_update",
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testupdate",
 						"resources.#":           "3",
 					}),
@@ -488,7 +490,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11108(t *testing.T) {
 }
 
 var AlicloudWafv3DefenseTemplateMap11108 = map[string]string{
-	"defense_template_id": CHECKSET,
+	"defense_template_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3DefenseTemplateBasicDependence11108(name string) string {
@@ -560,22 +562,22 @@ resource "alicloud_wafv3_domain" "default3" {
 func TestAccAliCloudWafv3DefenseTemplate_basic11016(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_defense_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap11016)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3DefenseTemplateMap11016)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3DefenseTemplate")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccwafv3%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence11016)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3DefenseTemplateBasicDependence11016)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -591,15 +593,15 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11016(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":                        CHECKSET,
+						"instance_id":                        acctest.CHECKSET,
 						"template_origin":                    "custom",
 						"defense_template_name":              name,
 						"defense_scene":                      "ip_blacklist",
 						"template_type":                      "user_custom",
-						"status":                             CHECKSET,
+						"status":                             acctest.CHECKSET,
 						"description":                        "testCreate",
 						"resources.#":                        "0",
-						"resource_manager_resource_group_id": CHECKSET,
+						"resource_manager_resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -612,7 +614,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11016(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"defense_template_name": name + "_update",
-						"status":                CHECKSET,
+						"status":                acctest.CHECKSET,
 						"description":           "testupdate",
 					}),
 				),
@@ -628,7 +630,7 @@ func TestAccAliCloudWafv3DefenseTemplate_basic11016(t *testing.T) {
 }
 
 var AlicloudWafv3DefenseTemplateMap11016 = map[string]string{
-	"defense_template_id": CHECKSET,
+	"defense_template_id": acctest.CHECKSET,
 }
 
 func AlicloudWafv3DefenseTemplateBasicDependence11016(name string) string {
