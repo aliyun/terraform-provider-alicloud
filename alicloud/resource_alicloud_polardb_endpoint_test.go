@@ -16,6 +16,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	var v *polardb.DBEndpoint
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
+	connectionPrefix := fmt.Sprintf("tf-testacc-%s", acctest.RandString(8))
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
 	}
@@ -107,11 +108,11 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"connection_prefix": "tf-privatetestacc-3",
+					"connection_prefix": connectionPrefix,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_prefix": "tf-privatetestacc-3",
+						"connection_prefix": connectionPrefix,
 					}),
 				),
 			},
@@ -138,6 +139,46 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_config": map[string]string{
+						"ConsistLevel": "0",
+					},
+					"scc_mode":                 "on",
+					"polar_scc_wait_timeout":   "100",
+					"polar_scc_timeout_action": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_config.ConsistLevel": "0",
+						"scc_mode":                     "on",
+						"polar_scc_wait_timeout":       "100",
+						"polar_scc_timeout_action":     "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polar_scc_wait_timeout":   "200",
+					"polar_scc_timeout_action": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polar_scc_wait_timeout":   "200",
+						"polar_scc_timeout_action": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scc_mode": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scc_mode": "off",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -151,6 +192,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 	var v *polardb.DBEndpoint
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
+	connectionPrefix := fmt.Sprintf("tf-testacc-%s", acctest.RandString(8))
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
 	}
@@ -217,11 +259,11 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 			//todo: After resource polardb_node is supported, it is necessary to add a modification check on the “nodes” parameter
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"connection_prefix": "tf-privatetestacc-4",
+					"connection_prefix": connectionPrefix,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_prefix": "tf-privatetestacc-4",
+						"connection_prefix": connectionPrefix,
 					}),
 				),
 			},
@@ -248,6 +290,31 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnection
 			},
 		},
 	})
+}
+
+func TestUnitPolarDBEndpointSccConfig(t *testing.T) {
+	sccModeSchema := resourceAlicloudPolarDBEndpoint().Schema["scc_mode"]
+	for _, input := range []string{"on", "off"} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) > 0 {
+			t.Fatalf("expected %q to be valid, got: %v", input, errors)
+		}
+	}
+	for _, input := range []string{"ON", "OFF", "invalid"} {
+		if _, errors := sccModeSchema.ValidateFunc(input, "scc_mode"); len(errors) == 0 {
+			t.Fatalf("expected %q to be rejected", input)
+		}
+	}
+	timeoutActionSchema := resourceAlicloudPolarDBEndpoint().Schema["polar_scc_timeout_action"]
+	for _, input := range []string{"0", "2"} {
+		if _, errors := timeoutActionSchema.ValidateFunc(input, "polar_scc_timeout_action"); len(errors) > 0 {
+			t.Fatalf("expected %q to be valid, got: %v", input, errors)
+		}
+	}
+	for _, input := range []string{"1", "3", ""} {
+		if _, errors := timeoutActionSchema.ValidateFunc(input, "polar_scc_timeout_action"); len(errors) == 0 {
+			t.Fatalf("expected %q to be rejected", input)
+		}
+	}
 }
 
 func resourcePolarDBEndpointConfigDependence(name string) string {
