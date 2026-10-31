@@ -1,4 +1,4 @@
-package alicloud
+package eci
 
 import (
 	"fmt"
@@ -7,10 +7,14 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudEciImageCache() *schema.Resource {
+func ResourceEciImageCache() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudEciImageCacheCreate,
 		Read:   resourceAlicloudEciImageCacheRead,
@@ -105,7 +109,7 @@ func resourceAlicloudEciImageCache() *schema.Resource {
 
 func resourceAlicloudEciImageCacheCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 
 	request := eci.CreateCreateImageCacheRequest()
 	if v, ok := d.GetOk("eip_instance_id"); ok {
@@ -129,7 +133,7 @@ func resourceAlicloudEciImageCacheCreate(d *schema.ResourceData, meta interface{
 		}
 		request.ImageRegistryCredential = &imageRegistryCredential
 	}
-	image := expandStringList(d.Get("images").(*schema.Set).List())
+	image := convert.ExpandStringList(d.Get("images").(*schema.Set).List())
 	request.Image = image
 	request.RegionId = client.RegionId
 	if v, ok := d.GetOk("resource_group_id"); ok {
@@ -148,28 +152,28 @@ func resourceAlicloudEciImageCacheCreate(d *schema.ResourceData, meta interface{
 		return eciClient.CreateImageCache(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_image_cache", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_eci_image_cache", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	logs.AddDebug(request.GetActionName(), raw)
 	response, _ := raw.(*eci.CreateImageCacheResponse)
 	d.SetId(fmt.Sprintf("%v", response.ImageCacheId))
-	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Ready"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciImageCacheStateRefreshFunc(d.Id(), []string{"Failed"}))
+	stateConf := helper.BuildStateConf([]string{"Preparing", "Creating"}, []string{"Ready"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciImageCacheStateRefreshFunc(d.Id(), []string{"Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAlicloudEciImageCacheRead(d, meta)
 }
 func resourceAlicloudEciImageCacheRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	eciService := EciService{client}
+	eciService := NewService(client)
 	object, err := eciService.DescribeEciImageCache(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("container_group_id", object.ContainerGroupId)
@@ -186,9 +190,9 @@ func resourceAlicloudEciImageCacheDelete(d *schema.ResourceData, meta interface{
 	raw, err := client.WithEciClient(func(eciClient *eci.Client) (interface{}, error) {
 		return eciClient.DeleteImageCache(request)
 	})
-	addDebug(request.GetActionName(), raw)
+	logs.AddDebug(request.GetActionName(), raw)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
