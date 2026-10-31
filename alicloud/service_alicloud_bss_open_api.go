@@ -7,6 +7,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
@@ -91,75 +92,11 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productC
 	return object, nil
 }
 
+// QueryAvailableInstancesWithoutProductType delegates to the bssopenapi service
+// package so the instanceID-only billing lookup has a single implementation
+// shared with the product packages.
 func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instanceRegion, productCode, productCodeIntl string) (object map[string]interface{}, err error) {
-	client := s.client
-	var response map[string]interface{}
-	var endpoint string
-	action := "QueryAvailableInstances"
-	request := map[string]interface{}{
-		"InstanceIDs": id,
-		"ProductCode": productCode,
-	}
-	if client.IsInternationalAccount() {
-		request["ProductCode"] = productCodeIntl
-	}
-	// Region is intentionally not set: QueryAvailableInstances is a global billing
-	// API keyed by InstanceIDs. Passing an international region (e.g. na-south-1) for
-	// a domestic-station account makes the domestic BSS return an empty list, which
-	// triggers a blind fallback to the international endpoint and fails with
-	// "account not exists". Omitting Region lets the domestic BSS resolve the instance.
-
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return retry.RetryableError(err)
-			}
-			if !client.IsInternationalAccount() && IsExpectedErrors(err, []string{"NotApplicable"}) {
-				request["ProductCode"] = productCodeIntl
-				endpoint = connectivity.BssOpenAPIEndpointInternational
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
-		}
-		resp, err := jsonpath.Get("$.Data.InstanceList", response)
-		if err != nil {
-			return retry.NonRetryableError(err)
-		}
-		if !client.IsInternationalAccount() && len(resp.([]interface{})) < 1 {
-			request["ProductCode"] = productCodeIntl
-			endpoint = connectivity.BssOpenAPIEndpointInternational
-			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	v, err := jsonpath.Get("$.Data.InstanceList", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr(productCode+"Instance", id), NotFoundWithResponse, response)
-	} else {
-		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
-			return object, WrapErrorf(NotFoundErr(productCode+"Instance", id), NotFoundWithResponse, response)
-		}
-	}
-	object = v.([]interface{})[0].(map[string]interface{})
-	return object, nil
+	return bssopenapi.NewService(s.client).QueryAvailableInstances(id, instanceRegion, productCode, productCodeIntl)
 }
 
 func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string]interface{}, err error) {

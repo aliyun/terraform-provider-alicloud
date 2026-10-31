@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -40,6 +41,7 @@ func ResourceSynchronizationInstance() *schema.Resource {
 			"auto_pay": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"true", "false"}, false),
 			},
 			"auto_start": {
@@ -194,7 +196,8 @@ func resourceSynchronizationInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("instance_class", object["DtsJobClass"])
-	d.Set("payment_type", convertDtsSyncPaymentTypeResponse(object["PayType"]))
+	paymentTypeRaw := convertDtsSyncPaymentTypeResponse(object["PayType"])
+	d.Set("payment_type", paymentTypeRaw)
 	if v, ok := object["SourceEndpoint"].(map[string]interface{}); ok {
 		d.Set("source_endpoint_engine_name", v["EngineName"])
 		d.Set("source_endpoint_region", v["Region"])
@@ -203,10 +206,30 @@ func resourceSynchronizationInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("destination_endpoint_engine_name", v["EngineName"])
 		d.Set("destination_endpoint_region", v["Region"])
 	}
+	if fmt.Sprint(paymentTypeRaw) == "Subscription" && !d.IsNewResource() {
+		// DTS does not return the renewal setting; it is read back from BSS. A
+		// just-created instance is skipped because BSS may not list it yet.
+		renewObject, err := bssopenapi.NewService(client).QueryAvailableInstances(d.Id(), "", "dts", "dts")
+		if err != nil {
+			if !errs.NotFoundError(err) {
+				return errs.WrapError(err)
+			}
+		} else if renewStatus, ok := renewObject["RenewStatus"]; ok && renewStatus != nil {
+			d.Set("auto_pay", convertDtsSynchronizationInstanceAutoPayResponse(renewStatus))
+		}
+	}
 	return nil
 }
 func resourceSynchronizationInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	if d.HasChange("auto_pay") {
+		if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+			if err := setDtsSynchronizationInstanceRenewal(d, meta); err != nil {
+				return err
+			}
+		} else {
+			log.Printf("[WARN] auto_pay only takes effect for Subscription instances, skip changing the renewal status of %s", d.Id())
+		}
+	}
 	return resourceSynchronizationInstanceRead(d, meta)
 }
 func resourceSynchronizationInstanceDelete(d *schema.ResourceData, meta interface{}) error {
@@ -266,4 +289,11 @@ func convertDtsSyncPaymentTypeRequest(source interface{}) interface{} {
 		return "PrePaid"
 	}
 	return source
+}
+
+func convertDtsSynchronizationInstanceAutoPayResponse(source interface{}) string {
+	if fmt.Sprint(source) == "AutoRenewal" {
+		return "true"
+	}
+	return "false"
 }
