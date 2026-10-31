@@ -1,21 +1,22 @@
-package alicloud
+package fc_test
 
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudFCZonesDataSource_basic(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudFCZonesDataSource_basic(t *testing.T) {
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_fc_zones.default"
 
 	var fcZonesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":      CHECKSET,
-			"ids.0":      CHECKSET,
-			"zones.#":    CHECKSET,
-			"zones.0.id": CHECKSET,
+			"ids.#":      acctest.CHECKSET,
+			"ids.0":      acctest.CHECKSET,
+			"zones.#":    acctest.CHECKSET,
+			"zones.0.id": acctest.CHECKSET,
 		}
 	}
 
@@ -26,17 +27,17 @@ func TestAccAlicloudFCZonesDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fcZonesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: fcZonesMapFunc,
-		fakeMapFunc:  fakeFCZonesMapFunc,
+	var fcZonesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: fcZonesMapFunc,
+		FakeMapFunc:  fakeFCZonesMapFunc,
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFCZonesDataSourceConfig(),
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFCZonesDataSourceConfig(),
 	}
 
-	fcZonesCheckInfo.dataSourceTestCheck(t, rand, allConf)
+	fcZonesCheckInfo.DataSourceTestCheck(t, rand, allConf)
 }
 
 func testAccCheckAlicloudFCZonesDataSourceConfig() string {
