@@ -73,11 +73,23 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"auto_use_coupon": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return !d.IsNewResource()
+				},
+			},
 			"bandwidth_burst": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"cluster_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"coupon_no": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -129,6 +141,12 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"instance_endpoint_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"AzIndependentEndpoint", "UnifiedEndpoint"}, false),
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
@@ -248,6 +266,11 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -305,6 +328,11 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"slave_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"src_db_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -334,14 +362,13 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"storage_performance_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
 			},
 			"storage_size_gb": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
@@ -477,6 +504,22 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("connection_string_prefix"); ok {
 		request["ConnectionStringPrefix"] = v
 	}
+	applyTairInstanceReplicaCountRequest(d, request)
+	if v, ok := d.GetOk("maintain_start_time"); ok {
+		request["MaintainStartTime"] = v
+	}
+	if v, ok := d.GetOk("maintain_end_time"); ok {
+		request["MaintainEndTime"] = v
+	}
+	if v, ok := d.GetOk("coupon_no"); ok {
+		request["CouponNo"] = v
+	}
+	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
+		request["AutoUseCoupon"] = convertBoolToString(v.(bool))
+	}
+	if v, ok := d.GetOk("instance_endpoint_type"); ok {
+		request["InstanceEndpointType"] = v
+	}
 	wait := incrementalWait(180*time.Second, 180*time.Second)
 	internalErrRetryCount := 0
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -593,6 +636,20 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 			return err
 		}
 		d.Set("storage_size_gb", storage_size_gbVal)
+	}
+	if objectRaw["ReplicaCount"] != nil {
+		replicaCountVal, err := formatInt(objectRaw["ReplicaCount"])
+		if err != nil {
+			return err
+		}
+		d.Set("replica_count", replicaCountVal)
+	}
+	if objectRaw["SlaveReplicaCount"] != nil {
+		slaveReplicaCountVal, err := formatInt(objectRaw["SlaveReplicaCount"])
+		if err != nil {
+			return err
+		}
+		d.Set("slave_replica_count", slaveReplicaCountVal)
 	}
 	if objectRaw["InstanceName"] != nil {
 		d.Set("tair_instance_name", objectRaw["InstanceName"])
@@ -815,10 +872,10 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 	}
 	request["InstanceClass"] = d.Get("instance_class")
-	if v, ok := d.GetOkExists("force_upgrade"); ok {
+	if v := optionalTairInstanceUpdateOption(d, "force_upgrade"); v != nil {
 		request["ForceUpgrade"] = v
 	}
-	if v, ok := d.GetOk("effective_time"); ok {
+	if v := optionalTairInstanceUpdateOption(d, "effective_time"); v != nil {
 		request["EffectiveTime"] = v
 	}
 	request["AutoPay"] = "true"
@@ -832,8 +889,69 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 		request["NodeType"] = d.Get("node_type")
 	}
+	if !d.IsNewResource() && d.HasChange("replica_count") {
+		update = true
+		request["ReplicaCount"] = d.Get("replica_count")
+	}
+	if !d.IsNewResource() && d.HasChange("storage_size_gb") {
+		update = true
+		request["Storage"] = d.Get("storage_size_gb")
+	}
+	if !d.IsNewResource() && d.HasChange("storage_performance_level") {
+		// Removing the attribute must not serialize an empty StorageType: the API only
+		// accepts essd_pl1, essd_pl2 and essd_pl3.
+		if v, ok := d.Get("storage_performance_level").(string); ok && v != "" {
+			update = true
+			request["StorageType"] = convertRedisTairInstanceStorageTypeRequest(v)
+		}
+	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("slave_replica_count") {
+		// ReplicaCount and SlaveReplicaCount are rejected when changed in the same
+		// request, so the secondary zone replica count is applied in its own request
+		// after the main ModifyInstanceSpec call above has converged.
+		action = "ModifyInstanceSpec"
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		// ModifyInstanceSpec requires InstanceClass to match the current instance class,
+		// so the class already read from the API is passed unchanged in this request.
+		// force_upgrade and effective_time are carried over as well: without them the API
+		// would fall back to its defaults (force upgrade enabled, run immediately), which
+		// would silently ignore the values configured by the user.
+		request = buildRedisTairInstanceSlaveReplicaCountRequest(
+			d.Id(),
+			client.RegionId,
+			buildClientToken(action),
+			d.Get("instance_class").(string),
+			d.Get("slave_replica_count").(int),
+			optionalTairInstanceUpdateOption(d, "force_upgrade"),
+			optionalTairInstanceUpdateOption(d, "effective_time"),
+		)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -977,6 +1095,9 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("auto_renew_period"); ok {
 		request["AutoRenewPeriod"] = v
 	}
+	if v, ok := d.GetOk("coupon_no"); ok {
+		request["CouponNo"] = v
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -984,7 +1105,7 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"Order.LatestOrderIsHanding"}) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1598,4 +1719,68 @@ func configuredConfigKeysFromRawConfig(d *schema.ResourceData) map[string]struct
 		}
 	}
 	return keys
+}
+
+// tairInstanceConfiguredValue returns the value the user configured for an attribute and
+// whether that attribute is present and non-null in the configuration. Values that come only
+// from API read-back (Optional+Computed) or from state are not treated as configured, so an
+// explicit zero value stays distinguishable from an unset or removed attribute.
+func tairInstanceConfiguredValue(d *schema.ResourceData, key string) (interface{}, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return nil, false
+	}
+	rawType := rawConfig.Type()
+	if !rawType.IsObjectType() || !rawType.HasAttribute(key) {
+		return nil, false
+	}
+	value := rawConfig.GetAttr(key)
+	if value.IsNull() || !value.IsKnown() {
+		return nil, false
+	}
+	return d.Get(key), true
+}
+
+// optionalTairInstanceUpdateOption returns the configured value of an execution option and
+// nil when the user did not set it or removed it, so the option is omitted from the request
+// instead of being sent with its zero value or with a stale state value.
+func optionalTairInstanceUpdateOption(d *schema.ResourceData, key string) interface{} {
+	if v, ok := tairInstanceConfiguredValue(d, key); ok {
+		return v
+	}
+	return nil
+}
+
+// applyTairInstanceReplicaCountRequest adds the replica counts the user configured to a
+// CreateTairInstance request. Both attributes are Optional+Computed, so the configuration is
+// inspected instead of GetOkExists to keep an explicit 0 distinguishable from an unset value.
+func applyTairInstanceReplicaCountRequest(d *schema.ResourceData, request map[string]interface{}) {
+	if v, ok := tairInstanceConfiguredValue(d, "replica_count"); ok {
+		request["ReplicaCount"] = v
+	}
+	if v, ok := tairInstanceConfiguredValue(d, "slave_replica_count"); ok {
+		request["SlaveReplicaCount"] = v
+	}
+}
+
+// buildRedisTairInstanceSlaveReplicaCountRequest builds the standalone ModifyInstanceSpec
+// request that changes only SlaveReplicaCount after the request carrying ReplicaCount has
+// converged (the API rejects changing both replica counts together). User configured
+// execution options are carried over; omitting them would make the API fall back to its
+// defaults (force upgrade enabled, run immediately).
+func buildRedisTairInstanceSlaveReplicaCountRequest(instanceId, regionId, clientToken, instanceClass string, slaveReplicaCount int, forceUpgrade, effectiveTime interface{}) map[string]interface{} {
+	request := map[string]interface{}{
+		"InstanceId":        instanceId,
+		"RegionId":          regionId,
+		"ClientToken":       clientToken,
+		"InstanceClass":     instanceClass,
+		"SlaveReplicaCount": slaveReplicaCount,
+	}
+	if forceUpgrade != nil {
+		request["ForceUpgrade"] = forceUpgrade
+	}
+	if effectiveTime != nil {
+		request["EffectiveTime"] = effectiveTime
+	}
+	return request
 }

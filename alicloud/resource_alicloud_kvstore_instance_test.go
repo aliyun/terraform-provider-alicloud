@@ -104,16 +104,55 @@ func TestAccAliCloudKVStoreRedisInstance_coverage(t *testing.T) {
 	})
 }
 
+// kvStoreTairInstanceType is the DescribeInstances InstanceType that returns Tair
+// (enterprise edition) instances. Tair instances are not included in the Redis or
+// Memcache queries, so the sweeper has to request them explicitly.
+const kvStoreTairInstanceType = KVStoreInstanceType("Tair")
+
+// kvStoreSweeperInstanceTypes lists every instance type the kvstore sweeper enumerates.
+var kvStoreSweeperInstanceTypes = []string{
+	string(KVStoreRedis),
+	string(KVStoreMemcache),
+	string(kvStoreTairInstanceType),
+}
+
+// kvStoreSweeperNamePrefixes lists the test name prefixes whose leftovers the sweeper
+// deletes. They match the prefixes used by the acceptance tests and by the resource
+// documentation examples, so leftovers from a failed documentation lifecycle run are
+// cleaned up as well.
+var kvStoreSweeperNamePrefixes = []string{"tf-testAcc", "tf_testAcc", "tf-example", "terraform-example"}
+
+// isKVStoreSweeperTarget reports whether an instance returned for instanceType is a
+// leftover the sweeper may delete: the instance type must be enumerated and, unless
+// sweeping everything, the name must use one of the controlled test prefixes.
+func isKVStoreSweeperTarget(instanceType, instanceName string, sweepEverything bool) bool {
+	enumerated := false
+	for _, candidate := range kvStoreSweeperInstanceTypes {
+		if candidate == instanceType {
+			enumerated = true
+			break
+		}
+	}
+	if !enumerated {
+		return false
+	}
+	if sweepEverything {
+		return true
+	}
+	for _, prefix := range kvStoreSweeperNamePrefixes {
+		if strings.HasPrefix(strings.ToLower(instanceName), strings.ToLower(prefix)) {
+			return true
+		}
+	}
+	return false
+}
+
 func testSweepKVStoreInstances(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 	action := "DescribeInstances"
 	request := map[string]interface{}{
 		"RegionId":   client.RegionId,
@@ -123,8 +162,10 @@ func testSweepKVStoreInstances(region string) error {
 
 	kvstoreInstanceIds := make([]string, 0)
 	var response map[string]interface{}
-	for _, instanceType := range []string{string(KVStoreRedis), string(KVStoreMemcache)} {
+	for _, instanceType := range kvStoreSweeperInstanceTypes {
 		request["InstanceType"] = instanceType
+		// Every instance type has its own page sequence.
+		request["PageNumber"] = 1
 		for {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 			if err != nil {
@@ -137,19 +178,10 @@ func testSweepKVStoreInstances(region string) error {
 			}
 			result, _ := resp.([]interface{})
 			for _, v := range result {
-				skip := true
 				item := v.(map[string]interface{})
-				if !sweepAll() {
-					for _, prefix := range prefixes {
-						if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["InstanceName"])), strings.ToLower(prefix)) {
-							skip = false
-							break
-						}
-					}
-					if skip {
-						log.Printf("[INFO] Skipping KVStore Instance: %v (%v)", item["InstanceName"], item["InstanceId"])
-						continue
-					}
+				if !isKVStoreSweeperTarget(instanceType, fmt.Sprint(item["InstanceName"]), sweepAll()) {
+					log.Printf("[INFO] Skipping KVStore Instance: %v (%v)", item["InstanceName"], item["InstanceId"])
+					continue
 				}
 				kvstoreInstanceIds = append(kvstoreInstanceIds, fmt.Sprint(item["InstanceId"]))
 			}
@@ -4443,4 +4475,39 @@ func TestUnitKvstoreAdditionalBandwidthPagination(t *testing.T) {
 		return []map[string]interface{}{{"InsName": "r-x-db-0"}}, 2, nil
 	})
 	assert.Error(t, err)
+}
+
+func TestUnitKVStoreInstanceSweeperTairSelection(t *testing.T) {
+	// Tair instances are returned under their own DescribeInstances InstanceType, so the
+	// sweeper must enumerate Tair in addition to Redis and Memcache to see leftovers.
+	assert.Contains(t, kvStoreSweeperInstanceTypes, string(KVStoreRedis))
+	assert.Contains(t, kvStoreSweeperInstanceTypes, string(KVStoreMemcache))
+	assert.Contains(t, kvStoreSweeperInstanceTypes, string(kvStoreTairInstanceType))
+
+	tairTestName := "tf-testAcccn-hangzhouredistairinstance12345"
+	assert.True(t, isKVStoreSweeperTarget("Tair", tairTestName, false))
+	assert.True(t, isKVStoreSweeperTarget("Tair", "tf_testAcccn-hangzhouredistairinstance12345", false))
+	assert.False(t, isKVStoreSweeperTarget("Tair", "production-tair-instance", false))
+	assert.True(t, isKVStoreSweeperTarget("Tair", "production-tair-instance", true))
+	assert.False(t, isKVStoreSweeperTarget("TairAssistant", tairTestName, false), "only enumerated instance types are swept")
+}
+
+func TestUnitKVStoreInstanceSweeperDocExampleSelection(t *testing.T) {
+	// The resource documentation names its example instances with `default = "tf-example"`
+	// (website/docs/r/redis_tair_instance.html.markdown) and recommends
+	// `terraform-example`. Leftovers from a failed documentation lifecycle run must be
+	// swept even though they do not use the acceptance test prefixes.
+	for _, name := range []string{"tf-example", "tf-example-tair", "terraform-example", "terraform-example-tair"} {
+		assert.True(t, isKVStoreSweeperTarget(string(kvStoreTairInstanceType), name, false), "documentation example name %q must be swept", name)
+		assert.True(t, isKVStoreSweeperTarget(string(KVStoreRedis), name, false), "documentation example name %q must be swept for Redis", name)
+	}
+	assert.True(t, isKVStoreSweeperTarget(string(kvStoreTairInstanceType), "TF-EXAMPLE-tair", false), "prefix matching stays case-insensitive")
+
+	// Names that only contain the documentation example name as a substring are not targets.
+	for _, name := range []string{"production-tf-example", "my-terraform-example", "tfexample", "example"} {
+		assert.False(t, isKVStoreSweeperTarget(string(kvStoreTairInstanceType), name, false), "non-prefixed name %q must not be swept", name)
+	}
+
+	assert.Contains(t, kvStoreSweeperNamePrefixes, "tf-example")
+	assert.Contains(t, kvStoreSweeperNamePrefixes, "terraform-example")
 }
