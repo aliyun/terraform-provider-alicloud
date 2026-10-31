@@ -1,0 +1,129 @@
+package cs
+
+import (
+	"time"
+
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func DataSourceCSKubernetesPermissions() *schema.Resource {
+	return &schema.Resource{
+		Read: dataCSKubernetesPermissionsRead,
+
+		Schema: map[string]*schema.Schema{
+			"uid": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"permissions": {
+				Computed: true,
+				Type:     schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"role_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"role_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"is_owner": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"is_ram_role": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataCSKubernetesPermissionsRead(d *schema.ResourceData, meta interface{}) error {
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+
+	// Query existing permissions, DescribeUserPermission
+	var perms []*roacs.DescribeUserPermissionResponseBody
+	uid := d.Get("uid").(string)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		perms, err = describeUserPermissions(client, uid)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceName, "DescribeUserPermission", err)
+	}
+
+	_ = d.Set("permissions", flattenPermissionsConfig(perms))
+	_ = d.Set("uid", uid)
+
+	d.SetId(tea.ToString(helper.Hashcode(uid)))
+	return nil
+}
+
+func describeUserPermissions(client *roacs.Client, uid string) ([]*roacs.DescribeUserPermissionResponseBody, error) {
+	resp, err := client.DescribeUserPermission(tea.String(uid))
+	if err != nil {
+		return nil, err
+	}
+
+	logs.AddDebug("DescribeUserPermission", resp)
+	return resp.Body, nil
+}
+
+func flattenPermissionsConfig(permissions []*roacs.DescribeUserPermissionResponseBody) (m []map[string]interface{}) {
+	if permissions == nil {
+		return []map[string]interface{}{}
+	}
+	for _, permission := range permissions {
+		m = append(m, map[string]interface{}{
+			"resource_id":   permission.ResourceId,
+			"resource_type": permission.ResourceType,
+			"role_name":     permission.RoleName,
+			"role_type":     permission.RoleType,
+			"is_owner":      convertToBool(permission.IsOwner),
+			"is_ram_role":   convertToBool(permission.IsRamRole),
+		})
+	}
+
+	return m
+}
+
+func convertToBool(i *int64) bool {
+	in := tea.Int64Value(i)
+	if in != 1 {
+		return false
+	}
+
+	return true
+}

@@ -1,0 +1,151 @@
+package cs
+
+import (
+	"strconv"
+	"time"
+
+	roacs "github.com/alibabacloud-go/cs-20151215/v8/client"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceCSKubernetesVersion() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceCSKubernetesVersionRead,
+		Schema: map[string]*schema.Schema{
+			"cluster_type": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Kubernetes", "ManagedKubernetes"}, false),
+				Required:     true,
+			},
+			"kubernetes_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"profile": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Default", "Serverless", "Edge", "Acs"}, false),
+				Optional:     true,
+			},
+			"metadata": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"runtime": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"version": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceCSKubernetesVersionRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	var resp []*roacs.DescribeKubernetesVersionMetadataResponseBody
+	var err error
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		resp, err = describeKubernetesVersionMetadata(d, client)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "DescribeKubernetesVersionMetadata", err)
+	}
+
+	var results []map[string]interface{}
+
+	for _, metadata := range resp {
+		result := make(map[string]interface{})
+		result["version"] = *metadata.Version
+		result["runtime"] = formatRuntime(metadata.Runtimes)
+		results = append(results, result)
+	}
+
+	d.Set("cluster_type", d.Get("cluster_type").(string))
+	if version, ok := d.GetOk("kubernetes_version"); ok {
+		d.Set("kubernetes_version", version.(string))
+	}
+	if profile, ok := d.GetOk("profile"); ok {
+		d.Set("profile", profile.(string))
+	}
+	d.Set("metadata", results)
+
+	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
+	return nil
+}
+
+func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectivity.AliyunClient) ([]*roacs.DescribeKubernetesVersionMetadataResponseBody, error) {
+	csClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, "InitializeClient", err)
+	}
+	request := &roacs.DescribeKubernetesVersionMetadataRequest{}
+	request.Region = tea.String(client.RegionId)
+	request.ClusterType = tea.String(d.Get("cluster_type").(string))
+	request.Profile = tea.String(d.Get("profile").(string))
+	request.KubernetesVersion = tea.String(d.Get("kubernetes_version").(string))
+	var resp *roacs.DescribeKubernetesVersionMetadataResponse
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		resp, err = csClient.DescribeKubernetesVersionMetadata(request)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
+}
+
+func formatRuntime(runtimes []*roacs.Runtime) []map[string]interface{} {
+	result := []map[string]interface{}{}
+	for _, runtime := range runtimes {
+		mapping := map[string]interface{}{
+			"name":    *runtime.Name,
+			"version": *runtime.Version,
+		}
+		result = append(result, mapping)
+	}
+	return result
+}
