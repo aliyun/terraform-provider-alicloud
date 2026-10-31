@@ -1,30 +1,31 @@
-package alicloud
+package sddp_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudSddpConfigDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1, 100)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(1, 100)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_config.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_config.default.id}_fake"]`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
 			"ids":  `["${alicloud_sddp_config.default.id}"]`,
 			"lang": `"zh"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpConfigDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_config.default.id}_fake"]`,
 		}),
 	}
@@ -34,7 +35,7 @@ func TestAccAliCloudSddpConfigDataSource(t *testing.T) {
 			"ids.#":                 "1",
 			"configs.#":             "1",
 			"configs.0.code":        "access_failed_cnt",
-			"configs.0.description": CHECKSET,
+			"configs.0.description": acctest.CHECKSET,
 			"configs.0.value":       "50",
 		}
 	}
@@ -44,15 +45,15 @@ func TestAccAliCloudSddpConfigDataSource(t *testing.T) {
 			"configs.#": "0",
 		}
 	}
-	var alicloudSaeNamespaceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_sddp_configs.default",
-		existMapFunc: existAlicloudSddpConfigDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudSddpConfigDataSourceNameMapFunc,
+	var alicloudSaeNamespaceCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_sddp_configs.default",
+		ExistMapFunc: existAlicloudSddpConfigDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudSddpConfigDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
+		acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
 	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, allConf)
+	alicloudSaeNamespaceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, allConf)
 
 }
 func testAccCheckAlicloudSddpConfigDataSourceName(rand int, attrMap map[string]string) string {

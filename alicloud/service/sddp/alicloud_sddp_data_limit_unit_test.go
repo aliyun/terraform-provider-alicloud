@@ -1,7 +1,6 @@
-package alicloud
+package sddp
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -11,178 +10,19 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudSDDPDataLimit_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_sddp_data_limit.default"
-	ra := resourceAttrInit(resourceId, AlicloudSDDPDataLimitMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpDataLimit")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddpdatalimit%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSDDPDataLimitBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			checkoutSupportedRegions(t, true, []connectivity.Region{sddpDataLimitsDataSourceTestRegion})
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"lang":              "lang",
-					"audit_status":      "0",
-					"engine_type":       "MySQL",
-					"parent_id":         "${local.parent_id}",
-					"resource_type":     "RDS",
-					"user_name":         "${var.database_name}",
-					"password":          "${var.password}",
-					"port":              "3306",
-					"service_region_id": "${var.region}",
-					"depends_on":        []string{"alicloud_db_account_privilege.default"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"audit_status":  "0",
-						"engine_type":   "MySQL",
-						"parent_id":     CHECKSET,
-						"resource_type": "RDS",
-						"user_name":     CHECKSET,
-						"password":      CHECKSET,
-						"port":          "3306",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"audit_status":  "1",
-					"log_store_day": "30",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"audit_status":  "1",
-						"log_store_day": "30",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"audit_status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"audit_status": "0",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang", "password"},
-			},
-		},
-	})
-}
-
-var AlicloudSDDPDataLimitMap0 = map[string]string{}
-
-func AlicloudSDDPDataLimitBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-variable "region" {
-  default = "%s"
-}
-
-variable "password" {
-  default = "Test12345"
-}
-
-variable "database_name" {
-  default = "tftestdatabase"
-}
-
-data "alicloud_db_zones" "default" {
-  engine                   = "MySQL"
-  engine_version           = "8.0"
-  instance_charge_type     = "PostPaid"
-  category                 = "HighAvailability"
-  db_instance_storage_type = "cloud_essd"
-}
-
-data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.1.id
-  engine                   = "MySQL"
-  engine_version           = "8.0"
-  category                 = "HighAvailability"
-  db_instance_storage_type = "cloud_essd"
-  instance_charge_type     = "PostPaid"
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  zone_id      = data.alicloud_db_zones.default.zones.1.id
-  vswitch_name = var.name
-}
-
-resource "alicloud_db_instance" "default" {
-  engine           = "MySQL"
-  engine_version   = "8.0"
-  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
-  vswitch_id       = alicloud_vswitch.default.id
-  instance_name    = var.name
-}
-
-
-locals {
-  parent_id = join(".", [alicloud_db_instance.default.id, var.database_name])
-}
-
-resource "alicloud_rds_account" "default" {
-  db_instance_id   = alicloud_db_instance.default.id
-  account_name     = var.database_name
-  account_password = var.password
-}
-
-resource "alicloud_db_database" "default" {
-  instance_id = alicloud_db_instance.default.id
-  name        = var.database_name
-}
-
-resource "alicloud_db_account_privilege" "default" {
-  instance_id  = alicloud_db_instance.default.id
-  account_name = alicloud_rds_account.default.name
-  privilege    = "ReadWrite"
-  db_names     = [alicloud_db_database.default.name]
-}
-`, name, sddpDataLimitsDataSourceTestRegion)
-}
-
 // lintignore: R001
 func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, nil)
+	r := ResourceSddpDataLimit()
+	d, _ := schema.InternalMap(r.Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(r.Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
 		"port":              3306,
@@ -202,7 +42,7 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -228,20 +68,20 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_sddp_data_limit", "sddp_data_limit_id"))
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_sddp_data_limit", "sddp_data_limit_id"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -270,9 +110,9 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
@@ -335,9 +175,9 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
@@ -354,7 +194,7 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
 		diff.Attributes["audit_status"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
 		diff.Attributes["log_store_day"] = &terraform.ResourceAttrDiff{Old: "30", New: "365"}
-		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(r.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -376,12 +216,12 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
 		diff.Attributes["audit_status"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
 		diff.Attributes["log_store_day"] = &terraform.ResourceAttrDiff{Old: "30", New: "365"}
-		resourceData, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
+		resourceData, _ := schema.InternalMap(r.Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&SddpService{}), "DescribeSddpDataLimit", func(*SddpService, string) (map[string]interface{}, error) {
+		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&Service{}), "DescribeSddpDataLimit", func(*Service, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
 		err := resourceAlicloudSddpDataLimitUpdate(resourceData, rawClient)
@@ -394,7 +234,7 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 		diff.Attributes["audit_status"] = &terraform.ResourceAttrDiff{Old: "0", New: "1"}
 		diff.Attributes["log_store_day"] = &terraform.ResourceAttrDiff{Old: "30", New: "365"}
 		diff.Attributes["lang"] = &terraform.ResourceAttrDiff{Old: "zh", New: "us"}
-		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(r.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
@@ -408,9 +248,9 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	t.Run("DeleteClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})

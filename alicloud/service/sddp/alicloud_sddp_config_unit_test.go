@@ -1,7 +1,6 @@
-package alicloud
+package sddp
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -12,217 +11,19 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudSDDPConfig_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_sddp_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudSDDPConfigMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddpconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSDDPConfigBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "description",
-					"lang":        "lang",
-					"code":        "access_failed_cnt",
-					"value":       "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"code":  "access_failed_cnt",
-						"value": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "zh",
-					"value":       "40",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"value": "40",
-					}),
-				),
-			},
-			//todo : SDDP's Bug. reopen after fixing
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"description": "description",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"description": "description",
-			//		}),
-			//	),
-			//},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudSDDPConfig_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_sddp_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudSDDPConfigMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddpconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSDDPConfigBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"code":  "access_permission_exprie_max_days",
-					"value": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"code":  "access_permission_exprie_max_days",
-						"value": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"value": "40",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"value": "40",
-					}),
-				),
-			},
-			//todo : SDDP's Bug. reopen after fixing
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"description": "description",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"description": "description",
-			//		}),
-			//	),
-			//},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudSDDPConfig_basic2(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_sddp_config.default"
-	ra := resourceAttrInit(resourceId, AlicloudSDDPConfigMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpConfig")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddpconfig%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSDDPConfigBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"code":  "log_datasize_avg_days",
-					"value": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"code":  "log_datasize_avg_days",
-						"value": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"value": "40",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"value": "40",
-					}),
-				),
-			},
-			//todo : SDDP's Bug. reopen after fixing
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"description": "description",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"description": "description",
-			//		}),
-			//	),
-			//},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"lang"},
-			},
-		},
-	})
-}
-
-var AlicloudSDDPConfigMap0 = map[string]string{}
-
-func AlicloudSDDPConfigBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAlicloudSDDPConfig(t *testing.T) {
-	p := Provider().ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_sddp_config"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_sddp_config"].Schema).Data(nil, nil)
+	r := ResourceSddpConfig()
+	d, _ := schema.InternalMap(r.Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(r.Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
 		"code":        "code",
@@ -236,7 +37,7 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -255,20 +56,20 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
 		"RetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_sddp_config", "MockCode"))
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_sddp_config", "MockCode"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
-				Code:       String(errorCode),
-				Data:       String(errorCode),
-				Message:    String(errorCode),
+				Code:       helper.String(errorCode),
+				Data:       helper.String(errorCode),
+				Message:    helper.String(errorCode),
 				StatusCode: tea.Int(400),
 			}
 		},
@@ -294,9 +95,9 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
@@ -345,9 +146,9 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 			return nil, &tea.SDKError{
-				Code:       String("loadEndpoint error"),
-				Data:       String("loadEndpoint error"),
-				Message:    String("loadEndpoint error"),
+				Code:       helper.String("loadEndpoint error"),
+				Data:       helper.String("loadEndpoint error"),
+				Message:    helper.String("loadEndpoint error"),
 				StatusCode: tea.Int(400),
 			}
 		})
@@ -360,7 +161,7 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 	t.Run("UpdateCreateConfigAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
 		for _, key := range []string{"description", "lang", "value"} {
-			switch p["alicloud_sddp_config"].Schema[key].Type {
+			switch r.Schema[key].Type {
 			case schema.TypeString:
 				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
@@ -369,7 +170,7 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_config"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(r.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -391,7 +192,7 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 	t.Run("UpdateCreateConfigNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
 		for _, key := range []string{"description", "lang", "value"} {
-			switch p["alicloud_sddp_config"].Schema[key].Type {
+			switch r.Schema[key].Type {
 			case schema.TypeString:
 				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
 			case schema.TypeBool:
@@ -400,7 +201,7 @@ func TestUnitAlicloudSDDPConfig(t *testing.T) {
 				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_config"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(r.Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := false
 		noRetryFlag := false
