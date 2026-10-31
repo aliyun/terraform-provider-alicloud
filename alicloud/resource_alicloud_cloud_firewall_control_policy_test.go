@@ -12,6 +12,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cen"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -340,6 +341,29 @@ func TestAccAliCloudCloudFirewallControlPolicy_basic0_twin(t *testing.T) {
 						"repeat_end_time":   "10:00",
 						"repeat_days.#":     "3",
 						"release":           "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_ip": "127.0.0.2",
+					"lang":      "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":  "::1/128",
+						"release": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repeat_days": []string{"2", "1", "3"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repeat_type":   "Weekly",
+						"repeat_days.#": "3",
 					}),
 				),
 			},
@@ -741,6 +765,16 @@ func TestAccAliCloudCloudFirewallControlPolicy_basic2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"application_name_list": []string{"HTTP", "SMTP", "HTTPS"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name_list": []string{"HTTPS", "SMTP", "HTTP"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1715,7 +1749,7 @@ func TestUnitAliCloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		patcheDescribeCenInstance := gomonkey.ApplyMethod(reflect.TypeOf(&CbnService{}), "DescribeCenInstance", func(*CbnService, string) (map[string]interface{}, error) {
+		patcheDescribeCenInstance := gomonkey.ApplyMethod(reflect.TypeOf(&cen.CbnService{}), "DescribeCenInstance", func(*cen.CbnService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
 		err := resourceAliCloudCloudFirewallControlPolicyDelete(d, rawClient)

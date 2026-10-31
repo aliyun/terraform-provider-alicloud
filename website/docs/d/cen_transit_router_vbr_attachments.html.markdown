@@ -7,17 +7,17 @@ description: |-
   Provides a list of CEN Transit Router VBR Attachments owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_transit\_router\_vbr\_attachments
+# alicloud_cen_transit_router_vbr_attachments
 
-This data source provides CEN Transit Router VBR Attachments available to the user.[What is Cen Transit Router VBR Attachments](https://help.aliyun.com/document_detail/261226.html)
+This data source provides CEN Transit Router VBR Attachments available to the user.[What is Cen Transit Router VBR Attachments](https://www.alibabacloud.com/help/doc-detail/261226.html)
 
--> **NOTE:** Available in 1.126.0+
+-> **NOTE:** Available since v1.126.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_transit_router_vbr_attachments" "default" {
-  cen_id    = "cen-id1"
+  cen_id = "cen-id1"
 }
 
 output "first_transit_router_vbr_attachments_vbr_id" {
@@ -33,8 +33,6 @@ The following arguments are supported:
 * `ids` - (Optional) A list of resource id. The element value is same as `transit_router_id`.
 * `status` - (Optional) The status of the resource. Valid values `Attached`, `Attaching` and `Detaching`.  
 * `transit_router_id` - (Optional) ID of the transit router.
-* `transit_router_attachment_id` - (Optional) ID of the transit router VBR attachment.
-* `resource_type` - (Optional) Type of the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -42,14 +40,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of CEN Transit Router VBR attachment IDs.
-* `names` - A list of name of CEN Transit VBR attachment Tables.
 * `attachments` - A list of CEN Transit Router VBR Attachments. Each element contains the following attributes:
-    * `transit_router_attachment_id` - ID of the transit router attachment.
-    * `transit_router_attachment_name` - Name of the transit router attachment.
-    * `resource_type` - Type of the resource.
-    * `status` - The status of the transit router attachment.
-    * `creation_time` - The time when it's created.
-    * `vbr_id` - ID of the VBR.
-    * `vbr_owner_id` - The Owner ID of the VBR.
-    * `vbr_region_id` - ID of the region where the conflicted VBR is located.
-    * `auto_publish_route_enabled` - ID of the region where the conflicted VBR is located.
+  * `id` - The ID of the CEN Transit Router VBR Attachment.
+  * `transit_router_attachment_id` - ID of the transit router attachment.
+  * `transit_router_attachment_name` - Name of the transit router attachment.
+  * `transit_router_attachment_description` - The description of the transit router attachment.
+  * `resource_type` - Type of the resource.
+  * `status` - The status of the transit router attachment.
+  * `vbr_id` - ID of the VBR.
+  * `vbr_owner_id` - The Owner ID of the VBR.
+  * `auto_publish_route_enabled` - Auto publish route enabled.
