@@ -4849,3 +4849,177 @@ resource "alicloud_vswitch" "defaultAislbL" {
 
 `, name, name, name)
 }
+
+// Case 9.x Agent engine version (instance_category = x-pack, version = 9.99)
+// index_node_configuration / search_node_configuration are new fields for the
+// 9.x Agent engine. Config values come from the product owner's reference.
+func TestAccAliCloudElasticsearchInstance_es9Agent(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapEs9Agent)
+	serviceFunc := func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeElasticsearchInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandInt()
+	name := fmt.Sprintf("tfes9agent%d", rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceEs9Agent)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":        "1",
+					"description":       "es9-agent",
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbL.id}",
+					"instance_category": "x-pack",
+					"protocol":          "HTTP",
+					"version":           "9.99",
+					"password":          "Admain@123",
+					"index_node_configuration": []map[string]interface{}{
+						{
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "200",
+							"performance_level": "PL1",
+							"amount":            "3",
+						},
+					},
+					"search_node_configuration": []map[string]interface{}{
+						{
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "200",
+							"performance_level": "PL1",
+							"amount":            "3",
+						},
+					},
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"spec": "elasticsearch.sn1ne.large",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_count":                         "1",
+						"payment_type":                       "PayAsYouGo",
+						"instance_category":                  "x-pack",
+						"protocol":                           "HTTP",
+						"version":                            "9.99.0_with_X-Pack",
+						"index_node_configuration.0.spec":    "elasticsearch.turbo2.cae.large",
+						"index_node_configuration.0.disk":    "200",
+						"index_node_configuration.0.amount":  "3",
+						"search_node_configuration.0.spec":   "elasticsearch.turbo2.cae.large",
+						"search_node_configuration.0.disk":   "200",
+						"search_node_configuration.0.amount": "3",
+						"kibana_configuration.0.spec":        "elasticsearch.sn1ne.large",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":        "1",
+					"description":       "es9-agent",
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbL.id}",
+					"instance_category": "x-pack",
+					"protocol":          "HTTP",
+					"version":           "9.99",
+					"password":          "Admain@123",
+					"index_node_configuration": []map[string]interface{}{
+						{
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.xlarge",
+							"disk":              "500",
+							"performance_level": "PL2",
+							"amount":            "4",
+						},
+					},
+					"search_node_configuration": []map[string]interface{}{
+						{
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.xlarge",
+							"disk":              "500",
+							"performance_level": "PL2",
+							"amount":            "4",
+						},
+					},
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"spec": "elasticsearch.sn1ne.large",
+						},
+					},
+					"order_action_type": "UPGRADE",
+					"update_strategy":   "blue_green",
+					"force":             false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"index_node_configuration.0.spec":               "elasticsearch.turbo2.cae.xlarge",
+						"index_node_configuration.0.disk":               "500",
+						"index_node_configuration.0.amount":             "4",
+						"index_node_configuration.0.disk_type":          "cloud_essd",
+						"index_node_configuration.0.performance_level":  "PL2",
+						"search_node_configuration.0.spec":              "elasticsearch.turbo2.cae.xlarge",
+						"search_node_configuration.0.disk":              "500",
+						"search_node_configuration.0.amount":            "4",
+						"search_node_configuration.0.disk_type":         "cloud_essd",
+						"search_node_configuration.0.performance_level": "PL2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+		},
+	})
+}
+
+var AlicloudElasticsearchInstanceMapEs9Agent = map[string]string{
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
+}
+
+func AlicloudElasticsearchInstanceBasicDependenceEs9Agent(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultLPXHTQ" {
+  description = "es-instance-es9-agent"
+  vpc_name    = "es-instance-es9-agent"
+  dry_run     = false
+  cidr_block  = "10.0.10.0/24"
+  is_default  = false
+}
+
+resource "alicloud_vswitch" "defaultAislbL" {
+  vpc_id       = alicloud_vpc.defaultLPXHTQ.id
+  zone_id      = "cn-hangzhou-k"
+  description  = "tf-case"
+  cidr_block   = "10.0.10.0/24"
+  vswitch_name = "es-instance-es9-agent"
+}
+
+
+`, name)
+}
