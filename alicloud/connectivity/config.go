@@ -20,6 +20,7 @@ import (
 	credential "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 )
 
 var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
@@ -511,6 +512,9 @@ func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, er
 	return
 }
 func (c *Config) getTeaRpcOpenapiConfig(stsSupported bool) (config openapi.Config, err error) {
+	if recording.Enabled() {
+		config.HttpClient = recording.HTTPClient{}
+	}
 	config.SetRegionId(c.RegionId)
 	config.SetUserAgent(c.getUserAgent())
 	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
@@ -536,6 +540,9 @@ func (c *Config) getTeaRpcOpenapiConfig(stsSupported bool) (config openapi.Confi
 	return
 }
 func (c *Config) getTeaRoaOpenapiConfig(stsSupported bool) (config openapi.Config, err error) {
+	if recording.Enabled() {
+		config.HttpClient = recording.HTTPClient{}
+	}
 	config.SetRegionId(c.RegionId)
 	config.SetUserAgent(c.getUserAgent())
 	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))

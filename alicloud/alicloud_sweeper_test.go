@@ -12,11 +12,16 @@ import (
 
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
+	if recording.Enabled() && flag.Lookup("sweep").Value.String() != "" {
+		fmt.Fprintln(os.Stderr, "recording cannot be combined with resource sweeping")
+		os.Exit(1)
+	}
 	if flag.Lookup("sweep").Value.String() != "" && flag.Lookup("sweep-run").Value.String() == "alicloud_vpc" {
 		// The SDK matches -sweep-run by substring, so alicloud_vpc also
 		// selects alicloud_vpc_* sweepers with region-wide deletion logic.
@@ -27,7 +32,7 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(0)
 	}
-	resource.TestMain(m)
+	resource.TestMain(recording.WrapMain(m))
 }
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper

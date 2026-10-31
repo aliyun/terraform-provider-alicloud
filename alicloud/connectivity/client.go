@@ -75,6 +75,7 @@ import (
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
 	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -222,6 +223,17 @@ var EndpointMap = map[string]string{
 
 // Client for AliyunClient
 func (c *Config) Client() (*AliyunClient, error) {
+	if recording.Enabled() && (c.EcsRoleName != "" || c.RamRoleArn != "" || c.AssumeRoleWithOidc != nil || c.AccessKey == "" || c.SecretKey == "") {
+		return nil, recording.Unsupported("non-static credential source")
+	}
+	if recording.Replaying() && (c.AccessKey != "recording-access-key" || c.SecretKey != "recording-secret-key" || c.SecurityToken != "" || c.EcsRoleName != "" || c.RamRoleArn != "" || c.AssumeRoleWithOidc != nil) {
+		return nil, fmt.Errorf("replay requires static recording dummy credentials and forbids role, OIDC, and metadata credential sources")
+	}
+
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
+	}
+
 	// Get the auth and region. This can fail if keys/regions were not
 	// specified and we're attempting to use the environment.
 	if !c.SkipRegionValidation {
@@ -412,6 +424,9 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 // cluster's DynamoDB endpoint address. If accessKey/secretKey are empty, the provider's
 // credentials are used instead.
 func (client *AliyunClient) NewPolarDBDynamoClient(endpoint, accessKey, secretKey string) (*awsdynamodb.Client, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("NewPolarDBDynamoClient")
+	}
 	if endpoint == "" {
 		return nil, fmt.Errorf("endpoint is required for PolarDB DynamoDB operations")
 	}
@@ -585,6 +600,9 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithOssClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -650,6 +668,9 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 }
 
 func (client *AliyunClient) WithOssClientV2(do func(*ossv2.Client) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithOssClientV2")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -776,6 +797,9 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 }
 
 func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithCsClient")
+	}
 	if client.csconn != nil && !client.config.needRefreshCredential() {
 		return do(client.csconn)
 	}
@@ -803,6 +827,9 @@ func (client *AliyunClient) WithCsClient(do func(*cs.Client) (interface{}, error
 }
 
 func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("NewRoaCsClient")
+	}
 	product := "cs"
 	endpoint, err := client.loadApiEndpoint(product)
 	if err != nil {
@@ -924,6 +951,9 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 }
 
 func (client *AliyunClient) WithCdnClient(do func(*cdn.CdnClient) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithCdnClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1032,6 +1062,9 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 
 // NewOtsRoaClient rpc client for common sdk
 func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("NewOtsRoaClient")
+	}
 	// first, load endpoint by user setting
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		// second,  load endpoint by serverside rule
@@ -1147,6 +1180,9 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 }
 
 func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, error)) (interface{}, error) {
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1186,6 +1222,15 @@ func (client *AliyunClient) WithLogClient(do func(*sls.Client) (interface{}, err
 		client.logconn.Region = region
 	}
 	applyLogClientSignVersion(client.logconn, client.config.SignVersion, "sls")
+	if recording.Enabled() {
+		base := http.DefaultTransport
+		if transport, ok := base.(*http.Transport); ok {
+			cloned := transport.Clone()
+			cloned.IdleConnTimeout = 55 * time.Second // upstream SLS SDK default
+			base = cloned
+		}
+		client.logconn.HTTPClient = &http.Client{Timeout: 60 * time.Second, Transport: recording.Transport(base)}
+	}
 
 	return do(client.logconn)
 }
@@ -1317,6 +1362,9 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithFcClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 	if client.fcconn != nil && !client.config.needRefreshCredential() {
@@ -1394,6 +1442,9 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 }
 
 func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("NewTeaCommonClient")
+	}
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	credential, err := client.config.Credential.GetCredential()
@@ -1413,6 +1464,9 @@ func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, er
 	return conn, nil
 }
 func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("NewTeaRoaCommonClient")
+	}
 	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	credential, err := client.config.Credential.GetCredential()
@@ -1433,6 +1487,9 @@ func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client,
 }
 
 func (client *AliyunClient) WithDataHubClient(do func(api datahub.DataHubApi) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithDataHubClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1507,6 +1564,9 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 }
 
 func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithMnsClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1546,6 +1606,9 @@ func (client *AliyunClient) WithMnsClient(do func(*ali_mns.MNSClient) (interface
 	return do(client.mnsconn)
 }
 func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithMnsQueueManager")
+	}
 	return client.WithMnsClient(func(mnsClient *ali_mns.MNSClient) (interface{}, error) {
 		queueManager := ali_mns.NewMNSQueueManager(*mnsClient)
 		return do(queueManager)
@@ -1553,6 +1616,9 @@ func (client *AliyunClient) WithMnsQueueManager(do func(ali_mns.AliQueueManager)
 }
 
 func (client *AliyunClient) WithMnsTopicManager(do func(ali_mns.AliTopicManager) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithMnsTopicManager")
+	}
 	return client.WithMnsClient(func(mnsClient *ali_mns.MNSClient) (interface{}, error) {
 		topicManager := ali_mns.NewMNSTopicManager(*mnsClient)
 		return do(topicManager)
@@ -1560,6 +1626,9 @@ func (client *AliyunClient) WithMnsTopicManager(do func(ali_mns.AliTopicManager)
 }
 
 func (client *AliyunClient) WithMnsSubscriptionManagerByTopicName(topicName string, do func(ali_mns.AliMNSTopic) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithMnsSubscriptionManagerByTopicName")
+	}
 	return client.WithMnsClient(func(mnsClient *ali_mns.MNSClient) (interface{}, error) {
 		subscriptionManager := ali_mns.NewMNSTopic(topicName, *mnsClient)
 		return do(subscriptionManager)
@@ -1567,6 +1636,9 @@ func (client *AliyunClient) WithMnsSubscriptionManagerByTopicName(topicName stri
 }
 
 func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*tablestore.TableStoreClient) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithTableStoreClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1607,6 +1679,9 @@ func getTableStoreConfig() *tablestore.TableStoreConfig {
 }
 
 func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do func(otsTunnel.TunnelClient) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithTableStoreTunnelClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1641,6 +1716,9 @@ func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do f
 }
 
 func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clusterCerts cs.ClusterCerts, do func(*cs.ProjectClient) (interface{}, error)) (interface{}, error) {
+	if recording.Enabled() {
+		return nil, recording.Unsupported("WithCsProjectClient")
+	}
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
 
@@ -1780,7 +1858,7 @@ func (client *AliyunClient) getSdkConfig(timeout time.Duration) *sdk.Config {
 		timeout = time.Duration(30) * time.Second
 	}
 	// WithUserAgent will add a prefix Extra/ for user agent value
-	return sdk.NewConfig().
+	config := sdk.NewConfig().
 		WithAutoRetry(true).
 		WithMaxRetryTime(DefaultClientRetryCountSmall).
 		WithTimeout(timeout).
@@ -1791,6 +1869,23 @@ func (client *AliyunClient) getSdkConfig(timeout time.Duration) *sdk.Config {
 		WithHttpTransport(client.getTransport()).
 		WithScheme(client.config.Protocol).
 		WithUserAgent(fmt.Sprintf("Terraform %s", client.config.getUserAgent()))
+	if recording.Enabled() {
+		// SDK proxy setters only recognize a concrete *http.Transport. Preserve
+		// their proxy selection on the inner transport before wrapping it.
+		config.HttpTransport.Proxy = func(request *http.Request) (*url.URL, error) {
+			proxy, err := client.getHttpProxy()
+			if err != nil || proxy == nil {
+				return proxy, err
+			}
+			skip, err := client.skipProxy(request.URL.Hostname())
+			if err != nil || skip {
+				return nil, err
+			}
+			return proxy, nil
+		}
+		config.Transport = recording.Transport(config.HttpTransport)
+	}
+	return config
 }
 
 func (client *AliyunClient) getUserAgent() string {
@@ -2562,6 +2657,9 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
+	}
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
@@ -2585,7 +2683,12 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	var response map[string]interface{}
+	if recording.Enabled() {
+		response, err = recordingRPCRequest(conn, tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	} else {
+		response, err = conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+	}
 	return response, formatError(response, err)
 }
 
@@ -2733,6 +2836,9 @@ func (client *AliyunClient) RoaPatchWithApiName(apiProductCode string, apiVersio
 }
 
 func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
+	if err := recording.RequireSession(); err != nil {
+		return nil, err
+	}
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
@@ -2754,7 +2860,9 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	var response map[string]interface{}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
-	if apiName != "" {
+	if recording.Enabled() {
+		response, err = recordingROARequest(conn, tea.String(apiName), tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
+	} else if apiName != "" {
 		response, err = conn.DoRequestWithAction(tea.String(apiName), tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
 	} else {
 		response, err = conn.DoRequest(tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
@@ -2812,6 +2920,9 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
 	sdkConfig.SetSecurityToken(*credential.SecurityToken)
 	sdkConfig.SetUserAgent(client.config.getUserAgent())
+	if recording.Enabled() {
+		sdkConfig.HttpClient = recording.HTTPClient{}
+	}
 	openapiClient, err := openapi.NewClient(&sdkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
