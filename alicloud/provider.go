@@ -225,15 +225,7 @@ func Provider() *schema.Provider {
 			"alicloud_amqp_bindings":                dataSourceAlicloudAmqpBindings(),
 			"alicloud_amqp_static_accounts":         dataSourceAlicloudAmqpStaticAccounts(),
 
-			// api
-			"alicloud_api_gateway_service":     dataSourceAlicloudApiGatewayService(),
-			"alicloud_api_gateway_apis":        dataSourceAliCloudApiGatewayApis(),
-			"alicloud_api_gateway_groups":      dataSourceAlicloudApiGatewayGroups(),
-			"alicloud_api_gateway_apps":        dataSourceAlicloudApiGatewayApps(),
-			"alicloud_api_gateway_backends":    dataSourceAlicloudApiGatewayBackends(),
-			"alicloud_api_gateway_log_configs": dataSourceAlicloudApiGatewayLogConfigs(),
-			"alicloud_api_gateway_models":      dataSourceAlicloudApiGatewayModels(),
-			"alicloud_api_gateway_plugins":     dataSourceAlicloudApiGatewayPlugins(),
+			// api — registered via alicloud/service/apigateway.ServicePackage()
 
 			// apig
 			"alicloud_apig_secrets":            dataSourceAliCloudApigSecrets(),
@@ -1318,24 +1310,7 @@ func Provider() *schema.Provider {
 			"alicloud_amqp_binding":                resourceAliCloudAmqpBinding(),
 			"alicloud_amqp_static_account":         resourceAliCloudAmqpStaticAccount(),
 
-			// api
-			"alicloud_api_gateway_access_control_list":     resourceAliCloudApiGatewayAccessControlList(),
-			"alicloud_api_gateway_acl_entry_attachment":    resourceAliCloudApiGatewayAclEntryAttachment(),
-			"alicloud_api_gateway_instance_acl_attachment": resourceAliCloudApiGatewayInstanceAclAttachment(),
-			"alicloud_api_gateway_instance":                resourceAliCloudApiGatewayInstance(),
-			"alicloud_api_gateway_api":                     resourceAliyunApigatewayApi(),
-			"alicloud_api_gateway_group":                   resourceAliyunApigatewayGroup(),
-			"alicloud_api_gateway_app":                     resourceAliyunApigatewayApp(),
-			"alicloud_api_gateway_app_attachment":          resourceAliyunApigatewayAppAttachment(),
-			"alicloud_api_gateway_vpc_access":              resourceAliCloudApiGatewayVpcAccess(),
-			"alicloud_api_gateway_backend":                 resourceAlicloudApiGatewayBackend(),
-			"alicloud_api_gateway_stage_model":             resourceAlicloudApiGatewayStageModel(),
-			"alicloud_api_gateway_backend_model":           resourceAlicloudApiGatewayBackendModel(),
-			"alicloud_api_gateway_log_config":              resourceAlicloudApiGatewayLogConfig(),
-			"alicloud_api_gateway_model":                   resourceAlicloudApiGatewayModel(),
-			"alicloud_api_gateway_plugin":                  resourceAliCloudApiGatewayPlugin(),
-			"alicloud_api_gateway_group_plugin_attachment": resourceAlicloudApiGatewayGroupPluginAttachment(),
-			"alicloud_api_gateway_plugin_attachment":       resourceAlicloudApiGatewayPluginAttachment(),
+			// api — registered via alicloud/service/apigateway.ServicePackage()
 
 			// apig
 			"alicloud_apig_secret":            resourceAliCloudApigSecret(),
