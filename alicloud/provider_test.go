@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/internal/acctestcredentials"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -349,18 +351,7 @@ Time: %s
 
 // Migrated to alicloud/acctest.PreCheckWithAccountSiteType.
 func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
-	defaultAccount := string(DomesticSite)
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	}
-	if defaultAccount != string(account) {
-		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
-		t.Skipped()
-	}
+	acctestcredentials.Select(t, string(account))
 }
 
 // Migrated to alicloud/acctest.PreCheckPrePaidResources.

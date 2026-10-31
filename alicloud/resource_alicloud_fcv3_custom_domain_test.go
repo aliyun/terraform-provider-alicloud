@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -1912,21 +1911,10 @@ func TestAccAliCloudFcv3CustomDomain_certificateId_basic(t *testing.T) {
 	})
 }
 
-// testAccFcv3CustomDomainCertIdIntlConfig builds the acceptance config for the
-// international-account certificate_id create step: it composes the CAS
-// certificate dependence (AlicloudFc3CustomDomainCertIdDependence) with the FC
-// custom domain that binds the default certificate by id. Written as a direct
-// HCL template string rather than the resourceTestAccConfigFunc map builder,
-// following the TestAccAlicloudSslVpnServerBasic convention. The international
-// account credentials are supplied via an explicit provider block driven by
-// ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1 (region pinned to us-west-1), instead of
-// relying on the IntlSite account-site precheck, so the case no longer skips
-// when the default account is domestic.
+// testAccFcv3CustomDomainCertIdIntlConfig uses the identity selected by the site precheck.
 func testAccFcv3CustomDomainCertIdIntlConfig(name string) string {
 	return fmt.Sprintf(`
 provider "alicloud" {
-  access_key = "%s"
-  secret_key = "%s"
   region     = "us-west-1"
 }
 %s
@@ -1940,20 +1928,13 @@ resource "alicloud_fcv3_custom_domain" "default" {
   protocol       = "HTTP,HTTPS"
   certificate_id = "${alicloud_ssl_certificates_service_certificate.default.id}"
 }
-`, os.Getenv("ALICLOUD_ACCESS_KEY_1"), os.Getenv("ALICLOUD_SECRET_KEY_1"), AlicloudFc3CustomDomainCertIdDependence(name), name)
+`, AlicloudFc3CustomDomainCertIdDependence(name), name)
 }
 
-// testAccFcv3CustomDomainCertIdIntlConfigRotate rebuilds the config with the
-// certificate rotated to the alternate CAS certificate, exercising the Update
-// resolution path (certificate_id change -> DescribeSslCertificatesServiceCertificate).
-// It reuses the same explicit international-account provider block as the
-// create step so the rotation runs against ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1
-// at us-west-1.
+// testAccFcv3CustomDomainCertIdIntlConfigRotate exercises certificate rotation with the selected identity.
 func testAccFcv3CustomDomainCertIdIntlConfigRotate(name string) string {
 	return fmt.Sprintf(`
 provider "alicloud" {
-  access_key = "%s"
-  secret_key = "%s"
   region     = "us-west-1"
 }
 %s
@@ -1967,18 +1948,12 @@ resource "alicloud_fcv3_custom_domain" "default" {
   protocol       = "HTTP,HTTPS"
   certificate_id = "${alicloud_ssl_certificates_service_certificate.alt.id}"
 }
-`, os.Getenv("ALICLOUD_ACCESS_KEY_1"), os.Getenv("ALICLOUD_SECRET_KEY_1"), AlicloudFc3CustomDomainCertIdDependence(name), name)
+`, AlicloudFc3CustomDomainCertIdDependence(name), name)
 }
 
-// TestAccAliCloudFcv3CustomDomain_certificateId_intlAccount exercises the
-// CAS GetUserCertificateDetail -> FC certificate_id resolution path under an
-// international account. Instead of gating on the IntlSite account-site precheck
-// (testAccPreCheckWithAccountSiteType), the international account is selected by
-// an explicit provider block that injects ALICLOUD_ACCESS_KEY_1/SECRET_KEY_1 and
-// pins the region to us-west-1, so the case runs even when the ambient account
-// is domestic. The FC custom domain name is pinned to
-// webpy-5ef9.fcv3.5806750234758840.us-west-1.fc.devsapp.net (us-west-1).
+// TestAccAliCloudFcv3CustomDomain_certificateId_intlAccount exercises the international certificate lifecycle.
 func TestAccAliCloudFcv3CustomDomain_certificateId_intlAccount(t *testing.T) {
+	testAccPreCheckWithAccountSiteType(t, IntlSite)
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
