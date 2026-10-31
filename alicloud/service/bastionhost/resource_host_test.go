@@ -1,0 +1,693 @@
+package bastionhost_test
+
+import (
+	"fmt"
+	"os"
+	"reflect"
+	"strconv"
+	"testing"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bastionhost"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestAccAliCloudBastionhostHost_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_bastionhost_host.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudBastionhostHostMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return bastionhost.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeBastionhostHost")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sbastionhosthost%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudBastionhostHostBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source":               "Local",
+					"instance_id":          "${local.instance_id}",
+					"host_name":            "tf-testAcc-j1ZFb6NcZb7jkd7BUT77QDoA",
+					"active_address_type":  "Private",
+					"host_private_address": "172.16.0.10",
+					"os_type":              "Linux",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":               "Local",
+						"instance_id":          acctest.CHECKSET,
+						"host_name":            "tf-testAcc-j1ZFb6NcZb7jkd7BUT77QDoA",
+						"active_address_type":  "Private",
+						"host_private_address": "172.16.0.10",
+						"os_type":              "Linux",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comment": "tf-testAcc-j1ZFb6NcZb7jkd7BUT77QDoA",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comment": "tf-testAcc-j1ZFb6NcZb7jkd7BUT77QDoA",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"host_public_address": "10.0.0.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"host_public_address": "10.0.0.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"active_address_type": "Public",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"active_address_type": "Public",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"host_public_address": "10.0.0.2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"host_public_address": "10.0.0.2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"os_type": "Windows",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"os_type": "Windows",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"host_name": "tf-testAcc-zxttoHFctU2IGUrPU5PWrItq",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"host_name": "tf-testAcc-zxttoHFctU2IGUrPU5PWrItq",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"comment":              "tf-testAcc-zxttoHFctU2IGUrPU5PWrItq",
+					"active_address_type":  "Private",
+					"host_private_address": "172.16.0.11",
+					"os_type":              "Linux",
+					"host_name":            "tf-testAcc-j1ZFb6NcZb7jkd7BUT77QDoA",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comment":              "tf-testAcc-zxttoHFctU2IGUrPU5PWrItq",
+						"active_address_type":  "Private",
+						"host_private_address": "172.16.0.11",
+						"os_type":              "Linux",
+						"host_name":            "tf-testAcc-j1ZFb6NcZb7jkd7BUT77QDoA",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"instance_region_id"},
+			},
+		},
+	})
+}
+
+var AliCloudBastionhostHostMap0 = map[string]string{
+	"instance_id": acctest.CHECKSET,
+	"host_id":     acctest.CHECKSET,
+}
+
+func AliCloudBastionhostHostBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_bastionhost_instances" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_security_group" "default" {
+  		count  = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_bastionhost_instance" "default" {
+  		count              = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		description        = var.name
+  		license_code       = "bhah_ent_50_asset"
+  		plan_code          = "cloudbastion"
+  		storage            = "5"
+  		bandwidth          = "5"
+  		period             = "1"
+  		vswitch_id         = data.alicloud_vswitches.default.ids.0
+  		security_group_ids = [alicloud_security_group.default.0.id]
+	}
+
+	locals {
+  		instance_id = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? data.alicloud_bastionhost_instances.default.ids.0 : alicloud_bastionhost_instance.default.0.id
+	}
+`, name)
+}
+
+// lintignore: R001
+func TestUnitAliCloudBastionhostHost(t *testing.T) {
+	resourceSchema := bastionhost.ResourceHost()
+	d, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dCreate.MarkNewResource()
+	for key, value := range map[string]interface{}{
+		"source":               "Local",
+		"instance_id":          "instance_id",
+		"host_name":            "host_name",
+		"active_address_type":  "Private",
+		"host_private_address": "172.16.0.10",
+		"os_type":              "Linux",
+	} {
+		err := dCreate.Set(key, value)
+		assert.Nil(t, err)
+		err = d.Set(key, value)
+		assert.Nil(t, err)
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sweep.SharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		"Host": map[string]interface{}{
+			"InstanceId":         "instance_id",
+			"HostId":             "MockHostId",
+			"ActiveAddressType":  "active_address_type",
+			"Comment":            "comment",
+			"HostName":           "host_name",
+			"HostPrivateAddress": "host_private_address",
+			"HostPublicAddress":  "host_public_address",
+			"OSType":             "os_type",
+			"Source":             "source",
+			"SourceInstanceId":   "source_instance_id",
+		},
+	}
+
+	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
+		"RetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_bastionhost_host", "MockHostId"))
+		},
+		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{
+				Code:       tea.String(errorCode),
+				Data:       tea.String(errorCode),
+				Message:    tea.String(errorCode),
+				StatusCode: tea.Int(400),
+			}
+		},
+		"CreateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			result["HostId"] = "MockHostId"
+			return result, nil
+		},
+		"UpdateNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"DeleteNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+		"ReadNormal": func(errorCode string) (map[string]interface{}, error) {
+			result := ReadMockResponse
+			return result, nil
+		},
+	}
+	// Create
+	t.Run("CreateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+		err := resourceSchema.Create(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceSchema.Create(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("CreateNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["CreateNormal"]("")
+		})
+		err := resourceSchema.Create(dCreate, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	// Set ID for Update and Delete Method
+	d.SetId(fmt.Sprint("instance_id", ":", "MockHostId"))
+	// Update
+	t.Run("UpdateClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+
+		err := resourceSchema.Update(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateModifyHostsActiveAddressTypeAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"active_address_type"} {
+			switch resourceSchema.Schema[key].Type {
+			case schema.TypeString:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+			case schema.TypeBool:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+			case schema.TypeInt:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+			case schema.TypeMap:
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+			}
+		}
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceSchema.Update(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateModifyHostAbnormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"comment", "host_name", "host_private_address", "host_public_address", "os_type"} {
+			switch resourceSchema.Schema[key].Type {
+			case schema.TypeString:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+			case schema.TypeBool:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+			case schema.TypeInt:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+			case schema.TypeMap:
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+			}
+		}
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceSchema.Update(resourceData1, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateModifyHostsActiveAddressTypeNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"active_address_type"} {
+			switch resourceSchema.Schema[key].Type {
+			case schema.TypeString:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+			case schema.TypeBool:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+			case schema.TypeInt:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+			case schema.TypeMap:
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+			}
+		}
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceSchema.Update(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("UpdateModifyHostNormal", func(t *testing.T) {
+		diff := terraform.NewInstanceDiff()
+		for _, key := range []string{"comment", "host_name", "host_private_address", "host_public_address", "os_type"} {
+			switch resourceSchema.Schema[key].Type {
+			case schema.TypeString:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"}
+			case schema.TypeBool:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)}
+			case schema.TypeInt:
+				diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)}
+			case schema.TypeMap:
+				diff.Attributes["tags.%"] = &terraform.ResourceAttrDiff{Old: "0", New: "2"}
+				diff.Attributes["tags.For"] = &terraform.ResourceAttrDiff{Old: "", New: "Test"}
+				diff.Attributes["tags.Created"] = &terraform.ResourceAttrDiff{Old: "", New: "TF"}
+			}
+		}
+		resourceData1, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, diff)
+		resourceData1.SetId(d.Id())
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["UpdateNormal"]("")
+		})
+		err := resourceSchema.Update(resourceData1, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+	// Delete
+	t.Run("DeleteClientAbnormal", func(t *testing.T) {
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBastionhostClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+			return nil, &tea.SDKError{
+				Code:       tea.String("loadEndpoint error"),
+				Data:       tea.String("loadEndpoint error"),
+				Message:    tea.String("loadEndpoint error"),
+				StatusCode: tea.Int(400),
+			}
+		})
+		err := resourceSchema.Delete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockAbnormal", func(t *testing.T) {
+		retryFlag := true
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceSchema.Delete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+	t.Run("DeleteMockNormal", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := false
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				retryFlag = false
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceSchema.Delete(d, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("DeleteNonRetryableError", func(t *testing.T) {
+		retryFlag := false
+		noRetryFlag := true
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				noRetryFlag = false
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["DeleteNormal"]("")
+		})
+		err := resourceSchema.Delete(d, rawClient)
+		patches.Reset()
+		assert.NotNil(t, err)
+	})
+
+	//Read
+	t.Run("ReadDescribeBastionhostHostNotFound", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			NotFoundFlag := true
+			noRetryFlag := false
+			if NotFoundFlag {
+				return responseMock["NotFoundError"]("ResourceNotfound")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NoRetryError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceSchema.Read(d, rawClient)
+		patcheDorequest.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("ReadDescribeBastionhostHostAbnormal", func(t *testing.T) {
+		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			retryFlag := false
+			noRetryFlag := true
+			if retryFlag {
+				return responseMock["RetryError"]("Throttling")
+			} else if noRetryFlag {
+				return responseMock["NoRetryError"]("NonRetryableError")
+			}
+			return responseMock["ReadNormal"]("")
+		})
+		err := resourceSchema.Read(d, rawClient)
+		patcheDorequest.Reset()
+		assert.NotNil(t, err)
+	})
+}
+
+// lintignore: AT001
+func TestAccAliCloudBastionhostHost_ecs(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_bastionhost_host.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudBastionhostHostMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return bastionhost.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeBastionhostHost")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sbastionhosthost%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudBastionhostHostEcsDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source":               "Ecs",
+					"instance_id":          "${local.instance_id}",
+					"host_name":            name,
+					"active_address_type":  "Private",
+					"host_private_address": "${alicloud_instance.default.private_ip}",
+					"os_type":              "Linux",
+					"instance_region_id":   acctest.DefaultRegionToTest,
+					"source_instance_id":   "${alicloud_instance.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":              "Ecs",
+						"instance_id":         acctest.CHECKSET,
+						"host_name":           name,
+						"active_address_type": "Private",
+						"os_type":             "Linux",
+						"instance_region_id":  acctest.DefaultRegionToTest,
+						"source_instance_id":  acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"instance_region_id"},
+			},
+		},
+	})
+}
+
+func AliCloudBastionhostHostEcsDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+		vpc_id  = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	data "alicloud_images" "default" {
+		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+		most_recent = true
+	}
+
+	data "alicloud_instance_types" "default" {
+		availability_zone = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+		name   = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_bastionhost_instance" "default" {
+		description        = var.name
+		license_code       = "bhah_ent_50_asset"
+		plan_code          = "cloudbastion"
+		storage            = "5"
+		bandwidth          = "5"
+		period             = "1"
+		vswitch_id         = data.alicloud_vswitches.default.ids.0
+		security_group_ids = [alicloud_security_group.default.id]
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id             = data.alicloud_images.default.images.0.id
+		instance_type        = data.alicloud_instance_types.default.instance_types.0.id
+		instance_name        = var.name
+		security_groups      = [alicloud_security_group.default.id]
+		availability_zone    = data.alicloud_zones.default.zones.0.id
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id           = data.alicloud_vswitches.default.ids.0
+	}
+
+	locals {
+		instance_id = alicloud_bastionhost_instance.default.id
+	}
+`, name)
+}

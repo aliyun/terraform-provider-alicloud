@@ -23,6 +23,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqpopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
@@ -169,7 +170,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcpeer"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/waf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundunbastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundundbaudit"
 )
 
@@ -345,7 +345,7 @@ var servicePackages = []conns.ServicePackage{
 	videosurveillancesystem.ServicePackage(),
 	waf.ServicePackage(),
 	wafopenapi.ServicePackage(),
-	yundunbastionhost.ServicePackage(),
+	bastionhost.ServicePackage(),
 	yundundbaudit.ServicePackage(),
 }
 
