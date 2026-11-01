@@ -1,0 +1,276 @@
+package vpngateway
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+)
+
+func resourceAlicloudVpnPbrRouteEntry() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudVpnPbrRouteEntryCreate,
+		Read:   resourceAlicloudVpnPbrRouteEntryRead,
+		Update: resourceAlicloudVpnPbrRouteEntryUpdate,
+		Delete: resourceAlicloudVpnPbrRouteEntryDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"next_hop": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Required: true,
+			},
+			"route_dest": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Required: true,
+			},
+			"route_source": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Required: true,
+			},
+
+			"publish_vpc": {
+				Type:     schema.TypeBool,
+				Required: true,
+			},
+			"weight": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntInSlice([]int{0, 100}),
+			},
+			"vpn_gateway_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceAlicloudVpnPbrRouteEntryCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	var response map[string]interface{}
+	action := "CreateVpnPbrRouteEntry"
+	request := make(map[string]interface{})
+	var err error
+	request["RegionId"] = client.RegionId
+	request["VpnGatewayId"] = d.Get("vpn_gateway_id")
+	request["RouteDest"] = d.Get("route_dest")
+	request["NextHop"] = d.Get("next_hop")
+	request["Weight"] = d.Get("weight")
+	request["PublishVpc"] = d.Get("publish_vpc")
+	request["RouteSource"] = d.Get("route_source")
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		request["ClientToken"] = helper.BuildClientToken(action)
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vpn_pbr_route_entry", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["VpnGatewayId"], ":", request["NextHop"], ":", request["RouteSource"], ":", request["RouteDest"]))
+
+	stateConf := helper.BuildStateConf([]string{}, []string{"published", "normal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpnPbrRouteEntryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return resourceAlicloudVpnPbrRouteEntryRead(d, meta)
+}
+
+func resourceAlicloudVpnPbrRouteEntryRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeVpnPbrRouteEntry(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpn_pbr_route_entry VpcService.DescribeVpnPbrRouteEntry Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("weight", object["Weight"])
+	d.Set("next_hop", object["NextHop"])
+	d.Set("route_dest", object["RouteDest"])
+	d.Set("vpn_gateway_id", object["VpnInstanceId"])
+	d.Set("route_source", object["RouteSource"])
+	if object["State"] == "published" {
+		d.Set("publish_vpc", true)
+	} else {
+		d.Set("publish_vpc", false)
+	}
+	d.Set("status", object["State"])
+	return nil
+}
+
+func resourceAlicloudVpnPbrRouteEntryUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	d.Partial(true)
+	var err error
+	parts, err := helper.ParseResourceId(d.Id(), 4)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"RouteDest":    parts[3],
+		"RouteSource":  parts[2],
+		"NextHop":      parts[1],
+		"VpnGatewayId": parts[0],
+	}
+
+	update := false
+	if d.HasChange("publish_vpc") {
+		update = true
+		if v, ok := d.GetOkExists("publish_vpc"); ok {
+			request["PublishVpc"] = v
+		}
+	}
+
+	if update {
+		request["RouteType"] = "pbr"
+		action := "PublishVpnRouteEntry"
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		request["ClientToken"] = helper.BuildClientToken(action)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vpn_pbr_route_entry", action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	weightRequest := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"RouteDest":    parts[3],
+		"RouteSource":  parts[2],
+		"NextHop":      parts[1],
+		"VpnGatewayId": parts[0],
+	}
+	update = false
+	if d.HasChange("weight") {
+		update = true
+		oldWeight, newWeight := d.GetChange("weight")
+		weightRequest["Weight"] = oldWeight
+		weightRequest["NewWeight"] = newWeight
+	}
+
+	if update {
+		action := "ModifyVpnPbrRouteEntryWeight"
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		request["ClientToken"] = helper.BuildClientToken(action)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, weightRequest, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, weightRequest)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vpn_pbr_route_entry", action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	d.Partial(false)
+	return resourceAlicloudVpnPbrRouteEntryRead(d, meta)
+}
+
+func resourceAlicloudVpnPbrRouteEntryDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+	var response map[string]interface{}
+	var err error
+	parts, err := helper.ParseResourceId(d.Id(), 4)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"RouteDest":    parts[3],
+		"RouteSource":  parts[2],
+		"NextHop":      parts[1],
+		"VpnGatewayId": parts[0],
+	}
+
+	if v, ok := d.GetOkExists("weight"); ok {
+		request["Weight"] = v
+	}
+
+	action := "DeleteVpnPbrRouteEntry"
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	request["ClientToken"] = helper.BuildClientToken(action)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("Vpc", "2016-04-28", action, nil, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_vpn_pbr_route_entry", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpnPbrRouteEntryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return nil
+}
