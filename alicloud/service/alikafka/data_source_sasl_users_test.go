@@ -1,40 +1,41 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudAlikafkaSaslUsersDataSource(t *testing.T) {
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_alikafka_sasl_user.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_alikafka_sasl_user.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_alikafka_sasl_user.default.username}"`,
 		}),
-		fakeConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_alikafka_sasl_user.default.username}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_alikafka_sasl_user.default.id}"]`,
 			"name_regex": `"${alicloud_alikafka_sasl_user.default.username}"`,
 		}),
-		fakeConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_alikafka_sasl_user.default.id}_fake"]`,
 			"name_regex": `"${alicloud_alikafka_sasl_user.default.username}_fake"`,
 		}),
@@ -45,10 +46,10 @@ func TestAccAliCloudAlikafkaSaslUsersDataSource(t *testing.T) {
 			"ids.#":            "1",
 			"names.#":          "1",
 			"users.#":          "1",
-			"users.0.id":       CHECKSET,
-			"users.0.username": CHECKSET,
-			"users.0.password": CHECKSET,
-			"users.0.type":     CHECKSET,
+			"users.0.id":       acctest.CHECKSET,
+			"users.0.username": acctest.CHECKSET,
+			"users.0.password": acctest.CHECKSET,
+			"users.0.type":     acctest.CHECKSET,
 		}
 	}
 
@@ -60,17 +61,17 @@ func TestAccAliCloudAlikafkaSaslUsersDataSource(t *testing.T) {
 		}
 	}
 
-	var alicloudAlikafkaSaslUsersCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_alikafka_sasl_users.default",
-		existMapFunc: existAliCloudAlikafkaSaslUsersDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAliCloudAlikafkaSaslUsersDataSourceNameMapFunc,
+	var alicloudAlikafkaSaslUsersCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_alikafka_sasl_users.default",
+		ExistMapFunc: existAliCloudAlikafkaSaslUsersDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAliCloudAlikafkaSaslUsersDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
 
-	alicloudAlikafkaSaslUsersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	alicloudAlikafkaSaslUsersCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func testAccCheckAliCloudAlikafkaSaslUsersDataSourceName(rand int, attrMap map[string]string) string {

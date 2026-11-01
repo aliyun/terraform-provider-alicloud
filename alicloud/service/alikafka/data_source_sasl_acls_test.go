@@ -1,29 +1,30 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudAlikafkaSaslAclsDataSource(t *testing.T) {
 
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_alikafka_sasl_acls.default"
 	name := fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand)
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAlikafkaSaslAclsConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceAlikafkaSaslAclsConfigDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"instance_id":       "${alicloud_alikafka_instance.default.id}",
 			"username":          "${alicloud_alikafka_sasl_acl.default.username}",
 			"acl_resource_type": "Topic",
 			"acl_resource_name": "${alicloud_alikafka_sasl_acl.default.acl_resource_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"instance_id":       "${alicloud_alikafka_instance.default.id}",
 			"username":          "fake_tf-testacc*",
 			"acl_resource_type": "Topic",
@@ -34,7 +35,7 @@ func TestAccAlicloudAlikafkaSaslAclsDataSource(t *testing.T) {
 	var existAlikafkaSaslAclsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"acls.#":                           "1",
-			"acls.0.id":                        CHECKSET,
+			"acls.0.id":                        acctest.CHECKSET,
 			"acls.0.username":                  fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand),
 			"acls.0.acl_resource_type":         "TOPIC",
 			"acls.0.acl_resource_name":         fmt.Sprintf("tf-testacc-alikafkasaslacl%v", rand),
@@ -50,16 +51,16 @@ func TestAccAlicloudAlikafkaSaslAclsDataSource(t *testing.T) {
 		}
 	}
 
-	var alikafkaSaslAclsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existAlikafkaSaslAclsMapFunc,
-		fakeMapFunc:  fakeAlikafkaSaslAclsMapFunc,
+	var alikafkaSaslAclsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existAlikafkaSaslAclsMapFunc,
+		FakeMapFunc:  fakeAlikafkaSaslAclsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-		testAccPreCheck(t)
+		acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		acctest.PreCheck(t)
 	}
-	alikafkaSaslAclsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
+	alikafkaSaslAclsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
 
 func dataSourceAlikafkaSaslAclsConfigDependence(name string) string {

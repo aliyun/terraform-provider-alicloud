@@ -1,50 +1,51 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlikafkaTopicsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(10000, 99999)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"ids":         `["${alicloud_alikafka_topic.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"ids":         `["${alicloud_alikafka_topic.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"name_regex":  `"${alicloud_alikafka_topic.default.topic}"`,
 		}),
-		fakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"name_regex":  `"${alicloud_alikafka_topic.default.topic}_fake"`,
 		}),
 	}
 
-	topicConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+	topicConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"topic":       `"${alicloud_alikafka_topic.default.topic}"`,
 		}),
-		fakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"topic":       `"${alicloud_alikafka_topic.default.topic}_fake"`,
 		}),
 	}
 
-	pagingConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+	pagingConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
 			"topic":       `"${alicloud_alikafka_topic.default.topic}"`,
 			"page_number": `1`,
@@ -53,19 +54,19 @@ func TestAccAlikafkaTopicsDataSource(t *testing.T) {
 
 	var existAlikafkaTopicsDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                  CHECKSET,
-			"names.#":                CHECKSET,
-			"total_count":            CHECKSET,
-			"topics.#":               CHECKSET,
-			"topics.0.id":            CHECKSET,
+			"ids.#":                  acctest.CHECKSET,
+			"names.#":                acctest.CHECKSET,
+			"total_count":            acctest.CHECKSET,
+			"topics.#":               acctest.CHECKSET,
+			"topics.0.id":            acctest.CHECKSET,
 			"topics.0.topic":         fmt.Sprintf("tf-testacc-alikafkatopic%v", rand),
 			"topics.0.local_topic":   "false",
 			"topics.0.compact_topic": "false",
 			"topics.0.partition_num": "12",
 			"topics.0.remark":        "remark",
 			"topics.0.status":        "0",
-			"topics.0.status_name":   CHECKSET,
-			"topics.0.instance_id":   CHECKSET,
+			"topics.0.status_name":   acctest.CHECKSET,
+			"topics.0.instance_id":   acctest.CHECKSET,
 			"topics.0.tags.%":        "2",
 			"topics.0.tags.Created":  "TF",
 			"topics.0.tags.For":      "Test",
@@ -78,13 +79,13 @@ func TestAccAlikafkaTopicsDataSource(t *testing.T) {
 			"names.#":  "0",
 		}
 	}
-	var AlikafkaTopicsBusesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_alikafka_topics.default",
-		existMapFunc: existAlikafkaTopicsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlikafkaTopicsDataSourceNameMapFunc,
+	var AlikafkaTopicsBusesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_alikafka_topics.default",
+		ExistMapFunc: existAlikafkaTopicsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlikafkaTopicsDataSourceNameMapFunc,
 	}
 
-	AlikafkaTopicsBusesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, topicConf, pagingConf)
+	AlikafkaTopicsBusesCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameRegexConf, topicConf, pagingConf)
 }
 func testAccCheckAlikafkaTopicsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

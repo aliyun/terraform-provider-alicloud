@@ -1,4 +1,4 @@
-package alicloud
+package alikafka
 
 import (
 	"fmt"
@@ -7,14 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudAlikafkaTopics() *schema.Resource {
+func DataSourceTopics() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAlikafkaTopicsRead,
+		Read: dataSourceTopicsRead,
 
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
@@ -101,7 +106,7 @@ func dataSourceAlicloudAlikafkaTopics() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": tags.TagsSchema(),
 					},
 				},
 			},
@@ -113,7 +118,7 @@ func dataSourceAlicloudAlikafkaTopics() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceTopicsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "GetTopicList"
@@ -149,16 +154,16 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = helper.PageSizeLarge
 	}
 
 	var objects []interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -166,16 +171,16 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_topics", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_alikafka_topics", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.TopicList.TopicVO", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TopicList.TopicVO", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.TopicList.TopicVO", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -235,23 +240,23 @@ func dataSourceAlicloudAlikafkaTopicsRead(d *schema.ResourceData, meta interface
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("topics", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["Total"])
+	total_countVal, err := convert.FormatInt(response["Total"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

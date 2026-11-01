@@ -1,17 +1,20 @@
-package alicloud
+package alikafka
 
 import (
 	"fmt"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	alikafkasdk "github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
+func DataSourceSaslAcls() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAlikafkaSaslAclsRead,
+		Read: dataSourceSaslAclsRead,
 
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
@@ -77,35 +80,35 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAlikafkaSaslAclsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceSaslAclsRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
+	alikafkaService := NewAlikafkaService(client)
 
-	request := alikafka.CreateDescribeAclsRequest()
+	request := alikafkasdk.CreateDescribeAclsRequest()
 	request.InstanceId = d.Get("instance_id").(string)
 	request.RegionId = client.RegionId
 	request.Username = d.Get("username").(string)
 	request.AclResourceType = d.Get("acl_resource_type").(string)
 	request.AclResourceName = d.Get("acl_resource_name").(string)
 
-	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+	raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafkasdk.Client) (interface{}, error) {
 		return alikafkaClient.DescribeAcls(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"BIZ_SUBSCRIPTION_NOT_FOUND", "BIZ_TOPIC_NOT_FOUND"}) {
-			var emptyValue []alikafka.KafkaAclVO
+		if errs.IsExpectedErrors(err, []string{"BIZ_SUBSCRIPTION_NOT_FOUND", "BIZ_TOPIC_NOT_FOUND"}) {
+			var emptyValue []alikafkasdk.KafkaAclVO
 			return alikafkaSaslAclsDecriptionAttributes(d, emptyValue, meta)
 		}
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_sasl_acls", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_alikafka_sasl_acls", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*alikafka.DescribeAclsResponse)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*alikafkasdk.DescribeAclsResponse)
 
 	return alikafkaSaslAclsDecriptionAttributes(d, response.KafkaAclList.KafkaAclVO, meta)
 }
 
-func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo []alikafka.KafkaAclVO, meta interface{}) error {
+func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo []alikafkasdk.KafkaAclVO, meta interface{}) error {
 
 	var names []string
 	var s []map[string]interface{}
@@ -131,12 +134,12 @@ func alikafkaSaslAclsDecriptionAttributes(d *schema.ResourceData, kafkaAclsInfo 
 	d.SetId(dataResourceIdHash(names))
 
 	if err := d.Set("acls", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

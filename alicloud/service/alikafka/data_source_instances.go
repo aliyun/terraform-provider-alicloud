@@ -1,4 +1,4 @@
-package alicloud
+package alikafka
 
 import (
 	"fmt"
@@ -7,14 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
+func DataSourceInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAlikafkaInstancesRead,
+		Read: dataSourceInstancesRead,
 
 		Schema: map[string]*schema.Schema{
 			"ids": {
@@ -210,7 +214,7 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": tags.TagsSchema(),
 					},
 				},
 			},
@@ -218,7 +222,7 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "GetInstanceList"
@@ -244,13 +248,13 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 	}
 
 	var response map[string]interface{}
-	pageNo, pageSize := 1, PageSizeLarge
+	pageNo, pageSize := 1, helper.PageSizeLarge
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -258,13 +262,13 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alikafka_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_alikafka_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList.InstanceVO", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.InstanceList.InstanceVO", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -347,18 +351,18 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 		names = append(names, mapping["name"])
 		id := fmt.Sprint(object["InstanceId"])
 
-		AlikaService := AlikafkaService{client}
+		AlikaService := NewAlikafkaService(client)
 		if d.Get("enable_details").(bool) {
 			quota, err := AlikaService.GetQuotaTip(id)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			mapping["topic_quota"] = quota["TopicQuota"]
 			mapping["partition_num"] = quota["PartitionNumOfBuy"]
 
 			getResp, err := AlikaService.GetAllowedIpList(id)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 
 			allowedListMaps := make([]map[string]interface{}, 0)
@@ -400,16 +404,16 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

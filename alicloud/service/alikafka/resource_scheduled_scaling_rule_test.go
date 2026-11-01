@@ -1,12 +1,14 @@
-package alicloud
+package alikafka_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	alikafka "github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,23 +17,23 @@ import (
 func TestAccAliCloudAlikafkaScheduledScalingRule_basic12412(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_scheduled_scaling_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaScheduledScalingRuleMap12412)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaScheduledScalingRuleMap12412)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaScheduledScalingRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
 	firstScheduledTime := time.Now().AddDate(0, 0, 6).UnixMilli()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaScheduledScalingRuleBasicDependence12412)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaScheduledScalingRuleBasicDependence12412)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -47,8 +49,8 @@ func TestAccAliCloudAlikafkaScheduledScalingRule_basic12412(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"duration_minutes":     "100",
-						"first_scheduled_time": CHECKSET,
-						"instance_id":          CHECKSET,
+						"first_scheduled_time": acctest.CHECKSET,
+						"instance_id":          acctest.CHECKSET,
 						"reserved_pub_flow":    "200",
 						"reserved_sub_flow":    "200",
 						"rule_name":            name,
@@ -90,23 +92,23 @@ func TestAccAliCloudAlikafkaScheduledScalingRule_basic12412(t *testing.T) {
 func TestAccAliCloudAlikafkaScheduledScalingRule_basic12412_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_scheduled_scaling_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudAlikafkaScheduledScalingRuleMap12412)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlikafkaServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAlikafkaScheduledScalingRuleMap12412)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return alikafka.NewAlikafkaServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlikafkaScheduledScalingRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccalikafka%d", rand)
 	firstScheduledTime := time.Now().AddDate(0, 0, 6).UnixMilli()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlikafkaScheduledScalingRuleBasicDependence12412)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAlikafkaScheduledScalingRuleBasicDependence12412)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -125,8 +127,8 @@ func TestAccAliCloudAlikafkaScheduledScalingRule_basic12412_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"duration_minutes":     "100",
-						"first_scheduled_time": CHECKSET,
-						"instance_id":          CHECKSET,
+						"first_scheduled_time": acctest.CHECKSET,
+						"instance_id":          acctest.CHECKSET,
 						"reserved_pub_flow":    "200",
 						"reserved_sub_flow":    "200",
 						"rule_name":            name,

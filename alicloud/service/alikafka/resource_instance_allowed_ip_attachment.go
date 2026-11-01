@@ -1,4 +1,4 @@
-package alicloud
+package alikafka
 
 import (
 	"fmt"
@@ -6,15 +6,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
+func ResourceInstanceAllowedIpAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate,
-		Read:   resourceAliCloudAliKafkaInstanceAllowedIpAttachmentRead,
-		Delete: resourceAliCloudAliKafkaInstanceAllowedIpAttachmentDelete,
+		Create: resourceInstanceAllowedIpAttachmentCreate,
+		Read:   resourceInstanceAllowedIpAttachmentRead,
+		Delete: resourceInstanceAllowedIpAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -32,13 +36,13 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"vpc", "internet"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"vpc", "internet"}, false),
 			},
 			"port_range": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"9092/9092", "9093/9093", "9094/9094", "9095/9095"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"9092/9092", "9093/9093", "9094/9094", "9095/9095"}, false),
 			},
 			"allowed_ip": {
 				Type:     schema.TypeString,
@@ -49,7 +53,7 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceAllowedIpAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "UpdateAllowedIp"
@@ -63,11 +67,11 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate(d *schema.Resourc
 	request["PortRange"] = d.Get("port_range")
 	request["AllowedListIp"] = d.Get("allowed_ip")
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -75,38 +79,38 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate(d *schema.Resourc
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_instance_allowed_ip_attachment", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_alikafka_instance_allowed_ip_attachment", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v:%v:%v", request["InstanceId"], request["AllowedListType"], request["PortRange"], request["AllowedListIp"]))
 
-	return resourceAliCloudAliKafkaInstanceAllowedIpAttachmentRead(d, meta)
+	return resourceInstanceAllowedIpAttachmentRead(d, meta)
 }
 
-func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceAllowedIpAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
+	alikafkaService := NewAlikafkaService(client)
 
 	object, err := alikafkaService.DescribeAliKafkaInstanceAllowedIpAttachment(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alikafka_instance_allowed_ip_attachment alikafkaService.DescribeAliKafkaInstanceAllowedIpAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := helper.ParseResourceId(d.Id(), 4)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_id", parts[0])
@@ -117,16 +121,16 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentRead(d *schema.ResourceD
 	return nil
 }
 
-func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceAllowedIpAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "UpdateAllowedIp"
 	var response map[string]interface{}
 
 	var err error
 
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := helper.ParseResourceId(d.Id(), 4)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	request := map[string]interface{}{
@@ -138,11 +142,11 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentDelete(d *schema.Resourc
 		"AllowedListIp":   parts[3],
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("alikafka", "2019-09-16", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -150,17 +154,17 @@ func resourceAliCloudAliKafkaInstanceAllowedIpAttachmentDelete(d *schema.Resourc
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	return nil
