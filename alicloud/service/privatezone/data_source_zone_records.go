@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"fmt"
@@ -6,13 +6,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudPvtzZoneRecords() *schema.Resource {
+func DataSourceZoneRecords() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudPvtzZoneRecordsRead,
+		Read: dataSourceZoneRecordsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -39,7 +45,7 @@ func dataSourceAliCloudPvtzZoneRecords() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ENABLE", "DISABLE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ENABLE", "DISABLE"}, false),
 			},
 			"search_mode": {
 				Type:     schema.TypeString,
@@ -105,12 +111,12 @@ func dataSourceAliCloudPvtzZoneRecords() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceZoneRecordsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeZoneRecords"
 	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	request["ZoneId"] = d.Get("zone_id")
 
@@ -152,11 +158,11 @@ func dataSourceAliCloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	var err error
 
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err := retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"System.Busy", "ServiceUnavailable"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"System.Busy", "ServiceUnavailable"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -164,15 +170,15 @@ func dataSourceAliCloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_pvtz_zone_records", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_pvtz_zone_records", action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Records.Record", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Records.Record", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Records.Record", response)
 		}
 
 		result, _ := resp.([]interface{})
@@ -202,12 +208,12 @@ func dataSourceAliCloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		priorityVal, err := formatInt(object["Priority"])
+		priorityVal, err := convert.FormatInt(object["Priority"])
 		if err != nil {
 			return err
 		}
 
-		ttlVal, err := formatInt(object["Ttl"])
+		ttlVal, err := convert.FormatInt(object["Ttl"])
 		if err != nil {
 			return err
 		}
@@ -229,18 +235,18 @@ func dataSourceAliCloudPvtzZoneRecordsRead(d *schema.ResourceData, meta interfac
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("records", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

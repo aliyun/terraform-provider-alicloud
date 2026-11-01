@@ -1,4 +1,4 @@
-package alicloud
+package privatezone_test
 
 import (
 	"fmt"
@@ -9,9 +9,14 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -25,11 +30,10 @@ func init() {
 }
 
 func testSweepPrivateZoneEndpoint(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	client, err := privatezoneTestClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testacc",
 		"tf_testacc",
@@ -38,16 +42,16 @@ func testSweepPrivateZoneEndpoint(region string) error {
 	request := map[string]interface{}{}
 
 	request["Lang"] = "en"
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 
 	var response map[string]interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -55,14 +59,14 @@ func testSweepPrivateZoneEndpoint(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			log.Printf("[ERROR] %s get an error: %#v", action, err)
 			return nil
 		}
 
 		resp, err := jsonpath.Get("$.Endpoints", response)
-		totalCount, formatErr := formatInt(response["TotalCount"])
+		totalCount, formatErr := convert.FormatInt(response["TotalCount"])
 		if formatErr != nil {
 			return formatErr
 		}
@@ -91,7 +95,7 @@ func testSweepPrivateZoneEndpoint(region string) error {
 			request := map[string]interface{}{
 				"EndpointId": item["Id"],
 			}
-			request["ClientToken"] = buildClientToken(action)
+			request["ClientToken"] = helper.BuildClientToken(action)
 			_, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete PrivateZone Endpoint (%s): %s", item["Id"].(string), err)
@@ -99,7 +103,7 @@ func testSweepPrivateZoneEndpoint(region string) error {
 			log.Printf("[INFO] Delete PrivateZone Endpoint success: %s ", item["Id"].(string))
 		}
 
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -108,31 +112,31 @@ func testSweepPrivateZoneEndpoint(region string) error {
 }
 
 func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.TestPvtzRegions)
+	acctest.PreCheckWithRegions(t, true, connectivity.TestPvtzRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_endpoint.default"
-	ra := resourceAttrInit(resourceId, AlicloudPrivateZoneEndpointMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &PvtzService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribePvtzEndpoint")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999999)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivateZoneEndpointMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatezone.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEndpoint")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000, 9999999)
 	name := fmt.Sprintf("tf-testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateZoneEndpointBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivateZoneEndpointBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ip":                "CHANGE_FAILED",
+					"ip":                acctest.REMOVEKEY,
 					"vpc_id":            "${alicloud_vpc.default.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
-					"vpc_region_id":     defaultRegionToTest,
+					"vpc_region_id":     acctest.DefaultRegionToTest,
 					"endpoint_name":     name,
 					"ip_configs": []map[string]interface{}{
 						{
@@ -154,9 +158,9 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":            CHECKSET,
-						"security_group_id": CHECKSET,
-						"vpc_region_id":     CHECKSET,
+						"vpc_id":            acctest.CHECKSET,
+						"security_group_id": acctest.CHECKSET,
+						"vpc_region_id":     acctest.CHECKSET,
 						"endpoint_name":     name,
 						"ip_configs.#":      "3",
 					}),
@@ -164,7 +168,7 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ip":            "CHANGE_INIT",
+					"ip":            acctest.REMOVEKEY,
 					"endpoint_name": name + "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -210,7 +214,7 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 				// endpoint_name stops the plan before the placeholder
 				// ip_configs entry reaches the API.
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_name": REMOVEKEY,
+					"endpoint_name": acctest.REMOVEKEY,
 					"ip_configs": []map[string]interface{}{
 						{
 							"ip":         "",
@@ -227,6 +231,34 @@ func TestAccAliCloudPvtzEndpoint_basic0(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{},
+			},
+			{
+				// The ExpectError step above omits the required endpoint_name,
+				// leaving an invalid config as the last written one. Restore a
+				// valid Config (matching the Step 4 state) as the final apply
+				// step so the post-test destroy runs against a valid plan. This
+				// apply is a no-op against the existing resource. ip is
+				// Optional+Computed and service-assigned, omitted as in Step 1.
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_name": name,
+					"ip_configs": []map[string]interface{}{
+						{
+							"zone_id":    "${alicloud_vswitch.default[2].zone_id}",
+							"cidr_block": "${alicloud_vswitch.default[2].cidr_block}",
+							"vswitch_id": "${alicloud_vswitch.default[2].id}",
+						},
+						{
+							"zone_id":    "${alicloud_vswitch.default[3].zone_id}",
+							"cidr_block": "${alicloud_vswitch.default[3].cidr_block}",
+							"vswitch_id": "${alicloud_vswitch.default[3].id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_name": name,
+					}),
+				),
 			},
 		},
 	})

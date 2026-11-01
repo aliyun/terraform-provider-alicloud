@@ -1,4 +1,4 @@
-package alicloud
+package privatezone
 
 import (
 	"fmt"
@@ -6,16 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudPvtzEndpoint() *schema.Resource {
+func ResourceEndpoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPvtzEndpointCreate,
-		Read:   resourceAlicloudPvtzEndpointRead,
-		Update: resourceAlicloudPvtzEndpointUpdate,
-		Delete: resourceAlicloudPvtzEndpointDelete,
+		Create: resourceEndpointCreate,
+		Read:   resourceEndpointRead,
+		Update: resourceEndpointUpdate,
+		Delete: resourceEndpointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -77,7 +81,7 @@ func resourceAlicloudPvtzEndpoint() *schema.Resource {
 	}
 }
 
-func resourceAlicloudPvtzEndpointCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceEndpointCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "AddResolverEndpoint"
@@ -96,11 +100,11 @@ func resourceAlicloudPvtzEndpointCreate(d *schema.ResourceData, meta interface{}
 	request["SecurityGroupId"] = d.Get("security_group_id")
 	request["VpcId"] = d.Get("vpc_id")
 	request["VpcRegionId"] = d.Get("vpc_region_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResolverEndpoint.Operation.ExceedsFrequency"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ResolverEndpoint.Operation.ExceedsFrequency"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -108,30 +112,30 @@ func resourceAlicloudPvtzEndpointCreate(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_pvtz_endpoint", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pvtz_endpoint", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["EndpointId"]))
-	pvtzService := PvtzService{client}
-	stateConf := BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, pvtzService.PvtzEndpointStateRefreshFunc(d.Id(), []string{}))
+	pvtzService := Service{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, pvtzService.EndpointStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
-	return resourceAlicloudPvtzEndpointRead(d, meta)
+	return resourceEndpointRead(d, meta)
 }
-func resourceAlicloudPvtzEndpointRead(d *schema.ResourceData, meta interface{}) error {
+func resourceEndpointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	pvtzService := PvtzService{client}
-	object, err := pvtzService.DescribePvtzEndpoint(d.Id())
+	pvtzService := Service{client}
+	object, err := pvtzService.DescribeEndpoint(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_pvtz_endpoint pvtzService.DescribePvtzEndpoint Failed!!! %s", err)
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pvtz_endpoint pvtzService.DescribeEndpoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("endpoint_name", object["Name"])
 	ipConfigsSli := make([]map[string]interface{}, 0)
@@ -153,7 +157,7 @@ func resourceAlicloudPvtzEndpointRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("vpc_region_id", object["VpcRegionId"])
 	return nil
 }
-func resourceAlicloudPvtzEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
@@ -182,12 +186,12 @@ func resourceAlicloudPvtzEndpointUpdate(d *schema.ResourceData, meta interface{}
 	request["Lang"] = "en"
 	if update {
 		action := "UpdateResolverEndpoint"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 			if err != nil {
 
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -195,21 +199,21 @@ func resourceAlicloudPvtzEndpointUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
-		pvtzService := PvtzService{client}
-		stateConf := BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, pvtzService.PvtzEndpointStateRefreshFunc(d.Id(), []string{}))
+		pvtzService := Service{client}
+		stateConf := helper.BuildStateConf([]string{}, []string{"SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, pvtzService.EndpointStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
 	}
-	return resourceAlicloudPvtzEndpointRead(d, meta)
+	return resourceEndpointRead(d, meta)
 }
-func resourceAlicloudPvtzEndpointDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceEndpointDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteResolverEndpoint"
 	var response map[string]interface{}
@@ -219,11 +223,11 @@ func resourceAlicloudPvtzEndpointDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	request["Lang"] = "en"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("pvtz", "2018-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -231,12 +235,12 @@ func resourceAlicloudPvtzEndpointDelete(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ResolverEndpoint.NotExists"}) {
+		if errs.IsExpectedErrors(err, []string{"ResolverEndpoint.NotExists"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

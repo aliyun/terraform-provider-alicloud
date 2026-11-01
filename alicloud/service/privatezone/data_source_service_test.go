@@ -1,19 +1,20 @@
-package alicloud
+package privatezone_test
 
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudPvtzServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_pvtz_service.default"
-	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
+	testAccCheck := acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCheckAliCloudPvtzServiceDataSourceNil,
@@ -37,7 +38,7 @@ func TestAccAliCloudPvtzServiceDataSource(t *testing.T) {
 				Config: testAccCheckAliCloudPvtzServiceDataSourceWithOn,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"id":     CHECKSET,
+						"id":     acctest.CHECKSET,
 						"status": "Opened",
 					}),
 				),
