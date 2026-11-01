@@ -205,30 +205,6 @@ func Provider() *schema.Provider {
 			// clickhouse resources/data sources migrated to alicloud/service/clickhouse
 
 			// cloud
-			"alicloud_cloud_monitor_service_metric_alarm_rules":   dataSourceAliCloudCloudMonitorServiceMetricAlarmRules(),
-			"alicloud_cloud_monitor_service_hybrid_double_writes": dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
-
-			// cms
-			"alicloud_cms_event_notify_policies":     dataSourceAliCloudCmsEventNotifyPolicies(),
-			"alicloud_cms_alert_rules_v2":            dataSourceAliCloudCmsAlertRulesV2(),
-			"alicloud_cms_service":                   dataSourceAlicloudCmsService(),
-			"alicloud_cms_alarm_contacts":            dataSourceAlicloudCmsAlarmContacts(),
-			"alicloud_cms_alarm_contact_groups":      dataSourceAlicloudCmsAlarmContactGroups(),
-			"alicloud_cms_group_metric_rules":        dataSourceAlicloudCmsGroupMetricRules(),
-			"alicloud_cms_monitor_groups":            dataSourceAlicloudCmsMonitorGroups(),
-			"alicloud_cms_monitor_group_instanceses": dataSourceAlicloudCmsMonitorGroupInstances(),
-			"alicloud_cms_monitor_group_instances":   dataSourceAlicloudCmsMonitorGroupInstances(),
-			"alicloud_cms_metric_rule_templates":     dataSourceAlicloudCmsMetricRuleTemplates(),
-			"alicloud_cms_dynamic_tag_groups":        dataSourceAlicloudCmsDynamicTagGroups(),
-			"alicloud_cms_namespaces":                dataSourceAlicloudCmsNamespaces(),
-			"alicloud_cms_datasets":                  dataSourceAliCloudCmsDatasets(),
-			"alicloud_cms_sls_groups":                dataSourceAlicloudCmsSlsGroups(),
-			"alicloud_cms_hybrid_monitor_datas":      dataSourceAlicloudCmsHybridMonitorDatas(),
-			"alicloud_cms_hybrid_monitor_sls_tasks":  dataSourceAlicloudCmsHybridMonitorSlsTasks(),
-			"alicloud_cms_hybrid_monitor_fc_tasks":   dataSourceAlicloudCmsHybridMonitorFcTasks(),
-			"alicloud_cms_event_rules":               dataSourceAlicloudCmsEventRules(),
-			"alicloud_cms_metric_rule_black_lists":   dataSourceAlicloudCmsMetricRuleBlackLists(),
-			"alicloud_cms_site_monitors":             dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 
 			// compute
 
@@ -452,39 +428,6 @@ func Provider() *schema.Provider {
 			// clickhouse resources migrated to alicloud/service/clickhouse
 
 			// cloud
-			"alicloud_cloud_monitor_service_metric_alarm_rule":              resourceAliCloudCloudMonitorServiceMetricAlarmRule(),
-			"alicloud_cloud_monitor_service_agent_config":                   resourceAliCloudCloudMonitorServiceAgentConfig(),
-			"alicloud_cloud_monitor_service_enterprise_public":              resourceAliCloudCloudMonitorServiceEnterprisePublic(),
-			"alicloud_cloud_monitor_service_basic_public":                   resourceAliCloudCloudMonitorServiceBasicPublic(),
-			"alicloud_cloud_monitor_service_hybrid_double_write":            resourceAliCloudCloudMonitorServiceHybridDoubleWrite(),
-			"alicloud_cloud_monitor_service_monitoring_agent_process":       resourceAliCloudCloudMonitorServiceMonitoringAgentProcess(),
-			"alicloud_cloud_monitor_service_group_monitoring_agent_process": resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcess(),
-
-			// cms
-			"alicloud_cms_event_notify_policy":     resourceAliCloudCmsEventNotifyPolicy(),
-			"alicloud_cms_alert_rule_v2":           resourceAliCloudCmsAlertRuleV2(),
-			"alicloud_cms_agg_task_group":          resourceAliCloudCmsAggTaskGroup(),
-			"alicloud_cms_addon_release":           resourceAliCloudCmsAddonRelease(),
-			"alicloud_cms_prometheus_view":         resourceAliCloudCmsPrometheusView(),
-			"alicloud_cms_prometheus_instance":     resourceAliCloudCmsPrometheusInstance(),
-			"alicloud_cms_integration_policy":      resourceAliCloudCmsIntegrationPolicy(),
-			"alicloud_cms_workspace":               resourceAliCloudCmsWorkspace(),
-			"alicloud_cms_dataset":                 resourceAliCloudCmsDataset(),
-			"alicloud_cms_alarm":                   resourceAliCloudCmsAlarm(),
-			"alicloud_cms_site_monitor":            resourceAliCloudCloudMonitorServiceSiteMonitor(),
-			"alicloud_cms_alarm_contact":           resourceAlicloudCmsAlarmContact(),
-			"alicloud_cms_alarm_contact_group":     resourceAlicloudCmsAlarmContactGroup(),
-			"alicloud_cms_group_metric_rule":       resourceAliCloudCmsGroupMetricRule(),
-			"alicloud_cms_monitor_group":           resourceAlicloudCmsMonitorGroup(),
-			"alicloud_cms_monitor_group_instances": resourceAlicloudCmsMonitorGroupInstances(),
-			"alicloud_cms_metric_rule_template":    resourceAliCloudCmsMetricRuleTemplate(),
-			"alicloud_cms_dynamic_tag_group":       resourceAliCloudCmsDynamicTagGroup(),
-			"alicloud_cms_namespace":               resourceAliCloudCmsNamespace(),
-			"alicloud_cms_sls_group":               resourceAlicloudCmsSlsGroup(),
-			"alicloud_cms_hybrid_monitor_sls_task": resourceAlicloudCmsHybridMonitorSlsTask(),
-			"alicloud_cms_hybrid_monitor_fc_task":  resourceAlicloudCmsHybridMonitorFcTask(),
-			"alicloud_cms_event_rule":              resourceAliCloudCloudMonitorServiceEventRule(),
-			"alicloud_cms_metric_rule_black_list":  resourceAlicloudCmsMetricRuleBlackList(),
 
 			// compute
 
