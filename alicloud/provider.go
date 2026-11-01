@@ -190,15 +190,6 @@ func Provider() *schema.Provider {
 
 			// apig
 
-			// bastionhost
-			"alicloud_bastionhost_instances":       dataSourceAlicloudBastionhostInstances(),
-			"alicloud_bastionhost_user_groups":     dataSourceAlicloudBastionhostUserGroups(),
-			"alicloud_bastionhost_users":           dataSourceAlicloudBastionhostUsers(),
-			"alicloud_bastionhost_host_groups":     dataSourceAlicloudBastionhostHostGroups(),
-			"alicloud_bastionhost_hosts":           dataSourceAlicloudBastionhostHosts(),
-			"alicloud_bastionhost_host_accounts":   dataSourceAlicloudBastionhostHostAccounts(),
-			"alicloud_bastionhost_host_share_keys": dataSourceAlicloudBastionhostHostShareKeys(),
-
 			// brain
 
 			// bss
@@ -548,7 +539,6 @@ func Provider() *schema.Provider {
 			// service/wafopenapi.ServicePackage() in provider/registry/registry.go.
 
 			// yundun
-			"alicloud_yundun_bastionhost_instances": dataSourceAlicloudBastionhostInstances(),
 
 			// zones
 			"alicloud_zones": dataSourceAlicloudZones(),
@@ -571,22 +561,6 @@ func Provider() *schema.Provider {
 
 			// auto
 			"alicloud_auto_provisioning_group": resourceAlicloudAutoProvisioningGroup(),
-
-			// bastionhost
-			"alicloud_bastionhost_instance":                                 resourceAliCloudBastionhostInstance(),
-			"alicloud_bastionhost_user_group":                               resourceAlicloudBastionhostUserGroup(),
-			"alicloud_bastionhost_user":                                     resourceAlicloudBastionhostUser(),
-			"alicloud_bastionhost_host_group":                               resourceAlicloudBastionhostHostGroup(),
-			"alicloud_bastionhost_user_attachment":                          resourceAlicloudBastionhostUserAttachment(),
-			"alicloud_bastionhost_host":                                     resourceAlicloudBastionhostHost(),
-			"alicloud_bastionhost_host_account":                             resourceAlicloudBastionhostHostAccount(),
-			"alicloud_bastionhost_host_attachment":                          resourceAlicloudBastionhostHostAttachment(),
-			"alicloud_bastionhost_host_account_user_group_attachment":       resourceAlicloudBastionhostHostAccountUserGroupAttachment(),
-			"alicloud_bastionhost_host_account_user_attachment":             resourceAlicloudBastionhostHostAccountUserAttachment(),
-			"alicloud_bastionhost_host_group_account_user_attachment":       resourceAlicloudBastionhostHostGroupAccountUserAttachment(),
-			"alicloud_bastionhost_host_group_account_user_group_attachment": resourceAlicloudBastionhostHostGroupAccountUserGroupAttachment(),
-			"alicloud_bastionhost_host_share_key":                           resourceAlicloudBastionhostHostShareKey(),
-			"alicloud_bastionhost_host_account_share_key_attachment":        resourceAlicloudBastionhostHostAccountShareKeyAttachment(),
 
 			// brain
 
@@ -989,7 +963,6 @@ func Provider() *schema.Provider {
 			// service/waf.ServicePackage() in provider/registry/registry.go.
 
 			// yundun
-			"alicloud_yundun_bastionhost_instance": resourceAliCloudBastionhostInstance(),
 		},
 	}
 	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
