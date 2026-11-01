@@ -16,9 +16,12 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/aliyun/fc-go-sdk"
+	fc "github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	bsssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
+	ecssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	osssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -299,7 +302,7 @@ func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCod
 		t.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	bssOpenApiService := BssOpenApiService{client}
+	bssOpenApiService := bsssvc.NewBssOpenApiService(client)
 	accountId, err := client.AccountId()
 	if err != nil {
 		t.Errorf("error getting AliCloud client: %s", err)
@@ -800,7 +803,7 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
 	serviceFunc := func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ecssvc.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -865,7 +868,7 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 	resourceId := "alicloud_fc_function.default"
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
