@@ -667,7 +667,7 @@ func Provider() *schema.Provider {
 			"alicloud_network_acls":       dataSourceAlicloudNetworkAcls(),
 
 			// ocean
-			"alicloud_ocean_base_instances": dataSourceAlicloudOceanBaseInstances(),
+			// alicloud_ocean_base_instances is declared by service/oceanbasepro.ServicePackage().
 
 			// oos
 			"alicloud_oos_templates":            dataSourceAlicloudOosTemplates(),
@@ -1597,7 +1597,7 @@ func Provider() *schema.Provider {
 			"alicloud_network_acl_entries":          resourceAliyunNetworkAclEntries(),
 
 			// ocean
-			"alicloud_ocean_base_instance": resourceAliCloudOceanBaseInstance(),
+			// alicloud_ocean_base_instance is declared by service/oceanbasepro.ServicePackage().
 
 			// oos
 			"alicloud_oos_template":               resourceAlicloudOosTemplate(),

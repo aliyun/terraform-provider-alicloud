@@ -1,4 +1,4 @@
-package alicloud
+package oceanbasepro
 
 import (
 	"fmt"
@@ -7,12 +7,15 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudOceanBaseInstances() *schema.Resource {
+func DataSourceAlicloudOceanBaseInstances() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudOceanBaseInstancesRead,
 		Schema: map[string]*schema.Schema{
@@ -164,7 +167,7 @@ func dataSourceAlicloudOceanBaseInstancesRead(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("search_key"); ok {
 		request["SearchKey"] = v
 	}
-	setPagingRequest(d, request, PageSizeLarge)
+	helper.SetPagingRequest(d, request, helper.PageSizeLarge)
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -180,7 +183,7 @@ func dataSourceAlicloudOceanBaseInstancesRead(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		instanceNameRegex = r
 	}
@@ -192,29 +195,29 @@ func dataSourceAlicloudOceanBaseInstancesRead(d *schema.ResourceData, meta inter
 
 	for {
 		action := "DescribeInstances"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			resp, err := client.RpcPost("OceanBasePro", "2019-09-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
 			response = resp
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ocean_base_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ocean_base_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Instances", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Instances", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -244,7 +247,7 @@ func dataSourceAlicloudOceanBaseInstancesRead(d *schema.ResourceData, meta inter
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
-	oceanBaseProService := OceanBaseProService{client}
+	oceanBaseProService := NewService(client)
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 
@@ -275,28 +278,28 @@ func dataSourceAlicloudOceanBaseInstancesRead(d *schema.ResourceData, meta inter
 			continue
 		}
 		id := fmt.Sprint(object["InstanceId"])
-		object, err = oceanBaseProService.DescribeOceanBaseInstance(id)
+		object, err = oceanBaseProService.DescribeOceanBaseInstanceDetail(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["node_num"] = object["NodeNum"]
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }
