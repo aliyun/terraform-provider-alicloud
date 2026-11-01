@@ -722,9 +722,6 @@ func Provider() *schema.Provider {
 
 			// ram
 
-			// rdc
-			"alicloud_rdc_organizations": dataSourceAlicloudRdcOrganizations(),
-
 			// rds
 			"alicloud_rds_backups":               dataSourceAlicloudRdsBackups(),
 			"alicloud_rds_modify_parameter_logs": dataSourceAlicloudRdsModifyParameterLogs(),
@@ -1704,9 +1701,6 @@ func Provider() *schema.Provider {
 
 			// ram
 			"alicloud_ram_role_attachment": resourceAlicloudRamRoleAttachment(),
-
-			// rdc
-			"alicloud_rdc_organization": resourceAlicloudRdcOrganization(),
 
 			// rds
 			"alicloud_rds_custom_disk_attachment":       resourceAliCloudRdsCustomDiskAttachment(),
