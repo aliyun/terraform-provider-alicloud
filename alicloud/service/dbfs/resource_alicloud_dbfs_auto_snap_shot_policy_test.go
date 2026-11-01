@@ -1,35 +1,37 @@
-package alicloud
+package dbfs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // Case 1
-func TestAccAlicloudDbfsAutoSnapShotPolicy_basic2601(t *testing.T) {
+func TestAccAliCloudDbfsAutoSnapShotPolicy_basic2601(t *testing.T) {
 	var v map[string]interface{}
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
-	checkoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	resourceId := "alicloud_dbfs_auto_snap_shot_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudDbfsAutoSnapShotPolicyMap2601)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DbfsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDbfsAutoSnapShotPolicyMap2601)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dbfs.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDbfsAutoSnapShotPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sDbfsAutoSnapShotPolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDbfsAutoSnapShotPolicyBasicDependence2601)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sDbfsAutoSnapShotPolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDbfsAutoSnapShotPolicyBasicDependence2601)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

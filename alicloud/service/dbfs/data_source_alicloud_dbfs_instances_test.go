@@ -1,57 +1,58 @@
-package alicloud
+package dbfs_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudDBFSInstancesDataSource(t *testing.T) {
+func TestAccAliCloudDBFSInstancesDataSource(t *testing.T) {
 	t.Skip("This resource has been deprecated since v1.279.0 and will be removed in the future. See: https://help.aliyun.com/en/dbfs/")
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_dbfs_instances.default"
 	name := fmt.Sprintf("tf-testacc-dbfsInstance%v", rand)
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceDbfsInstancesConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceDbfsInstancesConfigDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_dbfs_instance.default.instance_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "fake_tf-testacc*",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_dbfs_instance.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_dbfs_instance.default.id}_fake"},
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_dbfs_instance.default.id}"},
 			"status": "unattached",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_dbfs_instance.default.id}_fake"},
 			"status": "attaching",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_dbfs_instance.default.instance_name}",
 			"ids":        []string{"${alicloud_dbfs_instance.default.id}"},
 			"status":     "unattached",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_dbfs_instance.default.instance_name}",
 			"ids":        []string{"${alicloud_dbfs_instance.default.id}"},
 			"status":     "attaching",
@@ -74,16 +75,16 @@ func TestAccAlicloudDBFSInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var DbfsInstancesCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existDbfsInstancesMapFunc,
-		fakeMapFunc:  fakeDbfsInstancesMapFunc,
+	var DbfsInstancesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existDbfsInstancesMapFunc,
+		FakeMapFunc:  fakeDbfsInstancesMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
 	}
-	DbfsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, statusConf, allConf)
+	DbfsInstancesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, statusConf, allConf)
 }
 
 func dataSourceDbfsInstancesConfigDependence(name string) string {

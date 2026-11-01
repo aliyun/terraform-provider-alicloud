@@ -1,4 +1,4 @@
-package alicloud
+package dbfs
 
 import (
 	"fmt"
@@ -6,16 +6,24 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type DbfsServiceV2 struct {
+type ServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+// NewServiceV2 is the exported constructor for the v2 service variant.
+func NewServiceV2(client *connectivity.AliyunClient) *ServiceV2 {
+	return &ServiceV2{client: client}
 }
 
 // DescribeDbfsDbfsInstance <<< Encapsulated get interface for Dbfs DbfsInstance.
 
-func (s *DbfsServiceV2) DescribeDbfsDbfsInstance(id string) (object map[string]interface{}, err error) {
+func (s *ServiceV2) DescribeDbfsDbfsInstance(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -25,44 +33,44 @@ func (s *DbfsServiceV2) DescribeDbfsDbfsInstance(id string) (object map[string]i
 	query = make(map[string]interface{})
 	query["FsId"] = id
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("DBFS", "2020-04-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
-			return object, WrapErrorf(NotFoundErr("DbfsInstance", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DbfsInstance", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.DBFSInfo", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DBFSInfo", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DBFSInfo", response)
 	}
 
 	return v.(map[string]interface{}), nil
 }
 
-func (s *DbfsServiceV2) DbfsDbfsInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+func (s *ServiceV2) DbfsDbfsInstanceStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDbfsDbfsInstance(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -70,7 +78,7 @@ func (s *DbfsServiceV2) DbfsDbfsInstanceStateRefreshFunc(id string, field string
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
