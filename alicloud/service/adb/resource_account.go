@@ -1,4 +1,4 @@
-package alicloud
+package adb
 
 import (
 	"fmt"
@@ -8,16 +8,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudAdbAccount() *schema.Resource {
+func ResourceAdbAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAdbAccountCreate,
-		Read:   resourceAliCloudAdbAccountRead,
-		Update: resourceAliCloudAdbAccountUpdate,
-		Delete: resourceAliCloudAdbAccountDelete,
+		Create: ResourceAdbAccountCreate,
+		Read:   ResourceAdbAccountRead,
+		Update: ResourceAdbAccountUpdate,
+		Delete: ResourceAdbAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,7 +52,7 @@ func resourceAliCloudAdbAccount() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Super"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Super"}, false),
 			},
 			"db_cluster_id": {
 				Type:     schema.TypeString,
@@ -57,7 +63,7 @@ func resourceAliCloudAdbAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchemaForceNew(),
+			"tags": tags.TagsSchemaForceNew(),
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -75,7 +81,7 @@ func resourceAliCloudAdbAccount() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbAccountCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -93,10 +99,10 @@ func resourceAliCloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		tagsMapJSON, err := convertListMapToJsonString(tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		tagsMapJSON, err := convert.ConvertListMapToJsonString(tagsMap)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Tag"] = tagsMapJSON
 	}
@@ -109,16 +115,15 @@ func resourceAliCloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 
 	if accountPassword == "" && kmsPassword == "" {
-		return WrapError(Error("One of the 'account_password' and 'kms_encrypted_password' should be set."))
+		return errs.WrapError(errs.Error("One of the 'account_password' and 'kms_encrypted_password' should be set."))
 	}
 
 	if accountPassword != "" {
 		request["AccountPassword"] = accountPassword
 	} else {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		decryptResp, err := kmsDecrypt(client, kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["AccountPassword"] = decryptResp
@@ -127,11 +132,11 @@ func resourceAliCloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -139,35 +144,35 @@ func resourceAliCloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_adb_account", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_adb_account", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["DBClusterId"], request["AccountName"]))
 
 	adbServiceV2 := AdbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
-	return resourceAliCloudAdbAccountRead(d, meta)
+	return ResourceAdbAccountRead(d, meta)
 }
 
-func resourceAliCloudAdbAccountRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbServiceV2 := AdbServiceV2{client}
 
 	objectRaw, err := adbServiceV2.DescribeAdbAccount(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_adb_account DescribeAdbAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("account_description", objectRaw["AccountDescription"])
@@ -176,7 +181,7 @@ func resourceAliCloudAdbAccountRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("account_name", objectRaw["AccountName"])
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_cluster_id", parts[0])
@@ -184,7 +189,7 @@ func resourceAliCloudAdbAccountRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceAliCloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -208,11 +213,11 @@ func resourceAliCloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -220,14 +225,14 @@ func resourceAliCloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		adbServiceV2 := AdbServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 	update = false
@@ -249,20 +254,19 @@ func resourceAliCloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("kms_encrypted_password") {
 		update = true
 
-		kmsService := KmsService{meta.(*connectivity.AliyunClient)}
-		decryptResp, err := kmsService.Decrypt(d.Get("kms_encrypted_password").(string), d.Get("kms_encryption_context").(map[string]interface{}))
+		decryptResp, err := kmsDecrypt(meta.(*connectivity.AliyunClient), d.Get("kms_encrypted_password").(string), d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["AccountPassword"] = decryptResp
 	}
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -270,22 +274,22 @@ func resourceAliCloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		adbServiceV2 := AdbServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 
 	d.Partial(false)
-	return resourceAliCloudAdbAccountRead(d, meta)
+	return ResourceAdbAccountRead(d, meta)
 }
 
-func resourceAliCloudAdbAccountDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbAccountDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -301,11 +305,11 @@ func resourceAliCloudAdbAccountDelete(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("account_type"); ok {
 		request["AccountType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -313,19 +317,19 @@ func resourceAliCloudAdbAccountDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidAccountName.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidAccountName.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	adbServiceV2 := AdbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 10*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 10*time.Second, adbServiceV2.AdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil

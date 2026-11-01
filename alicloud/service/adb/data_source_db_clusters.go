@@ -1,4 +1,4 @@
-package alicloud
+package adb
 
 import (
 	"fmt"
@@ -7,13 +7,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudAdbDbClusters() *schema.Resource {
+func DataSourceAdbDbClusters() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAdbDbClustersRead,
+		Read: DataSourceAdbDbClustersRead,
 		Schema: map[string]*schema.Schema{
 			"description_regex": {
 				Type:         schema.TypeString,
@@ -44,7 +49,7 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ClassChanging", "Creating", "Deleting", "NetAddressCreating", "NetAddressDeleting", "Preparing", "Restoring", "Running"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -277,7 +282,7 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{}) error {
+func DataSourceAdbDbClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeDBClusters"
@@ -310,14 +315,14 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = helper.PageSizeLarge
 	}
 	var objects []interface{}
 	var descriptionRegex *regexp.Regexp
 	if v, ok := d.GetOk("description_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		descriptionRegex = r
 	}
@@ -336,16 +341,16 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	for {
 		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.Items.DBCluster", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBCluster", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Items.DBCluster", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -374,12 +379,12 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 
-		elastic_io_resourceVal, err := formatInt(object["ElasticIOResource"])
+		elastic_io_resourceVal, err := convert.FormatInt(object["ElasticIOResource"])
 		if err != nil {
 			return err
 		}
 
-		portVal, err := formatInt(object["Port"])
+		portVal, err := convert.FormatInt(object["Port"])
 		if err != nil {
 			return err
 		}
@@ -424,18 +429,18 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		}
 		descriptions = append(descriptions, object["DBClusterDescription"].(string))
 
-		tags := make(map[string]interface{})
+		tagsMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.TagIgnored(key, value) {
+					tagsMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagsMap
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["DBClusterId"]))
 			s = append(s, mapping)
@@ -447,26 +452,26 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		if object["PayType"].(string) == string(Prepaid) {
 			getResp, err := adbService.DescribeAutoRenewAttribute(id)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			mapping["auto_renew_period"] = getResp["Duration"]
 			mapping["renewal_status"] = getResp["RenewalStatus"]
 		}
 		getResp1, err := adbService.DescribeDBClusterAccessWhiteList(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["security_ips"] = strings.Split(getResp1["SecurityIPList"].(string), ",")
 
 		getResp2, err := adbService.DescribeAdbDbCluster(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["engine_version"] = getResp2["EngineVersion"]
 		mapping["maintain_time"] = getResp2["MaintainTime"]
 		getResp3, err := adbService.DescribeAdbDbClusterKernelVersion(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["kernel_version"] = getResp3["KernelVersion"]
 		availableKernelVersion := getResp3["AvailableKernelVersion"]
@@ -487,27 +492,27 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("descriptions", descriptions); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["TotalCount"])
+	total_countVal, err := convert.FormatInt(response["TotalCount"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

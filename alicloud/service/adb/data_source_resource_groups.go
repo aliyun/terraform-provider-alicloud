@@ -1,4 +1,4 @@
-package alicloud
+package adb
 
 import (
 	"fmt"
@@ -6,13 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudAdbResourceGroups() *schema.Resource {
+func DataSourceAdbResourceGroups() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAdbResourceGroupsRead,
+		Read: DataSourceAdbResourceGroupsRead,
 		Schema: map[string]*schema.Schema{
 			"db_cluster_id": {
 				Required: true,
@@ -74,7 +77,7 @@ func dataSourceAlicloudAdbResourceGroups() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAdbResourceGroupsRead(d *schema.ResourceData, meta interface{}) error {
+func DataSourceAdbResourceGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := make(map[string]interface{})
@@ -100,29 +103,29 @@ func dataSourceAlicloudAdbResourceGroupsRead(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var err error
 	action := "DescribeDBResourceGroup"
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_resource_groups", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_adb_resource_groups", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	resp, err := jsonpath.Get("$.GroupsInfo", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.GroupsInfo", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.GroupsInfo", response)
 	}
 	dbClusterId, err := jsonpath.Get("$.DBClusterId", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.DBClusterId", response)
+		return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DBClusterId", response)
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
@@ -153,13 +156,13 @@ func dataSourceAlicloudAdbResourceGroupsRead(d *schema.ResourceData, meta interf
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	return nil
 }

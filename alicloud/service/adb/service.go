@@ -1,4 +1,4 @@
-package alicloud
+package adb
 
 import (
 	"fmt"
@@ -10,8 +10,12 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
+	adbSdk "github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -20,73 +24,80 @@ type AdbService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *AdbService) DescribeAdbCluster(id string) (instance *adb.DBClusterInDescribeDBClusters, err error) {
-	request := adb.CreateDescribeDBClustersRequest()
+// NewAdbService constructs an AdbService from the shared client. It replaces
+// the root-package &AdbService{client} literal referenced by migrated tests,
+// which can no longer reach the unexported struct field from package adb_test.
+func NewAdbService(client *connectivity.AliyunClient) *AdbService {
+	return &AdbService{client: client}
+}
+
+func (s *AdbService) DescribeAdbCluster(id string) (instance *adbSdk.DBClusterInDescribeDBClusters, err error) {
+	request := adbSdk.CreateDescribeDBClustersRequest()
 	request.RegionId = s.client.RegionId
 	dbClusterIds := []string{}
 	dbClusterIds = append(dbClusterIds, id)
 	request.DBClusterIds = id
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.DescribeDBClusters(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*adb.DescribeDBClustersResponse)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*adbSdk.DescribeDBClustersResponse)
 	if len(response.Items.DBCluster) < 1 {
-		return nil, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("Cluster", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 
 	return &response.Items.DBCluster[0], nil
 }
 
-func (s *AdbService) DescribeAdbClusterAttribute(id string) (instance *adb.DBCluster, err error) {
-	request := adb.CreateDescribeDBClusterAttributeRequest()
+func (s *AdbService) DescribeAdbClusterAttribute(id string) (instance *adbSdk.DBCluster, err error) {
+	request := adbSdk.CreateDescribeDBClusterAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
 
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.DescribeDBClusterAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return instance, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return instance, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*adb.DescribeDBClusterAttributeResponse)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*adbSdk.DescribeDBClusterAttributeResponse)
 	if len(response.Items.DBCluster) < 1 {
-		return nil, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("Cluster", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 
 	return &response.Items.DBCluster[0], nil
 }
 
-func (s *AdbService) DescribeAdbAutoRenewAttribute(id string) (instance *adb.AutoRenewAttribute, err error) {
-	request := adb.CreateDescribeAutoRenewAttributeRequest()
+func (s *AdbService) DescribeAdbAutoRenewAttribute(id string) (instance *adbSdk.AutoRenewAttribute, err error) {
+	request := adbSdk.CreateDescribeAutoRenewAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterIds = id
 
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.DescribeAutoRenewAttribute(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return instance, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return instance, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return instance, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return instance, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*adb.DescribeAutoRenewAttributeResponse)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*adbSdk.DescribeAutoRenewAttributeResponse)
 	if len(response.Items.AutoRenewAttribute) < 1 {
-		return nil, WrapErrorf(NotFoundErr("Cluster", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("Cluster", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 
 	return &response.Items.AutoRenewAttribute[0], nil
@@ -97,38 +108,38 @@ func (s *AdbService) WaitForAdbConnection(id string, status Status, timeout int)
 	for {
 		object, err := s.DescribeAdbConnection(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if status != Deleted && object != nil && object.ConnectionString != "" {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.ConnectionString, id, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.ConnectionString, id, errs.ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 }
 
-func (s *AdbService) DescribeAdbConnection(id string) (*adb.Address, error) {
-	parts, err := ParseResourceId(id, 2)
+func (s *AdbService) DescribeAdbConnection(id string) (*adbSdk.Address, error) {
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
-	deadline := time.Now().Add(time.Duration(DefaultIntervalLong) * time.Second)
+	deadline := time.Now().Add(time.Duration(helper.DefaultIntervalLong) * time.Second)
 	for {
 		object, err := s.DescribeAdbClusterNetInfo(parts[0])
 
 		if err != nil {
-			if NotFoundError(err) {
-				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			if errs.NotFoundError(err) {
+				return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 			}
-			return nil, WrapError(err)
+			return nil, errs.WrapError(err)
 		}
 
 		if object != nil {
@@ -138,36 +149,36 @@ func (s *AdbService) DescribeAdbConnection(id string) (*adb.Address, error) {
 				}
 			}
 		}
-		time.Sleep(DefaultIntervalMini * time.Second)
+		time.Sleep(helper.DefaultIntervalMini * time.Second)
 		if time.Now().After(deadline) {
 			break
 		}
 	}
 
-	return nil, WrapErrorf(NotFoundErr("DBConnection", id), NotFoundMsg, ProviderERROR)
+	return nil, errs.WrapErrorf(errs.NotFoundErr("DBConnection", id), errs.NotFoundMsg, errs.ProviderERROR)
 }
 
-func (s *AdbService) DescribeAdbClusterNetInfo(id string) ([]adb.Address, error) {
+func (s *AdbService) DescribeAdbClusterNetInfo(id string) ([]adbSdk.Address, error) {
 
-	request := adb.CreateDescribeDBClusterNetInfoRequest()
+	request := adbSdk.CreateDescribeDBClusterNetInfoRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.DescribeDBClusterNetInfo(request)
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	response, _ := raw.(*adb.DescribeDBClusterNetInfoResponse)
+	response, _ := raw.(*adbSdk.DescribeDBClusterNetInfoResponse)
 	if len(response.Items.Address) < 1 {
-		return nil, WrapErrorf(NotFoundErr("DBInstanceNetInfo", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("DBInstanceNetInfo", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 
 	return response.Items.Address, nil
@@ -178,59 +189,59 @@ func (s *AdbService) WaitForAdbAccount(id string, status Status, timeout int) er
 	for {
 		object, err := s.DescribeAdbAccount(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if object != nil && object.AccountStatus == string(status) {
 			break
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AccountStatus, status, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.AccountStatus, status, errs.ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
 
-func (s *AdbService) DescribeAdbAccount(id string) (ds *adb.DBAccount, err error) {
-	parts, err := ParseResourceId(id, 2)
+func (s *AdbService) DescribeAdbAccount(id string) (ds *adbSdk.DBAccount, err error) {
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
+		err = errs.WrapError(err)
 		return
 	}
-	request := adb.CreateDescribeAccountsRequest()
+	request := adbSdk.CreateDescribeAccountsRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = parts[0]
 	request.AccountName = parts[1]
-	invoker := NewInvoker()
-	invoker.AddCatcher(DBInstanceStatusCatcher)
-	var response *adb.DescribeAccountsResponse
+	invoker := helper.NewInvoker()
+	invoker.AddCatcher(dbInstanceStatusCatcher)
+	var response *adbSdk.DescribeAccountsResponse
 	if err := invoker.Run(func() error {
-		raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+		raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 			return adbClient.DescribeAccounts(request)
 		})
 		if err != nil {
 			return err
 		}
 
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-		response, _ = raw.(*adb.DescribeAccountsResponse)
+		response, _ = raw.(*adbSdk.DescribeAccountsResponse)
 		return nil
 	}); err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
 	if len(response.AccountList.DBAccount) < 1 {
-		return nil, WrapErrorf(NotFoundErr("DBAccount", id), NotFoundMsg, ProviderERROR)
+		return nil, errs.WrapErrorf(errs.NotFoundErr("DBAccount", id), errs.NotFoundMsg, errs.ProviderERROR)
 	}
 	return &response.AccountList.DBAccount[0], nil
 }
@@ -241,21 +252,21 @@ func (s *AdbService) WaitForAdbInstance(id string, status Status, timeout int) e
 	for {
 		object, err := s.DescribeAdbCluster(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if strings.ToLower(object.DBClusterStatus) == strings.ToLower(string(status)) {
 			break
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DBClusterStatus, status, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.DBClusterStatus, status, errs.ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
@@ -272,33 +283,33 @@ func (s *AdbService) setClusterTags(d *schema.ResourceData) error {
 			for _, v := range remove {
 				tagKey = append(tagKey, v.Key)
 			}
-			request := adb.CreateUntagResourcesRequest()
+			request := adbSdk.CreateUntagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
 			request.ResourceType = "cluster"
 			request.TagKey = &tagKey
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithAdbClient(func(client *adb.Client) (interface{}, error) {
+			raw, err := s.client.WithAdbClient(func(client *adbSdk.Client) (interface{}, error) {
 				return client.UntagResources(request)
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 		if len(create) > 0 {
-			request := adb.CreateTagResourcesRequest()
+			request := adbSdk.CreateTagResourcesRequest()
 			request.ResourceId = &[]string{d.Id()}
 			request.Tag = &create
 			request.ResourceType = "cluster"
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithAdbClient(func(client *adb.Client) (interface{}, error) {
+			raw, err := s.client.WithAdbClient(func(client *adbSdk.Client) (interface{}, error) {
 				return client.TagResources(request)
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
 	}
@@ -306,7 +317,7 @@ func (s *AdbService) setClusterTags(d *schema.ResourceData) error {
 	return nil
 }
 
-func (s *AdbService) diffTags(oldTags, newTags []adb.TagResourcesTag) ([]adb.TagResourcesTag, []adb.TagResourcesTag) {
+func (s *AdbService) diffTags(oldTags, newTags []adbSdk.TagResourcesTag) ([]adbSdk.TagResourcesTag, []adbSdk.TagResourcesTag) {
 	// First, we're creating everything we have
 	create := make(map[string]interface{})
 	for _, t := range newTags {
@@ -314,7 +325,7 @@ func (s *AdbService) diffTags(oldTags, newTags []adb.TagResourcesTag) ([]adb.Tag
 	}
 
 	// Build the list of what to remove
-	var remove []adb.TagResourcesTag
+	var remove []adbSdk.TagResourcesTag
 	for _, t := range oldTags {
 		old, ok := create[t.Key]
 		if !ok || old != t.Value {
@@ -326,7 +337,7 @@ func (s *AdbService) diffTags(oldTags, newTags []adb.TagResourcesTag) ([]adb.Tag
 	return s.tagsFromMap(create), remove
 }
 
-func (s *AdbService) tagsToMap(tags []adb.TagResource) map[string]string {
+func (s *AdbService) tagsToMap(tags []adbSdk.TagResource) map[string]string {
 	result := make(map[string]string)
 	for _, t := range tags {
 		if !s.ignoreTag(t) {
@@ -336,10 +347,10 @@ func (s *AdbService) tagsToMap(tags []adb.TagResource) map[string]string {
 	return result
 }
 
-func (s *AdbService) tagsFromMap(m map[string]interface{}) []adb.TagResourcesTag {
-	result := make([]adb.TagResourcesTag, 0, len(m))
+func (s *AdbService) tagsFromMap(m map[string]interface{}) []adbSdk.TagResourcesTag {
+	result := make([]adbSdk.TagResourcesTag, 0, len(m))
 	for k, v := range m {
-		result = append(result, adb.TagResourcesTag{
+		result = append(result, adbSdk.TagResourcesTag{
 			Key:   k,
 			Value: v.(string),
 		})
@@ -348,7 +359,7 @@ func (s *AdbService) tagsFromMap(m map[string]interface{}) []adb.TagResourcesTag
 	return result
 }
 
-func (s *AdbService) ignoreTag(t adb.TagResource) bool {
+func (s *AdbService) ignoreTag(t adbSdk.TagResource) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
@@ -361,20 +372,20 @@ func (s *AdbService) ignoreTag(t adb.TagResource) bool {
 	return false
 }
 
-func (s *AdbService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []adb.TagResource, err error) {
-	request := adb.CreateListTagResourcesRequest()
+func (s *AdbService) DescribeTags(resourceId string, resourceType tags.TagResourceType) (tags []adbSdk.TagResource, err error) {
+	request := adbSdk.CreateListTagResourcesRequest()
 	request.RegionId = s.client.RegionId
 	request.ResourceType = string(resourceType)
 	request.ResourceId = &[]string{resourceId}
-	raw, err := s.client.WithAdbClient(func(client *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(client *adbSdk.Client) (interface{}, error) {
 		return client.ListTagResources(request)
 	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, resourceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, resourceId, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*adb.ListTagResourcesResponse)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*adbSdk.ListTagResourcesResponse)
 
 	return response.TagResources.TagResource, nil
 }
@@ -385,51 +396,51 @@ func (s *AdbService) WaitForCluster(id string, status Status, timeout int) error
 	for {
 		object, err := s.DescribeAdbClusterAttribute(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				if status == Deleted {
 					return nil
 				}
 			} else {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 		}
 		if strings.ToLower(object.DBClusterStatus) == strings.ToLower(string(status)) {
 			break
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.DBClusterStatus, status, ProviderERROR)
+			return errs.WrapErrorf(err, errs.WaitTimeoutMsg, id, helper.GetFunc(1), timeout, object.DBClusterStatus, status, errs.ProviderERROR)
 		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		time.Sleep(helper.DefaultIntervalShort * time.Second)
 	}
 	return nil
 }
 
 func (s *AdbService) DescribeDBSecurityIps(clusterId string) (ips []string, err error) {
 
-	request := adb.CreateDescribeDBClusterAccessWhiteListRequest()
+	request := adbSdk.CreateDescribeDBClusterAccessWhiteListRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = clusterId
 
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.DescribeDBClusterAccessWhiteList(request)
 	})
 	if err != nil {
-		return ips, WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return ips, errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	resp, _ := raw.(*adb.DescribeDBClusterAccessWhiteListResponse)
+	resp, _ := raw.(*adbSdk.DescribeDBClusterAccessWhiteListResponse)
 
 	var ipstr, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range resp.Items.IPArray {
 		if ip.DBClusterIPArrayAttribute != "hidden" {
 			ipstr += separator + ip.SecurityIPList
-			separator = COMMA_SEPARATED
+			separator = helper.CommaSeparated
 		}
 	}
 
-	for _, ip := range strings.Split(ipstr, COMMA_SEPARATED) {
+	for _, ip := range strings.Split(ipstr, helper.CommaSeparated) {
 		ipsMap[ip] = ip
 	}
 
@@ -445,67 +456,67 @@ func (s *AdbService) DescribeDBSecurityIps(clusterId string) (ips []string, err 
 
 func (s *AdbService) ModifyDBSecurityIps(clusterId, ips string) error {
 
-	request := adb.CreateModifyDBClusterAccessWhiteListRequest()
+	request := adbSdk.CreateModifyDBClusterAccessWhiteListRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = clusterId
 	request.SecurityIps = ips
 
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.ModifyDBClusterAccessWhiteList(request)
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err := s.WaitForCluster(clusterId, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	return nil
 }
 
-func (s *AdbService) DescribeAdbBackupPolicy(id string) (policy *adb.DescribeBackupPolicyResponse, err error) {
+func (s *AdbService) DescribeAdbBackupPolicy(id string) (policy *adbSdk.DescribeBackupPolicyResponse, err error) {
 
-	request := adb.CreateDescribeBackupPolicyRequest()
+	request := adbSdk.CreateDescribeBackupPolicyRequest()
 	request.DBClusterId = id
 	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.DescribeBackupPolicy(request)
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return policy, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	return raw.(*adb.DescribeBackupPolicyResponse), nil
+	return raw.(*adbSdk.DescribeBackupPolicyResponse), nil
 }
 
 func (s *AdbService) ModifyAdbBackupPolicy(clusterId, backupTime, backupPeriod string) error {
 
-	request := adb.CreateModifyBackupPolicyRequest()
+	request := adbSdk.CreateModifyBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = clusterId
 	request.PreferredBackupPeriod = backupPeriod
 	request.PreferredBackupTime = backupTime
 
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.ModifyBackupPolicy(request)
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err := s.WaitForCluster(clusterId, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	return nil
 }
@@ -514,51 +525,51 @@ func (s *AdbService) AdbClusterStateRefreshFunc(id string, failStates []string) 
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbClusterAttribute(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if object.DBClusterStatus == failState {
-				return object, object.DBClusterStatus, WrapError(Error(FailedToReachTargetStatus, object.DBClusterStatus))
+				return object, object.DBClusterStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, object.DBClusterStatus))
 			}
 		}
 		return object, object.DBClusterStatus, nil
 	}
 }
 
-func (s *AdbService) DescribeTask(id, taskId string) (*adb.DescribeTaskInfoResponse, error) {
-	request := adb.CreateDescribeTaskInfoRequest()
+func (s *AdbService) DescribeTask(id, taskId string) (*adbSdk.DescribeTaskInfoResponse, error) {
+	request := adbSdk.CreateDescribeTaskInfoRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
 	request.TaskId = requests.Integer(taskId)
 
-	var response *adb.DescribeTaskInfoResponse
-	wait := incrementalWait(2*time.Second, 1*time.Second)
+	var response *adbSdk.DescribeTaskInfoResponse
+	wait := helper.IncrementalWait(2*time.Second, 1*time.Second)
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
-		raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+		raw, err := s.client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 			return adbClient.DescribeTaskInfo(request)
 		})
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*adb.DescribeTaskInfoResponse)
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*adbSdk.DescribeTaskInfoResponse)
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -568,11 +579,11 @@ func (s *AdbService) AdbTaskStateRefreshFunc(id, taskId string) retry.StateRefre
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTask(id, taskId)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		return object, object.TaskInfo.Status, nil
@@ -591,19 +602,19 @@ func (s *AdbService) DescribeAutoRenewAttribute(id string) (object map[string]in
 	runtime.SetAutoretry(true)
 	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	v, err := jsonpath.Get("$.Items.AutoRenewAttribute", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.AutoRenewAttribute", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items.AutoRenewAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["DBClusterId"].(string) != id {
-			return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -621,20 +632,20 @@ func (s *AdbService) DescribeDBClusterAccessWhiteList(id string) (object map[str
 	runtime.SetAutoretry(true)
 	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
-			err = WrapErrorf(NotFoundErr("AnalyticdbForMysql3.0DbCluster", id), NotFoundMsg, ProviderERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+			err = errs.WrapErrorf(errs.NotFoundErr("AnalyticdbForMysql3.0DbCluster", id), errs.NotFoundMsg, errs.ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		return object, err
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	v, err := jsonpath.Get("$.Items.IPArray", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.IPArray", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items.IPArray", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 	} else {
 		ipList := ""
 		for _, item := range v.([]interface{}) {
@@ -653,10 +664,10 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 	var response map[string]interface{}
 	var err error
 	if d.HasChange("tags") {
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.TagIgnored(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -670,22 +681,22 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
-			wait := incrementalWait(2*time.Second, 1*time.Second)
+			wait := helper.IncrementalWait(2*time.Second, 1*time.Second)
 			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 		if len(added) > 0 {
@@ -702,22 +713,22 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 				count++
 			}
 
-			wait := incrementalWait(2*time.Second, 1*time.Second)
+			wait := helper.IncrementalWait(2*time.Second, 1*time.Second)
 			err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 				response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 
 					}
 					return retry.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				return nil
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 	}
@@ -733,23 +744,23 @@ func (s *AdbService) DescribeAdbDbCluster(id string) (object map[string]interfac
 	}
 	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFoundError"}) {
-			err = WrapErrorf(NotFoundErr("AdbDbCluster", id), NotFoundMsg, ProviderERROR)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFoundError"}) {
+			err = errs.WrapErrorf(errs.NotFoundErr("AdbDbCluster", id), errs.NotFoundMsg, errs.ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		return object, err
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	v, err := jsonpath.Get("$.Items.DBCluster", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["DBClusterId"].(string) != id {
-			return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -765,19 +776,19 @@ func (s *AdbService) DescribeDBClusters(id string) (object map[string]interface{
 	}
 	response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		err = errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		return
 	}
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	v, err := jsonpath.Get("$.Items.DBCluster", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["DBClusterId"].(string) != id {
-			return object, WrapErrorf(NotFoundErr("AnalyticDBForMySQL3.0", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("AnalyticDBForMySQL3.0", id), errs.NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -788,16 +799,16 @@ func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, stateField string, 
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbCluster(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if object[stateField].(string) == failState {
-				return object, object[stateField].(string), WrapError(Error(FailedToReachTargetStatus, object[stateField].(string)))
+				return object, object[stateField].(string), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, object[stateField].(string)))
 			}
 		}
 		return object, object[stateField].(string), nil
@@ -815,11 +826,11 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -827,22 +838,22 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Adb:DbClusterLakeVersion", id), NotFoundWithResponse, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Adb:DbClusterLakeVersion", id), errs.NotFoundWithResponse, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	resp, err := jsonpath.Get("$.Items.DBCluster", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(NotFoundErr("Adb:DbClusterLakeVersion", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Adb:DbClusterLakeVersion", id), errs.NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -853,7 +864,7 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[stri
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Adb:DbClusterLakeVersion", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Adb:DbClusterLakeVersion", id), errs.NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -863,15 +874,15 @@ func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceD
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbClusterLakeVersion(d.Id())
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["DBClusterStatus"]) == failState {
-				return object, fmt.Sprint(object["DBClusterStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DBClusterStatus"])))
+				return object, fmt.Sprint(object["DBClusterStatus"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["DBClusterStatus"])))
 			}
 		}
 
@@ -889,11 +900,11 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -901,22 +912,22 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("DBClusterLakeVersion", id), NotFoundWithResponse, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DBClusterLakeVersion", id), errs.NotFoundWithResponse, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	resp, err := jsonpath.Get("$.Items.IPArray", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.IPArray", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items.IPArray", response)
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(NotFoundErr("DBClusterLakeVersion", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DBClusterLakeVersion", id), errs.NotFoundWithResponse, response)
 	}
 
 	object = resp.([]interface{})[0].(map[string]interface{})
@@ -927,9 +938,9 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDBResourceGroup"
-	parts, err := ParseResourceId(id, 2)
+	parts, err := helper.ParseResourceId(id, 2)
 	if err != nil {
-		return object, WrapError(err)
+		return object, errs.WrapError(err)
 	}
 
 	request := map[string]interface{}{
@@ -941,11 +952,11 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -953,22 +964,22 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("Adb:ResourceGroup", id), NotFoundWithResponse, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Adb:ResourceGroup", id), errs.NotFoundWithResponse, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	resp, err := jsonpath.Get("$.GroupsInfo", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GroupsInfo", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.GroupsInfo", response)
 	}
 
 	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-		return object, WrapErrorf(NotFoundErr("Adb:ResourceGroup", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Adb:ResourceGroup", id), errs.NotFoundWithResponse, response)
 	}
 
 	for _, v := range resp.([]interface{}) {
@@ -979,7 +990,7 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Adb:ResourceGroup", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Adb:ResourceGroup", id), errs.NotFoundWithResponse, response)
 	}
 
 	return object, nil
@@ -993,11 +1004,11 @@ func (s *AdbService) DescribeAdbDbClusterSSL(id string) (object map[string]inter
 		"DBClusterId": id,
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ADBVersionNotSupport"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ADBVersionNotSupport"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1005,15 +1016,15 @@ func (s *AdbService) DescribeAdbDbClusterSSL(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 
 	object = v.(map[string]interface{})
@@ -1029,11 +1040,11 @@ func (s *AdbService) DescribeAdbDbClusterKernelVersion(id string) (object map[st
 		"DBClusterId": id,
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1041,15 +1052,15 @@ func (s *AdbService) DescribeAdbDbClusterKernelVersion(id string) (object map[st
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 
 	object = v.(map[string]interface{})
@@ -1065,11 +1076,11 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersionDBClusterSSL(id string) (obj
 		"DBClusterId": id,
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = s.client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1077,18 +1088,18 @@ func (s *AdbService) DescribeAdbDbClusterLakeVersionDBClusterSSL(id string) (obj
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return object, WrapErrorf(NotFoundErr("DBClusterLakeVersion", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DBClusterLakeVersion", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
 	}
 
 	object = v.(map[string]interface{})
@@ -1100,15 +1111,15 @@ func (s *AdbService) AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d *sche
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbClusterLakeVersionDBClusterSSL(d.Id())
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		for _, failState := range failStates {
 			if fmt.Sprint(object["SSLEnabled"]) == failState {
-				return object, fmt.Sprint(object["SSLEnabled"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["SSLEnabled"])))
+				return object, fmt.Sprint(object["SSLEnabled"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["SSLEnabled"])))
 			}
 		}
 

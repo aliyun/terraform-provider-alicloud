@@ -1,78 +1,80 @@
-package alicloud
+// Package adb_test.
+package adb_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudAdbResourceGroupDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.ADBResourceGroupSupportRegions)
+func TestAccAliCloudAdbResourceGroupDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ADBResourceGroupSupportRegions)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}"]`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}_fake"]`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
 	}
 
-	GroupNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+	GroupNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}"]`,
 			"group_name":    `"${var.name}"`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}_fake"]`,
 			"group_name":    `"${var.name}_fake"`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
 	}
-	DbClusterIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+	DbClusterIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}"]`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}_fake"]`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}"]`,
 			"group_name":    `"${var.name}"`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudAdbResourceGroupSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_adb_resource_group.default.id}_fake"]`,
 			"group_name":    `"${var.name}_fake"`,
 			"db_cluster_id": `"${alicloud_adb_db_cluster.default.id}"`,
 		}),
 	}
 
-	AdbResourceGroupCheckInfo.dataSourceTestCheck(t, rand, idsConf, GroupNameConf, DbClusterIdConf, allConf)
+	AdbResourceGroupCheckInfo.DataSourceTestCheck(t, rand, idsConf, GroupNameConf, DbClusterIdConf, allConf)
 }
 
 var existAdbResourceGroupMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"groups.#":               "1",
-		"groups.0.id":            CHECKSET,
-		"groups.0.create_time":   CHECKSET,
-		"groups.0.db_cluster_id": CHECKSET,
-		"groups.0.group_name":    CHECKSET,
-		"groups.0.group_type":    CHECKSET,
-		"groups.0.node_num":      CHECKSET,
-		"groups.0.user":          CHECKSET,
+		"groups.0.id":            acctest.CHECKSET,
+		"groups.0.create_time":   acctest.CHECKSET,
+		"groups.0.db_cluster_id": acctest.CHECKSET,
+		"groups.0.group_name":    acctest.CHECKSET,
+		"groups.0.group_type":    acctest.CHECKSET,
+		"groups.0.node_num":      acctest.CHECKSET,
+		"groups.0.user":          acctest.CHECKSET,
 	}
 }
 
@@ -82,10 +84,10 @@ var fakeAdbResourceGroupMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var AdbResourceGroupCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_adb_resource_groups.default",
-	existMapFunc: existAdbResourceGroupMapFunc,
-	fakeMapFunc:  fakeAdbResourceGroupMapFunc,
+var AdbResourceGroupCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_adb_resource_groups.default",
+	ExistMapFunc: existAdbResourceGroupMapFunc,
+	FakeMapFunc:  fakeAdbResourceGroupMapFunc,
 }
 
 func testAccCheckAlicloudAdbResourceGroupSourceConfig(rand int, attrMap map[string]string) string {

@@ -1,23 +1,27 @@
-package alicloud
+package adb
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
+	adbSdk "github.com/aliyun/alibaba-cloud-sdk-go/services/adb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudAdbBackupPolicy() *schema.Resource {
+func ResourceAdbBackupPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAdbBackupPolicyCreate,
-		Read:   resourceAlicloudAdbBackupPolicyRead,
-		Update: resourceAlicloudAdbBackupPolicyUpdate,
-		Delete: resourceAlicloudAdbBackupPolicyDelete,
+		Create: ResourceAdbBackupPolicyCreate,
+		Read:   ResourceAdbBackupPolicyRead,
+		Update: ResourceAdbBackupPolicyUpdate,
+		Delete: ResourceAdbBackupPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -50,23 +54,23 @@ func resourceAlicloudAdbBackupPolicy() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAdbBackupPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbBackupPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(d.Get("db_cluster_id").(string))
 
-	return resourceAlicloudAdbBackupPolicyUpdate(d, meta)
+	return ResourceAdbBackupPolicyUpdate(d, meta)
 }
 
-func resourceAlicloudAdbBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	object, err := adbService.DescribeAdbBackupPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("db_cluster_id", d.Id())
@@ -77,52 +81,52 @@ func resourceAlicloudAdbBackupPolicyRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAlicloudAdbBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbBackupPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 
 	if d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") {
-		periodList := expandStringList(d.Get("preferred_backup_period").(*schema.Set).List())
-		preferredBackupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], COMMA_SEPARATED))
+		periodList := convert.ExpandStringList(d.Get("preferred_backup_period").(*schema.Set).List())
+		preferredBackupPeriod := fmt.Sprintf("%s", strings.Join(periodList[:], helper.CommaSeparated))
 		preferredBackupTime := d.Get("preferred_backup_time").(string)
 
 		// wait instance running before modifying
 		if err := adbService.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 			if err := adbService.ModifyAdbBackupPolicy(d.Id(), preferredBackupTime, preferredBackupPeriod); err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) {
+				if errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
 			return nil
 		}); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
-	return resourceAlicloudAdbBackupPolicyRead(d, meta)
+	return ResourceAdbBackupPolicyRead(d, meta)
 }
 
-func resourceAlicloudAdbBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	// In case of a delete we are resetting to default values which is Tuesday,Friday each 1am-2am
 	client := meta.(*connectivity.AliyunClient)
-	request := adb.CreateModifyBackupPolicyRequest()
+	request := adbSdk.CreateModifyBackupPolicyRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = d.Id()
 
 	request.PreferredBackupTime = "01:00Z-02:00Z"
 	request.PreferredBackupPeriod = "Tuesday,Friday"
 
-	raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+	raw, err := client.WithAdbClient(func(adbClient *adbSdk.Client) (interface{}, error) {
 		return adbClient.ModifyBackupPolicy(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
 }

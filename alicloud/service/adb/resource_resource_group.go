@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package adb
 
 import (
 	"fmt"
@@ -8,16 +8,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudAdbResourceGroup() *schema.Resource {
+func ResourceAdbResourceGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAdbResourceGroupCreate,
-		Read:   resourceAliCloudAdbResourceGroupRead,
-		Update: resourceAliCloudAdbResourceGroupUpdate,
-		Delete: resourceAliCloudAdbResourceGroupDelete,
+		Create: ResourceAdbResourceGroupCreate,
+		Read:   ResourceAdbResourceGroupRead,
+		Update: ResourceAdbResourceGroupUpdate,
+		Delete: ResourceAdbResourceGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -72,7 +77,7 @@ func resourceAliCloudAdbResourceGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"interactive", "batch", "job", "default_type"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"interactive", "batch", "job", "default_type"}, false),
 			},
 			"max_cluster_count": {
 				Type:     schema.TypeInt,
@@ -126,7 +131,7 @@ func resourceAliCloudAdbResourceGroup() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbResourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -138,7 +143,7 @@ func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interfa
 	request = make(map[string]interface{})
 	request["GroupName"] = d.Get("group_name")
 	request["DBClusterId"] = d.Get("db_cluster_id")
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("max_cluster_count"); ok {
 		request["MaxClusterCount"] = v
@@ -150,9 +155,9 @@ func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interfa
 		request["MinClusterCount"] = v
 	}
 	if v, ok := d.GetOk("engine_params"); ok {
-		engineParamsJson, err := convertMaptoJsonString(v.(map[string]interface{}))
+		engineParamsJson, err := convert.ConvertMaptoJsonString(v.(map[string]interface{}))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		request["EngineParams"] = engineParamsJson
@@ -175,11 +180,11 @@ func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOkExists("node_num"); ok {
 		request["NodeNum"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResourceNotEnough", "ACS.ServerError"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ResourceNotEnough", "ACS.ServerError"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -187,35 +192,35 @@ func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_adb_resource_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_adb_resource_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["DBClusterId"], request["GroupName"]))
 
 	adbServiceV2 := AdbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, adbServiceV2.AdbResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, adbServiceV2.AdbResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudAdbResourceGroupUpdate(d, meta)
+	return ResourceAdbResourceGroupUpdate(d, meta)
 }
 
-func resourceAliCloudAdbResourceGroupRead(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbResourceGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbServiceV2 := AdbServiceV2{client}
 
 	objectRaw, err := adbServiceV2.DescribeAdbResourceGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_adb_resource_group DescribeAdbResourceGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("cluster_mode", objectRaw["ClusterMode"])
@@ -249,7 +254,7 @@ func resourceAliCloudAdbResourceGroupRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudAdbResourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbResourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -264,7 +269,7 @@ func resourceAliCloudAdbResourceGroupUpdate(d *schema.ResourceData, meta interfa
 	request["GroupName"] = parts[1]
 	request["DBClusterId"] = parts[0]
 
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("max_cluster_count") {
 		update = true
 
@@ -293,9 +298,9 @@ func resourceAliCloudAdbResourceGroupUpdate(d *schema.ResourceData, meta interfa
 		update = true
 
 		if v, ok := d.GetOk("engine_params"); ok {
-			engineParamsJson, err := convertMaptoJsonString(v.(map[string]interface{}))
+			engineParamsJson, err := convert.ConvertMaptoJsonString(v.(map[string]interface{}))
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 
 			request["EngineParams"] = engineParamsJson
@@ -346,16 +351,16 @@ func resourceAliCloudAdbResourceGroupUpdate(d *schema.ResourceData, meta interfa
 		update = true
 
 		if v, ok := d.GetOk("users"); ok {
-			request["PoolUserList"] = convertListToJsonString(v.(*schema.Set).List())
+			request["PoolUserList"] = convert.ConvertListToJsonString(v.(*schema.Set).List())
 		}
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ResourceNotEnough"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ResourceNotEnough"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -363,21 +368,21 @@ func resourceAliCloudAdbResourceGroupUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		adbServiceV2 := AdbServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, adbServiceV2.AdbResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, adbServiceV2.AdbResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudAdbResourceGroupRead(d, meta)
+	return ResourceAdbResourceGroupRead(d, meta)
 }
 
-func resourceAliCloudAdbResourceGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func ResourceAdbResourceGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -390,12 +395,12 @@ func resourceAliCloudAdbResourceGroupDelete(d *schema.ResourceData, meta interfa
 	request["GroupName"] = parts[1]
 	request["DBClusterId"] = parts[0]
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("adb", "2019-03-15", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -403,19 +408,19 @@ func resourceAliCloudAdbResourceGroupDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	adbServiceV2 := AdbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, adbServiceV2.AdbResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, adbServiceV2.AdbResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return nil

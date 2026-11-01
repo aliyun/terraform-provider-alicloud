@@ -1,4 +1,5 @@
-package alicloud
+// Package adb_test.
+package adb_test
 
 import (
 	"fmt"
@@ -9,9 +10,13 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/adb"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -23,11 +28,10 @@ func init() {
 }
 
 func testSweepAdbDbInstances(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	client, err := adbTestClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
-	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
 		"tf-testAcc",
@@ -37,19 +41,19 @@ func testSweepAdbDbInstances(region string) error {
 	action := "DescribeDBClusters"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
 	for {
 		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
-			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, AlibabaCloudSdkGoERROR))
+			log.Println(errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, errs.AlibabaCloudSdkGoERROR))
 			break
 		}
 
 		resp, err := jsonpath.Get("$.Items.DBCluster", response)
 		if err != nil {
-			log.Println(WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBCluster", response))
+			log.Println(errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Items.DBCluster", response))
 			break
 		}
 		result, _ := resp.([]interface{})
@@ -58,7 +62,7 @@ func testSweepAdbDbInstances(region string) error {
 			name := fmt.Sprint(item["DBClusterDescription"])
 			id := fmt.Sprint(item["DBClusterId"])
 			skip := true
-			if !sweepAll() {
+			if !adbSweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 						skip = false
@@ -75,11 +79,11 @@ func testSweepAdbDbInstances(region string) error {
 			request := map[string]interface{}{
 				"DBClusterId": id,
 			}
-			wait := incrementalWait(3*time.Second, 3*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 				_, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -89,7 +93,7 @@ func testSweepAdbDbInstances(region string) error {
 				return nil
 			})
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -100,22 +104,22 @@ func testSweepAdbDbInstances(region string) error {
 func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbDbClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sadbCluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.AdbReserverUnSupportRegions)
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.AdbReserverUnSupportRegions)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -139,8 +143,8 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 						"db_node_count":       "1",
 						"db_node_storage":     "100",
 						"mode":                "reserver",
-						"vswitch_id":          CHECKSET,
-						"kernel_version":      CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
+						"kernel_version":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -206,7 +210,7 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -295,7 +299,7 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 				// stops the plan before the placeholder reaches the API.
 				Config: testAccConfig(map[string]interface{}{
 					"kernel_version": "3.2.1",
-					"mode":           REMOVEKEY,
+					"mode":           acctest.REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile("Missing required argument"),
 			},
@@ -312,22 +316,22 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbDbClusterMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sadbCluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -343,8 +347,8 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 						"description":         name,
 						"mode":                "flexible",
 						"compute_resource":    "8Core32GB",
-						"vswitch_id":          CHECKSET,
-						"kernel_version":      CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
+						"kernel_version":      acctest.CHECKSET,
 					}),
 				),
 			},
@@ -396,7 +400,7 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -492,23 +496,23 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 
 func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbDbClusterMap1)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sadbCluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -527,7 +531,7 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 						"mode":                "flexible",
 						"compute_resource":    "32Core128GBNEW",
 						"elastic_io_resource": "1",
-						"vswitch_id":          CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
 						"enable_ssl":          "true",
 						"db_node_class":       "E32",
 					}),
@@ -541,7 +545,7 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
 			//			"compute_resource": "48Core192GBNEW",
-			//			"db_node_count":    CHECKSET,
+			//			"db_node_count":    acctest.CHECKSET,
 			//		}),
 			//	),
 			//},
@@ -581,7 +585,7 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -621,23 +625,23 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 
 func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap2)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudAdbDbClusterMap2)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return adb.NewAdbService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAdbDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sadbCluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAdbDbClusterBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -661,12 +665,12 @@ func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 						"compute_resource":         "32Core128GBNEW",
 						"elastic_io_resource_size": "8Core64GB",
 						"disk_performance_level":   "PL1",
-						"vswitch_id":               CHECKSET,
-						"vpc_id":                   CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
+						"vpc_id":                   acctest.CHECKSET,
 						"db_node_class":            "E32",
 						"elastic_io_resource":      "1",
 						"disk_encryption":          "true",
-						"kms_id":                   CHECKSET,
+						"kms_id":                   acctest.CHECKSET,
 					}),
 				),
 			},
@@ -690,45 +694,45 @@ func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 }
 
 var AliCloudAdbDbClusterMap0 = map[string]string{
-	"auto_renew_period":   NOSET,
+	"auto_renew_period":   acctest.NOSET,
 	"compute_resource":    "",
-	"connection_string":   CHECKSET,
-	"port":                CHECKSET,
+	"connection_string":   acctest.CHECKSET,
+	"port":                acctest.CHECKSET,
 	"db_cluster_version":  "3.0",
 	"db_node_storage":     "0",
 	"elastic_io_resource": "0",
-	"maintain_time":       CHECKSET,
-	"modify_type":         NOSET,
+	"maintain_time":       acctest.CHECKSET,
+	"modify_type":         acctest.NOSET,
 	"payment_type":        "PayAsYouGo",
 	"pay_type":            "PostPaid",
-	"renewal_status":      NOSET,
-	"resource_group_id":   CHECKSET,
+	"renewal_status":      acctest.NOSET,
+	"resource_group_id":   acctest.CHECKSET,
 	"security_ips.#":      "1",
 	"status":              "Running",
 	"tags.%":              "0",
-	"zone_id":             CHECKSET,
+	"zone_id":             acctest.CHECKSET,
 }
 
 var AliCloudAdbDbClusterMap1 = map[string]string{
-	"auto_renew_period": NOSET,
+	"auto_renew_period": acctest.NOSET,
 	//"compute_resource": "8c16g",
-	"connection_string":   CHECKSET,
-	"port":                CHECKSET,
+	"connection_string":   acctest.CHECKSET,
+	"port":                acctest.CHECKSET,
 	"db_cluster_version":  "3.0",
 	"db_node_class":       "E8",
 	"db_node_count":       "1",
 	"db_node_storage":     "100",
 	"elastic_io_resource": "0",
-	"maintain_time":       CHECKSET,
-	"modify_type":         NOSET,
+	"maintain_time":       acctest.CHECKSET,
+	"modify_type":         acctest.NOSET,
 	"payment_type":        "PayAsYouGo",
 	"pay_type":            "PostPaid",
-	"renewal_status":      NOSET,
-	"resource_group_id":   CHECKSET,
+	"renewal_status":      acctest.NOSET,
+	"resource_group_id":   acctest.CHECKSET,
 	"security_ips.#":      "1",
 	"status":              "Running",
 	"tags.%":              "0",
-	"zone_id":             CHECKSET,
+	"zone_id":             acctest.CHECKSET,
 }
 
 var AliCloudAdbDbClusterMap2 = map[string]string{}
