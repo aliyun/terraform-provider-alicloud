@@ -7,17 +7,17 @@ description: |-
   Provides a list of CEN Transit Routers owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_transit\_routers
+# alicloud_cen_transit_routers
 
-This data source provides CEN Transit Routers available to the user.[What is Cen Transit Routers](https://help.aliyun.com/document_detail/261219.html)
+This data source provides CEN Transit Routers available to the user.[What is Cen Transit Routers](https://www.alibabacloud.com/help/doc-detail/261219.html)
 
--> **NOTE:** Available in 1.126.0+
+-> **NOTE:** Available since v1.126.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_transit_routers" "default" {
-  cen_id    = "cen-id1"
+  cen_id = "cen-id1"
 }
 
 output "first_transit_routers_type" {
@@ -43,13 +43,12 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of  CEN Transit Routers names.
 * `transit_routers` - A list of CEN Transit Routers. Each element contains the following attributes:
-    * `cen_id` - The ID of the CEN instance.
-    * `ali_uid` - The UID of the Aliyun.
-    * `transit_router_id` - The ID of the transit router.
-    * `transit_router_name` - The name of the transit router.
-    * `transit_router_description` - The description of the transit router.
-    * `status` - The status of the transit router attachment.
-    * `type` - The Type of the transit router.
-    * `region_id` - The Region ID of the transit router.
-    * `xgw_vip` - The vip of the XGW.
-    * `id` - The ID of the resource, It is formatted to `<cen_id>:<transit_router_id>`. **NOTE:** Before 1.151.0, It is formatted to `<transit_router_id>`.
+  * `cen_id` - The ID of the CEN instance.
+  * `ali_uid` - The UID of the Aliyun.
+  * `transit_router_id` - The ID of the transit router.
+  * `transit_router_name` - The name of the transit router.
+  * `transit_router_description` - The description of the transit router.
+  * `status` - The status of the transit router attachment.
+  * `type` - The Type of the transit router.
+  * `xgw_vip` - The vip of the XGW.
+  * `id` - The ID of the resource, It is formatted to `<cen_id>:<transit_router_id>`. **NOTE:** Before 1.151.0, It is formatted to `<transit_router_id>`.

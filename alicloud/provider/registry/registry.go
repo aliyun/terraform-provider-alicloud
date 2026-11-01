@@ -32,6 +32,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cbwp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cddc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/chatbot"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/clickhouse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudapi"
@@ -211,6 +212,7 @@ var servicePackages = []conns.ServicePackage{
 	cbwp.ServicePackage(),
 	cddc.ServicePackage(),
 	cdn.ServicePackage(),
+	cen.ServicePackage(),
 	chatbot.ServicePackage(),
 	clickhouse.ServicePackage(),
 	cloudapi.ServicePackage(),
