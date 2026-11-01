@@ -1,0 +1,274 @@
+package ecd
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceCommands() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceCommandsRead,
+		Schema: map[string]*schema.Schema{
+			"command_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"RunBatScript", "RunPowerShellScript"}, false),
+			},
+			"content_encoding": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "PlainText",
+				ValidateFunc: validation.StringInSlice([]string{"Base64", "PlainText"}, false),
+			},
+			"desktop_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Pending", "Failed", "PartialFailed", "Running", "Stopped", "Stopping", "Finished", "Success"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"commands": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"command_content": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"command_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"invoke_desktops": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"desktop_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"dropped": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"error_code": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"error_info": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"exit_code": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"finish_time": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"invocation_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"output": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"repeats": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"start_time": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"stop_time": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"invoke_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceCommandsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeInvocations"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("command_type"); ok {
+		request["CommandType"] = v
+	}
+	if v, ok := d.GetOk("content_encoding"); ok {
+		request["ContentEncoding"] = v
+	}
+
+	if v, ok := d.GetOk("desktop_id"); ok {
+		request["DesktopId"] = v
+	}
+
+	request["IncludeOutput"] = "true"
+
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("status"); ok {
+		request["InvokeStatus"] = v
+	}
+	request["MaxResults"] = helper.PageSizeLarge
+	var objects []map[string]interface{}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_ecd_commands", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Invocations", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Invocations", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["InvokeId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"command_content": object["CommandContent"],
+			"command_type":    object["CommandType"],
+			"create_time":     object["CreationTime"],
+			"id":              fmt.Sprint(object["InvokeId"]),
+			"invoke_id":       fmt.Sprint(object["InvokeId"]),
+			"status":          object["InvocationStatus"],
+		}
+
+		invokeDesktops := make([]map[string]interface{}, 0)
+		if invokeDesktopsList, ok := object["InvokeDesktops"].([]interface{}); ok {
+			for _, v := range invokeDesktopsList {
+				if m1, ok := v.(map[string]interface{}); ok {
+
+					droppedVal, err := convert.FormatInt(m1["Dropped"])
+					if err != nil {
+						return err
+					}
+
+					repeatsVal, err := convert.FormatInt(m1["Repeats"])
+					if err != nil {
+						return err
+					}
+					temp1 := map[string]interface{}{
+						"desktop_id":        m1["DesktopId"],
+						"dropped":           droppedVal,
+						"error_code":        m1["ErrorCode"],
+						"error_info":        m1["ErrorInfo"],
+						"exit_code":         m1["ExitCode"],
+						"finish_time":       m1["FinishTime"],
+						"invocation_status": m1["InvocationStatus"],
+						"output":            m1["Output"],
+						"repeats":           repeatsVal,
+						"start_time":        m1["StartTime"],
+						"stop_time":         m1["StopTime"],
+					}
+					invokeDesktops = append(invokeDesktops, temp1)
+				}
+			}
+		}
+		mapping["invoke_desktops"] = invokeDesktops
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("commands", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}
