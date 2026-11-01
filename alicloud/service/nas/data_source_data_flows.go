@@ -1,0 +1,206 @@
+package nas
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudNasDataFlows() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudNasDataFlowsRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"file_system_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Starting", "Running", "Stopped", "Updating", "Deleting", "Stopping", "Misconfigured"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"flows": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"create_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"data_flow_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"error_message": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"file_system_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"file_system_path": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"fset_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"fset_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"source_security_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"source_storage": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"throughput": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudNasDataFlowsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeDataFlows"
+	request := make(map[string]interface{})
+	request["FileSystemId"] = d.Get("file_system_id")
+	request["MaxResults"] = helper.PageSizeLarge
+	var objects []map[string]interface{}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_nas_data_flows", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.DataFlowInfo.DataFlow", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.DataFlowInfo.DataFlow", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["FileSystemId"], ":", item["DataFlowId"])]; !ok {
+					continue
+				}
+			}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+
+		throughputVal, err := convert.FormatInt(object["Throughput"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"create_time":          object["CreateTime"],
+			"id":                   fmt.Sprint(object["FileSystemId"], ":", object["DataFlowId"]),
+			"data_flow_id":         fmt.Sprint(object["DataFlowId"]),
+			"description":          object["Description"],
+			"error_message":        object["ErrorMessage"],
+			"file_system_id":       object["FileSystemId"],
+			"file_system_path":     object["FileSystemPath"],
+			"fset_description":     object["FsetDescription"],
+			"fset_id":              object["FsetId"],
+			"source_security_type": object["SourceSecurityType"],
+			"source_storage":       object["SourceStorage"],
+			"status":               object["Status"],
+			"throughput":           throughputVal,
+		}
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("flows", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}
