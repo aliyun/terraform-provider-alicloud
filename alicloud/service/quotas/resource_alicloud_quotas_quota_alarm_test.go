@@ -1,4 +1,4 @@
-package alicloud
+package quotas_test
 
 import (
 	"fmt"
@@ -11,9 +11,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quotas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,21 +26,21 @@ import (
 func TestAccAliCloudQuotasQuotaAlarm_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaAlarm")
-	rac := resourceAttrCheckInit(rc, ra)
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccQuotasQuotaAlarmTest%d", rand)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -109,9 +114,10 @@ func AlicloudQuotasQuotaAlarmBasicDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_quotas_quota_alarm"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_quotas_quota_alarm"].Schema).Data(nil, nil)
+	p := quotasTestProviderResources()
+	resourceSchema := p["alicloud_quotas_quota_alarm"]
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"quota_alarm_name":  "CreateQuotaAlarmValue",
@@ -137,7 +143,7 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -163,18 +169,18 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_quotas_quota_alarm", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_quotas_quota_alarm", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -182,13 +188,13 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuotasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudQuotasQuotaAlarmCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -214,14 +220,14 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudQuotasQuotaAlarmCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_quotas_quota_alarm"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -235,13 +241,13 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuotasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudQuotasQuotaAlarmUpdate(dExisted, rawClient)
+	err = resourceSchema.Update(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateQuotaAlarm
@@ -251,11 +257,11 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 		"threshold_percent": 200,
 		"web_hook":          "UpdateQuotaAlarmValue",
 	}
-	diff, err := newInstanceDiff("alicloud_quotas_quota_alarm", attributes, attributesDiff, dInit.State())
+	diff, err := acctest.NewInstanceDiff("alicloud_quotas_quota_alarm", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_quotas_quota_alarm"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// GetQuotaAlarm Response
 		"QuotaAlarm": map[string]interface{}{
@@ -282,14 +288,14 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudQuotasQuotaAlarmUpdate(dExisted, rawClient)
+		err := resourceSchema.Update(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_quotas_quota_alarm"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -321,7 +327,7 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudQuotasQuotaAlarmRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -334,13 +340,13 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuotasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudQuotasQuotaAlarmDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -362,7 +368,7 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudQuotasQuotaAlarmDelete(dExisted, rawClient)
+		err := resourceSchema.Delete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -377,21 +383,21 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 func TestAccAliCloudQuotasQuotaAlarm_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaAlarm")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2901)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2901)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -542,21 +548,21 @@ func TestAccAliCloudQuotasQuotaAlarm_basic1(t *testing.T) {
 func TestAccAliCloudQuotasQuotaAlarm_basic2901(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaAlarm")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2901)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2901)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -671,7 +677,7 @@ func TestAccAliCloudQuotasQuotaAlarm_basic2901(t *testing.T) {
 }
 
 var AlicloudQuotasQuotaAlarmMap2901 = map[string]string{
-	"create_time":    CHECKSET,
+	"create_time":    acctest.CHECKSET,
 	"threshold_type": "used",
 }
 
@@ -689,21 +695,21 @@ variable "name" {
 func TestAccAliCloudQuotasQuotaAlarm_basic2936(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2936)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2936)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaAlarm")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2936)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2936)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -778,7 +784,7 @@ func TestAccAliCloudQuotasQuotaAlarm_basic2936(t *testing.T) {
 }
 
 var AlicloudQuotasQuotaAlarmMap2936 = map[string]string{
-	"create_time":    CHECKSET,
+	"create_time":    acctest.CHECKSET,
 	"threshold_type": "used",
 }
 
@@ -796,21 +802,21 @@ variable "name" {
 func TestAccAliCloudQuotasQuotaAlarm_basic2901_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaAlarm")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2901)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2901)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -853,21 +859,21 @@ func TestAccAliCloudQuotasQuotaAlarm_basic2901_twin(t *testing.T) {
 func TestAccAliCloudQuotasQuotaAlarm_basic2936_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2936)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2936)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaAlarm")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2936)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaalarm%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaAlarmBasicDependence2936)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -896,3 +902,10 @@ func TestAccAliCloudQuotasQuotaAlarm_basic2936_twin(t *testing.T) {
 }
 
 // Test Quotas QuotaAlarm. <<< Resource test cases, automatically generated.
+
+func quotasTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_quotas_quota_alarm":       quotas.ResourceQuotaAlarm(),
+		"alicloud_quotas_quota_application": quotas.ResourceQuotaApplication(),
+	}
+}

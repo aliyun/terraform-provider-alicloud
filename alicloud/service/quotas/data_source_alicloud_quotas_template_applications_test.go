@@ -1,58 +1,59 @@
-package alicloud
+package quotas_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudQuotasTemplateApplicationsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_quotas_template_applications.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_quotas_template_applications.default.id}_fake"]`,
 		}),
 	}
 
-	ProductCodeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+	ProductCodeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_quotas_template_applications.default.id}"]`,
 			"product_code": `"vpc"`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_quotas_template_applications.default.id}_fake"]`,
 			"product_code": `"vpc_fake"`,
 		}),
 	}
-	QuotaActionCodeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+	QuotaActionCodeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_quotas_template_applications.default.id}"]`,
 			"quota_action_code": `"vpc_whitelist/ha_vip_whitelist"`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":               `["${alicloud_quotas_template_applications.default.id}_fake"]`,
 			"quota_action_code": `"vpc_whitelist/ha_vip_whitelist_fake"`,
 		}),
 	}
-	QuotaCategoryConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+	QuotaCategoryConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":            `["${alicloud_quotas_template_applications.default.id}"]`,
 			"quota_category": `"FlowControl"`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":            `["${alicloud_quotas_template_applications.default.id}_fake"]`,
 			"quota_category": `"CommonQuota"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_quotas_template_applications.default.id}"]`,
 			"product_code": `"vpc"`,
 
@@ -60,7 +61,7 @@ func TestAccAlicloudQuotasTemplateApplicationsDataSource(t *testing.T) {
 
 			"quota_category": `"FlowControl"`,
 		}),
-		fakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_quotas_template_applications.default.id}_fake"]`,
 			"product_code": `"vpc_fake"`,
 
@@ -70,13 +71,13 @@ func TestAccAlicloudQuotasTemplateApplicationsDataSource(t *testing.T) {
 		}),
 	}
 
-	QuotasTemplateApplicationsCheckInfo.dataSourceTestCheck(t, rand, idsConf, ProductCodeConf, QuotaActionCodeConf, QuotaCategoryConf, allConf)
+	QuotasTemplateApplicationsCheckInfo.DataSourceTestCheck(t, rand, idsConf, ProductCodeConf, QuotaActionCodeConf, QuotaCategoryConf, allConf)
 }
 
 var existQuotasTemplateApplicationsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"applications.#":    "1",
-		"applications.0.id": CHECKSET,
+		"applications.0.id": acctest.CHECKSET,
 	}
 }
 
@@ -86,10 +87,10 @@ var fakeQuotasTemplateApplicationsMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var QuotasTemplateApplicationsCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_quotas_template_applications.default",
-	existMapFunc: existQuotasTemplateApplicationsMapFunc,
-	fakeMapFunc:  fakeQuotasTemplateApplicationsMapFunc,
+var QuotasTemplateApplicationsCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_quotas_template_applications.default",
+	ExistMapFunc: existQuotasTemplateApplicationsMapFunc,
+	FakeMapFunc:  fakeQuotasTemplateApplicationsMapFunc,
 }
 
 func testAccCheckAlicloudQuotasTemplateApplicationsSourceConfig(rand int, attrMap map[string]string) string {

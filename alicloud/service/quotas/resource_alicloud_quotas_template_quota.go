@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package quotas. This file is generated automatically. Please do not modify it manually, thank you!
+package quotas
 
 import (
 	"fmt"
@@ -7,17 +7,21 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudQuotasTemplateQuota() *schema.Resource {
+func ResourceTemplateQuota() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudQuotasTemplateQuotaCreate,
-		Read:   resourceAliCloudQuotasTemplateQuotaRead,
-		Update: resourceAliCloudQuotasTemplateQuotaUpdate,
-		Delete: resourceAliCloudQuotasTemplateQuotaDelete,
+		Create: resourceTemplateQuotaCreate,
+		Read:   resourceTemplateQuotaRead,
+		Update: resourceTemplateQuotaUpdate,
+		Delete: resourceTemplateQuotaDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -64,7 +68,7 @@ func resourceAliCloudQuotasTemplateQuota() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntInSlice([]int{0, 3}),
+				ValidateFunc: validators.IntInSlice([]int{0, 3}),
 			},
 			"product_code": {
 				Type:     schema.TypeString,
@@ -79,13 +83,13 @@ func resourceAliCloudQuotasTemplateQuota() *schema.Resource {
 			"quota_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"CommonQuota", "WhiteListLabel", "FlowControl"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"CommonQuota", "WhiteListLabel", "FlowControl"}, false),
 			},
 		},
 	}
 }
 
-func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateQuotaCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateTemplateQuotaItem"
@@ -124,42 +128,42 @@ func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("expire_time"); ok {
 		request["ExpireTime"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_template_quota", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_quotas_template_quota", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAliCloudQuotasTemplateQuotaUpdate(d, meta)
+	return resourceTemplateQuotaUpdate(d, meta)
 }
 
-func resourceAliCloudQuotasTemplateQuotaRead(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateQuotaRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	quotasServiceV2 := QuotasServiceV2{client}
 
 	objectRaw, err := quotasServiceV2.DescribeQuotasTemplateQuota(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_quotas_template_quota DescribeQuotasTemplateQuota Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("desire_value", objectRaw["DesireValue"])
@@ -178,7 +182,7 @@ func resourceAliCloudQuotasTemplateQuotaRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateQuotaUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -233,29 +237,29 @@ func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+			response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
-	return resourceAliCloudQuotasTemplateQuotaRead(d, meta)
+	return resourceTemplateQuotaRead(d, meta)
 }
 
-func resourceAliCloudQuotasTemplateQuotaDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceTemplateQuotaDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -267,23 +271,23 @@ func resourceAliCloudQuotasTemplateQuotaDelete(d *schema.ResourceData, meta inte
 
 	request["Id"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

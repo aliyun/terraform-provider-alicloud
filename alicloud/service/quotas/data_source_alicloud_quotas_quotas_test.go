@@ -1,45 +1,46 @@
-package alicloud
+package quotas_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudQuotasQuotasDataSource(t *testing.T) {
 	resourceId := "data.alicloud_quotas_quotas.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccQuotasQuotas%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotasDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotasDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex":   "Maximum*",
 			"product_code": "ecs",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":   "Maximum-fake",
 			"product_code": "ecs",
 		}),
 	}
-	actionCodeConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	actionCodeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
 			"quota_action_code": "q_cloud-assistant-activation-count",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
 			"quota_action_code": "q_cloud-assistant-activation-count-fake",
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
 			"name_regex":        "Maximum*",
 			"quota_action_code": "q_cloud-assistant-activation-count",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
 			"name_regex":        "Maximum-fake",
 			"quota_action_code": "q_cloud-assistant-activation-count-fake",
@@ -47,8 +48,8 @@ func TestAccAlicloudQuotasQuotasDataSource(t *testing.T) {
 	}
 	var existQuotasQuotasMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":    CHECKSET,
-			"quotas.#": CHECKSET,
+			"ids.#":    acctest.CHECKSET,
+			"quotas.#": acctest.CHECKSET,
 		}
 	}
 
@@ -60,13 +61,13 @@ func TestAccAlicloudQuotasQuotasDataSource(t *testing.T) {
 		}
 	}
 
-	var QuotasQuotasInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existQuotasQuotasMapFunc,
-		fakeMapFunc:  fakeQuotasQuotasMapFunc,
+	var QuotasQuotasInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existQuotasQuotasMapFunc,
+		FakeMapFunc:  fakeQuotasQuotasMapFunc,
 	}
 
-	QuotasQuotasInfo.dataSourceTestCheck(t, 0, nameRegexConf, actionCodeConf, allConf)
+	QuotasQuotasInfo.DataSourceTestCheck(t, 0, nameRegexConf, actionCodeConf, allConf)
 }
 
 func dataSourceQuotasQuotasDependence(name string) string {

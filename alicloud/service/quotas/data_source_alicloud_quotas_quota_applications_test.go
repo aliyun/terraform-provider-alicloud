@@ -1,41 +1,42 @@
-package alicloud
+package quotas_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 // The quota product does not support deletion, so skip the test.
 func TestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 	resourceId := "data.alicloud_quotas_quota_applications.default"
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotaApplicationsDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceQuotasQuotaApplicationsDependence)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"product_code":   "vpc",
 			"enable_details": "true",
 			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":   "vpc",
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_application.default.id}-fake"},
 		}),
 	}
-	dimenstionsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	dimenstionsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"product_code":   "vpc",
 			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":   "vpc",
 			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"enable_details": "true",
@@ -48,15 +49,15 @@ func TestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 			},
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"product_code":   "vpc",
 			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
 			"status":         "Agree",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":   "vpc",
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
@@ -75,13 +76,13 @@ func TestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 		}
 	}
 
-	var QuotasApplicationInfosInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existQuotasApplicationInfosMapFunc,
-		fakeMapFunc:  fakeQuotasApplicationInfosMapFunc,
+	var QuotasApplicationInfosInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existQuotasApplicationInfosMapFunc,
+		FakeMapFunc:  fakeQuotasApplicationInfosMapFunc,
 	}
 
-	QuotasApplicationInfosInfo.dataSourceTestCheck(t, 0, idsConf, dimenstionsConf, statusConf)
+	QuotasApplicationInfosInfo.DataSourceTestCheck(t, 0, idsConf, dimenstionsConf, statusConf)
 }
 
 func dataSourceQuotasQuotaApplicationsDependence(name string) string {

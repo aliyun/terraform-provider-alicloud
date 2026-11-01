@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package quotas. This file is generated automatically. Please do not modify it manually, thank you!
+package quotas
 
 import (
 	"fmt"
@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudQuotasQuotaAlarm() *schema.Resource {
+func ResourceQuotaAlarm() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudQuotasQuotaAlarmCreate,
-		Read:   resourceAliCloudQuotasQuotaAlarmRead,
-		Update: resourceAliCloudQuotasQuotaAlarmUpdate,
-		Delete: resourceAliCloudQuotasQuotaAlarmDelete,
+		Create: resourceQuotaAlarmCreate,
+		Read:   resourceQuotaAlarmRead,
+		Update: resourceQuotaAlarmUpdate,
+		Delete: resourceQuotaAlarmDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -86,7 +89,7 @@ func resourceAliCloudQuotasQuotaAlarm() *schema.Resource {
 	}
 }
 
-func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceQuotaAlarmCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateQuotaAlarm"
@@ -122,41 +125,41 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("threshold_type"); ok {
 		request["ThresholdType"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_quota_alarm", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_quotas_quota_alarm", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AlarmId"]))
 
-	return resourceAliCloudQuotasQuotaAlarmUpdate(d, meta)
+	return resourceQuotaAlarmUpdate(d, meta)
 }
 
-func resourceAliCloudQuotasQuotaAlarmRead(d *schema.ResourceData, meta interface{}) error {
+func resourceQuotaAlarmRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	quotasServiceV2 := QuotasServiceV2{client}
 
 	objectRaw, err := quotasServiceV2.DescribeQuotasQuotaAlarm(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_quotas_quota_alarm DescribeQuotasQuotaAlarm Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -175,7 +178,7 @@ func resourceAliCloudQuotasQuotaAlarmRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceQuotaAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -210,29 +213,29 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+			response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 	}
-	return resourceAliCloudQuotasQuotaAlarmRead(d, meta)
+	return resourceQuotaAlarmRead(d, meta)
 }
 
-func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceQuotaAlarmDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -244,23 +247,23 @@ func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interfa
 
 	request["AlarmId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package quotas. This file is generated automatically. Please do not modify it manually, thank you!
+package quotas
 
 import (
 	"fmt"
@@ -8,14 +8,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudQuotasTemplateApplications() *schema.Resource {
+func DataSourceTemplateApplications() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudQuotasTemplateApplicationsRead,
+		Read: dataSourceTemplateApplicationsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -132,7 +135,7 @@ func dataSourceAliCloudQuotasTemplateApplications() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceTemplateApplicationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var request map[string]interface{}
@@ -152,22 +155,22 @@ func dataSourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, me
 	if v, ok := d.GetOk("quota_category"); ok {
 		request["QuotaCategory"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	var objects []map[string]interface{}
@@ -175,7 +178,7 @@ func dataSourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, me
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -234,13 +237,13 @@ func dataSourceAliCloudQuotasTemplateApplicationsRead(d *schema.ResourceData, me
 		s = append(s, mapping)
 	}
 	d.Set("applications", s)
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

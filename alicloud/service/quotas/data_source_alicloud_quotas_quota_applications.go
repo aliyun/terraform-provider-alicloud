@@ -1,17 +1,21 @@
-package alicloud
+package quotas
 
 import (
 	"fmt"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudQuotasQuotaApplications() *schema.Resource {
+func DataSourceQuotaApplications() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudQuotasQuotaApplicationsRead,
+		Read: dataSourceQuotaApplicationsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -154,7 +158,7 @@ func dataSourceAlicloudQuotasQuotaApplications() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceQuotaApplicationsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListQuotaApplications"
@@ -185,7 +189,7 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("status"); ok {
 		request["Status"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 
 	idsMap := make(map[string]string)
@@ -201,15 +205,15 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	var err error
 	for {
-		response, err = client.Do("quotas", rpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
+		response, err = client.Do("quotas", helper.RpcParam("POST", "2020-05-10", action), nil, request, nil, nil, false)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_quota_applications", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_quotas_quota_applications", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.QuotaApplications", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.QuotaApplications", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.QuotaApplications", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -231,7 +235,7 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		notice_typeVal, err := formatInt(object["NoticeType"])
+		notice_typeVal, err := convert.FormatInt(object["NoticeType"])
 		if err != nil {
 			return err
 		}
@@ -261,7 +265,7 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 		id := fmt.Sprint(object["ApplicationId"])
 		getResp, err := quotasService.DescribeQuotasQuotaApplication(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if statusOk && status != "" && status != getResp["Status"].(string) {
 			continue
@@ -283,16 +287,16 @@ func dataSourceAlicloudQuotasQuotaApplicationsRead(d *schema.ResourceData, meta 
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("applications", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

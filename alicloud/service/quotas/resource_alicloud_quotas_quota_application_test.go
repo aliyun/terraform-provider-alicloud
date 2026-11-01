@@ -1,4 +1,4 @@
-package alicloud
+package quotas_test
 
 import (
 	"fmt"
@@ -12,9 +12,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quotas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,18 +29,18 @@ import (
 func SkipTestAccAliCloudQuotasQuotaApplication_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaApplication")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, "", AlicloudQuotasQuotaApplicationBasicDependence)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, "", AlicloudQuotasQuotaApplicationBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -74,7 +79,7 @@ func SkipTestAccAliCloudQuotasQuotaApplication_basic(t *testing.T) {
 
 var AlicloudQuotasQuotaApplicationMap = map[string]string{
 	"notice_type": "0",
-	"status":      CHECKSET,
+	"status":      acctest.CHECKSET,
 }
 
 func AlicloudQuotasQuotaApplicationBasicDependence(name string) string {
@@ -83,9 +88,10 @@ func AlicloudQuotasQuotaApplicationBasicDependence(name string) string {
 
 // lintignore: R001
 func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_quotas_quota_application"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_quotas_quota_application"].Schema).Data(nil, nil)
+	p := quotasTestProviderResources()
+	resourceSchema := p["alicloud_quotas_quota_application"]
+	dInit, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(resourceSchema.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"notice_type":       0,
@@ -112,7 +118,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -146,18 +152,18 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_quotas_quota_application", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_quotas_quota_application", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -165,13 +171,13 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewQuotasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudQuotasQuotaApplicationCreate(dInit, rawClient)
+	err = resourceSchema.Create(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -197,14 +203,14 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudQuotasQuotaApplicationCreate(dInit, rawClient)
+		err := resourceSchema.Create(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_quotas_quota_application"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(resourceSchema.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -236,7 +242,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudQuotasQuotaApplicationRead(dExisted, rawClient)
+		err := resourceSchema.Read(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -247,7 +253,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAliCloudQuotasQuotaApplicationDelete(dExisted, rawClient)
+	err = resourceSchema.Delete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }
@@ -258,20 +264,20 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 func SkipTestAccAliCloudQuotasQuotaApplication_basic3294(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3294)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3294)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaApplication")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3294)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3294)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -313,12 +319,12 @@ func SkipTestAccAliCloudQuotasQuotaApplication_basic3294(t *testing.T) {
 }
 
 var AlicloudQuotasQuotaApplicationMap3294 = map[string]string{
-	"status":            CHECKSET,
-	"quota_description": CHECKSET,
-	"create_time":       CHECKSET,
-	"approve_value":     CHECKSET,
-	"quota_name":        CHECKSET,
-	"notice_type":       CHECKSET,
+	"status":            acctest.CHECKSET,
+	"quota_description": acctest.CHECKSET,
+	"create_time":       acctest.CHECKSET,
+	"approve_value":     acctest.CHECKSET,
+	"quota_name":        acctest.CHECKSET,
+	"notice_type":       acctest.CHECKSET,
 }
 
 func AlicloudQuotasQuotaApplicationBasicDependence3294(name string) string {
@@ -326,7 +332,6 @@ func AlicloudQuotasQuotaApplicationBasicDependence3294(name string) string {
 variable "name" {
     default = "%s"
 }
-
 
 `, name)
 }
@@ -336,23 +341,23 @@ variable "name" {
 func TestAccAliCloudQuotasQuotaApplication_basic3289(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
-	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3289)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3289)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return quotas.NewQuotasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeQuotasQuotaApplication")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", defaultRegionToTest, rand)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", acctest.DefaultRegionToTest, rand)
 	currentTime := time.Now()
 	sixMonthsLater := currentTime.AddDate(0, 6, 0)
 	expireTime := sixMonthsLater.Format("2006-01-02T15:04:05Z")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3289)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3289)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -393,13 +398,13 @@ func TestAccAliCloudQuotasQuotaApplication_basic3289(t *testing.T) {
 }
 
 var AlicloudQuotasQuotaApplicationMap3289 = map[string]string{
-	"status":            CHECKSET,
-	"quota_description": CHECKSET,
-	"create_time":       CHECKSET,
-	"audit_reason":      CHECKSET,
-	"approve_value":     CHECKSET,
-	"quota_name":        CHECKSET,
-	"notice_type":       CHECKSET,
+	"status":            acctest.CHECKSET,
+	"quota_description": acctest.CHECKSET,
+	"create_time":       acctest.CHECKSET,
+	"audit_reason":      acctest.CHECKSET,
+	"approve_value":     acctest.CHECKSET,
+	"quota_name":        acctest.CHECKSET,
+	"notice_type":       acctest.CHECKSET,
 }
 
 func AlicloudQuotasQuotaApplicationBasicDependence3289(name string) string {
@@ -407,7 +412,6 @@ func AlicloudQuotasQuotaApplicationBasicDependence3289(name string) string {
 variable "name" {
     default = "%s"
 }
-
 
 `, name)
 }
