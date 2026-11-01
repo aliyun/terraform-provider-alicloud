@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi
 
 import (
 	"fmt"
@@ -8,13 +8,17 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAliCloudWafv3DefenseRules() *schema.Resource {
+func DataSourceWafv3DefenseRules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudWafv3DefenseRuleRead,
+		Read: dataSourceWafv3DefenseRuleRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -400,7 +404,7 @@ func dataSourceAliCloudWafv3DefenseRules() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceWafv3DefenseRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -435,25 +439,25 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutRead), func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := jsonpath.Get("$.Rules[*]", response)
@@ -469,7 +473,7 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 			objects = append(objects, item)
 		}
 
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -496,34 +500,34 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 		configMap := make(map[string]interface{})
 		configRaw := make(map[string]interface{})
 		if objectRaw["Config"] != nil {
-			configRaw = convertJsonStringToObject(objectRaw["Config"])
+			configRaw = convert.ConvertJsonStringToObject(objectRaw["Config"])
 			if len(configRaw) > 0 {
 				configMap["abroad_regions"] = configRaw["abroadRegionList"]
-				actualAutoUpdate, err := formatBool(configRaw["autoUpdate"])
+				actualAutoUpdate, err := convert.FormatBool(configRaw["autoUpdate"])
 				if err != nil {
 					return err
 				}
 				configMap["auto_update"] = actualAutoUpdate
 				configMap["cc_effect"] = configRaw["effect"]
-				actualCcStatus, err := formatInt(configRaw["ccStatus"])
+				actualCcStatus, err := convert.FormatInt(configRaw["ccStatus"])
 				if err != nil {
 					return err
 				}
 				configMap["cc_status"] = actualCcStatus
 				configMap["cn_regions"] = configRaw["cnRegionList"]
-				actualGrayStatus, err := formatInt(configRaw["grayStatus"])
+				actualGrayStatus, err := convert.FormatInt(configRaw["grayStatus"])
 				if err != nil {
 					return err
 				}
 				configMap["gray_status"] = actualGrayStatus
-				actualMode, err := formatInt(configRaw["mode"])
+				actualMode, err := convert.FormatInt(configRaw["mode"])
 				if err != nil {
 					return err
 				}
 				configMap["mode"] = actualMode
 				configMap["protocol"] = configRaw["protocol"]
 				configMap["rule_action"] = configRaw["action"]
-				throttleThrehold, err := formatInt(configRaw["threshold"])
+				throttleThrehold, err := convert.FormatInt(configRaw["threshold"])
 				if err != nil {
 					return err
 				}
@@ -535,13 +539,13 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 				accountIdentifiersRaw := configRaw["accountIdentifiers"]
 				accountIdentifiersMaps := make([]map[string]interface{}, 0)
 				if accountIdentifiersRaw != nil {
-					for _, accountIdentifiersChildRaw := range convertToInterfaceArray(accountIdentifiersRaw) {
+					for _, accountIdentifiersChildRaw := range convert.ConvertToInterfaceArray(accountIdentifiersRaw) {
 						accountIdentifiersMap := make(map[string]interface{})
 						accountIdentifiersChildRaw := accountIdentifiersChildRaw.(map[string]interface{})
 						accountIdentifiersMap["decode_type"] = accountIdentifiersChildRaw["decodeType"]
 						accountIdentifiersMap["key"] = accountIdentifiersChildRaw["key"]
 						accountIdentifiersMap["position"] = accountIdentifiersChildRaw["position"]
-						accountIdentifiersChildRawPriority, err := formatInt(accountIdentifiersChildRaw["priority"])
+						accountIdentifiersChildRawPriority, err := convert.FormatInt(accountIdentifiersChildRaw["priority"])
 						if err != nil {
 							return err
 						}
@@ -554,32 +558,32 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 				configMap["account_identifiers"] = accountIdentifiersMaps
 				regularRulesRaw := make([]interface{}, 0)
 				if configRaw["regularRules"] != nil {
-					regularRulesRaw = convertToInterfaceArray(configRaw["regularRules"])
+					regularRulesRaw = convert.ConvertToInterfaceArray(configRaw["regularRules"])
 				}
 
 				configMap["bypass_regular_rules"] = regularRulesRaw
 				regularTypesRaw := make([]interface{}, 0)
 				if configRaw["regularTypes"] != nil {
-					regularTypesRaw = convertToInterfaceArray(configRaw["regularTypes"])
+					regularTypesRaw = convert.ConvertToInterfaceArray(configRaw["regularTypes"])
 				}
 
 				configMap["bypass_regular_types"] = regularTypesRaw
 				tagsRaw := make([]interface{}, 0)
 				if configRaw["tags"] != nil {
-					tagsRaw = convertToInterfaceArray(configRaw["tags"])
+					tagsRaw = convert.ConvertToInterfaceArray(configRaw["tags"])
 				}
 
 				configMap["bypass_tags"] = tagsRaw
 				codecListRaw := make([]interface{}, 0)
 				if configRaw["codecList"] != nil {
-					codecListRaw = convertToInterfaceArray(configRaw["codecList"])
+					codecListRaw = convert.ConvertToInterfaceArray(configRaw["codecList"])
 				}
 
 				configMap["codec_list"] = codecListRaw
 				conditionsRaw := configRaw["conditions"]
 				conditionsMaps := make([]map[string]interface{}, 0)
 				if conditionsRaw != nil {
-					for _, conditionsChildRaw := range convertToInterfaceArray(conditionsRaw) {
+					for _, conditionsChildRaw := range convert.ConvertToInterfaceArray(conditionsRaw) {
 						conditionsMap := make(map[string]interface{})
 						conditionsChildRaw := conditionsChildRaw.(map[string]interface{})
 						conditionsMap["key"] = conditionsChildRaw["key"]
@@ -598,7 +602,7 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 					grayConfigRaw = configRaw["grayConfig"].(map[string]interface{})
 				}
 				if len(grayConfigRaw) > 0 {
-					grayConfigRawGrayRate, err := formatInt(grayConfigRaw["grayRate"])
+					grayConfigRawGrayRate, err := convert.FormatInt(grayConfigRaw["grayRate"])
 					if err != nil {
 						return err
 					}
@@ -616,19 +620,19 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 					ratelimitRaw = configRaw["ratelimit"].(map[string]interface{})
 				}
 				if len(ratelimitRaw) > 0 {
-					ratelimitRawInterval, err := formatInt(ratelimitRaw["interval"])
+					ratelimitRawInterval, err := convert.FormatInt(ratelimitRaw["interval"])
 					if err != nil {
 						return err
 					}
 					rateLimitMap["interval"] = ratelimitRawInterval
 					rateLimitMap["sub_key"] = ratelimitRaw["subKey"]
 					rateLimitMap["target"] = ratelimitRaw["target"]
-					ratelimitRawThreshold, err := formatInt(ratelimitRaw["threshold"])
+					ratelimitRawThreshold, err := convert.FormatInt(ratelimitRaw["threshold"])
 					if err != nil {
 						return err
 					}
 					rateLimitMap["threshold"] = ratelimitRawThreshold
-					ratelimitRawTtl, err := formatInt(ratelimitRaw["ttl"])
+					ratelimitRawTtl, err := convert.FormatInt(ratelimitRaw["ttl"])
 					if err != nil {
 						return err
 					}
@@ -641,17 +645,17 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 						statusRaw = ratelimitRaw["status"].(map[string]interface{})
 					}
 					if len(statusRaw) > 0 {
-						actualCode, err := formatInt(statusRaw["code"])
+						actualCode, err := convert.FormatInt(statusRaw["code"])
 						if err != nil {
 							return err
 						}
 						statusMap["code"] = actualCode
-						actualCount, err := formatInt(statusRaw["count"])
+						actualCount, err := convert.FormatInt(statusRaw["count"])
 						if err != nil {
 							return err
 						}
 						statusMap["count"] = actualCount
-						actualRatio, err := formatInt(statusRaw["ratio"])
+						actualRatio, err := convert.FormatInt(statusRaw["ratio"])
 						if err != nil {
 							return err
 						}
@@ -665,7 +669,7 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 				configMap["rate_limit"] = rateLimitMaps
 				remoteAddrRaw := make([]interface{}, 0)
 				if configRaw["remoteAddr"] != nil {
-					remoteAddrRaw = convertToInterfaceArray(configRaw["remoteAddr"])
+					remoteAddrRaw = convert.ConvertToInterfaceArray(configRaw["remoteAddr"])
 				}
 
 				configMap["remote_addr"] = remoteAddrRaw
@@ -677,7 +681,7 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 				}
 				if len(timeConfigRaw) > 0 {
 					timeConfigMap["time_scope"] = timeConfigRaw["timeScope"]
-					timeConfigRawTimeZone, err := formatInt(timeConfigRaw["timeZone"])
+					timeConfigRawTimeZone, err := convert.FormatInt(timeConfigRaw["timeZone"])
 					if err != nil {
 						return err
 					}
@@ -686,15 +690,15 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 					timePeriodsRaw := timeConfigRaw["timePeriods"]
 					timePeriodsMaps := make([]map[string]interface{}, 0)
 					if timePeriodsRaw != nil {
-						for _, timePeriodsChildRaw := range convertToInterfaceArray(timePeriodsRaw) {
+						for _, timePeriodsChildRaw := range convert.ConvertToInterfaceArray(timePeriodsRaw) {
 							timePeriodsMap := make(map[string]interface{})
 							timePeriodsChildRaw := timePeriodsChildRaw.(map[string]interface{})
-							timePeriodsChildRawEnd, err := formatInt(timePeriodsChildRaw["end"])
+							timePeriodsChildRawEnd, err := convert.FormatInt(timePeriodsChildRaw["end"])
 							if err != nil {
 								return err
 							}
 							timePeriodsMap["end"] = timePeriodsChildRawEnd
-							timePeriodsChildRawStart, err := formatInt(timePeriodsChildRaw["start"])
+							timePeriodsChildRawStart, err := convert.FormatInt(timePeriodsChildRaw["start"])
 							if err != nil {
 								return err
 							}
@@ -707,7 +711,7 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 					weekTimePeriodsRaw := timeConfigRaw["weekTimePeriods"]
 					weekTimePeriodsMaps := make([]map[string]interface{}, 0)
 					if weekTimePeriodsRaw != nil {
-						for _, weekTimePeriodsChildRaw := range convertToInterfaceArray(weekTimePeriodsRaw) {
+						for _, weekTimePeriodsChildRaw := range convert.ConvertToInterfaceArray(weekTimePeriodsRaw) {
 							weekTimePeriodsMap := make(map[string]interface{})
 							weekTimePeriodsChildRaw := weekTimePeriodsChildRaw.(map[string]interface{})
 							weekTimePeriodsMap["day"] = weekTimePeriodsChildRaw["day"]
@@ -715,15 +719,15 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 							dayPeriodsRaw := weekTimePeriodsChildRaw["dayPeriods"]
 							dayPeriodsMaps := make([]map[string]interface{}, 0)
 							if dayPeriodsRaw != nil {
-								for _, dayPeriodsChildRaw := range convertToInterfaceArray(dayPeriodsRaw) {
+								for _, dayPeriodsChildRaw := range convert.ConvertToInterfaceArray(dayPeriodsRaw) {
 									dayPeriodsMap := make(map[string]interface{})
 									dayPeriodsChildRaw := dayPeriodsChildRaw.(map[string]interface{})
-									dayPeriodsChildRawEnd, err := formatInt(dayPeriodsChildRaw["end"])
+									dayPeriodsChildRawEnd, err := convert.FormatInt(dayPeriodsChildRaw["end"])
 									if err != nil {
 										return err
 									}
 									dayPeriodsMap["end"] = dayPeriodsChildRawEnd
-									dayPeriodsChildRawStart, err := formatInt(dayPeriodsChildRaw["start"])
+									dayPeriodsChildRawStart, err := convert.FormatInt(dayPeriodsChildRaw["start"])
 									if err != nil {
 										return err
 									}
@@ -743,7 +747,7 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 				config1Raw := configRaw["config"]
 				wafBaseConfigMaps := make([]map[string]interface{}, 0)
 				if config1Raw != nil {
-					for _, configChildRaw := range convertToInterfaceArray(config1Raw) {
+					for _, configChildRaw := range convert.ConvertToInterfaceArray(config1Raw) {
 						wafBaseConfigMap := make(map[string]interface{})
 						configChildRaw := configChildRaw.(map[string]interface{})
 						wafBaseConfigMap["rule_batch_operation_config"] = configChildRaw["ruleBatchOperationConfig"]
@@ -752,14 +756,14 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 						ruleDetailRaw := configChildRaw["ruleDetail"]
 						ruleDetailMaps := make([]map[string]interface{}, 0)
 						if ruleDetailRaw != nil {
-							for _, ruleDetailChildRaw := range convertToInterfaceArray(ruleDetailRaw) {
+							for _, ruleDetailChildRaw := range convert.ConvertToInterfaceArray(ruleDetailRaw) {
 								ruleDetailMap := make(map[string]interface{})
 								ruleDetailChildRaw := ruleDetailChildRaw.(map[string]interface{})
 								ruleDetailMap["rule_action"] = ruleDetailChildRaw["ruleAction"]
 								if v := ruleDetailChildRaw["ruleId"]; v != nil {
 									ruleDetailMap["rule_id"] = fmt.Sprint(v)
 								}
-								ruleDetailChildRawRuleStatus, err := formatInt(ruleDetailChildRaw["ruleStatus"])
+								ruleDetailChildRawRuleStatus, err := convert.FormatInt(ruleDetailChildRaw["ruleStatus"])
 								if err != nil {
 									return err
 								}
@@ -785,37 +789,37 @@ func dataSourceAliCloudWafv3DefenseRuleRead(d *schema.ResourceData, meta interfa
 		}
 
 		id := fmt.Sprint(request["InstanceId"], ":", objectRaw["DefenseType"], ":", objectRaw["RuleId"])
-		mapping, err = dataSourceAliCloudWafv3DefenseRuleReadDescription(d, id, mapping, meta)
+		mapping, err = dataSourceWafv3DefenseRuleReadDescription(d, id, mapping, meta)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("rules", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }
 
-func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+func dataSourceWafv3DefenseRuleReadDescription(d *schema.ResourceData, id string, object map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 
 	wafv3ServiceV2 := Wafv3ServiceV2{client}
 	getResp, err := wafv3ServiceV2.DescribeWafv3DefenseRule(id)
 	if err != nil {
-		return nil, WrapError(err)
+		return nil, errs.WrapError(err)
 	}
 
 	// Merge additional fields from Get API response to mapping
@@ -837,34 +841,34 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 	configMap := make(map[string]interface{})
 	configRaw := make(map[string]interface{})
 	if objectRaw["Config"] != nil {
-		configRaw = convertJsonStringToObject(objectRaw["Config"])
+		configRaw = convert.ConvertJsonStringToObject(objectRaw["Config"])
 		if len(configRaw) > 0 {
 			configMap["abroad_regions"] = configRaw["abroadRegionList"]
-			actualAutoUpdate, err := formatBool(configRaw["autoUpdate"])
+			actualAutoUpdate, err := convert.FormatBool(configRaw["autoUpdate"])
 			if err != nil {
 				return nil, err
 			}
 			configMap["auto_update"] = actualAutoUpdate
 			configMap["cc_effect"] = configRaw["effect"]
-			actualCcStatus, err := formatInt(configRaw["ccStatus"])
+			actualCcStatus, err := convert.FormatInt(configRaw["ccStatus"])
 			if err != nil {
 				return nil, err
 			}
 			configMap["cc_status"] = actualCcStatus
 			configMap["cn_regions"] = configRaw["cnRegionList"]
-			actualGrayStatus, err := formatInt(configRaw["grayStatus"])
+			actualGrayStatus, err := convert.FormatInt(configRaw["grayStatus"])
 			if err != nil {
 				return nil, err
 			}
 			configMap["gray_status"] = actualGrayStatus
-			actualMode, err := formatInt(configRaw["mode"])
+			actualMode, err := convert.FormatInt(configRaw["mode"])
 			if err != nil {
 				return nil, err
 			}
 			configMap["mode"] = actualMode
 			configMap["protocol"] = configRaw["protocol"]
 			configMap["rule_action"] = configRaw["action"]
-			throttleThrehold, err := formatInt(configRaw["threshold"])
+			throttleThrehold, err := convert.FormatInt(configRaw["threshold"])
 			if err != nil {
 				return nil, err
 			}
@@ -876,13 +880,13 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 			accountIdentifiersRaw := configRaw["accountIdentifiers"]
 			accountIdentifiersMaps := make([]map[string]interface{}, 0)
 			if accountIdentifiersRaw != nil {
-				for _, accountIdentifiersChildRaw := range convertToInterfaceArray(accountIdentifiersRaw) {
+				for _, accountIdentifiersChildRaw := range convert.ConvertToInterfaceArray(accountIdentifiersRaw) {
 					accountIdentifiersMap := make(map[string]interface{})
 					accountIdentifiersChildRaw := accountIdentifiersChildRaw.(map[string]interface{})
 					accountIdentifiersMap["decode_type"] = accountIdentifiersChildRaw["decodeType"]
 					accountIdentifiersMap["key"] = accountIdentifiersChildRaw["key"]
 					accountIdentifiersMap["position"] = accountIdentifiersChildRaw["position"]
-					accountIdentifiersChildRawPriority, err := formatInt(accountIdentifiersChildRaw["priority"])
+					accountIdentifiersChildRawPriority, err := convert.FormatInt(accountIdentifiersChildRaw["priority"])
 					if err != nil {
 						return nil, err
 					}
@@ -895,32 +899,32 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 			configMap["account_identifiers"] = accountIdentifiersMaps
 			regularRulesRaw := make([]interface{}, 0)
 			if configRaw["regularRules"] != nil {
-				regularRulesRaw = convertToInterfaceArray(configRaw["regularRules"])
+				regularRulesRaw = convert.ConvertToInterfaceArray(configRaw["regularRules"])
 			}
 
 			configMap["bypass_regular_rules"] = regularRulesRaw
 			regularTypesRaw := make([]interface{}, 0)
 			if configRaw["regularTypes"] != nil {
-				regularTypesRaw = convertToInterfaceArray(configRaw["regularTypes"])
+				regularTypesRaw = convert.ConvertToInterfaceArray(configRaw["regularTypes"])
 			}
 
 			configMap["bypass_regular_types"] = regularTypesRaw
 			tagsRaw := make([]interface{}, 0)
 			if configRaw["tags"] != nil {
-				tagsRaw = convertToInterfaceArray(configRaw["tags"])
+				tagsRaw = convert.ConvertToInterfaceArray(configRaw["tags"])
 			}
 
 			configMap["bypass_tags"] = tagsRaw
 			codecListRaw := make([]interface{}, 0)
 			if configRaw["codecList"] != nil {
-				codecListRaw = convertToInterfaceArray(configRaw["codecList"])
+				codecListRaw = convert.ConvertToInterfaceArray(configRaw["codecList"])
 			}
 
 			configMap["codec_list"] = codecListRaw
 			conditionsRaw := configRaw["conditions"]
 			conditionsMaps := make([]map[string]interface{}, 0)
 			if conditionsRaw != nil {
-				for _, conditionsChildRaw := range convertToInterfaceArray(conditionsRaw) {
+				for _, conditionsChildRaw := range convert.ConvertToInterfaceArray(conditionsRaw) {
 					conditionsMap := make(map[string]interface{})
 					conditionsChildRaw := conditionsChildRaw.(map[string]interface{})
 					conditionsMap["key"] = conditionsChildRaw["key"]
@@ -939,7 +943,7 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 				grayConfigRaw = configRaw["grayConfig"].(map[string]interface{})
 			}
 			if len(grayConfigRaw) > 0 {
-				grayConfigRawGrayRate, err := formatInt(grayConfigRaw["grayRate"])
+				grayConfigRawGrayRate, err := convert.FormatInt(grayConfigRaw["grayRate"])
 				if err != nil {
 					return nil, err
 				}
@@ -957,19 +961,19 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 				ratelimitRaw = configRaw["ratelimit"].(map[string]interface{})
 			}
 			if len(ratelimitRaw) > 0 {
-				ratelimitRawInterval, err := formatInt(ratelimitRaw["interval"])
+				ratelimitRawInterval, err := convert.FormatInt(ratelimitRaw["interval"])
 				if err != nil {
 					return nil, err
 				}
 				rateLimitMap["interval"] = ratelimitRawInterval
 				rateLimitMap["sub_key"] = ratelimitRaw["subKey"]
 				rateLimitMap["target"] = ratelimitRaw["target"]
-				ratelimitRawThreshold, err := formatInt(ratelimitRaw["threshold"])
+				ratelimitRawThreshold, err := convert.FormatInt(ratelimitRaw["threshold"])
 				if err != nil {
 					return nil, err
 				}
 				rateLimitMap["threshold"] = ratelimitRawThreshold
-				ratelimitRawTtl, err := formatInt(ratelimitRaw["ttl"])
+				ratelimitRawTtl, err := convert.FormatInt(ratelimitRaw["ttl"])
 				if err != nil {
 					return nil, err
 				}
@@ -982,17 +986,17 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 					statusRaw = ratelimitRaw["status"].(map[string]interface{})
 				}
 				if len(statusRaw) > 0 {
-					actualCode, err := formatInt(statusRaw["code"])
+					actualCode, err := convert.FormatInt(statusRaw["code"])
 					if err != nil {
 						return nil, err
 					}
 					statusMap["code"] = actualCode
-					actualCount, err := formatInt(statusRaw["count"])
+					actualCount, err := convert.FormatInt(statusRaw["count"])
 					if err != nil {
 						return nil, err
 					}
 					statusMap["count"] = actualCount
-					actualRatio, err := formatInt(statusRaw["ratio"])
+					actualRatio, err := convert.FormatInt(statusRaw["ratio"])
 					if err != nil {
 						return nil, err
 					}
@@ -1006,7 +1010,7 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 			configMap["rate_limit"] = rateLimitMaps
 			remoteAddrRaw := make([]interface{}, 0)
 			if configRaw["remoteAddr"] != nil {
-				remoteAddrRaw = convertToInterfaceArray(configRaw["remoteAddr"])
+				remoteAddrRaw = convert.ConvertToInterfaceArray(configRaw["remoteAddr"])
 			}
 
 			configMap["remote_addr"] = remoteAddrRaw
@@ -1018,7 +1022,7 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 			}
 			if len(timeConfigRaw) > 0 {
 				timeConfigMap["time_scope"] = timeConfigRaw["timeScope"]
-				timeConfigRawTimeZone, err := formatInt(timeConfigRaw["timeZone"])
+				timeConfigRawTimeZone, err := convert.FormatInt(timeConfigRaw["timeZone"])
 				if err != nil {
 					return nil, err
 				}
@@ -1027,15 +1031,15 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 				timePeriodsRaw := timeConfigRaw["timePeriods"]
 				timePeriodsMaps := make([]map[string]interface{}, 0)
 				if timePeriodsRaw != nil {
-					for _, timePeriodsChildRaw := range convertToInterfaceArray(timePeriodsRaw) {
+					for _, timePeriodsChildRaw := range convert.ConvertToInterfaceArray(timePeriodsRaw) {
 						timePeriodsMap := make(map[string]interface{})
 						timePeriodsChildRaw := timePeriodsChildRaw.(map[string]interface{})
-						timePeriodsChildRawEnd, err := formatInt(timePeriodsChildRaw["end"])
+						timePeriodsChildRawEnd, err := convert.FormatInt(timePeriodsChildRaw["end"])
 						if err != nil {
 							return nil, err
 						}
 						timePeriodsMap["end"] = timePeriodsChildRawEnd
-						timePeriodsChildRawStart, err := formatInt(timePeriodsChildRaw["start"])
+						timePeriodsChildRawStart, err := convert.FormatInt(timePeriodsChildRaw["start"])
 						if err != nil {
 							return nil, err
 						}
@@ -1048,7 +1052,7 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 				weekTimePeriodsRaw := timeConfigRaw["weekTimePeriods"]
 				weekTimePeriodsMaps := make([]map[string]interface{}, 0)
 				if weekTimePeriodsRaw != nil {
-					for _, weekTimePeriodsChildRaw := range convertToInterfaceArray(weekTimePeriodsRaw) {
+					for _, weekTimePeriodsChildRaw := range convert.ConvertToInterfaceArray(weekTimePeriodsRaw) {
 						weekTimePeriodsMap := make(map[string]interface{})
 						weekTimePeriodsChildRaw := weekTimePeriodsChildRaw.(map[string]interface{})
 						weekTimePeriodsMap["day"] = weekTimePeriodsChildRaw["day"]
@@ -1056,15 +1060,15 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 						dayPeriodsRaw := weekTimePeriodsChildRaw["dayPeriods"]
 						dayPeriodsMaps := make([]map[string]interface{}, 0)
 						if dayPeriodsRaw != nil {
-							for _, dayPeriodsChildRaw := range convertToInterfaceArray(dayPeriodsRaw) {
+							for _, dayPeriodsChildRaw := range convert.ConvertToInterfaceArray(dayPeriodsRaw) {
 								dayPeriodsMap := make(map[string]interface{})
 								dayPeriodsChildRaw := dayPeriodsChildRaw.(map[string]interface{})
-								dayPeriodsChildRawEnd, err := formatInt(dayPeriodsChildRaw["end"])
+								dayPeriodsChildRawEnd, err := convert.FormatInt(dayPeriodsChildRaw["end"])
 								if err != nil {
 									return nil, err
 								}
 								dayPeriodsMap["end"] = dayPeriodsChildRawEnd
-								dayPeriodsChildRawStart, err := formatInt(dayPeriodsChildRaw["start"])
+								dayPeriodsChildRawStart, err := convert.FormatInt(dayPeriodsChildRaw["start"])
 								if err != nil {
 									return nil, err
 								}
@@ -1084,7 +1088,7 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 			config1Raw := configRaw["config"]
 			wafBaseConfigMaps := make([]map[string]interface{}, 0)
 			if config1Raw != nil {
-				for _, configChildRaw := range convertToInterfaceArray(config1Raw) {
+				for _, configChildRaw := range convert.ConvertToInterfaceArray(config1Raw) {
 					wafBaseConfigMap := make(map[string]interface{})
 					configChildRaw := configChildRaw.(map[string]interface{})
 					wafBaseConfigMap["rule_batch_operation_config"] = configChildRaw["ruleBatchOperationConfig"]
@@ -1093,14 +1097,14 @@ func dataSourceAliCloudWafv3DefenseRuleReadDescription(d *schema.ResourceData, i
 					ruleDetailRaw := configChildRaw["ruleDetail"]
 					ruleDetailMaps := make([]map[string]interface{}, 0)
 					if ruleDetailRaw != nil {
-						for _, ruleDetailChildRaw := range convertToInterfaceArray(ruleDetailRaw) {
+						for _, ruleDetailChildRaw := range convert.ConvertToInterfaceArray(ruleDetailRaw) {
 							ruleDetailMap := make(map[string]interface{})
 							ruleDetailChildRaw := ruleDetailChildRaw.(map[string]interface{})
 							ruleDetailMap["rule_action"] = ruleDetailChildRaw["ruleAction"]
 							if v := ruleDetailChildRaw["ruleId"]; v != nil {
 								ruleDetailMap["rule_id"] = fmt.Sprint(v)
 							}
-							ruleDetailChildRawRuleStatus, err := formatInt(ruleDetailChildRaw["ruleStatus"])
+							ruleDetailChildRawRuleStatus, err := convert.FormatInt(ruleDetailChildRaw["ruleStatus"])
 							if err != nil {
 								return nil, err
 							}

@@ -1,12 +1,14 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ import (
 func TestAccAliCloudWafv3DefenseResourceGroup_basic11639(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_defense_resource_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudWafv3DefenseResourceGroupMap11639)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Wafv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudWafv3DefenseResourceGroupMap11639)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafv3ServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeWafv3DefenseResourceGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccwafv3%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudWafv3DefenseResourceGroupBasicDependence11639)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudWafv3DefenseResourceGroupBasicDependence11639)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -45,7 +47,7 @@ func TestAccAliCloudWafv3DefenseResourceGroup_basic11639(t *testing.T) {
 						"group_name":      "testfromTF",
 						"resource_list.#": "1",
 						"description":     "test",
-						"instance_id":     CHECKSET,
+						"instance_id":     acctest.CHECKSET,
 					}),
 				),
 			},

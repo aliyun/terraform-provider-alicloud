@@ -1,65 +1,66 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudWafv3DefenseRuleDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+func TestAccAliCloudWafv3DefenseRuleDataSource(t *testing.T) {
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_wafv3_defense_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_wafv3_defense_rule.default.id}_fake"]`,
 		}),
 	}
 
-	DefenseTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
+	DefenseTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_wafv3_defense_rule.default.id}"]`,
 			"defense_type": `"template"`,
 		}),
-		fakeConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_wafv3_defense_rule.default.id}_fake"]`,
 			"defense_type": `"resource"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_wafv3_defense_rule.default.id}"]`,
 			"defense_type": `"template"`,
 		}),
-		fakeConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand, map[string]string{
 			"ids":          `["${alicloud_wafv3_defense_rule.default.id}_fake"]`,
 			"defense_type": `"resource"`,
 		}),
 	}
 
-	Wafv3DefenseRuleCheckInfo.dataSourceTestCheck(t, rand, idsConf, DefenseTypeConf, allConf)
+	Wafv3DefenseRuleCheckInfo.DataSourceTestCheck(t, rand, idsConf, DefenseTypeConf, allConf)
 }
 
 var existWafv3DefenseRuleMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"rules.#":                "1",
-		"rules.0.defense_origin": CHECKSET,
-		"rules.0.config.#":       CHECKSET,
-		"rules.0.rule_id":        CHECKSET,
-		"rules.0.gmt_modified":   CHECKSET,
-		"rules.0.defense_type":   CHECKSET,
-		"rules.0.defense_scene":  CHECKSET,
-		"rules.0.rule_status":    CHECKSET,
-		"rules.0.template_id":    CHECKSET,
-		"rules.0.rule_name":      CHECKSET,
+		"rules.0.defense_origin": acctest.CHECKSET,
+		"rules.0.config.#":       acctest.CHECKSET,
+		"rules.0.rule_id":        acctest.CHECKSET,
+		"rules.0.gmt_modified":   acctest.CHECKSET,
+		"rules.0.defense_type":   acctest.CHECKSET,
+		"rules.0.defense_scene":  acctest.CHECKSET,
+		"rules.0.rule_status":    acctest.CHECKSET,
+		"rules.0.template_id":    acctest.CHECKSET,
+		"rules.0.rule_name":      acctest.CHECKSET,
 	}
 }
 
@@ -69,10 +70,10 @@ var fakeWafv3DefenseRuleMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var Wafv3DefenseRuleCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_wafv3_defense_rules.default",
-	existMapFunc: existWafv3DefenseRuleMapFunc,
-	fakeMapFunc:  fakeWafv3DefenseRuleMapFunc,
+var Wafv3DefenseRuleCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_wafv3_defense_rules.default",
+	ExistMapFunc: existWafv3DefenseRuleMapFunc,
+	FakeMapFunc:  fakeWafv3DefenseRuleMapFunc,
 }
 
 func testAccCheckAlicloudWafv3DefenseRuleSourceConfig(rand int, attrMap map[string]string) string {

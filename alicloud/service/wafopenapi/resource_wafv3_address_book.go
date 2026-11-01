@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package wafopenapi
 
 import (
 	"encoding/json"
@@ -10,16 +10,21 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudWafv3AddressBook() *schema.Resource {
+func ResourceWafv3AddressBook() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudWafv3AddressBookCreate,
-		Read:   resourceAliCloudWafv3AddressBookRead,
-		Update: resourceAliCloudWafv3AddressBookUpdate,
-		Delete: resourceAliCloudWafv3AddressBookDelete,
+		Create: resourceWafv3AddressBookCreate,
+		Read:   resourceWafv3AddressBookRead,
+		Update: resourceWafv3AddressBookUpdate,
+		Delete: resourceWafv3AddressBookDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -41,7 +46,7 @@ func resourceAliCloudWafv3AddressBook() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ip"}, false),
 			},
 			"address_list": {
 				Type:     schema.TypeSet,
@@ -61,7 +66,7 @@ func resourceAliCloudWafv3AddressBook() *schema.Resource {
 	}
 }
 
-func resourceAliCloudWafv3AddressBookCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3AddressBookCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -94,17 +99,17 @@ func resourceAliCloudWafv3AddressBookCreate(d *schema.ResourceData, meta interfa
 	RulesMap = append(RulesMap, rulesDataList)
 	rulesJson, err := json.Marshal(RulesMap)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["Rules"] = string(rulesJson)
 
 	request["DefenseScene"] = "address_book"
 	request["DefenseType"] = "global"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -112,29 +117,29 @@ func resourceAliCloudWafv3AddressBookCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_wafv3_address_book", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_wafv3_address_book", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], response["RuleIds"]))
 
-	return resourceAliCloudWafv3AddressBookUpdate(d, meta)
+	return resourceWafv3AddressBookUpdate(d, meta)
 }
 
-func resourceAliCloudWafv3AddressBookRead(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3AddressBookRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	wafv3ServiceV2 := Wafv3ServiceV2{client}
 
 	objectRaw, err := wafv3ServiceV2.DescribeWafv3AddressBook(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_wafv3_address_book DescribeWafv3AddressBook Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("address_book_name", objectRaw["name"])
@@ -142,14 +147,14 @@ func resourceAliCloudWafv3AddressBookRead(d *schema.ResourceData, meta interface
 	d.Set("description", objectRaw["description"])
 
 	addressesRaw, err := wafv3ServiceV2.DescribeWafv3AddressBookAddresses(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	addressListRawObj, _ := jsonpath.Get("$.AddressList", addressesRaw)
 	addressListRaw := make([]interface{}, 0)
 	if addressListRawObj != nil {
-		addressListRaw = convertToInterfaceArray(addressListRawObj)
+		addressListRaw = convert.ConvertToInterfaceArray(addressListRawObj)
 	}
 
 	addresses := make([]interface{}, 0)
@@ -172,7 +177,7 @@ func resourceAliCloudWafv3AddressBookRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3AddressBookUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -201,15 +206,15 @@ func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interfa
 
 		rulesJson, err := json.Marshal([]interface{}{rulesDataList})
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["Rules"] = string(rulesJson)
 
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -217,9 +222,9 @@ func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -243,11 +248,11 @@ func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interfa
 			addressListMapsArray := localData
 			request["AddressList"] = addressListMapsArray
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -255,9 +260,9 @@ func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interfa
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -274,11 +279,11 @@ func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interfa
 			addressListMapsArray := localData
 			request["AddressList"] = addressListMapsArray
 
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -286,18 +291,18 @@ func resourceAliCloudWafv3AddressBookUpdate(d *schema.ResourceData, meta interfa
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
 
 	}
-	return resourceAliCloudWafv3AddressBookRead(d, meta)
+	return resourceWafv3AddressBookRead(d, meta)
 }
 
-func resourceAliCloudWafv3AddressBookDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceWafv3AddressBookDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -312,11 +317,11 @@ func resourceAliCloudWafv3AddressBookDelete(d *schema.ResourceData, meta interfa
 	request["RegionId"] = client.RegionId
 
 	request["DefenseType"] = "global"
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -324,13 +329,13 @@ func resourceAliCloudWafv3AddressBookDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

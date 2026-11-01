@@ -1,4 +1,4 @@
-package alicloud
+package wafopenapi
 
 import (
 	"encoding/json"
@@ -8,6 +8,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -15,6 +19,10 @@ import (
 
 type Wafv3ServiceV2 struct {
 	client *connectivity.AliyunClient
+}
+
+func NewWafv3ServiceV2(client *connectivity.AliyunClient) *Wafv3ServiceV2 {
+	return &Wafv3ServiceV2{client: client}
 }
 
 // DescribeWafv3DefenseTemplate <<< Encapsulated get interface for Wafv3 DefenseTemplate.
@@ -26,7 +34,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -35,12 +43,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 	request["RegionId"] = client.RegionId
 	action := "DescribeDefenseTemplate"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -48,19 +56,19 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseTemplate(id string) (object map[str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Template", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("DefenseTemplate", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DefenseTemplate", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["TemplateName"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("DefenseTemplate", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DefenseTemplate", id), errs.NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -72,7 +80,7 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -82,12 +90,12 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 	request["ResourceType"] = resourceType
 	action := "DescribeTemplateResources"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -95,12 +103,12 @@ func (s *Wafv3ServiceV2) DescribeDefenseTemplateDescribeTemplateResources(id str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Defense.Control.DefenseTemplateNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("DefenseTemplate", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Defense.Control.DefenseTemplateNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DefenseTemplate", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -114,10 +122,10 @@ func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFuncWithApi(id string, 
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -131,7 +139,7 @@ func (s *Wafv3ServiceV2) Wafv3DefenseTemplateStateRefreshFuncWithApi(id string, 
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -149,7 +157,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3Domain(id string) (object map[string]inter
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
@@ -159,12 +167,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3Domain(id string) (object map[string]inter
 	request["RegionId"] = client.RegionId
 	action := "DescribeDomainDetail"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -172,17 +180,17 @@ func (s *Wafv3ServiceV2) DescribeWafv3Domain(id string) (object map[string]inter
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Waf.Instance.ValidFaild"}) {
-			return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Waf.Instance.ValidFaild"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Domain", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	currentStatus := response["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("Domain", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Domain", id), errs.NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -194,7 +202,7 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
@@ -204,12 +212,12 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 	request["ResourceType"] = "ALIYUN::WAF::DEFENSERESOURCE"
 	action := "ListTagResources"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -217,9 +225,9 @@ func (s *Wafv3ServiceV2) DescribeDomainListTagResources(id string) (object map[s
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -233,10 +241,10 @@ func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFuncWithApi(id string, field str
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -250,7 +258,7 @@ func (s *Wafv3ServiceV2) Wafv3DomainStateRefreshFuncWithApi(id string, field str
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -269,10 +277,10 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -288,11 +296,11 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -300,9 +308,9 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -322,11 +330,11 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			}
 
 			request["ResourceType"] = resourceType
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -334,9 +342,9 @@ func (s *Wafv3ServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -356,7 +364,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
@@ -367,12 +375,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 	request["RegionId"] = client.RegionId
 	action := "DescribeDefenseRule"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -380,17 +388,17 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseRule(id string) (object map[string]
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("DefenseRule", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DefenseRule", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Rule", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Rule", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -404,10 +412,10 @@ func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFuncWithApi(id string, fiel
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -421,7 +429,7 @@ func (s *Wafv3ServiceV2) Wafv3DefenseRuleStateRefreshFuncWithApi(id string, fiel
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -439,7 +447,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseResourceGroup(id string) (object ma
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
@@ -448,12 +456,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseResourceGroup(id string) (object ma
 	request["RegionId"] = client.RegionId
 	action := "DescribeDefenseResourceGroup"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -461,19 +469,19 @@ func (s *Wafv3ServiceV2) DescribeWafv3DefenseResourceGroup(id string) (object ma
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Group", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("DefenseResourceGroup", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DefenseResourceGroup", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.(map[string]interface{})["GroupName"]
 	if currentStatus == nil {
-		return object, WrapErrorf(NotFoundErr("DefenseResourceGroup", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("DefenseResourceGroup", id), errs.NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -487,10 +495,10 @@ func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id str
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -509,7 +517,7 @@ func (s *Wafv3ServiceV2) Wafv3DefenseResourceGroupStateRefreshFuncWithApi(id str
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -527,7 +535,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBook(id string) (object map[string]
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
@@ -538,12 +546,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBook(id string) (object map[string]
 	request["DefenseType"] = "global"
 	action := "DescribeDefenseRule"
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -551,23 +559,23 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBook(id string) (object map[string]
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
-			return object, WrapErrorf(NotFoundErr("AddressBook", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("AddressBook", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Rule.Config", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule.Config", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Rule.Config", response)
 	}
 
 	if configStr, ok := v.(string); ok {
 		object = make(map[string]interface{})
 		if err := json.Unmarshal([]byte(configStr), &object); err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule.Config", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Rule.Config", response)
 		}
 		return object, nil
 	}
@@ -577,7 +585,7 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBookAddresses(id string) (object ma
 	client := s.client
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 
@@ -598,11 +606,11 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBookAddresses(id string) (object ma
 		query := make(map[string]interface{})
 
 		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -610,12 +618,12 @@ func (s *Wafv3ServiceV2) DescribeWafv3AddressBookAddresses(id string) (object ma
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
-				return object, WrapErrorf(NotFoundErr("AddressBook", id), NotFoundMsg, response)
+			if errs.IsExpectedErrors(err, []string{"Defense.Control.DefenseRuleNotExist"}) {
+				return object, errs.WrapErrorf(errs.NotFoundErr("AddressBook", id), errs.NotFoundMsg, response)
 			}
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if pageList, ok := response["AddressList"].([]interface{}); ok {

@@ -1,4 +1,4 @@
-package alicloud
+package wafopenapi_test
 
 import (
 	"fmt"
@@ -6,45 +6,46 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudWafv3DomainDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 99999999)
+	rand := tfacctest.RandIntRange(1000000, 99999999)
 	// cn region needs icp domain, and using intl region instead
-	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+	acctest.CheckoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_wafv3_domain.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_wafv3_domain.default.id}_fake"]`,
 		}),
 	}
-	DomainConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+	DomainConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"domain": `"${alicloud_wafv3_domain.default.domain}"`,
 		}),
-		fakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"domain": `"${alicloud_wafv3_domain.default.domain}_fake"`,
 		}),
 	}
-	backendConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+	backendConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"backend": `"1.1.1.1"`,
 		}),
-		fakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"backend": `"1.1.1.2"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"ids":     `["${alicloud_wafv3_domain.default.id}"]`,
 			"domain":  `"${alicloud_wafv3_domain.default.domain}"`,
 			"backend": `"1.1.1.1"`,
 		}),
-		fakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAliCloudWafv3DomainSourceConfig(rand, map[string]string{
 			"ids":     `["${alicloud_wafv3_domain.default.id}_fake"]`,
 			"domain":  `"${alicloud_wafv3_domain.default.domain}_fake"`,
 			"backend": `"1.1.1.2"`,
@@ -52,24 +53,24 @@ func TestAccAliCloudWafv3DomainDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 		testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
 	}
 
-	Wafv3DomainCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, DomainConf, backendConf, allConf)
+	Wafv3DomainCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, DomainConf, backendConf, allConf)
 }
 
 var existWafv3DomainMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"ids.#":            "1",
 		"domains.#":        "1",
-		"domains.0.id":     CHECKSET,
-		"domains.0.domain": CHECKSET,
-		"domains.0.resource_manager_resource_group_id": CHECKSET,
-		"domains.0.status":                             CHECKSET,
-		"domains.0.cname":                              CHECKSET,
+		"domains.0.id":     acctest.CHECKSET,
+		"domains.0.domain": acctest.CHECKSET,
+		"domains.0.resource_manager_resource_group_id": acctest.CHECKSET,
+		"domains.0.status":                             acctest.CHECKSET,
+		"domains.0.cname":                              acctest.CHECKSET,
 		"domains.0.listen.#":                           "1",
-		"domains.0.listen.0.cert_id":                   CHECKSET,
+		"domains.0.listen.0.cert_id":                   acctest.CHECKSET,
 		"domains.0.listen.0.cipher_suite":              "99",
 		"domains.0.listen.0.enable_tlsv3":              "true",
 		"domains.0.listen.0.exclusive_ip":              "false",
@@ -97,8 +98,8 @@ var existWafv3DomainMapFunc = func(rand int) map[string]string {
 		"domains.0.redirect.0.write_timeout":           "30",
 		"domains.0.redirect.0.backends.#":              "1",
 		"domains.0.redirect.0.request_headers.#":       "1",
-		"domains.0.redirect.0.request_headers.0.key":   CHECKSET,
-		"domains.0.redirect.0.request_headers.0.value": CHECKSET,
+		"domains.0.redirect.0.request_headers.0.key":   acctest.CHECKSET,
+		"domains.0.redirect.0.request_headers.0.value": acctest.CHECKSET,
 	}
 }
 
@@ -109,10 +110,10 @@ var fakeWafv3DomainMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var Wafv3DomainCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_wafv3_domains.default",
-	existMapFunc: existWafv3DomainMapFunc,
-	fakeMapFunc:  fakeWafv3DomainMapFunc,
+var Wafv3DomainCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_wafv3_domains.default",
+	ExistMapFunc: existWafv3DomainMapFunc,
+	FakeMapFunc:  fakeWafv3DomainMapFunc,
 }
 
 func testAccCheckAliCloudWafv3DomainSourceConfig(rand int, attrMap map[string]string) string {
