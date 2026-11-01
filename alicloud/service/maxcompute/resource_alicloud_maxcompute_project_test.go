@@ -1,11 +1,13 @@
-package alicloud
+package maxcompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,22 +15,22 @@ import (
 func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AliCloudMaxComputeProjectMap1968)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMaxComputeProjectMap1968)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeProjectBasicDependence1968)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMaxComputeProjectBasicDependence1968)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -84,10 +86,10 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"default_quota":         CHECKSET,
-						"project_name":          CHECKSET,
-						"comment":               CHECKSET,
-						"product_type":          CHECKSET,
+						"default_quota":         acctest.CHECKSET,
+						"project_name":          acctest.CHECKSET,
+						"comment":               acctest.CHECKSET,
+						"product_type":          acctest.CHECKSET,
 						"three_tier_model":      "true",
 						"ip_white_list.#":       "1",
 						"properties.#":          "1",
@@ -103,8 +105,8 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"comment":      CHECKSET,
-						"project_name": CHECKSET,
+						"comment":      acctest.CHECKSET,
+						"project_name": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -129,22 +131,22 @@ func TestAccAliCloudMaxComputeProject_basic1968(t *testing.T) {
 func TestAccAliCloudMaxComputeProject_basic1968_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AliCloudMaxComputeProjectMap1968)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMaxComputeProjectMap1968)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeProjectBasicDependence1968)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMaxComputeProjectBasicDependence1968)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -162,10 +164,10 @@ func TestAccAliCloudMaxComputeProject_basic1968_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"default_quota":   CHECKSET,
-						"project_name":    CHECKSET,
-						"comment":         CHECKSET,
-						"product_type":    CHECKSET,
+						"default_quota":   acctest.CHECKSET,
+						"project_name":    acctest.CHECKSET,
+						"comment":         acctest.CHECKSET,
+						"product_type":    acctest.CHECKSET,
 						"ip_white_list.#": "1",
 					}),
 				),
@@ -209,11 +211,11 @@ variable "name" {
 }
 
 var AliCloudMaxComputeProjectMap7168 = map[string]string{
-	"status":       CHECKSET,
-	"owner":        CHECKSET,
-	"project_name": CHECKSET,
-	"create_time":  CHECKSET,
-	"type":         CHECKSET,
+	"status":       acctest.CHECKSET,
+	"owner":        acctest.CHECKSET,
+	"project_name": acctest.CHECKSET,
+	"create_time":  acctest.CHECKSET,
+	"type":         acctest.CHECKSET,
 }
 
 func AliCloudMaxComputeProjectBasicDependence7168(name string) string {
@@ -230,22 +232,22 @@ variable "name" {
 func TestAccAliCloudMaxComputeProject_basic7168_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_maxcompute_project.default"
-	ra := resourceAttrInit(resourceId, AliCloudMaxComputeProjectMap7168)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudMaxComputeProjectMap7168)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeProject")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testaccmp%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMaxComputeProjectBasicDependence7168)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudMaxComputeProjectBasicDependence7168)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{

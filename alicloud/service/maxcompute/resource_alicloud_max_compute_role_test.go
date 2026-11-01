@@ -1,11 +1,13 @@
-package alicloud
+package maxcompute_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/maxcompute"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudMaxComputeRole_basic9618(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_role.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxComputeRoleMap9618)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleMap9618)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeRole")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleBasicDependence9618)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleBasicDependence9618)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -41,8 +43,8 @@ func TestAccAliCloudMaxComputeRole_basic9618(t *testing.T) {
 					testAccCheck(map[string]string{
 						"role_name":    name,
 						"type":         "admin",
-						"project_name": CHECKSET,
-						"policy":       CHECKSET,
+						"project_name": acctest.CHECKSET,
+						"policy":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -52,7 +54,7 @@ func TestAccAliCloudMaxComputeRole_basic9618(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"policy": CHECKSET,
+						"policy": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -92,21 +94,22 @@ resource "alicloud_maxcompute_project" "default" {
 func TestAccAliCloudMaxComputeRole_basic9584(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_max_compute_role.default"
-	ra := resourceAttrInit(resourceId, AlicloudMaxComputeRoleMap9584)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MaxComputeServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudMaxComputeRoleMap9584)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return maxcompute.NewMaxComputeServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeMaxComputeRole")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1, 999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMaxComputeRoleBasicDependence9584)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMaxComputeRoleBasicDependence9584)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -119,8 +122,8 @@ func TestAccAliCloudMaxComputeRole_basic9584(t *testing.T) {
 					testAccCheck(map[string]string{
 						"role_name":    name,
 						"type":         "resource",
-						"project_name": CHECKSET,
-						"policy":       CHECKSET,
+						"project_name": acctest.CHECKSET,
+						"policy":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -130,7 +133,7 @@ func TestAccAliCloudMaxComputeRole_basic9584(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"policy": CHECKSET,
+						"policy": acctest.CHECKSET,
 					}),
 				),
 			},

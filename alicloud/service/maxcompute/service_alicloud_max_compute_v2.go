@@ -1,4 +1,4 @@
-package alicloud
+package maxcompute
 
 import (
 	"encoding/json"
@@ -8,6 +8,11 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
@@ -31,12 +36,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 
 	action := fmt.Sprintf("/api/v1/projects/%s", projectName)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"500"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"500"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -44,17 +49,17 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeProject(id string) (object map[s
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "ODPS-0420095", "PROJECT_NOT_FOUND", "ODPS-0420061"}) {
-			return object, WrapErrorf(NotFoundErr("Project", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST", "ODPS-0420111", "ODPS-0420095", "PROJECT_NOT_FOUND", "ODPS-0420061"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Project", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.data", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -66,17 +71,17 @@ func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object
 	var query map[string]*string
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	query["ResourceId"] = StringPointer(id)
-	query["RegionId"] = StringPointer(client.RegionId)
-	query["ResourceType"] = StringPointer("project")
+	query["ResourceId"] = helper.StringPointer(id)
+	query["RegionId"] = helper.StringPointer(client.RegionId)
+	query["ResourceType"] = helper.StringPointer("project")
 	action := fmt.Sprintf("/tags")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -84,9 +89,9 @@ func (s *MaxComputeServiceV2) DescribeProjectListTagResources(id string) (object
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -96,10 +101,10 @@ func (s *MaxComputeServiceV2) MaxComputeProjectStateRefreshFunc(id string, field
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeProject(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return nil, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -114,7 +119,7 @@ func (s *MaxComputeServiceV2) MaxComputeProjectStateRefreshFunc(id string, field
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -134,10 +139,10 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 		query := make(map[string]*string)
 		body := make(map[string]interface{})
 
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !ignoredTags(v, "") {
+			if !tags.IgnoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -146,16 +151,16 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			request = make(map[string]interface{})
 			query = make(map[string]*string)
 			body = make(map[string]interface{})
-			query["ResourceId"] = StringPointer(d.Id())
-			query["RegionId"] = StringPointer(client.RegionId)
-			query["TagKey"] = StringPointer(convertListToCommaSeparate(convertListStringToListInterface(removedTagKeys)))
-			query["ResourceType"] = StringPointer(resourceType)
+			query["ResourceId"] = helper.StringPointer(d.Id())
+			query["RegionId"] = helper.StringPointer(client.RegionId)
+			query["TagKey"] = helper.StringPointer(convert.ConvertListToCommaSeparate(convert.ConvertListStringToListInterface(removedTagKeys)))
+			query["ResourceType"] = helper.StringPointer(resourceType)
 			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaDelete("MaxCompute", "2022-01-04", action, query, nil, nil, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -163,9 +168,9 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -189,16 +194,16 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 
 			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
-			jsonString := convertObjectToJsonString(request)
+			jsonString := convert.ConvertObjectToJsonString(request)
 			jsonString, _ = sjson.Set(jsonString, "ResourceId.0", d.Id())
 			_ = json.Unmarshal([]byte(jsonString), &request)
 
 			body = request
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RoaPost("MaxCompute", "2022-01-04", action, query, nil, body, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -206,9 +211,9 @@ func (s *MaxComputeServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -227,7 +232,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaPlan(id string) (object map
 	var query map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	nickname := parts[0]
 	planName := parts[1]
@@ -236,12 +241,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaPlan(id string) (object map
 
 	action := fmt.Sprintf("/api/v1/quotas/%s/computeQuotaPlan/%s", nickname, planName)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -249,17 +254,17 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaPlan(id string) (object map
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"QUOTA_PLAN_NOT_FOUND"}) {
-			return object, WrapErrorf(NotFoundErr("QuotaPlan", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"QUOTA_PLAN_NOT_FOUND"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("QuotaPlan", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.data", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -269,10 +274,10 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaPlanStateRefreshFunc(id string, fie
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeQuotaPlan(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -287,7 +292,7 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaPlanStateRefreshFunc(id string, fie
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -305,7 +310,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[stri
 	var query map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	projectName := parts[0]
 	roleName := parts[1]
@@ -314,12 +319,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[stri
 
 	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/policy", projectName, roleName)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -327,12 +332,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeRole(id string) (object map[stri
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST"}) {
-			return object, WrapErrorf(NotFoundErr("Role", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"OBJECT_NOT_EXIST"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Role", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -342,10 +347,10 @@ func (s *MaxComputeServiceV2) MaxComputeRoleStateRefreshFunc(id string, field st
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeRole(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -360,7 +365,7 @@ func (s *MaxComputeServiceV2) MaxComputeRoleStateRefreshFunc(id string, field st
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -377,21 +382,21 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaSchedule(id string) (object
 	var query map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 	}
 	nickname := parts[0]
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	query["displayTimezone"] = StringPointer(parts[1])
+	query["displayTimezone"] = helper.StringPointer(parts[1])
 
 	action := fmt.Sprintf("/api/v1/quotas/%s/computeQuotaSchedule", nickname)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -399,9 +404,9 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuotaSchedule(id string) (object
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -411,10 +416,10 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaScheduleStateRefreshFunc(id string,
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeQuotaSchedule(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -429,7 +434,7 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaScheduleStateRefreshFunc(id string,
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -455,7 +460,7 @@ func (s *MaxComputeServiceV2) describeMaxComputeRoleUserAttachmentWithRoaGet(id 
 	var query map[string]*string
 	parts := strings.Split(id, "&")
 	if len(parts) != 3 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	projectName := parts[0]
 	roleName := parts[1]
@@ -464,12 +469,12 @@ func (s *MaxComputeServiceV2) describeMaxComputeRoleUserAttachmentWithRoaGet(id 
 
 	action := fmt.Sprintf("/api/v1/projects/%s/roles/%s/users", projectName, roleName)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = roaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -477,7 +482,7 @@ func (s *MaxComputeServiceV2) describeMaxComputeRoleUserAttachmentWithRoaGet(id 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
 		// When the linked RAM/ALIYUN user referenced by a role is deleted
 		// externally, the project role user list API returns a non-404 error
@@ -487,18 +492,18 @@ func (s *MaxComputeServiceV2) describeMaxComputeRoleUserAttachmentWithRoaGet(id 
 		// String match is a stop-gap until MaxCompute exposes a stable error
 		// code for the externally-deleted member case.
 		if strings.Contains(err.Error(), "baseId and tenantId do not match") {
-			return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, err)
+			return object, errs.WrapErrorf(errs.NotFoundErr("RoleUserAttachment", id), errs.NotFoundMsg, err)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.data.users[*]", response)
 	if err != nil {
-		return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("RoleUserAttachment", id), errs.NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("RoleUserAttachment", id), errs.NotFoundMsg, response)
 	}
 
 	result, _ := v.([]interface{})
@@ -509,17 +514,17 @@ func (s *MaxComputeServiceV2) describeMaxComputeRoleUserAttachmentWithRoaGet(id 
 		}
 		return item, nil
 	}
-	return object, WrapErrorf(NotFoundErr("RoleUserAttachment", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("RoleUserAttachment", id), errs.NotFoundMsg, response)
 }
 
 func (s *MaxComputeServiceV2) MaxComputeRoleUserAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeRoleUserAttachment(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -534,7 +539,7 @@ func (s *MaxComputeServiceV2) MaxComputeRoleUserAttachmentStateRefreshFunc(id st
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -556,12 +561,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTunnelQuotaTimer(id string) (obj
 
 	action := fmt.Sprintf("/api/v1/tunnel/%s/timers", nickname)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -569,9 +574,9 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTunnelQuotaTimer(id string) (obj
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -581,10 +586,10 @@ func (s *MaxComputeServiceV2) MaxComputeTunnelQuotaTimerStateRefreshFunc(id stri
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeTunnelQuotaTimer(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -599,7 +604,7 @@ func (s *MaxComputeServiceV2) MaxComputeTunnelQuotaTimerStateRefreshFunc(id stri
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -622,12 +627,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuota(id string) (object map[str
 
 	action := fmt.Sprintf("/api/v1/quotas/%s", nickname)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -635,12 +640,12 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeQuota(id string) (object map[str
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"QUOTA_UNKNOWN_NICKNAME"}) {
-			return object, WrapErrorf(NotFoundErr("Quota", id), NotFoundMsg, response)
+		if errs.IsExpectedErrors(err, []string{"QUOTA_UNKNOWN_NICKNAME"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Quota", id), errs.NotFoundMsg, response)
 		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -652,17 +657,17 @@ func (s *MaxComputeServiceV2) DescribeQuotaListTagResources(id string) (object m
 	var query map[string]*string
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	query["ResourceId"] = StringPointer(id)
-	query["RegionId"] = StringPointer(client.RegionId)
-	query["ResourceType"] = StringPointer("quota")
+	query["ResourceId"] = helper.StringPointer(id)
+	query["RegionId"] = helper.StringPointer(client.RegionId)
+	query["ResourceType"] = helper.StringPointer("quota")
 	action := fmt.Sprintf("/tags")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -670,9 +675,9 @@ func (s *MaxComputeServiceV2) DescribeQuotaListTagResources(id string) (object m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
@@ -682,10 +687,10 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaStateRefreshFunc(id string, field s
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeMaxComputeQuota(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -700,7 +705,7 @@ func (s *MaxComputeServiceV2) MaxComputeQuotaStateRefreshFunc(id string, field s
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -718,22 +723,22 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTenantRoleUserAttachment(id stri
 	var header map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	header = make(map[string]*string)
-	query["accountId"] = StringPointer(parts[0])
+	query["accountId"] = helper.StringPointer(parts[0])
 
 	action := fmt.Sprintf("/api/v1/tenants/user")
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaGet("MaxCompute", "2022-01-04", action, query, header, nil)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -741,19 +746,19 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTenantRoleUserAttachment(id stri
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.data.roles", response)
 	if err != nil || v == nil {
-		return object, WrapErrorf(NotFoundErr("TenantRoleUserAttachment", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("TenantRoleUserAttachment", id), errs.NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})
 	if currentStatus == nil || len(currentStatus) == 0 {
-		return object, WrapErrorf(NotFoundErr("TenantRoleUserAttachment", id), NotFoundMsg, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("TenantRoleUserAttachment", id), errs.NotFoundMsg, response)
 	}
 
 	targetRole := parts[1]
@@ -763,7 +768,7 @@ func (s *MaxComputeServiceV2) DescribeMaxComputeTenantRoleUserAttachment(id stri
 		}
 	}
 
-	return object, WrapErrorf(NotFoundErr("TenantRoleUserAttachment", id), NotFoundMsg, response)
+	return object, errs.WrapErrorf(errs.NotFoundErr("TenantRoleUserAttachment", id), errs.NotFoundMsg, response)
 }
 
 func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
@@ -774,10 +779,10 @@ func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc
 	return func() (interface{}, string, error) {
 		object, err := call(id)
 		if err != nil {
-			if NotFoundError(err) {
+			if errs.NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", WrapError(err)
+			return nil, "", errs.WrapError(err)
 		}
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
@@ -791,7 +796,7 @@ func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -799,3 +804,8 @@ func (s *MaxComputeServiceV2) MaxComputeTenantRoleUserAttachmentStateRefreshFunc
 }
 
 // DescribeMaxComputeTenantRoleUserAttachment >>> Encapsulated.
+
+// NewMaxComputeServiceV2 constructs a MaxComputeServiceV2 from the shared AliyunClient.
+func NewMaxComputeServiceV2(client *connectivity.AliyunClient) *MaxComputeServiceV2 {
+	return &MaxComputeServiceV2{client: client}
+}

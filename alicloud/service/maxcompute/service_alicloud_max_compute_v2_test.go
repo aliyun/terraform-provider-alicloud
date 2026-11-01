@@ -1,17 +1,18 @@
-package alicloud
+package maxcompute
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 )
 
 // TestDescribeMaxComputeRoleUserAttachment_ExternallyDeletedMember verifies
 // that when MaxCompute returns a non-404 error whose message indicates the
 // linked RAM/ALIYUN user referenced by a role has been deleted externally
 // ("baseId and tenantId do not match"), the service-layer Read path in
-// DescribeMaxComputeRoleUserAttachment surfaces a NotFoundError so the
+// DescribeMaxComputeRoleUserAttachment surfaces a errs.NotFoundError so the
 // resource Read drops the attachment from state instead of failing
 // refresh/apply.
 //
@@ -116,11 +117,11 @@ func TestDescribeMaxComputeRoleUserAttachment_ExternallyDeletedMember(t *testing
 			if (err != nil) != c.wantErr {
 				t.Fatalf("expected err != nil = %v, got err = %v", c.wantErr, err)
 			}
-			if NotFoundError(err) != c.wantNotFound {
-				t.Fatalf("expected NotFoundError = %v, got %v. err: %v", c.wantNotFound, NotFoundError(err), err)
+			if errs.NotFoundError(err) != c.wantNotFound {
+				t.Fatalf("expected errs.NotFoundError = %v, got %v. err: %v", c.wantNotFound, errs.NotFoundError(err), err)
 			}
 			if c.wantNotFound && !strings.Contains(err.Error(), c.id) {
-				t.Fatalf("expected NotFoundError to contain resource ID %q, got %v", c.id, err)
+				t.Fatalf("expected errs.NotFoundError to contain resource ID %q, got %v", c.id, err)
 			}
 		})
 	}

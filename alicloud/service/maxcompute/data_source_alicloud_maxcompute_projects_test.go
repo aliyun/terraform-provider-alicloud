@@ -1,61 +1,62 @@
-package alicloud
+package maxcompute_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudMaxComputeProjectDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
+func TestAccAliCloudMaxComputeProjectDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MaxComputeProjectSupportRegions)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_maxcompute_project.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_maxcompute_project.default.id}_fake"]`,
 		}),
 	}
 
-	nameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+	nameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"name_regex": `"${var.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"name_regex": `"${var.name}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_maxcompute_project.default.id}"]`,
 			"name_regex": `"${var.name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"ids":        `["${alicloud_maxcompute_project.default.id}_fake"]`,
 			"name_regex": `"${var.name}_fake"`,
 		}),
 	}
 
-	MaxComputeProjectCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameConf, allConf)
+	MaxComputeProjectCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameConf, allConf)
 }
 
 var existMaxComputeProjectMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"projects.#":                       "1",
-		"projects.0.comment":               CHECKSET,
-		"projects.0.default_quota":         CHECKSET,
-		"projects.0.owner":                 CHECKSET,
-		"projects.0.project_name":          CHECKSET,
+		"projects.0.comment":               acctest.CHECKSET,
+		"projects.0.default_quota":         acctest.CHECKSET,
+		"projects.0.owner":                 acctest.CHECKSET,
+		"projects.0.project_name":          acctest.CHECKSET,
 		"projects.0.properties.#":          "1",
 		"projects.0.security_properties.#": "1",
-		"projects.0.status":                CHECKSET,
-		"projects.0.type":                  CHECKSET,
+		"projects.0.status":                acctest.CHECKSET,
+		"projects.0.type":                  acctest.CHECKSET,
 	}
 }
 
@@ -65,10 +66,10 @@ var fakeMaxComputeProjectMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var MaxComputeProjectCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_maxcompute_projects.default",
-	existMapFunc: existMaxComputeProjectMapFunc,
-	fakeMapFunc:  fakeMaxComputeProjectMapFunc,
+var MaxComputeProjectCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_maxcompute_projects.default",
+	ExistMapFunc: existMaxComputeProjectMapFunc,
+	FakeMapFunc:  fakeMaxComputeProjectMapFunc,
 }
 
 func testAccCheckAlicloudMaxComputeProjectSourceConfig(rand int, attrMap map[string]string) string {

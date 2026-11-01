@@ -1,10 +1,13 @@
-package alicloud
+package maxcompute
 
 import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -49,18 +52,18 @@ func dataSourceAlicloudMaxcomputeServiceRead(d *schema.ResourceData, meta interf
 	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
 		resp, err := client.RoaGet("MaxCompute", "2022-01-04", action, query, nil, nil)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"QPS Limit Exceeded"}) || helper.NeedRetry(err) {
 				return retry.RetryableError(err)
 			}
-			addDebug(action, resp, nil)
+			logs.AddDebug(action, resp, nil)
 			return retry.NonRetryableError(err)
 		}
 		response = resp
-		addDebug(action, resp, nil)
+		logs.AddDebug(action, resp, nil)
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_maxcompute_service", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_maxcompute_service", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	quotaList, err := jsonpath.Get("$.data.quotaInfoList", response)
 	if err == nil && quotaList != nil {
@@ -70,7 +73,7 @@ func dataSourceAlicloudMaxcomputeServiceRead(d *schema.ResourceData, meta interf
 			return nil
 		}
 	}
-	return WrapErrorf(NotFoundErr("MaxcomputeService", "MaxcomputeServiceHasNotBeenOpened"),
+	return errs.WrapErrorf(errs.NotFoundErr("MaxcomputeService", "MaxcomputeServiceHasNotBeenOpened"),
 		"the MaxCompute service has not been activated in this region, and it can no longer be activated through this data source "+
 			"because the OpenMaxComputeService API has been decommissioned; please activate MaxCompute in the Alibaba Cloud console")
 }
