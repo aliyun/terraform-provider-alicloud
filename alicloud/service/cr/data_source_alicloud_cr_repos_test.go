@@ -1,0 +1,107 @@
+package cr_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAliCloudCRReposDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_cr_repos.default"
+
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-cr-repo-%d", rand),
+		dataSourceCRReposConfigDependence)
+
+	namespaceConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"namespace": "${alicloud_cr_repo.default.name}",
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"namespace": "${alicloud_cr_repo.default.name}_fake",
+		}),
+	}
+
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_cr_repo.default.name}",
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_cr_repo.default.name}_fake",
+		}),
+	}
+
+	enableDetailsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_cr_repo.default.name}",
+			"enable_details": "true",
+		}),
+	}
+
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
+			"namespace":      "${alicloud_cr_repo.default.name}",
+			"name_regex":     "${alicloud_cr_repo.default.name}",
+			"enable_details": "true",
+		}),
+		FakeConfig: testAccConfig(map[string]interface{}{
+			"namespace":      "${alicloud_cr_repo.default.name}_fake",
+			"name_regex":     "${alicloud_cr_repo.default.name}",
+			"enable_details": "true",
+		}),
+	}
+
+	var existCRReposMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#":           "1",
+			"names.0":           fmt.Sprintf("tf-testacc-cr-repo-%d", rand),
+			"repos.#":           "1",
+			"repos.0.name":      fmt.Sprintf("tf-testacc-cr-repo-%d", rand),
+			"repos.0.namespace": fmt.Sprintf("tf-testacc-cr-repo-%d", rand),
+			"repos.0.summary":   "OLD",
+			"repos.0.repo_type": "PUBLIC",
+			"repos.0.tags.#":    "0",
+		}
+	}
+
+	var fakeCRReposMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"names.#": "0",
+			"repos.#": "0",
+		}
+	}
+
+	var crReposCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existCRReposMapFunc,
+		FakeMapFunc:  fakeCRReposMapFunc,
+	}
+
+	crReposCheckInfo.DataSourceTestCheck(t, rand, namespaceConf, nameRegexConf, enableDetailsConf, allConf)
+}
+
+func dataSourceCRReposConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_cr_namespace" "default" {
+  name               = "${var.name}"
+  auto_create        = false
+  default_visibility = "PUBLIC"
+}
+
+resource "alicloud_cr_repo" "default" {
+  namespace = "${alicloud_cr_namespace.default.name}"
+  name      = "${var.name}"
+  summary   = "OLD"
+  repo_type = "PUBLIC"
+  detail    = "OLD"
+}
+`, name)
+}
