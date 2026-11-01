@@ -1,127 +1,128 @@
-package alicloud
+package sddp_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudSddpRuleDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_rule.default.id}_fake"]`,
 		}),
 	}
-	nameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	nameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"name": `"${alicloud_sddp_rule.default.rule_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"name": `"${alicloud_sddp_rule.default.rule_name}_fake"`,
 		}),
 	}
-	nameregexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	nameregexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_sddp_rule.default.rule_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_sddp_rule.default.rule_name}_fake"`,
 		}),
 	}
-	risklevelidConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	risklevelidConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"risk_level_id": `"${alicloud_sddp_rule.default.risk_level_id}"`,
 			"ids":           `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"risk_level_id": `"0"`,
 			"ids":           `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
-	customtypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	customtypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"custom_type": `"${alicloud_sddp_rule.default.custom_type}"`,
 			"ids":         `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"custom_type": `"2"`,
 			"ids":         `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
-	productidConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	productidConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"product_id": `"${alicloud_sddp_rule.default.product_id}"`,
 			"ids":        `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"product_id": `"2"`,
 			"ids":        `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"status": `"${alicloud_sddp_rule.default.status}"`,
 			"ids":    `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"status": `"0"`,
 			"ids":    `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
-	ruletypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	ruletypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"rule_type": `"${alicloud_sddp_rule.default.rule_type}"`,
 			"ids":       `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"rule_type": `"3"`,
 			"ids":       `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
 
-	categoryConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	categoryConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"category": `"${alicloud_sddp_rule.default.category}"`,
 			"ids":      `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"category": `"2"`,
 			"ids":      `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
 
-	warnevelConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	warnevelConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"warn_level": `"${alicloud_sddp_rule.default.warn_level}"`,
 			"ids":        `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"warn_level": `"1"`,
 			"ids":        `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
 
-	contentCategoryConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	contentCategoryConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"content_category": `"${alicloud_sddp_rule.default.content_category}"`,
 			"ids":              `["${alicloud_sddp_rule.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"content_category": `"1"`,
 			"ids":              `["${alicloud_sddp_rule.default.id}"]`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_sddp_rule.default.id}"]`,
 			"name":          `"${alicloud_sddp_rule.default.rule_name}"`,
 			"name_regex":    `"${alicloud_sddp_rule.default.rule_name}"`,
@@ -133,7 +134,7 @@ func TestAccAliCloudSddpRuleDataSource(t *testing.T) {
 			"category":      `"${alicloud_sddp_rule.default.category}"`,
 			"warn_level":    `"${alicloud_sddp_rule.default.warn_level}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpRuleDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_sddp_rule.default.id}_fake"]`,
 			"name":          `"${alicloud_sddp_rule.default.rule_name}_fake"`,
 			"name_regex":    `"${alicloud_sddp_rule.default.rule_name}_fake"`,
@@ -165,15 +166,15 @@ func TestAccAliCloudSddpRuleDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudSaeNamespaceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_sddp_rules.default",
-		existMapFunc: existAlicloudSaeNamespaceDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudSaeNamespaceDataSourceNameMapFunc,
+	var alicloudSaeNamespaceCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_sddp_rules.default",
+		ExistMapFunc: existAlicloudSaeNamespaceDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudSaeNamespaceDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.SddpSupportRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.SddpSupportRegions)
 	}
-	alicloudSaeNamespaceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameConf, nameregexConf, risklevelidConf, customtypeConf, productidConf, productidConf, statusConf, ruletypeConf, categoryConf, warnevelConf, contentCategoryConf, allConf)
+	alicloudSaeNamespaceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameConf, nameregexConf, risklevelidConf, customtypeConf, productidConf, productidConf, statusConf, ruletypeConf, categoryConf, warnevelConf, contentCategoryConf, allConf)
 
 }
 func testAccCheckAlicloudSddpRuleDataSourceName(rand int, attrMap map[string]string) string {

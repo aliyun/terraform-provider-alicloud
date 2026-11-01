@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"fmt"
@@ -6,12 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudSddpDataLimits() *schema.Resource {
+func DataSourceSddpDataLimits() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSddpDataLimitsRead,
 		Schema: map[string]*schema.Schema{
@@ -101,7 +105,7 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("parent_id"); ok {
 		request["ParentId"] = v
 	}
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["CurrentPage"] = 1
 	var objects []map[string]interface{}
 
@@ -117,11 +121,11 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -129,13 +133,13 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_sddp_data_limits", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_sddp_data_limits", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Items", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Items", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -147,7 +151,7 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
@@ -156,21 +160,21 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		audit_statusVal, err := formatInt(object["AuditStatus"])
+		audit_statusVal, err := convert.FormatInt(object["AuditStatus"])
 		if err != nil {
 			return err
 		}
-		check_statusVal, err := formatInt(object["CheckStatus"])
-		if err != nil {
-			return err
-		}
-
-		log_store_dayVal, err := formatInt(object["LogStoreDay"])
+		check_statusVal, err := convert.FormatInt(object["CheckStatus"])
 		if err != nil {
 			return err
 		}
 
-		portVal, err := formatInt(object["Port"])
+		log_store_dayVal, err := convert.FormatInt(object["LogStoreDay"])
+		if err != nil {
+			return err
+		}
+
+		portVal, err := convert.FormatInt(object["Port"])
 		if err != nil {
 			return err
 		}
@@ -191,16 +195,16 @@ func dataSourceAlicloudSddpDataLimitsRead(d *schema.ResourceData, meta interface
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("limits", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

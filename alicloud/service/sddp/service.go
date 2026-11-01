@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"fmt"
@@ -6,29 +6,39 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type SddpService struct {
+type Service struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}, err error) {
+// NewService is the exported constructor: the client field stays
+// unexported, so callers outside the package (including the flat
+// layout's acceptance tests) build values with it.
+func NewService(client *connectivity.AliyunClient) *Service {
+	return &Service{client: client}
+}
+
+func (s *Service) DescribeSddpRule(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "DescribeRules"
 	request := map[string]interface{}{
-		"PageSize":    PageSizeLarge,
+		"PageSize":    helper.PageSizeLarge,
 		"CurrentPage": 1,
 	}
 
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -36,19 +46,19 @@ func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, err := jsonpath.Get("$.Items", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items", response)
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(NotFoundErr("Sddp:Rule", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("Sddp:Rule", id), errs.NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
@@ -66,13 +76,13 @@ func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}
 	}
 
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("Sddp:Rule", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("Sddp:Rule", id), errs.NotFoundWithResponse, response)
 	}
 
 	return object, nil
 }
 
-func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeSddpConfig(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
 	action := "DescribeConfigs"
@@ -80,11 +90,11 @@ func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface
 		"Lang": "zh",
 	}
 	idExist := false
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -92,16 +102,16 @@ func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.ConfigList", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ConfigList", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ConfigList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SDDP", id), errs.NotFoundWithResponse, response)
 	}
 	for _, v := range v.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Code"]) == id {
@@ -110,21 +120,21 @@ func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface
 		}
 	}
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SDDP", id), errs.NotFoundWithResponse, response)
 	}
 	return object, nil
 }
 
-func (s *SddpService) DescribeSddpInstance(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeSddpInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeUserStatus"
 	request := map[string]interface{}{}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -132,19 +142,19 @@ func (s *SddpService) DescribeSddpInstance(id string) (object map[string]interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.UserStatus", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.UserStatus", response)
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.UserStatus", response)
 	}
 	object = v.(map[string]interface{})
 	return object, nil
 }
 
-func (s *SddpService) DescribeSddpDataLimit(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeSddpDataLimit(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	client := s.client
 	action := "DescribeDataLimits"
@@ -154,11 +164,11 @@ func (s *SddpService) DescribeSddpDataLimit(id string) (object map[string]interf
 	}
 	idExist := false
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -166,16 +176,16 @@ func (s *SddpService) DescribeSddpDataLimit(id string) (object map[string]interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}
 		v, err := jsonpath.Get("$.Items", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items", response)
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Items", response)
 		}
 		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
+			return object, errs.WrapErrorf(errs.NotFoundErr("SDDP", id), errs.NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
@@ -189,7 +199,7 @@ func (s *SddpService) DescribeSddpDataLimit(id string) (object map[string]interf
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
 	if !idExist {
-		return object, WrapErrorf(NotFoundErr("SDDP", id), NotFoundWithResponse, response)
+		return object, errs.WrapErrorf(errs.NotFoundErr("SDDP", id), errs.NotFoundWithResponse, response)
 	}
 	return
 }

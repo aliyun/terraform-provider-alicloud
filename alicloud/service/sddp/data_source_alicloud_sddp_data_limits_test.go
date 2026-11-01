@@ -1,12 +1,13 @@
-package alicloud
+package sddp_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 const (
@@ -14,68 +15,68 @@ const (
 )
 
 func TestAccAliCloudSddpDataLimitsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(100, 999)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(100, 999)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_data_limit.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_sddp_data_limit.default.id}_fake"]`,
 		}),
 	}
-	resourceTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+	resourceTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_sddp_data_limit.default.id}"]`,
 			"resource_type": `"RDS"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_sddp_data_limit.default.id}"]`,
 			"resource_type": `"OSS"`,
 		}),
 	}
-	parentIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+	parentIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_sddp_data_limit.default.id}"]`,
 			"parent_id": `"${alicloud_sddp_data_limit.default.parent_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids":       `["${alicloud_sddp_data_limit.default.id}_fake"]`,
 			"parent_id": `"${alicloud_sddp_data_limit.default.parent_id}_fake"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_sddp_data_limit.default.id}"]`,
 			"resource_type": `"RDS"`,
 			"parent_id":     `"${alicloud_sddp_data_limit.default.parent_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSddpDataLimitsDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_sddp_data_limit.default.id}_fake"]`,
 			"parent_id":     `"${alicloud_sddp_data_limit.default.parent_id}_fake"`,
 			"resource_type": `"OSS"`,
 		}),
 	}
 
-	var alicloudSddpDataLimitsCheckInfo = dataSourceAttr{
-		resourceId: "data.alicloud_sddp_data_limits.default",
-		existMapFunc: func(rand int) map[string]string {
+	var alicloudSddpDataLimitsCheckInfo = acctest.DataSourceAttr{
+		ResourceId: "data.alicloud_sddp_data_limits.default",
+		ExistMapFunc: func(rand int) map[string]string {
 			return map[string]string{
 				"ids.#":                  "1",
 				"limits.#":               "1",
-				"limits.0.audit_status":  CHECKSET,
-				"limits.0.check_status":  CHECKSET,
-				"limits.0.id":            CHECKSET,
-				"limits.0.data_limit_id": CHECKSET,
-				"limits.0.engine_type":   CHECKSET,
-				"limits.0.local_name":    CHECKSET,
-				"limits.0.log_store_day": CHECKSET,
-				"limits.0.parent_id":     CHECKSET,
-				"limits.0.port":          CHECKSET,
+				"limits.0.audit_status":  acctest.CHECKSET,
+				"limits.0.check_status":  acctest.CHECKSET,
+				"limits.0.id":            acctest.CHECKSET,
+				"limits.0.data_limit_id": acctest.CHECKSET,
+				"limits.0.engine_type":   acctest.CHECKSET,
+				"limits.0.local_name":    acctest.CHECKSET,
+				"limits.0.log_store_day": acctest.CHECKSET,
+				"limits.0.parent_id":     acctest.CHECKSET,
+				"limits.0.port":          acctest.CHECKSET,
 				"limits.0.resource_type": "RDS",
-				"limits.0.user_name":     CHECKSET,
+				"limits.0.user_name":     acctest.CHECKSET,
 			}
 		},
-		fakeMapFunc: func(rand int) map[string]string {
+		FakeMapFunc: func(rand int) map[string]string {
 			return map[string]string{
 				"ids.#": "0",
 			}
@@ -83,10 +84,10 @@ func TestAccAliCloudSddpDataLimitsDataSource(t *testing.T) {
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		checkoutSupportedRegions(t, true, []connectivity.Region{sddpDataLimitsDataSourceTestRegion})
+		acctest.PreCheck(t)
+		acctest.CheckoutSupportedRegions(t, true, []connectivity.Region{sddpDataLimitsDataSourceTestRegion})
 	}
-	alicloudSddpDataLimitsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, resourceTypeConf, parentIdConf, allConf)
+	alicloudSddpDataLimitsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, resourceTypeConf, parentIdConf, allConf)
 }
 func testAccCheckAlicloudSddpDataLimitsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -111,14 +112,8 @@ variable "database_name" {
   default = "tfaccdatabase"
 }
 
-data "alicloud_db_zones" "default" {
-  engine = "MySQL"
-  engine_version = "8.0"
-  instance_charge_type = "PostPaid"
-}
-
 data "alicloud_db_instance_classes" "default" {
-  zone_id = data.alicloud_db_zones.default.zones.1.id
+  zone_id = "ap-southeast-1c"
   engine = "MySQL"
   engine_version = "8.0"
   category = "HighAvailability"
@@ -134,7 +129,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  zone_id      = data.alicloud_db_zones.default.zones.1.id
+  zone_id      = "ap-southeast-1c"
   vswitch_name = var.name
 }
 

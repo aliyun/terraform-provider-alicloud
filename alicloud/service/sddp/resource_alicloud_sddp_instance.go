@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"fmt"
@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudSddpInstance() *schema.Resource {
+func ResourceSddpInstance() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudSddpInstanceCreate,
 		Read:   resourceAlicloudSddpInstanceRead,
@@ -149,7 +153,7 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 	action := "CreateInstance"
 	request := make(map[string]interface{})
 
-	request["ClientToken"] = buildClientToken("CreateInstance")
+	request["ClientToken"] = helper.BuildClientToken("CreateInstance")
 	request["ProductCode"] = "sddp"
 	request["ProductType"] = "sddp_pre"
 	request["SubscriptionType"] = d.Get("payment_type")
@@ -160,12 +164,12 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("renewal_duration"); ok {
 		request["RenewPeriod"] = v
 	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
+		return errs.WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_duration", "renewal_status", d.Get("renewal_status")))
 	}
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	} else if d.Get("payment_type").(string) == "Subscription" {
-		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v", "period", "payment_type", "Subscription"))
+		return errs.WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v", "period", "payment_type", "Subscription"))
 	}
 
 	if v, ok := d.GetOk("logistics"); ok {
@@ -199,7 +203,7 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 			"Value": v,
 		})
 	} else if d.Get("sddp_version").(string) == "version_audit" || d.Get("sddp_version").(string) == "version_company" {
-		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v or %v", "dataphin", "sddp_version", "version_audit", "version_company"))
+		return errs.WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v or %v", "dataphin", "sddp_version", "version_audit", "version_company"))
 	}
 	if v, ok := d.GetOk("dataphin_count"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -212,15 +216,15 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 		"Value": client.RegionId,
 	})
 	request["Parameter"] = parameterMapList
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 				endpoint = connectivity.BssOpenAPIEndpointInternational
 				return retry.RetryableError(err)
 			}
@@ -228,12 +232,12 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sddp_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_sddp_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Code"]) != "Success" {
-		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
@@ -241,19 +245,19 @@ func resourceAlicloudSddpInstanceCreate(d *schema.ResourceData, meta interface{}
 }
 func resourceAlicloudSddpInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	sddpService := SddpService{client}
+	sddpService := NewService(client)
 	object, err := sddpService.DescribeSddpInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_sddp_instance sddpService.DescribeSddpInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("payment_type", convertSddpInstancePaymentTypeToStandard(object["ChargeType"]))
 	d.Set("sddp_version", object["Version"])
-	sdcInstanceNum, err := formatInt(object["InstanceNum"])
+	sdcInstanceNum, err := convert.FormatInt(object["InstanceNum"])
 	if err != nil {
 		return err
 	}
@@ -261,20 +265,20 @@ func resourceAlicloudSddpInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	d.Set("authed", object["Authed"])
 	d.Set("renewal_status", object["RenewStatus"])
-	instanceNum, err := formatInt(object["InstanceNum"])
+	instanceNum, err := convert.FormatInt(object["InstanceNum"])
 	if err != nil {
 		return err
 	}
 	d.Set("instance_num", fmt.Sprint(instanceNum))
 	d.Set("odps_set", object["OdpsSet"])
 	d.Set("oss_bucket_set", object["OssBucketSet"])
-	ossSize, err := formatInt(object["OssSize"])
+	ossSize, err := convert.FormatInt(object["OssSize"])
 	if err != nil {
 		return err
 	}
 	d.Set("oss_size", fmt.Sprint(ossSize))
 	d.Set("rds_set", object["RdsSet"])
-	instanceStatus, err := formatInt(object["InstanceStatus"])
+	instanceStatus, err := convert.FormatInt(object["InstanceStatus"])
 	if err != nil {
 		return err
 	}
@@ -292,7 +296,7 @@ func resourceAlicloudSddpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		"InstanceId": d.Id(),
 	}
 	request["SubscriptionType"] = d.Get("payment_type")
-	request["ClientToken"] = buildClientToken("ModifyInstance")
+	request["ClientToken"] = helper.BuildClientToken("ModifyInstance")
 	request["ProductCode"] = "sddp"
 	request["ProductType"] = "sddp_pre"
 	parameterMapList := make([]map[string]interface{}, 0)
@@ -379,15 +383,15 @@ func resourceAlicloudSddpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			request["ModifyType"] = v
 		}
 		action := "ModifyInstance"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
-				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				if errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
 					endpoint = connectivity.BssOpenAPIEndpointInternational
 					return retry.RetryableError(err)
 				}
@@ -395,19 +399,19 @@ func resourceAlicloudSddpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
 	return resourceAlicloudSddpInstanceRead(d, meta)
 }
 func resourceAlicloudSddpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudSddpInstance. Terraform will remove this resource from the state file, however resources may remain.")
+	log.Printf("[WARN] Cannot destroy ResourceSddpInstance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
 

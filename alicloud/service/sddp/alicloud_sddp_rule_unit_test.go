@@ -1,7 +1,6 @@
-package alicloud
+package sddp
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -12,236 +11,18 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudSDDPRule_basic0(t *testing.T) {
-	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
-	resourceId := "alicloud_sddp_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudSDDPRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddprule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSDDPRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_name": name,
-					"category":  "0",
-					"content":   `[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"tf-testACCContent\"}],\"ruleRelation\":\"AND\"}]`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rule_name": name,
-						"category":  "0",
-						"content":   CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_name": name + "-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rule_name": name + "-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"category": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"category": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"content": `[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"tf-testACCContent-update\"}],\"ruleRelation\":\"AND\"}]`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"content": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"risk_level_id": "5",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"risk_level_id": "5",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_type": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rule_type": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"product_code": "OSS",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"product_code": "OSS",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"product_id": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"product_id": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"warn_level": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"warn_level": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"rule_type", "lang"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudSDDPRule_basic0_twin(t *testing.T) {
-	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
-	resourceId := "alicloud_sddp_rule.default"
-	ra := resourceAttrInit(resourceId, AliCloudSDDPRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSddpRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%ssddprule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSDDPRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_name":        name,
-					"category":         "0",
-					"content":          `[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"tf-testACCContent\"}],\"ruleRelation\":\"AND\"}]`,
-					"content_category": "106",
-					"risk_level_id":    "5",
-					"rule_type":        "1",
-					"product_code":     "OSS",
-					"product_id":       "2",
-					"warn_level":       "1",
-					"stat_express":     name,
-					"target":           "tf-target",
-					"status":           "1",
-					"description":      name,
-					"lang":             "en",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rule_name":        name,
-						"category":         "0",
-						"content":          CHECKSET,
-						"content_category": "106",
-						"risk_level_id":    "5",
-						"rule_type":        "1",
-						"product_code":     "OSS",
-						"product_id":       "2",
-						"warn_level":       "1",
-						"stat_express":     name,
-						"target":           "tf-target",
-						"status":           "1",
-						"description":      name,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"rule_type", "lang"},
-			},
-		},
-	})
-}
-
-var AliCloudSDDPRuleMap0 = map[string]string{
-	"content_category": CHECKSET,
-	"status":           CHECKSET,
-	"custom_type":      CHECKSET,
-}
-
-func AliCloudSDDPRuleBasicDependence0(name string) string {
-	return ""
-}
-
 // lintignore: R001
 func TestUnitAliCloudSDDPRule(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(nil, nil)
+	r := ResourceSddpRule()
+	dInit, _ := schema.InternalMap(r.Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(r.Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
 		"category":         0,
@@ -269,7 +50,7 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -303,18 +84,18 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_sddp_rule", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_sddp_rule", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -322,9 +103,9 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -361,7 +142,7 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(r.Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -375,9 +156,9 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -393,7 +174,7 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(r.Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeRules
 		"Items": []interface{}{
@@ -427,7 +208,7 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(r.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -457,7 +238,7 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(dExisted.State(), diff)
+	dExisted, _ = schema.InternalMap(r.Schema).Data(dExisted.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		// DescribeRules
 		"Items": []interface{}{
@@ -501,7 +282,7 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(r.Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -546,9 +327,9 @@ func TestUnitAliCloudSDDPRule(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSddpClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

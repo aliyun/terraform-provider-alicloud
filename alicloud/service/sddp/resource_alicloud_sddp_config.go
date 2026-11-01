@@ -1,4 +1,4 @@
-package alicloud
+package sddp
 
 import (
 	"fmt"
@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudSddpConfig() *schema.Resource {
+func ResourceSddpConfig() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudSddpConfigCreate,
 		Read:   resourceAlicloudSddpConfigRead,
@@ -64,11 +68,11 @@ func resourceAlicloudSddpConfigCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("value"); ok {
 		request["Value"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -76,9 +80,9 @@ func resourceAlicloudSddpConfigCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sddp_config", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_sddp_config", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["Code"]))
@@ -87,20 +91,20 @@ func resourceAlicloudSddpConfigCreate(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudSddpConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	sddpService := SddpService{client}
+	sddpService := NewService(client)
 	object, err := sddpService.DescribeSddpConfig(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_sddp_config sddpService.DescribeSddpConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("code", d.Id())
 	d.Set("description", object["Description"])
-	configValue, err := formatInt(object["Value"])
+	configValue, err := convert.FormatInt(object["Value"])
 	if err != nil {
 		return err
 	}
@@ -132,11 +136,11 @@ func resourceAlicloudSddpConfigUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "CreateConfig"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -144,14 +148,14 @@ func resourceAlicloudSddpConfigUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudSddpConfigRead(d, meta)
 }
 func resourceAlicloudSddpConfigDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudSddpConfig. Terraform will remove this resource from the state file, however resources may remain.")
+	log.Printf("[WARN] Cannot destroy ResourceSddpConfig. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
