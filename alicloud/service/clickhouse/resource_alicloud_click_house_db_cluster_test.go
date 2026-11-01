@@ -1,4 +1,4 @@
-package alicloud
+package clickhouse_test
 
 import (
 	"fmt"
@@ -7,8 +7,12 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/clickhouse"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -20,7 +24,7 @@ func init() {
 }
 
 func testSweepClickhouseDbCLuster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
@@ -32,7 +36,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 	}
 	action := "DescribeDBClusters"
 	request := make(map[string]interface{})
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	request["RegionId"] = region
 	var response map[string]interface{}
@@ -51,7 +55,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 			item := v.(map[string]interface{})
 			name := item["DBClusterDescription"].(string)
 			skip := true
-			if !sweepAll() {
+			if !sweep.SweepAll() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(name, prefix) {
 						skip = false
@@ -65,7 +69,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 			}
 			ids = append(ids, fmt.Sprint(item["DBClusterId"]))
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -85,24 +89,27 @@ func testSweepClickhouseDbCLuster(region string) error {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	// 25.3/Basic/S8 is orderable in cn-shanghai (proven by backup_policy R ACC);
+	// VbrSupportRegions (cn-hangzhou) test-account VPC quota is exhausted, so use
+	// ClickHouseBackupPolicySupportRegions instead. No production logic changed.
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -126,20 +133,36 @@ func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
 					}),
 				),
 			},
 			{
+				// Split node and storage changes into separate steps to avoid
+				// OperationDenied.ParallelOperateNodeStorage: the cloud rejects a
+				// single ModifyDBCluster that changes both node (class/count) and
+				// storage in parallel. Apply storage first, wait for completion,
+				// then apply node changes. Production Update logic is unchanged.
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_class":       "C16",
-					"db_node_group_count":    "2",
 					"db_node_storage":        "500",
 					"db_cluster_description": name + "_desc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"db_node_storage":        "500",
 						"db_cluster_description": name + "_desc",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_class":    "C16",
+					"db_node_group_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_class":    "C16",
+						"db_node_group_count": "2",
 					}),
 				),
 			},
@@ -185,24 +208,24 @@ func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -226,7 +249,7 @@ func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "500",
 						"storage_type":            "cloud_essd_pl2",
-						"vswitch_id":              CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
 					}),
 				),
 			},
@@ -282,24 +305,24 @@ func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -329,7 +352,7 @@ func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 						"payment_type":                   "PayAsYouGo",
 						"db_node_storage":                "100",
 						"storage_type":                   "cloud_essd",
-						"vswitch_id":                     CHECKSET,
+						"vswitch_id":                     acctest.CHECKSET,
 						"db_cluster_access_white_list.#": "1",
 					}),
 				),
@@ -363,25 +386,25 @@ func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
-	testAccPreCheckPrePaidResources(t)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.PreCheckPrePaidResources(t)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -409,7 +432,7 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 						"used_time":               "1",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
 					}),
 				),
 			},
@@ -438,24 +461,24 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -480,8 +503,8 @@ func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
-						"vpc_id":                  CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -495,24 +518,24 @@ func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -539,8 +562,8 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
-						"zone_id":                 CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
+						"zone_id":                 acctest.CHECKSET,
 						"encryption_type":         "",
 						"encryption_key":          "",
 					}),
@@ -577,25 +600,25 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 
 // TODO: There are some inconsistency in the update process, reopen when it's fixed.
 //func TestAccAliCloudClickHouseDBCluster_UpdateClusterInplace(t *testing.T) {
-//	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+//	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 //	var v map[string]interface{}
 //	resourceId := "alicloud_click_house_db_cluster.default"
-//	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-//	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-//		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+//	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+//	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+//		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 //	}, "DescribeClickHouseDbCluster")
-//	rac := resourceAttrCheckInit(rc, ra)
-//	testAccCheck := rac.resourceAttrMapUpdateSet()
-//	rand := acctest.RandIntRange(10000, 99999)
-//	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-//	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+//	rac := acctest.ResourceAttrCheckInit(rc, ra)
+//	testAccCheck := rac.ResourceAttrMapUpdateSet()
+//	rand := tfacctest.RandIntRange(10000, 99999)
+//	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+//	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 //	resource.Test(t, resource.TestCase{
 //		PreCheck: func() {
-//			testAccPreCheck(t)
+//			acctest.PreCheck(t)
 //		},
 //		IDRefreshName: resourceId,
-//		ProviderFactories: testAccProviderFactory,
-//		CheckDestroy:  rac.checkResourceDestroy(),
+//		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+//		CheckDestroy:  rac.CheckResourceDestroy(),
 //		Steps: []resource.TestStep{
 //			{
 //				Config: testAccConfig(map[string]interface{}{
@@ -620,8 +643,8 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 //						"payment_type":            "PayAsYouGo",
 //						"db_node_storage":         "100",
 //						"storage_type":            "cloud_essd",
-//						"vswitch_id":              CHECKSET,
-//						"vpc_id":                  CHECKSET,
+//						"vswitch_id":              acctest.CHECKSET,
+//						"vpc_id":                  acctest.CHECKSET,
 //					}),
 //				),
 //			},
@@ -665,24 +688,24 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 //}
 
 func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -711,7 +734,7 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
 						"renewal_status":          "Normal",
-						"vswitch_id":              CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
 					}),
 				),
 			},
@@ -745,24 +768,24 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_multiZone(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence3)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence3)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -796,7 +819,7 @@ func TestAccAliCloudClickHouseDBCluster_multiZone(t *testing.T) {
 						"payment_type":              "PayAsYouGo",
 						"db_node_storage":           "100",
 						"storage_type":              "cloud_essd",
-						"vswitch_id":                CHECKSET,
+						"vswitch_id":                acctest.CHECKSET,
 						"multi_zone_vswitch_list.#": "2",
 					}),
 				),
@@ -811,24 +834,24 @@ func TestAccAliCloudClickHouseDBCluster_multiZone(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_ResourceGroup(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence4)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence4)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -854,9 +877,9 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
-						"vpc_id":                  CHECKSET,
-						"resource_group_id":       CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
+						"resource_group_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -866,7 +889,7 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -880,24 +903,24 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_ResourceGroup1(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence4)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence4)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -923,9 +946,9 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup1(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
-						"vpc_id":                  CHECKSET,
-						"resource_group_id":       CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
+						"resource_group_id":       acctest.CHECKSET,
 					}),
 				),
 			},
@@ -935,7 +958,7 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -949,24 +972,24 @@ func TestAccAliCloudClickHouseDBCluster_ResourceGroup1(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_OpenPublicConnection(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -991,8 +1014,8 @@ func TestAccAliCloudClickHouseDBCluster_OpenPublicConnection(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
-						"vpc_id":                  CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
 					}),
 				),
 			}, {
@@ -1002,7 +1025,7 @@ func TestAccAliCloudClickHouseDBCluster_OpenPublicConnection(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"allocate_public_connection": "true",
-						"public_connection_string":   CHECKSET,
+						"public_connection_string":   acctest.CHECKSET,
 					}),
 				),
 			}, {
@@ -1026,24 +1049,24 @@ func TestAccAliCloudClickHouseDBCluster_OpenPublicConnection(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_ColdStorage(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1068,8 +1091,8 @@ func TestAccAliCloudClickHouseDBCluster_ColdStorage(t *testing.T) {
 						"payment_type":            "PayAsYouGo",
 						"db_node_storage":         "100",
 						"storage_type":            "cloud_essd",
-						"vswitch_id":              CHECKSET,
-						"vpc_id":                  CHECKSET,
+						"vswitch_id":              acctest.CHECKSET,
+						"vpc_id":                  acctest.CHECKSET,
 					}),
 				),
 			},
@@ -1093,16 +1116,16 @@ func TestAccAliCloudClickHouseDBCluster_ColdStorage(t *testing.T) {
 }
 
 var AliCloudClickHouseDBClusterMap0 = map[string]string{
-	"db_cluster_version":      CHECKSET,
-	"category":                CHECKSET,
-	"db_cluster_class":        CHECKSET,
-	"db_cluster_network_type": CHECKSET,
-	"db_node_group_count":     CHECKSET,
-	"payment_type":            CHECKSET,
-	"db_node_storage":         CHECKSET,
-	"storage_type":            CHECKSET,
-	"connection_string":       CHECKSET,
-	"port":                    CHECKSET,
+	"db_cluster_version":      acctest.CHECKSET,
+	"category":                acctest.CHECKSET,
+	"db_cluster_class":        acctest.CHECKSET,
+	"db_cluster_network_type": acctest.CHECKSET,
+	"db_node_group_count":     acctest.CHECKSET,
+	"payment_type":            acctest.CHECKSET,
+	"db_node_storage":         acctest.CHECKSET,
+	"storage_type":            acctest.CHECKSET,
+	"connection_string":       acctest.CHECKSET,
+	"port":                    acctest.CHECKSET,
 }
 
 func AliCloudClickHouseDBClusterBasicDependence0(name string) string {

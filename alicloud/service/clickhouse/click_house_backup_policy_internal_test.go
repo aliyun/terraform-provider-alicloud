@@ -1,10 +1,10 @@
-package alicloud
+package clickhouse
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -12,148 +12,95 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAliCloudClickHouseBackupPolicy_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
-	var v map[string]interface{}
-	resourceId := "alicloud_click_house_backup_policy.default"
-	checkoutSupportedRegions(t, true, connectivity.ClickHouseSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseBackupPolicyMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeClickHouseBackupPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclickhousebackuppolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseBackupPolicyBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"preferred_backup_period": []string{"Monday", "Tuesday"},
-					"preferred_backup_time":   "00:00Z-01:00Z",
-					"db_cluster_id":           "${alicloud_click_house_db_cluster.default.id}",
-					"backup_retention_period": "7",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"preferred_backup_period.#": "2",
-						"preferred_backup_time":     "00:00Z-01:00Z",
-						"db_cluster_id":             CHECKSET,
-						"backup_retention_period":   "7",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"preferred_backup_period": []string{"Wednesday", "Monday", "Saturday"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"preferred_backup_period.#": "3",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"preferred_backup_time": "01:00Z-02:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"preferred_backup_time": "01:00Z-02:00Z",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"backup_retention_period": "14",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_retention_period": "14",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"preferred_backup_period": []string{"Monday", "Tuesday"},
-					"preferred_backup_time":   "00:00Z-01:00Z",
-					"backup_retention_period": "7",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"preferred_backup_period.#": "2",
-						"preferred_backup_time":     "00:00Z-01:00Z",
-						"backup_retention_period":   "7",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+// unitTestProviderResources supplies the schema the migrated unit tests
+// inspect; the root alicloud package cannot be imported from a service
+// package, so the resource is wired through its own factory.
+func unitTestProviderResources() map[string]*schema.Resource {
+	return map[string]*schema.Resource{
+		"alicloud_click_house_backup_policy": ResourceClickHouseBackupPolicy(),
+	}
 }
 
-var AlicloudClickHouseBackupPolicyMap0 = map[string]string{
-	"db_cluster_id": CHECKSET,
-	"status":        CHECKSET,
-}
+// newInstanceDiff mirrors the root helper for the migrated resource.
+// lintignore: R001
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+	p := unitTestProviderResources()
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
 
-func AlicloudClickHouseBackupPolicyBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
 
-data "alicloud_click_house_regions" "default" {
-  current = true
-}
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range helper.MapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
+		}
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
+		}
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
+		}
+		diff.Attributes[key] = &terraform.ResourceAttrDiff{Old: oldValue, New: newValue}
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "192.168.192.0/24"
-  zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
-}
-
-resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "23.8"
-  status                  = "Running"
-  category                = "Basic"
-  db_cluster_class        = "S8"
-  db_cluster_network_type = "vpc"
-  db_cluster_description  = var.name
-  db_node_group_count     = "1"
-  payment_type            = "PayAsYouGo"
-  db_node_storage         = "500"
-  storage_type            = "cloud_essd"
-  vswitch_id              = alicloud_vswitch.default.id
-}
-`, name)
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						if len(strings.Split(removeKey, ".")) > 2 {
+							delete(diff.Attributes, removeKey)
+						} else {
+							diff.Attributes[removeKey] = &terraform.ResourceAttrDiff{Old: removeValue, New: ""}
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
+	}
+	return diff, nil
 }
 
 // lintignore: R001
 func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_click_house_backup_policy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_click_house_backup_policy"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -173,7 +120,7 @@ func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -190,18 +137,18 @@ func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
 	CreateMockResponse := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_click_house_backup_policy", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_click_house_backup_policy", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -209,9 +156,9 @@ func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewClickhouseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -259,9 +206,9 @@ func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewClickhouseClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

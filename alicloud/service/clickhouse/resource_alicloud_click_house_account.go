@@ -1,4 +1,4 @@
-package alicloud
+package clickhouse
 
 import (
 	"fmt"
@@ -7,11 +7,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAlicloudClickHouseAccount() *schema.Resource {
+func ResourceClickHouseAccount() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudClickHouseAccountCreate,
 		Read:   resourceAlicloudClickHouseAccountRead,
@@ -34,12 +39,12 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{1,15}`), "The account_name most consist of lowercase letters, numbers, and underscores, starting with a lowercase letter"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{1,15}`), "The account_name most consist of lowercase letters, numbers, and underscores, starting with a lowercase letter"),
 			},
 			"account_password": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile(`[a-zA-Z!#$%^&*()_+-=]{8,32}`), "account_password must consist of uppercase letters, lowercase letters, numbers, and special characters"),
+				ValidateFunc: validators.StringMatch(regexp.MustCompile(`[a-zA-Z!#$%^&*()_+-=]{8,32}`), "account_password must consist of uppercase letters, lowercase letters, numbers, and special characters"),
 			},
 			"db_cluster_id": {
 				Type:     schema.TypeString,
@@ -55,13 +60,13 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Normal", "Super"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Normal", "Super"}, false),
 			},
 			"dml_authority": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"all", "readOnly,modify"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"all", "readOnly,modify"}, false),
 			},
 			"ddl_authority": {
 				Type:     schema.TypeBool,
@@ -110,11 +115,11 @@ func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interf
 		action = "CreateSQLAccount"
 		request["AccountType"] = d.Get("type")
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -122,9 +127,9 @@ func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_click_house_account", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_click_house_account", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["DBClusterId"], ":", request["AccountName"]))
@@ -133,19 +138,19 @@ func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interf
 }
 func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickhouseService := ClickhouseService{client}
+	clickhouseService := NewService(client)
 	object, err := clickhouseService.DescribeClickHouseAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_click_house_account clickhouseService.DescribeClickHouseAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("account_name", parts[1])
 	d.Set("db_cluster_id", parts[0])
@@ -157,12 +162,12 @@ func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interfac
 	d.Set("dml_authority", authority["DmlAuthority"])
 	d.Set("ddl_authority", authority["DdlAuthority"])
 
-	d.Set("allow_databases", convertArrayToString(authority["AllowDatabases"], ","))
-	d.Set("allow_dictionaries", convertArrayToString(authority["AllowDictionaries"], ","))
-	d.Set("total_databases", convertArrayToString(authority["TotalDatabases"], ","))
-	d.Set("total_dictionaries", convertArrayToString(authority["TotalDictionaries"], ","))
+	d.Set("allow_databases", convert.ConvertArrayToString(authority["AllowDatabases"], ","))
+	d.Set("allow_dictionaries", convert.ConvertArrayToString(authority["AllowDictionaries"], ","))
+	d.Set("total_databases", convert.ConvertArrayToString(authority["TotalDatabases"], ","))
+	d.Set("total_dictionaries", convert.ConvertArrayToString(authority["TotalDictionaries"], ","))
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	return nil
@@ -170,9 +175,9 @@ func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interfac
 func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	update := false
@@ -189,11 +194,11 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 	}
 	if update {
 		action := "ModifyAccountDescription"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -201,9 +206,9 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	update = false
@@ -217,11 +222,11 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 	request["AccountPassword"] = d.Get("account_password")
 	if update {
 		action := "ResetAccountPassword"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -229,9 +234,9 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -285,11 +290,11 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 
 	if update {
 		action := "ModifyAccountAuthority"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -297,9 +302,9 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.Partial(false)
@@ -308,10 +313,10 @@ func resourceAlicloudClickHouseAccountUpdate(d *schema.ResourceData, meta interf
 }
 func resourceAlicloudClickHouseAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickhouseService := ClickhouseService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
+	clickhouseService := NewService(client)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "DeleteAccount"
 	var response map[string]interface{}
@@ -320,11 +325,11 @@ func resourceAlicloudClickHouseAccountDelete(d *schema.ResourceData, meta interf
 		"DBClusterId": parts[0],
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2019-11-11", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"IncorrectAccountStatus", "IncorrectDBInstanceState"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -332,16 +337,16 @@ func resourceAlicloudClickHouseAccountDelete(d *schema.ResourceData, meta interf
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{"Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickhouseService.ClickhouseStateRefreshFunc(d.Id(), []string{}))
+	stateConf := helper.BuildStateConf([]string{"Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickhouseService.ClickhouseStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }

@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package clickhouse
 
 import (
 	"fmt"
@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicy() *schema.Resource {
+func ResourceClickHouseEnterpriseDbClusterBackupPolicy() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyCreate,
 		Read:   resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyRead,
@@ -65,11 +68,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyCreate(d *schema.R
 	request["BackupRetentionPeriod"] = d.Get("backup_retention_period")
 	request["PreferredBackupTime"] = d.Get("preferred_backup_time")
 	request["PreferredBackupPeriod"] = d.Get("preferred_backup_period")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -77,10 +80,10 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyCreate(d *schema.R
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster_backup_policy", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster_backup_policy", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["DBInstanceId"]))
@@ -90,16 +93,16 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyCreate(d *schema.R
 
 func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
+	clickHouseServiceV2 := NewService(client)
 
 	objectRaw, err := clickHouseServiceV2.DescribeClickHouseEnterpriseDbClusterBackupPolicy(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_click_house_enterprise_db_cluster_backup_policy DescribeClickHouseEnterpriseDbClusterBackupPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("backup_retention_period", objectRaw["BackupRetentionPeriod"])
@@ -137,11 +140,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyUpdate(d *schema.R
 	}
 	request["PreferredBackupPeriod"] = d.Get("preferred_backup_period")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -149,9 +152,9 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyUpdate(d *schema.R
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -170,11 +173,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyDelete(d *schema.R
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -182,13 +185,13 @@ func resourceAliCloudClickHouseEnterpriseDbClusterBackupPolicyDelete(d *schema.R
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

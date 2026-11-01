@@ -1,34 +1,39 @@
-package alicloud
+package clickhouse_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/clickhouse"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccAliCloudClickHouseAccount_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	// 25.3/Basic/S8 is orderable in cn-shanghai (proven by backup_policy R ACC);
+	// VbrSupportRegions (cn-hangzhou) test-account VPC quota is exhausted, so use
+	// ClickHouseBackupPolicySupportRegions instead. No production logic changed.
+	acctest.CheckoutSupportedRegions(t, true, connectivity.ClickHouseBackupPolicySupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	pwd := fmt.Sprintf("Tf-test%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -39,7 +44,7 @@ func TestAccAliCloudClickHouseAccount_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id":    CHECKSET,
+						"db_cluster_id":    acctest.CHECKSET,
 						"account_name":     name,
 						"account_password": pwd,
 						"type":             "Normal",
@@ -89,25 +94,25 @@ func TestAccAliCloudClickHouseAccount_basic0(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	pwd := fmt.Sprintf("Tf-test%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -122,7 +127,7 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id":      CHECKSET,
+						"db_cluster_id":      acctest.CHECKSET,
 						"account_name":       name,
 						"account_password":   pwd,
 						"type":               "Normal",
@@ -200,25 +205,25 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseAccount_CreateSuperAccount(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	acctest.CheckoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_account.default"
-	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return clickhouse.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeClickHouseAccount")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100, 999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
 	pwd := fmt.Sprintf("Tf-test%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -229,7 +234,7 @@ func TestAccAliCloudClickHouseAccount_CreateSuperAccount(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_id":    CHECKSET,
+						"db_cluster_id":    acctest.CHECKSET,
 						"account_name":     name,
 						"account_password": pwd,
 						"type":             "Super",
@@ -267,13 +272,13 @@ func TestAccAliCloudClickHouseAccount_CreateSuperAccount(t *testing.T) {
 }
 
 var AliCloudClickHouseAccountMap0 = map[string]string{
-	"status":             CHECKSET,
-	"type":               CHECKSET,
-	"dml_authority":      CHECKSET,
-	"ddl_authority":      CHECKSET,
-	"allow_databases":    CHECKSET,
-	"total_databases":    CHECKSET,
-	"allow_dictionaries": CHECKSET,
+	"status":             acctest.CHECKSET,
+	"type":               acctest.CHECKSET,
+	"dml_authority":      acctest.CHECKSET,
+	"ddl_authority":      acctest.CHECKSET,
+	"allow_databases":    acctest.CHECKSET,
+	"total_databases":    acctest.CHECKSET,
+	"allow_dictionaries": acctest.CHECKSET,
 }
 
 func AliCloudClickHouseAccountBasicDependence0(name string) string {
@@ -299,7 +304,7 @@ func AliCloudClickHouseAccountBasicDependence0(name string) string {
 	}
 
 	resource "alicloud_click_house_db_cluster" "default" {
-  		db_cluster_version      = "22.8.5.29"
+  		db_cluster_version      = "25.3"
   		category                = "Basic"
   		db_cluster_class        = "S8"
   		db_cluster_network_type = "vpc"

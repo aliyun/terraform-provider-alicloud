@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package clickhouse
 
 import (
 	"fmt"
@@ -8,12 +8,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpoint() *schema.Resource {
+func ResourceClickHouseEnterpriseDbClusterPublicEndpoint() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointCreate,
 		Read:   resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointRead,
@@ -41,7 +45,7 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpoint() *schema.Resou
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Public"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Public"}, false),
 			},
 		},
 	}
@@ -66,11 +70,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointCreate(d *schema
 	request["RegionId"] = client.RegionId
 
 	request["ConnectionPrefix"] = d.Get("connection_string_prefix")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -78,18 +82,18 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointCreate(d *schema
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster_public_endpoint", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster_public_endpoint", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["DBInstanceId"], request["DBInstanceNetType"]))
 
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterPublicEndpointStateRefreshFunc(d, response, "$.Data.Status", []string{}))
+	clickHouseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterPublicEndpointStateRefreshFunc(d, response, "$.Data.Status", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
 	return resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointUpdate(d, meta)
@@ -97,16 +101,16 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointCreate(d *schema
 
 func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
+	clickHouseServiceV2 := NewService(client)
 
 	objectRaw, err := clickHouseServiceV2.DescribeClickHouseEnterpriseDbClusterPublicEndpoint(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_click_house_enterprise_db_cluster_public_endpoint DescribeClickHouseEnterpriseDbClusterPublicEndpoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("net_type", convertClickHouseEnterpriseDbClusterPublicEndpointDataEndpointsNetTypeResponse(objectRaw["NetType"]))
@@ -141,11 +145,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointUpdate(d *schema
 	}
 	request["ConnectionStringPrefix"] = d.Get("connection_string_prefix")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -153,14 +157,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointUpdate(d *schema
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterPublicEndpointStateRefreshFunc(d, response, "$.Data.Status", []string{}))
+		clickHouseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterPublicEndpointStateRefreshFunc(d, response, "$.Data.Status", []string{}))
 		if jobDetail, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 		}
 	}
 
@@ -181,12 +185,12 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointDelete(d *schema
 	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -194,19 +198,19 @@ func resourceAliCloudClickHouseEnterpriseDbClusterPublicEndpointDelete(d *schema
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterPublicEndpointStateRefreshFunc(d, response, "$.Data.Status", []string{}))
+	clickHouseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, clickHouseServiceV2.DescribeAsyncClickHouseEnterpriseDbClusterPublicEndpointStateRefreshFunc(d, response, "$.Data.Status", []string{}))
 	if jobDetail, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package alicloud
+package clickhouse
 
 import (
 	"encoding/json"
@@ -8,11 +8,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
+func ResourceClickHouseEnterpriseDbCluster() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudClickHouseEnterpriseDbClusterCreate,
 		Read:   resourceAliCloudClickHouseEnterpriseDbClusterRead,
@@ -188,7 +193,7 @@ func resourceAliCloudClickHouseEnterpriseDbCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -219,14 +224,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	if v, ok := d.GetOkExists("node_scale_max"); ok {
 		request["NodeScaleMax"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
-		request = expandTagsToMap(request, tagsMap)
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request = tags.ExpandTagsToMap(request, tagsMap)
 	}
 
 	if v, ok := d.GetOk("scale_min"); ok {
@@ -240,16 +245,16 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 	}
 	if v, ok := d.GetOk("multi_zones"); ok {
 		multiZoneMapsArray := make([]interface{}, 0)
-		for _, dataLoop1 := range convertToInterfaceArray(v) {
+		for _, dataLoop1 := range convert.ConvertToInterfaceArray(v) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
-			dataLoop1Map["VSwitchIds"] = convertToInterfaceArray(dataLoop1Tmp["vswitch_ids"])
+			dataLoop1Map["VSwitchIds"] = convert.ConvertToInterfaceArray(dataLoop1Tmp["vswitch_ids"])
 			dataLoop1Map["ZoneId"] = dataLoop1Tmp["zone_id"]
 			multiZoneMapsArray = append(multiZoneMapsArray, dataLoop1Map)
 		}
 		multiZoneMapsJson, err := json.Marshal(multiZoneMapsArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["MultiZone"] = string(multiZoneMapsJson)
 	}
@@ -269,11 +274,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -281,19 +286,19 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_click_house_enterprise_db_cluster", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.Data.DBInstanceId", response)
 	d.SetId(fmt.Sprint(id))
 
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Status", []string{}))
+	clickHouseServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION", "ACTIVE"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	return resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d, meta)
@@ -301,16 +306,16 @@ func resourceAliCloudClickHouseEnterpriseDbClusterCreate(d *schema.ResourceData,
 
 func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickHouseServiceV2 := ClickHouseServiceV2{client}
+	clickHouseServiceV2 := NewService(client)
 
 	objectRaw, err := clickHouseServiceV2.DescribeClickHouseEnterpriseDbCluster(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_click_house_enterprise_db_cluster DescribeClickHouseEnterpriseDbCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("category", objectRaw["Category"])
@@ -318,17 +323,17 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("engine_minor_version", objectRaw["EngineMinorVersion"])
-	node_countVal, formatErr := formatInt(objectRaw["NodeCount"])
+	node_countVal, formatErr := convert.FormatInt(objectRaw["NodeCount"])
 	if formatErr != nil {
 		return formatErr
 	}
 	d.Set("node_count", node_countVal)
-	node_scale_maxVal, formatErr := formatInt(objectRaw["NodeScaleMax"])
+	node_scale_maxVal, formatErr := convert.FormatInt(objectRaw["NodeScaleMax"])
 	if formatErr != nil {
 		return formatErr
 	}
 	d.Set("node_scale_max", node_scale_maxVal)
-	node_scale_minVal, formatErr := formatInt(objectRaw["NodeScaleMin"])
+	node_scale_minVal, formatErr := convert.FormatInt(objectRaw["NodeScaleMin"])
 	if formatErr != nil {
 		return formatErr
 	}
@@ -348,14 +353,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	multiZonesRaw := objectRaw["MultiZones"]
 	multiZonesMaps := make([]map[string]interface{}, 0)
 	if multiZonesRaw != nil {
-		for _, multiZonesChildRaw := range convertToInterfaceArray(multiZonesRaw) {
+		for _, multiZonesChildRaw := range convert.ConvertToInterfaceArray(multiZonesRaw) {
 			multiZonesMap := make(map[string]interface{})
 			multiZonesChildRaw := multiZonesChildRaw.(map[string]interface{})
 			multiZonesMap["zone_id"] = multiZonesChildRaw["ZoneId"]
 
 			vSwitchIdsRaw := make([]interface{}, 0)
 			if multiZonesChildRaw["VSwitchIds"] != nil {
-				vSwitchIdsRaw = convertToInterfaceArray(multiZonesChildRaw["VSwitchIds"])
+				vSwitchIdsRaw = convert.ConvertToInterfaceArray(multiZonesChildRaw["VSwitchIds"])
 			}
 
 			multiZonesMap["vswitch_ids"] = vSwitchIdsRaw
@@ -366,11 +371,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 		return err
 	}
 	tagsMaps := objectRaw["Tags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	objectRaw, err = clickHouseServiceV2.DescribeEnterpriseDbClusterDescribeEndpoints(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	d.Set("instance_network_type", objectRaw["InstanceNetworkType"])
@@ -378,7 +383,7 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	endpointsRaw := objectRaw["Endpoints"]
 	endpointsMaps := make([]map[string]interface{}, 0)
 	if endpointsRaw != nil {
-		for _, endpointsChildRaw := range convertToInterfaceArray(endpointsRaw) {
+		for _, endpointsChildRaw := range convert.ConvertToInterfaceArray(endpointsRaw) {
 			endpointsMap := make(map[string]interface{})
 			endpointsChildRaw := endpointsChildRaw.(map[string]interface{})
 			endpointsMap["computing_group_id"] = endpointsChildRaw["ComputingGroupId"]
@@ -394,7 +399,7 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 			portsRaw := endpointsChildRaw["Ports"]
 			portsMaps := make([]map[string]interface{}, 0)
 			if portsRaw != nil {
-				for _, portsChildRaw := range convertToInterfaceArray(portsRaw) {
+				for _, portsChildRaw := range convert.ConvertToInterfaceArray(portsRaw) {
 					portsMap := make(map[string]interface{})
 					portsChildRaw := portsChildRaw.(map[string]interface{})
 					portsMap["port"] = portsChildRaw["Port"]
@@ -412,8 +417,8 @@ func resourceAliCloudClickHouseEnterpriseDbClusterRead(d *schema.ResourceData, m
 	}
 
 	objectRaw, err = clickHouseServiceV2.DescribeEnterpriseDbClusterDescribeComputingGroups(d.Id())
-	if err != nil && !NotFoundError(err) {
-		return WrapError(err)
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
 	}
 
 	computingGroupIdsRaw, _ := jsonpath.Get("$.ComputingGroupIds", objectRaw)
@@ -463,11 +468,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData,
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -475,14 +480,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData,
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Status", []string{}))
+		clickHouseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -497,11 +502,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData,
 	request["ResourceGroupId"] = d.Get("resource_group_id")
 	request["ResourceType"] = "EnterpriseDBCluster"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -509,14 +514,14 @@ func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData,
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
+		clickHouseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -531,11 +536,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData,
 	request["AttributeValue"] = d.Get("description")
 	request["AttributeType"] = "DBInstanceDescription"
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -543,21 +548,21 @@ func resourceAliCloudClickHouseEnterpriseDbClusterUpdate(d *schema.ResourceData,
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("description"))}, d.Timeout(schema.TimeoutUpdate), 0, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Description", []string{}))
+		clickHouseServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("description"))}, d.Timeout(schema.TimeoutUpdate), 0, clickHouseServiceV2.ClickHouseEnterpriseDbClusterStateRefreshFunc(d.Id(), "Description", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 
 	if d.HasChange("tags") {
-		clickHouseServiceV2 := ClickHouseServiceV2{client}
+		clickHouseServiceV2 := NewService(client)
 		if err := clickHouseServiceV2.SetResourceTags(d, "EnterpriseDBCluster"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 	d.Partial(false)
@@ -576,11 +581,11 @@ func resourceAliCloudClickHouseEnterpriseDbClusterDelete(d *schema.ResourceData,
 	request["DBInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("clickhouse", "2023-05-22", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -588,13 +593,13 @@ func resourceAliCloudClickHouseEnterpriseDbClusterDelete(d *schema.ResourceData,
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

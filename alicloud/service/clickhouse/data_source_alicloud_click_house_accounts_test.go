@@ -1,56 +1,57 @@
-package alicloud
+package clickhouse_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudClickHouseAccountDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(100, 999)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandIntRange(100, 999)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_click_house_account.default.id}"]`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_click_house_account.default.id}_fake"]`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"name_regex":    `"${alicloud_click_house_account.default.account_name}"`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"name_regex":    `"${alicloud_click_house_account.default.account_name}_fake"`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"status":        `"${alicloud_click_house_account.default.status}"`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 			"ids":           `["${alicloud_click_house_account.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"status":        `"Deleting"`,
 			"ids":           `["${alicloud_click_house_account.default.id}"]`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_click_house_account.default.id}"]`,
 			"name_regex":    `"${alicloud_click_house_account.default.account_name}"`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
 			"status":        `"${alicloud_click_house_account.default.status}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudClickHouseAccountDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_click_house_account.default.id}_fake"]`,
 			"name_regex":    `"${alicloud_click_house_account.default.account_name}_fake"`,
 			"db_cluster_id": `"${alicloud_click_house_db_cluster.default.id}"`,
@@ -72,15 +73,15 @@ func TestAccAlicloudClickHouseAccountDataSource(t *testing.T) {
 			"accounts.#": "0",
 		}
 	}
-	var alicloudClickHouseAccountBusesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_click_house_accounts.default",
-		existMapFunc: existAlicloudClickHouseAccountDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudClickHouseAccountDataSourceNameMapFunc,
+	var alicloudClickHouseAccountBusesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_click_house_accounts.default",
+		ExistMapFunc: existAlicloudClickHouseAccountDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudClickHouseAccountDataSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 	}
-	alicloudClickHouseAccountBusesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
+	alicloudClickHouseAccountBusesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudClickHouseAccountDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -109,7 +110,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "23.8"
+  db_cluster_version      = "25.3"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"
