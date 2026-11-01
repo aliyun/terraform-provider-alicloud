@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Hpc Clusters of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -32,17 +32,17 @@ output "first_ecs_hpc_cluster_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Hpc Cluster IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Hpc Cluster name.
+* `ids` - (Optional, Computed)  A list of Hpc Cluster IDs.
+* `name_regex` - (Optional) A regex string to filter results by Hpc Cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Hpc Cluster names.
 * `clusters` - A list of Ecs Hpc Clusters. Each element contains the following attributes:
-	* `description` - The description of ECS Hpc Cluster.
-	* `hpc_cluster_id` - The ID of the Hpc Cluster.
-	* `id` - The ID of the Hpc Cluster.
-	* `name` - The name of ECS Hpc Cluster.
+  * `description` - The description of ECS Hpc Cluster.
+  * `hpc_cluster_id` - The ID of the Hpc Cluster.
+  * `id` - The ID of the Hpc Cluster.
+  * `name` - The name of ECS Hpc Cluster.

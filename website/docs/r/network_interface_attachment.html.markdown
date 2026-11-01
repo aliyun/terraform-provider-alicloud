@@ -95,6 +95,9 @@ The following argument are supported:
 
 * `instance_id` - (Required, ForceNew) The instance ID to attach.
 * `network_interface_id` - (Required, ForceNew) The ENI ID to attach.
+* `trunk_network_instance_id` - (Optional, ForceNew) The ID of the trunk network instance.
+* `network_card_index` - (Optional, ForceNew) The index of the network card.
+* `wait_for_network_configuration_ready` - (Optional) Whether to wait for the network configuration to be ready.
 
 ## Attributes Reference
 
