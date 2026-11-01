@@ -6,14 +6,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	jsonpath "github.com/PaesslerAG/jsonpath"
+	connectivity "github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	helper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	validators "github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	retry "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const cloudFirewallInstancePaymentTypeChangeError = "cannot change payment_type of Cloud Firewall instance %s from %s to %s: converting the billing method of an existing instance is not supported by the API. Convert it in the Cloud Firewall console (Overview -> More -> Convert Pay-As-You-Go to Subscription, or Convert Subscription to Pay-As-You-Go) by following https://help.aliyun.com/cloud-firewall/cloudfirewall/product-overview/smoothly-change-the-billing-method-between-pay-as-you-go-and-subscription, then align payment_type, product_type and spec in the configuration or import the converted instance. The existing instance is kept unchanged (no destroy or recreate)."
