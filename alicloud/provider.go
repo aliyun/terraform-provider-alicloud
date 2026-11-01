@@ -1550,7 +1550,6 @@ func Provider() *schema.Provider {
 			"alicloud_message_service_subscription":    resourceAliCloudMessageServiceSubscription(),
 
 			// milvus
-			"alicloud_milvus_instance": resourceAliCloudMilvusInstance(),
 
 			// mns
 			// mongodb
