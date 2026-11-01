@@ -1,0 +1,450 @@
+package sls_test
+
+import (
+	"fmt"
+	"testing"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	slssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/sls"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+func TestAccAliCloudLogETL_basic(t *testing.T) {
+	var v *sls.ETL
+	resourceId := "alicloud_log_etl.default"
+	ra := acctest.ResourceAttrInit(resourceId, logETLMap)
+	serviceFunc := func() interface{} {
+		return slssvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogossshipper-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceLogETLConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"etl_name":     name,
+					"project":      "${alicloud_log_project.default.name}",
+					"display_name": "etl_display",
+					"description":  "etl_description",
+					"from_time":    "1616486027",
+					"to_time":      "1617486027",
+					"parameters": map[string]string{
+						"test1": "test2",
+					},
+					"access_key_id":     "access_key_id_test",
+					"access_key_secret": "access_key_secret_test",
+					"script":            "e_set('new','test')",
+					"logstore":          "${alicloud_log_store.default.name}",
+					"etl_sinks": []map[string]interface{}{
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default1.name}",
+						},
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name_2",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default2.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"etl_name":         name,
+						"project":          name,
+						"from_time":        "1616486027",
+						"to_time":          "1617486027",
+						"etl_sinks.#":      "2",
+						"parameters.%":     "1",
+						"parameters.test1": "test2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"access_key_id", "access_key_secret"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "update",
+					"display_name": "update_name",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  "update",
+						"display_name": "update_name",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "STOPPED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script": "e_set('new','new_value')",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+						"script": "e_set('new','new_value')",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "RUNNING",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "RUNNING",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script": "e_set('aliyun','aliyun')",
+					"parameters": map[string]string{
+						"update": "update",
+					},
+					"etl_sinks": []map[string]interface{}{
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default1.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":            "RUNNING",
+						"script":            "e_set('aliyun','aliyun')",
+						"parameters.update": "update",
+						"parameters.test1":  acctest.REMOVEKEY,
+						"etl_sinks.#":       "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudLogETL_basic1(t *testing.T) {
+	var v *sls.ETL
+	resourceId := "alicloud_log_etl.default"
+	ra := acctest.ResourceAttrInit(resourceId, logETLMap)
+	serviceFunc := func() interface{} {
+		return slssvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogossshipper-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceLogETLConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"etl_name":     name,
+					"project":      "${alicloud_log_project.default.name}",
+					"display_name": "etl_display",
+					"description":  "etl_description",
+					"from_time":    "1616486027",
+					"to_time":      "1617486027",
+					"parameters": map[string]string{
+						"test1": "test2",
+					},
+					"access_key_id":     "access_key_id_test",
+					"access_key_secret": "access_key_secret_test",
+					"script":            "",
+					"logstore":          "${alicloud_log_store.default.name}",
+					"lang":              "SPL",
+					"etl_sinks": []map[string]interface{}{
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default1.name}",
+							"datasets":          []string{"__UNNAMED__"},
+						},
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name_2",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default2.name}",
+							"datasets":          []string{"__UNNAMED__"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"etl_name":         name,
+						"project":          name,
+						"from_time":        "1616486027",
+						"to_time":          "1617486027",
+						"etl_sinks.#":      "2",
+						"parameters.%":     "1",
+						"parameters.test1": "test2",
+						"lang":             "SPL",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"access_key_id", "access_key_secret"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "update",
+					"display_name": "update_name",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  "update",
+						"display_name": "update_name",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "STOPPED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+						"script": "",
+						"lang":   "SPL",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "RUNNING",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "RUNNING",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"script": "",
+					"parameters": map[string]string{
+						"update": "update",
+					},
+					"lang": "SPL",
+					"etl_sinks": []map[string]interface{}{
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default1.name}",
+							"datasets":          []string{"__UNNAMED__"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":            "RUNNING",
+						"script":            "",
+						"parameters.update": "update",
+						"parameters.test1":  acctest.REMOVEKEY,
+						"etl_sinks.#":       "1",
+						"lang":              "SPL",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceLogETLConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	    default = "%s"
+	}
+	resource "alicloud_log_project" "default" {
+	    name = "${var.name}"
+	    description = "tf unit test"
+	}
+	resource "alicloud_log_store" "default" {
+	    project = "${alicloud_log_project.default.name}"
+	    name = "${var.name}"
+	    retention_period = "3000"
+	    shard_count = 1
+	}
+	resource "alicloud_log_store" "default1" {
+	    project = "${alicloud_log_project.default.name}"
+	    name = "${var.name}1"
+	    retention_period = "3000"
+	    shard_count = 1
+	}
+	resource "alicloud_log_store" "default2" {
+	    project = "${alicloud_log_project.default.name}"
+	    name = "${var.name}2"
+	    retention_period = "3000"
+	    shard_count = 1
+	}
+	`, name)
+}
+
+var logETLMap = map[string]string{
+	"project": acctest.CHECKSET,
+}
+
+// Case TypeListOrderCoverage memberOrder
+func TestAccAliCloudLogEtl_memberOrder(t *testing.T) {
+	var v *sls.ETL
+	resourceId := "alicloud_log_etl.default"
+	ra := acctest.ResourceAttrInit(resourceId, logETLMap)
+	serviceFunc := func() interface{} {
+		return slssvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogossshipper-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceLogETLConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"etl_name":     name,
+					"project":      "${alicloud_log_project.default.name}",
+					"display_name": "etl_display",
+					"description":  "etl_description",
+					"from_time":    "1616486027",
+					"to_time":      "1617486027",
+					"parameters": map[string]string{
+						"test1": "test2",
+					},
+					"access_key_id":     "access_key_id_test",
+					"access_key_secret": "access_key_secret_test",
+					"script":            "e_set('new','test')",
+					"logstore":          "${alicloud_log_store.default.name}",
+					"etl_sinks": []map[string]interface{}{
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default1.name}",
+							"datasets":          []string{"__UNNAMED__", "result_dataset"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"etl_name":         name,
+						"project":          name,
+						"from_time":        "1616486027",
+						"to_time":          "1617486027",
+						"etl_sinks.#":      "1",
+						"parameters.%":     "1",
+						"parameters.test1": "test2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"etl_name":     name,
+					"project":      "${alicloud_log_project.default.name}",
+					"display_name": "etl_display",
+					"description":  "etl_description",
+					"from_time":    "1616486027",
+					"to_time":      "1617486027",
+					"parameters": map[string]string{
+						"test1": "test2",
+					},
+					"access_key_id":     "access_key_id_test",
+					"access_key_secret": "access_key_secret_test",
+					"script":            "e_set('new','test')",
+					"logstore":          "${alicloud_log_store.default.name}",
+					"etl_sinks": []map[string]interface{}{
+						{
+							"access_key_id":     "test1",
+							"access_key_secret": "test2",
+							"endpoint":          "cn-hangzhou.log.aliyuncs.com",
+							"name":              "target_name",
+							"project":           "${alicloud_log_project.default.name}",
+							"logstore":          "${alicloud_log_store.default1.name}",
+							"datasets":          []string{"result_dataset", "__UNNAMED__"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"etl_name":         name,
+						"project":          name,
+						"from_time":        "1616486027",
+						"to_time":          "1617486027",
+						"etl_sinks.#":      "1",
+						"parameters.%":     "1",
+						"parameters.test1": "test2",
+					}),
+				),
+			},
+		},
+	})
+}
