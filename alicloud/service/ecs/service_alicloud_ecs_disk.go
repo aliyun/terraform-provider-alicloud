@@ -6,11 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -25,10 +20,10 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 		var response map[string]interface{}
 		query := make(map[string]interface{})
 
-		added, removed := tags.ParsingTags(d)
+		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
-			if !tags.IgnoredTags(v, "") {
+			if !ignoredTags(v, "") {
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
@@ -43,11 +38,11 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			}
 
 			request["ResourceType"] = resourceType
-			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, false)
 				if err != nil {
-					if helper.NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -55,9 +50,9 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 				}
 				return nil
 			})
-			logs.AddDebug(action, response, request)
+			addDebug(action, response, request)
 			if err != nil {
-				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -76,11 +71,11 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			}
 
 			request["ResourceType"] = resourceType
-			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, false)
 				if err != nil {
-					if helper.NeedRetry(err) {
+					if NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -88,9 +83,9 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 				}
 				return nil
 			})
-			logs.AddDebug(action, response, request)
+			addDebug(action, response, request)
 			if err != nil {
-				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -111,15 +106,15 @@ func (s *Service) DescribeDisk(id string) (object map[string]interface{}, err er
 	action := "DescribeDisks"
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["DiskIds"] = convert.ConvertListToJsonString([]interface{}{id})
+	request["DiskIds"] = convertListToJsonString([]interface{}{id})
 	request["RegionId"] = client.RegionId
 
-	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"InternalError"}) || helper.NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -127,23 +122,23 @@ func (s *Service) DescribeDisk(id string) (object map[string]interface{}, err er
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, request)
+	addDebug(action, response, request)
 	if err != nil {
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Disks.Disk[*]", response)
 	if err != nil {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Disk", id), errs.NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Disk", id), errs.NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
 	if currentStatus == nil {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Disk", id), errs.NotFoundMsg, response)
+		return object, WrapErrorf(NotFoundErr("Disk", id), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -153,10 +148,10 @@ func (s *Service) DiskStateRefreshFunc(id string, field string, failStates []str
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeDisk(id)
 		if err != nil {
-			if errs.NotFoundError(err) {
+			if NotFoundError(err) {
 				return object, "", nil
 			}
-			return nil, "", errs.WrapError(err)
+			return nil, "", WrapError(err)
 		}
 
 		v, err := jsonpath.Get(field, object)
@@ -171,7 +166,7 @@ func (s *Service) DiskStateRefreshFunc(id string, field string, failStates []str
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
-				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
 		return object, currentStatus, nil
@@ -207,10 +202,10 @@ func IsDiskSweepCandidateName(name string) bool {
 func (s *Service) SweepDisk(id string) error {
 	object, err := s.DescribeDisk(id)
 	if err != nil {
-		if errs.NotFoundError(err) {
+		if NotFoundError(err) {
 			return nil
 		}
-		return errs.WrapError(err)
+		return WrapError(err)
 	}
 	return forceDeleteDisk(id, diskSweepTimeout, s.client, s, object, "")
 }
