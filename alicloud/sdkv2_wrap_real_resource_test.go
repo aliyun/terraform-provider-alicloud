@@ -9,6 +9,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/intercept"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/sdkv2"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apigateway"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -87,7 +88,7 @@ func TestUnitAliCloudSdkV2WrapPreservesCustomizeDiff(t *testing.T) {
 
 func TestUnitAliCloudSdkV2WrapPreservesStateUpgraders(t *testing.T) {
 	rec := &recordingInterceptor{}
-	original := resourceAliCloudApiGatewayInstance()
+	original := apigateway.ResourceInstance()
 	wrapped := sdkv2.WrapResource("alicloud_api_gateway_instance", original, []intercept.Interceptor{rec})
 
 	if wrapped.SchemaVersion != original.SchemaVersion {
@@ -136,7 +137,7 @@ func TestUnitAliCloudSdkV2WrapCopiesEveryNonCRUDField(t *testing.T) {
 		factory func() *schema.Resource
 	}{
 		{"alicloud_instance", resourceAliCloudInstance},
-		{"alicloud_api_gateway_instance", resourceAliCloudApiGatewayInstance},
+		{"alicloud_api_gateway_instance", apigateway.ResourceInstance},
 	}
 
 	for _, tc := range cases {
