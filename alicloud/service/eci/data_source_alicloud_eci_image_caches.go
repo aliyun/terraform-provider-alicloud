@@ -1,15 +1,18 @@
-package alicloud
+package eci
 
 import (
 	"regexp"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/eci"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEciImageCaches() *schema.Resource {
+func DataSourceEciImageCaches() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEciImageCachesRead,
 		Schema: map[string]*schema.Schema{
@@ -150,7 +153,7 @@ func dataSourceAlicloudEciImageCachesRead(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		imageCacheNameRegex = r
 	}
@@ -170,9 +173,9 @@ func dataSourceAlicloudEciImageCachesRead(d *schema.ResourceData, meta interface
 		return eciClient.DescribeImageCaches(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eci_image_caches", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eci_image_caches", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	logs.AddDebug(request.GetActionName(), raw)
 	response, _ = raw.(*eci.DescribeImageCachesResponse)
 
 	for _, item := range response.ImageCaches {
@@ -224,20 +227,20 @@ func dataSourceAlicloudEciImageCachesRead(d *schema.ResourceData, meta interface
 		s[i] = mapping
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("caches", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

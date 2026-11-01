@@ -1,43 +1,44 @@
-package alicloud
+package eci_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudEciImageCachesDataSource(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
-	rand := acctest.RandIntRange(1000, 9999)
+func TestAccAliCloudEciImageCachesDataSource(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_eci_image_caches.default", name, dataSourceEciImageCachesConfigDependence)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	testAccConfig := acctest.DataSourceTestAccConfigFunc("data.alicloud_eci_image_caches.default", name, dataSourceEciImageCachesConfigDependence)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_eci_image_cache.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_eci_image_cache.default.id}-fake"},
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_eci_image_cache.default.id}"},
 			"name_regex": "${alicloud_eci_image_cache.default.image_cache_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":        []string{"${alicloud_eci_image_cache.default.id}"},
 			"name_regex": "${alicloud_eci_image_cache.default.image_cache_name}-fake",
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_eci_image_cache.default.id}"},
 			"status": "${alicloud_eci_image_cache.default.status}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_eci_image_cache.default.id}"},
 			"status": "Failed",
 		}),
@@ -47,16 +48,16 @@ func TestAccAlicloudEciImageCachesDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                       "1",
 			"caches.#":                    "1",
-			"caches.0.id":                 CHECKSET,
-			"caches.0.container_group_id": CHECKSET,
-			"caches.0.image_cache_id":     CHECKSET,
+			"caches.0.id":                 acctest.CHECKSET,
+			"caches.0.container_group_id": acctest.CHECKSET,
+			"caches.0.image_cache_id":     acctest.CHECKSET,
 			"caches.0.image_cache_name":   name,
 			"caches.0.images.#":           "1",
-			"caches.0.images.0":           fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+			"caches.0.images.0":           fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", acctest.DefaultRegionToTest),
 			"caches.0.progress":           "100%",
-			"caches.0.snapshot_id":        CHECKSET,
+			"caches.0.snapshot_id":        acctest.CHECKSET,
 			"caches.0.status":             "Ready",
-			"caches.0.events.#":           CHECKSET,
+			"caches.0.events.#":           acctest.CHECKSET,
 		}
 	}
 
@@ -67,13 +68,13 @@ func TestAccAlicloudEciImageCachesDataSource(t *testing.T) {
 		}
 	}
 
-	var eciImageCachesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_eci_image_caches.default",
-		existMapFunc: existEciImageCachesMapCheck,
-		fakeMapFunc:  fakeEciImageCachesMapCheck,
+	var eciImageCachesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_eci_image_caches.default",
+		ExistMapFunc: existEciImageCachesMapCheck,
+		FakeMapFunc:  fakeEciImageCachesMapCheck,
 	}
 
-	eciImageCachesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusConf, idsConf)
+	eciImageCachesCheckInfo.DataSourceTestCheck(t, rand, nameRegexConf, statusConf, idsConf)
 }
 
 func dataSourceEciImageCachesConfigDependence(name string) string {
@@ -102,5 +103,5 @@ resource "alicloud_eci_image_cache" "default" {
   security_group_id = alicloud_security_group.default.id
   vswitch_id        = data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0
   eip_instance_id = alicloud_eip_address.default.id
-}`, name, defaultRegionToTest)
+}`, name, acctest.DefaultRegionToTest)
 }

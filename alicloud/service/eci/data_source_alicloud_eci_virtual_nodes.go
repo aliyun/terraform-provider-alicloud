@@ -1,4 +1,4 @@
-package alicloud
+package eci
 
 import (
 	"fmt"
@@ -7,12 +7,17 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEciVirtualNodes() *schema.Resource {
+func DataSourceEciVirtualNodes() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEciVirtualNodesRead,
 		Schema: map[string]*schema.Schema{
@@ -29,7 +34,7 @@ func dataSourceAlicloudEciVirtualNodes() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Cleaned", "Failed", "Pending", "Ready"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -201,7 +206,7 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		virtualNodeNameRegex = r
 	}
@@ -225,11 +230,11 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -237,13 +242,13 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eci_virtual_nodes", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eci_virtual_nodes", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.VirtualNodes", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.VirtualNodes", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.VirtualNodes", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -269,12 +274,12 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		cpuVal, err := formatInt(object["Cpu"])
+		cpuVal, err := convert.FormatInt(object["Cpu"])
 		if err != nil {
 			return err
 		}
 
-		memoryVal, err := formatInt(object["Memory"])
+		memoryVal, err := convert.FormatInt(object["Memory"])
 		if err != nil {
 			return err
 		}
@@ -302,7 +307,7 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 			for _, v := range eventsList {
 				if m1, ok := v.(map[string]interface{}); ok {
 
-					countVal, err := formatInt(m1["Count"])
+					countVal, err := convert.FormatInt(m1["Count"])
 					if err != nil {
 						return err
 					}
@@ -321,37 +326,37 @@ func dataSourceAlicloudEciVirtualNodesRead(d *schema.ResourceData, meta interfac
 		}
 		mapping["events"] = events
 
-		tags := make(map[string]interface{})
+		tagMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagMap
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["VirtualNodeName"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("nodes", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

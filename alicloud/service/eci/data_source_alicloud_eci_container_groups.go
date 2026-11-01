@@ -1,4 +1,4 @@
-package alicloud
+package eci
 
 import (
 	"fmt"
@@ -6,11 +6,16 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEciContainerGroups() *schema.Resource {
+func DataSourceEciContainerGroups() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudEciContainerGroupsRead,
 		Schema: map[string]*schema.Schema{
@@ -47,7 +52,7 @@ func dataSourceAlicloudEciContainerGroups() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Pending", "Running", "ScheduleFailed", "Scheduling", "Succeeded"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -598,13 +603,13 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
+	request["MaxResults"] = helper.PageSizeLarge
 	var objects []map[string]interface{}
 	var containerGroupNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		containerGroupNameRegex = r
 	}
@@ -623,13 +628,13 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 	for {
 		response, err = client.RpcPost("Eci", "2018-08-08", action, nil, request, true)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_eci_container_groups", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_eci_container_groups", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.ContainerGroups", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ContainerGroups", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ContainerGroups", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
@@ -657,7 +662,7 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 
-		discountVal, err := formatInt(object["Discount"])
+		discountVal, err := convert.FormatInt(object["Discount"])
 		if err != nil {
 			return err
 		}
@@ -891,18 +896,18 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 		}
 		mapping["eci_security_context"] = eciSecurityContextSli
 
-		tags := make(map[string]interface{})
+		tagMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["Key"].(string)
 				value := t.(map[string]interface{})["Value"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagMap
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(object["ContainerGroupId"]))
 			names = append(names, object["ContainerGroupName"])
@@ -910,11 +915,11 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 			continue
 		}
 
-		eciService := EciService{client}
+		eciService := NewService(client)
 		id := fmt.Sprint(object["ContainerGroupId"])
 		getResp, err := eciService.DescribeEciContainerGroup(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["restart_policy"] = getResp["RestartPolicy"]
 		ids = append(ids, fmt.Sprint(object["ContainerGroupId"]))
@@ -922,20 +927,20 @@ func dataSourceAlicloudEciContainerGroupsRead(d *schema.ResourceData, meta inter
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

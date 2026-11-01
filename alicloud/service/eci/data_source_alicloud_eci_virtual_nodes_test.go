@@ -1,4 +1,4 @@
-package alicloud
+package eci_test
 
 import (
 	"fmt"
@@ -6,89 +6,90 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudEciVirtualNodesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+func TestAccAliCloudEciVirtualNodesDataSource(t *testing.T) {
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_eci_virtual_node.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_eci_virtual_node.default.id}_fake"]`,
 		}),
 	}
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"resource_group_id": `"${alicloud_eci_virtual_node.default.resource_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"resource_group_id": `"${alicloud_eci_virtual_node.default.resource_group_id}_fake"`,
 		}),
 	}
-	securityGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	securityGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"security_group_id": `"${alicloud_eci_virtual_node.default.security_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"security_group_id": `"${alicloud_eci_virtual_node.default.security_group_id}_fake"`,
 		}),
 	}
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":  `["${alicloud_eci_virtual_node.default.id}"]`,
 			"tags": `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":  `["${alicloud_eci_virtual_node.default.id}"]`,
 			"tags": `{Created = "TF_fake"}`,
 		}),
 	}
-	vSwitchIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	vSwitchIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_eci_virtual_node.default.id}"]`,
 			"vswitch_id": `"${alicloud_eci_virtual_node.default.vswitch_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_eci_virtual_node.default.id}"]`,
 			"vswitch_id": `"${alicloud_eci_virtual_node.default.vswitch_id}_fake"`,
 		}),
 	}
-	virtualNodeNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	virtualNodeNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"virtual_node_name": `"${alicloud_eci_virtual_node.default.virtual_node_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"virtual_node_name": `"${alicloud_eci_virtual_node.default.virtual_node_name}_fake"`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_eci_virtual_node.default.virtual_node_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_eci_virtual_node.default.virtual_node_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_eci_virtual_node.default.id}"]`,
 			"status": `"Ready"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_eci_virtual_node.default.id}"]`,
 			"status": `"Pending"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}"]`,
 			"name_regex":        `"${alicloud_eci_virtual_node.default.virtual_node_name}"`,
 			"resource_group_id": `"${alicloud_eci_virtual_node.default.resource_group_id}"`,
@@ -98,7 +99,7 @@ func TestAccAlicloudEciVirtualNodesDataSource(t *testing.T) {
 			"virtual_node_name": `"${alicloud_eci_virtual_node.default.virtual_node_name}"`,
 			"vswitch_id":        `"${alicloud_eci_virtual_node.default.vswitch_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEciVirtualNodesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_eci_virtual_node.default.id}_fake"]`,
 			"name_regex":        `"${alicloud_eci_virtual_node.default.virtual_node_name}_fake"`,
 			"resource_group_id": `"${alicloud_eci_virtual_node.default.resource_group_id}_fake"`,
@@ -114,23 +115,23 @@ func TestAccAlicloudEciVirtualNodesDataSource(t *testing.T) {
 			"ids.#":                     "1",
 			"names.#":                   "1",
 			"nodes.#":                   "1",
-			"nodes.0.cpu":               CHECKSET,
-			"nodes.0.create_time":       CHECKSET,
-			"nodes.0.events.#":          CHECKSET,
-			"nodes.0.internet_ip":       CHECKSET,
-			"nodes.0.intranet_ip":       CHECKSET,
-			"nodes.0.memory":            CHECKSET,
-			"nodes.0.resource_group_id": CHECKSET,
-			"nodes.0.security_group_id": CHECKSET,
-			"nodes.0.status":            CHECKSET,
+			"nodes.0.cpu":               acctest.CHECKSET,
+			"nodes.0.create_time":       acctest.CHECKSET,
+			"nodes.0.events.#":          acctest.CHECKSET,
+			"nodes.0.internet_ip":       acctest.CHECKSET,
+			"nodes.0.intranet_ip":       acctest.CHECKSET,
+			"nodes.0.memory":            acctest.CHECKSET,
+			"nodes.0.resource_group_id": acctest.CHECKSET,
+			"nodes.0.security_group_id": acctest.CHECKSET,
+			"nodes.0.status":            acctest.CHECKSET,
 			"nodes.0.tags.%":            "1",
 			"nodes.0.tags.Created":      "TF",
-			"nodes.0.vswitch_id":        CHECKSET,
-			"nodes.0.id":                CHECKSET,
-			"nodes.0.virtual_node_id":   CHECKSET,
-			"nodes.0.virtual_node_name": CHECKSET,
-			"nodes.0.vpc_id":            CHECKSET,
-			"nodes.0.zone_id":           CHECKSET,
+			"nodes.0.vswitch_id":        acctest.CHECKSET,
+			"nodes.0.id":                acctest.CHECKSET,
+			"nodes.0.virtual_node_id":   acctest.CHECKSET,
+			"nodes.0.virtual_node_name": acctest.CHECKSET,
+			"nodes.0.vpc_id":            acctest.CHECKSET,
+			"nodes.0.zone_id":           acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudEciVirtualNodesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -139,17 +140,17 @@ func TestAccAlicloudEciVirtualNodesDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudEciVirtualNodesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_eci_virtual_nodes.default",
-		existMapFunc: existAlicloudEciVirtualNodesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEciVirtualNodesDataSourceNameMapFunc,
+	var alicloudEciVirtualNodesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_eci_virtual_nodes.default",
+		ExistMapFunc: existAlicloudEciVirtualNodesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEciVirtualNodesDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithEnvVariable(t, "KUBE_CONFIG")
+		acctest.PreCheck(t)
+		acctest.PreCheckWithEnvVariable(t, "KUBE_CONFIG")
 	}
-	alicloudEciVirtualNodesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, resourceGroupIdConf, securityGroupIdConf, tagsConf, virtualNodeNameConf, vSwitchIdConf, nameRegexConf, statusConf, allConf)
+	alicloudEciVirtualNodesCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, resourceGroupIdConf, securityGroupIdConf, tagsConf, virtualNodeNameConf, vSwitchIdConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEciVirtualNodesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
