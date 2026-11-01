@@ -1,11 +1,13 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_data_source.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksDataSourceMap8927)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksDataSourceMap8927)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksDataSource")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDataSourceBasicDependence8927)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksDataSourceBasicDependence8927)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -46,7 +48,7 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 						"data_source_name":           name,
 						"connection_properties":      "{\"address\":[{\"host\":\"127.0.0.1\",\"port\":\"1234\"}],\"database\":\"hive_database\",\"envType\":\"Prod\",\"loginMode\":\"Anonymous\",\"metaType\":\"HiveMetastore\",\"metastoreUris\":\"thrift://123:123\",\"properties\":{\"key1\":\"value1\"},\"securityProtocol\":\"authTypeNone\",\"version\":\"2.3.9\"}",
 						"connection_properties_mode": "UrlMode",
-						"project_id":                 CHECKSET,
+						"project_id":                 acctest.CHECKSET,
 						"description":                "描述信息-初始状态",
 					}),
 				),
@@ -90,8 +92,8 @@ func TestAccAliCloudDataWorksDataSource_basic8927(t *testing.T) {
 }
 
 var AlicloudDataWorksDataSourceMap8927 = map[string]string{
-	"create_time":    CHECKSET,
-	"data_source_id": CHECKSET,
+	"create_time":    acctest.CHECKSET,
+	"data_source_id": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksDataSourceBasicDependence8927(name string) string {

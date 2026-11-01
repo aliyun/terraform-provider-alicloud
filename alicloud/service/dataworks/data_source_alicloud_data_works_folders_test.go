@@ -1,27 +1,28 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudDataWorksFoldersDataSource(t *testing.T) {
 
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_data_works_folders.default"
 	name := fmt.Sprintf("tf-testacc-dataworksfolder%v", rand)
 
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceDataworksFoldersConfigDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceDataworksFoldersConfigDependence)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"project_id":         "${alicloud_data_works_folder.default.project_id}",
 			"ids":                []string{"${alicloud_data_works_folder.default.folder_id}"},
 			"parent_folder_path": "Business Flow/tfTestAcc/folderDi",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"project_id":         "${alicloud_data_works_folder.default.project_id}",
 			"ids":                []string{"${alicloud_data_works_folder.default.folder_id}_fake"},
 			"parent_folder_path": "Business Flow/tfTestAcc/folderDi",
@@ -32,8 +33,8 @@ func TestAccAlicloudDataWorksFoldersDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                "1",
 			"folders.#":            "1",
-			"folders.0.project_id": CHECKSET,
-			"folders.0.folder_id":  CHECKSET,
+			"folders.0.project_id": acctest.CHECKSET,
+			"folders.0.folder_id":  acctest.CHECKSET,
 		}
 	}
 
@@ -44,13 +45,13 @@ func TestAccAlicloudDataWorksFoldersDataSource(t *testing.T) {
 		}
 	}
 
-	var DataworksFoldersCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existDataworksFoldersMapFunc,
-		fakeMapFunc:  fakeDataworksFoldersMapFunc,
+	var DataworksFoldersCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existDataworksFoldersMapFunc,
+		FakeMapFunc:  fakeDataworksFoldersMapFunc,
 	}
 
-	DataworksFoldersCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	DataworksFoldersCheckInfo.DataSourceTestCheck(t, rand, idsConf)
 }
 
 func dataSourceDataworksFoldersConfigDependence(name string) string {

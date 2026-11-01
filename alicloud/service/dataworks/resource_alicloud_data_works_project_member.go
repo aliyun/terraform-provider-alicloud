@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"encoding/json"
@@ -11,16 +11,19 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDataWorksProjectMember() *schema.Resource {
+func ResourceProjectMember() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksProjectMemberCreate,
-		Read:   resourceAliCloudDataWorksProjectMemberRead,
-		Update: resourceAliCloudDataWorksProjectMemberUpdate,
-		Delete: resourceAliCloudDataWorksProjectMemberDelete,
+		Create: resourceProjectMemberCreate,
+		Read:   resourceProjectMemberRead,
+		Update: resourceProjectMemberUpdate,
+		Delete: resourceProjectMemberDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -68,7 +71,7 @@ func resourceAliCloudDataWorksProjectMember() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDataWorksProjectMemberCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceProjectMemberCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -85,23 +88,23 @@ func resourceAliCloudDataWorksProjectMemberCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("roles"); ok {
 		localData, err := jsonpath.Get("$[*].code", v)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		localDataArray := localData.([]interface{})
 		localDataJson, err := json.Marshal(localDataArray)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request["RoleCodes"] = string(localDataJson)
 	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -109,29 +112,29 @@ func resourceAliCloudDataWorksProjectMemberCreate(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_project_member", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_project_member", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["ProjectId"], request["UserId"]))
 
-	return resourceAliCloudDataWorksProjectMemberUpdate(d, meta)
+	return resourceProjectMemberUpdate(d, meta)
 }
 
-func resourceAliCloudDataWorksProjectMemberRead(d *schema.ResourceData, meta interface{}) error {
+func resourceProjectMemberRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksProjectMember(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_project_member DescribeDataWorksProjectMember Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["Status"] != nil {
@@ -166,7 +169,7 @@ func resourceAliCloudDataWorksProjectMemberRead(d *schema.ResourceData, meta int
 	return nil
 }
 
-func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceProjectMemberUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -195,17 +198,17 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 			localDataArray := localData
 			localDataJson, err := json.Marshal(localDataArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["RoleCodes"] = string(localDataJson)
 
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -213,9 +216,9 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
@@ -238,17 +241,17 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 			localDataArray := localData
 			localDataJson, err := json.Marshal(localDataArray)
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			request["RoleCodes"] = string(localDataJson)
 
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 5*time.Second)
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 				response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -256,17 +259,17 @@ func resourceAliCloudDataWorksProjectMemberUpdate(d *schema.ResourceData, meta i
 				}
 				return nil
 			})
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 			}
 
 		}
 	}
-	return resourceAliCloudDataWorksProjectMemberRead(d, meta)
+	return resourceProjectMemberRead(d, meta)
 }
 
-func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceProjectMemberDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -282,12 +285,12 @@ func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta i
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -295,15 +298,15 @@ func resourceAliCloudDataWorksProjectMemberDelete(d *schema.ResourceData, meta i
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
 		// A member that does not exist any more leaves the deletion nothing to do, and 400010
 		// means the UserId no longer belongs to the tenant of the workspace.
-		if IsExpectedErrors(err, []string{"100002001", "1101080166", "400010"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"100002001", "1101080166", "400010"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"fmt"
@@ -8,16 +8,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudDataWorksDwResourceGroup() *schema.Resource {
+func ResourceDwResourceGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksDwResourceGroupCreate,
-		Read:   resourceAliCloudDataWorksDwResourceGroupRead,
-		Update: resourceAliCloudDataWorksDwResourceGroupUpdate,
-		Delete: resourceAliCloudDataWorksDwResourceGroupDelete,
+		Create: resourceDwResourceGroupCreate,
+		Read:   resourceDwResourceGroupRead,
+		Update: resourceDwResourceGroupUpdate,
+		Delete: resourceDwResourceGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -80,12 +84,12 @@ func resourceAliCloudDataWorksDwResourceGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 		},
 	}
 }
 
-func resourceAliCloudDataWorksDwResourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDwResourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -96,7 +100,7 @@ func resourceAliCloudDataWorksDwResourceGroupCreate(d *schema.ResourceData, meta
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["Remark"] = d.Get("remark")
 	request["PaymentType"] = d.Get("payment_type")
@@ -116,18 +120,18 @@ func resourceAliCloudDataWorksDwResourceGroupCreate(d *schema.ResourceData, meta
 		request["AliyunResourceGroupId"] = v
 	}
 	if v, ok := d.GetOk("tags"); ok {
-		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
 		request["Tags"] = tagsMap
 	}
 
 	if v, ok := d.GetOkExists("auto_renew"); ok {
 		request["AutoRenewEnabled"] = v
 	}
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -135,36 +139,36 @@ func resourceAliCloudDataWorksDwResourceGroupCreate(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_dw_resource_group", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_dw_resource_group", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.ResourceGroupOrder.Id", response)
 	d.SetId(fmt.Sprint(id))
 
-	dataWorksServiceV2 := DataWorksServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, dataWorksServiceV2.DataWorksDwResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
+	dataWorksServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, dataWorksServiceV2.DataWorksDwResourceGroupStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAliCloudDataWorksDwResourceGroupUpdate(d, meta)
+	return resourceDwResourceGroupUpdate(d, meta)
 }
 
-func resourceAliCloudDataWorksDwResourceGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDwResourceGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksDwResourceGroup(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_dw_resource_group DescribeDataWorksDwResourceGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["CreateTime"] != nil {
@@ -193,12 +197,12 @@ func resourceAliCloudDataWorksDwResourceGroupRead(d *schema.ResourceData, meta i
 	}
 
 	tagsMaps := objectRaw["AliyunResourceTags"]
-	d.Set("tags", tagsToMap(tagsMaps))
+	d.Set("tags", tags.TagsToMap(tagsMaps))
 
 	return nil
 }
 
-func resourceAliCloudDataWorksDwResourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDwResourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -226,11 +230,11 @@ func resourceAliCloudDataWorksDwResourceGroupUpdate(d *schema.ResourceData, meta
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -238,22 +242,22 @@ func resourceAliCloudDataWorksDwResourceGroupUpdate(d *schema.ResourceData, meta
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		dataWorksServiceV2 := DataWorksServiceV2{client}
+		dataWorksServiceV2 := NewService(client)
 		if err := dataWorksServiceV2.SetResourceTags(d, "dwresourcegroup"); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
-	return resourceAliCloudDataWorksDwResourceGroupRead(d, meta)
+	return resourceDwResourceGroupRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDwResourceGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDwResourceGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteResourceGroup"
@@ -265,12 +269,12 @@ func resourceAliCloudDataWorksDwResourceGroupDelete(d *schema.ResourceData, meta
 	request["Id"] = d.Id()
 	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -278,13 +282,13 @@ func resourceAliCloudDataWorksDwResourceGroupDelete(d *schema.ResourceData, meta
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

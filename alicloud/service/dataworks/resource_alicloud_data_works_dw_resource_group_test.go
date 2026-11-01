@@ -1,11 +1,13 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,22 +16,22 @@ import (
 func TestAccAliCloudDataWorksDwResourceGroup_basic8964(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_dw_resource_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksDwResourceGroupMap8964)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksDwResourceGroupMap8964)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksDwResourceGroup")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDwResourceGroupBasicDependence8964)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksDwResourceGroupBasicDependence8964)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -46,11 +48,11 @@ func TestAccAliCloudDataWorksDwResourceGroup_basic8964(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":          "PostPaid",
-						"default_vpc_id":        CHECKSET,
+						"default_vpc_id":        acctest.CHECKSET,
 						"remark":                "openapi_test",
-						"resource_group_name":   CHECKSET,
+						"resource_group_name":   acctest.CHECKSET,
 						"auto_renew":            "false",
-						"default_vswitch_id":    CHECKSET,
+						"default_vswitch_id":    acctest.CHECKSET,
 						"payment_duration_unit": "Month",
 						"specification":         "500",
 						"payment_duration":      "1",
@@ -105,7 +107,7 @@ func TestAccAliCloudDataWorksDwResourceGroup_basic8964(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -115,7 +117,7 @@ func TestAccAliCloudDataWorksDwResourceGroup_basic8964(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -123,15 +125,15 @@ func TestAccAliCloudDataWorksDwResourceGroup_basic8964(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "payment_duration", "payment_duration_unit", "project_id", "specification"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "payment_duration", "payment_duration_unit", "specification"},
 			},
 		},
 	})
 }
 
 var AlicloudDataWorksDwResourceGroupMap8964 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksDwResourceGroupBasicDependence8964(name string) string {

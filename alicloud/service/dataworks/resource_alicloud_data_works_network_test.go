@@ -1,11 +1,13 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,22 +15,22 @@ import (
 func TestAccAliCloudDataWorksNetwork_basic8963_modify(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_network.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksNetworkMap8963)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksNetworkMap8963)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksNetwork")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksNetworkBasicDependence8963)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksNetworkBasicDependence8963)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,9 +40,9 @@ func TestAccAliCloudDataWorksNetwork_basic8963_modify(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":               CHECKSET,
-						"vswitch_id":           CHECKSET,
-						"dw_resource_group_id": CHECKSET,
+						"vpc_id":               acctest.CHECKSET,
+						"vswitch_id":           acctest.CHECKSET,
+						"dw_resource_group_id": acctest.CHECKSET,
 					}),
 				),
 			},
@@ -55,8 +57,8 @@ func TestAccAliCloudDataWorksNetwork_basic8963_modify(t *testing.T) {
 }
 
 var AlicloudDataWorksNetworkMap8963 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksNetworkBasicDependence8963(name string) string {

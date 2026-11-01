@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package dataworks
 
 import (
 	"encoding/json"
@@ -9,17 +9,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAliCloudDataWorksDataSource() *schema.Resource {
+func ResourceDataSource() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDataWorksDataSourceCreate,
-		Read:   resourceAliCloudDataWorksDataSourceRead,
-		Update: resourceAliCloudDataWorksDataSourceUpdate,
-		Delete: resourceAliCloudDataWorksDataSourceDelete,
+		Create: resourceDataSourceCreate,
+		Read:   resourceDataSourceRead,
+		Update: resourceDataSourceUpdate,
+		Delete: resourceDataSourceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,7 +38,7 @@ func resourceAliCloudDataWorksDataSource() *schema.Resource {
 				Sensitive:    true,
 				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
 			},
@@ -90,7 +93,7 @@ func resourceAliCloudDataWorksDataSource() *schema.Resource {
 	}
 }
 
-func resourceAliCloudDataWorksDataSourceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -110,11 +113,11 @@ func resourceAliCloudDataWorksDataSourceCreate(d *schema.ResourceData, meta inte
 		request["Description"] = v
 	}
 	request["Name"] = d.Get("data_source_name")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -122,35 +125,35 @@ func resourceAliCloudDataWorksDataSourceCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_data_works_data_source", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_data_source", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["ProjectId"], response["Id"]))
 
-	return resourceAliCloudDataWorksDataSourceRead(d, meta)
+	return resourceDataSourceRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDataSourceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dataWorksServiceV2 := DataWorksServiceV2{client}
+	dataWorksServiceV2 := NewService(client)
 
 	objectRaw, err := dataWorksServiceV2.DescribeDataWorksDataSource(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_data_works_data_source DescribeDataWorksDataSource Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if v, ok := objectRaw["ConnectionProperties"]; ok {
 		connPropJson, err := json.Marshal(v)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		d.Set("connection_properties", string(connPropJson))
 	}
@@ -191,7 +194,7 @@ func resourceAliCloudDataWorksDataSourceRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAliCloudDataWorksDataSourceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -220,11 +223,11 @@ func resourceAliCloudDataWorksDataSourceUpdate(d *schema.ResourceData, meta inte
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -232,16 +235,16 @@ func resourceAliCloudDataWorksDataSourceUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudDataWorksDataSourceRead(d, meta)
+	return resourceDataSourceRead(d, meta)
 }
 
-func resourceAliCloudDataWorksDataSourceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDataSourceDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -254,12 +257,12 @@ func resourceAliCloudDataWorksDataSourceDelete(d *schema.ResourceData, meta inte
 	query["Id"] = parts[1]
 	query["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcGet("dataworks-public", "2024-05-18", action, query, request)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -267,13 +270,13 @@ func resourceAliCloudDataWorksDataSourceDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

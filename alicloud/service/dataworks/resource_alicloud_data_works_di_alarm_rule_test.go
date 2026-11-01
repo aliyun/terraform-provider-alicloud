@@ -1,34 +1,48 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// The following TypeList attributes are pre-existing stock surfaced by the
+// dataworks subpackage migration (schema unchanged by this PR). A convergent
+// reorder ACC requires a DataWorks-enabled account, which is not opened this
+// round, so no fabricated reorder configuration is added; they are marked as
+// known stock debt per scripts/collection-order/README.md.
+// collection-order: bypass notification_settings.notification_channels -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass notification_settings.notification_channels.channels -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass notification_settings.notification_receivers -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass notification_settings.notification_receivers.receiver_values -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass trigger_conditions -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass trigger_conditions.ddl_report_tags -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
 
 // Test DataWorks DiAlarmRule. >>> Resource test cases, automatically generated.
 // Case 数据集成报警规则_TF验收_成都 8956
 func TestAccAliCloudDataWorksDiAlarmRule_basic8956(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_di_alarm_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksDiAlarmRuleMap8956)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksDiAlarmRuleMap8956)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksDiAlarmRule")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDiAlarmRuleBasicDependence8956)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksDiAlarmRuleBasicDependence8956)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		CheckDestroy:      nil,
 		Steps: []resource.TestStep{
 			{
@@ -72,7 +86,7 @@ func TestAccAliCloudDataWorksDiAlarmRule_basic8956(t *testing.T) {
 						"description":          "Description",
 						"trigger_conditions.#": "1",
 						"metric_type":          "DdlReport",
-						"di_job_id":            CHECKSET,
+						"di_job_id":            acctest.CHECKSET,
 						"di_alarm_rule_name":   name,
 						"enabled":              "false",
 					}),
@@ -228,7 +242,7 @@ func TestAccAliCloudDataWorksDiAlarmRule_basic8956(t *testing.T) {
 }
 
 var AlicloudDataWorksDiAlarmRuleMap8956 = map[string]string{
-	"di_alarm_rule_id": CHECKSET,
+	"di_alarm_rule_id": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksDiAlarmRuleBasicDependence8956(name string) string {

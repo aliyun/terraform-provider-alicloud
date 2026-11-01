@@ -1,35 +1,52 @@
-package alicloud
+package dataworks_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// The following TypeList attributes are pre-existing stock surfaced by the
+// dataworks subpackage migration (schema unchanged by this PR). A convergent
+// reorder ACC requires a DataWorks-enabled account, which is not opened this
+// round, so no fabricated reorder configuration is added; they are marked as
+// known stock debt per scripts/collection-order/README.md.
+// collection-order: bypass destination_data_source_settings -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass job_settings.column_data_type_settings -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass job_settings.ddl_handling_settings -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass job_settings.runtime_settings -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass source_data_source_settings -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass table_mappings -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass table_mappings.source_object_selection_rules -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass table_mappings.transformation_rules -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
+// collection-order: bypass transformation_rules -- pre-existing stock TypeList; schema unchanged by migration; reorder ACC needs a DataWorks account (not opened this round)
 
 // Test DataWorks DiJob. >>> Resource test cases, automatically generated.
 // Case diJob_coverage_TF验收_成都 8957
 func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_data_works_di_job.default"
-	ra := resourceAttrInit(resourceId, AlicloudDataWorksDiJobMap8957)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DataWorksServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudDataWorksDiJobMap8957)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return dataworks.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeDataWorksDiJob")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dwpt%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDataWorksDiJobBasicDependence8957)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudDataWorksDiJobBasicDependence8957)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -149,7 +166,7 @@ func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":                        "aaaa",
-						"project_id":                         CHECKSET,
+						"project_id":                         acctest.CHECKSET,
 						"job_name":                           "zhenyuan_test_case",
 						"migration_type":                     "api_FullAndRealtimeIncremental",
 						"source_data_source_settings.#":      "1",
@@ -470,7 +487,7 @@ func TestAccAliCloudDataWorksDiJob_basic8957(t *testing.T) {
 }
 
 var AlicloudDataWorksDiJobMap8957 = map[string]string{
-	"di_job_id": CHECKSET,
+	"di_job_id": acctest.CHECKSET,
 }
 
 func AlicloudDataWorksDiJobBasicDependence8957(name string) string {
