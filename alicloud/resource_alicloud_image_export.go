@@ -6,6 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	osssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -84,7 +85,7 @@ func resourceAliCloudImageExportRead(d *schema.ResourceData, meta interface{}) e
 func resourceAliCloudImageExportDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	ossService := OssService{client: client}
+	ossService := osssvc.NewOssService(client)
 	var requestInfo *oss.Client
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		requestInfo = ossClient
@@ -105,5 +106,5 @@ func resourceAliCloudImageExportDelete(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultErrorMsg, d.Get("oss_prefix").(string), "DeleteObject", AliyunOssGoSdk)
 	}
 	addDebug("oss_prefix", nil, requestInfo, map[string]string{"oss_prefix": d.Get("oss_prefix").(string)})
-	return WrapError(ossService.WaitForOssBucketObject(bucket, d.Get("oss_prefix").(string), Deleted, DefaultTimeoutMedium))
+	return WrapError(ossService.WaitForOssBucketObject(bucket, d.Get("oss_prefix").(string), osssvc.Deleted, DefaultTimeoutMedium))
 }
