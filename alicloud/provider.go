@@ -461,10 +461,6 @@ func Provider() *schema.Provider {
 
 			// edas
 
-			// eflo
-			"alicloud_eflo_vpds":    dataSourceAlicloudEfloVpds(),
-			"alicloud_eflo_subnets": dataSourceAlicloudEfloSubnets(),
-
 			// ehpc
 
 			// eip
@@ -1203,22 +1199,6 @@ func Provider() *schema.Provider {
 			"alicloud_ecs_elasticity_assurance":            resourceAliCloudEcsElasticityAssurance(),
 
 			// edas
-
-			// eflo
-			"alicloud_eflo_hyper_node":               resourceAliCloudEfloHyperNode(),
-			"alicloud_eflo_vpd_grant_rule":           resourceAliCloudEfloVpdGrantRule(),
-			"alicloud_eflo_er":                       resourceAliCloudEfloEr(),
-			"alicloud_eflo_node_group_attachment":    resourceAliCloudEfloNodeGroupAttachment(),
-			"alicloud_eflo_vsc":                      resourceAliCloudEfloVsc(),
-			"alicloud_eflo_experiment_plan":          resourceAliCloudEfloExperimentPlan(),
-			"alicloud_eflo_resource":                 resourceAliCloudEfloResource(),
-			"alicloud_eflo_experiment_plan_template": resourceAliCloudEfloExperimentPlanTemplate(),
-			"alicloud_eflo_invocation":               resourceAliCloudEfloInvocation(),
-			"alicloud_eflo_cluster":                  resourceAliCloudEfloCluster(),
-			"alicloud_eflo_node_group":               resourceAliCloudEfloNodeGroup(),
-			"alicloud_eflo_node":                     resourceAliCloudEfloNode(),
-			"alicloud_eflo_vpd":                      resourceAliCloudEfloVpd(),
-			"alicloud_eflo_subnet":                   resourceAlicloudEfloSubnet(),
 
 			// ehpc
 
