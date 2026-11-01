@@ -1,35 +1,40 @@
-package alicloud
+package ehpc_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ehpc"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// collection-order: bypass compute_nodes -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the ehpc_queue ACC depends on a cluster_v2 that is in a pre-existing failing state, so a convergent two-member reorder apply cannot be run
+// collection-order: bypass vswitch_ids -- pre-existing stock TypeList in a pure directory migration (no schema/CRUD/behavior change); the ehpc_queue ACC depends on a cluster_v2 that is in a pre-existing failing state, so a convergent two-member reorder apply cannot be run
 
 // Test Ehpc Queue. >>> Resource test cases, automatically generated.
 // Case Queue_minimal_test 12111
 func TestAccAliCloudEhpcQueue_basic12111(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_queue.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcQueueMap12111)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcQueueMap12111)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcQueue")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcQueueBasicDependence12111)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcQueueBasicDependence12111)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -38,7 +43,7 @@ func TestAccAliCloudEhpcQueue_basic12111(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_id": CHECKSET,
+						"cluster_id": acctest.CHECKSET,
 						"queue_name": name,
 					}),
 				),
@@ -260,22 +265,22 @@ resource "alicloud_ehpc_cluster_v2" "queue_minimal_cluster_test" {
 func TestAccAliCloudEhpcQueue_basic12112(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_queue.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcQueueMap12112)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcQueueMap12112)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcQueue")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcQueueBasicDependence12112)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcQueueBasicDependence12112)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -311,7 +316,7 @@ func TestAccAliCloudEhpcQueue_basic12112(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_scale_in":  "true",
-						"cluster_id":       CHECKSET,
+						"cluster_id":       acctest.CHECKSET,
 						"vswitch_ids.#":    "1",
 						"compute_nodes.#":  "1",
 						"inter_connect":    "vpc",
@@ -519,22 +524,22 @@ resource "alicloud_nas_access_rule" "queue_autoscale_test_access_rule" {
 func TestAccAliCloudEhpcQueue_basic12113(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_queue.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcQueueMap12113)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcQueueMap12113)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcQueue")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcQueueBasicDependence12113)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcQueueBasicDependence12113)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -571,7 +576,7 @@ func TestAccAliCloudEhpcQueue_basic12113(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_scale_in":  "true",
-						"cluster_id":       CHECKSET,
+						"cluster_id":       acctest.CHECKSET,
 						"vswitch_ids.#":    "1",
 						"compute_nodes.#":  "1",
 						"inter_connect":    "vpc",
@@ -806,22 +811,22 @@ resource "alicloud_nas_access_rule" "queue_prepaid_test_access_rule" {
 func TestAccAliCloudEhpcQueue_basic12114(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ehpc_queue.default"
-	ra := resourceAttrInit(resourceId, AlicloudEhpcQueueMap12114)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudEhpcQueueMap12114)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ehpc.NewEhpcServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeEhpcQueue")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccehpc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcQueueBasicDependence12114)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudEhpcQueueBasicDependence12114)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -858,7 +863,7 @@ func TestAccAliCloudEhpcQueue_basic12114(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_scale_in":  "true",
-						"cluster_id":       CHECKSET,
+						"cluster_id":       acctest.CHECKSET,
 						"vswitch_ids.#":    "3",
 						"hostname_suffix":  "node",
 						"compute_nodes.#":  "1",

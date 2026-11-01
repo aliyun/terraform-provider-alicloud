@@ -1,20 +1,21 @@
-package alicloud
+package ehpc_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudEhpcJobTemplatesDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEhpcJobTemplatesDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEhpcJobTemplatesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ehpc_job_template.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEhpcJobTemplatesDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEhpcJobTemplatesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ehpc_job_template.default.id}_fake"]`,
 		}),
 	}
@@ -32,12 +33,12 @@ func TestAccAlicloudEhpcJobTemplatesDataSource(t *testing.T) {
 			"ids.#": "0",
 		}
 	}
-	var alicloudEhpcJobTemplatesCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ehpc_job_templates.default",
-		existMapFunc: existAlicloudEhpcJobTemplatesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEhpcJobTemplatesDataSourceNameMapFunc,
+	var alicloudEhpcJobTemplatesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ehpc_job_templates.default",
+		ExistMapFunc: existAlicloudEhpcJobTemplatesDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEhpcJobTemplatesDataSourceNameMapFunc,
 	}
-	alicloudEhpcJobTemplatesCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	alicloudEhpcJobTemplatesCheckInfo.DataSourceTestCheck(t, rand, idsConf)
 }
 func testAccCheckAlicloudEhpcJobTemplatesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

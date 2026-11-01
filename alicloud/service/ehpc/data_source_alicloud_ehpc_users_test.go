@@ -1,48 +1,49 @@
-package alicloud
+package ehpc_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAliCloudEhpcUsersDataSource_basic0(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ehpc_users.default"
 	name := fmt.Sprintf("tfacc%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceEhpcUsersConfig)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceEhpcUsersConfig)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_ehpc_user.default.cluster_id}",
 			"ids":        []string{"${alicloud_ehpc_user.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_ehpc_user.default.cluster_id}",
 			"ids":        []string{"${alicloud_ehpc_user.default.id}_fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_ehpc_user.default.cluster_id}",
 			"name_regex": "${alicloud_ehpc_user.default.user_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_ehpc_user.default.cluster_id}",
 			"name_regex": "${alicloud_ehpc_user.default.user_name}_fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_ehpc_user.default.cluster_id}",
 			"ids":        []string{"${alicloud_ehpc_user.default.id}"},
 			"name_regex": "${alicloud_ehpc_user.default.user_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_ehpc_user.default.cluster_id}",
 			"ids":        []string{"${alicloud_ehpc_user.default.id}_fake"},
 			"name_regex": "${alicloud_ehpc_user.default.user_name}_fake",
@@ -54,12 +55,12 @@ func TestAccAliCloudEhpcUsersDataSource_basic0(t *testing.T) {
 			"ids.#":              "1",
 			"names.#":            "1",
 			"users.#":            "1",
-			"users.0.id":         CHECKSET,
-			"users.0.cluster_id": CHECKSET,
-			"users.0.user_name":  CHECKSET,
-			"users.0.user_id":    CHECKSET,
-			"users.0.group":      CHECKSET,
-			"users.0.group_id":   CHECKSET,
+			"users.0.id":         acctest.CHECKSET,
+			"users.0.cluster_id": acctest.CHECKSET,
+			"users.0.user_name":  acctest.CHECKSET,
+			"users.0.user_id":    acctest.CHECKSET,
+			"users.0.group":      acctest.CHECKSET,
+			"users.0.group_id":   acctest.CHECKSET,
 		}
 	}
 
@@ -71,17 +72,17 @@ func TestAccAliCloudEhpcUsersDataSource_basic0(t *testing.T) {
 		}
 	}
 
-	var aliCloudEhpcUsersInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ehpc_users.default",
-		existMapFunc: existAliCloudEhpcUsersMapFunc,
-		fakeMapFunc:  fakeAliCloudEhpcUsersMapFunc,
+	var aliCloudEhpcUsersInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ehpc_users.default",
+		ExistMapFunc: existAliCloudEhpcUsersMapFunc,
+		FakeMapFunc:  fakeAliCloudEhpcUsersMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		acctest.PreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 	}
 
-	aliCloudEhpcUsersInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	aliCloudEhpcUsersInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceEhpcUsersConfig(name string) string {

@@ -1,50 +1,51 @@
-package alicloud
+package ehpc_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudEhpcClustersDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.EhpcSupportRegions)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	acctest.CheckoutSupportedRegions(t, true, connectivity.EhpcSupportRegions)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ehpc_cluster.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ehpc_cluster.default.id}_fake"]`,
 		}),
 	}
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_ehpc_cluster.default.cluster_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_ehpc_cluster.default.cluster_name}_fake"`,
 		}),
 	}
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_ehpc_cluster.default.id}"]`,
 			"status": `"running"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_ehpc_cluster.default.id}"]`,
 			"status": `"stopped"`,
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_ehpc_cluster.default.id}"]`,
 			"name_regex": `"${alicloud_ehpc_cluster.default.cluster_name}"`,
 			"status":     `"running"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEhpcClustersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_ehpc_cluster.default.id}_fake"]`,
 			"name_regex": `"${alicloud_ehpc_cluster.default.cluster_name}_fake"`,
 			"status":     `"stopped"`,
@@ -56,33 +57,33 @@ func TestAccAlicloudEhpcClustersDataSource(t *testing.T) {
 			"names.#":                          "1",
 			"clusters.#":                       "1",
 			"clusters.0.account_type":          "nis",
-			"clusters.0.client_version":        CHECKSET,
+			"clusters.0.client_version":        acctest.CHECKSET,
 			"clusters.0.cluster_name":          fmt.Sprintf("tf-testAccCluster-%d", rand),
 			"clusters.0.deploy_mode":           "Simple",
 			"clusters.0.description":           fmt.Sprintf("tf-testAccCluster-%d", rand),
 			"clusters.0.ha_enable":             "false",
-			"clusters.0.image_id":              CHECKSET,
+			"clusters.0.image_id":              acctest.CHECKSET,
 			"clusters.0.image_owner_alias":     "system",
 			"clusters.0.compute_count":         "1",
-			"clusters.0.compute_instance_type": CHECKSET,
+			"clusters.0.compute_instance_type": acctest.CHECKSET,
 			"clusters.0.login_count":           "1",
-			"clusters.0.login_instance_type":   CHECKSET,
+			"clusters.0.login_instance_type":   acctest.CHECKSET,
 			"clusters.0.manager_count":         "1",
-			"clusters.0.manager_instance_type": CHECKSET,
+			"clusters.0.manager_instance_type": acctest.CHECKSET,
 			"clusters.0.os_tag":                "CentOS_7.6_64",
-			"clusters.0.remote_directory":      CHECKSET,
+			"clusters.0.remote_directory":      acctest.CHECKSET,
 			"clusters.0.scc_cluster_id":        "",
-			"clusters.0.scheduler_type":        CHECKSET,
-			"clusters.0.security_group_id":     CHECKSET,
-			"clusters.0.volume_id":             CHECKSET,
-			"clusters.0.volume_mountpoint":     CHECKSET,
-			"clusters.0.volume_protocol":       CHECKSET,
-			"clusters.0.volume_type":           CHECKSET,
-			"clusters.0.vswitch_id":            CHECKSET,
-			"clusters.0.vpc_id":                CHECKSET,
-			"clusters.0.zone_id":               CHECKSET,
-			"clusters.0.post_install_script.#": CHECKSET,
-			"clusters.0.application.#":         CHECKSET,
+			"clusters.0.scheduler_type":        acctest.CHECKSET,
+			"clusters.0.security_group_id":     acctest.CHECKSET,
+			"clusters.0.volume_id":             acctest.CHECKSET,
+			"clusters.0.volume_mountpoint":     acctest.CHECKSET,
+			"clusters.0.volume_protocol":       acctest.CHECKSET,
+			"clusters.0.volume_type":           acctest.CHECKSET,
+			"clusters.0.vswitch_id":            acctest.CHECKSET,
+			"clusters.0.vpc_id":                acctest.CHECKSET,
+			"clusters.0.zone_id":               acctest.CHECKSET,
+			"clusters.0.post_install_script.#": acctest.CHECKSET,
+			"clusters.0.application.#":         acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudEhpcClustersDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -91,16 +92,16 @@ func TestAccAlicloudEhpcClustersDataSource(t *testing.T) {
 			"names.#": "0",
 		}
 	}
-	var alicloudEhpcClustersCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_ehpc_clusters.default",
-		existMapFunc: existAlicloudEhpcClustersDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEhpcClustersDataSourceNameMapFunc,
+	var alicloudEhpcClustersCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_ehpc_clusters.default",
+		ExistMapFunc: existAlicloudEhpcClustersDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEhpcClustersDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
+		acctest.PreCheck(t)
 	}
-	alicloudEhpcClustersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
+	alicloudEhpcClustersCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEhpcClustersDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

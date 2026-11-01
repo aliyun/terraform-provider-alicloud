@@ -1,394 +1,30 @@
-package alicloud
+// Package ehpc. Internal test package (package ehpc) so the TestUnit
+// gomonkey tests can call the unexported resourceAlicloudEhpc* CRUD
+// functions directly, matching the migrated-subpackage convention
+// (see alicloud/service/ecs/disk_unit_test.go).
+package ehpc
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func testSweepEhpcCluster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		return WrapErrorf(err, "error getting AliCloud client.")
-	}
-
-	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
-
-	request := make(map[string]interface{})
-	request["RegionId"] = region
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
-
-	for {
-		action := "ListClusters"
-		response, err := client.RpcGet("EHPC", "2018-04-12", action, request, nil)
-		if err != nil {
-			log.Printf("[ERROR] %s got an error: %v", action, err)
-			break
-		}
-		addDebug(action, response, request)
-
-		resp, err := jsonpath.Get("$.Clusters.ClusterInfoSimple", response)
-		if err != nil {
-			log.Println(err)
-			break
-		}
-		result, _ := resp.([]interface{})
-		for _, v := range result {
-			item := v.(map[string]interface{})
-			itemName := fmt.Sprint(item["Name"])
-			itemId := fmt.Sprint(item["Id"])
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(itemName, prefix) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Ehpc cluster: %s(%s) ", itemId, itemName)
-				continue
-			}
-			log.Printf("[Info] Delete Ehpc cluster: %s(%s)", itemId, itemName)
-
-			{
-				action := "DeleteCluster"
-				request := map[string]interface{}{
-					"ClusterId":       itemId,
-					"RegionId":        client.RegionId,
-					"ReleaseInstance": "true",
-				}
-				request["ClientToken"] = buildClientToken("DeleteCluster")
-				response, err = client.RpcGet("EHPC", "2018-04-12", action, request, nil)
-				addDebug(action, response, request)
-				if err != nil {
-					log.Printf("[ERROR] Deleting ephc cluster %s got an error: %s", itemId, err)
-				}
-			}
-
-		}
-		if len(result) < PageSizeLarge {
-			break
-		}
-		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-	return nil
-}
-
-func TestAccAlicloudEhpcCluster_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ehpc_cluster.default"
-	checkoutSupportedRegions(t, true, connectivity.EhpcSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEhpcCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sehpccluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cluster_name":          "${var.name}",
-					"deploy_mode":           "Simple",
-					"os_tag":                "CentOS_7.6_64",
-					"manager_count":         "1",
-					"manager_instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"compute_count":         "1",
-					"compute_instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"login_count":           "1",
-					"login_instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"volume_protocol":       "nfs",
-					"volume_id":             "${alicloud_nas_file_system.default.id}",
-					"volume_mountpoint":     "${alicloud_nas_mount_target.default.mount_target_domain}",
-					"password":              "Your-password123",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":               "${data.alicloud_zones.default.zones.0.id}",
-					"release_instance":      "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cluster_name":          name,
-						"deploy_mode":           "Simple",
-						"os_tag":                "CentOS_7.6_64",
-						"manager_count":         "1",
-						"manager_instance_type": CHECKSET,
-						"compute_count":         "1",
-						"compute_instance_type": CHECKSET,
-						"login_count":           "1",
-						"login_instance_type":   CHECKSET,
-						"volume_protocol":       "nfs4",
-						"volume_id":             CHECKSET,
-						"volume_mountpoint":     CHECKSET,
-						"vswitch_id":            CHECKSET,
-						"vpc_id":                CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cluster_name": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cluster_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_id":          "${data.alicloud_images.default.images.0.id}",
-					"image_owner_alias": "system",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_id":          CHECKSET,
-						"image_owner_alias": "system",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "ram_role_name", "system_disk_level", "system_disk_type", "ram_node_types", "plugin", "resource_group_id", "domain", "volume_mount_option", "zone_id", "compute_enable_ht", "ecs_charge_type", "release_instance", "cluster_version", "input_file_url", "system_disk_size", "compute_spot_strategy", "without_elastic_ip", "additional_volumes", "security_group_name", "period", "compute_spot_price_limit", "manager_count", "job_queue", "without_agent", "auto_renew", "is_compute_ess", "ehpc_version", "remote_vis_enable", "auto_renew_period", "period_unit", "volume_protocol"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudEhpcCluster_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ehpc_cluster.default"
-	checkoutSupportedRegions(t, true, connectivity.EhpcSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudEhpcClusterMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EhpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEhpcCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sehpccluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEhpcClusterBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":           "${var.name}",
-					"cluster_name":          "${var.name}",
-					"volume_protocol":       "nfs",
-					"volume_id":             "${alicloud_nas_file_system.default.id}",
-					"volume_mountpoint":     "${alicloud_nas_mount_target.default.mount_target_domain}",
-					"deploy_mode":           "Simple",
-					"image_id":              "${data.alicloud_images.default.images.0.id}",
-					"image_owner_alias":     "system",
-					"cluster_version":       "1.0",
-					"volume_type":           "nas",
-					"remote_directory":      "/",
-					"scheduler_type":        "pbs",
-					"account_type":          "nis",
-					"ha_enable":             "false",
-					"os_tag":                "CentOS_7.6_64",
-					"manager_count":         "1",
-					"manager_instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"compute_count":         "1",
-					"compute_instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"login_count":           "1",
-					"login_instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"password":              "Your-password123",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":               "${data.alicloud_zones.default.zones.0.id}",
-					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"system_disk_level":     "PL0",
-					"system_disk_size":      "40",
-					"system_disk_type":      "cloud_essd",
-					"ecs_charge_type":       "PostPaid",
-					"client_version":        "1.0.1",
-					"remote_vis_enable":     "false",
-					"additional_volumes": []map[string]interface{}{
-						{
-							"job_queue":        "high",
-							"local_directory":  "/ff",
-							"location":         "PublicCloud",
-							"remote_directory": "/test",
-							"roles": []map[string]interface{}{
-								{
-									"name": "Compute",
-								},
-							},
-							"volume_id":           "${alicloud_nas_file_system.default1.id}",
-							"volume_mountpoint":   "${alicloud_nas_mount_target.default1.mount_target_domain}",
-							"volume_mount_option": "-t nfs -o vers=4.0",
-							"volume_protocol":     "nfs",
-							"volume_type":         "nas",
-						},
-					},
-					"application": []map[string]interface{}{
-						{
-							"tag": "singularity_3.8.3",
-						},
-					},
-					"post_install_script": []map[string]interface{}{
-						{
-							"args": "bashfile.sh",
-							"url":  "/opt/job.sh",
-						},
-					},
-					"ram_node_types":      []string{"manager"},
-					"security_group_name": "${var.name}",
-					"volume_mount_option": "-t nfs -o vers=4.0",
-					"without_agent":       "false",
-					"without_elastic_ip":  "false",
-					"ehpc_version":        "1.0.0",
-					"is_compute_ess":      "false",
-					"release_instance":    "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":           name,
-						"cluster_name":          name,
-						"volume_protocol":       "nfs",
-						"volume_id":             CHECKSET,
-						"deploy_mode":           "Simple",
-						"image_id":              CHECKSET,
-						"volume_mountpoint":     CHECKSET,
-						"image_owner_alias":     "system",
-						"cluster_version":       "1.0",
-						"volume_type":           "nas",
-						"remote_directory":      "/",
-						"scheduler_type":        "pbs",
-						"account_type":          "nis",
-						"ha_enable":             "false",
-						"os_tag":                "CentOS_7.6_64",
-						"manager_count":         "1",
-						"manager_instance_type": CHECKSET,
-						"compute_count":         "1",
-						"compute_instance_type": CHECKSET,
-						"login_count":           "1",
-						"login_instance_type":   CHECKSET,
-						"vswitch_id":            CHECKSET,
-						"vpc_id":                CHECKSET,
-						"system_disk_level":     "PL0",
-						"system_disk_size":      "40",
-						"system_disk_type":      "cloud_essd",
-						"client_version":        "1.0.1",
-						"additional_volumes.#":  "1",
-						"application.#":         "1",
-						"post_install_script.#": "1",
-						"remote_vis_enable":     "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "ram_role_name", "system_disk_level", "system_disk_type", "ram_node_types", "plugin", "resource_group_id", "domain", "volume_mount_option", "zone_id", "compute_enable_ht", "ecs_charge_type", "release_instance", "cluster_version", "input_file_url", "system_disk_size", "compute_spot_strategy", "without_elastic_ip", "additional_volumes", "security_group_name", "period", "compute_spot_price_limit", "manager_count", "job_queue", "without_agent", "auto_renew", "is_compute_ess", "ehpc_version", "remote_vis_enable", "auto_renew_period", "period_unit"},
-			},
-		},
-	})
-}
-
-var AlicloudEhpcClusterMap0 = map[string]string{}
-
-func AlicloudEhpcClusterBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_resource_manager_resource_groups" "default"{
-	status = "OK"
-}
-data "alicloud_zones" default {
-  available_resource_creation  = "VSwitch"
-}
-
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-data "alicloud_instance_types" "default" {
- availability_zone = data.alicloud_zones.default.zones.0.id
-}
-variable "storage_type" {
-  default = "Capacity"
-}
-resource "alicloud_nas_file_system" "default" {
-  storage_type = var.storage_type
-  protocol_type = "NFS"
-}
-resource "alicloud_nas_mount_target" "default" {
-	file_system_id = alicloud_nas_file_system.default.id
-	access_group_name = "DEFAULT_VPC_GROUP_NAME"
-	vswitch_id = data.alicloud_vswitches.default.ids.0
-}
-resource "alicloud_nas_file_system" "default1" {
-  storage_type = var.storage_type
-  protocol_type = "NFS"
-}
-resource "alicloud_nas_mount_target" "default1" {
-	file_system_id = alicloud_nas_file_system.default1.id
-	access_group_name = "DEFAULT_VPC_GROUP_NAME"
-	vswitch_id = data.alicloud_vswitches.default.ids.0
-}
-data "alicloud_images" "default" {
-  name_regex  = "^centos_7_6_x64*"
-  owners      = "system"
-}
-
-`, name)
-}
-
 // lintignore: R001
 func TestUnitAlicloudEhpcCluster(t *testing.T) {
-	p := Provider().ResourcesMap
+	p := unitTestProviderResources()
 	dInit, _ := schema.InternalMap(p["alicloud_ehpc_cluster"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ehpc_cluster"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
@@ -488,7 +124,7 @@ func TestUnitAlicloudEhpcCluster(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
@@ -573,18 +209,18 @@ func TestUnitAlicloudEhpcCluster(t *testing.T) {
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ehpc_cluster", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_ehpc_cluster", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -592,9 +228,9 @@ func TestUnitAlicloudEhpcCluster(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEhsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -642,9 +278,9 @@ func TestUnitAlicloudEhpcCluster(t *testing.T) {
 	// Update
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEhsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
@@ -745,9 +381,9 @@ func TestUnitAlicloudEhpcCluster(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewEhsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})

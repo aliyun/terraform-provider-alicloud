@@ -1,4 +1,4 @@
-package alicloud
+package ehpc
 
 import (
 	"encoding/json"
@@ -9,6 +9,10 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tidwall/sjson"
@@ -187,13 +191,13 @@ func resourceAliCloudEhpcQueueCreate(d *schema.ResourceData, meta interface{}) e
 
 	queue := make(map[string]interface{})
 
-	if v := d.Get("compute_nodes"); !IsNil(v) {
+	if v := d.Get("compute_nodes"); !helper.IsNil(v) {
 		localData, err := jsonpath.Get("$", v)
 		if err != nil {
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -277,15 +281,15 @@ func resourceAliCloudEhpcQueueCreate(d *schema.ResourceData, meta interface{}) e
 
 	queueJson, err := json.Marshal(queue)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["Queue"] = string(queueJson)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -293,10 +297,10 @@ func resourceAliCloudEhpcQueueCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ehpc_queue", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ehpc_queue", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", request["ClusterId"], response["Name"]))
@@ -310,12 +314,12 @@ func resourceAliCloudEhpcQueueRead(d *schema.ResourceData, meta interface{}) err
 
 	objectRaw, err := ehpcServiceV2.DescribeEhpcQueue(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ehpc_queue DescribeEhpcQueue Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreateTime"])
@@ -332,7 +336,7 @@ func resourceAliCloudEhpcQueueRead(d *schema.ResourceData, meta interface{}) err
 	computeNodesRaw := objectRaw["ComputeNodes"]
 	computeNodesMaps := make([]map[string]interface{}, 0)
 	if computeNodesRaw != nil {
-		for _, computeNodesChildRaw := range convertToInterfaceArray(computeNodesRaw) {
+		for _, computeNodesChildRaw := range convert.ConvertToInterfaceArray(computeNodesRaw) {
 			computeNodesMap := make(map[string]interface{})
 			computeNodesChildRaw := computeNodesChildRaw.(map[string]interface{})
 			computeNodesMap["auto_renew"] = computeNodesChildRaw["AutoRenew"]
@@ -369,7 +373,7 @@ func resourceAliCloudEhpcQueueRead(d *schema.ResourceData, meta interface{}) err
 	}
 	vSwitchIdsRaw := make([]interface{}, 0)
 	if objectRaw["VSwitchIds"] != nil {
-		vSwitchIdsRaw = convertToInterfaceArray(objectRaw["VSwitchIds"])
+		vSwitchIdsRaw = convert.ConvertToInterfaceArray(objectRaw["VSwitchIds"])
 	}
 
 	d.Set("vswitch_ids", vSwitchIdsRaw)
@@ -399,13 +403,13 @@ func resourceAliCloudEhpcQueueUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("compute_nodes") {
 		update = true
 	}
-	if v := d.Get("compute_nodes"); !IsNil(v) || d.HasChange("compute_nodes") {
+	if v := d.Get("compute_nodes"); !helper.IsNil(v) || d.HasChange("compute_nodes") {
 		localData, err := jsonpath.Get("$", v)
 		if err != nil {
 			localData = make([]interface{}, 0)
 		}
 		localMaps := make([]interface{}, 0)
-		for _, dataLoop := range convertToInterfaceArray(localData) {
+		for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 			dataLoopTmp := make(map[string]interface{})
 			if dataLoop != nil {
 				dataLoopTmp = dataLoop.(map[string]interface{})
@@ -413,7 +417,7 @@ func resourceAliCloudEhpcQueueUpdate(d *schema.ResourceData, meta interface{}) e
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["InstanceType"] = dataLoopTmp["instance_type"]
 			dataLoopMap["PeriodUnit"] = dataLoopTmp["period_unit"]
-			if !IsNil(dataLoopTmp["system_disk"]) {
+			if !helper.IsNil(dataLoopTmp["system_disk"]) {
 				localData1 := make(map[string]interface{})
 				level1, _ := jsonpath.Get("$[0].level", dataLoopTmp["system_disk"])
 				if level1 != nil && level1 != "" {
@@ -512,16 +516,16 @@ func resourceAliCloudEhpcQueueUpdate(d *schema.ResourceData, meta interface{}) e
 
 	queueJson, err := json.Marshal(queue)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	request["Queue"] = string(queueJson)
 
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -529,9 +533,9 @@ func resourceAliCloudEhpcQueueUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -550,15 +554,15 @@ func resourceAliCloudEhpcQueueDelete(d *schema.ResourceData, meta interface{}) e
 	request = make(map[string]interface{})
 	request["ClusterId"] = parts[0]
 
-	jsonString := convertObjectToJsonString(request)
+	jsonString := convert.ConvertObjectToJsonString(request)
 	jsonString, _ = sjson.Set(jsonString, "QueueNames.0", parts[1])
 	_ = json.Unmarshal([]byte(jsonString), &request)
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -566,13 +570,13 @@ func resourceAliCloudEhpcQueueDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
