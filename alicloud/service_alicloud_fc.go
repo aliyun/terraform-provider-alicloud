@@ -13,6 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// Migrated to alicloud/service/fc.Service. This root copy is retained for
+// in-package root test consumers (e.g. provider_test.go TestAccAlicloudProviderFC)
+// that cannot import the product subpackage without a cycle.
 type FcService struct {
 	client *connectivity.AliyunClient
 }
@@ -483,4 +486,27 @@ func (s *FcService) WaitForFcFunctionAsyncInvokeConfig(id string, status Status,
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, id, ProviderERROR)
 		}
 	}
+}
+
+// parseFCDestinationConfigId is retained in the root package for the
+// in-package FcService compat copy (DescribeFcFunctionAsyncInvokeConfig).
+// The migrated copy lives in alicloud/service/fc; this root copy keeps the
+// retained root surface self-contained without importing the subpackage.
+func parseFCDestinationConfigId(id string) (serviceName string, functionName string, qualifier string, err error) {
+	idParts := strings.Split(id, ":")
+
+	if len(idParts) == 2 && idParts[0] != "" && idParts[1] != "" {
+		serviceName = idParts[0]
+		functionName = idParts[1]
+		return
+	}
+
+	if len(idParts) == 3 && idParts[0] != "" && idParts[1] != "" && idParts[2] != "" {
+		serviceName = idParts[0]
+		functionName = idParts[1]
+		qualifier = idParts[2]
+		return
+	}
+
+	return "", "", "", fmt.Errorf("unexpected format of ID (%s), expected service_name:function_name or service_name:function_name:qualifier", id)
 }

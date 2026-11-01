@@ -1,54 +1,55 @@
-package alicloud
+package fc_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudFCFunctionsDataSourceUpdate(t *testing.T) {
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_fc_functions.default"
 
 	name := fmt.Sprintf("tf-testaccfcfunctiondsbasic-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, testAccCheckAlicloudFCFunctionsDataSourceConfig)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, testAccCheckAlicloudFCFunctionsDataSourceConfig)
 
-	serviceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	serviceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}_fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"name_regex":   "${alicloud_fc_function.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 			"name_regex":   "${alicloud_fc_function.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
@@ -68,8 +69,8 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 			"functions.0.memory_size":                  "512",
 			"functions.0.code_size":                    "155",
 			"functions.0.code_checksum":                "13713894526498940759",
-			"functions.0.creation_time":                CHECKSET,
-			"functions.0.last_modification_time":       CHECKSET,
+			"functions.0.creation_time":                acctest.CHECKSET,
+			"functions.0.last_modification_time":       acctest.CHECKSET,
 			"functions.0.environment_variables.test":   "terraform",
 			"functions.0.environment_variables.prefix": "tfAcc",
 			"functions.0.initializer":                  "hello.initializer",
@@ -86,57 +87,57 @@ func TestAccAlicloudFCFunctionsDataSourceUpdate(t *testing.T) {
 		}
 	}
 
-	var fcFunctionsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existFCFunctionsMapFunc,
-		fakeMapFunc:  fakeFCFunctionsMapFunc,
+	var fcFunctionsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existFCFunctionsMapFunc,
+		FakeMapFunc:  fakeFCFunctionsMapFunc,
 	}
 
-	fcFunctionsCheckInfo.dataSourceTestCheck(t, rand, serviceNameConf, idsConf, nameRegexConf, allConf)
+	fcFunctionsCheckInfo.DataSourceTestCheck(t, rand, serviceNameConf, idsConf, nameRegexConf, allConf)
 }
 
-func TestAccAlicloudFCFunctionsDataSourceCustomContainerUpdate(t *testing.T) {
-	rand := acctest.RandInt()
+func TestAccAliCloudFCFunctionsDataSourceCustomContainerUpdate(t *testing.T) {
+	rand := tfacctest.RandInt()
 	resourceId := "data.alicloud_fc_functions.default"
 
 	name := fmt.Sprintf("tf-testaccfcfunctiondscustomcontainer-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, testAccCheckAlicloudFCFunctionsDataSourceCustomContainerConfig)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, testAccCheckAlicloudFCFunctionsDataSourceCustomContainerConfig)
 
-	serviceNameConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	serviceNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}_fake"},
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"name_regex":   "${alicloud_fc_function.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 			"name_regex":   "${alicloud_fc_function.default.name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"service_name": "${alicloud_fc_function.default.service}",
 			"ids":          []string{"${alicloud_fc_function.default.function_id}"},
 			"name_regex":   "${alicloud_fc_function.default.name}_fake",
@@ -150,7 +151,7 @@ func TestAccAlicloudFCFunctionsDataSourceCustomContainerUpdate(t *testing.T) {
 			"functions.#":         "1",
 			"functions.0.name":    name,
 			"functions.0.runtime": "custom-container",
-			"functions.0.custom_container_config.0.image":   CHECKSET,
+			"functions.0.custom_container_config.0.image":   acctest.CHECKSET,
 			"functions.0.custom_container_config.0.command": `["python", "server.py"]`,
 			"functions.0.custom_container_config.0.args":    `["a1", "a2"]`,
 			"functions.0.instance_concurrency":              "28",
@@ -166,13 +167,13 @@ func TestAccAlicloudFCFunctionsDataSourceCustomContainerUpdate(t *testing.T) {
 		}
 	}
 
-	var fcFunctionsCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existFCFunctionsMapFunc,
-		fakeMapFunc:  fakeFCFunctionsMapFunc,
+	var fcFunctionsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existFCFunctionsMapFunc,
+		FakeMapFunc:  fakeFCFunctionsMapFunc,
 	}
 
-	fcFunctionsCheckInfo.dataSourceTestCheck(t, rand, serviceNameConf, idsConf, nameRegexConf, allConf)
+	fcFunctionsCheckInfo.DataSourceTestCheck(t, rand, serviceNameConf, idsConf, nameRegexConf, allConf)
 }
 
 func testAccCheckAlicloudFCFunctionsDataSourceConfig(name string) string {

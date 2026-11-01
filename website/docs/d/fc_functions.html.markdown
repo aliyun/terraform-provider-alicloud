@@ -13,7 +13,7 @@ This data source provides the Function Compute functions of the current Alibaba 
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_fc_functions" "functions_ds" {
   service_name = "sample_service"
   name_regex   = "sample_fc_function"
@@ -28,7 +28,7 @@ output "first_fc_function_name" {
 
 The following arguments are supported:
 
-* `service_name` - Name of the service that contains the functions to find.
+* `service_name` - (Required) Name of the service that contains the functions to find.
 * `name_regex` - (Optional) A regex string to filter results by function name.
 * `ids` (Optional, Available in 1.53.0+) - A list of functions ids.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -57,7 +57,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_type` - The instance type of the function.
   * `instance_concurrency` - The maximum number of requests can be executed concurrently within the single function instance.
   * `ca_port` - The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
-  * `custom_container_config` - The configuration for custom container runtime. It contains following attributes:
+  * `custom_container_config` - (Optional, MaxItems: 1) The configuration for custom container runtime. The data source Read backfills this block from the server response when the function uses a custom container; it contains the following attributes:
     * `image` - The container image address.
     * `command` - The entry point of the container, which specifies the actual command run by the container.
     * `args` - The args field specifies the arguments passed to the command.
