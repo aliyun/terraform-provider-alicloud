@@ -1,4 +1,4 @@
-package alicloud
+package emr
 
 import (
 	"fmt"
@@ -7,14 +7,19 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEmrClusters() *schema.Resource {
+func DataSourceEmrClusters() *schema.Resource {
 	return &schema.Resource{
-		Read:               dataSourceAlicloudEmrClustersRead,
+		Read:               dataSourceEmrClustersRead,
 		DeprecationMessage: "This data source has been deprecated since v1.204.0 and will be removed in the future. Please use 'alicloud_emrv2_clusters' instead.",
 		Schema: map[string]*schema.Schema{
 			"ids": {
@@ -533,7 +538,7 @@ func dataSourceAlicloudEmrClusters() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEmrClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListClusters"
@@ -581,14 +586,14 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = helper.PageSizeLarge
 	}
 
 	var clusterNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		clusterNameRegex = r
 	}
@@ -607,11 +612,11 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 	var err error
 	var objects []interface{}
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Emr", "2016-04-08", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -619,16 +624,16 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emr_clusters", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_emr_clusters", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Clusters.ClusterInfo", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Clusters.ClusterInfo", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Clusters.ClusterInfo", response)
 		}
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
+		if helper.IsPagingRequest(d) {
 			objects = result
 			break
 		}
@@ -656,11 +661,11 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 	for _, v := range objects {
 		object := v.(map[string]interface{})
 
-		periodVal, err := formatInt(object["Period"])
+		periodVal, err := convert.FormatInt(object["Period"])
 		if err != nil {
 			return err
 		}
-		running_timeVal, err := formatInt(object["RunningTime"])
+		running_timeVal, err := convert.FormatInt(object["RunningTime"])
 		if err != nil {
 			return err
 		}
@@ -682,18 +687,18 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 			"has_uncompleted_order": object["HasUncompletedOrder"],
 		}
 
-		tags := make(map[string]interface{})
+		tagsMap := make(map[string]interface{})
 		t, _ := jsonpath.Get("$.Tags.Tag", object)
 		if t != nil {
 			for _, t := range t.([]interface{}) {
 				key := t.(map[string]interface{})["TagKey"].(string)
 				value := t.(map[string]interface{})["TagValue"].(string)
-				if !ignoredTags(key, value) {
-					tags[key] = value
+				if !tags.IgnoredTags(key, value) {
+					tagsMap[key] = value
 				}
 			}
 		}
-		mapping["tags"] = tags
+		mapping["tags"] = tagsMap
 
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			ids = append(ids, fmt.Sprint(mapping["id"]))
@@ -703,10 +708,10 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 		}
 
 		id := fmt.Sprint(object["Id"])
-		emrService := EmrService{client}
+		emrService := NewService(client)
 		getResp, err := emrService.DescribeClusterBasicInfo(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		mapping["auto_scaling_allowed"] = getResp["AutoScalingAllowed"]
 		mapping["auto_scaling_by_load_allowed"] = getResp["AutoScalingByLoadAllowed"]
@@ -793,10 +798,10 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 		mapping["vswitch_id"] = getResp["VSwitchId"]
 		mapping["vpc_id"] = getResp["VpcId"]
 		mapping["zone_id"] = getResp["ZoneId"]
-		emrService = EmrService{client}
+		emrService = NewService(client)
 		getResp1, err := emrService.DataSourceDescribeEmrCluster(id)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 
 		mapping["access_info"] = getResp1["AccessInfo"]
@@ -831,24 +836,24 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 			for _, v := range hostGroupList {
 				if m1, ok := v.(map[string]interface{}); ok {
 
-					cpu_coreVal, err := formatInt(m1["CpuCore"])
+					cpu_coreVal, err := convert.FormatInt(m1["CpuCore"])
 					if err != nil {
 						return err
 					}
-					disk_capacityVal, err := formatInt(m1["DiskCapacity"])
+					disk_capacityVal, err := convert.FormatInt(m1["DiskCapacity"])
 					if err != nil {
 						return err
 					}
-					disk_countVal, err := formatInt(m1["DiskCount"])
+					disk_countVal, err := convert.FormatInt(m1["DiskCount"])
 					if err != nil {
 						return err
 					}
 
-					memory_capacityVal, err := formatInt(m1["MemoryCapacity"])
+					memory_capacityVal, err := convert.FormatInt(m1["MemoryCapacity"])
 					if err != nil {
 						return err
 					}
-					node_countVal, err := formatInt(m1["NodeCount"])
+					node_countVal, err := convert.FormatInt(m1["NodeCount"])
 					if err != nil {
 						return err
 					}
@@ -910,40 +915,40 @@ func dataSourceAlicloudEmrClustersRead(d *schema.ResourceData, meta interface{})
 		mapping["host_group_list"] = hostGroup
 		mapping["resize_disk_enable"] = getResp1["ResizeDiskEnable"]
 
-		emrService = EmrService{client}
+		emrService = NewService(client)
 		getResp2, err := emrService.ListTagResources(id, "cluster")
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		mapping["tags"] = tagsToMap(getResp2)
+		mapping["tags"] = tags.TagsToMap(getResp2)
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["TotalCount"])
+	total_countVal, err := convert.FormatInt(response["TotalCount"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

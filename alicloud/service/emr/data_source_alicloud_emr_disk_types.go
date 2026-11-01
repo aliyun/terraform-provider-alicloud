@@ -1,17 +1,19 @@
-package alicloud
+package emr
 
 import (
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/emr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudEmrDiskTypes() *schema.Resource {
+func DataSourceEmrDiskTypes() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEmrDiskTypesRead,
+		Read: dataSourceEmrDiskTypesRead,
 
 		Schema: map[string]*schema.Schema{
 			"destination_resource": {
@@ -78,7 +80,7 @@ func dataSourceAlicloudEmrDiskTypes() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEmrDiskTypesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEmrDiskTypesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := emr.CreateListEmrAvailableResourceRequest()
@@ -102,7 +104,7 @@ func dataSourceAlicloudEmrDiskTypesRead(d *schema.ResourceData, meta interface{}
 		return emrClient.ListEmrAvailableResource(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emr_disk_types", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_emr_disk_types", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	var resources []emr.SupportedResource
 	resourceResponse, _ := raw.(*emr.ListEmrAvailableResourceResponse)
@@ -130,19 +132,19 @@ func emrClusterDiskTypesAttributes(d *schema.ResourceData, resources []emr.Suppo
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 
 	if err := d.Set("types", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	// create a json file in current directory and write data source to it
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

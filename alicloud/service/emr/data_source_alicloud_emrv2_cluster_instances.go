@@ -1,4 +1,4 @@
-package alicloud
+package emr
 
 import (
 	"strings"
@@ -6,13 +6,18 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceAlicloudEmrV2ClusterInstances() *schema.Resource {
+func DataSourceEmrV2ClusterInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudEmrV2ClusterInstancesRead,
+		Read: dataSourceEmrV2ClusterInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -40,7 +45,7 @@ func dataSourceAlicloudEmrV2ClusterInstances() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -131,11 +136,11 @@ func dataSourceAlicloudEmrV2ClusterInstances() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceEmrV2ClusterInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	emrService := EmrService{client}
+	emrService := NewService(client)
 	action := "ListNodes"
-	maxResults := PageSizeSmall
+	maxResults := helper.PageSizeSmall
 	if v, ok := d.GetOk("max_results"); ok {
 		maxResults = v.(int)
 	}
@@ -197,7 +202,7 @@ func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta in
 				}
 			} else {
 				if !strings.Contains(err.Error(), "The specified parameter ClusterId is not valid") {
-					return WrapError(err)
+					return errs.WrapError(err)
 				}
 			}
 		}
@@ -222,11 +227,11 @@ func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta in
 	var objects []interface{}
 
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("Emr", "2021-03-20", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -234,16 +239,16 @@ func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
 			if strings.Contains(err.Error(), "The specified parameter ClusterId is not valid") {
 				break
 			}
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_emrv2_cluster_instances", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_emrv2_cluster_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
 		resp, err := jsonpath.Get("$.Nodes", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Nodes", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Nodes", response)
 		}
 		result, _ := resp.([]interface{})
 		if _, ok := d.GetOk("next_token"); !ok {
@@ -268,7 +273,7 @@ func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta in
 		}
 		nextToken, err := jsonpath.Get("$.NextToken", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NextToken", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.NextToken", response)
 		}
 		request["NextToken"] = nextToken
 	}
@@ -300,31 +305,31 @@ func dataSourceAlicloudEmrV2ClusterInstancesRead(d *schema.ResourceData, meta in
 	}
 
 	if len(ids) > 0 {
-		d.SetId(dataResourceIdHash(ids))
+		d.SetId(helper.DataResourceIdHash(ids))
 	} else {
 		d.SetId(request["ClusterId"].(string))
 	}
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("instances", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	total_countVal, err := formatInt(response["TotalCount"])
+	total_countVal, err := convert.FormatInt(response["TotalCount"])
 	if err != nil {
 		return err
 	}
 	if err := d.Set("total_count", total_countVal); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

@@ -1,73 +1,74 @@
-package alicloud
+package emr_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
 func TestAccAlicloudEmrV2ClustersDataSource(t *testing.T) {
-	rand := acctest.RandInt()
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_emrv2_cluster.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_emrv2_cluster.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_emrv2_cluster.default.id}"]`,
 			"name_regex": `"${alicloud_emrv2_cluster.default.cluster_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_emrv2_cluster.default.id}"]`,
 			"name_regex": `"${alicloud_emrv2_cluster.default.cluster_name}_fake"`,
 		}),
 	}
 
-	clusterNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	clusterNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"cluster_name": `"${alicloud_emrv2_cluster.default.cluster_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"cluster_name": `"${alicloud_emrv2_cluster.default.cluster_name}_fake"`,
 		}),
 	}
 
-	clusterTypesConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	clusterTypesConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_emrv2_cluster.default.id}"]`,
 			"cluster_types": `["DATALAKE","OLAP"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":           `["${alicloud_emrv2_cluster.default.id}"]`,
 			"cluster_types": `["DATALEKA","OALP"]`,
 		}),
 	}
 
-	resourceGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	resourceGroupIdConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emrv2_cluster.default.id}"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emrv2_cluster.default.id}"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 		}),
 	}
 
-	clusterStatesConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	clusterStatesConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_emrv2_cluster.default.id}"]`,
 			"cluster_states": `["STARTING","RUNNING"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_emrv2_cluster.default.id}"]`,
 			"cluster_states": `["TERMINATING"]`,
 		}),
@@ -75,26 +76,26 @@ func TestAccAlicloudEmrV2ClustersDataSource(t *testing.T) {
 
 	existTagBytes, _ := json.Marshal(map[string]interface{}{"Created": "TF"})
 	fakeTagBytes, _ := json.Marshal(map[string]interface{}{"CreatedFake": "TFFake"})
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":  `["${alicloud_emrv2_cluster.default.id}"]`,
 			"tags": string(existTagBytes),
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":  `["${alicloud_emrv2_cluster.default.id}"]`,
 			"tags": string(fakeTagBytes),
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emrv2_cluster.default.id}"]`,
 			"name_regex":        `"${alicloud_emrv2_cluster.default.cluster_name}"`,
 			"cluster_types":     `["DATALAKE","OLAP"]`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}"`,
 			"cluster_states":    `["STARTING","RUNNING"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudEmrV2ClustersDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_emrv2_cluster.default.id}_fake"]`,
 			"name_regex":        `"${alicloud_emrv2_cluster.default.cluster_name}_fake"`,
 			"cluster_types":     `["DATALEKA","OALP"]`,
@@ -107,26 +108,26 @@ func TestAccAlicloudEmrV2ClustersDataSource(t *testing.T) {
 		return map[string]string{
 			"ids.#":                                  "1",
 			"clusters.#":                             "1",
-			"ids.0":                                  CHECKSET,
+			"ids.0":                                  acctest.CHECKSET,
 			"names.#":                                "1",
-			"total_count":                            CHECKSET,
-			"clusters.0.cluster_id":                  CHECKSET,
+			"total_count":                            acctest.CHECKSET,
+			"clusters.0.cluster_id":                  acctest.CHECKSET,
 			"clusters.0.cluster_name":                fmt.Sprintf("tf-testAccClusters-%d", rand),
 			"clusters.0.cluster_type":                "OLAP",
 			"clusters.0.cluster_state":               "RUNNING",
 			"clusters.0.payment_type":                "PayAsYouGo",
-			"clusters.0.create_time":                 CHECKSET,
-			"clusters.0.ready_time":                  CHECKSET,
-			"clusters.0.expire_time":                 CHECKSET,
-			"clusters.0.end_time":                    CHECKSET,
+			"clusters.0.create_time":                 acctest.CHECKSET,
+			"clusters.0.ready_time":                  acctest.CHECKSET,
+			"clusters.0.expire_time":                 acctest.CHECKSET,
+			"clusters.0.end_time":                    acctest.CHECKSET,
 			"clusters.0.release_version":             "EMR-5.10.0",
-			"clusters.0.resource_group_id":           CHECKSET,
+			"clusters.0.resource_group_id":           acctest.CHECKSET,
 			"clusters.0.tags.#":                      "1",
 			"clusters.0.tags.0.key":                  "Created",
 			"clusters.0.tags.0.value":                "TF",
-			"clusters.0.emr_default_role":            CHECKSET,
-			"clusters.0.state_change_reason.Code":    CHECKSET,
-			"clusters.0.state_change_reason.Message": CHECKSET,
+			"clusters.0.emr_default_role":            acctest.CHECKSET,
+			"clusters.0.state_change_reason.Code":    acctest.CHECKSET,
+			"clusters.0.state_change_reason.Message": acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudEmrClustersDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -136,12 +137,12 @@ func TestAccAlicloudEmrV2ClustersDataSource(t *testing.T) {
 			"clusters.#": "0",
 		}
 	}
-	var alicloudEmrClustersCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_emrv2_clusters.default",
-		existMapFunc: existAlicloudEmrClustersDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudEmrClustersDataSourceNameMapFunc,
+	var alicloudEmrClustersCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_emrv2_clusters.default",
+		ExistMapFunc: existAlicloudEmrClustersDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudEmrClustersDataSourceNameMapFunc,
 	}
-	alicloudEmrClustersCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, clusterNameConf, clusterTypesConf, resourceGroupIdConf, clusterStatesConf, tagsConf, allConf)
+	alicloudEmrClustersCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameRegexConf, clusterNameConf, clusterTypesConf, resourceGroupIdConf, clusterStatesConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudEmrV2ClustersDataSourceName(rand int, attrMap map[string]string) string {
