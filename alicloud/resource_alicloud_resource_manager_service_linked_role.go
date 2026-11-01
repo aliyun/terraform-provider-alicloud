@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -86,7 +87,7 @@ func resourceAliCloudResourceManagerServiceLinkedRoleCreate(d *schema.ResourceDa
 }
 func resourceAliCloudResourceManagerServiceLinkedRoleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ramService := RamService{client}
+	ramService := ram.NewRamService(client)
 	parts, _ := ParseResourceId(d.Id(), 2)
 
 	object, err := ramService.DescribeRamServiceLinkedRole(d.Id())
