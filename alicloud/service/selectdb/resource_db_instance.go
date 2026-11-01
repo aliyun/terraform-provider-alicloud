@@ -1,4 +1,4 @@
-package alicloud
+package selectdb
 
 import (
 	"encoding/json"
@@ -9,15 +9,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudSelectDBDbInstance() *schema.Resource {
+func ResourceDbInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudSelectDBDbInstanceCreate,
-		Read:   resourceAliCloudSelectDBDbInstanceRead,
-		Update: resourceAliCloudSelectDBDbInstanceUpdate,
-		Delete: resourceAliCloudSelectDBDbInstanceDelete,
+		Create: resourceDbInstanceCreate,
+		Read:   resourceDbInstanceRead,
+		Update: resourceDbInstanceUpdate,
+		Delete: resourceDbInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -38,20 +43,20 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				Required:     true,
 			},
 			"period": {
 				Type:             schema.TypeString,
-				ValidateFunc:     StringInSlice([]string{string(Year), string(Month)}, false),
+				ValidateFunc:     validators.StringInSlice([]string{"Year", "Month"}, false),
 				Optional:         true,
-				DiffSuppressFunc: selectdbPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
 			},
 			"period_time": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
-				DiffSuppressFunc: selectdbPostPaidDiffSuppressFunc,
+				DiffSuppressFunc: postPaidDiffSuppressFunc,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -85,7 +90,7 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 				ConflictsWith: []string{"engine_minor_version"},
 				Deprecated:    "Field `upgraded_engine_minor_version` has been deprecated from provider version 1.248.0. New field `engine_minor_version` instead.",
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			// flag for public network and update
 			"enable_public_network": {
 				Type:     schema.TypeBool,
@@ -258,60 +263,60 @@ func resourceAliCloudSelectDBDbInstance() *schema.Resource {
 	}
 }
 
-func resourceAliCloudSelectDBDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	selectDBService := SelectDBService{client}
-	request, err := buildSelectDBCreateInstanceRequest(d, meta)
+	selectDBService := NewService(client)
+	request, err := buildCreateInstanceRequest(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "CreateDBInstance"
-	response, err := selectDBService.RequestProcessForSelectDB(request, action, "POST")
+	response, err := selectDBService.RequestProcess(request, action, "POST")
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if resp, err := jsonpath.Get("$.Data", response); err != nil || resp == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_selectdb_db_instance")
+		return errs.WrapErrorf(err, errs.IdMsg, "alicloud_selectdb_db_instance")
 	} else {
 		instanceId := resp.(map[string]interface{})["DBInstanceId"].(string)
 		d.SetId(fmt.Sprint(instanceId))
 	}
 
-	stateConfPreparing := BuildStateConf([]string{"RESOURCE_PREPARING", "CREATING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+	stateConfPreparing := helper.BuildStateConf([]string{"RESOURCE_PREPARING", "CREATING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 	if _, err := stateConfPreparing.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	enable_public_network, exist := d.GetOkExists("enable_public_network")
 	if exist {
 		if enable_public_network == true {
-			if _, err := selectDBService.AllocateSelectDBInstancePublicConnection(d.Id()); err != nil {
-				return WrapError(err)
+			if _, err := selectDBService.AllocateInstancePublicConnection(d.Id()); err != nil {
+				return errs.WrapError(err)
 			}
-			stateConf := BuildStateConf([]string{"NET_CREATING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+			stateConf := helper.BuildStateConf([]string{"NET_CREATING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 	}
 
-	return resourceAliCloudSelectDBDbInstanceUpdate(d, meta)
+	return resourceDbInstanceUpdate(d, meta)
 }
 
-func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	selectDBService := SelectDBService{client}
+	selectDBService := NewService(client)
 	d.Partial(true)
 
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		_, newPayment := d.GetChange("payment_type")
 
 		request := make(map[string]string)
-		payment := convertPaymentTypeToChargeType(newPayment)
+		payment := convert.ConvertPaymentTypeToChargeType(newPayment)
 
-		if payment == string(PostPaid) {
+		if payment == "PostPaid" {
 			request["payment_type"] = string("POSTPAY")
-		} else if payment == string(PrePaid) {
+		} else if payment == "PrePaid" {
 			request["payment_type"] = string("PREPAY")
 			if v, ok := d.GetOk("period"); ok {
 				request["period"] = v.(string)
@@ -324,8 +329,8 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 				request["period_time"] = "1"
 			}
 		}
-		if _, err := selectDBService.ModifySelectDBInstancePaymentType(d.Id(), request); err != nil {
-			return WrapError(err)
+		if _, err := selectDBService.ModifyInstancePaymentType(d.Id(), request); err != nil {
+			return errs.WrapError(err)
 		}
 
 	}
@@ -333,9 +338,9 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 	if !d.IsNewResource() && d.HasChange("enable_public_network") {
 		oldNetStatus, newNetStatus := d.GetChange("enable_public_network")
 		if oldNetStatus.(bool) && !newNetStatus.(bool) {
-			netResp, err := selectDBService.DescribeSelectDBDbInstanceNetInfo(d.Id())
+			netResp, err := selectDBService.DescribeDbInstanceNetInfo(d.Id())
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			connectionString := ""
 			resultNet, _ := netResp["DBInstanceNetInfos"].([]interface{})
@@ -346,20 +351,20 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 				}
 			}
 
-			if _, err := selectDBService.ReleaseSelectDBInstancePublicConnection(d.Id(), connectionString); err != nil {
-				return WrapError(err)
+			if _, err := selectDBService.ReleaseInstancePublicConnection(d.Id(), connectionString); err != nil {
+				return errs.WrapError(err)
 			}
-			stateConf := BuildStateConf([]string{"NET_DELETING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+			stateConf := helper.BuildStateConf([]string{"NET_DELETING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		} else if !oldNetStatus.(bool) && newNetStatus.(bool) {
-			if _, err := selectDBService.AllocateSelectDBInstancePublicConnection(d.Id()); err != nil {
-				return WrapError(err)
+			if _, err := selectDBService.AllocateInstancePublicConnection(d.Id()); err != nil {
+				return errs.WrapError(err)
 			}
-			stateConf := BuildStateConf([]string{"NET_CREATING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+			stateConf := helper.BuildStateConf([]string{"NET_CREATING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 
@@ -374,9 +379,9 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 
 		instanceId := fmt.Sprint(d.Id())
-		instanceResp, err := selectDBService.DescribeSelectDBDbInstance(instanceId)
+		instanceResp, err := selectDBService.DescribeDbInstance(instanceId)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		upgradeTargetVersion := ""
 		canUpgradeVersion := instanceResp["CanUpgradeVersions"].([]interface{})
@@ -388,16 +393,16 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 
 		if upgradeTargetVersion == "" {
-			return WrapErrorf(err, "Invalid upgrade version for %s, cannot upgrade to %s", d.Id(), newVersion.(string), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, "Invalid upgrade version for %s, cannot upgrade to %s", d.Id(), newVersion.(string), errs.AlibabaCloudSdkGoERROR)
 		} else {
 			// todo maintaintime update
-			_, err = selectDBService.UpgradeSelectDBInstanceEngineVersion(d.Id(), upgradeTargetVersion, false)
+			_, err = selectDBService.UpgradeInstanceEngineVersion(d.Id(), upgradeTargetVersion, false)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeSelectDBInstanceEngineVersion", AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpgradeInstanceEngineVersion", errs.AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{"MODULE_UPGRADING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+			stateConf := helper.BuildStateConf([]string{"MODULE_UPGRADING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 			}
 		}
 
@@ -413,13 +418,13 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 			cache_size = newCacheSize.(int)
 			cacheSizeModified = true
 		}
-		_, err := selectDBService.ModifySelectDBCluster(defaultBeId, newClass.(string), cache_size)
+		_, err := selectDBService.ModifyCluster(defaultBeId, newClass.(string), cache_size)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, defaultBeId, "ModifyDBCluster", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, defaultBeId, "ModifyDBCluster", errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{"RESOURCE_PREPARING", "CLASS_CHANGING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.SelectDBDbClusterStateRefreshFunc(defaultBeId, []string{"DELETING"}))
+		stateConf := helper.BuildStateConf([]string{"RESOURCE_PREPARING", "CLASS_CHANGING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.DbClusterStateRefreshFunc(defaultBeId, []string{"DELETING"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, defaultBeId)
+			return errs.WrapErrorf(err, errs.IdMsg, defaultBeId)
 		}
 	}
 
@@ -431,35 +436,35 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 			_, newClass := d.GetChange("db_instance_class")
 			db_cluster_class = newClass.(string)
 		}
-		_, err := selectDBService.ModifySelectDBCluster(defaultBeId, db_cluster_class, newCacheSize.(int))
+		_, err := selectDBService.ModifyCluster(defaultBeId, db_cluster_class, newCacheSize.(int))
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, defaultBeId, "ModifyDBCluster", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, defaultBeId, "ModifyDBCluster", errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{"RESOURCE_PREPARING", "CLASS_CHANGING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.SelectDBDbClusterStateRefreshFunc(defaultBeId, []string{"DELETING"}))
+		stateConf := helper.BuildStateConf([]string{"RESOURCE_PREPARING", "CLASS_CHANGING"}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, selectDBService.DbClusterStateRefreshFunc(defaultBeId, []string{"DELETING"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, defaultBeId)
+			return errs.WrapErrorf(err, errs.IdMsg, defaultBeId)
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("db_instance_description") {
 		_, newDesc := d.GetChange("db_instance_description")
-		_, err := selectDBService.ModifySelectDBInstanceDescription(d.Id(), newDesc.(string))
+		_, err := selectDBService.ModifyInstanceDescription(d.Id(), newDesc.(string))
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifySelectDBInstanceDescription", AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "ModifyInstanceDescription", errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	if d.HasChange("tags") {
-		added, removed := parsingTags(d)
+		added, removed := tags.ParsingTags(d)
 		if err := selectDBService.SetResourceTags(d.Id(), added, removed); err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 	}
 
 	if d.HasChange("admin_pass") {
 		_, newPass := d.GetChange("admin_pass")
-		if _, err := selectDBService.ModifySelectDBInstanceAdminPass(d.Id(), newPass.(string)); err != nil {
-			return WrapError(err)
+		if _, err := selectDBService.ModifyInstanceAdminPass(d.Id(), newPass.(string)); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 
@@ -467,35 +472,35 @@ func resourceAliCloudSelectDBDbInstanceUpdate(d *schema.ResourceData, meta inter
 		_, newDesc := d.GetChange("desired_security_ip_lists")
 		for _, v := range newDesc.([]interface{}) {
 			item := v.(map[string]interface{})
-			_, err := selectDBService.ModifySelectDBDbInstanceSecurityIPList(d.Id(), item["group_name"].(string), item["security_ip_list"].(string))
+			_, err := selectDBService.ModifyDbInstanceSecurityIPList(d.Id(), item["group_name"].(string), item["security_ip_list"].(string))
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifySecurityIPList", AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "ModifySecurityIPList", errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 	}
-	stateConf := BuildStateConf([]string{"RESOURCE_PREPARING", "CREATING", "CLASS_CHANGING", "MODULE_UPGRADING", "NET_CREATING", "NET_DELETING"},
-		[]string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+	stateConf := helper.BuildStateConf([]string{"RESOURCE_PREPARING", "CREATING", "CLASS_CHANGING", "MODULE_UPGRADING", "NET_CREATING", "NET_DELETING"},
+		[]string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
 	d.Partial(false)
-	return resourceAliCloudSelectDBDbInstanceRead(d, meta)
+	return resourceDbInstanceRead(d, meta)
 }
 
-func resourceAliCloudSelectDBDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	selectDBService := SelectDBService{client}
+	selectDBService := NewService(client)
 
 	instanceId := fmt.Sprint(d.Id())
-	instanceResp, err := selectDBService.DescribeSelectDBDbInstance(instanceId)
+	instanceResp, err := selectDBService.DescribeDbInstance(instanceId)
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("engine", instanceResp["Engine"])
@@ -506,7 +511,7 @@ func resourceAliCloudSelectDBDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("zone_id", instanceResp["ZoneId"])
 	d.Set("vpc_id", instanceResp["VpcId"])
 
-	d.Set("payment_type", convertChargeTypeToPaymentType(instanceResp["ChargeType"]))
+	d.Set("payment_type", convert.ConvertChargeTypeToPaymentType(instanceResp["ChargeType"]))
 
 	d.Set("db_instance_description", instanceResp["Description"])
 	d.Set("status", instanceResp["Status"])
@@ -574,20 +579,20 @@ func resourceAliCloudSelectDBDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("cluster_count_postpaid", clusterPostpaidCount)
 
 	if resp, err := jsonpath.Get("$.Tags", instanceResp); err == nil || resp != nil {
-		tags := make(map[string]interface{})
+		tagsMap := make(map[string]interface{})
 		for _, t := range resp.([]interface{}) {
 			key := t.(map[string]interface{})["TagKey"].(string)
 			value := t.(map[string]interface{})["TagValue"].(string)
-			if !ignoredTags(key, value) {
-				tags[key] = value
+			if !tags.IgnoredTags(key, value) {
+				tagsMap[key] = value
 			}
 		}
-		d.Set("tags", tags)
+		d.Set("tags", tagsMap)
 	}
 
-	netResp, err := selectDBService.DescribeSelectDBDbInstanceNetInfo(d.Id())
+	netResp, err := selectDBService.DescribeDbInstanceNetInfo(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	instanceNetArray := make([]map[string]interface{}, 0)
 	resultInstanceNet, _ := netResp["DBInstanceNetInfos"].([]interface{})
@@ -620,9 +625,9 @@ func resourceAliCloudSelectDBDbInstanceRead(d *schema.ResourceData, meta interfa
 	}
 	d.Set("instance_net_infos", instanceNetArray)
 
-	securityIpArrayList, err := selectDBService.DescribeSelectDBDbInstanceSecurityIPList(d.Id())
+	securityIpArrayList, err := selectDBService.DescribeDbInstanceSecurityIPList(d.Id())
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	securityIpArray := make([]map[string]interface{}, 0)
 	for _, v := range securityIpArrayList {
@@ -642,34 +647,34 @@ func resourceAliCloudSelectDBDbInstanceRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAliCloudSelectDBDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	selectDBService := SelectDBService{client}
+	selectDBService := NewService(client)
 
-	stateConf := BuildStateConf([]string{"RESOURCE_PREPARING", "CREATING", "CLASS_CHANGING", "MODULE_UPGRADING", "NET_CREATING", "NET_DELETING"},
-		[]string{"ACTIVATION"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, selectDBService.SelectDBDbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
+	stateConf := helper.BuildStateConf([]string{"RESOURCE_PREPARING", "CREATING", "CLASS_CHANGING", "MODULE_UPGRADING", "NET_CREATING", "NET_DELETING"},
+		[]string{"ACTIVATION"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, selectDBService.DbInstanceStateRefreshFunc(d.Id(), []string{"DELETING"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	payment := convertPaymentTypeToChargeType(d.Get("payment_type"))
+	payment := convert.ConvertPaymentTypeToChargeType(d.Get("payment_type"))
 
-	if payment == string(PrePaid) {
+	if payment == "PrePaid" {
 		request := make(map[string]string)
 		request["payment_type"] = string("POSTPAY")
-		if _, err := selectDBService.ModifySelectDBInstancePaymentType(d.Id(), request); err != nil {
-			return WrapError(err)
+		if _, err := selectDBService.ModifyInstancePaymentType(d.Id(), request); err != nil {
+			return errs.WrapError(err)
 		}
 	}
 
-	_, err := selectDBService.DeleteSelectDBInstance(d.Id())
+	_, err := selectDBService.DeleteInstance(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteDBInstance", AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "DeleteDBInstance", errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }
 
-func buildSelectDBCreateInstanceRequest(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
+func buildCreateInstanceRequest(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := map[string]interface{}{
@@ -693,11 +698,11 @@ func buildSelectDBCreateInstanceRequest(d *schema.ResourceData, meta interface{}
 		request["CacheSize"] = cache_size.(int)
 	}
 
-	payType := convertPaymentTypeToChargeType(d.Get("payment_type"))
+	payType := convert.ConvertPaymentTypeToChargeType(d.Get("payment_type"))
 
-	if payType == string(PostPaid) {
+	if payType == "PostPaid" {
 		request["ChargeType"] = string("POSTPAY")
-	} else if payType == string(PrePaid) {
+	} else if payType == "PrePaid" {
 		request["ChargeType"] = string("PREPAY")
 		request["Period"] = d.Get("period").(string)
 		period_time, _ := d.GetOkExists("period_time")

@@ -784,10 +784,6 @@ func Provider() *schema.Provider {
 			"alicloud_security_group_rules":   dataSourceAlicloudSecurityGroupRules(),
 			"alicloud_security_center_groups": dataSourceAlicloudSecurityCenterGroups(),
 
-			// selectdb
-			"alicloud_selectdb_db_clusters":  dataSourceAlicloudSelectDBDbClusters(),
-			"alicloud_selectdb_db_instances": dataSourceAlicloudSelectDBDbInstances(),
-
 			// service
 
 			// simple
@@ -1791,10 +1787,6 @@ func Provider() *schema.Provider {
 			"alicloud_security_group_rule":                 resourceAliyunSecurityGroupRule(),
 			"alicloud_security_center_group":               resourceAlicloudSecurityCenterGroup(),
 			"alicloud_security_center_service_linked_role": resourceAlicloudSecurityCenterServiceLinkedRole(),
-
-			// selectdb
-			"alicloud_selectdb_db_cluster":  resourceAliCloudSelectDBDbCluster(),
-			"alicloud_selectdb_db_instance": resourceAliCloudSelectDBDbInstance(),
 
 			// service
 
