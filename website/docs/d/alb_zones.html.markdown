@@ -7,11 +7,11 @@ description: |-
   Provides a list of Application Load Balancer (ALB) instance available zones to the user.
 ---
 
-# alicloud\_alb\_zones
+# alicloud_alb_zones
 
 This data source provides the available zones with the Application Load Balancer (ALB) Instance of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
@@ -31,12 +31,12 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of alb instance zone IDs.
 * `zones` - A list of alb Instance zones. Each element contains the following attributes:
-	* `id` - The ID of zone.
-	* `zone_id` - The zone ID.
-	* `local_name` - The local name.
+  * `id` - The ID of zone.
+  * `zone_id` - The zone ID.
+  * `local_name` - The local name.
