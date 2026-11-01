@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -16,17 +15,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	flag.Parse()
-	if flag.Lookup("sweep").Value.String() != "" && flag.Lookup("sweep-run").Value.String() == "alicloud_vpc" {
-		// The SDK matches -sweep-run by substring, so alicloud_vpc also
-		// selects alicloud_vpc_* sweepers with region-wide deletion logic.
-		// Invoke exactly the registered VPC sweeper callback for VPC cleanup.
-		if err := runVpcSweep(flag.Lookup("sweep").Value.String(), flag.Lookup("sweep-run").Value.String(), testSweepVpcs); err != nil {
-			log.Print(err)
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
+	// The alicloud_vpc multi-region sweep orchestration (runVpcSweep /
+	// testSweepVpcs) moved with the VPC tests into alicloud/service/vpc and is
+	// now driven by that package's TestMain. Sweepers for other resources keep
+	// using the standard resource.TestMain path here.
 	resource.TestMain(m)
 }
 
