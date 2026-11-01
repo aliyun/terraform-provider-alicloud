@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccAlicloudCrVpcEndpointLinkedVpc_basic0(t *testing.T) {
+func TestAccAliCloudCrVpcEndpointLinkedVpc_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cr_vpc_endpoint_linked_vpc.default"
 	ra := resourceAttrInit(resourceId, AlicloudCrVpcEndpointLinkedVpcMap)
