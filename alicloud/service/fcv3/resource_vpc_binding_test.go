@@ -1,11 +1,13 @@
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,21 +16,21 @@ import (
 func TestAccAliCloudFcv3VpcBinding_basic7123(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_vpc_binding.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3VpcBindingMap7123)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3VpcBinding")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3vpcbinding%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3VpcBindingBasicDependence7123)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3VpcBindingMap7123)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcBinding")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sfcv3vpcbinding%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3VpcBindingBasicDependence7123)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -37,8 +39,8 @@ func TestAccAliCloudFcv3VpcBinding_basic7123(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name": CHECKSET,
-						"vpc_id":        CHECKSET,
+						"function_name": acctest.CHECKSET,
+						"vpc_id":        acctest.CHECKSET,
 					}),
 				),
 			},
@@ -53,7 +55,7 @@ func TestAccAliCloudFcv3VpcBinding_basic7123(t *testing.T) {
 }
 
 var AlicloudFcv3VpcBindingMap7123 = map[string]string{
-	"vpc_id": CHECKSET,
+	"vpc_id": acctest.CHECKSET,
 }
 
 func AlicloudFcv3VpcBindingBasicDependence7123(name string) string {

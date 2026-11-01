@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -8,16 +8,19 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3Alias() *schema.Resource {
+func ResourceAlias() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3AliasCreate,
-		Read:   resourceAliCloudFcv3AliasRead,
-		Update: resourceAliCloudFcv3AliasUpdate,
-		Delete: resourceAliCloudFcv3AliasDelete,
+		Create: resourceAliasCreate,
+		Read:   resourceAliasRead,
+		Update: resourceAliasUpdate,
+		Delete: resourceAliasDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -63,7 +66,7 @@ func resourceAliCloudFcv3Alias() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliasCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -87,11 +90,11 @@ func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) e
 		request["additionalVersionWeight"] = v
 	}
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -99,28 +102,28 @@ func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_alias", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_alias", action, errs.AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprintf("%v:%v", functionName, response["aliasName"]))
 
-	return resourceAliCloudFcv3AliasRead(d, meta)
+	return resourceAliasRead(d, meta)
 }
 
-func resourceAliCloudFcv3AliasRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliasRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3Alias(d.Id())
+	objectRaw, err := service.DescribeAlias(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_alias DescribeFcv3Alias Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_alias DescribeAlias Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if objectRaw["additionalVersionWeight"] != nil {
@@ -148,7 +151,7 @@ func resourceAliCloudFcv3AliasRead(d *schema.ResourceData, meta interface{}) err
 	return nil
 }
 
-func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliasUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -181,11 +184,11 @@ func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) e
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -193,16 +196,16 @@ func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudFcv3AliasRead(d, meta)
+	return resourceAliasRead(d, meta)
 }
 
-func resourceAliCloudFcv3AliasDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliasDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
@@ -215,12 +218,12 @@ func resourceAliCloudFcv3AliasDelete(d *schema.ResourceData, meta interface{}) e
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -228,13 +231,13 @@ func resourceAliCloudFcv3AliasDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

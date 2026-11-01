@@ -1,12 +1,14 @@
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -33,8 +35,8 @@ const testFc3PrivateKey = `-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQDO0kt3
 // Test Fc3 CustomDomain. >>> Resource test cases, automatically generated.
 
 var AlicloudFc3CustomDomainMap6974 = map[string]string{
-	"custom_domain_name": CHECKSET,
-	"create_time":        CHECKSET,
+	"custom_domain_name": acctest.CHECKSET,
+	"create_time":        acctest.CHECKSET,
 }
 
 func AlicloudFc3CustomDomainBasicDependence6974(name string) string {
@@ -56,8 +58,8 @@ variable "function_name2" {
 }
 
 var AlicloudFc3CustomDomainMap7241 = map[string]string{
-	"custom_domain_name": CHECKSET,
-	"create_time":        CHECKSET,
+	"custom_domain_name": acctest.CHECKSET,
+	"create_time":        acctest.CHECKSET,
 }
 
 func AlicloudFc3CustomDomainBasicDependence7241(name string) string {
@@ -82,21 +84,21 @@ variable "function_name2" {
 func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainBasicDependence6974)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFc3CustomDomainBasicDependence6974)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -322,8 +324,8 @@ func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 						},
 					},
 					"protocol":    "HTTP",
-					"cert_config": REMOVEKEY,
-					"tls_config":  REMOVEKEY,
+					"cert_config": acctest.REMOVEKEY,
+					"tls_config":  acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -351,21 +353,21 @@ func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap7241)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFc3CustomDomainMap7241)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainBasicDependence7241)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFc3CustomDomainBasicDependence7241)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -585,8 +587,8 @@ func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 							"auth_type": "function",
 						},
 					},
-					"cert_config": REMOVEKEY,
-					"tls_config":  REMOVEKEY,
+					"cert_config": acctest.REMOVEKEY,
+					"tls_config":  acctest.REMOVEKEY,
 					"protocol":    "HTTP",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -618,20 +620,20 @@ func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 func TestAccAliCloudFcv3CustomDomain_basic12462(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap12462)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap12462)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3CustomDomainBasicDependence12462)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3CustomDomainBasicDependence12462)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -868,8 +870,8 @@ func TestAccAliCloudFcv3CustomDomain_basic12462(t *testing.T) {
 						},
 					},
 					"protocol":    "HTTP",
-					"cert_config": REMOVEKEY,
-					"tls_config":  REMOVEKEY,
+					"cert_config": acctest.REMOVEKEY,
+					"tls_config":  acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -894,10 +896,10 @@ func TestAccAliCloudFcv3CustomDomain_basic12462(t *testing.T) {
 }
 
 var AlicloudFcv3CustomDomainMap12462 = map[string]string{
-	"api_version":        CHECKSET,
-	"account_id":         CHECKSET,
-	"create_time":        CHECKSET,
-	"last_modified_time": CHECKSET,
+	"api_version":        acctest.CHECKSET,
+	"account_id":         acctest.CHECKSET,
+	"create_time":        acctest.CHECKSET,
+	"last_modified_time": acctest.CHECKSET,
 }
 
 func AlicloudFcv3CustomDomainBasicDependence12462(name string) string {
@@ -922,21 +924,21 @@ variable "function_name2" {
 func TestAccAliCloudFcv3CustomDomain_basic7338(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap7338)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap7338)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3CustomDomainBasicDependence7338)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3CustomDomainBasicDependence7338)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1150,8 +1152,8 @@ func TestAccAliCloudFcv3CustomDomain_basic7338(t *testing.T) {
 						},
 					},
 					"protocol":    "HTTP",
-					"cert_config": REMOVEKEY,
-					"tls_config":  REMOVEKEY,
+					"cert_config": acctest.REMOVEKEY,
+					"tls_config":  acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1176,10 +1178,10 @@ func TestAccAliCloudFcv3CustomDomain_basic7338(t *testing.T) {
 }
 
 var AlicloudFcv3CustomDomainMap7338 = map[string]string{
-	"api_version":        CHECKSET,
-	"account_id":         CHECKSET,
-	"create_time":        CHECKSET,
-	"last_modified_time": CHECKSET,
+	"api_version":        acctest.CHECKSET,
+	"account_id":         acctest.CHECKSET,
+	"create_time":        acctest.CHECKSET,
+	"last_modified_time": acctest.CHECKSET,
 }
 
 func AlicloudFcv3CustomDomainBasicDependence7338(name string) string {
@@ -1204,21 +1206,21 @@ variable "function_name2" {
 func TestAccAliCloudFcv3CustomDomain_basic6974(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap6974)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap6974)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3CustomDomainBasicDependence6974)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3CustomDomainBasicDependence6974)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1432,8 +1434,8 @@ func TestAccAliCloudFcv3CustomDomain_basic6974(t *testing.T) {
 						},
 					},
 					"protocol":    "HTTP",
-					"cert_config": REMOVEKEY,
-					"tls_config":  REMOVEKEY,
+					"cert_config": acctest.REMOVEKEY,
+					"tls_config":  acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1458,10 +1460,10 @@ func TestAccAliCloudFcv3CustomDomain_basic6974(t *testing.T) {
 }
 
 var AlicloudFcv3CustomDomainMap6974 = map[string]string{
-	"api_version":        CHECKSET,
-	"account_id":         CHECKSET,
-	"create_time":        CHECKSET,
-	"last_modified_time": CHECKSET,
+	"api_version":        acctest.CHECKSET,
+	"account_id":         acctest.CHECKSET,
+	"create_time":        acctest.CHECKSET,
+	"last_modified_time": acctest.CHECKSET,
 }
 
 func AlicloudFcv3CustomDomainBasicDependence6974(name string) string {
@@ -1486,21 +1488,21 @@ variable "function_name2" {
 func TestAccAliCloudFcv3CustomDomain_basic7241(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap7241)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3CustomDomainMap7241)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, "cn-shanghai")
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFcv3CustomDomainBasicDependence7241)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3CustomDomainBasicDependence7241)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
 		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1709,8 +1711,8 @@ func TestAccAliCloudFcv3CustomDomain_basic7241(t *testing.T) {
 						},
 					},
 					"protocol":    "HTTP",
-					"cert_config": REMOVEKEY,
-					"tls_config":  REMOVEKEY,
+					"cert_config": acctest.REMOVEKEY,
+					"tls_config":  acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1735,10 +1737,10 @@ func TestAccAliCloudFcv3CustomDomain_basic7241(t *testing.T) {
 }
 
 var AlicloudFcv3CustomDomainMap7241 = map[string]string{
-	"api_version":        CHECKSET,
-	"account_id":         CHECKSET,
-	"create_time":        CHECKSET,
-	"last_modified_time": CHECKSET,
+	"api_version":        acctest.CHECKSET,
+	"account_id":         acctest.CHECKSET,
+	"create_time":        acctest.CHECKSET,
+	"last_modified_time": acctest.CHECKSET,
 }
 
 func AlicloudFcv3CustomDomainBasicDependence7241(name string) string {
@@ -1769,7 +1771,7 @@ variable "function_name2" {
 // distinct cert ids) so the rotation step can switch certificate_id and
 // exercise the Update resolution path.
 func AlicloudFc3CustomDomainCertIdDependence(name string) string {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -1854,21 +1856,21 @@ resource "alicloud_ssl_certificates_service_certificate" "alt" {
 func TestAccAliCloudFcv3CustomDomain_certificateId_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := "flask-07ap.fcv3.1511928242963727.cn-shanghai.fc.devsapp.net"
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainCertIdDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFc3CustomDomainCertIdDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1981,20 +1983,20 @@ resource "alicloud_fcv3_custom_domain" "default" {
 func TestAccAliCloudFcv3CustomDomain_certificateId_intlAccount(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_custom_domain.default"
-	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFcv3CustomDomain")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeCustomDomain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	name := "webpy-5ef9.fcv3.5806750234758840.us-west-1.fc.devsapp.net"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.USWest1})
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.USWest1})
 		},
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccFcv3CustomDomainCertIdIntlConfig(name),

@@ -1,5 +1,5 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -8,16 +8,20 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3AsyncInvokeConfig() *schema.Resource {
+func ResourceAsyncInvokeConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3AsyncInvokeConfigCreate,
-		Read:   resourceAliCloudFcv3AsyncInvokeConfigRead,
-		Update: resourceAliCloudFcv3AsyncInvokeConfigUpdate,
-		Delete: resourceAliCloudFcv3AsyncInvokeConfigDelete,
+		Create: resourceAsyncInvokeConfigCreate,
+		Read:   resourceAsyncInvokeConfigRead,
+		Update: resourceAsyncInvokeConfigUpdate,
+		Delete: resourceAsyncInvokeConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -86,7 +90,7 @@ func resourceAliCloudFcv3AsyncInvokeConfig() *schema.Resource {
 			"max_async_event_age_in_seconds": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 86400),
+				ValidateFunc: validators.IntBetween(0, 86400),
 			},
 			"max_async_retry_attempts": {
 				Type:     schema.TypeInt,
@@ -100,7 +104,7 @@ func resourceAliCloudFcv3AsyncInvokeConfig() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAsyncInvokeConfigCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -122,7 +126,7 @@ func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta in
 	}
 	destinationConfig := make(map[string]interface{})
 
-	if v := d.Get("destination_config"); !IsNil(v) {
+	if v := d.Get("destination_config"); !helper.IsNil(v) {
 		onFailure := make(map[string]interface{})
 		destination1, _ := jsonpath.Get("$[0].on_failure[0].destination", d.Get("destination_config"))
 		if destination1 != nil && destination1 != "" {
@@ -152,15 +156,15 @@ func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta in
 		request["maxAsyncRetryAttempts"] = v
 	}
 	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = StringPointer(v.(string))
+		query["qualifier"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -168,29 +172,29 @@ func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_async_invoke_config", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_async_invoke_config", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(functionName))
 
-	return resourceAliCloudFcv3AsyncInvokeConfigRead(d, meta)
+	return resourceAsyncInvokeConfigRead(d, meta)
 }
 
-func resourceAliCloudFcv3AsyncInvokeConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAsyncInvokeConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3AsyncInvokeConfig(d.Id())
+	objectRaw, err := service.DescribeAsyncInvokeConfig(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_async_invoke_config DescribeFcv3AsyncInvokeConfig Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_async_invoke_config DescribeAsyncInvokeConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("async_task", objectRaw["asyncTask"])
@@ -243,7 +247,7 @@ func resourceAliCloudFcv3AsyncInvokeConfigRead(d *schema.ResourceData, meta inte
 	return nil
 }
 
-func resourceAliCloudFcv3AsyncInvokeConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAsyncInvokeConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -271,7 +275,7 @@ func resourceAliCloudFcv3AsyncInvokeConfigUpdate(d *schema.ResourceData, meta in
 	}
 	destinationConfig := make(map[string]interface{})
 
-	if v := d.Get("destination_config"); !IsNil(v) || d.HasChange("destination_config") {
+	if v := d.Get("destination_config"); !helper.IsNil(v) || d.HasChange("destination_config") {
 		onFailure := make(map[string]interface{})
 		destination1, _ := jsonpath.Get("$[0].on_failure[0].destination", d.Get("destination_config"))
 		if destination1 != nil && destination1 != "" {
@@ -312,16 +316,16 @@ func resourceAliCloudFcv3AsyncInvokeConfigUpdate(d *schema.ResourceData, meta in
 	}
 
 	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = StringPointer(v.(string))
+		query["qualifier"] = helper.StringPointer(v.(string))
 	}
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, nil, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -329,16 +333,16 @@ func resourceAliCloudFcv3AsyncInvokeConfigUpdate(d *schema.ResourceData, meta in
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudFcv3AsyncInvokeConfigRead(d, meta)
+	return resourceAsyncInvokeConfigRead(d, meta)
 }
 
-func resourceAliCloudFcv3AsyncInvokeConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAsyncInvokeConfigDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	functionName := d.Id()
@@ -351,14 +355,14 @@ func resourceAliCloudFcv3AsyncInvokeConfigDelete(d *schema.ResourceData, meta in
 	request["functionName"] = d.Id()
 
 	if v, ok := d.GetOk("qualifier"); ok {
-		query["qualifier"] = StringPointer(v.(string))
+		query["qualifier"] = helper.StringPointer(v.(string))
 	}
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -366,13 +370,13 @@ func resourceAliCloudFcv3AsyncInvokeConfigDelete(d *schema.ResourceData, meta in
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

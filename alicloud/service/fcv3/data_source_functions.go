@@ -1,4 +1,4 @@
-package alicloud
+package fcv3
 
 import (
 	"encoding/json"
@@ -9,14 +9,19 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAliCloudFcv3Functions() *schema.Resource {
+func DataSourceFunctions() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAliCloudFcv3FunctionRead,
+		Read: dataSourceFunctionRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -629,7 +634,7 @@ func dataSourceAliCloudFcv3Functions() *schema.Resource {
 	}
 }
 
-func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceFunctionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	var objects []map[string]interface{}
@@ -637,7 +642,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -660,32 +665,32 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	if v, ok := d.GetOk("resource_group_id"); ok {
-		query["resourceGroupId"] = StringPointer(v.(string))
+		query["resourceGroupId"] = helper.StringPointer(v.(string))
 	}
 	if v, ok := d.GetOk("prefix"); ok {
-		query["prefix"] = StringPointer(v.(string))
+		query["prefix"] = helper.StringPointer(v.(string))
 	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	query["limit"] = StringPointer(fmt.Sprint(PageSizeSmall))
+	query["limit"] = helper.StringPointer(fmt.Sprint(helper.PageSizeSmall))
 	for {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaGet("FC", "2023-03-30", action, query, nil, request)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			logs.AddDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 
 		resp, _ := jsonpath.Get("$.functions[*]", response)
@@ -705,7 +710,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 		}
 
 		if nextToken, ok := response["nextToken"].(string); ok && nextToken != "" {
-			query["nextToken"] = StringPointer(fmt.Sprint(nextToken))
+			query["nextToken"] = helper.StringPointer(fmt.Sprint(nextToken))
 		} else {
 			break
 		}
@@ -775,13 +780,13 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 			customContainerConfigMap["acceleration_info"] = accelerationInfoMaps
 			commandRaw := make([]interface{}, 0)
 			if customContainerConfigRaw["command"] != nil {
-				commandRaw = convertToInterfaceArray(customContainerConfigRaw["command"])
+				commandRaw = convert.ConvertToInterfaceArray(customContainerConfigRaw["command"])
 			}
 
 			customContainerConfigMap["command"] = commandRaw
 			entrypointRaw := make([]interface{}, 0)
 			if customContainerConfigRaw["entrypoint"] != nil {
-				entrypointRaw = convertToInterfaceArray(customContainerConfigRaw["entrypoint"])
+				entrypointRaw = convert.ConvertToInterfaceArray(customContainerConfigRaw["entrypoint"])
 			}
 
 			customContainerConfigMap["entrypoint"] = entrypointRaw
@@ -847,7 +852,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 			dnsOptionsRaw := customDNSRaw["dnsOptions"]
 			dnsOptionsMaps := make([]map[string]interface{}, 0)
 			if dnsOptionsRaw != nil {
-				for _, dnsOptionsChildRaw := range convertToInterfaceArray(dnsOptionsRaw) {
+				for _, dnsOptionsChildRaw := range convert.ConvertToInterfaceArray(dnsOptionsRaw) {
 					dnsOptionsMap := make(map[string]interface{})
 					dnsOptionsChildRaw := dnsOptionsChildRaw.(map[string]interface{})
 					dnsOptionsMap["name"] = dnsOptionsChildRaw["name"]
@@ -859,13 +864,13 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 			customDnsMap["dns_options"] = dnsOptionsMaps
 			nameServersRaw := make([]interface{}, 0)
 			if customDNSRaw["nameServers"] != nil {
-				nameServersRaw = convertToInterfaceArray(customDNSRaw["nameServers"])
+				nameServersRaw = convert.ConvertToInterfaceArray(customDNSRaw["nameServers"])
 			}
 
 			customDnsMap["name_servers"] = nameServersRaw
 			searchesRaw := make([]interface{}, 0)
 			if customDNSRaw["searches"] != nil {
-				searchesRaw = convertToInterfaceArray(customDNSRaw["searches"])
+				searchesRaw = convert.ConvertToInterfaceArray(customDNSRaw["searches"])
 			}
 
 			customDnsMap["searches"] = searchesRaw
@@ -883,13 +888,13 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 
 			argsRaw := make([]interface{}, 0)
 			if customRuntimeConfigRaw["args"] != nil {
-				argsRaw = convertToInterfaceArray(customRuntimeConfigRaw["args"])
+				argsRaw = convert.ConvertToInterfaceArray(customRuntimeConfigRaw["args"])
 			}
 
 			customRuntimeConfigMap["args"] = argsRaw
 			commandRaw := make([]interface{}, 0)
 			if customRuntimeConfigRaw["command"] != nil {
-				commandRaw = convertToInterfaceArray(customRuntimeConfigRaw["command"])
+				commandRaw = convert.ConvertToInterfaceArray(customRuntimeConfigRaw["command"])
 			}
 
 			customRuntimeConfigMap["command"] = commandRaw
@@ -946,7 +951,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 
 				commandRaw := make([]interface{}, 0)
 				if initializerRaw["command"] != nil {
-					commandRaw = convertToInterfaceArray(initializerRaw["command"])
+					commandRaw = convert.ConvertToInterfaceArray(initializerRaw["command"])
 				}
 
 				initializerMap["command"] = commandRaw
@@ -1014,7 +1019,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 			mountPointsRaw := nasConfigRaw["mountPoints"]
 			mountPointsMaps := make([]map[string]interface{}, 0)
 			if mountPointsRaw != nil {
-				for _, mountPointsChildRaw := range convertToInterfaceArray(mountPointsRaw) {
+				for _, mountPointsChildRaw := range convert.ConvertToInterfaceArray(mountPointsRaw) {
 					mountPointsMap := make(map[string]interface{})
 					mountPointsChildRaw := mountPointsChildRaw.(map[string]interface{})
 					mountPointsMap["enable_tls"] = mountPointsChildRaw["enableTLS"]
@@ -1034,7 +1039,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 
 		mountPointsMaps := make([]map[string]interface{}, 0)
 		if mountPointsRaw != nil {
-			for _, mountPointsChildRaw := range convertToInterfaceArray(mountPointsRaw) {
+			for _, mountPointsChildRaw := range convert.ConvertToInterfaceArray(mountPointsRaw) {
 				mountPointsMap := make(map[string]interface{})
 				mountPointsChildRaw := mountPointsChildRaw.(map[string]interface{})
 				mountPointsMap["bucket_name"] = mountPointsChildRaw["bucketName"]
@@ -1050,7 +1055,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 		ossMountConfigMaps = append(ossMountConfigMaps, ossMountConfigMap)
 		mapping["oss_mount_config"] = ossMountConfigMaps
 		tagsMaps := objectRaw["tags"]
-		mapping["tags"] = tagsToMap(tagsMaps)
+		mapping["tags"] = tags.TagsToMap(tagsMaps)
 		tracingConfigMaps := make([]map[string]interface{}, 0)
 		tracingConfigMap := make(map[string]interface{})
 		tracingConfigRaw := make(map[string]interface{})
@@ -1076,7 +1081,7 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 
 			vSwitchIdsRaw := make([]interface{}, 0)
 			if vpcConfigRaw["vSwitchIds"] != nil {
-				vSwitchIdsRaw = convertToInterfaceArray(vpcConfigRaw["vSwitchIds"])
+				vSwitchIdsRaw = convert.ConvertToInterfaceArray(vpcConfigRaw["vSwitchIds"])
 			}
 
 			vpcConfigMap["vswitch_ids"] = vSwitchIdsRaw
@@ -1089,20 +1094,20 @@ func dataSourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("functions", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 	return nil
 }

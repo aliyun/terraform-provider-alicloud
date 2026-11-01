@@ -1,4 +1,4 @@
-package alicloud
+package fcv3
 
 import (
 	"fmt"
@@ -7,17 +7,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sslcertificateservice"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudFcv3CustomDomain() *schema.Resource {
+func ResourceCustomDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFcv3CustomDomainCreate,
-		Read:   resourceAliCloudFcv3CustomDomainRead,
-		Update: resourceAliCloudFcv3CustomDomainUpdate,
-		Delete: resourceAliCloudFcv3CustomDomainDelete,
+		Create: resourceCustomDomainCreate,
+		Read:   resourceCustomDomainRead,
+		Update: resourceCustomDomainUpdate,
+		Delete: resourceCustomDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,14 +50,14 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-								equal, _ := compareJsonTemplateAreEquivalent(old, new)
+								equal, _ := helper.CompareJsonTemplateAreEquivalent(old, new)
 								return equal
 							},
 						},
 						"auth_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"anonymous", "function", "jwt"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"anonymous", "function", "jwt"}, false),
 						},
 					},
 				},
@@ -140,7 +145,7 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS", "HTTP,HTTPS"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"HTTP", "HTTPS", "HTTP,HTTPS"}, false),
 			},
 			"route_config": {
 				Type:     schema.TypeList,
@@ -248,12 +253,12 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 						"min_version": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1.0"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1.0"}, false),
 						},
 						"max_version": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1.0"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLSv1.0"}, false),
 						},
 						"cipher_suites": {
 							Type:     schema.TypeList,
@@ -280,7 +285,7 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomDomainCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -297,14 +302,14 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 
 	routeConfig := make(map[string]interface{})
 
-	if v := d.Get("route_config"); !IsNil(v) {
+	if v := d.Get("route_config"); !helper.IsNil(v) {
 		if v, ok := d.GetOk("route_config"); ok {
 			localData, err := jsonpath.Get("$[0].routes", v)
 			if err != nil {
 				localData = make([]interface{}, 0)
 			}
 			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range convertToInterfaceArray(localData) {
+			for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 				dataLoopTmp := make(map[string]interface{})
 				if dataLoop != nil {
 					dataLoopTmp = dataLoop.(map[string]interface{})
@@ -318,7 +323,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 						localData2 = make([]interface{}, 0)
 					}
 					localMaps2 := make([]interface{}, 0)
-					for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+					for _, dataLoop2 := range convert.ConvertToInterfaceArray(localData2) {
 						dataLoop2Tmp := make(map[string]interface{})
 						if dataLoop2 != nil {
 							dataLoop2Tmp = dataLoop2.(map[string]interface{})
@@ -338,7 +343,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 						localData3 = make([]interface{}, 0)
 					}
 					localMaps3 := make([]interface{}, 0)
-					for _, dataLoop3 := range convertToInterfaceArray(localData3) {
+					for _, dataLoop3 := range convert.ConvertToInterfaceArray(localData3) {
 						dataLoop3Tmp := make(map[string]interface{})
 						if dataLoop3 != nil {
 							dataLoop3Tmp = dataLoop3.(map[string]interface{})
@@ -358,7 +363,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 						localData4 = make([]interface{}, 0)
 					}
 					localMaps4 := make([]interface{}, 0)
-					for _, dataLoop4 := range convertToInterfaceArray(localData4) {
+					for _, dataLoop4 := range convert.ConvertToInterfaceArray(localData4) {
 						dataLoop4Tmp := make(map[string]interface{})
 						if dataLoop4 != nil {
 							dataLoop4Tmp = dataLoop4.(map[string]interface{})
@@ -395,11 +400,11 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 		// Resolve the certificate and private key from the SSL Certificates
 		// Service (CAS) certificate referenced by certificate_id and assemble
 		// the FC certConfig. The resolved private key is never persisted to
-		// state (see resourceAliCloudFcv3CustomDomainRead).
+		// state (see resourceCustomDomainRead).
 		sslCertService := sslcertificateservice.NewSslCertificatesServiceServiceV2(client)
 		certDetail, err := sslCertService.DescribeSslCertificatesServiceCertificate(certId.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		if v := certDetail["Cert"]; v != nil && v != "" {
 			certConfig["certificate"] = v
@@ -411,7 +416,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 			certConfig["certName"] = v
 		}
 		request["certConfig"] = certConfig
-	} else if v := d.Get("cert_config"); !IsNil(v) {
+	} else if v := d.Get("cert_config"); !helper.IsNil(v) {
 		certName1, _ := jsonpath.Get("$[0].cert_name", v)
 		if certName1 != nil && certName1 != "" {
 			certConfig["certName"] = certName1
@@ -430,7 +435,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 
 	authConfig := make(map[string]interface{})
 
-	if v := d.Get("auth_config"); !IsNil(v) {
+	if v := d.Get("auth_config"); !helper.IsNil(v) {
 		authInfo1, _ := jsonpath.Get("$[0].auth_info", v)
 		if authInfo1 != nil && authInfo1 != "" {
 			authConfig["authInfo"] = authInfo1
@@ -445,7 +450,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 
 	corsConfig := make(map[string]interface{})
 
-	if v := d.Get("cors_config"); !IsNil(v) {
+	if v := d.Get("cors_config"); !helper.IsNil(v) {
 		allowHeaders1, _ := jsonpath.Get("$[0].allow_headers", v)
 		if allowHeaders1 != nil && allowHeaders1 != "" {
 			corsConfig["allowHeaders"] = allowHeaders1
@@ -472,7 +477,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 
 	tlsConfig := make(map[string]interface{})
 
-	if v := d.Get("tls_config"); !IsNil(v) {
+	if v := d.Get("tls_config"); !helper.IsNil(v) {
 		minVersion1, _ := jsonpath.Get("$[0].min_version", v)
 		if minVersion1 != nil && minVersion1 != "" {
 			tlsConfig["minVersion"] = minVersion1
@@ -491,7 +496,7 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 
 	wafConfig := make(map[string]interface{})
 
-	if v := d.Get("waf_config"); !IsNil(v) {
+	if v := d.Get("waf_config"); !helper.IsNil(v) {
 		enableWaf, _ := jsonpath.Get("$[0].enable_waf", v)
 		if enableWaf != nil && enableWaf != "" {
 			wafConfig["enableWAF"] = enableWaf
@@ -501,11 +506,11 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 	}
 
 	body = request
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RoaPost("FC", "2023-03-30", action, query, nil, body, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -513,29 +518,29 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_custom_domain", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_fcv3_custom_domain", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["domainName"]))
 
-	return resourceAliCloudFcv3CustomDomainRead(d, meta)
+	return resourceCustomDomainRead(d, meta)
 }
 
-func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fcv3ServiceV2 := Fcv3ServiceV2{client}
+	service := NewService(client)
 
-	objectRaw, err := fcv3ServiceV2.DescribeFcv3CustomDomain(d.Id())
+	objectRaw, err := service.DescribeCustomDomain(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fcv3_custom_domain DescribeFcv3CustomDomain Failed!!! %s", err)
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_fcv3_custom_domain DescribeCustomDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("account_id", objectRaw["accountId"])
@@ -594,25 +599,25 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 
 		allowHeadersRaw := make([]interface{}, 0)
 		if corsConfigRaw["allowHeaders"] != nil {
-			allowHeadersRaw = convertToInterfaceArray(corsConfigRaw["allowHeaders"])
+			allowHeadersRaw = convert.ConvertToInterfaceArray(corsConfigRaw["allowHeaders"])
 		}
 
 		corsConfigMap["allow_headers"] = allowHeadersRaw
 		allowMethodsRaw := make([]interface{}, 0)
 		if corsConfigRaw["allowMethods"] != nil {
-			allowMethodsRaw = convertToInterfaceArray(corsConfigRaw["allowMethods"])
+			allowMethodsRaw = convert.ConvertToInterfaceArray(corsConfigRaw["allowMethods"])
 		}
 
 		corsConfigMap["allow_methods"] = allowMethodsRaw
 		allowOriginsRaw := make([]interface{}, 0)
 		if corsConfigRaw["allowOrigins"] != nil {
-			allowOriginsRaw = convertToInterfaceArray(corsConfigRaw["allowOrigins"])
+			allowOriginsRaw = convert.ConvertToInterfaceArray(corsConfigRaw["allowOrigins"])
 		}
 
 		corsConfigMap["allow_origins"] = allowOriginsRaw
 		exposeHeadersRaw := make([]interface{}, 0)
 		if corsConfigRaw["exposeHeaders"] != nil {
-			exposeHeadersRaw = convertToInterfaceArray(corsConfigRaw["exposeHeaders"])
+			exposeHeadersRaw = convert.ConvertToInterfaceArray(corsConfigRaw["exposeHeaders"])
 		}
 
 		corsConfigMap["expose_headers"] = exposeHeadersRaw
@@ -627,7 +632,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 
 	routesMaps := make([]map[string]interface{}, 0)
 	if routesRaw != nil {
-		for _, routesChildRaw := range convertToInterfaceArray(routesRaw) {
+		for _, routesChildRaw := range convert.ConvertToInterfaceArray(routesRaw) {
 			routesMap := make(map[string]interface{})
 			routesChildRaw := routesChildRaw.(map[string]interface{})
 			routesMap["function_name"] = routesChildRaw["functionName"]
@@ -636,7 +641,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 
 			methodsRaw := make([]interface{}, 0)
 			if routesChildRaw["methods"] != nil {
-				methodsRaw = convertToInterfaceArray(routesChildRaw["methods"])
+				methodsRaw = convert.ConvertToInterfaceArray(routesChildRaw["methods"])
 			}
 
 			routesMap["methods"] = methodsRaw
@@ -651,7 +656,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 				equalRulesRaw := rewriteConfigRaw["equalRules"]
 				equalRulesMaps := make([]map[string]interface{}, 0)
 				if equalRulesRaw != nil {
-					for _, equalRulesChildRaw := range convertToInterfaceArray(equalRulesRaw) {
+					for _, equalRulesChildRaw := range convert.ConvertToInterfaceArray(equalRulesRaw) {
 						equalRulesMap := make(map[string]interface{})
 						equalRulesChildRaw := equalRulesChildRaw.(map[string]interface{})
 						equalRulesMap["match"] = equalRulesChildRaw["match"]
@@ -664,7 +669,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 				regexRulesRaw := rewriteConfigRaw["regexRules"]
 				regexRulesMaps := make([]map[string]interface{}, 0)
 				if regexRulesRaw != nil {
-					for _, regexRulesChildRaw := range convertToInterfaceArray(regexRulesRaw) {
+					for _, regexRulesChildRaw := range convert.ConvertToInterfaceArray(regexRulesRaw) {
 						regexRulesMap := make(map[string]interface{})
 						regexRulesChildRaw := regexRulesChildRaw.(map[string]interface{})
 						regexRulesMap["match"] = regexRulesChildRaw["match"]
@@ -677,7 +682,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 				wildcardRulesRaw := rewriteConfigRaw["wildcardRules"]
 				wildcardRulesMaps := make([]map[string]interface{}, 0)
 				if wildcardRulesRaw != nil {
-					for _, wildcardRulesChildRaw := range convertToInterfaceArray(wildcardRulesRaw) {
+					for _, wildcardRulesChildRaw := range convert.ConvertToInterfaceArray(wildcardRulesRaw) {
 						wildcardRulesMap := make(map[string]interface{})
 						wildcardRulesChildRaw := wildcardRulesChildRaw.(map[string]interface{})
 						wildcardRulesMap["match"] = wildcardRulesChildRaw["match"]
@@ -710,7 +715,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 
 		cipherSuitesRaw := make([]interface{}, 0)
 		if tlsConfigRaw["cipherSuites"] != nil {
-			cipherSuitesRaw = convertToInterfaceArray(tlsConfigRaw["cipherSuites"])
+			cipherSuitesRaw = convert.ConvertToInterfaceArray(tlsConfigRaw["cipherSuites"])
 		}
 
 		tlsConfigMap["cipher_suites"] = cipherSuitesRaw
@@ -739,7 +744,7 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -800,14 +805,14 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 					localData = make([]interface{}, 0)
 				}
 				localMaps := make([]interface{}, 0)
-				for _, dataLoop := range convertToInterfaceArray(localData) {
+				for _, dataLoop := range convert.ConvertToInterfaceArray(localData) {
 					dataLoopTmp := make(map[string]interface{})
 					if dataLoop != nil {
 						dataLoopTmp = dataLoop.(map[string]interface{})
 					}
 					dataLoopMap := make(map[string]interface{})
 					dataLoopMap["path"] = dataLoopTmp["path"]
-					if !IsNil(dataLoopTmp["rewrite_config"]) {
+					if !helper.IsNil(dataLoopTmp["rewrite_config"]) {
 						localData1 := make(map[string]interface{})
 						if v, ok := dataLoopTmp["rewrite_config"]; ok {
 							localData2, err := jsonpath.Get("$[0].wildcard_rules", v)
@@ -815,7 +820,7 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 								localData2 = make([]interface{}, 0)
 							}
 							localMaps2 := make([]interface{}, 0)
-							for _, dataLoop2 := range convertToInterfaceArray(localData2) {
+							for _, dataLoop2 := range convert.ConvertToInterfaceArray(localData2) {
 								dataLoop2Tmp := make(map[string]interface{})
 								if dataLoop2 != nil {
 									dataLoop2Tmp = dataLoop2.(map[string]interface{})
@@ -835,7 +840,7 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 								localData3 = make([]interface{}, 0)
 							}
 							localMaps3 := make([]interface{}, 0)
-							for _, dataLoop3 := range convertToInterfaceArray(localData3) {
+							for _, dataLoop3 := range convert.ConvertToInterfaceArray(localData3) {
 								dataLoop3Tmp := make(map[string]interface{})
 								if dataLoop3 != nil {
 									dataLoop3Tmp = dataLoop3.(map[string]interface{})
@@ -855,7 +860,7 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 								localData4 = make([]interface{}, 0)
 							}
 							localMaps4 := make([]interface{}, 0)
-							for _, dataLoop4 := range convertToInterfaceArray(localData4) {
+							for _, dataLoop4 := range convert.ConvertToInterfaceArray(localData4) {
 								dataLoop4Tmp := make(map[string]interface{})
 								if dataLoop4 != nil {
 									dataLoop4Tmp = dataLoop4.(map[string]interface{})
@@ -898,7 +903,7 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 			sslCertService := sslcertificateservice.NewSslCertificatesServiceServiceV2(client)
 			certDetail, err := sslCertService.DescribeSslCertificatesServiceCertificate(certId.(string))
 			if err != nil {
-				return WrapError(err)
+				return errs.WrapError(err)
 			}
 			if v := certDetail["Cert"]; v != nil && v != "" {
 				certConfig["certificate"] = v
@@ -984,11 +989,11 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 
 	body = request
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("FC", "2023-03-30", action, query, header, body, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -996,16 +1001,16 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudFcv3CustomDomainRead(d, meta)
+	return resourceCustomDomainRead(d, meta)
 }
 
-func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomDomainDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	domainName := d.Id()
@@ -1016,11 +1021,11 @@ func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interfa
 	var err error
 	request = make(map[string]interface{})
 
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RoaDelete("FC", "2023-03-30", action, query, nil, nil, true)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"429"}) || NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"429"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1028,13 +1033,13 @@ func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNameNotFound"}) || NotFoundError(err) {
+		if errs.IsExpectedErrors(err, []string{"DomainNameNotFound"}) || errs.NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil

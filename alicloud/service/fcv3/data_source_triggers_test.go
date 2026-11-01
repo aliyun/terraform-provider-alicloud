@@ -1,56 +1,57 @@
 // Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+package fcv3_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudFcv3TriggerDataSource(t *testing.T) {
-	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-	rand := acctest.RandIntRange(1000000, 9999999)
+	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 
-	FunctionNameConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
+	FunctionNameConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_fcv3_trigger.default.id}"]`,
 			"function_name": `"${alicloud_fcv3_trigger.default.function_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_fcv3_trigger.default.id}_fake"]`,
 			"function_name": `"${alicloud_fcv3_trigger.default.function_name}"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_fcv3_trigger.default.id}"]`,
 			"function_name": `"${alicloud_fcv3_trigger.default.function_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudFcv3TriggerSourceConfig(rand, map[string]string{
 			"ids":           `["${alicloud_fcv3_trigger.default.id}_fake"]`,
 			"function_name": `"${alicloud_fcv3_trigger.default.function_name}"`,
 		}),
 	}
 
-	Fcv3TriggerCheckInfo.dataSourceTestCheck(t, rand, FunctionNameConf, allConf)
+	Fcv3TriggerCheckInfo.DataSourceTestCheck(t, rand, FunctionNameConf, allConf)
 }
 
 var existFcv3TriggerMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"triggers.#":                    "1",
-		"triggers.0.trigger_type":       CHECKSET,
-		"triggers.0.description":        CHECKSET,
-		"triggers.0.create_time":        CHECKSET,
-		"triggers.0.trigger_config":     CHECKSET,
-		"triggers.0.trigger_name":       CHECKSET,
-		"triggers.0.trigger_id":         CHECKSET,
-		"triggers.0.last_modified_time": CHECKSET,
-		"triggers.0.qualifier":          CHECKSET,
-		"triggers.0.http_trigger.#":     CHECKSET,
+		"triggers.0.trigger_type":       acctest.CHECKSET,
+		"triggers.0.description":        acctest.CHECKSET,
+		"triggers.0.create_time":        acctest.CHECKSET,
+		"triggers.0.trigger_config":     acctest.CHECKSET,
+		"triggers.0.trigger_name":       acctest.CHECKSET,
+		"triggers.0.trigger_id":         acctest.CHECKSET,
+		"triggers.0.last_modified_time": acctest.CHECKSET,
+		"triggers.0.qualifier":          acctest.CHECKSET,
+		"triggers.0.http_trigger.#":     acctest.CHECKSET,
 	}
 }
 
@@ -60,10 +61,10 @@ var fakeFcv3TriggerMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var Fcv3TriggerCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_fcv3_triggers.default",
-	existMapFunc: existFcv3TriggerMapFunc,
-	fakeMapFunc:  fakeFcv3TriggerMapFunc,
+var Fcv3TriggerCheckInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_fcv3_triggers.default",
+	ExistMapFunc: existFcv3TriggerMapFunc,
+	FakeMapFunc:  fakeFcv3TriggerMapFunc,
 }
 
 func testAccCheckAlicloudFcv3TriggerSourceConfig(rand int, attrMap map[string]string) string {
