@@ -1,4 +1,4 @@
-package alicloud
+package swasopen
 
 import (
 	"fmt"
@@ -8,17 +8,20 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudSimpleApplicationServerCustomImage() *schema.Resource {
+func ResourceCustomImage() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudSimpleApplicationServerCustomImageCreate,
-		Read:   resourceAlicloudSimpleApplicationServerCustomImageRead,
-		Update: resourceAlicloudSimpleApplicationServerCustomImageUpdate,
-		Delete: resourceAlicloudSimpleApplicationServerCustomImageDelete,
+		Create: resourceCustomImageCreate,
+		Read:   resourceCustomImageRead,
+		Update: resourceCustomImageUpdate,
+		Delete: resourceCustomImageDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -27,7 +30,7 @@ func resourceAlicloudSimpleApplicationServerCustomImage() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile("^[0-9a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9:_-]{2,128}$"), "The name must be `2` to `128` characters in length. It must start with a letter or a number. It can contain letters, digits, colons (:), underscores (_) and hyphens (-)."),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile("^[0-9a-zA-Z一-龥][一-龥A-Za-z0-9:_-]{2,128}$"), "The name must be `2` to `128` characters in length. It must start with a letter or a number. It can contain letters, digits, colons (:), underscores (_) and hyphens (-)."),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -51,7 +54,7 @@ func resourceAlicloudSimpleApplicationServerCustomImage() *schema.Resource {
 	}
 }
 
-func resourceAlicloudSimpleApplicationServerCustomImageCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomImageCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateCustomImage"
@@ -64,12 +67,12 @@ func resourceAlicloudSimpleApplicationServerCustomImageCreate(d *schema.Resource
 	request["InstanceId"] = d.Get("instance_id")
 	request["RegionId"] = client.RegionId
 	request["SystemSnapshotId"] = d.Get("system_snapshot_id")
-	request["ClientToken"] = buildClientToken("CreateCustomImage")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateCustomImage")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -77,38 +80,38 @@ func resourceAlicloudSimpleApplicationServerCustomImageCreate(d *schema.Resource
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_simple_application_server_custom_image", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_simple_application_server_custom_image", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ImageId"]))
 
-	swasOpenService := SwasOpenService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Exist"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerCustomImageStateRefreshFunc(d.Id(), []string{}))
+	swasOpenService := NewSwasOpenService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Exist"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerCustomImageStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudSimpleApplicationServerCustomImageUpdate(d, meta)
+	return resourceCustomImageUpdate(d, meta)
 }
-func resourceAlicloudSimpleApplicationServerCustomImageRead(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomImageRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	swasOpenService := SwasOpenService{client}
+	swasOpenService := NewSwasOpenService(client)
 	object, err := swasOpenService.DescribeSimpleApplicationServerCustomImage(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_simple_application_server_custom_image swasOpenService.DescribeSimpleApplicationServerCustomImage Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("custom_image_name", object["ImageName"])
 	d.Set("description", object["Description"])
 	return nil
 }
-func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
@@ -124,12 +127,12 @@ func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.Resource
 	}
 	if update {
 		action := "ModifyImageShareStatus"
-		request["ClientToken"] = buildClientToken("ModifyImageShareStatus")
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		request["ClientToken"] = helper.BuildClientToken("ModifyImageShareStatus")
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -137,14 +140,14 @@ func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.Resource
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudSimpleApplicationServerCustomImageRead(d, meta)
+	return resourceCustomImageRead(d, meta)
 }
-func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceCustomImageDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	if v := d.Get("status"); v.(string) == "Share" {
 		var response map[string]interface{}
@@ -154,14 +157,14 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 			"Operation": "UnShare",
 		}
 		action := "ModifyImageShareStatus"
-		request["ClientToken"] = buildClientToken("ModifyImageShareStatus")
+		request["ClientToken"] = helper.BuildClientToken("ModifyImageShareStatus")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -169,9 +172,9 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	action := "DeleteCustomImage"
@@ -182,12 +185,12 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 	}
 
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("DeleteCustomImage")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("DeleteCustomImage")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -195,14 +198,14 @@ func resourceAlicloudSimpleApplicationServerCustomImageDelete(d *schema.Resource
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
-	swasOpenService := SwasOpenService{client}
-	stateConf := BuildStateConf([]string{"Exist"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, swasOpenService.SimpleApplicationServerCustomImageStateRefreshFunc(d.Id(), []string{}))
+	swasOpenService := NewSwasOpenService(client)
+	stateConf := helper.BuildStateConf([]string{"Exist"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, swasOpenService.SimpleApplicationServerCustomImageStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 	return nil
 }

@@ -774,15 +774,6 @@ func Provider() *schema.Provider {
 
 			// service
 
-			// simple
-			"alicloud_simple_application_server_instances":      dataSourceAlicloudSimpleApplicationServerInstances(),
-			"alicloud_simple_application_server_plans":          dataSourceAlicloudSimpleApplicationServerPlans(),
-			"alicloud_simple_application_server_images":         dataSourceAlicloudSimpleApplicationServerImages(),
-			"alicloud_simple_application_server_firewall_rules": dataSourceAlicloudSimpleApplicationServerFirewallRules(),
-			"alicloud_simple_application_server_disks":          dataSourceAlicloudSimpleApplicationServerDisks(),
-			"alicloud_simple_application_server_snapshots":      dataSourceAlicloudSimpleApplicationServerSnapshots(),
-			"alicloud_simple_application_server_custom_images":  dataSourceAlicloudSimpleApplicationServerCustomImages(),
-
 			// slb
 			"alicloud_slb_attachments":                dataSourceAlicloudSlbAttachments(),
 			"alicloud_slb_backend_servers":            dataSourceAlicloudSlbBackendServers(),
@@ -1757,13 +1748,6 @@ func Provider() *schema.Provider {
 			"alicloud_security_center_service_linked_role": resourceAlicloudSecurityCenterServiceLinkedRole(),
 
 			// service
-
-			// simple
-			"alicloud_simple_application_server_disk":          resourceAliCloudSimpleApplicationServerDisk(),
-			"alicloud_simple_application_server_instance":      resourceAlicloudSimpleApplicationServerInstance(),
-			"alicloud_simple_application_server_firewall_rule": resourceAlicloudSimpleApplicationServerFirewallRule(),
-			"alicloud_simple_application_server_snapshot":      resourceAlicloudSimpleApplicationServerSnapshot(),
-			"alicloud_simple_application_server_custom_image":  resourceAlicloudSimpleApplicationServerCustomImage(),
 
 			// slb
 			"alicloud_slb":                                resourceAlicloudSlbLoadBalancer(),

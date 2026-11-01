@@ -1,5 +1,5 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package swasopen. This file is generated automatically. Please do not modify it manually, thank you!
+package swasopen
 
 import (
 	"fmt"
@@ -7,16 +7,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAliCloudSimpleApplicationServerDisk() *schema.Resource {
+func ResourceDisk() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudSimpleApplicationServerDiskCreate,
-		Read:   resourceAliCloudSimpleApplicationServerDiskRead,
-		Update: resourceAliCloudSimpleApplicationServerDiskUpdate,
-		Delete: resourceAliCloudSimpleApplicationServerDiskDelete,
+		Create: resourceDiskCreate,
+		Read:   resourceDiskRead,
+		Update: resourceDiskUpdate,
+		Delete: resourceDiskDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -38,7 +42,7 @@ func resourceAliCloudSimpleApplicationServerDisk() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: IntBetween(0, 16380),
+				ValidateFunc: validators.IntBetween(0, 16380),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -57,7 +61,7 @@ func resourceAliCloudSimpleApplicationServerDisk() *schema.Resource {
 	}
 }
 
-func resourceAliCloudSimpleApplicationServerDiskCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -68,15 +72,15 @@ func resourceAliCloudSimpleApplicationServerDiskCreate(d *schema.ResourceData, m
 	var err error
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 
 	request["DiskSize"] = d.Get("disk_size")
 	request["InstanceId"] = d.Get("instance_id")
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, query, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -84,29 +88,29 @@ func resourceAliCloudSimpleApplicationServerDiskCreate(d *schema.ResourceData, m
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_simple_application_server_disk", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_simple_application_server_disk", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DiskId"]))
 
-	return resourceAliCloudSimpleApplicationServerDiskUpdate(d, meta)
+	return resourceDiskUpdate(d, meta)
 }
 
-func resourceAliCloudSimpleApplicationServerDiskRead(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	simpleApplicationServerServiceV2 := SimpleApplicationServerServiceV2{client}
+	simpleApplicationServerServiceV2 := NewSimpleApplicationServerServiceV2(client)
 
 	objectRaw, err := simpleApplicationServerServiceV2.DescribeSimpleApplicationServerDisk(d.Id())
 	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_simple_application_server_disk DescribeSimpleApplicationServerDisk Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	d.Set("create_time", objectRaw["CreationTime"])
@@ -119,7 +123,7 @@ func resourceAliCloudSimpleApplicationServerDiskRead(d *schema.ResourceData, met
 	return nil
 }
 
-func resourceAliCloudSimpleApplicationServerDiskUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -132,17 +136,17 @@ func resourceAliCloudSimpleApplicationServerDiskUpdate(d *schema.ResourceData, m
 	query = make(map[string]interface{})
 	request["DiskId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken(action)
+	request["ClientToken"] = helper.BuildClientToken(action)
 	if d.HasChange("remark") {
 		update = true
 	}
 	request["Remark"] = d.Get("remark")
 	if update {
-		wait := incrementalWait(3*time.Second, 5*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, query, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -150,16 +154,16 @@ func resourceAliCloudSimpleApplicationServerDiskUpdate(d *schema.ResourceData, m
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAliCloudSimpleApplicationServerDiskRead(d, meta)
+	return resourceDiskRead(d, meta)
 }
 
-func resourceAliCloudSimpleApplicationServerDiskDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Disk. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

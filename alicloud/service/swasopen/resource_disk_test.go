@@ -1,12 +1,14 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
-package alicloud
+// Package swasopen. This file is generated automatically. Please do not modify it manually, thank you!
+package swasopen_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	swasopen "github.com/aliyun/terraform-provider-alicloud/alicloud/service/swasopen"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -16,22 +18,22 @@ import (
 func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_simple_application_server_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerDiskMap5761)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SimpleApplicationServerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudSimpleApplicationServerDiskMap5761)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return swasopen.NewSimpleApplicationServerServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeSimpleApplicationServerDisk")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccsimpleapplicationserver%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSimpleApplicationServerDiskBasicDependence5761)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudSimpleApplicationServerDiskBasicDependence5761)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+			acctest.PreCheckPrePaidResources(t)
 		},
-		ProviderFactories: testAccProviderFactory,
+		ProviderFactories: acctest.SDKProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -42,7 +44,7 @@ func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"disk_size":   "20",
-						"instance_id": CHECKSET,
+						"instance_id": acctest.CHECKSET,
 						"remark":      "test",
 					}),
 				),
@@ -68,9 +70,9 @@ func TestAccAliCloudSimpleApplicationServerDisk_basic5761(t *testing.T) {
 }
 
 var AlicloudSimpleApplicationServerDiskMap5761 = map[string]string{
-	"create_time": CHECKSET,
-	"region_id":   CHECKSET,
-	"disk_name":   CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
+	"disk_name":   acctest.CHECKSET,
 }
 
 func AlicloudSimpleApplicationServerDiskBasicDependence5761(name string) string {

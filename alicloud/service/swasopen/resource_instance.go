@@ -1,4 +1,4 @@
-package alicloud
+package swasopen
 
 import (
 	"fmt"
@@ -6,17 +6,20 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudSimpleApplicationServerInstance() *schema.Resource {
+func ResourceInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudSimpleApplicationServerInstanceCreate,
-		Read:   resourceAlicloudSimpleApplicationServerInstanceRead,
-		Update: resourceAlicloudSimpleApplicationServerInstanceUpdate,
-		Delete: resourceAlicloudSimpleApplicationServerInstanceDelete,
+		Create: resourceInstanceCreate,
+		Read:   resourceInstanceRead,
+		Update: resourceInstanceUpdate,
+		Delete: resourceInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -77,7 +80,7 @@ func resourceAlicloudSimpleApplicationServerInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudSimpleApplicationServerInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateInstances"
@@ -100,12 +103,12 @@ func resourceAlicloudSimpleApplicationServerInstanceCreate(d *schema.ResourceDat
 	request["Period"] = d.Get("period")
 	request["PlanId"] = d.Get("plan_id")
 	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("CreateInstances")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateInstances")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -113,32 +116,32 @@ func resourceAlicloudSimpleApplicationServerInstanceCreate(d *schema.ResourceDat
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_simple_application_server_instance", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_simple_application_server_instance", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["InstanceIds"].([]interface{})[0]))
 
-	swasOpenService := SwasOpenService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+	swasOpenService := NewSwasOpenService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
-	return resourceAlicloudSimpleApplicationServerInstanceUpdate(d, meta)
+	return resourceInstanceUpdate(d, meta)
 }
-func resourceAlicloudSimpleApplicationServerInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	swasOpenService := SwasOpenService{client}
+	swasOpenService := NewSwasOpenService(client)
 	object, err := swasOpenService.DescribeSimpleApplicationServerInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_simple_application_server_instance swasOpenService.DescribeSimpleApplicationServerInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("image_id", object["ImageId"])
 	d.Set("instance_name", object["InstanceName"])
@@ -147,9 +150,9 @@ func resourceAlicloudSimpleApplicationServerInstanceRead(d *schema.ResourceData,
 	d.Set("status", object["Status"])
 	return nil
 }
-func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	swasOpenService := SwasOpenService{client}
+	swasOpenService := NewSwasOpenService(client)
 	var err error
 	var response map[string]interface{}
 	d.Partial(true)
@@ -165,12 +168,12 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	request["RegionId"] = client.RegionId
 	if update {
 		action := "ResetSystem"
-		request["ClientToken"] = buildClientToken("ResetSystem")
-		wait := incrementalWait(3*time.Second, 10*time.Second)
+		request["ClientToken"] = helper.BuildClientToken("ResetSystem")
+		wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -178,13 +181,13 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -198,12 +201,12 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	upgradeInstanceReq["RegionId"] = client.RegionId
 	if update {
 		action := "UpgradeInstance"
-		request["ClientToken"] = buildClientToken("UpgradeInstance")
-		wait := incrementalWait(3*time.Second, 10*time.Second)
+		request["ClientToken"] = helper.BuildClientToken("UpgradeInstance")
+		wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, upgradeInstanceReq, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -211,13 +214,13 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 			}
 			return nil
 		})
-		addDebug(action, response, upgradeInstanceReq)
+		logs.AddDebug(action, response, upgradeInstanceReq)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	update = false
@@ -239,12 +242,12 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 	}
 	if update {
 		action := "UpdateInstanceAttribute"
-		request["ClientToken"] = buildClientToken("UpdateInstanceAttribute")
-		wait := incrementalWait(3*time.Second, 10*time.Second)
+		request["ClientToken"] = helper.BuildClientToken("UpdateInstanceAttribute")
+		wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, updateInstanceAttributeReq, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -252,19 +255,19 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 			}
 			return nil
 		})
-		addDebug(action, response, updateInstanceAttributeReq)
+		logs.AddDebug(action, response, updateInstanceAttributeReq)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
 	if d.HasChange("status") {
 		object, err := swasOpenService.DescribeSimpleApplicationServerInstance(d.Id())
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		target := d.Get("status").(string)
 		if object["Status"].(string) != target {
@@ -274,12 +277,12 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				}
 				request["RegionId"] = client.RegionId
 				action := "RebootInstance"
-				request["ClientToken"] = buildClientToken("RebootInstance")
-				wait := incrementalWait(3*time.Second, 10*time.Second)
+				request["ClientToken"] = helper.BuildClientToken("RebootInstance")
+				wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -287,13 +290,13 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 			if target == "Running" {
@@ -302,12 +305,12 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				}
 				request["RegionId"] = client.RegionId
 				action := "StartInstance"
-				request["ClientToken"] = buildClientToken("StartInstance")
-				wait := incrementalWait(3*time.Second, 10*time.Second)
+				request["ClientToken"] = helper.BuildClientToken("StartInstance")
+				wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -315,13 +318,13 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 			if target == "Stopped" {
@@ -330,12 +333,12 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 				}
 				request["RegionId"] = client.RegionId
 				action := "StopInstance"
-				request["ClientToken"] = buildClientToken("StopInstance")
-				wait := incrementalWait(3*time.Second, 10*time.Second)
+				request["ClientToken"] = helper.BuildClientToken("StopInstance")
+				wait := helper.IncrementalWait(3*time.Second, 10*time.Second)
 				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 					response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "Throttling.User"}) || NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "Throttling.User"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -343,22 +346,22 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 					}
 					return nil
 				})
-				addDebug(action, response, request)
+				logs.AddDebug(action, response, request)
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
+				stateConf := helper.BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, swasOpenService.SimpleApplicationServerInstanceStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 				}
 			}
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudSimpleApplicationServerInstanceRead(d, meta)
+	return resourceInstanceRead(d, meta)
 }
-func resourceAlicloudSimpleApplicationServerInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	return WrapError(Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
+func resourceInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	return errs.WrapError(errs.Error("'Subscription' instance cannot be destroyed: please unsubscribe it in the console or wait for it to expire. To remove it from the state only, run 'terraform state rm'."))
 }
 func convertSimpleApplicationServerInstancePaymentTypeRequest(source interface{}) interface{} {
 	switch source {

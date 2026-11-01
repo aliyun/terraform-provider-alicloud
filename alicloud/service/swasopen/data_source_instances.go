@@ -1,21 +1,23 @@
-package alicloud
+package swasopen
 
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
+func DataSourceInstances() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudSimpleApplicationServerDisksRead,
+		Read: dataSourceInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -33,30 +35,27 @@ func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
-			"instance_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"disk_type": {
+			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"System", "Data"}, false),
+				Default:      "Subscription",
+				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Attaching", "Available", "Creating", "Detaching", "In_use", "ReIniting"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Pending", "Resetting", "Running", "Starting", "Stopped", "Stopping", "Upgrading"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"disks": {
+			"instances": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"category": {
+						"business_status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -64,7 +63,19 @@ func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"device": {
+						"ddos_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expired_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"image_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"inner_ip_address": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -72,19 +83,11 @@ func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"disk_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"disk_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"disk_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -92,8 +95,12 @@ func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"size": {
-							Type:     schema.TypeInt,
+						"plan_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"public_ip_address": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"status": {
@@ -107,26 +114,25 @@ func dataSourceAlicloudSimpleApplicationServerDisks() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "ListDisks"
+	action := "ListInstances"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("instance_id"); ok {
-		request["InstanceId"] = v
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertSimpleApplicationServerInstancePaymentTypeRequest(v)
 	}
-	diskType, diskTypeOk := d.GetOk("disk_type")
 	request["RegionId"] = client.RegionId
-	request["PageSize"] = PageSizeLarge
+	request["PageSize"] = helper.PageSizeLarge
 	request["PageNumber"] = 1
 	var objects []map[string]interface{}
-	var diskNameRegex *regexp.Regexp
+	var instanceNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
-		diskNameRegex = r
+		instanceNameRegex = r
 	}
 
 	idsMap := make(map[string]string)
@@ -142,11 +148,11 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 	var response map[string]interface{}
 	var err error
 	for {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 			response, err = client.RpcPost("SWAS-OPEN", "2020-06-01", action, nil, request, true)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -154,37 +160,31 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
-				break
-			}
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_simple_application_server_disks", action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_simple_application_server_instances", action, errs.AlibabaCloudSdkGoERROR)
 		}
-		resp, err := jsonpath.Get("$.Disks", response)
+		resp, err := jsonpath.Get("$.Instances", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Disks", response)
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Instances", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if diskNameRegex != nil && !diskNameRegex.MatchString(fmt.Sprint(item["DiskName"])) {
+			if instanceNameRegex != nil && !instanceNameRegex.MatchString(fmt.Sprint(item["InstanceName"])) {
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["DiskId"])]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
 					continue
 				}
 			}
 			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
 				continue
 			}
-			if diskTypeOk && diskType.(string) != "" && !strings.EqualFold(diskType.(string), fmt.Sprint(item["DiskType"])) {
-				continue
-			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < helper.PageSizeLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -193,54 +193,41 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
-
-		sizeVal, err := formatInt(object["Size"])
-		if err != nil {
-			return err
-		}
 		mapping := map[string]interface{}{
-			"category":     object["Category"],
-			"create_time":  object["CreationTime"],
-			"device":       object["Device"],
-			"id":           fmt.Sprint(object["DiskId"]),
-			"disk_id":      fmt.Sprint(object["DiskId"]),
-			"disk_name":    object["DiskName"],
-			"disk_type":    object["DiskType"],
-			"instance_id":  object["InstanceId"],
-			"payment_type": convertSimpleApplicationServerDiskPaymentTypeResponse(object["DiskChargeType"].(string)),
-			"size":         sizeVal,
-			"status":       object["Status"],
+			"business_status":   object["BusinessStatus"],
+			"create_time":       object["CreationTime"],
+			"ddos_status":       object["DdosStatus"],
+			"expired_time":      object["ExpiredTime"],
+			"image_id":          object["ImageId"],
+			"inner_ip_address":  object["InnerIpAddress"],
+			"id":                fmt.Sprint(object["InstanceId"]),
+			"instance_id":       fmt.Sprint(object["InstanceId"]),
+			"instance_name":     object["InstanceName"],
+			"payment_type":      convertSimpleApplicationServerInstancePaymentTypeResponse(object["ChargeType"]),
+			"plan_id":           object["PlanId"],
+			"public_ip_address": object["PublicIpAddress"],
+			"status":            object["Status"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, object["DiskName"])
+		names = append(names, object["InstanceName"])
 		s = append(s, mapping)
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
-	if err := d.Set("disks", s); err != nil {
-		return WrapError(err)
+	if err := d.Set("instances", s); err != nil {
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
-}
-
-func convertSimpleApplicationServerDiskPaymentTypeResponse(source interface{}) interface{} {
-	switch source {
-	case "PostPaid":
-		return "PayAsYouGo"
-	case "PrePaid":
-		return "Subscription"
-	}
-	return source
 }

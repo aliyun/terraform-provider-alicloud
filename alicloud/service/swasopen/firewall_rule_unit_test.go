@@ -1,7 +1,6 @@
-package alicloud
+package swasopen
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -12,95 +11,23 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudSimpleApplicationServerSnapshot_basic0(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_simple_application_server_snapshot.default"
-	ra := resourceAttrInit(resourceId, AlicloudSimpleApplicationServerSnapshotMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &SwasOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeSimpleApplicationServerSnapshot")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc-swassnapshot%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSimpleApplicationServerSnapshotBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckPrePaidResources(t)
-			testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disk_id":       "${data.alicloud_simple_application_server_disks.default.ids.0}",
-					"snapshot_name": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disk_id":       CHECKSET,
-						"snapshot_name": name,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudSimpleApplicationServerSnapshotMap0 = map[string]string{
-	"status": CHECKSET,
-}
-
-func AlicloudSimpleApplicationServerSnapshotBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_simple_application_server_images" "default" {
-	platform = "Linux"
-}
-data "alicloud_simple_application_server_plans" "default" {
-	platform = "Linux"
-}
-
-resource "alicloud_simple_application_server_instance" "default" {
-  payment_type   = "Subscription"
-  plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = var.name
-  image_id       = data.alicloud_simple_application_server_images.default.images.0.id
-  period         = 1
-  data_disk_size = 100
-}
-
-data "alicloud_simple_application_server_disks" "default" {
-  instance_id = alicloud_simple_application_server_instance.default.id
-}
-`, name)
-}
-
 // lintignore: R001
-func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
-	p := Provider().ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_simple_application_server_snapshot"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_simple_application_server_snapshot"].Schema).Data(nil, nil)
+func TestUnitAlicloudSimpleApplicationServerFirewallRule(t *testing.T) {
+	p := unitTestProviderResources()
+	dInit, _ := schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"disk_id":       "CreateSnapshotValue",
-		"snapshot_name": "CreateSnapshotValue",
+		"instance_id":   "CreateFirewallRuleValue",
+		"rule_protocol": "Tcp",
+		"port":          "CreateFirewallRuleValue",
+		"remark":        "CreateFirewallRuleValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -112,42 +39,43 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 		}
 	}
 	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := unitTestSharedClientForRegion(region)
 	if err != nil {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
-		// ListSnapshots
-		"Snapshots": []interface{}{
+		// ListFirewallRules
+		"FirewallRules": []interface{}{
 			map[string]interface{}{
-				"SnapshotId":   "CreateSnapshotValue",
-				"SourceDiskId": "CreateSnapshotValue",
-				"SnapshotName": "CreateSnapshotValue",
-				"Status":       "Accomplished",
+				"InstanceId":   "CreateFirewallRuleValue",
+				"Port":         "CreateFirewallRuleValue",
+				"RuleId":       "CreateFirewallRuleValue",
+				"Remark":       "CreateFirewallRuleValue",
+				"RuleProtocol": "TCP",
 			},
 		},
-		"SnapshotId": "CreateSnapshotValue",
+		"FirewallId": "CreateFirewallRuleValue",
 	}
 	CreateMockResponse := map[string]interface{}{
 		// CreateFirewallRule
-		"SnapshotId": "CreateSnapshotValue",
+		"FirewallId": "CreateFirewallRuleValue",
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
-			Code:       String(errorCode),
-			Data:       String(errorCode),
-			Message:    String(errorCode),
+			Code:       helper.String(errorCode),
+			Data:       helper.String(errorCode),
+			Message:    helper.String(errorCode),
 			StatusCode: tea.Int(400),
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_simple_application_server_snapshot", errorCode))
+		return nil, errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("alicloud_simple_application_server_firewall_rule", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
-			mapMerge(ReadMockResponse, operationMockResponse)
+			helper.MapMerge(ReadMockResponse, operationMockResponse)
 		}
 		return ReadMockResponse, nil
 	}
@@ -155,24 +83,24 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 	// Create
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSwasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSimpleApplicationServerSnapshotCreate(dInit, rawClient)
+	err = resourceFirewallRuleCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
-		// ListSnapshots Response
-		"SnapshotId": "CreateSnapshotValue",
+		// ListFirewallRules Response
+		"FirewallId": "CreateFirewallRuleValue",
 	}
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateSnapshot" {
+			if *action == "CreateFirewallRule" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -187,14 +115,14 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerSnapshotCreate(dInit, rawClient)
+		err := resourceFirewallRuleCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_simple_application_server_snapshot"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				dCompare.Set(key, value)
 			}
@@ -206,11 +134,17 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 	}
 
 	// Read
+	attributesDiff := map[string]interface{}{}
+	diff, err := newInstanceDiff("alicloud_simple_application_server_firewall_rule", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "ListSnapshots" {
+			if *action == "ListFirewallRules" {
 				switch errorCode {
 				case "{}":
 					return notFoundResponseMock(errorCode)
@@ -226,7 +160,7 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerSnapshotRead(dExisted, rawClient)
+		err := resourceFirewallRuleRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -239,20 +173,26 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewSwasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
-			Code:       String("loadEndpoint error"),
-			Data:       String("loadEndpoint error"),
-			Message:    String("loadEndpoint error"),
+			Code:       helper.String("loadEndpoint error"),
+			Data:       helper.String("loadEndpoint error"),
+			Message:    helper.String("loadEndpoint error"),
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSimpleApplicationServerSnapshotDelete(dExisted, rawClient)
+	err = resourceFirewallRuleDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{}
+	diff, err = newInstanceDiff("alicloud_simple_application_server_firewall_rule", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_simple_application_server_firewall_rule"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteSnapshot" {
+			if *action == "DeleteFirewallRule" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -267,7 +207,7 @@ func TestUnitAlicloudSimpleApplicationServerSnapshot(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSimpleApplicationServerSnapshotDelete(dExisted, rawClient)
+		err := resourceFirewallRuleDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

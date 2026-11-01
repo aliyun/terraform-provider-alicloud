@@ -1,41 +1,42 @@
-package alicloud
+package swasopen_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudSimpleApplicationServerCustomImagesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_simple_application_server_custom_images.default"
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-swascustomimage-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerCustomImagesDependence)
+	testAccConfig := acctest.DataSourceTestAccConfigFunc(resourceId, name, dataSourceSimpleApplicationServerCustomImagesDependence)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_simple_application_server_custom_image.default.custom_image_name}",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_simple_application_server_custom_image.default.custom_image_name}-fake",
 		}),
 	}
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_simple_application_server_custom_image.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"ids": []string{"${alicloud_simple_application_server_custom_image.default.id}-fake"},
 		}),
 	}
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_simple_application_server_custom_image.default.custom_image_name}",
 			"ids":        []string{"${alicloud_simple_application_server_custom_image.default.id}"},
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
+		FakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "${alicloud_simple_application_server_custom_image.default.custom_image_name}-fake",
 			"ids":        []string{"${alicloud_simple_application_server_custom_image.default.id}"},
 		}),
@@ -43,13 +44,13 @@ func TestAccAlicloudSimpleApplicationServerCustomImagesDataSource(t *testing.T) 
 	var existSimpleApplicationServerCustomImageMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                      "1",
-			"ids.0":                      CHECKSET,
+			"ids.0":                      acctest.CHECKSET,
 			"images.#":                   "1",
-			"images.0.id":                CHECKSET,
-			"images.0.custom_image_id":   CHECKSET,
+			"images.0.id":                acctest.CHECKSET,
+			"images.0.custom_image_id":   acctest.CHECKSET,
 			"images.0.custom_image_name": fmt.Sprintf("tf-testacc-swascustomimage-%d", rand),
 			"images.0.description":       fmt.Sprintf("tf-testacc-swascustomimage-%d", rand),
-			"images.0.platform":          CHECKSET,
+			"images.0.platform":          acctest.CHECKSET,
 		}
 	}
 
@@ -60,19 +61,19 @@ func TestAccAlicloudSimpleApplicationServerCustomImagesDataSource(t *testing.T) 
 		}
 	}
 
-	var SimpleApplicationServerCustomImageCheckInfo = dataSourceAttr{
-		resourceId:   resourceId,
-		existMapFunc: existSimpleApplicationServerCustomImageMapFunc,
-		fakeMapFunc:  fakeSimpleApplicationServerCustomImageMapFunc,
+	var SimpleApplicationServerCustomImageCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   resourceId,
+		ExistMapFunc: existSimpleApplicationServerCustomImageMapFunc,
+		FakeMapFunc:  fakeSimpleApplicationServerCustomImageMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckPrePaidResources(t)
-		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckPrePaidResources(t)
+		acctest.PreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 	}
 
-	SimpleApplicationServerCustomImageCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	SimpleApplicationServerCustomImageCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceSimpleApplicationServerCustomImagesDependence(name string) string {

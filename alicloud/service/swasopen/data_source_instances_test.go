@@ -1,65 +1,66 @@
-package alicloud
+package swasopen_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudSimpleApplicationServerInstanceDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
+	rand := tfacctest.RandIntRange(10000, 99999)
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_simple_application_server_instance.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_simple_application_server_instance.default.id}_fake"]`,
 		}),
 	}
 
-	paymentTypeConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+	paymentTypeConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_simple_application_server_instance.default.id}"]`,
 			"payment_type": `"Subscription"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_simple_application_server_instance.default.id}_fake"]`,
 			"payment_type": `"Subscription"`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_simple_application_server_instance.default.instance_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_simple_application_server_instance.default.instance_name}_fake"`,
 		}),
 	}
 
-	statusConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+	statusConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_simple_application_server_instance.default.id}"]`,
 			"status": `"Running"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids":    `["${alicloud_simple_application_server_instance.default.id}"]`,
 			"status": `"Disabled"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_simple_application_server_instance.default.id}"]`,
 			"payment_type": `"Subscription"`,
 			"name_regex":   `"${alicloud_simple_application_server_instance.default.instance_name}"`,
 			"status":       `"Running"`,
 		}),
-		fakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand, map[string]string{
 			"ids":          `["${alicloud_simple_application_server_instance.default.id}_fake"]`,
 			"payment_type": `"Subscription"`,
 			"status":       `"Disabled"`,
@@ -81,17 +82,17 @@ func TestAccAlicloudSimpleApplicationServerInstanceDataSource(t *testing.T) {
 			"instances.#": "0",
 		}
 	}
-	var alicloudSimpleApplicationServerInstanceCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_simple_application_server_instances.default",
-		existMapFunc: existDataAlicloudSimpleApplicationServerInstancesSourceNameMapFunc,
-		fakeMapFunc:  fakeDataAlicloudSimpleApplicationServerInstancesSourceNameMapFunc,
+	var alicloudSimpleApplicationServerInstanceCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_simple_application_server_instances.default",
+		ExistMapFunc: existDataAlicloudSimpleApplicationServerInstancesSourceNameMapFunc,
+		FakeMapFunc:  fakeDataAlicloudSimpleApplicationServerInstancesSourceNameMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckPrePaidResources(t)
-		testAccPreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckPrePaidResources(t)
+		acctest.PreCheckWithRegions(t, false, connectivity.SimpleApplicationServerNotSupportRegions)
 	}
-	alicloudSimpleApplicationServerInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, paymentTypeConf, statusConf, allConf)
+	alicloudSimpleApplicationServerInstanceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, paymentTypeConf, statusConf, allConf)
 }
 func testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -101,7 +102,7 @@ func testAccCheckAlicloudSimpleApplicationServerInstanceDataSourceName(rand int,
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf-testaccswas%d"
 }
 
@@ -121,7 +122,7 @@ resource "alicloud_simple_application_server_instance" "default" {
   data_disk_size = 100
 }
 
-data "alicloud_simple_application_server_instances" "default" {	
+data "alicloud_simple_application_server_instances" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
