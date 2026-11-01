@@ -1,40 +1,41 @@
-package alicloud
+package mhub_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
-func TestAccAlicloudMhubProductsDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(10000, 99999)
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
+func TestAccAliCloudMhubProductsDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mhub_product.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_mhub_product.default.id}_fake"]`,
 		}),
 	}
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_mhub_product.default.product_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
 			"name_regex": `"${alicloud_mhub_product.default.product_name}_fake"`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_mhub_product.default.id}"]`,
 			"name_regex": `"${alicloud_mhub_product.default.product_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudMhubProductsDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_mhub_product.default.id}_fake"]`,
 			"name_regex": `"${alicloud_mhub_product.default.product_name}_fake"`,
 		}),
@@ -55,17 +56,17 @@ func TestAccAlicloudMhubProductsDataSource(t *testing.T) {
 		}
 	}
 
-	var AlicloudMhubProductsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_mhub_products.default",
-		existMapFunc: existAlicloudMhubProductsDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudMhubProductsDataSourceNameMapFunc,
+	var AlicloudMhubProductsCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_mhub_products.default",
+		ExistMapFunc: existAlicloudMhubProductsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudMhubProductsDataSourceNameMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, connectivity.MHUBSupportRegions)
 	}
-	AlicloudMhubProductsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	AlicloudMhubProductsCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }
 func testAccCheckAlicloudMhubProductsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -75,7 +76,7 @@ func testAccCheckAlicloudMhubProductsDataSourceName(rand int, attrMap map[string
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
+variable "name" {
 	default = "tf_testaccmhubproduct%d"
 }
 
@@ -83,7 +84,7 @@ resource "alicloud_mhub_product" "default"{
   product_name = var.name
 }
 
-data "alicloud_mhub_products" "default" {	
+data "alicloud_mhub_products" "default" {
 	%s
 }
 `, rand, strings.Join(pairs, " \n "))
