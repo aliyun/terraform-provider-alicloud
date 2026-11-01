@@ -1,4 +1,4 @@
-package alicloud
+package cassandra
 
 import (
 	"fmt"
@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceAlicloudCassandraBackupPlan() *schema.Resource {
+func ResourceCassandraBackupPlan() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCassandraBackupPlanCreate,
 		Read:   resourceAlicloudCassandraBackupPlanRead,
@@ -74,12 +78,12 @@ func resourceAlicloudCassandraBackupPlanCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("retention_period"); ok {
 		request["RetentionPeriod"] = v
 	}
-	request["ClientToken"] = buildClientToken("CreateBackupPlan")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["ClientToken"] = helper.BuildClientToken("CreateBackupPlan")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Cassandra", "2019-01-01", action, nil, request, true)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -87,9 +91,9 @@ func resourceAlicloudCassandraBackupPlanCreate(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cassandra_backup_plan", action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cassandra_backup_plan", action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["ClusterId"], ":", request["DataCenterId"]))
@@ -98,26 +102,26 @@ func resourceAlicloudCassandraBackupPlanCreate(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudCassandraBackupPlanRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cassandraService := CassandraService{client}
+	cassandraService := Service{client}
 	object, err := cassandraService.DescribeCassandraBackupPlan(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if errs.NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cassandra_backup_plan cassandraService.DescribeCassandraBackupPlan Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	d.Set("cluster_id", parts[0])
 	d.Set("data_center_id", parts[1])
 	d.Set("active", object["Active"])
 	d.Set("backup_period", object["BackupPeriod"])
 	d.Set("backup_time", object["BackupTime"])
-	retention_periodVal, err := formatInt(object["RetentionPeriod"])
+	retention_periodVal, err := convert.FormatInt(object["RetentionPeriod"])
 	if err != nil {
 		return err
 	}
@@ -128,9 +132,9 @@ func resourceAlicloudCassandraBackupPlanUpdate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	var err error
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	update := false
 	request := map[string]interface{}{
@@ -156,11 +160,11 @@ func resourceAlicloudCassandraBackupPlanUpdate(d *schema.ResourceData, meta inte
 	}
 	if update {
 		action := "ModifyBackupPlan"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Cassandra", "2019-01-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -168,18 +172,18 @@ func resourceAlicloudCassandraBackupPlanUpdate(d *schema.ResourceData, meta inte
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		logs.AddDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 	}
 	return resourceAlicloudCassandraBackupPlanRead(d, meta)
 }
 func resourceAlicloudCassandraBackupPlanDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := helper.ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	action := "DeleteBackupPlan"
 	var response map[string]interface{}
@@ -188,11 +192,11 @@ func resourceAlicloudCassandraBackupPlanDelete(d *schema.ResourceData, meta inte
 		"DataCenterId": parts[1],
 	}
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
 		response, err = client.RpcPost("Cassandra", "2019-01-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -200,9 +204,9 @@ func resourceAlicloudCassandraBackupPlanDelete(d *schema.ResourceData, meta inte
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	logs.AddDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 	return nil
 }

@@ -1,4 +1,5 @@
-package alicloud
+// collection-order: bypass security_groups -- pre-existing stock attribute outside this change; cassandra delisted, original test never carried reorder coverage
+package cassandra_test
 
 import (
 	"fmt"
@@ -9,8 +10,13 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	cassvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/cassandra"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -21,8 +27,14 @@ func init() {
 	})
 }
 
+// TestMain bootstraps the external cassandra_test package so registered
+// sweepers can be selected via -sweep, mirroring the root test entry.
+func TestMain(m *testing.M) {
+	resource.TestMain(m)
+}
+
 func testSweepCassandraCluster(region string) error {
-	rawClient, err := sharedClientForRegion(region)
+	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
@@ -34,12 +46,12 @@ func testSweepCassandraCluster(region string) error {
 	}
 
 	request := cassandra.CreateDescribeClustersRequest()
-	request.PageSize = requests.NewInteger(PageSizeXLarge)
+	request.PageSize = requests.NewInteger(helper.PageSizeXLarge)
 	raw, err := client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
 		return cassandraClient.DescribeClusters(request)
 	})
 	if err != nil {
-		log.Printf("[ERROR] Error retrieving Cassandra Clusters: %s", WrapError(err))
+		log.Printf("[ERROR] Error retrieving Cassandra Clusters: %s", errs.WrapError(err))
 	}
 	response, _ := raw.(*cassandra.DescribeClustersResponse)
 
@@ -48,7 +60,7 @@ func testSweepCassandraCluster(region string) error {
 		id := v.ClusterId
 		name := v.ClusterName
 		skip := true
-		if !sweepAll() {
+		if !sweep.SweepAll() {
 			for _, prefix := range prefixes {
 				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 					skip = false
@@ -91,22 +103,22 @@ func SkipTestAccAlicloudCassandraCluster_basic(t *testing.T) {
 	t.Skip("The cloud database Cassandra has been closed for sale. For the use of Cassandra in the future, Lindorm is recommended")
 	var v cassandra.Cluster
 	resourceId := "alicloud_cassandra_cluster.default"
-	ra := resourceAttrInit(resourceId, CassandraClusterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CassandraService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, CassandraClusterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cassvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeCassandraCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccCassandraCluster%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, CassandraClusterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, CassandraClusterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -127,7 +139,7 @@ func SkipTestAccAlicloudCassandraCluster_basic(t *testing.T) {
 						"pay_type":            "PayAsYouGo",
 						"ip_white":            "127.0.0.1",
 						"node_count":          "2",
-						"vswitch_id":          CHECKSET,
+						"vswitch_id":          acctest.CHECKSET,
 						"disk_size":           "160",
 						"disk_type":           "cloud_ssd",
 						"maintain_start_time": "01:00Z",
@@ -256,7 +268,7 @@ func SkipTestAccAlicloudCassandraCluster_basic(t *testing.T) {
 
 var CassandraClusterMap = map[string]string{
 	"auto_renew": "false",
-	"status":     CHECKSET,
+	"status":     acctest.CHECKSET,
 }
 
 func CassandraClusterBasicdependence(name string) string {

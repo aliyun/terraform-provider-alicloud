@@ -1,28 +1,29 @@
-package alicloud
+package cassandra_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func SkipTestAccAlicloudCassandraBackupPlansDataSource(t *testing.T) {
 	// Cassandra has been offline
 	t.Skip("Cassandra has been offline")
-	rand := acctest.RandInt()
+	rand := tfacctest.RandInt()
 
 	var existAlicloudCassandraBackupPlanDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                  "1",
-			"plans.data_center_id":   CHECKSET,
-			"plans.cluster_id":       CHECKSET,
+			"plans.data_center_id":   acctest.CHECKSET,
+			"plans.cluster_id":       acctest.CHECKSET,
 			"plans.backup_time":      "00:10Z",
 			"plans.active":           "false",
-			"plans.create_time":      CHECKSET,
-			"plans.backup_period":    CHECKSET,
-			"plans.retention_period": CHECKSET,
+			"plans.create_time":      acctest.CHECKSET,
+			"plans.backup_period":    acctest.CHECKSET,
+			"plans.retention_period": acctest.CHECKSET,
 		}
 	}
 	var fakeAlicloudCassandraBackupPlanDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -31,13 +32,13 @@ func SkipTestAccAlicloudCassandraBackupPlansDataSource(t *testing.T) {
 		}
 	}
 
-	var alicloudCassandraBackupPlanCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_cassandra_backup_plans.default_2",
-		existMapFunc: existAlicloudCassandraBackupPlanDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudCassandraBackupPlanDataSourceNameMapFunc,
+	var alicloudCassandraBackupPlanCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_cassandra_backup_plans.default_2",
+		ExistMapFunc: existAlicloudCassandraBackupPlanDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlicloudCassandraBackupPlanDataSourceNameMapFunc,
 	}
 
-	alicloudCassandraBackupPlanCheckInfo.dataSourceTestCheck(t, rand)
+	alicloudCassandraBackupPlanCheckInfo.DataSourceTestCheck(t, rand)
 }
 
 func testAccAlicloudCassandraBackupPlansDataSource(rand int, attrMap map[string]string) string {

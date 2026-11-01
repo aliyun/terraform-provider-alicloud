@@ -1,22 +1,23 @@
-package alicloud
+package cassandra_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 var existCassandraDcMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"centers.#":                  CHECKSET,
-		"centers.0.data_center_id":   CHECKSET,
-		"centers.0.data_center_name": CHECKSET,
-		"centers.0.status":           CHECKSET,
-		"centers.0.zone_id":          CHECKSET,
+		"centers.#":                  acctest.CHECKSET,
+		"centers.0.data_center_id":   acctest.CHECKSET,
+		"centers.0.data_center_name": acctest.CHECKSET,
+		"centers.0.status":           acctest.CHECKSET,
+		"centers.0.zone_id":          acctest.CHECKSET,
 		"ids.#":                      "1",
-		"ids.0":                      CHECKSET,
+		"ids.0":                      acctest.CHECKSET,
 		"names.#":                    "1",
 	}
 }
@@ -29,46 +30,46 @@ var fakeCassandraDcMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var checkCassandraDcInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_cassandra_data_centers.default",
-	existMapFunc: existCassandraDcMapFunc,
-	fakeMapFunc:  fakeCassandraDcMapFunc,
+var checkCassandraDcInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_cassandra_data_centers.default",
+	ExistMapFunc: existCassandraDcMapFunc,
+	FakeMapFunc:  fakeCassandraDcMapFunc,
 }
 
 func SkipTestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
 	// Cloud database Cassandra has been closed for sale
 	t.Skip("Cloud database Cassandra has been closed for sale")
-	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}_fake"`,
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
 			"ids": `["${alicloud_cassandra_data_center.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
 			"ids": `["${alicloud_cassandra_data_center.default.id}_fake"]`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}"`,
 			"ids":        `["${alicloud_cassandra_data_center.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}"`,
 			"ids":        `["${alicloud_cassandra_data_center.default.id}_fake"]`,
 		}),
 	}
 
-	checkCassandraDcInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
+	checkCassandraDcInfo.DataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 // new a cluster and a dataCenter config

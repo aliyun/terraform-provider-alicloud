@@ -1,4 +1,4 @@
-package alicloud
+package cassandra
 
 import (
 	"regexp"
@@ -6,11 +6,15 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudCassandraClusters() *schema.Resource {
+func DataSourceCassandraClusters() *schema.Resource {
 	return &schema.Resource{
 		Read:               dataSourceAlicloudCassandraClustersRead,
 		DeprecationMessage: "This data source has been deprecated since v1.220.0 and will be removed in the future.",
@@ -35,7 +39,7 @@ func dataSourceAlicloudCassandraClusters() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tags.TagsSchema(),
 			"clusters": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -85,7 +89,7 @@ func dataSourceAlicloudCassandraClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"tags": tagsSchema(),
+						"tags": tags.TagsSchema(),
 					},
 				},
 			},
@@ -95,21 +99,21 @@ func dataSourceAlicloudCassandraClusters() *schema.Resource {
 
 func dataSourceAlicloudCassandraClustersRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cassandraService := CassandraService{client}
+	cassandraService := Service{client}
 
 	request := cassandra.CreateDescribeClustersRequest()
 	if v, ok := d.GetOk("cluster_name"); ok {
 		request.ClusterName = v.(string)
 	}
 	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageSize = requests.NewInteger(helper.PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
 	var objects []cassandra.Cluster
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -137,9 +141,9 @@ func dataSourceAlicloudCassandraClustersRead(d *schema.ResourceData, meta interf
 			return cassandraClient.DescribeClusters(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cassandra_clusters", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cassandra_clusters", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw)
+		logs.AddDebug(request.GetActionName(), raw)
 		response, _ := raw.(*cassandra.DescribeClustersResponse)
 
 		for _, item := range response.Clusters.Cluster {
@@ -155,13 +159,13 @@ func dataSourceAlicloudCassandraClustersRead(d *schema.ResourceData, meta interf
 			}
 			objects = append(objects, item)
 		}
-		if len(response.Clusters.Cluster) < PageSizeLarge {
+		if len(response.Clusters.Cluster) < helper.PageSizeLarge {
 			break
 		}
 
-		page, err := getNextpageNumber(request.PageNumber)
+		page, err := helper.GetNextpageNumber(request.PageNumber)
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		request.PageNumber = page
 	}
@@ -189,18 +193,18 @@ func dataSourceAlicloudCassandraClustersRead(d *schema.ResourceData, meta interf
 		s[i] = mapping
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil

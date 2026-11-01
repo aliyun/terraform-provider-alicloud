@@ -1,12 +1,14 @@
-package alicloud
+package cassandra_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	cassvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/cassandra"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -15,22 +17,22 @@ func SkipTestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
 	t.Skip("Cassandra has been offline")
 	var v cassandra.DescribeDataCenterResponse
 	resourceId := "alicloud_cassandra_data_center.default"
-	ra := resourceAttrInit(resourceId, CassandraDataCenterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CassandraService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	ra := acctest.ResourceAttrInit(resourceId, CassandraDataCenterMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return cassvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeCassandraDataCenter")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccCassandraDataCenter%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, CassandraDataCenterBasicdependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, CassandraDataCenterBasicdependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheck(t)
 		},
 
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -48,7 +50,7 @@ func SkipTestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
 						"instance_type":    "cassandra.c.large",
 						"node_count":       "2",
 						"pay_type":         "PayAsYouGo",
-						"vswitch_id":       CHECKSET,
+						"vswitch_id":       acctest.CHECKSET,
 						"disk_size":        "160",
 						"disk_type":        "cloud_ssd",
 						"data_center_name": "dc2-2",
@@ -128,8 +130,8 @@ func SkipTestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
 
 var CassandraDataCenterMap = map[string]string{
 	"auto_renew":     "false",
-	"data_center_id": CHECKSET,
-	"status":         CHECKSET,
+	"data_center_id": acctest.CHECKSET,
+	"status":         acctest.CHECKSET,
 }
 
 func CassandraDataCenterBasicdependence(name string) string {

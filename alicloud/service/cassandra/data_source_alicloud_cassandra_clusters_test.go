@@ -1,24 +1,25 @@
-package alicloud
+package cassandra_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 var existCassandraMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"clusters.#":              CHECKSET,
-		"clusters.0.id":           CHECKSET,
-		"clusters.0.cluster_name": CHECKSET,
-		"clusters.0.status":       CHECKSET,
+		"clusters.#":              acctest.CHECKSET,
+		"clusters.0.id":           acctest.CHECKSET,
+		"clusters.0.cluster_name": acctest.CHECKSET,
+		"clusters.0.status":       acctest.CHECKSET,
 		"clusters.0.tags.%":       "2",
 		"clusters.0.tags.Created": "TF",
 		"clusters.0.tags.For":     "acceptance test",
 		"ids.#":                   "1",
-		"ids.0":                   CHECKSET,
+		"ids.0":                   acctest.CHECKSET,
 		"names.#":                 "1",
 	}
 }
@@ -31,59 +32,59 @@ var fakeCassandraMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var checkCassandraInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_cassandra_clusters.default",
-	existMapFunc: existCassandraMapFunc,
-	fakeMapFunc:  fakeCassandraMapFunc,
+var checkCassandraInfo = acctest.DataSourceAttr{
+	ResourceId:   "data.alicloud_cassandra_clusters.default",
+	ExistMapFunc: existCassandraMapFunc,
+	FakeMapFunc:  fakeCassandraMapFunc,
 }
 
 func SkipTestAccAlicloudCassandraClustersDataSourceNewCluster(t *testing.T) {
 	// Cassandra has been offline
 	t.Skip("Cassandra has been offline")
-	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+	rand := tfacctest.RandInt()
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}_fake"`,
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"ids": `["${alicloud_cassandra_cluster.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"ids": `["${alicloud_cassandra_cluster.default.id}_fake"]`,
 		}),
 	}
 
-	tagsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+	tagsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"tags":       `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"tags":       `{Created = "TF1"}`,
 		}),
 	}
 
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+	allConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"ids":        `["${alicloud_cassandra_cluster.default.id}"]`,
 			"tags":       `{Created = "TF"}`,
 		}),
-		fakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
+		FakeConfig: testAccCheckAlicloudCassandraDataSourceConfigNewCluster(rand, map[string]string{
 			"name_regex": `"${alicloud_cassandra_cluster.default.cluster_name}"`,
 			"ids":        `["${alicloud_cassandra_cluster.default.id}_fake"]`,
 			"tags":       `{Created = "TF1"}`,
 		}),
 	}
 
-	checkCassandraInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, allConf)
+	checkCassandraInfo.DataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, allConf)
 }
 
 // new a cluster config

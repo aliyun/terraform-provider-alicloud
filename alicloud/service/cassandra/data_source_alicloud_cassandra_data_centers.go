@@ -1,4 +1,4 @@
-package alicloud
+package cassandra
 
 import (
 	"fmt"
@@ -6,11 +6,14 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceAlicloudCassandraDataCenters() *schema.Resource {
+func DataSourceCassandraDataCenters() *schema.Resource {
 	return &schema.Resource{
 		Read:               dataSourceAlicloudCassandraDataCentersRead,
 		DeprecationMessage: "This data source has been deprecated since v1.220.0 and will be removed in the future.",
@@ -125,7 +128,7 @@ func dataSourceAlicloudCassandraDataCentersRead(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
-			return WrapError(err)
+			return errs.WrapError(err)
 		}
 		nameRegex = r
 	}
@@ -142,9 +145,9 @@ func dataSourceAlicloudCassandraDataCentersRead(d *schema.ResourceData, meta int
 		return cassandraClient.DescribeDataCenters(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cassandra_data_centers", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_cassandra_data_centers", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+	logs.AddDebug(request.GetActionName(), raw)
 	response, _ := raw.(*cassandra.DescribeDataCentersResponse)
 
 	for _, item := range response.DataCenters.DataCenter {
@@ -190,20 +193,20 @@ func dataSourceAlicloudCassandraDataCentersRead(d *schema.ResourceData, meta int
 		s[i] = mapping
 	}
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(helper.DataResourceIdHash(ids))
 	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 
 	if err := d.Set("centers", s); err != nil {
-		return WrapError(err)
+		return errs.WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
+		helper.WriteToFile(output.(string), s)
 	}
 
 	return nil
