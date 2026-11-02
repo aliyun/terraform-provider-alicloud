@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cen Transit Router Multicast Domains to the user.
 ---
 
-# alicloud\_cen\_transit\_router\_multicast\_domains
+# alicloud_cen_transit_router_multicast_domains
 
 This data source provides the Cen Transit Router Multicast Domains of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0+.
 
 ## Example Usage
 
@@ -54,10 +54,9 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Transit Router Multicast Domain names.
 * `domains` - A list of Cen Transit Router Multicast Domains. Each element contains the following attributes:
-	* `id` - The ID of the Transit Router Multicast Domain.
-	* `transit_router_id` - The ID of the transit router.
-	* `transit_router_multicast_domain_id` - The ID of the Transit Router Multicast Domain.
-	* `transit_router_multicast_domain_name` - The name of the Transit Router Multicast Domain.
-	* `transit_router_multicast_domain_description` - The description of the Transit Router Multicast Domain.
-	* `status` - The status of the Transit Router Multicast Domain.
-	
+  * `id` - The ID of the Transit Router Multicast Domain.
+  * `transit_router_id` - The ID of the transit router.
+  * `transit_router_multicast_domain_id` - The ID of the Transit Router Multicast Domain.
+  * `transit_router_multicast_domain_name` - The name of the Transit Router Multicast Domain.
+  * `transit_router_multicast_domain_description` - The description of the Transit Router Multicast Domain.
+  * `status` - The status of the Transit Router Multicast Domain.

@@ -1,0 +1,970 @@
+package dts
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceSynchronizationJob() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceSynchronizationJobCreate,
+		Read:   resourceSynchronizationJobRead,
+		Update: resourceSynchronizationJobUpdate,
+		Delete: resourceSynchronizationJobDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Update: schema.DefaultTimeout(10 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"dts_instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"dts_job_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"dedicated_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_check_configure": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"checkpoint": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"instance_class": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
+			},
+			"data_initialization": {
+				Type:     schema.TypeBool,
+				Required: true,
+				ForceNew: true,
+			},
+			"data_synchronization": {
+				Type:     schema.TypeBool,
+				Required: true,
+				ForceNew: true,
+			},
+			"structure_initialization": {
+				Type:     schema.TypeBool,
+				Required: true,
+				ForceNew: true,
+			},
+			"synchronization_direction": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Forward", "Reverse"}, false),
+			},
+			"db_list": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"reserve": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"source_endpoint_instance_type": {
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     validators.StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "DISTRIBUTED_POLARDBX10"}, true),
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
+			},
+			"source_endpoint_engine_name": {
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     validators.StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG", "MARIADB", "POLARDBX10", "TiDB", "REDIS"}, true),
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
+			},
+			"source_endpoint_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_oracle_sid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_database_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_user_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_password": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"source_endpoint_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_role": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"src_primary_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"src_secondary_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"0", "1"}, false),
+			},
+			"destination_endpoint_instance_type": {
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     validators.StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "ELK", "Tablestore", "ODPS"}, true),
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
+			},
+			"destination_endpoint_engine_name": {
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     validators.StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG", "MARIADB", "POLARDBX10", "ODPS", "Tablestore", "ELK", "REDIS"}, true),
+				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
+			},
+			"destination_endpoint_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_database_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_user_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_password": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"destination_endpoint_oracle_sid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_role": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_ssl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"0", "1", "3"}, false),
+			},
+			"dest_primary_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"dest_secondary_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"dts_bis_label": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"delay_notice": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"delay_phone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"delay_rule_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"error_notice": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"error_phone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Synchronizing", "Suspending"}, false),
+			},
+			"job_parameters": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: false,
+			},
+		},
+	}
+}
+
+func resourceSynchronizationJobCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "ConfigureDtsJob"
+	request := make(map[string]interface{})
+	var err error
+	if v, ok := d.GetOk("dts_instance_id"); ok {
+		request["DtsInstanceId"] = v
+	}
+	request["DtsJobName"] = d.Get("dts_job_name")
+	if v, ok := d.GetOk("checkpoint"); ok {
+		request["Checkpoint"] = v
+	}
+	request["DataInitialization"] = d.Get("data_initialization")
+	request["DataSynchronization"] = d.Get("data_synchronization")
+	request["StructureInitialization"] = d.Get("structure_initialization")
+	request["SynchronizationDirection"] = d.Get("synchronization_direction")
+	request["DbList"] = d.Get("db_list")
+	if v, ok := d.GetOkExists("delay_notice"); ok {
+		request["DelayNotice"] = v
+	}
+	if v, ok := d.GetOk("delay_phone"); ok {
+		request["DelayPhone"] = v
+	}
+	if v, ok := d.GetOk("delay_rule_time"); ok {
+		request["DelayRuleTime"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_database_name"); ok {
+		request["DestinationEndpointDataBaseName"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_engine_name"); ok {
+		request["DestinationEndpointEngineName"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_ip"); ok {
+		request["DestinationEndpointIP"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_instance_id"); ok {
+		request["DestinationEndpointInstanceID"] = v
+	}
+	request["DestinationEndpointInstanceType"] = d.Get("destination_endpoint_instance_type")
+	if v, ok := d.GetOk("destination_endpoint_oracle_sid"); ok {
+		request["DestinationEndpointOracleSID"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_password"); ok {
+		request["DestinationEndpointPassword"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_port"); ok {
+		request["DestinationEndpointPort"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_region"); ok {
+		request["DestinationEndpointRegion"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_user_name"); ok {
+		request["DestinationEndpointUserName"] = v
+	}
+	if v, ok := d.GetOkExists("error_notice"); ok {
+		request["ErrorNotice"] = v
+	}
+	if v, ok := d.GetOk("error_phone"); ok {
+		request["ErrorPhone"] = v
+	}
+	request["JobType"] = "SYNC"
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("reserve"); ok {
+		request["Reserve"] = v
+	}
+	if err := setEndpointSSL(d, request); err != nil {
+		return errs.WrapError(err)
+	}
+	if v, ok := d.GetOk("source_endpoint_database_name"); ok {
+		request["SourceEndpointDatabaseName"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_engine_name"); ok {
+		request["SourceEndpointEngineName"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_ip"); ok {
+		request["SourceEndpointIP"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_instance_id"); ok {
+		request["SourceEndpointInstanceID"] = v
+	}
+	request["SourceEndpointInstanceType"] = d.Get("source_endpoint_instance_type")
+	if v, ok := d.GetOk("source_endpoint_oracle_sid"); ok {
+		request["SourceEndpointOracleSID"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_owner_id"); ok {
+		request["SourceEndpointOwnerID"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_password"); ok {
+		request["SourceEndpointPassword"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_port"); ok {
+		request["SourceEndpointPort"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_region"); ok {
+		request["SourceEndpointRegion"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_role"); ok {
+		request["SourceEndpointRole"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_user_name"); ok {
+		request["SourceEndpointUserName"] = v
+	}
+	if v, ok := d.GetOk("dedicated_cluster_id"); ok {
+		request["DedicatedClusterId"] = v
+	}
+	if v, ok := d.GetOk("data_check_configure"); ok {
+		request["DataCheckConfigure"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_vswitch_id"); ok {
+		request["SourceEndpointVSwitchID"] = v
+	}
+	if v, ok := d.GetOk("src_primary_vswitch_id"); ok {
+		request["SrcPrimaryVswId"] = v
+	}
+	if v, ok := d.GetOk("src_secondary_vswitch_id"); ok {
+		request["SrcSecondaryVswId"] = v
+	}
+	if v, ok := d.GetOk("dest_primary_vswitch_id"); ok {
+		request["DestPrimaryVswId"] = v
+	}
+	if v, ok := d.GetOk("dest_secondary_vswitch_id"); ok {
+		request["DestSecondaryVswId"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_owner_id"); ok {
+		request["DestinationEndpointOwnerID"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_role"); ok {
+		request["DestinationEndpointRole"] = v
+	}
+	if v, ok := d.GetOk("dts_bis_label"); ok {
+		request["DtsBisLabel"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"SQLExecuteError"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_dts_synchronization_job", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["DtsJobId"]))
+	d.Set("dts_instance_id", response["DtsInstanceId"])
+	dtsService := NewService(client)
+	// DescribeDtsSynchronizationJob maps the transient Initializing state to
+	// Synchronizing so the create wait does not block on the data initialization
+	// phase. The wait releases as soon as the job reports a target state
+	// (Synchronizing/NotStarted). SynchronizationDirection is intentionally NOT
+	// gated here: DTS does not always report it for synchronization jobs, and
+	// requiring it non-empty would never converge, timing out the create. The
+	// direction is configured once by ConfigureDtsJob and is written back in Read
+	// when the API reports a non-empty value.
+	stateConf := helper.BuildStateConf([]string{}, []string{"Synchronizing", "NotStarted"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return resourceSynchronizationJobUpdate(d, meta)
+}
+func resourceSynchronizationJobRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	dtsService := NewService(client)
+	object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeDtsSynchronizationJob Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	migrationModeObj := object["MigrationMode"].(map[string]interface{})
+	destinationEndpointObj := object["DestinationEndpoint"].(map[string]interface{})
+	sourceEndpointObj := object["SourceEndpoint"].(map[string]interface{})
+	actualCheckpoint, err := convert.FormatInt(object["Checkpoint"])
+	if err != nil {
+		return err
+	}
+	d.Set("checkpoint", fmt.Sprint(actualCheckpoint))
+	d.Set("data_initialization", migrationModeObj["DataInitialization"])
+	d.Set("data_synchronization", migrationModeObj["DataSynchronization"])
+	d.Set("db_list", object["DbObject"])
+	d.Set("destination_endpoint_database_name", destinationEndpointObj["DatabaseName"])
+	d.Set("destination_endpoint_engine_name", destinationEndpointObj["EngineName"])
+	d.Set("destination_endpoint_ip", destinationEndpointObj["Ip"])
+	d.Set("destination_endpoint_instance_id", destinationEndpointObj["InstanceID"])
+	d.Set("destination_endpoint_instance_type", destinationEndpointObj["InstanceType"])
+	d.Set("destination_endpoint_oracle_sid", destinationEndpointObj["OracleSID"])
+	d.Set("destination_endpoint_port", destinationEndpointObj["Port"])
+	d.Set("destination_endpoint_region", destinationEndpointObj["Region"])
+	d.Set("destination_endpoint_user_name", destinationEndpointObj["UserName"])
+	if ssl := convertEndpointSslResponse(destinationEndpointObj["SslSolutionEnum"]); ssl != nil {
+		d.Set("destination_endpoint_ssl", ssl)
+	}
+	d.Set("dts_instance_id", object["DtsInstanceID"])
+	d.Set("dts_job_name", object["DtsJobName"])
+	d.Set("source_endpoint_database_name", sourceEndpointObj["DatabaseName"])
+	d.Set("source_endpoint_engine_name", convertSourceEndpointEngineNameUppercaseResponse(sourceEndpointObj["EngineName"]))
+	d.Set("source_endpoint_ip", sourceEndpointObj["Ip"])
+	d.Set("source_endpoint_instance_id", sourceEndpointObj["InstanceID"])
+	d.Set("source_endpoint_instance_type", sourceEndpointObj["InstanceType"])
+	d.Set("source_endpoint_oracle_sid", sourceEndpointObj["OracleSID"])
+	d.Set("source_endpoint_owner_id", sourceEndpointObj["AliyunUid"])
+	d.Set("source_endpoint_port", sourceEndpointObj["Port"])
+	d.Set("source_endpoint_region", sourceEndpointObj["Region"])
+	d.Set("source_endpoint_role", sourceEndpointObj["RoleName"])
+	d.Set("source_endpoint_user_name", sourceEndpointObj["UserName"])
+	if ssl := convertEndpointSslResponse(sourceEndpointObj["SslSolutionEnum"]); ssl != nil {
+		d.Set("source_endpoint_ssl", ssl)
+	}
+	d.Set("status", object["Status"])
+	d.Set("structure_initialization", migrationModeObj["StructureInitialization"])
+	// DescribeDtsJobDetail does not return SynchronizationDirection while the job is still
+	// prechecking or initializing, and the create wait may end in those phases because the
+	// shared state mapping treats Initializing as Synchronizing to skip the data initialization.
+	// The direction is configured once by ConfigureDtsJob and is force-new immutable, so keep
+	// the current state value until the API reports a non-empty one instead of overwriting it
+	// with an empty response, which would surface as a force-new diff on the next plan.
+	if direction, ok := object["SynchronizationDirection"].(string); ok && direction != "" {
+		d.Set("synchronization_direction", direction)
+	}
+	// Keep the configured class when the describe response omits DtsJobClass, otherwise the
+	// empty value would overwrite a valid state value and surface as a spurious diff.
+	if instanceClass, ok := object["DtsJobClass"].(string); ok && instanceClass != "" {
+		d.Set("instance_class", instanceClass)
+	}
+
+	parameters, err := dtsService.QueryChangedJobParameters(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dts_synchronization_job dtsService.DescribeDtsSynchronizationJob Failed!!! %s", err)
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	d.Set("job_parameters", parameters)
+
+	return nil
+}
+func resourceSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	var err error
+	d.Partial(true)
+
+	update := false
+	request := map[string]interface{}{
+		"DtsJobId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("dts_job_name") {
+		update = true
+		request["DtsJobName"] = d.Get("dts_job_name")
+	}
+	request["RegionId"] = client.RegionId
+	if update {
+		action := "ModifyDtsJobName"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+	}
+
+	modifyDtsJobPasswordReq := map[string]interface{}{
+		"DtsJobId": d.Id(),
+	}
+	modifyDtsJobPasswordReq["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("source_endpoint_password") {
+
+		modifyDtsJobPasswordReq["Endpoint"] = "src"
+		if v, ok := d.GetOk("source_endpoint_password"); ok {
+			modifyDtsJobPasswordReq["Password"] = v
+		}
+		if v, ok := d.GetOk("source_endpoint_user_name"); ok {
+			modifyDtsJobPasswordReq["UserName"] = v
+		}
+
+		action := "ModifyDtsJobPassword"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyDtsJobPasswordReq, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, modifyDtsJobPasswordReq)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
+		target := d.Get("status").(string)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
+		if err != nil {
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("destination_endpoint_password") {
+
+		modifyDtsJobPasswordReq["Endpoint"] = "dest"
+		if v, ok := d.GetOk("destination_endpoint_password"); ok {
+			modifyDtsJobPasswordReq["Password"] = v
+		}
+		if v, ok := d.GetOk("destination_endpoint_user_name"); ok {
+			modifyDtsJobPasswordReq["UserName"] = v
+		}
+
+		action := "ModifyDtsJobPassword"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyDtsJobPasswordReq, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, modifyDtsJobPasswordReq)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
+		target := d.Get("status").(string)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
+		if err != nil {
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
+		}
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"DtsJobId": d.Id(),
+	}
+	// ConfigureDtsJob does not accept InstanceClass, so the job is created with the
+	// service-side default. TransferInstanceClass is called with OrderType=UPGRADE;
+	// the service rejects requests that would downgrade the class (NoPermission for
+	// accounts without downgrade permission). Compare the configured class against
+	// the actual one returned by DescribeDtsJobDetail and request the transfer only
+	// when they differ, so a redundant create-time transfer is skipped while an
+	// actual class change still flows through.
+	if d.HasChange("instance_class") {
+		if v, ok := d.GetOk("instance_class"); ok {
+			configClass := v.(string)
+			dtsService := NewService(client)
+			object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			actualClass, _ := object["DtsJobClass"].(string)
+			// An empty actual class means the describe response did not carry it; do not
+			// trigger a transfer from incomplete data.
+			if actualClass != "" && configClass != actualClass {
+				request["InstanceClass"] = configClass
+				update = true
+			}
+		}
+	}
+	request["RegionId"] = client.RegionId
+	request["OrderType"] = "UPGRADE"
+
+	if update {
+		action := "TransferInstanceClass"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+	}
+
+	if d.HasChange("status") {
+		target := d.Get("status").(string)
+		err := resourceSynchronizationJobStatusFlow(d, meta, target)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
+	modifyDtsJobReq := map[string]interface{}{
+		"DtsInstanceId": d.Get("dts_instance_id"),
+	}
+	modifyDtsJobReq["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("db_list") {
+
+		if v, ok := d.GetOk("db_list"); ok {
+			modifyDtsJobReq["DbList"] = v
+		}
+
+		action := "ModifyDtsJob"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyDtsJobReq, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, modifyDtsJobReq)
+
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
+		target := d.Get("status").(string)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
+		if err != nil {
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
+		}
+	}
+
+	if d.HasChange("source_endpoint_ssl") || d.HasChange("destination_endpoint_ssl") {
+		reserved, err := endpointSSLReserved(d)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		modifyReservedReq := map[string]interface{}{
+			"DtsInstanceId":  d.Get("dts_instance_id"),
+			"RegionId":       client.RegionId,
+			"ModifyTypeEnum": "UPDATE_RESERVED",
+			"Reserved":       reserved,
+		}
+		// ModifyDtsJob defaults to the forward task. On a bidirectional instance the reserve update
+		// would land on the forward task no matter which direction this resource manages, so the
+		// reverse task would keep its old connection mode and the read would never see the change.
+		if v, ok := d.GetOk("synchronization_direction"); ok {
+			modifyReservedReq["SynchronizationDirection"] = v
+		}
+
+		action := "ModifyDtsJob"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyReservedReq, false)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, modifyReservedReq)
+
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		target := d.Get("status").(string)
+		err = resourceSynchronizationJobStatusFlow(d, meta, target)
+		if err != nil {
+			return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("job_parameters") {
+		oldRaw, newRaw := d.GetChange("job_parameters")
+
+		normOld := convert.NormalizeJsonObjectSliceByName(oldRaw)
+		normNew := convert.NormalizeJsonObjectSliceByName(newRaw)
+
+		if normOld != normNew {
+			modifyJobConfigReq := map[string]interface{}{
+				"DtsJobId": d.Id(),
+				"RegionId": client.RegionId,
+			}
+			modifyJobConfigReq["Parameters"] = normNew
+
+			action := "ModifyDtsJobConfig"
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, modifyJobConfigReq, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			logs.AddDebug(action, response, modifyJobConfigReq)
+
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+			if fmt.Sprint(response["Success"]) == "false" {
+				return errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+			}
+			// d.Set("job_parameters", normNew)
+
+			target := d.Get("status").(string)
+			err = resourceSynchronizationJobStatusFlow(d, meta, target)
+			if err != nil {
+				return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, d.Get("status")))
+			}
+		}
+	}
+	d.Partial(false)
+	return resourceSynchronizationJobRead(d, meta)
+}
+func resourceSynchronizationJobDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteDtsJob"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"DtsJobId": d.Id(),
+	}
+
+	if v, ok := d.GetOk("dts_instance_id"); ok {
+		request["DtsInstanceId"] = v
+	}
+	request["RegionId"] = client.RegionId
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func resourceSynchronizationJobStatusFlow(d *schema.ResourceData, meta interface{}, target string) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	dtsService := NewService(client)
+	var response map[string]interface{}
+	var err error
+	object, err := dtsService.DescribeDtsSynchronizationJob(d.Id())
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	if object["Status"].(string) != target {
+		if target == "Synchronizing" || target == "Suspending" {
+			request := map[string]interface{}{
+				"DtsJobId": d.Id(),
+			}
+			request["RegionId"] = client.RegionId
+			if v, ok := d.GetOk("synchronization_direction"); ok {
+				request["SynchronizationDirection"] = v
+			}
+			action := "StartDtsJob"
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			logs.AddDebug(action, response, request)
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+			stateConf := helper.BuildStateConf([]string{}, []string{"Synchronizing"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			}
+		}
+		if target == "Suspending" {
+			request := map[string]interface{}{
+				"DtsJobId": d.Id(),
+			}
+			request["RegionId"] = client.RegionId
+			if v, ok := d.GetOk("synchronization_direction"); ok {
+				request["SynchronizationDirection"] = v
+			}
+			action := "SuspendDtsJob"
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			logs.AddDebug(action, response, request)
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+			stateConf := helper.BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			}
+		}
+	}
+
+	return nil
+}

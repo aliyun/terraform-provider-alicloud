@@ -1,10 +1,16 @@
 package connectivity
 
 import (
+	"bytes"
 	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -199,8 +205,6 @@ func TestUnitEfloControllerEndpointFromEnv(t *testing.T) {
 }
 
 func TestUnitSlsWithoutEndpoint(t *testing.T) {
-	client := NewTestClient(t)
-
 	testCases := []struct {
 		productCode    string
 		configEndpoint string
@@ -213,8 +217,13 @@ func TestUnitSlsWithoutEndpoint(t *testing.T) {
 		{"alb", "", "eu-central-1", "alb.eu-central-1.aliyuncs.com"},
 	}
 
+	client := NewTestClient(t)
+
 	for _, tc := range testCases {
 		t.Run(tc.productCode, func(t *testing.T) {
+			// A fresh endpoint cache keeps the endpoint discovered for another
+			// region out of this case.
+			client.config.Endpoints = new(sync.Map)
 			client.config.Region = Region(tc.RegionId)
 			client.config.RegionId = tc.RegionId
 
@@ -229,56 +238,140 @@ func TestUnitSlsWithoutEndpoint(t *testing.T) {
 	}
 }
 
-// TestUnitSlsEndpointCacheReuse reproduces the read/write key mismatch fixed in
-// loadApiEndpoint: for sls, productCodeToConfigEndpoints maps the read key to
-// "log", while loadEndpoint always stores under "sls". Before the fix the
-// mapped read key never matched the write key, so every SLS API call re-ran
-// endpoint discovery. The env var is the only probe source, so this case needs
-// no credentials and no network and runs under ci-check-quick.
 func TestUnitSlsEndpointCacheReuse(t *testing.T) {
-	const envKey = "ALIBABA_CLOUD_ENDPOINT_SLS"
-	oldVal, hadOld := os.LookupEnv(envKey)
-	t.Cleanup(func() {
-		if hadOld {
-			os.Setenv(envKey, oldVal)
-		} else {
-			os.Unsetenv(envKey)
-		}
-	})
+	// Mirror the reported scenario: the location service is unreachable, so the
+	// first call falls back to the regular endpoint form and logs a WARN. Every
+	// following call must be served from the endpoint cache, without probing the
+	// location service again and without logging another WARN.
+	var locationProbes int32
+	locationProbe := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&locationProbes, 1)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer locationProbe.Close()
+
+	var logs bytes.Buffer
+	previousLogOutput := log.Writer()
+	log.SetOutput(&logs)
+	defer log.SetOutput(previousLogOutput)
+
+	t.Setenv("ALIBABA_CLOUD_ENDPOINT_SLS", "")
+	t.Setenv("SLS_ENDPOINT", "")
+
+	client := &AliyunClient{
+		RegionId: "cn-hangzhou",
+		config: &Config{
+			Endpoints: new(sync.Map),
+			RegionId:  "cn-hangzhou",
+			// HTTP keeps the simulated unreachable-location failure out of the
+			// SDK's HTTPS-specific retry branch, which would take minutes.
+			Protocol:         "HTTP",
+			LocationEndpoint: locationProbe.Listener.Addr().String(),
+			AccessKey:        "test-ak",
+			SecretKey:        "test-sk",
+			Credential:       &mockCredential{err: fmt.Errorf("unit test uses the static access key")},
+		},
+	}
+
+	first, err := client.loadApiEndpoint("sls")
+	assert.NoError(t, err)
+	assert.Equal(t, "cn-hangzhou.log.aliyuncs.com", first)
+	assert.NotZero(t, atomic.LoadInt32(&locationProbes))
+
+	cached, ok := client.config.Endpoints.Load("sls")
+	assert.True(t, ok)
+	assert.Equal(t, first, cached)
+	_, logCached := client.config.Endpoints.Load("log")
+	assert.False(t, logCached)
+	assert.Equal(t, 1, strings.Count(logs.String(), "[WARN] loading sls endpoint got an error"))
+
+	// Change the probe source. An un-cached implementation would return the new
+	// value here; a cache hit keeps the first endpoint.
+	t.Setenv("ALIBABA_CLOUD_ENDPOINT_SLS", "https://sls.second.test.com")
+	probesAfterFirstCall := atomic.LoadInt32(&locationProbes)
+
+	second, err := client.loadApiEndpoint("sls")
+	assert.NoError(t, err)
+	assert.Equal(t, first, second)
+	assert.Equal(t, probesAfterFirstCall, atomic.LoadInt32(&locationProbes))
+	assert.Equal(t, 1, strings.Count(logs.String(), "[WARN] loading sls endpoint got an error"))
+
+	// Clear the probe source again. With the endpoint cached nothing may probe
+	// the location service or log another WARN here; without the cache this call
+	// re-runs discovery and breaks both counters, while still returning the same
+	// regular endpoint form, so the counters are what distinguish the two paths.
+	t.Setenv("ALIBABA_CLOUD_ENDPOINT_SLS", "")
+
+	third, err := client.loadApiEndpoint("sls")
+	assert.NoError(t, err)
+	assert.Equal(t, first, third)
+	assert.Equal(t, probesAfterFirstCall, atomic.LoadInt32(&locationProbes))
+	assert.Equal(t, 1, strings.Count(logs.String(), "[WARN] loading sls endpoint got an error"))
+}
+
+func TestUnitSlsConfiguredEndpointPriority(t *testing.T) {
+	t.Setenv("ALIBABA_CLOUD_ENDPOINT_SLS", "https://sls.env.test.com")
+
+	var endpoints sync.Map
+	endpoints.Store("log", "cn-shanghai.log.aliyuncs.com")
 
 	client := &AliyunClient{
 		config: &Config{
-			Endpoints: new(sync.Map),
+			Endpoints: &endpoints,
 			RegionId:  "cn-hangzhou",
 		},
 	}
 
-	// First call probes the env var and must cache under "sls", not "log".
-	os.Setenv(envKey, "first.sls.example.com")
-	ep1, err := client.loadApiEndpoint("sls")
+	endpoint, err := client.loadApiEndpoint("sls")
 	assert.NoError(t, err)
-	assert.Equal(t, "first.sls.example.com", ep1)
+	assert.Equal(t, "cn-shanghai.log.aliyuncs.com", endpoint)
 
-	// Bug symptom: the read key is "log" but the write key is "sls", so the
-	// user-config key stays empty after a probe.
-	_, ok := client.config.Endpoints.Load("log")
-	assert.False(t, ok, `Load("log") must be empty; the probe is cached under "sls"`)
-
-	cached, ok := client.config.Endpoints.Load("sls")
+	cached, ok := client.config.Endpoints.Load("log")
 	assert.True(t, ok)
-	assert.Equal(t, "first.sls.example.com", cached)
+	assert.Equal(t, "cn-shanghai.log.aliyuncs.com", cached)
+}
 
-	// Flip the probe source. Before the fix the second call re-probed and
-	// returned the new value; with the Load(productCode) pre-check it is served
-	// from the cache instead.
-	os.Setenv(envKey, "second.sls.example.com")
-	ep2, err := client.loadApiEndpoint("sls")
-	assert.NoError(t, err)
-	assert.Equal(t, "first.sls.example.com", ep2, "second call must reuse the cached endpoint instead of re-probing")
+func TestUnitProductEndpointCacheReuse(t *testing.T) {
+	testCases := []struct {
+		productCode string
+		envName     string
+	}{
+		{"ecs", "ALIBABA_CLOUD_ENDPOINT_ECS"},
+		{"alb", "ALIBABA_CLOUD_ENDPOINT_ALB"},
+	}
 
-	cached, ok = client.config.Endpoints.Load("sls")
-	assert.True(t, ok)
-	assert.Equal(t, "first.sls.example.com", cached, "cache must not be overwritten by the skipped probe")
+	for _, tc := range testCases {
+		t.Run(tc.productCode, func(t *testing.T) {
+			firstName := fmt.Sprintf("https://%s.first.test.com", tc.productCode)
+			secondName := fmt.Sprintf("https://%s.second.test.com", tc.productCode)
+			t.Setenv(tc.envName, firstName)
+
+			client := &AliyunClient{
+				config: &Config{
+					Endpoints: new(sync.Map),
+					RegionId:  "cn-hangzhou",
+				},
+			}
+
+			first, err := client.loadApiEndpoint(tc.productCode)
+			assert.NoError(t, err)
+			assert.Equal(t, firstName, first)
+
+			cached, ok := client.config.Endpoints.Load(tc.productCode)
+			assert.True(t, ok)
+			assert.Equal(t, firstName, cached)
+
+			t.Setenv(tc.envName, secondName)
+
+			second, err := client.loadApiEndpoint(tc.productCode)
+			assert.NoError(t, err)
+			assert.Equal(t, first, second)
+
+			cached, ok = client.config.Endpoints.Load(tc.productCode)
+			assert.True(t, ok)
+			assert.Equal(t, first, cached)
+		})
+	}
 }
 
 // TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache verifies the fix keeps
@@ -307,40 +400,4 @@ func TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache(t *testing.T) {
 	cached, ok := client.config.Endpoints.Load("sls")
 	assert.True(t, ok)
 	assert.Equal(t, "cached.sls.example.com", cached, "the cached sls entry must be left untouched")
-}
-
-// TestUnitNonMappedProductEndpointCacheReuse is the control group: for
-// non-mapped products the read and write keys already coincide (ecs), so
-// caching must keep working unchanged after the fix.
-func TestUnitNonMappedProductEndpointCacheReuse(t *testing.T) {
-	const envKey = "ALIBABA_CLOUD_ENDPOINT_ECS"
-	oldVal, hadOld := os.LookupEnv(envKey)
-	t.Cleanup(func() {
-		if hadOld {
-			os.Setenv(envKey, oldVal)
-		} else {
-			os.Unsetenv(envKey)
-		}
-	})
-
-	client := &AliyunClient{
-		config: &Config{
-			Endpoints: new(sync.Map),
-			RegionId:  "cn-hangzhou",
-		},
-	}
-
-	os.Setenv(envKey, "first.ecs.example.com")
-	ep1, err := client.loadApiEndpoint("ecs")
-	assert.NoError(t, err)
-	assert.Equal(t, "first.ecs.example.com", ep1)
-
-	os.Setenv(envKey, "second.ecs.example.com")
-	ep2, err := client.loadApiEndpoint("ecs")
-	assert.NoError(t, err)
-	assert.Equal(t, "first.ecs.example.com", ep2, "second call must reuse the cached ecs endpoint instead of re-probing")
-
-	cached, ok := client.config.Endpoints.Load("ecs")
-	assert.True(t, ok)
-	assert.Equal(t, "first.ecs.example.com", cached)
 }

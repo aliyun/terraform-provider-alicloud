@@ -7,11 +7,11 @@ description: |-
   Provides a list of Nas Data Flows to the user.
 ---
 
-# alicloud\_nas\_data\_flows
+# alicloud_nas_data_flows
 
 This data source provides the Nas Data Flows of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0+.
 
 ## Example Usage
 
@@ -45,21 +45,21 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the Data flow. Including: `Starting`, `Running`, `Updating`, `Deleting`, `Stopping`, `Stopped`, `Misconfigured`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `flows` - A list of Nas Data Flows. Each element contains the following attributes:
- * `create_time` - The time when Fileset was created. Executing the ISO8601 standard means that the return format is: 'yyyy-MM-ddTHH:mm:ssZ'.
- * `data_flow_id` - The ID of the Data Flow.
- * `description` - The Description of data flow.
- * `error_message` - Error message.
- * `file_system_id` - The ID of the file system.
- * `file_system_path` - The path of Fileset in the CPFS file system.
- * `fset_description` - Description of automatic update.
- * `fset_id` - The ID of the Fileset.
- * `id` - The resource ID of the data flow. The value formats as `<file_system_id>:<data_flow_id>`.
- * `source_security_type` - The security protection type of the source storage.
- * `source_storage` - The access path of the source store. Format: `<storage type>://<path>`.
- * `status` - The status of the Data flow.
- * `throughput` - The maximum transmission bandwidth of data flow, unit: `MB/s`.
+  * `create_time` - The time when Fileset was created. Executing the ISO8601 standard means that the return format is: 'yyyy-MM-ddTHH:mm:ssZ'.
+  * `data_flow_id` - The ID of the Data Flow.
+  * `description` - The Description of data flow.
+  * `error_message` - Error message.
+  * `file_system_id` - The ID of the file system.
+  * `file_system_path` - The path of Fileset in the CPFS file system.
+  * `fset_description` - Description of automatic update.
+  * `fset_id` - The ID of the Fileset.
+  * `id` - The resource ID of the data flow. The value formats as `<file_system_id>:<data_flow_id>`.
+  * `source_security_type` - The security protection type of the source storage.
+  * `source_storage` - The access path of the source store. Format: `<storage type>://<path>`.
+  * `status` - The status of the Data flow.
+  * `throughput` - The maximum transmission bandwidth of data flow, unit: `MB/s`.

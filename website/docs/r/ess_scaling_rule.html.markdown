@@ -122,13 +122,13 @@ The following arguments are supported:
 
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling rule.
 * `adjustment_type` - (Optional) Adjustment mode of a scaling rule. Optional values:
-    - QuantityChangeInCapacity: It is used to increase or decrease a specified number of ECS instances.
-    - PercentChangeInCapacity: It is used to increase or decrease a specified proportion of ECS instances.
-    - TotalCapacity: It is used to adjust the quantity of ECS instances in the current scaling group to a specified value.
+  - QuantityChangeInCapacity: It is used to increase or decrease a specified number of ECS instances.
+  - PercentChangeInCapacity: It is used to increase or decrease a specified proportion of ECS instances.
+  - TotalCapacity: It is used to adjust the quantity of ECS instances in the current scaling group to a specified value.
 * `adjustment_value` - (Optional) The number of ECS instances to be adjusted in the scaling rule. This parameter is required and applicable only to simple scaling rules. The number of ECS instances to be adjusted in a single scaling activity cannot exceed 500. Value range:
-    - QuantityChangeInCapacity：(0, 500] U (-500, 0]
-    - PercentChangeInCapacity：[0, 10000] U [-100, 0]
-    - TotalCapacity：[0, 1000]
+  - QuantityChangeInCapacity：(0, 500] U (-500, 0]
+  - PercentChangeInCapacity：[0, 10000] U [-100, 0]
+  - TotalCapacity：[0, 1000]
 * `scaling_rule_name` - (Optional) Name shown for the scaling rule, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is scaling rule id. 
 * `cooldown` - (Optional) The cooldown time of the scaling rule. This parameter is applicable only to simple scaling rules. Value range: [0, 86,400], in seconds. The default value is empty，if not set, the return value will be 0, which is the default value of integer.
 * `scaling_rule_type` - (Optional, ForceNew, Available since v1.58.0) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule", "PredictiveScalingRule". Default to "SimpleScalingRule".
@@ -168,7 +168,6 @@ The HybridMetrics mapping supports the following:
 * `metric_name` - (Optional) The name of the Hybrid Cloud Monitoring metric.
 * `statistic` - (Optional) The statistical method of the metric value. Valid values: Average, Minimum, Maximum.
 * `expression` - (Optional) The metric expression that consists of multiple Hybrid Cloud Monitoring metrics. It calculates a result used to trigger scaling events. The expression must comply with the Reverse Polish Notation (RPN) specification, and the operators can only be + - × /.
-* `metric_name` - (Optional) The name of the Hybrid Cloud Monitoring metric.
 * `dimensions` - (Optional) The structure of volumeMounts.
   See [`dimensions`](#hybrid_metrics-dimensions) below for details.
 

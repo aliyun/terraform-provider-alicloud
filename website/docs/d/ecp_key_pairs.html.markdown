@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecp Key Pairs to the user.
 ---
 
-# alicloud\_ecp\_key\_pairs
+# alicloud_ecp_key_pairs
 
 This data source provides the Ecp Key Pairs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
@@ -41,12 +41,12 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Key Pair name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Key Pair names.
 * `pairs` - A list of Ecp Key Pairs. Each element contains the following attributes:
-	* `id` - The ID of the Key Pair. Its value is same as Queue Name.
-	* `key_pair_finger_print` - The Private Key of the Fingerprint.
-	* `key_pair_name` - The Key Name.
+  * `id` - The ID of the Key Pair. Its value is same as Queue Name.
+  * `key_pair_finger_print` - The Private Key of the Fingerprint.
+  * `key_pair_name` - The Key Name.

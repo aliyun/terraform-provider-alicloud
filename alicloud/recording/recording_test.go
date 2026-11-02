@@ -219,7 +219,7 @@ func TestSeedDeterminismAndWait(t *testing.T) {
 		t.Fatal("ignored cancellation")
 	}
 }
-func TestEnabledTransportRequiresMain(t *testing.T) {
+func TestEnabledTransportRequiresSession(t *testing.T) {
 	t.Setenv(ModeEnv, "replay")
 	req, _ := http.NewRequest("GET", "https://example.invalid/", nil)
 	if _, err := Transport(http.DefaultTransport).RoundTrip(req); err == nil {

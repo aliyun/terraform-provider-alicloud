@@ -18,24 +18,18 @@ import (
 	sdkalidns "github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-// This is also the TestMain integration used after a product's tests move out of
-// the root package. The recording identity is the exact test name, not its path.
-func TestMain(m *testing.M) { acctest.RecordingTestMain(m) }
 
 type recordingTestRun struct{ run func() int }
 
 func (r recordingTestRun) Run() int { return r.run() }
 
 // A fixture runs one explicit recording session inside an ordinary Go test. Its
-// TestMain has already selected the Go tests; temporarily scope the recorder's
-// single-case guard to this fixture and restore the caller's selection afterward.
-// Live acceptance-test processes still use the unmodified TestMain guard.
+// Temporarily scope the explicit fixture session to this exact test, restoring
+// the caller's selection afterward. Cloud tests use the common acctest lifecycle.
 func runRecordingFixture(t *testing.T, run func() int) int {
 	t.Helper()
 	selection := flag.Lookup("test.run").Value

@@ -74,36 +74,51 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `clusters` - A list of SelectDB DBClusters. Each element contains the following attributes:
-  * `id` - The resource ID in terraform of DBCluster. It formats as <db_instance_id>:<db_cluster_id>.
-  * `db_cluster_id` - The cluster ID.
-  * `db_instance_id` - The instance ID.
-  * `db_cluster_class` - The DBCluster class. db_cluster_class has a range of class from `selectdb.xlarge` to `selectdb.256xlarge`.
-  * `db_cluster_description` - The DBCluster description.
-  * `engine` - The Engine of the DBCluster.
-  * `engine_version` - The engine version of the DBCluster.
-  * `create_time` - The creation time of the resource.
-  * `status` - The status of the DBCluster. Valid values: `ACTIVATION`,`CREATING`,`DELETING`,`RESTARTING`,`ORDER_PREPARING`.
-  * `payment_type` - The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
-  * `cpu` - The cpu resource amount of DBCluster. Depends on `db_cluster_class`.
-  * `memory` - The memory resource amount of DBCluster. Depends on `db_cluster_class`.
-  * `cache_size` - The cache size for DBCluster.
-  * `region_id` - The ID of region for the cluster.
-  * `zone_id` - The ID of zone for the cluster.
-  * `vpc_id` - The ID of the VPC for the cluster.
-  * `params` - 	The details about each parameter in DBCluster returned.
-    * `name` - Parameter name.
-    * `value` - The new value of Parameter.
-    * `optional` - The value range of the parameter.
-    * `comment` - The comments on the parameter.
-    * `param_category` - The category of the parameter.
-    * `default_value` - The default value of the parameter.
-    * `is_dynamic` - Indicates whether the parameter immediately takes effect without requiring a restart.
-    * `is_user_modifiable` - Indicates whether the parameter is modifiable.
-  * `param_change_logs` - The configuration change logs of parameters.
-    * `name` - Changed parameter name.
-    * `old_value` - The old value of parameter.
-    * `new_value` - The new value of parameter.
-    * `gmt_created` - When the parameter change is created.
-    * `gmt_modified` - When the parameter change is modified.
-    * `config_id` - The id of parameter change.
-    * `is_applied` - Whether the parameter changing is applied.
+
+### `clusters`
+
+The clusters supports the following:
+
+* `id` - The resource ID in terraform of DBCluster. It formats as <db_instance_id>:<db_cluster_id>.
+* `db_cluster_id` - The cluster ID.
+* `db_instance_id` - The instance ID.
+* `db_cluster_class` - The DBCluster class. db_cluster_class has a range of class from `selectdb.xlarge` to `selectdb.256xlarge`.
+* `db_cluster_description` - The DBCluster description.
+* `engine` - The Engine of the DBCluster.
+* `engine_version` - The engine version of the DBCluster.
+* `create_time` - The creation time of the resource.
+* `status` - The status of the DBCluster. Valid values: `ACTIVATION`,`CREATING`,`DELETING`,`RESTARTING`,`ORDER_PREPARING`.
+* `payment_type` - The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
+* `cpu` - The cpu resource amount of DBCluster. Depends on `db_cluster_class`.
+* `memory` - The memory resource amount of DBCluster. Depends on `db_cluster_class`.
+* `cache_size` - The cache size for DBCluster.
+* `region_id` - The ID of region for the cluster.
+* `zone_id` - The ID of zone for the cluster.
+* `vpc_id` - The ID of the VPC for the cluster.
+* `params` - The details about each parameter in DBCluster returned.
+* `param_change_logs` - The configuration change logs of parameters.
+
+### `clusters.params`
+
+The params supports the following:
+
+* `name` - Parameter name.
+* `value` - The new value of Parameter.
+* `optional` - The value range of the parameter.
+* `comment` - The comments on the parameter.
+* `param_category` - The category of the parameter.
+* `default_value` - The default value of the parameter.
+* `is_dynamic` - Indicates whether the parameter immediately takes effect without requiring a restart.
+* `is_user_modifiable` - Indicates whether the parameter is modifiable.
+
+### `clusters.param_change_logs`
+
+The param_change_logs supports the following:
+
+* `name` - Changed parameter name.
+* `old_value` - The old value of parameter.
+* `new_value` - The new value of parameter.
+* `gmt_created` - When the parameter change is created.
+* `gmt_modified` - When the parameter change is modified.
+* `config_id` - The id of parameter change.
+* `is_applied` - Whether the parameter changing is applied.

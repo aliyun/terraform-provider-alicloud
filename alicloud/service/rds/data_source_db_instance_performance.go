@@ -259,7 +259,7 @@ func (d *dbInstancePerformanceDataSource) Read(ctx context.Context, req datasour
 }
 
 func (d *dbInstancePerformanceDataSource) describeDBInstancePerformance(ctx context.Context, model *dbInstancePerformanceModel) (map[string]interface{}, error) {
-	client := d.Client()
+	client := d.Meta()
 	action := "DescribeDBInstancePerformance"
 	request := map[string]interface{}{
 		"SourceIp":     client.SourceIp,

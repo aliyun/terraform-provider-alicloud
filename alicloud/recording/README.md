@@ -7,8 +7,11 @@ an instrumented client. Normal testing remains live by default.
 
 ## Running a supported test
 
-The root acceptance package and all 30 existing service packages with Go tests
-have a recording-enabled `TestMain`. Ordinary resource tests can keep using the
+Recording starts in the shared `alicloud/acctest` package, before test functions
+run. The existing `acctest.PreCheck(t)` binds the selected test and registers
+`t.Cleanup` to save/validate the session after Terraform teardown and CheckDestroy.
+No product-level `TestMain` or per-resource recording entry is required. Ordinary
+resource tests can keep using the
 existing HashiCorp `acctest.RandInt`, `RandIntRange`, `RandString`,
 `RandStringFromCharSet` and `RandomWithPrefix` functions: the single-case recording
 entry seeds the standard `math/rand` source from the saved seed before tests run.
@@ -23,20 +26,18 @@ within 64 characters, and are matched as business parameters instead of ignored.
 No per-resource recording branch or replacement random helper is needed for
 these common paths. Existing explicit `RecordingRandInt` callers remain supported.
 
-For a **new test package**, add its standard package-level recording entry once:
-
-```go
-func TestMain(m *testing.M) {
-    os.Exit(recording.RunMain(m))
-}
-```
-
-If the package already has a sweeper-aware TestMain, retain its ordinary live
-execution and use `recording.RunMain` for the recording path (or use the existing
-`alicloud/acctest.RecordingTestMain` helper). Individual resource tests in that
-package then inherit the common behavior. Run one explicit package per process;
-do not use `go test ./alicloud/...`, because unmatched packages would create empty
-sessions and compete for the same recording directory.
+A new product package inherits recording by importing the normal `acctest` helpers
+and calling the existing `acctest.PreCheck(t)` in its TestCase PreCheck. Tests
+that bypass this common lifecycle must adopt that PreCheck before recording;
+SDK calls without it fail closed. Existing sweeper TestMain functions stay as-is.
+Terraform teardown and CheckDestroy run before finalization. If a test has custom
+`t.Cleanup` callbacks that call cloud APIs, register them **after** PreCheck (Go
+runs cleanups in reverse order). Requests after finalization fail and invalidate
+the report even if their errors are ignored.
+Run one explicit package per process; do not use `go test ./alicloud/...`, because
+unmatched packages would initialize empty sessions and compete for one directory.
+Use `-count=1` and leave test shuffling off. An unmatched or early-skipped test
+cannot produce a successful cassette; runners must check both PASS and result.json.
 
 Run exactly one anchored top-level test per process: `-run '^TestExample$'`.
 The recorder infers its identity from this selector. Prefixes, regular-expression
@@ -116,7 +117,7 @@ Transport errors poison the recording rather than produce an incomplete tape.
 
 The transport serializes interactions within a process. Single-case execution
 avoids sharing random streams or clients between cases. Concurrent requests whose
-order varies are not supported. Timed/random choices made before TestMain,
+order varies are not supported. Timed/random choices made in package initialization,
 `math/rand/v2`, user-created random sources, direct crypto UUIDs or Terraform
 `uuid()`/`timestamp()` values used in business fields, and test-local reseeding are not controlled by this entry. Such cases
 still require an explicit adaptation or live acceptance testing. Existing waits
@@ -171,6 +172,8 @@ credentials; they never provision cloud resources.
 
 ```sh
 go test -race ./alicloud/recording
+# Exercises shared startup/cleanup with subprocesses and dummy HTTP only.
+go test -race ./alicloud/acctest -run '^TestSharedRecordingProcess$' -count=1
 go test -p=1 ./alicloud/service/alidns \
   -run '^TestRecordingDnsLifecycleOffline$' -count=1
 
@@ -301,6 +304,7 @@ Never publish real cassette payloads in a public repository.
 
 ## Cross-SDK live validation cases
 
+Verified on 2026-11-02 against the current source and shared acctest entry.
 These cases use real registered resources and the production Configure function.
 Run each separately with the same MODE/PATH interface, and replay each in its own
 network-isolated process. The verbose log prints `Recording resource: ... name=...`
@@ -315,10 +319,11 @@ and destroys its resource.
 | `^TestRecordingSlsProjectLiveTerraformCLI$` | Empty SLS project / OpenAPI v2 plus legacy SLS policy read | 39 | ListProject: exact logged name; check empty Logstores before fallback deletion |
 
 An additional unmodified existing case, `TestAccAliCloudALBAcl_basic1` in
-`./alicloud/service/alb`, passed real recording and isolated replay with 37
+`./alicloud/service/alb`, passed real recording and isolated replay with 33
 interactions, including its original random-name call, data source, import and
 CheckDestroy. It creates only an unattached ACL. Independent ListAcls queries
-confirmed no remaining newly created test ACL. None of that resource's existing
+confirmed no remaining test ACL in the actual selected region (`cn-shanghai`),
+with `cn-hangzhou` checked as well. None of that resource's existing
 test source was changed. All five verifications had zero unmatched/unused
 interactions, permission-denied external probes, unchanged cassette/seed hashes,
 credential scans, and zero residual resources. Counts include account discovery.

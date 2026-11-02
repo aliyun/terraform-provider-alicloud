@@ -39,6 +39,7 @@ jobs:
     runs-on: terraform-ci-route
     timeout-minutes: 5
     outputs:
+      classification: ${{ steps.select.outputs.classification }}
       runner: ${{ steps.select.outputs.runner }}
     steps:
       - name: Select runner
@@ -46,7 +47,7 @@ jobs:
         uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@cc0a874ce1783a88cc1bacfb961e4dd7c909cbb6
   docs-node:
     needs: route
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
@@ -68,9 +69,21 @@ jobs:
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Test parallel check runner
+        shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 -m unittest discover -s scripts/ci -p test_document_checks.py
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
+          fi
+          python3 "$helper" document
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
@@ -85,7 +98,7 @@ jobs:
     timeout-minutes: 20
   docs-go:
     needs: route
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:

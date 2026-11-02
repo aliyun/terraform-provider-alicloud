@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Mse Znodes of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.162.0+.
+-> **NOTE:** Available since v1.162.0.
 
 ## Example Usage
 
@@ -48,15 +48,15 @@ The following arguments are supported:
 * `cluster_id` - (Required, ForceNew) The ID of the Cluster.
 * `path` - (Required, ForceNew) The Node path.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Znode names.
 * `znodes` - A list of Mse Znodes. Each element contains the following attributes:
-	* `cluster_id` - The ID of the Cluster.
-	* `data` - The Node data.
-	* `dir` - Node list information, the value is as follows:
-	* `id` - The ID of the Znode. The value formats as `<cluster_id>:<path>`.
-	* `path` - The Node path.
-	* `znode_name` - The Node name.
+  * `cluster_id` - The ID of the Cluster.
+  * `data` - The Node data.
+  * `dir` - Node list information, the value is as follows:
+  * `id` - The ID of the Znode. The value formats as `<cluster_id>:<path>`.
+  * `path` - The Node path.
+  * `znode_name` - The Node name.

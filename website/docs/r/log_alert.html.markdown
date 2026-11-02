@@ -7,14 +7,14 @@ description: |-
   Provides a Alicloud log alert resource.
 ---
 
-# alicloud\_log\_alert
+# alicloud_log_alert
 
 Log alert is a unit of log service, which is used to monitor and alert the user's logstore status information. 
 Log Service enables you to configure alerts based on the charts in a dashboard to monitor the service status in real time.
 
 For information about SLS Alert and how to use it, see [SLS Alert Overview](https://www.alibabacloud.com/help/en/doc-detail/209202.html)
 
--> **NOTE:** Available in 1.78.0
+-> **NOTE:** Available since v1.78.0.
 
 ## Example Usage
 
@@ -297,62 +297,92 @@ The following arguments are supported:
 * `no_data_severity` - (Optional, Available in 1.161.0+) when no data happens, the severity of new alert.
 * `send_resolved` - (Optional, Available in 1.161.0+) when new alert is resolved, whether to notify, default is false.
 * `auto_annotation` - (Optional, Available in 1.164.0+) whether to add automatic annotation, default is false.
-* `query_list` - (Optinal, Required before 1.203.0) Multiple conditions for configured alarm query.
-    * `project` - (Optional, Available in 1.161.0+) Query project.
-    * `region` - (Optional, Available in 1.161.0+) Query project region.
-    * `role_arn` - (Optional) Query project store's ARN.
-    * `dashboard_id` - (Optional, Available in 1.161.0+) Query dashboard id.
-    * `chart_title` - (Optional) Chart title, optional from 1.161.0+.
-    * `logstore` - (Optional, Deprecated) Query logstore, use store for new alert, Deprecated from 1.161.0+.
-    * `store` - (Optional, Available in 1.161.0+) Query store for new alert.
-    * `store_type` - (Optional, Available in 1.161.0+) Query store type for new alert, including log,metric,meta.
-    * `query` - (Required) Query corresponding to chart. example: * AND aliyun.
-    * `start` - (Required) Begin time. example: -60s.
-    * `end` - (Required) End time. example: 20s.
-    * `time_span_type` - (Optional) default Custom. No need to configure this parameter.
-    * `power_sql_mode` - (Optional, Available in 1.164.0+) default disable, whether to use power sql. support auto, enable, disable.
-* `notification_list` - (Optional, Deprecated) Alarm information notification list, Deprecated from 1.161.0+.
-    * `type` - (Required) Notification type. support Email, SMS, DingTalk, MessageCenter.
-    * `content` - (Required) Notice content of alarm.
-    * `service_uri` - (Optional) Request address.
-    * `mobile_list` - (Optional) SMS sending mobile number.
-    * `email_list` - (Optional) Email address list.   
-* `labels` - (Optional, Available in 1.161.0+) Labels for new alert.
-    * `key` - (Required) Labels's key for new alert.
-    * `value` - (Required) Labels's value for new alert.
-* `annotations` - (Optional, Available in 1.161.0+) Annotations for new alert.
-    * `key` - (Required) Annotations's key for new alert.
-    * `value` - (Required) Annotations's value for new alert.
-* `policy_configuration` - (Optional, Available in 1.161.0+) Policy configuration for new alert.
-    * `alert_policy_id` - (Required) Alert Policy Id.
-    * `action_policy_id` - (Optional) Action Policy Id.
-    * `repeat_interval` - (Required) Repeat interval used by alert policy, 1h, 1m.e.g.
-* `group_configuration` - (Optional, Available in 1.161.0+) Group configuration for new alert.
-    * `type` - (Optional) Group configuration type, including no_group, labels_auto, custom.
-    * `fileds` - (Optional) Group configuration's fields list when type is custom.
-* `severity_configurations` - (Optional, Available in 1.161.0+) Severity configuration for new alert.
-    * `severity` - (Required) Severity for new alert, including 2,4,6,8,10 for Report,Low,Medium,High,Critical.
-    * `eval_condition` - (Required) Severity when this condition is met.
-        * `condition` - (Optional) Condition for each row.
-        * `count_condition` - (Optional) Count's condition for the rows met condition above.
-* `join_configurations` - (Optional, Available in 1.161.0+) Join configuration for different queries.
-    * `type` - (Required) Join type, including cross_join, inner_join, left_join, right_join, full_join, left_exclude, right_exclude, concat, no_join.
-    * `condition` - (Required) Join condition.
-* `template_configuration` - (Optional, Available in 1.203.0+) Template configuration for alert, when `type` is `tpl`.
-    * `id` - (Required) Alert template id.
-    * `type` - (Required) Alert template type including `sys`, `user`.
-    * `lang` - (Optional) Alert template language including `cn`, `en`.
-    * `tokens` - (Optional) Alert template tokens.
-    * `annotations` - (Optional) Alert template annotations.
+* `query_list` - (Optional, Required before 1.203.0) Multiple conditions for configured alarm query. See [`query_list`](#query_list) below.
+* `notification_list` - (Optional, Deprecated) Alarm information notification list, Deprecated from 1.161.0+. See [`notification_list`](#notification_list) below.
+* `labels` - (Optional, Available in 1.161.0+) Labels for new alert. See [`labels`](#labels) below.
+* `annotations` - (Optional, Available in 1.161.0+) Annotations for new alert. See [`annotations`](#annotations) below.
+* `policy_configuration` - (Optional, Available in 1.161.0+) Policy configuration for new alert. See [`policy_configuration`](#policy_configuration) below.
+* `group_configuration` - (Optional, Available in 1.161.0+) Group configuration for new alert. See [`group_configuration`](#group_configuration) below.
+* `severity_configurations` - (Optional, Available in 1.161.0+) Severity configuration for new alert. See [`severity_configurations`](#severity_configurations) below.
+* `join_configurations` - (Optional, Available in 1.161.0+) Join configuration for different queries. See [`join_configurations`](#join_configurations) below.
+* `template_configuration` - (Optional, Available in 1.203.0+) Template configuration for alert, when `type` is `tpl`. See [`template_configuration`](#template_configuration) below.
 * `schedule_interval` - (Optional, Deprecated) Execution interval. 60 seconds minimum, such as 60s, 1h. Deprecated from 1.176.0+. use interval in schedule.
 * `schedule_type` - (Optional, Deprecated)  Default FixedRate. No need to configure this parameter. Deprecated from 1.176.0+. use type in schedule.
-* `schedule` - (Optional, Available in 1.176.0+) schedule for alert.
-    * `type` - (Required) including FixedRate,Hourly,Daily,Weekly,Cron.
-    * `interval` - (Optional) Execution interval. 60 seconds minimum, such as 60s, 1h. used when type is FixedRate.
-    * `cron_expression` - (Optional) Cron expression when type is Cron.
-    * `day_of_week` - (Optional) Day of week when type is Weekly, including 0,1,2,3,4,5,6, 0 for Sunday, 1 for Monday
-    * `hour` - (Optional) Hour of day when type is Weekly/Daily.
-    * `time_zone` - (Optional) Time zone for schedule.
+* `schedule` - (Optional, Available in 1.176.0+) schedule for alert. See [`schedule`](#schedule) below.
+
+### `query_list`
+
+* `project` - (Optional, Available in 1.161.0+) Query project.
+* `region` - (Optional, Available in 1.161.0+) Query project region.
+* `role_arn` - (Optional) Query project store's ARN.
+* `dashboard_id` - (Optional, Available in 1.161.0+) Query dashboard id.
+* `chart_title` - (Optional) Chart title, optional from 1.161.0+.
+* `logstore` - (Optional, Deprecated) Query logstore, use store for new alert, Deprecated from 1.161.0+.
+* `store` - (Optional, Available in 1.161.0+) Query store for new alert.
+* `store_type` - (Optional, Available in 1.161.0+) Query store type for new alert, including log,metric,meta.
+* `query` - (Required) Query corresponding to chart. example: * AND aliyun.
+* `start` - (Required) Begin time. example: -60s.
+* `end` - (Required) End time. example: 20s.
+* `time_span_type` - (Optional) default Custom. No need to configure this parameter.
+* `power_sql_mode` - (Optional, Available in 1.164.0+) default disable, whether to use power sql. support auto, enable, disable.
+
+### `notification_list`
+
+* `type` - (Required) Notification type. support Email, SMS, DingTalk, MessageCenter.
+* `content` - (Required) Notice content of alarm.
+* `service_uri` - (Optional) Request address.
+* `mobile_list` - (Optional) SMS sending mobile number.
+* `email_list` - (Optional) Email address list.
+
+### `labels`
+
+* `key` - (Required) Labels's key for new alert.
+* `value` - (Required) Labels's value for new alert.
+
+### `annotations`
+
+* `key` - (Required) Annotations's key for new alert.
+* `value` - (Required) Annotations's value for new alert.
+
+### `policy_configuration`
+
+* `alert_policy_id` - (Required) Alert Policy Id.
+* `action_policy_id` - (Optional) Action Policy Id.
+* `repeat_interval` - (Required) Repeat interval used by alert policy, 1h, 1m.e.g.
+
+### `group_configuration`
+
+* `type` - (Required) Group configuration type, including no_group, labels_auto, custom.
+* `fields` - (Optional) Group configuration's fields list when type is custom.
+
+### `severity_configurations`
+
+* `severity` - (Required) Severity for new alert, including 2,4,6,8,10 for Report,Low,Medium,High,Critical.
+* `eval_condition` - (Required) Severity when this condition is met. The map supports `condition` (condition for each row) and `count_condition` (count's condition for the rows met condition above) keys.
+
+### `join_configurations`
+
+* `type` - (Required) Join type, including cross_join, inner_join, left_join, right_join, full_join, left_exclude, right_exclude, concat, no_join.
+* `condition` - (Required) Join condition.
+
+### `template_configuration`
+
+* `id` - (Required) Alert template id.
+* `type` - (Required) Alert template type including `sys`, `user`.
+* `lang` - (Optional) Alert template language including `cn`, `en`.
+* `tokens` - (Optional) Alert template tokens.
+* `annotations` - (Optional) Alert template annotations.
+
+### `schedule`
+
+* `type` - (Required) including FixedRate,Hourly,Daily,Weekly,Cron.
+* `interval` - (Optional) Execution interval. 60 seconds minimum, such as 60s, 1h. used when type is FixedRate.
+* `cron_expression` - (Optional) Cron expression when type is Cron.
+* `day_of_week` - (Optional) Day of week when type is Weekly, including 0,1,2,3,4,5,6, 0 for Sunday, 1 for Monday
+* `hour` - (Optional) Hour of day when type is Weekly/Daily.
+* `delay` - (Optional) Delay time for schedule.
+* `run_immediately` - (Optional) Whether to run the alert immediately.
+* `time_zone` - (Optional) Time zone for schedule.
 
 
 ## Attributes Reference

@@ -106,6 +106,8 @@ The following arguments are supported:
   -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `password` - (Optional) The access password for the instance. It must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@#$%^&*()_+-=).  
+* `password_wo` - (Optional, Available since v2.2.0) The write-only password of the account. It is only sent to the server when the resource is created or the `password_wo_version` changes and is never stored in the state or plan.
+* `password_wo_version` - (Optional, Available since v2.2.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `password_wo` changes.
 * `payment_type` - (Optional, Computed, Available since v1.267.0) The billing method of the instance. Supported values:
   - `PayAsYouGo`: Pay-as-you-go
   - `Subscription`: Subscription

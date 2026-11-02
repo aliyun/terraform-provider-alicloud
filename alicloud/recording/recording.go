@@ -81,7 +81,10 @@ type Session struct {
 
 var active struct {
 	sync.RWMutex
-	session *Session
+	session       *Session
+	process       bool
+	bound         bool
+	restoreRandom func()
 }
 
 func Mode() string {
@@ -195,15 +198,106 @@ func (r mainRunner) Run() int {
 	return code
 }
 
-// RunMain lets service-package TestMain functions use the same recording entry
-// without importing the aggregate Provider. Ordinary execution is unchanged.
-func RunMain(m interface{ Run() int }) int {
-	flag.Parse()
-	if f := flag.Lookup("sweep"); Enabled() && f != nil && f.Value.String() != "" {
-		fmt.Fprintln(os.Stderr, "recording cannot be combined with resource sweeping")
-		return 1
+// TestContext is the lifecycle supplied by testing.T, without linking testing
+// into production SDK clients. Cleanup runs after the entire test returns,
+// including Terraform destroy, CheckDestroy and later-registered cleanups.
+type TestContext interface {
+	Helper()
+	Name() string
+	Cleanup(func())
+	Failed() bool
+	Skipped() bool
+	Fatalf(string, ...interface{})
+	Errorf(string, ...interface{})
+}
+
+// StartProcess is called once by the shared acctest package during initialization,
+// before any test-body randomness. Do not parse Go flags in init: testing has not
+// registered them yet. Read only the explicit test-binary arguments we need.
+func StartProcess(args []string) error {
+	if !Enabled() {
+		return nil
 	}
-	return WrapMain(m).Run()
+	if os.Getenv("TF_ACC") == "" {
+		return errors.New("recording requires TF_ACC=1")
+	}
+	values := make(map[string]string)
+	for i := 0; i < len(args); i++ {
+		key, value, found := strings.Cut(strings.TrimLeft(args[i], "-"), "=")
+		switch key {
+		case "test.run", "test.count", "test.shuffle", "sweep":
+			if !found {
+				i++
+				if i >= len(args) {
+					return fmt.Errorf("missing value for %s", key)
+				}
+				value = args[i]
+			}
+			values[key] = value
+		}
+	}
+	if values["sweep"] != "" {
+		return errors.New("recording cannot be combined with resource sweeping")
+	}
+	if v := values["test.count"]; v != "" && v != "1" {
+		return errors.New("recording requires -count=1")
+	}
+	if v := values["test.shuffle"]; v != "" && v != "off" {
+		return errors.New("recording requires test shuffle off")
+	}
+	testCase, err := selectedCase(values["test.run"], os.Getenv(CaseEnv))
+	if err != nil {
+		return err
+	}
+	active.Lock()
+	defer active.Unlock()
+	if active.session != nil {
+		return errors.New("recording process already initialized")
+	}
+	session, err := New(Mode(), os.Getenv(PathEnv), testCase)
+	if err != nil {
+		return err
+	}
+	restore, err := seedGlobalRandom(session.seed)
+	if err != nil {
+		return err
+	}
+	active.session, active.process, active.bound, active.restoreRandom = session, true, false, restore
+	return nil
+}
+
+// BindTest is called by the existing shared acceptance PreCheck. Only the exact
+// selected top-level test can own the process session. Repeated PreChecks are safe.
+func BindTest(t TestContext) {
+	t.Helper()
+	if !Enabled() {
+		return
+	}
+	active.Lock()
+	s := active.session
+	if s == nil || !active.process {
+		active.Unlock()
+		t.Fatalf("recording requires shared acctest initialization")
+		return
+	}
+	if t.Name() != s.tape.TestCase {
+		active.Unlock()
+		t.Fatalf("recording PreCheck must belong to selected top-level test %s", s.tape.TestCase)
+		return
+	}
+	if active.bound {
+		active.Unlock()
+		return
+	}
+	active.bound = true
+	restore := active.restoreRandom
+	active.Unlock()
+	t.Cleanup(func() {
+		defer restore()
+		if err := s.Close(!t.Failed() && !t.Skipped()); err != nil {
+			t.Errorf("recording validation failed: %v", err)
+		}
+	})
 }
 
 // Seed the legacy math/rand source used by both HashiCorp acceptance helper
@@ -224,15 +318,15 @@ func seedGlobalRandom(seed int64) (func(), error) {
 	}, nil
 }
 
-// RequireSession prevents SDK configuration/discovery before an opt-in TestMain.
+// RequireSession prevents SDK calls before the shared test lifecycle is bound.
 func RequireSession() error {
 	if !Enabled() {
 		return nil
 	}
 	active.RLock()
 	defer active.RUnlock()
-	if active.session == nil {
-		return errors.New("recording requires a recording-enabled TestMain")
+	if active.session == nil || (active.process && !active.bound) {
+		return errors.New("recording requires acctest.PreCheck(t) on the selected test")
 	}
 	return nil
 }
@@ -290,9 +384,10 @@ func Transport(base http.RoundTripper) http.RoundTripper {
 	}
 	active.RLock()
 	s := active.session
+	unbound := active.process && !active.bound
 	active.RUnlock()
-	if s == nil {
-		return errorTransport{errors.New("recording requires a recording-enabled TestMain")}
+	if s == nil || unbound {
+		return errorTransport{errors.New("recording requires acctest.PreCheck(t) on the selected test")}
 	}
 	return s.Transport(base)
 }
@@ -327,7 +422,14 @@ func (t transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
-		return nil, errors.New("recording session is closed")
+		s.failure = errors.New("HTTP request after recording finalization; register HTTP cleanups after acctest.PreCheck")
+		s.unmatched++
+		// A custom cleanup registered before PreCheck runs after our finalizer.
+		// Never leave a successful report when such a late request is swallowed.
+		if err := s.writeResult(false); err != nil {
+			return nil, err
+		}
+		return nil, s.failure
 	}
 	if s.failure != nil {
 		return nil, s.failure
@@ -424,13 +526,7 @@ func (s *Session) Close(success bool) error {
 			valid = false
 		}
 	}
-	result := Result{1, "1", "1", s.tape.TestCase, s.mode, len(s.tape.Interactions), valid, s.unmatched, unused, valid}
-	// Replay writes its result outside the immutable input directory when requested.
-	resultPath := os.Getenv("TF_ACC_RECORDING_RESULT_PATH")
-	if resultPath == "" {
-		resultPath = filepath.Join(s.dir, "result.json")
-	}
-	if err := writeJSON(resultPath, result); err != nil {
+	if err := s.writeResult(valid); err != nil {
 		return err
 	}
 	if !success && s.failure == nil {
@@ -438,6 +534,21 @@ func (s *Session) Close(success bool) error {
 	}
 	return s.failure
 }
+
+// Caller holds s.mu. The baseline and seed are never rewritten by replay.
+func (s *Session) writeResult(valid bool) error {
+	unused := 0
+	if s.mode == "replay" {
+		unused = len(s.tape.Interactions) - s.next
+	}
+	result := Result{1, "1", "1", s.tape.TestCase, s.mode, len(s.tape.Interactions), valid, s.unmatched, unused, valid}
+	resultPath := os.Getenv("TF_ACC_RECORDING_RESULT_PATH")
+	if resultPath == "" {
+		resultPath = filepath.Join(s.dir, "result.json")
+	}
+	return writeJSON(resultPath, result)
+}
+
 func writeJSON(name string, value interface{}) error {
 	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {

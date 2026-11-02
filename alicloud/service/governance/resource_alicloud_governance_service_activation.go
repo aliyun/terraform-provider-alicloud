@@ -75,7 +75,7 @@ func (r *serviceActivationResource) Schema(ctx context.Context, req resource.Sch
 // RegionId for the activation region through the provider configuration, while region is also the
 // resource ID, so a divergent value would describe one region through another region's client.
 func (r *serviceActivationResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if req.Plan.Raw.IsNull() || r.Client() == nil {
+	if req.Plan.Raw.IsNull() || r.Meta() == nil {
 		return
 	}
 	var plan serviceActivationResourceModel
@@ -83,11 +83,11 @@ func (r *serviceActivationResource) ModifyPlan(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() || plan.Region.IsNull() || plan.Region.IsUnknown() {
 		return
 	}
-	if region := plan.Region.ValueString(); region != r.Client().RegionId {
+	if region := plan.Region.ValueString(); region != r.Meta().RegionId {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("region"),
 			"Region must match the provider region",
-			fmt.Sprintf("Cloud Governance Center must be addressed in its activation region, and this resource sends the open, decommission and status requests through the provider configuration, so region must be %q (the provider region), but %q was configured. The activation cannot move between regions: point the provider, or the provider alias applied to this resource, at the activation region %q instead of removing the resource and importing it under another region, because an import with the activation region as its ID also only succeeds while the provider is configured with that same region.", r.Client().RegionId, region, r.Client().RegionId),
+			fmt.Sprintf("Cloud Governance Center must be addressed in its activation region, and this resource sends the open, decommission and status requests through the provider configuration, so region must be %q (the provider region), but %q was configured. The activation cannot move between regions: point the provider, or the provider alias applied to this resource, at the activation region %q instead of removing the resource and importing it under another region, because an import with the activation region as its ID also only succeeds while the provider is configured with that same region.", r.Meta().RegionId, region, r.Meta().RegionId),
 		)
 	}
 }
@@ -109,9 +109,9 @@ func (r *serviceActivationResource) Create(ctx context.Context, req resource.Cre
 	// which is the region itself: the activation has no identity beyond the region.
 	request := map[string]interface{}{
 		"ClientToken": helper.BuildClientToken("OpenGovernanceService"),
-		"RegionId":    r.Client().RegionId,
+		"RegionId":    r.Meta().RegionId,
 	}
-	id := r.Client().RegionId
+	id := r.Meta().RegionId
 	if id == "" {
 		resp.Diagnostics.AddError("Creating alicloud_governance_service_activation: missing identity", "The provider region is empty, so the activation cannot be addressed")
 		return
@@ -150,7 +150,7 @@ func (r *serviceActivationResource) Create(ctx context.Context, req resource.Cre
 	issueOpen := true
 	// OpenGovernanceService publishes InvalidStatus.AlreadyEnabled when the account is already
 	// activated. Querying the status first keeps create idempotent without depending on that code.
-	if current, err := serviceActivationGet(opCtx, r.Client(), id); err == nil && current != nil {
+	if current, err := serviceActivationGet(opCtx, r.Meta(), id); err == nil && current != nil {
 		if status, ok := current["Status"].(string); ok && status == "Enabled" {
 			issueOpen = false
 		}
@@ -165,9 +165,9 @@ func (r *serviceActivationResource) Create(ctx context.Context, req resource.Cre
 			// out before the next attempt, and an in-flight open either lands on Enabled or
 			// reports the account as already activated when it is retried. Any other state means
 			// the error is terminal here, so it is reported instead of burning the timeout.
-			if _, err := retryRpcPost(opCtx, r.Client(), "governance", "2021-01-20", "OpenGovernanceService", request, time.Until(deadline)); err != nil {
+			if _, err := retryRpcPost(opCtx, r.Meta(), "governance", "2021-01-20", "OpenGovernanceService", request, time.Until(deadline)); err != nil {
 				openErr = err
-				current, getErr := serviceActivationGet(opCtx, r.Client(), id)
+				current, getErr := serviceActivationGet(opCtx, r.Meta(), id)
 				if getErr != nil || current == nil {
 					resp.Diagnostics.AddError(
 						fmt.Sprintf("Creating %s: calling OpenGovernanceService", serviceActivationTypeName),
@@ -203,13 +203,13 @@ func (r *serviceActivationResource) Create(ctx context.Context, req resource.Cre
 		if attemptTimeout > 2*time.Minute {
 			attemptTimeout = 2 * time.Minute
 		}
-		if object, waitErr = serviceActivationWaitForState(opCtx, r.Client(), id, "Status", []string{"Enabled"}, nil, attemptTimeout); waitErr == nil && object != nil {
+		if object, waitErr = serviceActivationWaitForState(opCtx, r.Meta(), id, "Status", []string{"Enabled"}, nil, attemptTimeout); waitErr == nil && object != nil {
 			lastStatus = "Enabled"
 			break
 		}
 		lastStatus, lastFailure = "", ""
 		lastErr = waitErr
-		if current, err := serviceActivationGet(opCtx, r.Client(), id); err == nil && current != nil {
+		if current, err := serviceActivationGet(opCtx, r.Meta(), id); err == nil && current != nil {
 			if status, ok := current["Status"].(string); ok {
 				lastStatus = status
 			}
@@ -258,7 +258,7 @@ func (r *serviceActivationResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	object, err := serviceActivationGet(ctx, r.Client(), state.Id.ValueString())
+	object, err := serviceActivationGet(ctx, r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetGovernanceServiceStatus", serviceActivationTypeName),
@@ -293,7 +293,7 @@ func (r *serviceActivationResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	object, err := serviceActivationGet(ctx, r.Client(), state.Id.ValueString())
+	object, err := serviceActivationGet(ctx, r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Updating %s: calling GetGovernanceServiceStatus", serviceActivationTypeName),
@@ -347,13 +347,13 @@ func (r *serviceActivationResource) Delete(ctx context.Context, req resource.Del
 			)
 			return false, false
 		}
-		if _, err := retryRpcPost(opCtx, r.Client(), "governance", "2021-01-20", "DecommissionGovernance", request0, remaining); err != nil {
+		if _, err := retryRpcPost(opCtx, r.Meta(), "governance", "2021-01-20", "DecommissionGovernance", request0, remaining); err != nil {
 			// A decommission write error is resolved through the status instead of the code (error
 			// tables checked 2026-10-24): the target may be reached already, because the service
 			// reports an activation it cannot decommission as not enabled, or an activation change
 			// may still be running and safe to retry once it settles. Both are observable in the
 			// status, so the write error alone does not decide the outcome.
-			if current, getErr := serviceActivationGet(opCtx, r.Client(), state.Id.ValueString()); getErr == nil && current != nil {
+			if current, getErr := serviceActivationGet(opCtx, r.Meta(), state.Id.ValueString()); getErr == nil && current != nil {
 				status, _ := current["Status"].(string)
 				switch {
 				case serviceActivationAbsent(status):
@@ -390,14 +390,14 @@ func (r *serviceActivationResource) Delete(ctx context.Context, req resource.Del
 		if attemptTimeout > 5*time.Minute {
 			attemptTimeout = 5 * time.Minute
 		}
-		if object, err := serviceActivationWaitForState(opCtx, r.Client(), state.Id.ValueString(), "Status", []string{"Disabled", "EnableFailed"}, nil, attemptTimeout); err == nil && object != nil {
+		if object, err := serviceActivationWaitForState(opCtx, r.Meta(), state.Id.ValueString(), "Status", []string{"Disabled", "EnableFailed"}, nil, attemptTimeout); err == nil && object != nil {
 			lastStatus, _ = object["Status"].(string)
 			break
 		} else if err != nil {
 			lastErr = err
 		}
 		lastStatus, lastFailure = "", ""
-		if current, err := serviceActivationGet(opCtx, r.Client(), state.Id.ValueString()); err == nil && current != nil {
+		if current, err := serviceActivationGet(opCtx, r.Meta(), state.Id.ValueString()); err == nil && current != nil {
 			if status, ok := current["Status"].(string); ok {
 				lastStatus = status
 			}

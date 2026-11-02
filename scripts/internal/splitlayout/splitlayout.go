@@ -235,6 +235,64 @@ func FrameworkRegisteredIn(registerSrc []byte, typeName string) bool {
 	return false
 }
 
+// ProviderRegisteredNames parses the root alicloud/provider.go source and
+// returns the entries registered in its DataSourcesMap and ResourcesMap
+// literals — the public aliases the flat layout registered at the provider
+// root rather than in a product register.go. The base title index needs them
+// so a migration that moves such an alias into a service register announces
+// it as modified, not as new: the alias type name need not match any flat
+// filename stem (Quotas #11288 registers alicloud_quotas_application_info at
+// the root), so the filename-derived index would otherwise miss it.
+//
+// Each entry carries the kind its map literal belongs to — DataSourcesMap
+// yields KindDataSource and ResourcesMap yields KindResource — so the title
+// gate keeps a root DataSource distinct from a same-named service Resource;
+// a name-only index would let a same-name Resource/DataSource collision waive
+// the wrong declaration. The Factory field is not populated: the title gate
+// only needs the type name and kind, and the provider.go value expressions
+// are not register factories.
+//
+// Provider-level registrations live in provider.go, which the title gate reads
+// at the base commit the same way it reads every register.go; this function
+// only walks the two top-level provider map literals, so nested schema maps
+// (map[string]*schema.Schema) are never mistaken for provider entities.
+func ProviderRegisteredNames(providerSrc []byte) []Entry {
+	f, err := parser.ParseFile(token.NewFileSet(), "provider.go", providerSrc, parser.SkipObjectResolution)
+	if err != nil {
+		return nil
+	}
+	var entries []Entry
+	ast.Inspect(f, func(n ast.Node) bool {
+		kv, ok := n.(*ast.KeyValueExpr)
+		if !ok {
+			return true
+		}
+		key, ok := kv.Key.(*ast.Ident)
+		if !ok || key.Name != "DataSourcesMap" && key.Name != "ResourcesMap" {
+			return true
+		}
+		kind := KindResource
+		if key.Name == "DataSourcesMap" {
+			kind = KindDataSource
+		}
+		lit, ok := kv.Value.(*ast.CompositeLit)
+		if !ok {
+			return true
+		}
+		for _, elt := range lit.Elts {
+			pair, ok := elt.(*ast.KeyValueExpr)
+			if !ok {
+				continue
+			}
+			if name := stringLit(pair.Key); name != "" {
+				entries = append(entries, Entry{TypeName: name, Kind: kind})
+			}
+		}
+		return true
+	})
+	return entries
+}
+
 // FrameworkRegistered reports whether any product register.go declares
 // typeName as framework-native. It lets the SDKv2 diff checkers tell a
 // framework registration (outside their scope) from an unregistered name.

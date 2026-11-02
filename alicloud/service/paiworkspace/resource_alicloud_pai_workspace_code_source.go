@@ -1,0 +1,346 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package paiworkspace
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourcePaiWorkspaceCodeSource() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudPaiWorkspaceCodeSourceCreate,
+		Read:   resourceAliCloudPaiWorkspaceCodeSourceRead,
+		Update: resourceAliCloudPaiWorkspaceCodeSourceUpdate,
+		Delete: resourceAliCloudPaiWorkspaceCodeSourceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"accessibility": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validators.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+			},
+			"code_branch": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"code_commit": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"code_repo": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"code_repo_access_token": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"code_repo_user_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"display_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"mount_path": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"workspace_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudPaiWorkspaceCodeSourceCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := fmt.Sprintf("/api/v1/codesources")
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	request["WorkspaceId"] = d.Get("workspace_id")
+	request["DisplayName"] = d.Get("display_name")
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	request["CodeRepo"] = d.Get("code_repo")
+	if v, ok := d.GetOk("code_repo_user_name"); ok {
+		request["CodeRepoUserName"] = v
+	}
+	if v, ok := d.GetOk("code_repo_access_token"); ok {
+		request["CodeRepoAccessToken"] = v
+	}
+	if v, ok := d.GetOk("code_branch"); ok {
+		request["CodeBranch"] = v
+	}
+	request["MountPath"] = d.Get("mount_path")
+	request["Accessibility"] = d.Get("accessibility")
+	if v, ok := d.GetOk("code_commit"); ok {
+		request["CodeCommit"] = v
+	}
+	body = request
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pai_workspace_code_source", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["CodeSourceId"]))
+
+	return resourceAliCloudPaiWorkspaceCodeSourceRead(d, meta)
+}
+
+func resourceAliCloudPaiWorkspaceCodeSourceRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	paiWorkspaceServiceV2 := NewService(client)
+
+	objectRaw, err := paiWorkspaceServiceV2.DescribePaiWorkspaceCodeSource(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pai_workspace_code_source DescribePaiWorkspaceCodeSource Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	if objectRaw["Accessibility"] != nil {
+		d.Set("accessibility", objectRaw["Accessibility"])
+	}
+	if objectRaw["CodeBranch"] != nil {
+		d.Set("code_branch", objectRaw["CodeBranch"])
+	}
+	if objectRaw["CodeCommit"] != nil {
+		d.Set("code_commit", objectRaw["CodeCommit"])
+	}
+	if objectRaw["CodeRepo"] != nil {
+		d.Set("code_repo", objectRaw["CodeRepo"])
+	}
+	if objectRaw["CodeRepoAccessToken"] != nil {
+		d.Set("code_repo_access_token", objectRaw["CodeRepoAccessToken"])
+	}
+	if objectRaw["CodeRepoUserName"] != nil {
+		d.Set("code_repo_user_name", objectRaw["CodeRepoUserName"])
+	}
+	if objectRaw["GmtCreateTime"] != nil {
+		d.Set("create_time", objectRaw["GmtCreateTime"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["DisplayName"] != nil {
+		d.Set("display_name", objectRaw["DisplayName"])
+	}
+	if objectRaw["MountPath"] != nil {
+		d.Set("mount_path", objectRaw["MountPath"])
+	}
+	if objectRaw["WorkspaceId"] != nil {
+		d.Set("workspace_id", objectRaw["WorkspaceId"])
+	}
+
+	return nil
+}
+
+func resourceAliCloudPaiWorkspaceCodeSourceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var body map[string]interface{}
+	update := false
+
+	if d.HasChange("accessibility") {
+		paiWorkspaceServiceV2 := NewService(client)
+		object, err := paiWorkspaceServiceV2.DescribePaiWorkspaceCodeSource(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+
+		target := d.Get("accessibility").(string)
+		if object["Accessibility"].(string) != target {
+			if target == "PUBLIC" {
+				CodeSourceId := d.Id()
+				action := fmt.Sprintf("/api/v1/codesources/%s/publish", CodeSourceId)
+				request = make(map[string]interface{})
+				query = make(map[string]*string)
+				body = make(map[string]interface{})
+				request["CodeSourceId"] = d.Id()
+
+				body = request
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+					if err != nil {
+						if helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+
+			}
+		}
+	}
+
+	CodeSourceId := d.Id()
+	action := fmt.Sprintf("/api/v1/codesources/%s", CodeSourceId)
+	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["CodeSourceId"] = d.Id()
+
+	if d.HasChange("display_name") {
+		update = true
+	}
+	request["DisplayName"] = d.Get("display_name")
+	if d.HasChange("description") {
+		update = true
+	}
+	if v, ok := d.GetOk("description"); ok || d.HasChange("description") {
+		request["Description"] = v
+	}
+	if d.HasChange("code_repo") {
+		update = true
+	}
+	request["CodeRepo"] = d.Get("code_repo")
+	if d.HasChange("code_branch") {
+		update = true
+	}
+	if v, ok := d.GetOk("code_branch"); ok || d.HasChange("code_branch") {
+		request["CodeBranch"] = v
+	}
+	if d.HasChange("code_commit") {
+		update = true
+	}
+	if v, ok := d.GetOk("code_commit"); ok || d.HasChange("code_commit") {
+		request["CodeCommit"] = v
+	}
+	if d.HasChange("code_repo_user_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("code_repo_user_name"); ok || d.HasChange("code_repo_user_name") {
+		request["CodeRepoUserName"] = v
+	}
+	if d.HasChange("code_repo_access_token") {
+		update = true
+	}
+	if v, ok := d.GetOk("code_repo_access_token"); ok || d.HasChange("code_repo_access_token") {
+		request["CodeRepoAccessToken"] = v
+	}
+	if d.HasChange("mount_path") {
+		update = true
+	}
+	request["MountPath"] = d.Get("mount_path")
+	body = request
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudPaiWorkspaceCodeSourceRead(d, meta)
+}
+
+func resourceAliCloudPaiWorkspaceCodeSourceDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	CodeSourceId := d.Id()
+	action := fmt.Sprintf("/api/v1/codesources/%s", CodeSourceId)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	var err error
+	request = make(map[string]interface{})
+	request["CodeSourceId"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
+
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"201400004"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"201400002"}) || errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

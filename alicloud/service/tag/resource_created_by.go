@@ -101,7 +101,7 @@ func (r *createdByResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	response, err := retryRpcPost(ctx, r.Client(), "Tag", "2018-08-28", "OpenCreatedBy", request, operationTimeout, createdByEndpoint())
+	response, err := retryRpcPost(ctx, r.Meta(), "Tag", "2018-08-28", "OpenCreatedBy", request, operationTimeout, createdByEndpoint())
 	// The switch is a singleton: an already-enabled account is the desired state, and
 	// OpenCreatedBy reports that as CreatedByAlreadyOpen instead of succeeding.
 	if err != nil && !isExpectedErrors(err, []string{"CreatedByAlreadyOpen"}) {
@@ -137,7 +137,7 @@ func (r *createdByResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	object, err := createdByWaitForState(ctx, r.Client(), id, "OpenStatus", []string{"true"}, []string{}, operationTimeout)
+	object, err := createdByWaitForState(ctx, r.Meta(), id, "OpenStatus", []string{"true"}, []string{}, operationTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for OpenCreatedBy", createdByTypeName),
@@ -162,7 +162,7 @@ func (r *createdByResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	object, err := createdByGet(ctx, r.Client(), state.Id.ValueString())
+	object, err := createdByGet(ctx, r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling CheckCreatedByEnabled", createdByTypeName),
@@ -188,7 +188,7 @@ func (r *createdByResource) Update(ctx context.Context, req resource.UpdateReque
 	// Only the local timeouts argument can change: the switch is account-scoped and exposes no
 	// mutable attribute. open_status is Computed, so a timeouts-only change leaves it unknown in
 	// the plan; read the live switch back instead of persisting that unknown value.
-	object, err := createdByGet(ctx, r.Client(), state.Id.ValueString())
+	object, err := createdByGet(ctx, r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Updating %s: calling CheckCreatedByEnabled", createdByTypeName),
@@ -239,14 +239,14 @@ func (r *createdByResource) Delete(ctx context.Context, req resource.DeleteReque
 			resp.Diagnostics.AddError("Building CloseCreatedBy request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(ctx, r.Client(), "Tag", "2018-08-28", "CloseCreatedBy", request0, operationTimeout, createdByEndpoint()); err != nil && !isExpectedErrors(err, []string{"ResourceNotFound.CreatedBy", "ResourceNotFound"}) {
+		if _, err := retryRpcPost(ctx, r.Meta(), "Tag", "2018-08-28", "CloseCreatedBy", request0, operationTimeout, createdByEndpoint()); err != nil && !isExpectedErrors(err, []string{"ResourceNotFound.CreatedBy", "ResourceNotFound"}) {
 			resp.Diagnostics.AddError("Deleting alicloud_tag_created_by: CloseCreatedBy", err.Error())
 			return
 		}
 		// A nil target waits for absence: StateChangeConf only treats a nil refresh
 		// result as success when Target is empty, and createdByGet returns nil once the
 		// switch reports OpenStatus=false.
-		if _, err := createdByWaitForState(ctx, r.Client(), state.Id.ValueString(), "OpenStatus", nil, []string{}, operationTimeout); err != nil {
+		if _, err := createdByWaitForState(ctx, r.Meta(), state.Id.ValueString(), "OpenStatus", nil, []string{}, operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Deleting alicloud_tag_created_by: waiting for CloseCreatedBy", err.Error())
 			return
 		}

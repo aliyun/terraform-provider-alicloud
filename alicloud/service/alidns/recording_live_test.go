@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -55,6 +56,7 @@ resource %q "test" {
 	}
 	address := resourceType + ".test"
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){"alicloud": factory},
 		Steps: []resource.TestStep{
 			{Config: config("initial"), Check: resource.TestCheckResourceAttr(address, nameAttribute, name)},

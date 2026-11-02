@@ -22,10 +22,10 @@ func TestRecordingClientRejectsUnsafeCredentialSources(t *testing.T) {
 		}
 	}
 }
-func TestRecordingClientRequiresTestMain(t *testing.T) {
+func TestRecordingClientRequiresPreCheck(t *testing.T) {
 	t.Setenv(recording.ModeEnv, "record")
 	c := &Config{AccessKey: "test-key", SecretKey: "test-secret"}
-	if _, err := c.Client(); err == nil || !strings.Contains(err.Error(), "TestMain") {
+	if _, err := c.Client(); err == nil || !strings.Contains(err.Error(), "acctest.PreCheck") {
 		t.Fatalf("unexpected session validation result: %v", err)
 	}
 }

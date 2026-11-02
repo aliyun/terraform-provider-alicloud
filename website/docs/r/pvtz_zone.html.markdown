@@ -67,8 +67,6 @@ The following attributes are exported:
 * `id` - The ID of the Private Zone.
 * `record_count` - The count of the Private Zone Record.
 * `is_ptr` - Whether the Private Zone is ptr.
-* `creation_time` - (Removed since v1.107.0+) The create time of the Private Zone.
-* `update_time` - (Removed since v1.107.0+) The update time of the Private Zone.
 
 ## Import
 

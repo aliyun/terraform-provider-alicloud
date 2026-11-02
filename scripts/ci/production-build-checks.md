@@ -97,3 +97,66 @@ FORBIDDEN_DEPS="<path> ..." scripts/ci/check-production-deps.sh  # extend scope
 
 The fixture tests live in `check-production-deps_test.sh` and exercise the
 assertion logic without a Go toolchain via `PROD_DEPS_INPUT`.
+
+## Cloudauth no-tests initialization check
+
+`scripts/ci/initialization-check.sh` is the local-ci-check equivalent of the
+remote `probe_init` init probe. It closes the gap where `ci-check-quick` left
+the cloudauth test-binary initialization to a separately respawned probe task,
+and where some QA treated `go build` / `go vet` success as proof the test
+binary had executed.
+
+| Entry | Command | Proves |
+| --- | --- | --- |
+| `make check-initialization` | `scripts/ci/initialization-check.sh` → `go test ./alicloud/service/cloudauth -run '^$' -count=1 -v` | The standard cloudauth test binary **compiles, links and initializes** (`init()`/`TestMain`) with **no test body running** — no cloud resource is created. INITIALIZATION_ONLY, `countsAsAccTest=false`. |
+
+### Why `-run '^$'` and `-count=1`
+
+- `-run '^$'` matches no `Test*` function, so `go test` builds the test
+  binary, links it, runs `init()` (and `TestMain`, if any) and then reports
+  "no tests to run". No acceptance case executes and no resource is created.
+- `-count=1` disables the Go test result cache, so a cached pass cannot mask
+  a real compile/link/init failure — the test binary is actually executed.
+- A pass additionally requires a genuine "no test ran" signal: the wrapper
+  rejects any output containing `=== RUN` / `--- PASS` / `--- FAIL` / `--- SKIP`
+  (a test body ran) or `?` (no test files; binary never built), so a stub or a
+  misconfigured filter cannot fake PASS. A non-zero exit (compile error,
+  link error, init panic, build-failed) fails the check and the enclosing
+  quick/CI run, with the original stdout/stderr and the exact command printed.
+
+### Scope (what it is NOT)
+
+- NOT the root main build — use `make provider-build` (`go build -o /dev/null .`).
+- NOT a real ACC — use the cloud acceptance suite. The receipt explicitly
+  marks `countsAsAccTest=false`.
+- NOT per-resource — one standard service test package, run once per quick.
+
+### Where it runs
+
+- **Local / FC quick check** — `make ci-check-quick`
+  (`scripts/local-ci-check.sh --quick`) runs the check as `Part 5b`,
+  unconditionally (not gated by `--skip-build`), so `--quick` does not bypass
+  it and it runs exactly once per quick.
+- **Standalone** — `make check-initialization` / `scripts/ci/initialization-check.sh`.
+- **Remote init probe** — the separate `probe_init` Provider Run entry remains
+  the standalone remote probe; this CI entry lets the PR前 quick
+  (`submit_quick`) collect the init evidence in the same quick run instead of
+  respawning a probe task per migration.
+
+### Local usage
+
+```bash
+make check-initialization                                  # real cloudauth init check
+make ci-check-quick                                        # quick now includes Part 5b
+scripts/ci/initialization-check.sh                        # direct
+INIT_CHECK_PACKAGE=./alicloud/service/ecs scripts/ci/initialization-check.sh  # other package
+# fixture tests (no Go toolchain, via a stub command):
+scripts/ci/initialization-check_test.sh
+CI_INIT_CHECK_REAL=1 scripts/ci/initialization-check_test.sh  # + real go test smoke (opt-in)
+```
+
+The fixture tests live in `initialization-check_test.sh` and exercise the
+pass/fail decision logic (compile failure, init panic, ran-a-test rejection,
+no-test-files rejection, receipt format, single-probe wiring) without a Go
+toolchain via `INIT_CHECK_GO_TEST_CMD`, mirroring `PROD_DEPS_INPUT`. The
+genuine `go test` execution is validated by a real `ci-check-quick` run.

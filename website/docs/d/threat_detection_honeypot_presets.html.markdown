@@ -11,16 +11,16 @@ description: |-
 
 This data source provides Threat Detection Honeypot Preset available to the user.
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_threat_detection_honeypot_presets" "default" {
   ids                 = ["${alicloud_threat_detection_honeypot_preset.default.id}"]
   honeypot_image_name = "shiro"
   node_id             = "example_value"
-  preset_name         = "apiapec_test"
+  preset_name         = "apiapec_example"
 }
 
 output "alicloud_threat_detection_honeypot_preset_example_id" {
@@ -31,9 +31,12 @@ output "alicloud_threat_detection_honeypot_preset_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `honeypot_image_name` - (ForceNew,Optional) Honeypot mirror name
-* `node_id` - (ForceNew,Optional) Unique id of management node
-* `preset_name` - (ForceNew,Optional) Honeypot template custom name
+* `current_page` - (Optional) The current page number.
+* `honeypot_image_name` - (ForceNew, Optional) Honeypot mirror name
+* `lang` - (Optional) The language.
+* `node_id` - (ForceNew, Optional) Unique id of management node
+* `node_name` - (Optional) The name of the management node.
+* `preset_name` - (ForceNew, Optional) Honeypot template custom name
 * `ids` - (Optional, ForceNew, Computed) A list of Honeypot Preset IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.

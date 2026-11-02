@@ -11,20 +11,20 @@ description: |-
 
 This data source provides a list of OOS Templates in an Alibaba Cloud account according to the specified filters.
  
--> **NOTE:** Available in v1.92.0+.
+-> **NOTE:** Available since v1.92.0.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 
 data "alicloud_oos_templates" "example" {
   name_regex = "test"
-  tags={
+  tags = {
     "Created" = "TF",
-    "For" = "template Test"
+    "For"     = "template Test"
   }
-  share_type = "Private"
+  share_type  = "Private"
   has_trigger = false
 }
 
@@ -67,4 +67,12 @@ The following attributes are exported in addition to the arguments listed above:
   * `template_version` - Version of the OOS Template.
   * `updated_by` - The user who updated the template.
   * `updated_date` - The time when the template was updated.
+  * `category` - The category of the template.
+  * `created_by` - The user who created the template.
+  * `created_date` - The time when the template was created.
+  * `has_trigger` - Whether the template has a trigger.
+  * `share_type` - The sharing type of the template.
+  * `tags` - The tag of the resource.
+  * `template_format` - The format of the template.
+  * `template_type` - The type of the OOS Template.
 
