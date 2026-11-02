@@ -1,0 +1,143 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package threatdetection
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudThreatDetectionServiceLinkedRole() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudThreatDetectionServiceLinkedRoleCreate,
+		Read:   resourceAliCloudThreatDetectionServiceLinkedRoleRead,
+		Delete: resourceAliCloudThreatDetectionServiceLinkedRoleDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"role_status": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"service_linked_role": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"AliyunServiceRoleForSas", "AliyunServiceRoleForSasCspm", "AliyunServiceRoleForSasAgentless", "AliyunServiceRoleForOssMfd", "AliyunServiceRoleForAntiRansomwareMssp", "AliyunServiceRoleForSasSecllm", "AliyunServiceRoleForSasAI", "AliyunLogETLRole"}, false),
+			},
+		},
+	}
+}
+
+func resourceAliCloudThreatDetectionServiceLinkedRoleCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateServiceLinkedRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("service_linked_role"); ok {
+		request["ServiceLinkedRole"] = v
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Sas", "2018-12-03", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_threat_detection_service_linked_role", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["ServiceLinkedRole"]))
+
+	return resourceAliCloudThreatDetectionServiceLinkedRoleRead(d, meta)
+}
+
+func resourceAliCloudThreatDetectionServiceLinkedRoleRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	threatDetectionServiceV2 := ServiceV2{client}
+
+	objectRaw, err := threatDetectionServiceV2.DescribeThreatDetectionServiceLinkedRole(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_threat_detection_service_linked_role DescribeThreatDetectionServiceLinkedRole Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("role_status", objectRaw["Status"])
+
+	d.Set("service_linked_role", d.Id())
+
+	return nil
+}
+
+func resourceAliCloudThreatDetectionServiceLinkedRoleDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteServiceLinkedRole"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["RoleName"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("ResourceManager", "2020-03-31", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	threatDetectionServiceV2 := ServiceV2{client}
+	stateConf := helper.BuildStateConf([]string{}, []string{"false"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, threatDetectionServiceV2.DescribeAsyncThreatDetectionServiceLinkedRoleStateRefreshFunc(d, response, "$.RoleStatus.Status", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
+	}
+
+	return nil
+}

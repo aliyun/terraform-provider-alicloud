@@ -3,7 +3,7 @@ package dts
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+	"sort"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -447,10 +447,6 @@ func convertSourceEndpointEngineNameUppercaseResponse(source interface{}) interf
 	return source
 }
 
-func upperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.EqualFold(old, new)
-}
-
 // convertMigrationJobStatusResponse keeps the computed status inside the writable status domain
 // without hiding an unstarted migration. DTS cycles through Prechecking while a job is being
 // prepared or started; that phase is folded into Migrating so a refresh that lands inside it does
@@ -474,6 +470,542 @@ func convertCheckJobStatusResponse(source interface{}) interface{} {
 	switch fmt.Sprint(source) {
 	case "Prechecking", "PreCheckPass":
 		return "Migrating"
+	}
+	return source
+}
+func (s *Service) DescribeDtsJobMonitorRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeJobMonitorRule"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *Service) DescribeDtsSubscriptionJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SubscriptionJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	if object["Status"] == "Starting" {
+		object["Status"] = "Normal"
+	}
+	return object, nil
+}
+
+func (s *Service) DtsSubscriptionJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDtsSubscriptionJob(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *Service) DescribeDtsSynchronizationInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId":      s.client.RegionId,
+		"DtsInstanceID": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SynchronizationInstance", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *Service) DescribeDtsSynchronizationJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SynchronizationJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	// From startup to synchronizing, the resource goes through the pre-check and initialization phases.
+	// Because the initialization phase takes too long, and once it passes the pre-check, it can be considered that the task can be executed normally.
+	// Therefore, the initialization state is regarded as an equivalent synchronization state.
+	if object["Status"] == "synchronizing" || object["Status"] == "Initializing" {
+		object["Status"] = "Synchronizing"
+	}
+	// After calling the delete interface, soft delete is actually performed,
+	// and instance data will still be queried from the query interface.
+	// Therefore, it is judged that the instance does not exist when the end state is "Finished".
+	if object["Status"] == "Finished" {
+		return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SynchronizationJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
+	return object, nil
+}
+
+func (s *Service) DescribeDtsJobDetail(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobDetail"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS:SynchronizationJob", id), errs.NotFoundMsg, errs.ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, errs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *Service) DtsSynchronizationJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDtsSynchronizationJob(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *Service) DescribeDtsConsumerChannel(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeConsumerChannel"
+	parts, err := helper.ParseResourceId(id, 2)
+	if err != nil {
+		err = errs.WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":      s.client.RegionId,
+		"DtsInstanceId": parts[0],
+		"PageSize":      helper.PageSizeMedium,
+		"PageNumber":    1,
+	}
+	idExist := false
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
+				return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+			}
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.ConsumerChannels", response)
+		if err != nil {
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ConsumerChannels", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ConsumerGroupId"]) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if !idExist {
+		return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+	}
+	return
+}
+
+func (s *Service) DescribeDtsMigrationJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobs"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	request["JobType"] = "MIGRATION"
+	request["PageSize"] = helper.PageSizeLarge
+	request["PageNumber"] = 1
+	idExist := false
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
+				return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+			}
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.DtsJobList", response)
+		if err != nil {
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DtsJobList", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DtsJobId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if !idExist {
+		return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+	}
+	return object, nil
+}
+
+func (s *Service) QueryChangedJobParameters(dtsJobId string) (string, error) {
+	client := s.client
+	action := "DescribeDtsJobConfig"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"DtsJobId": dtsJobId,
+	}
+	resp, err := client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+	if err != nil {
+		return "", err
+	}
+
+	logs.AddDebug(action, resp, request)
+
+	// Parameters 必须为 []interface{}
+	parameters, ok := resp["Parameters"].([]interface{})
+	if !ok {
+		return "", fmt.Errorf("no Parameters found in response")
+	}
+
+	changed := make([]map[string]interface{}, 0)
+
+	// filter 被修改的项
+	for _, item := range parameters {
+		param, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		rv, rvOk := param["RunningValue"]
+		dv, dvOk := param["DefaultValue"]
+		if rvOk && dvOk && rv != dv {
+			changed = append(changed, map[string]interface{}{
+				"module": param["Module"],
+				"name":   param["Name"],
+				"value":  rv,
+			})
+		}
+	}
+
+	if len(changed) == 0 {
+		return "", nil
+	}
+
+	// 按 name 排序
+	sort.Slice(changed, func(i, j int) bool {
+		ni, _ := changed[i]["name"].(string)
+		nj, _ := changed[j]["name"].(string)
+		return ni < nj
+	})
+
+	// 转一行字符串
+	b, err := json.Marshal(changed)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (s *Service) DescribeDtsSyncJob(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeDtsJobs"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"DtsJobId": id,
+	}
+	request["JobType"] = "SYNC"
+	request["PageSize"] = helper.PageSizeLarge
+	request["PageNumber"] = 1
+	idExist := false
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
+				return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+			}
+			return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.DtsJobList", response)
+		if err != nil {
+			return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DtsJobList", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DtsJobId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	if !idExist {
+		return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+	}
+	return object, nil
+}
+
+func (s *Service) DtsSyncJobStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDtsSyncJob(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *Service) DescribeDtsInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+
+	request := map[string]interface{}{
+		"DtsInstanceId": id,
+		"RegionId":      s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeDtsInstanceDetail"
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Dts", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DtsInstanceStatus", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.DtsInstanceStatus", response)
+	}
+	if status, ok := v.(map[string]interface{})["Status"]; ok && status == "finished" {
+		return object, errs.WrapErrorf(errs.NotFoundErr("DTS", id), errs.NotFoundWithResponse, response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func convertDtsMigrationJobPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
 	}
 	return source
 }

@@ -996,6 +996,76 @@ func TestUnitCommonRedisPostPaidDiffSuppressFunc(t *testing.T) {
 	}
 }
 
+func TestUnitCommonElasticsearchEnablePublicDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name         string
+		enablePublic bool
+		expected     bool
+		description  string
+	}{
+		{
+			name:         "Enable_Public_True",
+			enablePublic: true,
+			expected:     false,
+			description:  "Enable public true should not suppress diff",
+		},
+		{
+			name:         "Enable_Public_False",
+			enablePublic: false,
+			expected:     true,
+			description:  "Enable public false should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_public": {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_public": tc.enablePublic,
+			})
+
+			result := elasticsearchEnablePublicDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonElasticsearchEnableKibanaPublicDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                      string
+		enableKibanaPublicNetwork bool
+		expected                  bool
+		description               string
+	}{
+		{
+			name:                      "Enable_Kibana_Public_True",
+			enableKibanaPublicNetwork: true,
+			expected:                  false,
+			description:               "Enable Kibana public true should not suppress diff",
+		},
+		{
+			name:                      "Enable_Kibana_Public_False",
+			enableKibanaPublicNetwork: false,
+			expected:                  true,
+			description:               "Enable Kibana public false should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_kibana_public_network": {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_kibana_public_network": tc.enableKibanaPublicNetwork,
+			})
+
+			result := elasticsearchEnableKibanaPublicDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
 func TestUnitCommonPolardbPostPaidDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -1026,6 +1096,41 @@ func TestUnitCommonPolardbPostPaidDiffSuppressFunc(t *testing.T) {
 			})
 
 			result := polardbPostPaidDiffSuppressFunc("key", "old", "new", d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
+func TestUnitCommonElasticsearchEnableKibanaPrivateDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name                       string
+		enableKibanaPrivateNetwork bool
+		expected                   bool
+		description                string
+	}{
+		{
+			name:                       "Enable_Kibana_Private_True",
+			enableKibanaPrivateNetwork: true,
+			expected:                   false,
+			description:                "Enable Kibana private true should not suppress diff",
+		},
+		{
+			name:                       "Enable_Kibana_Private_False",
+			enableKibanaPrivateNetwork: false,
+			expected:                   true,
+			description:                "Enable Kibana private false should suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"enable_kibana_private_network": {Type: schema.TypeBool},
+			}, map[string]interface{}{
+				"enable_kibana_private_network": tc.enableKibanaPrivateNetwork,
+			})
+
+			result := elasticsearchEnableKibanaPrivateDiffSuppressFunc("key", "old", "new", d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}
@@ -1468,47 +1573,6 @@ func TestUnitNasFileSystemVpcDiffSuppressFunc(t *testing.T) {
 			})
 
 			result := nasFileSystemVpcDiffSuppressFunc("vpc_id", "", "vpc-123456", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonWhiteIpListDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		oldValue    string
-		newValue    string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "Same_IPs_Different_Order",
-			oldValue:    "192.168.1.1,192.168.1.2,192.168.1.3",
-			newValue:    "192.168.1.3,192.168.1.1,192.168.1.2",
-			expected:    true,
-			description: "Same IPs in different order should suppress diff",
-		},
-		{
-			name:        "Different_IPs",
-			oldValue:    "192.168.1.1,192.168.1.2",
-			newValue:    "192.168.1.3,192.168.1.4",
-			expected:    false,
-			description: "Different IPs should not suppress diff",
-		},
-		{
-			name:        "Different_Count",
-			oldValue:    "192.168.1.1,192.168.1.2",
-			newValue:    "192.168.1.1",
-			expected:    false,
-			description: "Different count of IPs should not suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
-
-			result := whiteIpListDiffSuppressFunc("key", tc.oldValue, tc.newValue, d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}
@@ -3625,6 +3689,67 @@ func TestUnitCommonImageIdSuppressFunc(t *testing.T) {
 	}
 }
 
+func TestUnitCommonEsVersionDiffSuppressFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		old         string
+		new         string
+		expected    bool
+		description string
+	}{
+		{
+			name:        "Same_Major_Minor",
+			old:         "6.7_with_X-Pack",
+			new:         "6.7_with_X-Pack",
+			expected:    true,
+			description: "Same major.minor versions should suppress diff",
+		},
+		{
+			name:        "Same_Major_Minor_Different_Patch",
+			old:         "6.7",
+			new:         "6.7.3",
+			expected:    true,
+			description: "Same major.minor but different patch should suppress diff",
+		},
+		{
+			name:        "Different_Minor",
+			old:         "6.7_with_X-Pack",
+			new:         "6.8_with_X-Pack",
+			expected:    false,
+			description: "Different minor version should not suppress diff",
+		},
+		{
+			name:        "Different_Major",
+			old:         "6.7_with_X-Pack",
+			new:         "7.7_with_X-Pack",
+			expected:    false,
+			description: "Different major version should not suppress diff",
+		},
+		{
+			name:        "Empty_Versions",
+			old:         "",
+			new:         "",
+			expected:    false,
+			description: "Empty versions (len < 2) should not suppress diff",
+		},
+		{
+			name:        "Single_Part_Version",
+			old:         "6",
+			new:         "6",
+			expected:    false,
+			description: "Single part version (len < 2) should not suppress diff",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
+			result := esVersionDiffSuppressFunc("key", tc.old, tc.new, d)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
+
 func TestUnitCommonVpnSslConnectionsDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -3785,46 +3910,6 @@ func TestUnitCommonSagClientUserPasswordSuppressFunc(t *testing.T) {
 				"user_name": tc.userName,
 			})
 			result := sagClientUserPasswordSuppressFunc("key", "old", "new", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonSelectdbPostPaidDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		paymentType string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "Subscription",
-			paymentType: "Subscription",
-			expected:    false,
-			description: "Subscription should not suppress diff",
-		},
-		{
-			name:        "PayAsYouGo",
-			paymentType: "PayAsYouGo",
-			expected:    true,
-			description: "PayAsYouGo should suppress diff",
-		},
-		{
-			name:        "Empty",
-			paymentType: "",
-			expected:    true,
-			description: "Empty payment_type should suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"payment_type": {Type: schema.TypeString},
-			}, map[string]interface{}{
-				"payment_type": tc.paymentType,
-			})
-			result := selectdbPostPaidDiffSuppressFunc("key", "old", "new", d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}
@@ -4030,166 +4115,6 @@ func TestUnitCommonCmsClientCriticalSuppressFunc(t *testing.T) {
 				"escalations_critical": tc.items,
 			})
 			result := cmsClientCriticalSuppressFunc("key", "old", "new", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonAlikafkaInstanceConfigDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		old         string
-		new         string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "New_Empty",
-			old:         `{"key":"value"}`,
-			new:         "",
-			expected:    true,
-			description: "Empty new value should suppress diff",
-		},
-		{
-			name:        "Old_Empty",
-			old:         "",
-			new:         `{"key":"value"}`,
-			expected:    false,
-			description: "Empty old value should not suppress diff",
-		},
-		{
-			name:        "Old_Invalid_JSON",
-			old:         "invalid json",
-			new:         `{"key":"value"}`,
-			expected:    false,
-			description: "Invalid old JSON should not suppress diff",
-		},
-		{
-			name:        "New_Invalid_JSON",
-			old:         `{"key":"value"}`,
-			new:         "invalid json",
-			expected:    false,
-			description: "Invalid new JSON should not suppress diff",
-		},
-		{
-			name:        "Same_Values",
-			old:         `{"key":"value","other":"data"}`,
-			new:         `{"key":"value"}`,
-			expected:    true,
-			description: "New is subset of old with same values should suppress diff",
-		},
-		{
-			name:        "Different_Values",
-			old:         `{"key":"old_value"}`,
-			new:         `{"key":"new_value"}`,
-			expected:    false,
-			description: "Different values for same key should not suppress diff",
-		},
-		{
-			name:        "New_Key_Not_In_Old",
-			old:         `{"other":"value"}`,
-			new:         `{"key":"value"}`,
-			expected:    true,
-			description: "New key not in old map should suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{}, map[string]interface{}{})
-			result := alikafkaInstanceConfigDiffSuppressFunc("key", tc.old, tc.new, d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonPayTypePostPaidDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		payType     string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "PostPaid",
-			payType:     "PostPaid",
-			expected:    true,
-			description: "PostPaid pay_type should suppress diff",
-		},
-		{
-			name:        "postpaid_lowercase",
-			payType:     "postpaid",
-			expected:    true,
-			description: "postpaid (lowercase) should suppress diff",
-		},
-		{
-			name:        "PrePaid",
-			payType:     "PrePaid",
-			expected:    false,
-			description: "PrePaid should not suppress diff",
-		},
-		{
-			name:        "Empty",
-			payType:     "",
-			expected:    false,
-			description: "Empty pay_type should not suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"pay_type": {Type: schema.TypeString},
-			}, map[string]interface{}{
-				"pay_type": tc.payType,
-			})
-			result := payTypePostPaidDiffSuppressFunc("key", "old", "new", d)
-			assert.Equal(t, tc.expected, result, tc.description)
-		})
-	}
-}
-
-func TestUnitCommonEngineDiffSuppressFunc(t *testing.T) {
-	testCases := []struct {
-		name        string
-		engine      string
-		expected    bool
-		description string
-	}{
-		{
-			name:        "BDS_Engine",
-			engine:      "bds",
-			expected:    true,
-			description: "bds engine should suppress diff",
-		},
-		{
-			name:        "BDS_Engine_Uppercase",
-			engine:      "BDS",
-			expected:    true,
-			description: "BDS engine (uppercase) should suppress diff",
-		},
-		{
-			name:        "Other_Engine",
-			engine:      "mysql",
-			expected:    false,
-			description: "Other engine should not suppress diff",
-		},
-		{
-			name:        "Empty_Engine",
-			engine:      "",
-			expected:    false,
-			description: "Empty engine should not suppress diff",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
-				"engine": {Type: schema.TypeString},
-			}, map[string]interface{}{
-				"engine": tc.engine,
-			})
-			result := engineDiffSuppressFunc("key", "old", "new", d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}
@@ -4487,122 +4412,47 @@ func TestUnitCommonCmsAlarmDiffSuppressFunc(t *testing.T) {
 	}
 }
 
-func TestUnitAlikafkaTopicConfigsDiffSuppressFunc(t *testing.T) {
-	// The service always reports the full effective topic config, so `old` (state) is a
-	// superset of `new` (the keys declared in HCL) whenever the instance injects defaults.
-	serverInjectedConfig := `{"cloud.native.topic.type":"true","replication-factor":"3","max.message.bytes":"1048576","retention.hours":"72"}`
-
+func TestUnitCommonEsDataNodeDiskPerformanceLevelDiffSuppressFunc(t *testing.T) {
 	testCases := []struct {
 		name        string
-		old         string
-		new         string
+		diskType    string
 		expected    bool
 		description string
 	}{
 		{
-			name:        "ServerInjectedKeysIgnored",
-			old:         serverInjectedConfig,
-			new:         `{"max.message.bytes":"1048576","retention.hours":"72"}`,
-			expected:    true,
-			description: "keys injected by the service must not produce a diff",
-		},
-		{
-			name:        "DeclaredKeyChanged",
-			old:         serverInjectedConfig,
-			new:         `{"max.message.bytes":"10485760","retention.hours":"72"}`,
+			name:        "Cloud_ESSD",
+			diskType:    "cloud_essd",
 			expected:    false,
-			description: "a real change on a declared key must still produce a diff",
+			description: "cloud_essd disk type should not suppress diff",
 		},
 		{
-			name:        "NumberOnStateSide",
-			old:         `{"cloud.native.topic.type":"true","replication-factor":3,"retention.hours":72}`,
-			new:         `{"retention.hours":"72"}`,
+			name:        "Cloud_SSD",
+			diskType:    "cloud_ssd",
 			expected:    true,
-			description: "numeric values reported by the service compare equal to their string form",
+			description: "Non-cloud_essd should suppress diff",
 		},
 		{
-			name:        "NumberOnConfigSide",
-			old:         serverInjectedConfig,
-			new:         `{"max.message.bytes":1048576}`,
+			name:        "Cloud",
+			diskType:    "cloud",
 			expected:    true,
-			description: "jsonencode with a numeric value compares equal to the string form",
+			description: "Cloud disk type should suppress diff",
 		},
 		{
-			name:        "BoolAndStringBoolAreEqual",
-			old:         `{"cloud.native.topic.type":"true","preallocate":true}`,
-			new:         `{"preallocate":"true"}`,
-			expected:    true,
-			description: "boolean values compare equal to their string form",
-		},
-		{
-			name:        "RemovedKeyIsNotADiff",
-			old:         serverInjectedConfig,
-			new:         `{"retention.hours":"72"}`,
-			expected:    true,
-			description: "dropping a previously declared key is suppressed because the update API only merges keys",
-		},
-		{
-			name:        "NewlyDeclaredKeyIsADiff",
-			old:         `{"cloud.native.topic.type":"true","replication-factor":"3"}`,
-			new:         `{"retention.hours":"72"}`,
+			name:        "Empty",
+			diskType:    "",
 			expected:    false,
-			description: "a key the service does not report yet must produce a diff so it gets applied",
-		},
-		{
-			name:        "EmptyConfigDeclared",
-			old:         serverInjectedConfig,
-			new:         `{}`,
-			expected:    true,
-			description: "declaring an empty object enforces nothing",
-		},
-		{
-			name:        "EmptyNew",
-			old:         serverInjectedConfig,
-			new:         "",
-			expected:    true,
-			description: "an unset attribute keeps the value read back from the service",
-		},
-		{
-			name:        "EmptyOld",
-			old:         "",
-			new:         `{"retention.hours":"72"}`,
-			expected:    false,
-			description: "nothing in state yet, so the declared config must be applied",
-		},
-		{
-			name:        "InvalidNewJson",
-			old:         serverInjectedConfig,
-			new:         `{"retention.hours":`,
-			expected:    false,
-			description: "malformed config must not be suppressed",
-		},
-		{
-			name:        "InvalidOldJson",
-			old:         `not-json`,
-			new:         `{"retention.hours":"72"}`,
-			expected:    false,
-			description: "malformed state must not be suppressed",
-		},
-		{
-			name:        "TrailingDataInState",
-			old:         `{"retention.hours":"72"}garbage`,
-			new:         `{"retention.hours":"72"}`,
-			expected:    false,
-			description: "a document with data after the object must not be suppressed",
-		},
-		{
-			name:        "TrailingDataInConfig",
-			old:         `{"retention.hours":"72"}`,
-			new:         `{"retention.hours":"72"}{"max.message.bytes":"1048576"}`,
-			expected:    false,
-			description: "a declared document with data after the object must not be suppressed",
+			description: "Empty disk type (GetOk returns false) should not suppress diff",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			d := initTestData(t, nil)
-			result := alikafkaTopicConfigsDiffSuppressFunc("configs", tc.old, tc.new, d)
+			d := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+				"data_node_disk_type": {Type: schema.TypeString},
+			}, map[string]interface{}{
+				"data_node_disk_type": tc.diskType,
+			})
+			result := esDataNodeDiskPerformanceLevelDiffSuppressFunc("key", "old", "new", d)
 			assert.Equal(t, tc.expected, result, tc.description)
 		})
 	}

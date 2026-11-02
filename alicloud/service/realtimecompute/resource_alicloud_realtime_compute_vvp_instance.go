@@ -161,6 +161,24 @@ func ResourceRealtimeComputeVvpInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"default_namespace_resource_spec": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cpu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"memory_gb": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"resource_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -243,6 +261,18 @@ func resourceAliCloudRealtimeComputeVvpInstanceCreate(d *schema.ResourceData, me
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["CreateInstanceRequest.ResourceGroupId"] = v
+	}
+	if v := d.Get("default_namespace_resource_spec"); !helper.IsNil(v) {
+		resourceSpec := make(map[string]interface{})
+		nodeNative7, _ := jsonpath.Get("$[0].cpu", v)
+		if nodeNative7 != "" {
+			resourceSpec["Cpu"] = nodeNative7
+		}
+		nodeNative8, _ := jsonpath.Get("$[0].memory_gb", v)
+		if nodeNative8 != "" {
+			resourceSpec["MemoryGB"] = nodeNative8
+		}
+		objectDataLocalMap["DefaultNamespaceResourceSpec"] = resourceSpec
 	}
 	request["CreateInstanceRequest.ChargeType"] = convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(d.Get("payment_type").(string))
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)

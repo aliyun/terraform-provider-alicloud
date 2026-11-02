@@ -13,7 +13,7 @@ Provides a ECS Prefix List resource.
 
 For information about ECS Prefix List and how to use it, see [What is Prefix List.](https://www.alibabacloud.com/help/en/doc-detail/207969.html).
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0.
 
 ## Example Usage
 
@@ -29,7 +29,7 @@ Basic Usage
 resource "alicloud_ecs_prefix_list" "default" {
   address_family   = "IPv4"
   max_entries      = 2
-  prefix_list_name = "tftest"
+  prefix_list_name = "tfexample"
   description      = "description"
   entry {
     cidr        = "192.168.0.0/24"
@@ -48,11 +48,12 @@ The following arguments are supported:
 * `max_entries` - (Required, ForceNew) The maximum number of entries that the prefix list can contain.  Valid values: 1 to 200.
 * `prefix_list_name` - (Required) The name of the prefix. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with `http://`, `https://`, `com.aliyun`, or `com.alibabacloud`. It can contain letters, digits, colons (:), underscores (_), periods (.), and hyphens (-).
 * `description` - (Optional) The description of the prefix list. The description must be 2 to 256 characters in length and cannot start with `http://` or `https://`.
-* `entry` - (Required) The Entry. The details see Block `entry`. 
+* `entry` - (Required) The Entry. See [`entry`](#entry) below.
 
 
 
-#### entry
+### `entry`
+
 The entry supports the following:
 
 * `cidr` - (Optional) The CIDR block in entry. This parameter is empty by default.  Take note of the following items:

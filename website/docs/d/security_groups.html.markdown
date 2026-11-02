@@ -11,9 +11,11 @@ description: |-
 
 This data source provides a list of Security Groups in an Alibaba Cloud account according to the specified filters.
 
+-> **NOTE:** Available since v1.9.0
+
 ## Example Usage
 
-```
+```terraform
 # Filter security groups and print the results into a file
 data "alicloud_security_groups" "sec_groups_ds" {
   name_regex  = "^web-"
@@ -41,10 +43,12 @@ The following arguments are supported:
 * `ids` - (Optional, Available 1.52.0+) A list of Security Group IDs.
 * `name_regex` - (Optional) A regex string to filter the resulting security groups by their names.
 * `vpc_id` - (Optional) Used to retrieve security groups that belong to the specified VPC ID.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the security_group belongs.
+* `resource_group_id` - (Optional, Available since v1.58.0) The Id of resource group which the security_group belongs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enable_details` - (Optional) Default to true. Set it to false to only output `id` in the `groups` block.
 * `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
-  ```
+
+  ```terraform
   data "alicloud_security_groups" "taggedSecurityGroups" {
     tags = {
       tagKey1 = "tagValue1",
@@ -52,6 +56,7 @@ The following arguments are supported:
     }
   }
   ```
+
 
 ## Attributes Reference
 
@@ -68,4 +73,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `security_group_type` - The type of the security group.
   * `inner_access` - Whether to allow inner network access.
   * `creation_time` - Creation time of the security group.
-  * `tags` - A map of tags assigned to the ECS instance.
+  * `tags` - (Optional) A map of tags assigned to the ECS instance.

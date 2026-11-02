@@ -223,6 +223,12 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 					"renew_status":          "AutoRenewal",
 					"auto_renew_duration":   1,
 					"renewal_duration_unit": "M",
+					"default_namespace_resource_spec": []map[string]interface{}{
+						{
+							"cpu":       "1",
+							"memory_gb": "4",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -253,7 +259,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4594(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id", "default_namespace_resource_spec"},
 			},
 		},
 	})
@@ -329,6 +335,18 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 					"vswitch_ids": []string{
 						"${data.alicloud_vswitches.default.ids.0}"},
 					"payment_type": "PayAsYouGo",
+					"resource_spec": []map[string]interface{}{
+						{
+							"cpu":       "2",
+							"memory_gb": "8",
+						},
+					},
+					"default_namespace_resource_spec": []map[string]interface{}{
+						{
+							"cpu":       "1",
+							"memory_gb": "4",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -343,7 +361,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id"},
+				ImportStateVerifyIgnore: []string{"auto_renew_duration", "duration", "pricing_cycle", "renew_status", "renewal_duration_unit", "zone_id", "default_namespace_resource_spec"},
 			},
 		},
 	})

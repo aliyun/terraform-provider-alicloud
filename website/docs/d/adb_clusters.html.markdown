@@ -4,28 +4,27 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_clusters"
 sidebar_current: "docs-alicloud-datasource-adb-clusters"
 description: |-
-    Provides a collection of ADB clusters according to the specified filters.
+  Provides a collection of ADB clusters according to the specified filters.
 ---
 
-# alicloud\_adb\_clusters
+# alicloud_adb_clusters
 
 The `alicloud_adb_clusters` data source provides a collection of ADB clusters available in Alibaba Cloud account.
 Filters support regular expression for the cluster description, searches by tags, and other filters which are listed below.
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new datasource [alicloud_adb_db_clusters](https://www.terraform.io/docs/providers/alicloud/d/adb_db_clusters).
-
--> **NOTE:** Available in v1.71.0+.
+-> **DEPRECATED:** This data source has been deprecated from version `1.121.0`. Please use new datasource [alicloud_adb_db_clusters](https://www.terraform.io/docs/providers/alicloud/d/adb_db_clusters).
 
 ## Example Usage
 
-```
-data "alicloud_adb_clusters" "adb_clusters_ds" {
-  description_regex = "am-\\w+"
-  status     = "Running"
+Basic Usage
+
+```terraform
+data "alicloud_adb_clusters" "example" {
+  description_regex = "example"
 }
 
 output "first_adb_cluster_id" {
-  value = data.alicloud_adb_clusters.adb_clusters_ds.clusters.0.id
+  value = data.alicloud_adb_clusters.example.clusters.0.id
 }
 ```
 
@@ -33,34 +32,66 @@ output "first_adb_cluster_id" {
 
 The following arguments are supported:
 
-* `description_regex` - (Optional) A regex string to filter results by cluster description.
-* `ids` - (Optional) A list of ADB cluster IDs. 
-* `status` - (Optional, ForceNew, Available in v1.102.0+) The status of the cluster. Valid values: `Preparing`, `Creating`, `Restoring`, `Running`, `Deleting`, `ClassChanging`, `NetAddressCreating`, `NetAddressDeleting`. For more information, see [Cluster status](https://www.alibabacloud.com/help/doc-detail/143075.htm).
-* `tags` - (Optional, Available in v1.68.0+) A mapping of tags to assign to the resource.
-      - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-      - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-
+* `description` - (Optional, ForceNew) The description of DBCluster.
+* `description_regex` - (Optional, ForceNew) A regex string to filter results by DBCluster description.
+* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
+* `ids` - (Optional, ForceNew, Computed)  A list of DBCluster IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
+* `status` - (Optional, ForceNew) The status of the resource.
+* `tags` - (Optional) A map of tags assigned to the cluster.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of ADB cluster IDs. 
-* `descriptions` - A list of ADB cluster descriptions. 
-* `clusters` - A list of ADB clusters. Each element contains the following attributes:
-  * `id` - The ID of the ADB cluster.
-  * `description` - The description of the ADB cluster.
-  * `charge_type` - Billing method. Value options: `PostPaid` for Pay-As-You-Go and `PrePaid` for subscription.
-  * `network_type` - The DBClusterNetworkType of the ADB cluster.
-  * `region_id` - Region ID the cluster belongs to.
-  * `zone_id` - The ZoneId of the ADB cluster.
-  * `expire_time` - Expiration time. Pay-As-You-Go clusters never expire.
-  * `expired` - The expired of the ADB cluster.
-  * `status` - Status of the cluster.
-  * `lock_mode` - The LockMode of the ADB cluster.
+* `descriptions` - A list of DBCluster descriptions.
+* `clusters` - A list of Adb Db Clusters. Each element contains the following attributes:
+  * `auto_renew_period` - Auto-renewal period of an cluster, in the unit of the month.
+  * `commodity_code` - The name of the service.
+  * `compute_resource` - The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources.
+  * `connection_string` - The endpoint of the cluster.
   * `create_time` - The CreateTime of the ADB cluster.
-  * `vpc_id` - ID of the VPC the cluster belongs to.
-  * `db_node_count` - The DBNodeCount of the ADB cluster.
-  * `db_node_class` - The DBNodeClass of the ADB cluster.
-  * `db_node_storage` - The DBNodeStorage of the ADB cluster.
+  * `db_cluster_category` - The db cluster category.
+  * `db_cluster_id` - The db cluster id.
+  * `db_cluster_network_type` - The db cluster network type.
+  * `network_type` - The db cluster network type.
+  * `db_cluster_type` - The db cluster type.
+  * `db_cluster_version` - The db cluster version.
+  * `db_node_class` - The db node class.
+  * `db_node_count` - The db node count.
+  * `db_node_storage` - The db node storage.
+  * `description` - The description of DBCluster.
+  * `disk_type` - The type of the disk.
+  * `dts_job_id` - The ID of the data synchronization task in Data Transmission Service (DTS). This parameter is valid only for analytic instances.
+  * `elastic_io_resource` - The elastic io resource.
+  * `engine` - The engine of the database.
+  * `engine_version` - The engine version of the database.
+  * `executor_count` - The number of nodes. The node resources are used for data computing in elastic mode.
+  * `expire_time` - The time when the cluster expires.
+  * `expired` - Indicates whether the cluster has expired.
+  * `id` - The ID of the DBCluster.
+  * `lock_mode` - The lock mode of the cluster.
+  * `lock_reason` - The reason why the cluster is locked.
+  * `maintain_time` - The maintenance window of the cluster.
+  * `payment_type` - The payment type of the resource.
+  * `charge_type` - The payment type of the resource.
+  * `port` - The port that is used to access the cluster.
+  * `rds_instance_id` - The ID of the ApsaraDB RDS instance from which data is synchronized to the cluster. This parameter is valid only for analytic instances.
+  * `renewal_status` - The status of renewal.
+  * `resource_group_id` - The ID of the resource group.
+  * `security_ips` - List of IP addresses allowed to access all databases of an cluster.
+  * `status` - The status of the resource.
+  * `storage_resource` - The specifications of storage resources in elastic mode. The resources are used for data read and write operations. The increase of resources can improve the read and write performance of your cluster.
+  * `tags` - The tags of the resource.
+  * `vpc_cloud_instance_id` - The vpc cloud instance id.
+  * `vpc_id` - The vpc id.
+  * `vswitch_id` - The vswitch id.
+  * `zone_id` - The zone ID  of the resource.
+  * `region_id` - The region ID  of the resource.
+  * `mode` - The lock mode of the cluster.
+  * `kernel_version` - The minor version of the cluster. Example: 3.1.8.
+  * `available_kernel_versions` - The minor versions to which you can update the current minor version of the cluster.
+    * `kernel_version` - The minor version. Example: 3.1.9.
+    * `release_date` - The time when the minor version was released.
+    * `expire_date` - The maintenance expiration time of the version

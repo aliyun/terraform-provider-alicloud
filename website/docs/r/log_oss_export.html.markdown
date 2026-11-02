@@ -8,10 +8,11 @@ description: |-
 ---
 
 # alicloud_log_oss_export
+
 Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage. [Refer to details](https://www.alibabacloud.com/help/en/log-service/latest/ship-logs-to-oss-new-version).
 
 -> **NOTE:** This resource is no longer maintained. It is recommended to use the new resource alicloud_sls_oss_export_sink.
-[Refer to details](https://help.aliyun.com/zh/terraform/alicloud-sls-oss-export-sink).
+[Refer to details](https://www.alibabacloud.com/help/en/terraform/alicloud-sls-oss-export-sink).
 
 -> **NOTE:** Available since v1.187.0.
 
@@ -101,9 +102,12 @@ The following arguments are supported:
 * `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file, the default value is `false`.
 * `csv_config_linefeed` - (Optional) lineFeed in csv content_type.
 * `csv_config_escape` - (Optional) escape in csv content_type.
-* `config_columns` - (Optional) Configure columns when `content_type` is `parquet` or `orc`.
-  *  `name` - (Required) The name of the key.
-  *  `type` - (Required) Type of configuration name.
+* `config_columns` - (Optional) Configure columns when `content_type` is `parquet` or `orc`. See [`config_columns`](#config_columns) below.
+
+### `config_columns`
+
+* `name` - (Required) The name of the key.
+* `type` - (Required) Type of configuration name.
 
 
 ## Attributes Reference

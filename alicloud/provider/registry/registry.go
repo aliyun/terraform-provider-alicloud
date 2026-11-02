@@ -22,7 +22,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/amqpopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apig"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/apigateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/arms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bpstudio"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/brainindustrial"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
@@ -31,6 +33,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cbwp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cddc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cdn"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/chatbot"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/clickhouse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudapi"
@@ -38,9 +41,10 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudcontrol"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudfirewall"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudfw"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudmonitorservice"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudphone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudsso"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cms"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudstoragegateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/computenest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/config"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cr"
@@ -48,17 +52,16 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/das"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/databasegateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/datahub"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworkspublic"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dataworks"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbfs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dbs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dcdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbasic"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddosbgp"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ddoscoo"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/devopsrdc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dfs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dm"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/directmail"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dmsenterprise"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/drds"
@@ -83,10 +86,12 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/esa"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/eventbridge"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnect"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/expressconnectrouter"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv2"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fnf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ga"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gdb"
@@ -112,6 +117,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/milvus"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mnsopen"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mongodb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mscopensubscription"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/mse"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/nas"
@@ -130,7 +136,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardbx"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatelink"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/pvtz"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/privatezone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quickbi"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/quotas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ram"
@@ -143,7 +149,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rocketmq"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ros"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sae"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/scdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/schedulerx"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sddp"
@@ -160,6 +165,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sts"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/swasopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tag"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/threatdetection"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tsdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ververica"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/videosurveillancesystem"
@@ -167,9 +173,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcipam"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcpeer"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpngateway"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/waf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundunbastionhost"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/yundundbaudit"
 )
 
@@ -198,6 +204,7 @@ var servicePackages = []conns.ServicePackage{
 	alikafka.ServicePackage(),
 	amqpopen.ServicePackage(),
 	apig.ServicePackage(),
+	apigateway.ServicePackage(),
 	arms.ServicePackage(),
 	bpstudio.ServicePackage(),
 	brainindustrial.ServicePackage(),
@@ -208,6 +215,7 @@ var servicePackages = []conns.ServicePackage{
 	cbwp.ServicePackage(),
 	cddc.ServicePackage(),
 	cdn.ServicePackage(),
+	cen.ServicePackage(),
 	chatbot.ServicePackage(),
 	clickhouse.ServicePackage(),
 	cloudapi.ServicePackage(),
@@ -218,25 +226,26 @@ var servicePackages = []conns.ServicePackage{
 	natgateway.ServicePackage(),
 	cloudphone.ServicePackage(),
 	cloudsso.ServicePackage(),
-	cms.ServicePackage(),
+	cloudstoragegateway.ServicePackage(),
+	cloudmonitorservice.ServicePackage(),
 	computenest.ServicePackage(),
 	config.ServicePackage(),
 	cr.ServicePackage(),
 	cs.ServicePackage(),
 	das.ServicePackage(),
 	datahub.ServicePackage(),
-	dataworkspublic.ServicePackage(),
+	dataworks.ServicePackage(),
 	dbfs.ServicePackage(),
 	dbs.ServicePackage(),
 	dcdn.ServicePackage(),
 	ddosbasic.ServicePackage(),
 	ddosbgp.ServicePackage(),
 	ddoscoo.ServicePackage(),
-	dds.ServicePackage(),
+	mongodb.ServicePackage(),
 	devopsrdc.ServicePackage(),
 	dfs.ServicePackage(),
 	databasegateway.ServicePackage(),
-	dm.ServicePackage(),
+	directmail.ServicePackage(),
 	dms.ServicePackage(),
 	dmsenterprise.ServicePackage(),
 	drds.ServicePackage(),
@@ -261,10 +270,12 @@ var servicePackages = []conns.ServicePackage{
 	esa.ServicePackage(),
 	ess.ServicePackage(),
 	eventbridge.ServicePackage(),
+	expressconnect.ServicePackage(),
 	expressconnectrouter.ServicePackage(),
 	fc.ServicePackage(),
 	fcopen.ServicePackage(),
 	fcv2.ServicePackage(),
+	fcv3.ServicePackage(),
 	fnf.ServicePackage(),
 	ga.ServicePackage(),
 	gdb.ServicePackage(),
@@ -307,7 +318,7 @@ var servicePackages = []conns.ServicePackage{
 	polardb.ServicePackage(),
 	polardbx.ServicePackage(),
 	privatelink.ServicePackage(),
-	pvtz.ServicePackage(),
+	privatezone.ServicePackage(),
 	quickbi.ServicePackage(),
 	quotas.ServicePackage(),
 	ram.ServicePackage(),
@@ -320,7 +331,6 @@ var servicePackages = []conns.ServicePackage{
 	rocketmq.ServicePackage(),
 	ros.ServicePackage(),
 	sae.ServicePackage(),
-	sas.ServicePackage(),
 	scdn.ServicePackage(),
 	schedulerx.ServicePackage(),
 	sddp.ServicePackage(),
@@ -336,6 +346,7 @@ var servicePackages = []conns.ServicePackage{
 	sts.ServicePackage(),
 	swasopen.ServicePackage(),
 	tag.ServicePackage(),
+	threatdetection.ServicePackage(),
 	tsdb.ServicePackage(),
 	ververica.ServicePackage(),
 	vod.ServicePackage(),
@@ -343,9 +354,10 @@ var servicePackages = []conns.ServicePackage{
 	vpcipam.ServicePackage(),
 	vpcpeer.ServicePackage(),
 	videosurveillancesystem.ServicePackage(),
+	vpngateway.ServicePackage(),
 	waf.ServicePackage(),
 	wafopenapi.ServicePackage(),
-	yundunbastionhost.ServicePackage(),
+	bastionhost.ServicePackage(),
 	yundundbaudit.ServicePackage(),
 }
 

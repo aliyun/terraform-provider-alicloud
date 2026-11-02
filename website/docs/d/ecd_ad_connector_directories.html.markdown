@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd Ad Connector Directories to the user.
 ---
 
-# alicloud\_ecd\_ad\_connector\_directories
+# alicloud_ecd_ad_connector_directories
 
 This data source provides the Ecd Ad Connector Directories of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.174.0+.
+-> **NOTE:** Available since v1.174.0.
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of directory. Valid values: `REGISTERING`, `REGISTERED`, `DEREGISTERING`, `NEEDCONFIGTRUST`, `CONFIGTRUSTFAILED`, `DEREGISTERED`, `ERROR`, `CONFIGTRUSTING`, `NEEDCONFIGUSER`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

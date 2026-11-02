@@ -4734,13 +4734,13 @@ func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 							"disk":   "0",
 						},
 					},
-					"payment_type":      "PayAsYouGo",
-					"vswitch_id":        "${alicloud_vswitch.defaultAislbL.id}",
-					"instance_category": "x-pack",
-					"protocol":          "HTTP",
-					"version":           "7.10.0_with_X-Pack",
-					"password":          "Admain@123",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"payment_type":        "PayAsYouGo",
+					"vswitch_id":          "${alicloud_vswitch.defaultAislbL.id}",
+					"instance_category":   "x-pack",
+					"protocol":            "HTTP",
+					"version":             "7.10.0_with_X-Pack",
+					"password_wo":         "YourPassword123!",
+					"password_wo_version": 1, "resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"data_node_configuration": []map[string]interface{}{
 						{
 							"disk_type":         "cloud_essd",
@@ -4776,10 +4776,34 @@ func TestAccAliCloudElasticsearchInstance_resourceGroup(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"password_wo":         "YourPassword123!Update",
+					"password_wo_version": 2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_wo_version": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password":            "YourPassword123!password",
+					"password_wo":         acctest.REMOVEKEY,
+					"password_wo_version": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password":            "YourPassword123!password",
+						"password_wo_version": acctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy"},
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "password_wo", "password_wo_version", "update_strategy"},
 			},
 		},
 	})

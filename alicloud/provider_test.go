@@ -15,11 +15,11 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	osssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -558,13 +558,6 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no sag instance id setting")
-		t.Skipped()
-	}
-}
-
 func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1")); v == "" {
 		t.Skip("Skipping the test case with no sag folder id setting")
@@ -597,13 +590,6 @@ func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
 func testAccPreCheckWithSlbInstanceSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_SLB_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no slb instance id setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no sag app instance id setting")
 		t.Skipped()
 	}
 }
@@ -918,7 +904,7 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return osssvc.NewOssService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 
@@ -946,43 +932,6 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bucket": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudProviderLog(t *testing.T) {
-	var v *sls.LogProject
-	resourceId := "alicloud_log_project.default"
-	ra := resourceAttrInit(resourceId, logProjectMap)
-	serviceFunc := func() interface{} {
-		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%slogproject-%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
-		return providerCommon + resourceLogProjectConfigDependence(name)
-	})
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		ProviderFactories: testAccProviderFactory,
-		CheckDestroy:      rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name,
 					}),
 				),
 			},
