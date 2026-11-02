@@ -551,32 +551,32 @@ func ResourceAckNodepool() *schema.Resource {
 									"transparent_enabled": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"always", "never", "madvise"}, false),
+										ValidateFunc: validators.StringInSlice([]string{"always", "never", "madvise"}, false),
 									},
 									"transparent_defrag": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"always", "defer", "madvise", "defer+madvise", "never"}, false),
+										ValidateFunc: validators.StringInSlice([]string{"always", "defer", "madvise", "defer+madvise", "never"}, false),
 									},
 									"khugepaged_defrag": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: ValidateNullableIntBetween(0, 1),
+										ValidateFunc: validators.ValidateNullableIntBetween(0, 1),
 									},
 									"khugepaged_alloc_sleep_millisecs": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
+										ValidateFunc: validators.ValidateNullableIntBetween(0, 9007199254740991),
 									},
 									"khugepaged_scan_sleep_millisecs": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
+										ValidateFunc: validators.ValidateNullableIntBetween(0, 9007199254740991),
 									},
 									"khugepaged_pages_to_scan": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: ValidateNullableIntBetween(0, 9007199254740991),
+										ValidateFunc: validators.ValidateNullableIntBetween(0, 9007199254740991),
 									},
 								},
 							},
@@ -2031,11 +2031,11 @@ func resourceAckNodepoolCreate(d *schema.ResourceData, meta interface{}) error {
 				"os_config": osConfig,
 			}
 			var nodeConfigResponse map[string]interface{}
-			nodeConfigWait := incrementalWait(3*time.Second, 5*time.Second)
+			nodeConfigWait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				nodeConfigResponse, err = client.RoaPut("CS", "2015-12-15", nodeConfigAction, query, nil, nodeConfigBody, true)
 				if err != nil {
-					if NeedRetry(err) {
+					if helper.NeedRetry(err) {
 						nodeConfigWait()
 						return retry.RetryableError(err)
 					}
@@ -2043,13 +2043,13 @@ func resourceAckNodepoolCreate(d *schema.ResourceData, meta interface{}) error {
 				}
 				return nil
 			})
-			addDebug(nodeConfigAction, nodeConfigResponse, nodeConfigBody)
+			logs.AddDebug(nodeConfigAction, nodeConfigResponse, nodeConfigBody)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), nodeConfigAction, AlibabaCloudSdkGoERROR)
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), nodeConfigAction, errs.AlibabaCloudSdkGoERROR)
 			}
-			nodeConfigStateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, nodeConfigResponse, "$.state", []string{"fail", "failed"}))
+			nodeConfigStateConf := helper.BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, nodeConfigResponse, "$.state", []string{"fail", "failed"}))
 			if jobDetail, err := nodeConfigStateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id(), jobDetail)
 			}
 		}
 	}
@@ -4408,7 +4408,7 @@ func osConfigNullableInt64(v interface{}, field string) (*int64, error) {
 	}
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return nil, WrapError(fmt.Errorf("invalid os_config.hugepage.%s value %q: %v", field, s, err))
+		return nil, errs.WrapError(fmt.Errorf("invalid os_config.hugepage.%s value %q: %v", field, s, err))
 	}
 	return &n, nil
 }

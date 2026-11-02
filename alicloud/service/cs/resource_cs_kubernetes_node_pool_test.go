@@ -8565,8 +8565,8 @@ func TestAccAliCloudCSKubernetesNodePool_osConfig(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"os_config.#":            "1",
-						"os_config.0.hugepage.#": "1",
+						"os_config.#":                                             "1",
+						"os_config.0.hugepage.#":                                  "1",
 						"os_config.0.hugepage.0.transparent_enabled":              "madvise",
 						"os_config.0.hugepage.0.transparent_defrag":               "defer+madvise",
 						"os_config.0.hugepage.0.khugepaged_defrag":                "1",
