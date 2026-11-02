@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest/helpers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
 func TestAccAlicloudFcv3FunctionDataSource(t *testing.T) {
-	acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	fcSuite.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	rand := tfacctest.RandIntRange(1000000, 9999999)
 
 	PrefixIdConf := acctest.DataSourceTestAccConfig{
@@ -99,7 +99,7 @@ var fakeFcv3FunctionMapFunc = func(rand int) map[string]string {
 	}
 }
 
-var Fcv3FunctionCheckInfo = acctest.DataSourceAttr{
+var Fcv3FunctionCheckInfo = acctest.DataSourceAttr{ProviderFactories: fcSuite.SDKProviderFactories, PreCheck: fcSuite.PreCheck,
 	ResourceId:   "data.alicloud_fcv3_functions.default",
 	ExistMapFunc: existFcv3FunctionMapFunc,
 	FakeMapFunc:  fakeFcv3FunctionMapFunc,

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest/helpers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -17,20 +17,20 @@ func TestAccAliCloudFcv3Alias_basic7304(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_alias.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3AliasMap7304)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlias")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3alias%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sfcv3alias%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3AliasBasicDependence7304)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			fcSuite.PreCheck(t)
+			fcSuite.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -101,20 +101,20 @@ func TestAccAliCloudFcv3Alias_basic7214(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_alias.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3AliasMap7214)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAlias")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3alias%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sfcv3alias%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3AliasBasicDependence7214)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			fcSuite.PreCheck(t)
+			fcSuite.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

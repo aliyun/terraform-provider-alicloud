@@ -1,4 +1,4 @@
-package framework
+package scoped
 
 import (
 	"context"
@@ -183,7 +183,7 @@ func sdkProtoSchema(ctx context.Context, t *testing.T, sdk map[string]*sdkschema
 func frameworkProtoSchema(ctx context.Context, t *testing.T, sdk map[string]*sdkschema.Schema) *tfprotov5.Schema {
 	t.Helper()
 
-	server := providerserver.NewProtocol5(NewProvider(&sdkschema.Provider{Schema: sdk}))()
+	server := providerserver.NewProtocol5(NewProvider(&sdkschema.Provider{Schema: sdk}, nil))()
 
 	resp, err := server.GetProviderSchema(ctx, &tfprotov5.GetProviderSchemaRequest{})
 	if err != nil {

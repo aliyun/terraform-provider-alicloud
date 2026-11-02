@@ -7,6 +7,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/config"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -389,7 +390,7 @@ const (
 )
 
 // default region for all resource
-const DEFAULT_REGION = "cn-beijing"
+const DEFAULT_REGION = config.DefaultRegion
 
 const INT_MAX = 2147483647
 

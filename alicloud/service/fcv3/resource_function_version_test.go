@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest/helpers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -17,19 +17,19 @@ func TestAccAliCloudFcv3FunctionVersion_basic7234(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_function_version.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3FunctionVersionMap7234)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFunctionVersion")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3functionversion%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sfcv3functionversion%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3FunctionVersionBasicDependence7234)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
+			fcSuite.PreCheck(t)
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -88,19 +88,19 @@ func TestAccAliCloudFcv3FunctionVersion_basic7234_raw(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_function_version.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3FunctionVersionMap7234)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeFunctionVersion")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3functionversion%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sfcv3functionversion%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3FunctionVersionBasicDependence7234)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
+			fcSuite.PreCheck(t)
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
