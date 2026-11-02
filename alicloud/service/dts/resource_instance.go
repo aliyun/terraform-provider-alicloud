@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -13,7 +15,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceInstance() *schema.Resource {
@@ -58,7 +59,7 @@ func ResourceInstance() *schema.Resource {
 				Computed:     true,
 				Type:         schema.TypeString,
 				AtLeastOneOf: []string{"destination_endpoint_engine_name", "job_id"},
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
 			},
 			"dts_instance_id": {
 				Computed: true,
@@ -67,18 +68,18 @@ func ResourceInstance() *schema.Resource {
 			"du": {
 				Optional:     true,
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 100),
+				ValidateFunc: validators.IntBetween(1, 100),
 			},
 			"fee_type": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"ONLY_CONFIGURATION_FEE", "CONFIGURATION_FEE_AND_DATA_FEE"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ONLY_CONFIGURATION_FEE", "CONFIGURATION_FEE_AND_DATA_FEE"}, false),
 			},
 			"instance_class": {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small", "micro"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"4xlarge", "2xlarge", "xlarge", "large", "medium", "small", "micro"}, false),
 			},
 			"instance_name": {
 				Computed: true,
@@ -92,12 +93,12 @@ func ResourceInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"period": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"resource_group_id": {
 				Optional: true,
@@ -110,7 +111,7 @@ func ResourceInstance() *schema.Resource {
 				ForceNew:     true,
 				Type:         schema.TypeString,
 				AtLeastOneOf: []string{"source_endpoint_engine_name", "job_id"},
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"MySQL", "PolarDB", "polardb_o", "polardb_pg", "Redis", "DRDS", "PostgreSQL", "odps", "oracle", "mongodb", "tidb", "ADS", "ADB30", "Greenplum", "MSSQL", "kafka", "DataHub", "clickhouse", "DB2", "as400", "Tablestore"}, false),
 			},
 			"source_region": {
 				Optional:     true,
@@ -130,13 +131,13 @@ func ResourceInstance() *schema.Resource {
 			},
 			"sync_architecture": {
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"bidirectional", "oneway"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"bidirectional", "oneway"}, false),
 				Type:         schema.TypeString,
 			},
 			"synchronization_direction": {
 				Optional:     true,
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Forward", "Reverse"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Forward", "Reverse"}, false),
 			},
 			"tags": tags.TagsSchema(),
 			"type": {
@@ -144,12 +145,12 @@ func ResourceInstance() *schema.Resource {
 				ForceNew:     true,
 				Type:         schema.TypeString,
 				AtLeastOneOf: []string{"type", "job_id"},
-				ValidateFunc: validation.StringInSlice([]string{"migration", "sync", "subscribe"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"migration", "sync", "subscribe"}, false),
 			},
 			"used_time": {
 				Optional:     true,
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc: validators.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("payment_type").(string) != "Subscription"
 				},

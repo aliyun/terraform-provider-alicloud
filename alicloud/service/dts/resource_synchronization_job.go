@@ -13,7 +13,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceSynchronizationJob() *schema.Resource {
@@ -58,7 +57,7 @@ func ResourceSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"xmicro", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "6xlarge", "8xlarge"}, false),
 			},
 			"data_initialization": {
 				Type:     schema.TypeBool,
@@ -80,7 +79,7 @@ func ResourceSynchronizationJob() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Forward", "Reverse"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Forward", "Reverse"}, false),
 			},
 			"db_list": {
 				Type:     schema.TypeString,
@@ -95,14 +94,14 @@ func ResourceSynchronizationJob() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "DISTRIBUTED_POLARDBX10"}, true),
+				ValidateFunc:     validators.StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "DISTRIBUTED_POLARDBX10"}, true),
 				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_engine_name": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG", "MARIADB", "POLARDBX10", "TiDB", "REDIS"}, true),
+				ValidateFunc:     validators.StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG", "MARIADB", "POLARDBX10", "TiDB", "REDIS"}, true),
 				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_instance_id": {
@@ -173,20 +172,20 @@ func ResourceSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1"}, false),
 			},
 			"destination_endpoint_instance_type": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "ELK", "Tablestore", "ODPS"}, true),
+				ValidateFunc:     validators.StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS", "REDIS", "ELK", "Tablestore", "ODPS"}, true),
 				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_engine_name": {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG", "MARIADB", "POLARDBX10", "ODPS", "Tablestore", "ELK", "REDIS"}, true),
+				ValidateFunc:     validators.StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG", "MARIADB", "POLARDBX10", "ODPS", "Tablestore", "ELK", "REDIS"}, true),
 				DiffSuppressFunc: validators.UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_instance_id": {
@@ -242,7 +241,7 @@ func ResourceSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1", "3"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1", "3"}, false),
 			},
 			"dest_primary_vswitch_id": {
 				Type:     schema.TypeString,
@@ -288,7 +287,7 @@ func ResourceSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Synchronizing", "Suspending"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Synchronizing", "Suspending"}, false),
 			},
 			"job_parameters": {
 				Type:     schema.TypeString,
