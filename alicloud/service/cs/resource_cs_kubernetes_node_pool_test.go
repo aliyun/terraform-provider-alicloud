@@ -8487,7 +8487,7 @@ func TestAccAliCloudCSKubernetesNodePool_osConfig(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-osconfig-%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ackNodepoolOsConfigDependence)
 
@@ -8749,7 +8749,7 @@ func TestAccAliCloudCSKubernetesNodePool_osConfigCreate(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-osconfig-create-%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ackNodepoolOsConfigDependence)
 
@@ -8839,7 +8839,7 @@ func TestAccAliCloudCSKubernetesNodePool_autoModeAndMetadata(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-automode-%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ackNodepoolOsConfigDependence)
 
@@ -8941,7 +8941,7 @@ func TestAccAliCloudCSKubernetesNodePool_rollingPolicyNodeNames(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-rolling-%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ackNodepoolRollingPolicyNodeNamesDependence)
 
@@ -8952,7 +8952,7 @@ func TestAccAliCloudCSKubernetesNodePool_rollingPolicyNodeNames(t *testing.T) {
 		},
 		// The node names come from a framework data source, which only the muxed
 		// provider serves.
-		ProtoV5ProviderFactories: testAccMuxedProviderFactories(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -9059,7 +9059,7 @@ func TestAccAliCloudCSKubernetesNodePool_memberOrder(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-order-%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, ackNodepoolMemberOrderDependence)
 
@@ -9680,7 +9680,7 @@ func TestAccAliCloudCSKubernetesNodePool_instancePatternsOrder(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := tfacctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccNodePool-patterns-%d", rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAckNodepoolBasicDependence12069)
 
