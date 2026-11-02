@@ -5,9 +5,9 @@ import (
 )
 
 // ServicePackage registers the RDS product's SDKv2 resources and data sources
-// plus the Framework data source that already lived in this package. The
-// factories are the unexported SDKv2 builders moved here from the flat layout;
-// they stay unexported because registration happens within the package.
+// plus the package's Framework data sources. The factories are the unexported
+// SDKv2 builders moved here from the flat layout; they stay unexported because
+// registration happens within the package.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Rds",
@@ -63,6 +63,7 @@ func ServicePackage() conns.ServicePackage {
 		},
 		DataSources: []conns.DataSource{
 			{TypeName: "alicloud_rds_db_instance_performance", Factory: NewDbInstancePerformanceDataSource},
+			{TypeName: "alicloud_rds_databases", Factory: NewDatabasesDataSource},
 		},
 	}
 }
