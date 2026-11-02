@@ -1,31 +1,19 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package threatdetection_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/threatdetection"
-	tFacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
-// Test ThreatDetection ServiceLinkedRole. >>> Resource test cases, automatically generated.
-// Case resource_ServiceLinkedRole_test_1 12848
-func TestAccAliCloudThreatDetectionServiceLinkedRole_basic12848(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_threat_detection_service_linked_role.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudThreatDetectionServiceLinkedRoleMap12848)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return threatdetection.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
-	}, "DescribeThreatDetectionServiceLinkedRole")
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tFacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudThreatDetectionServiceLinkedRoleBasicDependence12848)
+func TestAccAliCloudThreatDetectionServiceLinkedRole_basic(t *testing.T) {
+	rac, testAccCheck := testAccThreatDetectionServiceLinkedRoleDependence()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -34,52 +22,24 @@ func TestAccAliCloudThreatDetectionServiceLinkedRole_basic12848(t *testing.T) {
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_linked_role": "AliyunServiceRoleForAntiRansomwareMssp",
-				}),
+				Config: testAccThreatDetectionServiceLinkedRoleConfig(threatDetectionServiceLinkedRoleOssMfd),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_linked_role": "AliyunServiceRoleForAntiRansomwareMssp",
+						"service_linked_role": threatDetectionServiceLinkedRoleOssMfd,
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ResourceName:      threatDetectionServiceLinkedRoleId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudThreatDetectionServiceLinkedRoleMap12848 = map[string]string{
-	"role_status": acctest.CHECKSET,
-}
-
-func AlicloudThreatDetectionServiceLinkedRoleBasicDependence12848(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-
-`, name)
-}
-
-// Case resource_ServiceLinkedRole_test_2 12849
-func TestAccAliCloudThreatDetectionServiceLinkedRole_basic12849(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_threat_detection_service_linked_role.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudThreatDetectionServiceLinkedRoleMap12849)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return threatdetection.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
-	}, "DescribeThreatDetectionServiceLinkedRole")
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tFacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudThreatDetectionServiceLinkedRoleBasicDependence12849)
+func TestAccAliCloudThreatDetectionServiceLinkedRole_replace(t *testing.T) {
+	rac, testAccCheck := testAccThreatDetectionServiceLinkedRoleDependence()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -88,52 +48,37 @@ func TestAccAliCloudThreatDetectionServiceLinkedRole_basic12849(t *testing.T) {
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_linked_role": "AliyunServiceRoleForSas",
-				}),
+				Config: testAccThreatDetectionServiceLinkedRoleConfig(threatDetectionServiceLinkedRoleOssMfd),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_linked_role": "AliyunServiceRoleForSas",
+						"service_linked_role": threatDetectionServiceLinkedRoleOssMfd,
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				Config: testAccThreatDetectionServiceLinkedRoleConfig(threatDetectionServiceLinkedRoleMssp),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(threatDetectionServiceLinkedRoleId, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_linked_role": threatDetectionServiceLinkedRoleMssp,
+					}),
+				),
+			},
+			{
+				ResourceName:      threatDetectionServiceLinkedRoleId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudThreatDetectionServiceLinkedRoleMap12849 = map[string]string{
-	"role_status": acctest.CHECKSET,
-}
-
-func AlicloudThreatDetectionServiceLinkedRoleBasicDependence12849(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-
-`, name)
-}
-
-// Case resource_ServiceLinkedRole_test 12850
-func TestAccAliCloudThreatDetectionServiceLinkedRole_basic12850(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_threat_detection_service_linked_role.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudThreatDetectionServiceLinkedRoleMap12850)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return threatdetection.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
-	}, "DescribeThreatDetectionServiceLinkedRole")
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tFacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tfaccthreatdetection%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudThreatDetectionServiceLinkedRoleBasicDependence12850)
+func TestAccAliCloudThreatDetectionServiceLinkedRole_alreadyExists(t *testing.T) {
+	rac, testAccCheck := testAccThreatDetectionServiceLinkedRoleDependence()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -142,37 +87,53 @@ func TestAccAliCloudThreatDetectionServiceLinkedRole_basic12850(t *testing.T) {
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_linked_role": "AliyunServiceRoleForSasSecllm",
-				}),
+				Config: testAccThreatDetectionServiceLinkedRoleConfig(threatDetectionServiceLinkedRoleMssp),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"service_linked_role": "AliyunServiceRoleForSasSecllm",
+						"service_linked_role": threatDetectionServiceLinkedRoleMssp,
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				Config:      testAccThreatDetectionServiceLinkedRoleDuplicateConfig(threatDetectionServiceLinkedRoleMssp),
+				ExpectError: regexp.MustCompile("already exists, import it with: terraform import alicloud_threat_detection_service_linked_role"),
 			},
 		},
 	})
 }
 
-var AlicloudThreatDetectionServiceLinkedRoleMap12850 = map[string]string{
+const (
+	threatDetectionServiceLinkedRoleId     = "alicloud_threat_detection_service_linked_role.default"
+	threatDetectionServiceLinkedRoleMssp   = "AliyunServiceRoleForAntiRansomwareMssp"
+	threatDetectionServiceLinkedRoleOssMfd = "AliyunServiceRoleForOssMfd"
+)
+
+var aliCloudThreatDetectionServiceLinkedRoleMap = map[string]string{
 	"role_status": acctest.CHECKSET,
 }
 
-func AlicloudThreatDetectionServiceLinkedRoleBasicDependence12850(name string) string {
+func testAccThreatDetectionServiceLinkedRoleDependence() (*acctest.ResourceAttrCheck, acctest.ResourceAttrMapUpdate) {
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(threatDetectionServiceLinkedRoleId, aliCloudThreatDetectionServiceLinkedRoleMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(threatDetectionServiceLinkedRoleId, &v, func() interface{} {
+		return threatdetection.NewServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeThreatDetectionServiceLinkedRole")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	return rac, rac.ResourceAttrMapUpdateSet()
+}
+
+func testAccThreatDetectionServiceLinkedRoleConfig(roleName string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
+resource "alicloud_threat_detection_service_linked_role" "default" {
+  service_linked_role = "%s"
+}
+`, roleName)
 }
 
-
-`, name)
+func testAccThreatDetectionServiceLinkedRoleDuplicateConfig(roleName string) string {
+	return testAccThreatDetectionServiceLinkedRoleConfig(roleName) + fmt.Sprintf(`
+resource "alicloud_threat_detection_service_linked_role" "duplicate" {
+  service_linked_role = "%s"
 }
-
-// Test ThreatDetection ServiceLinkedRole. <<< Resource test cases, automatically generated.
+`, roleName)
+}
