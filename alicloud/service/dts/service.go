@@ -1009,3 +1009,78 @@ func convertDtsMigrationJobPaymentTypeResponse(source interface{}) interface{} {
 	}
 	return source
 }
+
+// setDtsSynchronizationInstanceRenewal writes the renewal setting of an existing
+// subscription instance through the BSS SetRenewal API.
+func setDtsSynchronizationInstanceRenewal(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "SetRenewal"
+	request, err := buildDtsSynchronizationInstanceRenewalRequest(d)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	var response map[string]interface{}
+	var endpoint string
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if endpoint == "" && !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func buildDtsSynchronizationInstanceRenewalRequest(d *schema.ResourceData) (map[string]interface{}, error) {
+	request := map[string]interface{}{
+		"InstanceIDs":      d.Id(),
+		"ProductCode":      "dts",
+		"SubscriptionType": "Subscription",
+	}
+	if d.Get("auto_pay").(string) != "true" {
+		request["RenewalStatus"] = "ManualRenewal"
+		return request, nil
+	}
+
+	request["RenewalStatus"] = "AutoRenewal"
+	periodUnit, ok := d.GetOk("payment_duration_unit")
+	if !ok {
+		return nil, fmt.Errorf("payment_duration_unit must be set when auto_pay is true")
+	}
+	period, ok := d.GetOk("payment_duration")
+	if !ok {
+		return nil, fmt.Errorf("payment_duration must be set when auto_pay is true")
+	}
+	switch period.(int) {
+	case 1, 2, 3, 6, 12:
+	default:
+		return nil, fmt.Errorf("payment_duration must be one of 1, 2, 3, 6, 12 when auto_pay is true, got %d", period.(int))
+	}
+	request["RenewalPeriod"] = period
+	request["RenewalPeriodUnit"] = convertDtsSynchronizationInstanceRenewalPeriodUnitRequest(periodUnit.(string))
+	return request, nil
+}
+
+func convertDtsSynchronizationInstanceRenewalPeriodUnitRequest(source string) string {
+	switch source {
+	case "Month":
+		return "M"
+	case "Year":
+		return "Y"
+	}
+	return source
+}
