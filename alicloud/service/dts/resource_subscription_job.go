@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -15,7 +17,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceSubscriptionJob() *schema.Resource {
@@ -63,7 +64,7 @@ func ResourceSubscriptionJob() *schema.Resource {
 			"destination_endpoint_engine_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ADS", "DB2", "DRDS", "DataHub", "Greenplum", "MSSQL", "MySQL", "PolarDB", "PostgreSQL", "Redis", "Tablestore", "as400", "clickhouse", "kafka", "mongodb", "odps", "oracle", "polardb_o", "polardb_pg", "tidb"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"ADS", "DB2", "DRDS", "DataHub", "Greenplum", "MSSQL", "MySQL", "PolarDB", "PostgreSQL", "Redis", "Tablestore", "as400", "clickhouse", "kafka", "mongodb", "odps", "oracle", "polardb_o", "polardb_pg", "tidb"}, false),
 			},
 			"destination_region": {
 				Type:     schema.TypeString,
@@ -90,18 +91,18 @@ func ResourceSubscriptionJob() *schema.Resource {
 			"instance_class": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"large", "medium", "micro", "small", "xlarge", "xxlarge"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"large", "medium", "micro", "small", "xlarge", "xxlarge"}, false),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"payment_duration_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"payment_duration": {
 				Type:     schema.TypeInt,
@@ -118,7 +119,7 @@ func ResourceSubscriptionJob() *schema.Resource {
 			"source_endpoint_engine_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MySQL", "Oracle"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"MySQL", "Oracle"}, false),
 			},
 			"source_endpoint_ip": {
 				Type:     schema.TypeString,
@@ -131,7 +132,7 @@ func ResourceSubscriptionJob() *schema.Resource {
 			"source_endpoint_instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CEN", "DRDS", "ECS", "Express", "LocalInstance", "PolarDB", "RDS", "dg"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"CEN", "DRDS", "ECS", "Express", "LocalInstance", "PolarDB", "RDS", "dg"}, false),
 			},
 			"source_endpoint_oracle_sid": {
 				Type:     schema.TypeString,
@@ -165,13 +166,13 @@ func ResourceSubscriptionJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"0", "1"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Abnormal", "Downgrade", "Locked", "Normal", "NotStarted", "NotStarted", "PreCheckPass", "PrecheckFailed", "Prechecking", "Retrying", "Starting", "Upgrade"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Abnormal", "Downgrade", "Locked", "Normal", "NotStarted", "NotStarted", "PreCheckPass", "PrecheckFailed", "Prechecking", "Retrying", "Starting", "Upgrade"}, false),
 			},
 			"subscription_data_type_ddl": {
 				Type:     schema.TypeBool,
@@ -187,7 +188,7 @@ func ResourceSubscriptionJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"classic", "vpc"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"classic", "vpc"}, false),
 			},
 			"subscription_instance_vpc_id": {
 				Type:     schema.TypeString,
@@ -200,7 +201,7 @@ func ResourceSubscriptionJob() *schema.Resource {
 			"sync_architecture": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"bidirectional", "oneway"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"bidirectional", "oneway"}, false),
 			},
 			"synchronization_direction": {
 				Type:     schema.TypeString,
