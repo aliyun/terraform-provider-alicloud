@@ -56,7 +56,6 @@ func setCdnTags(client *connectivity.AliyunClient, resourceType TagResourceType,
 }
 
 func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
-	ecsService := EcsService{client}
 	if d.HasChange("volume_tags") {
 		request := ecs.CreateDescribeDisksRequest()
 		request.InstanceId = d.Id()
@@ -92,7 +91,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 			ids = append(ids, disk.DiskId)
 			if disk.Type == "system" {
 				for _, t := range disk.Tags.Tag {
-					if !ecsService.ecsTagIgnored(t) {
+					if !ecsTagIgnored(t) {
 						systemDiskTag[t.TagKey] = t.TagValue
 					}
 				}

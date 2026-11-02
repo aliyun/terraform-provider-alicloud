@@ -1,0 +1,1037 @@
+package mnsopen_test
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	gomonkey "github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
+	alicloud "github.com/aliyun/terraform-provider-alicloud/alicloud"
+	tfacctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tferrs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	tflogs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	mnsopen "github.com/aliyun/terraform-provider-alicloud/alicloud/service/mnsopen"
+	tfsweep "github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/assert"
+)
+
+func init() {
+	resource.AddTestSweepers("alicloud_message_service_queue", &resource.Sweeper{
+		Name: "alicloud_message_service_queue",
+		F:    testSweepMessageServiceQueue,
+	})
+}
+
+func testSweepMessageServiceQueue(region string) error {
+	rawClient, err := tfsweep.SharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "ListQueue"
+	request := make(map[string]interface{})
+	request["PageSize"] = tfhelper.PageSizeLarge
+	request["PageNum"] = 1
+	var response map[string]interface{}
+	MessageServiceQueueIds := make([]string, 0)
+	for {
+		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Mns-open", "2022-01-19", action, nil, request, true)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		tflogs.AddDebug(action, response, request)
+		if err != nil {
+			return tferrs.WrapErrorf(err, tferrs.DataDefaultErrorMsg, "alicloud_message_service_queue", action, tferrs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return tferrs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		resp, err := jsonpath.Get("$.Data.PageData", response)
+		if err != nil {
+			return tferrs.WrapErrorf(err, tferrs.FailedGetAttributeMsg, action, "$.Data.PageData", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			skip := true
+			item := v.(map[string]interface{})
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["QueueName"])), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping MessageServiceQueue Instance: %v", item["QueueName"])
+				continue
+			}
+			MessageServiceQueueIds = append(MessageServiceQueueIds, fmt.Sprint(item["QueueName"]))
+		}
+		if len(result) < tfhelper.PageSizeLarge {
+			break
+		}
+		request["PageNum"] = request["PageNum"].(int) + 1
+	}
+
+	for _, id := range MessageServiceQueueIds {
+		log.Printf("[INFO] Deleting MessageServiceQueue Instance: %s", id)
+		deleteAction := "DeleteQueue"
+		if err != nil {
+			return tferrs.WrapError(err)
+		}
+		request = map[string]interface{}{
+			"QueueName": id,
+		}
+		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(3*time.Minute, func() *retry.RetryError {
+			_, err = client.RpcPost("Mns-open", "2022-01-19", deleteAction, nil, request, false)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete MessageServiceQueue Instance (%s): %s", id, err)
+		}
+	}
+	return nil
+}
+
+func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := tfacctest.ResourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := tfacctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mnsopen.NewMessageServiceServiceV2(tfacctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMessageServiceQueue")
+	rac := tfacctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := tfacctest.ResourceTestAccConfig(resourceId, name, AliCloudMessageServiceQueueBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			tfacctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			tfacctest.PreCheck(t)
+		},
+		ProviderFactories: tfacctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds": "66888",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delay_seconds": "66888",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logging_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logging_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "1688",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_message_size": "1688",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"message_retention_period": "256000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"message_retention_period": "256000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polling_wait_seconds": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polling_wait_seconds": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"visibility_timeout": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"visibility_timeout": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_message_service_queue.dlq.id}",
+							"max_receive_count":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_message_service_queue.dlq.id}",
+							"max_receive_count":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": tfacctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": tfacctest.REMOVEKEY,
+						"tags.For":     tfacctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMessageServiceQueue_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := tfacctest.ResourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := tfacctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mnsopen.NewMessageServiceServiceV2(tfacctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMessageServiceQueue")
+	rac := tfacctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := tfacctest.ResourceTestAccConfig(resourceId, name, AliCloudMessageServiceQueueBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			tfacctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			tfacctest.PreCheck(t)
+		},
+		ProviderFactories: tfacctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name":               name,
+					"queue_type":               "normal",
+					"delay_seconds":            "66888",
+					"logging_enabled":          "true",
+					"maximum_message_size":     "1688",
+					"message_retention_period": "256000",
+					"polling_wait_seconds":     "6",
+					"visibility_timeout":       "60",
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_message_service_queue.dlq.id}",
+							"max_receive_count":        "1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":               name,
+						"queue_type":               "normal",
+						"delay_seconds":            "66888",
+						"logging_enabled":          "true",
+						"maximum_message_size":     "1688",
+						"message_retention_period": "256000",
+						"polling_wait_seconds":     "6",
+						"visibility_timeout":       "60",
+						"dlq_policy.#":             "1",
+						"tags.%":                   "2",
+						"tags.Created":             "TF",
+						"tags.For":                 "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMessageServiceQueue_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := tfacctest.ResourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := tfacctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mnsopen.NewMessageServiceServiceV2(tfacctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMessageServiceQueue")
+	rac := tfacctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := tfacctest.ResourceTestAccConfig(resourceId, name, AliCloudMessageServiceQueueBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			tfacctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			tfacctest.PreCheck(t)
+		},
+		Providers:    tfacctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name": name,
+					"queue_type": "fifo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name": name,
+						"queue_type": "fifo",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logging_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logging_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "1688",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_message_size": "1688",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"message_retention_period": "256000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"message_retention_period": "256000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polling_wait_seconds": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polling_wait_seconds": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"visibility_timeout": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"visibility_timeout": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_message_service_queue.fifo.id}",
+							"max_receive_count":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_message_service_queue.fifo.id}",
+							"max_receive_count":        "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dlq_policy.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": tfacctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": tfacctest.REMOVEKEY,
+						"tags.For":     tfacctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMessageServiceQueue_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := tfacctest.ResourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := tfacctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mnsopen.NewMessageServiceServiceV2(tfacctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMessageServiceQueue")
+	rac := tfacctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := tfacctest.ResourceTestAccConfig(resourceId, name, AliCloudMessageServiceQueueBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			tfacctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			tfacctest.PreCheck(t)
+		},
+		Providers:    tfacctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name":               name,
+					"queue_type":               "fifo",
+					"delay_seconds":            "66888",
+					"logging_enabled":          "true",
+					"maximum_message_size":     "1688",
+					"message_retention_period": "256000",
+					"polling_wait_seconds":     "6",
+					"visibility_timeout":       "60",
+					"dlq_policy": []map[string]interface{}{
+						{
+							"enabled":                  "true",
+							"dead_letter_target_queue": "${alicloud_message_service_queue.fifo.id}",
+							"max_receive_count":        "1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":               name,
+						"queue_type":               "fifo",
+						"delay_seconds":            "66888",
+						"logging_enabled":          "true",
+						"maximum_message_size":     "1688",
+						"message_retention_period": "256000",
+						"polling_wait_seconds":     "6",
+						"visibility_timeout":       "60",
+						"dlq_policy.#":             "1",
+						"tags.%":                   "2",
+						"tags.Created":             "TF",
+						"tags.For":                 "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMessageServiceQueue_sse(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := tfacctest.ResourceAttrInit(resourceId, AliCloudMessageServiceQueueMap0)
+	rc := tfacctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return mnsopen.NewMessageServiceServiceV2(tfacctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeMessageServiceQueue")
+	rac := tfacctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccMessageServiceQueue-name%d", rand)
+	testAccConfig := tfacctest.ResourceTestAccConfig(resourceId, name, AliCloudMessageServiceQueueSSEDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			// SSE runs in cn-shanghai: it is the only probed region where the
+			// SSE create/read round trip works without an account whitelist.
+			// Other regions either hide the SSE fields in the response
+			// (cn-hangzhou, cn-beijing, cn-shenzhen, cn-hongkong,
+			// cn-zhangjiakou) or reject SSE with FeatureNotEnabled behind an
+			// account whitelist (cn-qingdao).
+			tfacctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			tfacctest.PreCheck(t)
+		},
+		Providers:    tfacctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name":    name,
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+					"tags": map[string]string{
+						"Created": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name":         name,
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "false",
+					"sse_type":      tfacctest.REMOVEKEY,
+					"sse_algorithm": tfacctest.REMOVEKEY,
+					"tags":          tfacctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						// EncryptionEnabled stays true after SSE is disabled: it
+						// reports the residual encryption state, not the switch. The
+						// check map accumulates across steps, so sse_type and
+						// sse_algorithm are REMOVEKEYed here: the response no longer
+						// reports them once SSE is off.
+						"enable_sse":         "false",
+						"encryption_enabled": "true",
+						"sse_type":           tfacctest.REMOVEKEY,
+						"sse_algorithm":      tfacctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				// SSE-SMQ does not use a KMS key: kms_key_id is explicitly set to
+				// empty here, which also keeps the attribute covered in tests.
+				Config: testAccConfig(map[string]interface{}{
+					"enable_sse":    "true",
+					"sse_type":      "SMQ",
+					"sse_algorithm": "AES-256-GCM",
+					"kms_key_id":    "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_sse":         "true",
+						"sse_type":           "SMQ",
+						"sse_algorithm":      "AES-256-GCM",
+						"encryption_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudMessageServiceQueueMap0 = map[string]string{
+	"create_time":              tfacctest.CHECKSET,
+	"delay_seconds":            tfacctest.CHECKSET,
+	"maximum_message_size":     tfacctest.CHECKSET,
+	"message_retention_period": tfacctest.CHECKSET,
+	"polling_wait_seconds":     tfacctest.CHECKSET,
+	"queue_type":               tfacctest.CHECKSET,
+	"visibility_timeout":       tfacctest.CHECKSET,
+}
+
+func AliCloudMessageServiceQueueBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+resource "alicloud_message_service_queue" "dlq" {
+  queue_name = "${var.name}-dlq"
+}
+`, name)
+}
+
+func AliCloudMessageServiceQueueBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+resource "alicloud_message_service_queue" "fifo" {
+  queue_name = "${var.name}-fifo"
+  queue_type = "fifo"
+}
+`, name)
+}
+
+func AliCloudMessageServiceQueueSSEDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+`, name)
+}
+
+// lintignore: R001
+func TestUnitAliCloudMessageServiceQueue(t *testing.T) {
+	p := alicloud.Provider().ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"queue_name":               "CreateMessageServiceQueueValue",
+		"delay_seconds":            60478,
+		"maximum_message_size":     12357,
+		"message_retention_period": 256000,
+		"visibility_timeout":       40,
+		"polling_wait_seconds":     3,
+		"logging_enabled":          false,
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := tfsweep.SharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// GetQueueAttributes
+		"Data": map[string]interface{}{
+			"QueueName":              "CreateMessageServiceQueueValue",
+			"DelaySeconds":           60478,
+			"MaximumMessageSize":     12357,
+			"MessageRetentionPeriod": 256000,
+			"VisibilityTimeout":      40,
+			"PollingWaitSeconds":     3,
+			"LoggingEnabled":         false,
+		},
+	}
+	CreateMockResponse := map[string]interface{}{}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       tfhelper.String(errorCode),
+			Data:       tfhelper.String(errorCode),
+			Message:    tfhelper.String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, tferrs.GetNotFoundErrorFromString(tferrs.GetNotFoundMessage("alicloud_message_service_queue", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			tfhelper.MapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       tfhelper.String("loadEndpoint error"),
+			Data:       tfhelper.String("loadEndpoint error"),
+			Message:    tfhelper.String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = mnsopen.ResourceAliCloudMessageServiceQueueCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateQueue" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mnsopen.ResourceAliCloudMessageServiceQueueCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       tfhelper.String("loadEndpoint error"),
+			Data:       tfhelper.String("loadEndpoint error"),
+			Message:    tfhelper.String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = mnsopen.ResourceAliCloudMessageServiceQueueUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff := map[string]interface{}{
+		"queue_name":               "CreateMessageServiceQueueValue",
+		"delay_seconds":            0,
+		"maximum_message_size":     65536,
+		"message_retention_period": 345600,
+		"visibility_timeout":       30,
+		"polling_wait_seconds":     0,
+		"logging_enabled":          true,
+	}
+	diff, err := tfacctest.NewInstanceDiff("alicloud_message_service_queue", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// GetQueueAttributes Response
+		"Data": map[string]interface{}{
+			"QueueName":              "CreateMessageServiceQueueValue",
+			"DelaySeconds":           0,
+			"MaximumMessageSize":     65536,
+			"MessageRetentionPeriod": 345600,
+			"VisibilityTimeout":      30,
+			"PollingWaitSeconds":     0,
+			"LoggingEnabled":         true,
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "SetQueueAttributes" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mnsopen.ResourceAliCloudMessageServiceQueueUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	diff, err = tfacctest.NewInstanceDiff("alicloud_message_service_queue", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "GetQueueAttributes" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mnsopen.ResourceAliCloudMessageServiceQueueRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewMnsClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       tfhelper.String("loadEndpoint error"),
+			Data:       tfhelper.String("loadEndpoint error"),
+			Message:    tfhelper.String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = mnsopen.ResourceAliCloudMessageServiceQueueDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	attributesDiff = map[string]interface{}{}
+	diff, err = tfacctest.NewInstanceDiff("alicloud_message_service_queue", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_message_service_queue"].Schema).Data(dInit.State(), diff)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteQueue" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := mnsopen.ResourceAliCloudMessageServiceQueueDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
+			assert.Nil(t, err)
+		}
+	}
+}

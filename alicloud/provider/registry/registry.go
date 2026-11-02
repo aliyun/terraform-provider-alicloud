@@ -10,6 +10,7 @@ import (
 
 	alicloudfunction "github.com/aliyun/terraform-provider-alicloud/alicloud/function"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/account"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ackone"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/actiontrail"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/adb"
@@ -92,6 +93,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcopen"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv2"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/file"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fnf"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ga"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/gdb"
@@ -191,6 +193,8 @@ const (
 )
 
 var servicePackages = []conns.ServicePackage{
+	account.ServicePackage(),
+	file.ServicePackage(),
 	ackone.ServicePackage(),
 	actiontrail.ServicePackage(),
 	adb.ServicePackage(),
