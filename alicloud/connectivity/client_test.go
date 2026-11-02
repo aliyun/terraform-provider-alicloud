@@ -13,6 +13,7 @@ import (
 
 	ossgateway "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
+	roa "github.com/alibabacloud-go/tea-roa/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -352,6 +353,183 @@ func TestUnitCommonWithRamClient_Proxy(t *testing.T) {
 			} else {
 				assert.Empty(t, ramconn.GetHttpProxy())
 				assert.Empty(t, ramconn.GetHttpsProxy())
+			}
+		})
+	}
+}
+
+// TestUnitTeaNoProxyHost verifies the host[:port] normalization that hands tea
+// the exact request host it compares against its NO_PROXY list. tea-roa sets
+// the host header to client.EndpointHost and never sets request.Port, so an
+// endpoint such as "host:443" compares as "host:443"; the bypass value must
+// preserve the port to match.
+func TestUnitTeaNoProxyHost(t *testing.T) {
+	cases := []struct {
+		name     string
+		endpoint string
+		want     string
+	}{
+		{"bare hostname", "tablestore.cn-shanghai.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com"},
+		{"https scheme", "https://tablestore.cn-shanghai.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com"},
+		{"host with port", "tablestore.cn-shanghai.aliyuncs.com:443", "tablestore.cn-shanghai.aliyuncs.com:443"},
+		{"scheme and port", "http://foo.com:8080", "foo.com:8080"},
+		{"empty endpoint", "", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, teaNoProxyHost(tc.endpoint))
+		})
+	}
+}
+
+// TestUnitResolveTeaProxy verifies the tea-roa proxy decision reuses the
+// provider's regexp-based skipProxy (suffix/wildcard matching) instead of
+// tea's own exact host comparison. It covers every NO_PROXY form the source
+// task requires: suffix (.aliyuncs.com), wildcard (*.aliyuncs.com), exact
+// host, star (*), host:443 (port-bearing miss), a suffix entry bypassing a
+// port-bearing endpoint (bypass value preserves the port), empty, and no
+// HTTPS_PROXY.
+func TestUnitResolveTeaProxy(t *testing.T) {
+	const proxyURL = "http://proxy.example.com:8080"
+	const host = "tablestore.cn-shanghai.aliyuncs.com"
+
+	cases := []struct {
+		name            string
+		httpsProxy      string
+		noProxy         string
+		protocol        string
+		endpoint        string
+		wantUseProxy    bool
+		wantProxyURL    string
+		wantNoProxyHost string
+	}{
+		{
+			name:       "no proxy environment configured",
+			httpsProxy: "", noProxy: "", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: "",
+		},
+		{
+			name:       "suffix no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: ".aliyuncs.com", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "wildcard no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: "*.aliyuncs.com", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "exact host no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: host, protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "star no_proxy entry bypasses proxy",
+			httpsProxy: proxyURL, noProxy: "*", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host,
+		},
+		{
+			name:       "suffix no_proxy bypasses port-bearing endpoint",
+			httpsProxy: proxyURL, noProxy: ".aliyuncs.com", protocol: "HTTPS", endpoint: host + ":443",
+			wantUseProxy: false, wantProxyURL: "", wantNoProxyHost: host + ":443",
+		},
+		{
+			name:       "port-bearing no_proxy entry does not match",
+			httpsProxy: proxyURL, noProxy: host + ":443", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: true, wantProxyURL: proxyURL, wantNoProxyHost: "",
+		},
+		{
+			name:       "unmatched no_proxy routes through proxy",
+			httpsProxy: proxyURL, noProxy: "other.example.com", protocol: "HTTPS", endpoint: host,
+			wantUseProxy: true, wantProxyURL: proxyURL, wantNoProxyHost: "",
+		},
+		{
+			name:       "HTTP protocol reads HTTP_PROXY",
+			httpsProxy: "http://p.example.com:3128", noProxy: "", protocol: "HTTP", endpoint: host,
+			wantUseProxy: true, wantProxyURL: "http://p.example.com:3128", wantNoProxyHost: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// env is process-global; subtests run sequentially to avoid races.
+			t.Setenv("HTTPS_PROXY", tc.httpsProxy)
+			t.Setenv("https_proxy", "")
+			t.Setenv("HTTP_PROXY", tc.httpsProxy)
+			t.Setenv("http_proxy", "")
+			t.Setenv("NO_PROXY", tc.noProxy)
+			t.Setenv("no_proxy", "")
+
+			client := &AliyunClient{config: &Config{Protocol: tc.protocol}}
+			useProxy, proxyURL, noProxyHost, err := client.resolveTeaProxy(tc.endpoint)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantUseProxy, useProxy)
+			assert.Equal(t, tc.wantProxyURL, proxyURL)
+			assert.Equal(t, tc.wantNoProxyHost, noProxyHost)
+		})
+	}
+}
+
+// TestUnitApplyTeaProxyConfig exercises the production proxy wiring against a
+// real *roa.Client (the type tea-roa's DoRequest reads at request time) rather
+// than roa.Config, closing the Client.Init NoProxy-copy gap (pinned tea-roa
+// v1.3.4) that helper-only assertions miss. It verifies the decision reaches
+// client.NoProxy / client.HttpsProxy and that a bypass entry matches what tea
+// compares: request.Domain equals the host header, which tea-roa sets to
+// client.EndpointHost (= the endpoint) without setting request.Port, so an
+// endpoint such as "host:443" compares as "host:443".
+func TestUnitApplyTeaProxyConfig(t *testing.T) {
+	const proxyURL = "http://proxy.example.com:8080"
+
+	cases := []struct {
+		name     string
+		noProxy  string
+		endpoint string
+		bypass   bool
+	}{
+		{"suffix match", ".aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com", true},
+		{"wildcard match", "*.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com", true},
+		{"exact host match", "tablestore.cn-shanghai.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com", true},
+		{"star match", "*", "tablestore.cn-shanghai.aliyuncs.com", true},
+		{"suffix match with explicit port", ".aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com:443", true},
+		{"no match routes through proxy", "other.example.com", "tablestore.cn-shanghai.aliyuncs.com", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// env is process-global; subtests run sequentially to avoid races.
+			t.Setenv("HTTPS_PROXY", proxyURL)
+			t.Setenv("https_proxy", "")
+			t.Setenv("NO_PROXY", tc.noProxy)
+			t.Setenv("no_proxy", "")
+
+			ac := &AliyunClient{config: &Config{Protocol: "HTTPS"}}
+			roaClient := &roa.Client{}
+			assert.NoError(t, ac.applyTeaProxyConfig(roaClient, tc.endpoint))
+
+			// tea-roa DoRequest sets the host header to client.EndpointHost and
+			// never sets request.Port, so tea compares request.Domain verbatim
+			// against each NO_PROXY entry; for a bare-hostname endpoint that is
+			// the endpoint itself (port preserved when present).
+			requestDomain := tc.endpoint
+			if tc.bypass {
+				// Direct connect: the bypass must reach client.NoProxy (the
+				// post-Init field DoRequest reads), not only roa.Config, and the
+				// entry must match request.Domain under tea's exact comparison.
+				assert.NotNil(t, roaClient.NoProxy, "bypass must reach client.NoProxy, not only roa.Config")
+				var matched bool
+				for _, entry := range strings.Split(tea.StringValue(roaClient.NoProxy), ",") {
+					if entry == requestDomain {
+						matched = true
+						break
+					}
+				}
+				assert.True(t, matched, "bypass entry %q must match request.Domain %q (tea exact comparison)", tea.StringValue(roaClient.NoProxy), requestDomain)
+				assert.Nil(t, roaClient.HttpsProxy, "bypass suppresses the proxy without needing HttpsProxy")
+			} else {
+				// Proxy: client.HttpsProxy must carry the proxy URL.
+				assert.Nil(t, roaClient.NoProxy, "non-match must not set a bypass entry")
+				assert.NotNil(t, roaClient.HttpsProxy, "non-match must route through the proxy")
+				assert.Equal(t, proxyURL, tea.StringValue(roaClient.HttpsProxy))
 			}
 		})
 	}
