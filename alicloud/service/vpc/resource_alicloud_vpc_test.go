@@ -3639,6 +3639,7 @@ func TestUnitVpcSweepMakeTimeoutContract(t *testing.T) {
 			shim := `#!/bin/sh
 set -eu
 if [ "$1" = env ] && [ "${2:-}" = GOPATH ]; then printf '%s\n' "$SWEEP_FAKE_GOPATH"; exit 0; fi
+if [ "$1" = run ] && [ "${2:-}" = "./scripts/testing/sweeppackage" ]; then printf './alicloud/service/vpc\n'; exit 0; fi
 if [ "$1" != test ]; then echo 'unexpected fake go command' >&2; exit 81; fi
 printf '%s\n' "$@" > "$SWEEP_ARGS_FILE"
 printf '%s\n' "${TF_ACC:-}" "${ALICLOUD_SWEEP_ALL_RESOURCES:-}" > "$SWEEP_ENV_FILE"
@@ -3664,7 +3665,7 @@ printf '%s\n' "${TF_ACC:-}" "${ALICLOUD_SWEEP_ALL_RESOURCES:-}" > "$SWEEP_ENV_FI
 				t.Fatal(err)
 			}
 			got := strings.Split(strings.TrimSpace(string(raw)), "\n")
-			want := []string{"test", "./alicloud", "-v", "-timeout=" + tc.timeout, "-sweep=cn-beijing", "-sweep-run=alicloud_vpc"}
+			want := []string{"test", "./alicloud/service/vpc", "-v", "-timeout=" + tc.timeout, "-sweep=cn-beijing", "-sweep-run=alicloud_vpc"}
 			if strings.Join(got, "\n") != strings.Join(want, "\n") {
 				t.Fatalf("actual go argv %q; want %q", got, want)
 			}
