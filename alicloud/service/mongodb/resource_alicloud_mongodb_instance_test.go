@@ -1668,7 +1668,7 @@ func mongodbBackupPolicyFixtureUpdateData(t *testing.T, resourceInstance *schema
 }
 
 func newMongoDBBackupPolicyFixtureResource() *schema.Resource {
-	resourceInstance := resourceAliCloudMongoDBInstance()
+	resourceInstance := mongodb.ResourceAliCloudMongoDBInstance()
 	resourceInstance.Timeouts = &schema.ResourceTimeout{Update: schema.DefaultTimeout(60 * time.Second)}
 	return resourceInstance
 }
