@@ -2776,6 +2776,20 @@ func normalizeOssOpenAPIResponse(response map[string]interface{}) (map[string]in
 	return normalized, nil
 }
 
+// slsOpenapiConfig builds the openapi.Config used for SLS gateway SPI
+// requests. A fresh openapi.Config is kept (rather than reusing
+// teaRoaOpenapiConfig/teaRpcOpenapiConfig) to avoid the SignatureNotMatch
+// error observed with temporary credentials, but the provider-configured
+// connect/read timeouts are restored so that slow or blocked SLS requests
+// honour client_connect_timeout/client_read_timeout instead of running with
+// no HTTP deadline that the outer resource.Retry can cancel.
+func (client *AliyunClient) slsOpenapiConfig() openapi.Config {
+	sdkConfig := openapi.Config{}
+	sdkConfig.SetReadTimeout(client.config.ClientReadTimeout)
+	sdkConfig.SetConnectTimeout(client.config.ClientConnectTimeout)
+	return sdkConfig
+}
+
 // Do invoking API request with SDK v2
 // parameters:
 //
@@ -2798,7 +2812,11 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		sdkConfig = client.teaRpcOpenapiConfig
 	}
 	if apiProductCode == "sls" {
-		sdkConfig = openapi.Config{}
+		// SLS uses a gateway SPI client; slsOpenapiConfig keeps the fresh
+		// openapi.Config that avoids the SignatureNotMatch error observed with
+		// temporary credentials while restoring the provider-configured
+		// connect/read timeouts.
+		sdkConfig = client.slsOpenapiConfig()
 	}
 	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
 		apiParams.Protocol = tea.String(client.config.Protocol)

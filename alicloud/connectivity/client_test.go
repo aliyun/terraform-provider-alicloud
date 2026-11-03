@@ -356,3 +356,21 @@ func TestUnitCommonWithRamClient_Proxy(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitSlsOpenapiConfigRetainsProviderTimeouts(t *testing.T) {
+	client := &AliyunClient{
+		config: &Config{
+			ClientReadTimeout:    5000,
+			ClientConnectTimeout: 3000,
+		},
+	}
+	sdkConfig := client.slsOpenapiConfig()
+	if sdkConfig.ReadTimeout == nil {
+		t.Fatalf("slsOpenapiConfig did not restore the provider read timeout (ClientReadTimeout=%d)", client.config.ClientReadTimeout)
+	}
+	assert.Equal(t, 5000, *sdkConfig.ReadTimeout)
+	if sdkConfig.ConnectTimeout == nil {
+		t.Fatalf("slsOpenapiConfig did not restore the provider connect timeout (ClientConnectTimeout=%d)", client.config.ClientConnectTimeout)
+	}
+	assert.Equal(t, 3000, *sdkConfig.ConnectTimeout)
+}
