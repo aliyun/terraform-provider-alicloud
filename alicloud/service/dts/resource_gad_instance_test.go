@@ -229,8 +229,9 @@ resource "alicloud_dts_gad_instance" "default" {
 // provider-region constraint documented in basic7553 applies (the framework muxed provider shares
 // one region), so the SQL Server master and the GAD instance are both in cn-hangzhou.
 //
-// SQL Server HA parameters mirror resourceDBInstanceSQLServerConfigDependence in
-// resource_alicloud_db_instance_test.go: engine_version 2012_std_ha, category HighAvailability,
+// SQL Server parameters: GAD rejects the HighAvailability category for SQL Server (DTS returns
+// DTS.Msg.GADUnsupportedRdsStandard — "category [HighAvailability] is not supported"), so the
+// master RDS must use the AlwaysOn cluster series (engine_version 2019_ent, category AlwaysOn).
 // PostPaid, cloud_essd, with a dedicated mssql.x* class (GAD rejects general-purpose specs the
 // same way it does for MySQL). collation/time_zone are SQL Server-specific required fields.
 func TestAccAliCloudDtsGadInstance_sqlServerDR(t *testing.T) {
@@ -269,11 +270,13 @@ func TestAccAliCloudDtsGadInstance_sqlServerDR(t *testing.T) {
 	})
 }
 
-// dtsGadInstanceSqlServerDependence provisions a SQL Server HA master RDS the GAD instance
-// references. Mirrors the MySQL fixture in dtsGadInstanceDependence but with SQL Server HA
-// parameters (engine_version 2012_std_ha, category HighAvailability, PostPaid, cloud_essd) and
-// a dedicated mssql.x* class selected from the zone's available classes. SQL Server requires
-// collation and time_zone; storage is 100 GB.
+// dtsGadInstanceSqlServerDependence provisions a SQL Server cluster-series master RDS the GAD
+// instance references. Mirrors the MySQL fixture in dtsGadInstanceDependence but with SQL Server
+// AlwaysOn cluster parameters (engine_version 2019_ent, category AlwaysOn, PostPaid, cloud_essd)
+// and a dedicated mssql.x* class selected from the zone's available classes. GAD rejects the
+// HighAvailability category for SQL Server (DTS.Msg.GADUnsupportedRdsStandard), so the master
+// must use the AlwaysOn cluster series. SQL Server requires collation and time_zone; storage
+// is 100 GB.
 func dtsGadInstanceSqlServerDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -282,18 +285,18 @@ variable "name" {
 
 data "alicloud_db_zones" "master" {
   engine                   = "SQLServer"
-  engine_version           = "2012_std_ha"
+  engine_version           = "2019_ent"
   instance_charge_type     = "PostPaid"
-  category                 = "HighAvailability"
+  category                 = "AlwaysOn"
   db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "master" {
   zone_id                  = data.alicloud_db_zones.master.zones.0.id
   engine                   = "SQLServer"
-  engine_version           = "2012_std_ha"
+  engine_version           = "2019_ent"
   instance_charge_type     = "PostPaid"
-  category                 = "HighAvailability"
+  category                 = "AlwaysOn"
   db_instance_storage_type = "cloud_essd"
 }
 
@@ -321,7 +324,7 @@ resource "alicloud_vswitch" "master" {
 
 resource "alicloud_db_instance" "master" {
   engine                   = "SQLServer"
-  engine_version           = "2012_std_ha"
+  engine_version           = "2019_ent"
   instance_type            = local.gad_master_class
   instance_storage         = "100"
   db_instance_storage_type = "cloud_essd"
