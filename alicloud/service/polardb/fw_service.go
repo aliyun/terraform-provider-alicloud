@@ -406,8 +406,12 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 	}
 	// gap: After CreateNetworkChannel, DescribeNetworkChannel may briefly return a null
 	// or empty ChannelInfos array before the channel propagates. retryRpcPost only retries
-	// on error responses, so wrap the full read (API call + navigation + array selection)
-	// in a retry loop with incremental backoff until the channel becomes visible.
+	// on error responses, so wrap the full read in a retry loop with incremental backoff
+	// until the channel becomes visible.
+	//
+	// The payload paths ($.ChannelInfos[*].TargetPort etc.) and fwNormalizeResponse
+	// bindings are designed for the full response (which contains the ChannelInfos array),
+	// not a selected element. Pass the full response to fwSelectScopedReadObject.
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var inner map[string]interface{}
 	var notFound bool
@@ -424,7 +428,7 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 			}
 			return retry.NonRetryableError(e)
 		}
-		// Navigate to ChannelInfos (direct array per OpenAPI definition).
+		// Navigate to ChannelInfos to check visibility (direct array per OpenAPI).
 		cur := interface{}(response)
 		for _, seg := range strings.Split("ChannelInfos", ".") {
 			m, ok := cur.(map[string]interface{})
@@ -436,34 +440,20 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 				return retry.NonRetryableError(fmt.Errorf("DescribeNetworkChannel returned no declared singleton response object"))
 			}
 		}
-		// gap: DescribeNetworkChannel returns ChannelInfos as an array (OpenAPI type: array),
-		// but the generator modeled it as a singleton object. Retry when the channel is not yet
-		// visible (nil or empty array); otherwise select the matching element by ChannelName.
+		// Retry when the channel is not yet visible (nil or empty array).
 		if cur == nil {
 			wait()
 			return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned nil ChannelInfos, channel may not have propagated yet"))
 		}
-		if arr, ok := cur.([]interface{}); ok {
-			if len(arr) == 0 {
-				wait()
-				return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned empty ChannelInfos, channel may not have propagated yet"))
-			}
-			for _, item := range arr {
-				if m, ok := item.(map[string]interface{}); ok {
-					if v, ok := m["ChannelName"]; ok && fmt.Sprint(v) == parts[1] {
-						cur = m
-						break
-					}
-				}
-			}
-			// Fallback: API already filtered by DBClusterId+ChannelName, use first element.
-			if _, stillArr := cur.([]interface{}); stillArr && len(arr) > 0 {
-				if m, ok := arr[0].(map[string]interface{}); ok {
-					cur = m
-				}
-			}
+		if arr, ok := cur.([]interface{}); ok && len(arr) == 0 {
+			wait()
+			return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned empty ChannelInfos, channel may not have propagated yet"))
 		}
-		selected, identityErr := fwSelectScopedReadObject(cur, request, []fwScopedReadIdentity{
+		// Pass the full response — payload paths ($.ChannelInfos[*].*) walk the array
+		// from the response root; identity paths ($.DBClusterId/$.ChannelName) are not
+		// top-level in the response (they live inside ChannelInfos elements), so the
+		// identity check is vacuous and the API's DBClusterId+ChannelName filter is trusted.
+		selected, identityErr := fwSelectScopedReadObject(response, request, []fwScopedReadIdentity{
 			{Source: "$.DBClusterId", Target: "DBClusterId", Value: parts[0]},
 			{Source: "$.ChannelName", Target: "ChannelName", Value: parts[1]},
 		}, []string{"$.ChannelInfos[*].TargetPort", "$.ChannelInfos[*].DBClusterId", "$.ChannelInfos[*].TargetDBClusterId", "$.ChannelInfos[*].VpcId", "$.ChannelInfos[*].ChannelName", "$.ChannelInfos[*].RegionId", "$.ChannelInfos[*].TargetIp", "$.ChannelInfos[*].Notes", "$.ChannelInfos[*].TargetType", "$.ChannelInfos"})
