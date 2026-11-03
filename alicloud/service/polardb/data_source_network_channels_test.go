@@ -47,6 +47,7 @@ func testAccAlicloudPolarDBNetworkChannelsConfig(name string) string {
 
 data "alicloud_polardb_network_channels" "default" {
   db_cluster_id = alicloud_polardb_cluster.default.id
+  depends_on    = [alicloud_polardb_network_channel.default]
 }
 `, testAccPolarDBNetworkChannelDependence(name))
 }

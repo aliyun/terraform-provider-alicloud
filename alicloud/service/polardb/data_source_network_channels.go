@@ -193,8 +193,8 @@ func (d *networkChannelsDataSource) Read(ctx context.Context, req datasource.Rea
 
 	config.Id = types.StringValue(config.DBClusterId.ValueString())
 	if len(ids) == 0 {
-		config.Ids = types.ListNull(types.StringType)
-		config.Names = types.ListNull(types.StringType)
+		config.Ids = types.ListValueMust(types.StringType, []attr.Value{})
+		config.Names = types.ListValueMust(types.StringType, []attr.Value{})
 	} else {
 		config.Ids, resp.Diagnostics = types.ListValue(types.StringType, ids)
 		config.Names, resp.Diagnostics = types.ListValue(types.StringType, names)
@@ -203,7 +203,9 @@ func (d *networkChannelsDataSource) Read(ctx context.Context, req datasource.Rea
 		}
 	}
 	if len(channelInfoObjects) == 0 {
-		config.ChannelInfos = types.ListNull(networkChannelsInfoObjectType)
+		// Use ListValueMust with an empty slice instead of ListNull so that
+		// channel_infos.# is always written to state (.#=0), not absent.
+		config.ChannelInfos = types.ListValueMust(networkChannelsInfoObjectType, []attr.Value{})
 	} else {
 		config.ChannelInfos, resp.Diagnostics = types.ListValue(networkChannelsInfoObjectType, channelInfoObjects)
 		if resp.Diagnostics.HasError() {

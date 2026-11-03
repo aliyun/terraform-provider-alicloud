@@ -504,6 +504,19 @@ func networkChannelState(object map[string]interface{}, prior *networkChannelRes
 		ChannelName:  str("ChannelName"),
 		DBClusterId:  str("DBClusterId"),
 	}
+	// gap: The API returns target configuration fields (TargetDBClusterId, TargetIp,
+	// TargetPort, VpcId) inside ChannelInfos[*], not at the top level. The generator
+	// modeled these as request-only fields preserved from prior state, but during
+	// import there is no prior state, so they must be extracted from the response's
+	// first ChannelInfos element (the managed channel).
+	if arr, ok := lookup("ChannelInfos").([]interface{}); ok && len(arr) > 0 {
+		if ch, ok := arr[0].(map[string]interface{}); ok {
+			m.TargetDBClusterId = fwStr(ch, "TargetDBClusterId")
+			m.TargetIp = fwStr(ch, "TargetIp")
+			m.TargetPort = fwStr(ch, "TargetPort")
+			m.VpcId = fwStr(ch, "VpcId")
+		}
+	}
 	if prior != nil {
 		m.FwTimeouts = prior.FwTimeouts
 		m.ChannelInfos = fwPreserveRequestValues(m.ChannelInfos, prior.ChannelInfos, map[string]fwWireField{"channel_name": {Name: "ChannelName", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "target_port": {Name: "TargetPort", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "vpc_id": {Name: "VpcId", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "target_db_cluster_id": {Name: "TargetDBClusterId", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "db_cluster_id": {Name: "DBClusterId", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "target_type": {Name: "TargetType", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "target_ip": {Name: "TargetIp", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "region_id": {Name: "RegionId", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "notes": {Name: "Notes", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}}).(types.List)
@@ -513,10 +526,19 @@ func networkChannelState(object map[string]interface{}, prior *networkChannelRes
 		m.ResourceGroupId = prior.ResourceGroupId
 		m.ResourceOwnerAccount = prior.ResourceOwnerAccount
 		m.ResourceOwnerId = prior.ResourceOwnerId
-		m.TargetDBClusterId = prior.TargetDBClusterId
-		m.TargetIp = prior.TargetIp
-		m.TargetPort = prior.TargetPort
-		m.VpcId = prior.VpcId
+		// Fall back to prior for target fields not present in the API response.
+		if m.TargetDBClusterId.IsNull() {
+			m.TargetDBClusterId = prior.TargetDBClusterId
+		}
+		if m.TargetIp.IsNull() {
+			m.TargetIp = prior.TargetIp
+		}
+		if m.TargetPort.IsNull() {
+			m.TargetPort = prior.TargetPort
+		}
+		if m.VpcId.IsNull() {
+			m.VpcId = prior.VpcId
+		}
 	}
 	return m
 }
