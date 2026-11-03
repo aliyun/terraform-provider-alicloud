@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -93,43 +94,73 @@ func (r *networkChannelResource) Schema(ctx context.Context, req resource.Schema
 				Description: "The ID of the cluster.",
 			},
 			"notes": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "Note information.",
 			},
 			"owner_account": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "Owner Account",
 			},
 			"owner_id": schema.Int64Attribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 				Description: "Owner ID",
 			},
 			"resource_group_id": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "The ID of the resource group.",
 			},
 			"resource_owner_account": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "Resource Owner Account",
 			},
 			"resource_owner_id": schema.Int64Attribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 				Description: "Resource Owner ID",
 			},
 			"target_db_cluster_id": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "The target instance name.",
 			},
 			"target_ip": schema.StringAttribute{
-				Required:    true,
+				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "The IP address of the target instance.",
 			},
 			"target_port": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "The port of the target instance.",
 			},
 			"vpc_id": schema.StringAttribute{
-				Optional:    true,
+				Optional: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 				Description: "The ID of the VPC to which the access endpoint resides.",
 			},
 		},
@@ -316,6 +347,11 @@ func (r *networkChannelResource) Read(ctx context.Context, req resource.ReadRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, networkChannelState(object, &state))...)
 }
 
+// Update is a no-op: PolarDB exposes no UpdateNetworkChannel API, so every
+// configurable attribute is ForceNew (RequiresReplace) — changing any of them
+// triggers resource replacement, never an in-place update. The only non-ForceNew
+// field is the timeouts block, whose changes are persisted here by writing the
+// planned values back to state without an API call.
 func (r *networkChannelResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	resp.State = req.State
 	var plan, state networkChannelResourceModel

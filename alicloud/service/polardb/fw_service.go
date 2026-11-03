@@ -451,13 +451,14 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 			wait()
 			return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned empty ChannelInfos, channel may not have propagated yet"))
 		}
-		// Pass the full response — payload paths ($.ChannelInfos[*].*) walk the array
-		// from the response root; identity paths ($.DBClusterId/$.ChannelName) are not
-		// top-level in the response (they live inside ChannelInfos elements), so the
-		// identity check is vacuous and the API's DBClusterId+ChannelName filter is trusted.
+		// Pass the full response. The identity fields (DBClusterId/ChannelName) live
+		// inside ChannelInfos elements, not at the response root, so the identity
+		// Source paths walk into $.ChannelInfos[*] to verify the returned element
+		// actually matches the requested DBClusterId+ChannelName, satisfying the
+		// minimum distinguishing-power requirement instead of a vacuous root lookup.
 		selected, identityErr := fwSelectScopedReadObject(response, request, []fwScopedReadIdentity{
-			{Source: "$.DBClusterId", Target: "DBClusterId", Value: parts[0]},
-			{Source: "$.ChannelName", Target: "ChannelName", Value: parts[1]},
+			{Source: "$.ChannelInfos[*].DBClusterId", Target: "DBClusterId", Value: parts[0]},
+			{Source: "$.ChannelInfos[*].ChannelName", Target: "ChannelName", Value: parts[1]},
 		}, []string{"$.ChannelInfos[*].TargetPort", "$.ChannelInfos[*].DBClusterId", "$.ChannelInfos[*].TargetDBClusterId", "$.ChannelInfos[*].VpcId", "$.ChannelInfos[*].ChannelName", "$.ChannelInfos[*].RegionId", "$.ChannelInfos[*].TargetIp", "$.ChannelInfos[*].Notes", "$.ChannelInfos[*].TargetType", "$.ChannelInfos"})
 		if identityErr != nil {
 			return retry.NonRetryableError(fmt.Errorf("selecting DescribeNetworkChannel resource: %w", identityErr))

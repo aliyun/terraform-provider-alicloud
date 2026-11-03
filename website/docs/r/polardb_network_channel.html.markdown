@@ -28,45 +28,18 @@ The following arguments are supported:
 * `channel_infos` - (Optional, ForceNew, List) Channel Network List See [`channel_infos`](#channel_infos) below.
 * `channel_name` - (Required, ForceNew) The name of the network channel.
 * `db_cluster_id` - (Required, ForceNew) The ID of the cluster.
-* `notes` - (Optional) Note information.
+* `notes` - (Optional, ForceNew) Note information.
+* `owner_account` - (Optional, ForceNew) Owner Account
+* `owner_id` - (Optional, ForceNew, Int) Owner ID
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
+* `resource_owner_account` - (Optional, ForceNew) Resource Owner Account
+* `resource_owner_id` - (Optional, ForceNew, Int) Resource Owner ID
+* `target_db_cluster_id` - (Optional, ForceNew) The target instance name.
+* `target_ip` - (Required, ForceNew) The IP address of the target instance.
+* `target_port` - (Optional, ForceNew) The port of the target instance.
+* `vpc_id` - (Optional, ForceNew) The ID of the VPC to which the access endpoint resides.
 
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
-
-* `owner_account` - (Optional) Owner Account
-
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
-
-* `owner_id` - (Optional, Int) Owner ID
-
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
-
-* `resource_group_id` - (Optional, Computed) The ID of the resource group.
-
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
-
-* `resource_owner_account` - (Optional) Resource Owner Account
-
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
-
-* `resource_owner_id` - (Optional, Int) Resource Owner ID
-
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
-
-* `target_db_cluster_id` - (Optional) The target instance name.
-
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
-
-* `target_ip` - (Required) The IP address of the target instance.
-
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
-
-* `target_port` - (Optional) The port of the target instance.
-
--> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
-
-* `vpc_id` - (Optional) The ID of the VPC to which the access endpoint resides.
-
--> **NOTE:** This parameter is only evaluated during resource creation and deletion. Modifying it in isolation will not trigger any action.
+-> **NOTE:** PolarDB exposes no update API for network channels; every argument above is ForceNew, so changing any of them triggers resource replacement rather than an in-place update.
 
 
 ### `channel_infos`
