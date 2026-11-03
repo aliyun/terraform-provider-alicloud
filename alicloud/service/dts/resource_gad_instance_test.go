@@ -275,8 +275,11 @@ func TestAccAliCloudDtsGadInstance_sqlServerDR(t *testing.T) {
 // AlwaysOn cluster parameters (engine_version 2019_ent, category AlwaysOn, PostPaid, cloud_essd)
 // and a dedicated mssql.x* class selected from the zone's available classes. GAD rejects the
 // HighAvailability category for SQL Server (DTS.Msg.GADUnsupportedRdsStandard), so the master
-// must use the AlwaysOn cluster series. SQL Server requires collation and time_zone; storage
-// is 100 GB.
+// must use the AlwaysOn cluster series. The mssql.x*.e2 class is an AlwaysOn cluster-series spec
+// (see resource_alicloud_rds_backup_test's SQL Server fixture), so CreateDBInstance must carry
+// category=AlwaysOn explicitly — without it the RDS backend searches the default category and
+// returns InvalidDBInstanceClass.NotFound for a class that only exists under AlwaysOn. SQL Server
+// requires collation and time_zone; storage is 100 GB.
 func dtsGadInstanceSqlServerDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -323,6 +326,7 @@ resource "alicloud_vswitch" "master" {
 }
 
 resource "alicloud_db_instance" "master" {
+  category                 = "AlwaysOn"
   engine                   = "SQLServer"
   engine_version           = "2019_ent"
   instance_type            = local.gad_master_class
