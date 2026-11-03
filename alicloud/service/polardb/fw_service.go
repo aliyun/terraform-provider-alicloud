@@ -9,9 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"math/big"
-	"math/rand"
 	"regexp"
 	"sort"
 	"strconv"
@@ -295,20 +293,6 @@ func buildClientToken(action string) string {
 		token = token[0:64]
 	}
 	return token
-}
-
-// incrementalWait mirrors alicloud.incrementalWait: exponential backoff capped at 20s with jitter.
-func incrementalWait(first, incr time.Duration) func() {
-	retryCount := 0
-	return func() {
-		upper := float64(first) + (math.Pow(2, float64(retryCount))-1)*float64(incr)
-		if upper > float64(20*time.Second) {
-			upper = float64(20 * time.Second)
-		}
-		waitTime := time.Duration(upper * (0.8 + 0.4*rand.Float64()))
-		time.Sleep(waitTime)
-		retryCount++
-	}
 }
 
 // needRetry mirrors alicloud.NeedRetry for the *tea.SDKError path that RpcPost produces.
