@@ -36,10 +36,14 @@ func TestAccAlicloudPolarDBNetworkChannel_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"notes", "channel_infos"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// gap#12: target_ip/target_port/vpc_id are request-only fields — the API
+				// accepts them in CreateNetworkChannel but DescribeNetworkChannel always
+				// returns them as empty strings. During import there is no prior state to
+				// fall back to, so these fields cannot match after import.
+				ImportStateVerifyIgnore: []string{"notes", "channel_infos", "target_ip", "target_port", "vpc_id"},
 			},
 		},
 	})

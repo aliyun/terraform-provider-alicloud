@@ -32,7 +32,10 @@ func TestAccAlicloudPolarDBNetworkChannels_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceId, "channel_infos.#", "1"),
 					resource.TestCheckResourceAttrSet(dataSourceId, "channel_infos.0.channel_name"),
 					resource.TestCheckResourceAttrSet(dataSourceId, "channel_infos.0.db_cluster_id"),
-					resource.TestCheckResourceAttrSet(dataSourceId, "channel_infos.0.target_ip"),
+					// gap#12: target_ip/target_port/vpc_id are request-only fields — the API
+					// accepts them in CreateNetworkChannel but DescribeNetworkChannel always
+					// returns them as empty strings. They cannot be asserted as set in the
+					// data source output.
 					resource.TestCheckResourceAttr(dataSourceId, "ids.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceId, "names.#", "1"),
 				),
