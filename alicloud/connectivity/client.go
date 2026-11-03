@@ -1072,6 +1072,9 @@ func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, er
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
+	if err := client.applyTeaProxyConfig(conn, endpoint); err != nil {
+		return nil, err
+	}
 
 	return conn, nil
 }
@@ -1447,6 +1450,9 @@ func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client,
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the tea roa client: %#v", err)
+	}
+	if err := client.applyTeaProxyConfig(conn, endpoint); err != nil {
+		return nil, err
 	}
 
 	return conn, nil
@@ -1870,6 +1876,85 @@ func (client *AliyunClient) skipProxy(endpoint string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// teaNoProxyHost returns the host[:port] that tea compares against when
+// deciding whether to bypass a proxy. tea-roa sets the request host header to
+// client.EndpointHost (the endpoint passed to SetEndpoint) and never sets
+// request.Port, so tea compares request.Domain verbatim against each NO_PROXY
+// entry: an endpoint such as "host:443" yields request.Domain "host:443". The
+// bypass value must therefore preserve any explicit port so it matches what tea
+// compares; stripping the port (e.g. via Hostname()) makes "host:443" fail to
+// match. The provider's regexp-based skipProxy decision is applied separately;
+// this helper only normalizes the host handed to tea when a direct connection
+// is desired.
+func teaNoProxyHost(endpoint string) string {
+	raw := endpoint
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+	if u, err := url.Parse(raw); err == nil && u.Host != "" {
+		return u.Host
+	}
+	return endpoint
+}
+
+// resolveTeaProxy reuses the provider's existing proxy decision (getHttpProxy
+// + skipProxy) to determine whether tea-roa requests to the given endpoint
+// should go through the proxy or connect directly. It returns the proxy URL to
+// apply when proxying, or the precise hostname to bypass when direct
+// connecting. The decision mirrors the V1 SDK path (e.g. WithOtsClient) so
+// tea-roa control-plane calls honor NO_PROXY suffix/wildcard entries that tea's
+// own exact-match comparison would otherwise miss.
+func (client *AliyunClient) resolveTeaProxy(endpoint string) (useProxy bool, proxyURL string, noProxyHost string, err error) {
+	proxy, proxyErr := client.getHttpProxy()
+	if proxyErr != nil {
+		return false, "", "", proxyErr
+	}
+	// No proxy configured in the environment: tea reads the environment itself
+	// and, finding none, connects directly. Nothing to override.
+	if proxy == nil {
+		return false, "", "", nil
+	}
+	skip, skipErr := client.skipProxy(endpoint)
+	if skipErr != nil {
+		return false, "", "", skipErr
+	}
+	if skip {
+		// Direct connect: instruct tea to bypass the proxy for this exact host.
+		return false, "", teaNoProxyHost(endpoint), nil
+	}
+	return true, proxy.String(), "", nil
+}
+
+// applyTeaProxyConfig translates the provider's proxy decision onto the
+// tea-roa client returned by roa.NewClient. It must be called AFTER
+// roa.NewClient: tea-roa's Client.Init copies HttpProxy/HttpsProxy from the
+// roa.Config but does NOT copy NoProxy (pinned tea-roa v1.3.4), so writing
+// NoProxy on the Config is lost and tea falls back to reading the NO_PROXY
+// environment variable, whose suffix/wildcard entries its exact host
+// comparison never matches. Setting the exported fields on the *roa.Client
+// directly reaches the values DoRequest places into the _runtime map
+// ("httpProxy"/"httpsProxy"/"noProxy" = DefaultString(runtime.X, client.X)).
+// tea checks noProxy before the proxy URL, so a matching bypass entry
+// suppresses the proxy even when HttpsProxy is set; an empty HttpsProxy alone
+// would leave tea reading HTTPS_PROXY from the environment and proxying anyway.
+func (client *AliyunClient) applyTeaProxyConfig(roaClient *roa.Client, endpoint string) error {
+	useProxy, proxyURL, noProxyHost, err := client.resolveTeaProxy(endpoint)
+	if err != nil {
+		return err
+	}
+	switch {
+	case useProxy:
+		if client.config.Protocol == "HTTPS" {
+			roaClient.HttpsProxy = tea.String(proxyURL)
+		} else {
+			roaClient.HttpProxy = tea.String(proxyURL)
+		}
+	case noProxyHost != "":
+		roaClient.NoProxy = tea.String(noProxyHost)
+	}
+	return nil
 }
 
 func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse, error) {
@@ -2770,6 +2855,9 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	if err := client.applyTeaProxyConfig(conn, endpoint); err != nil {
+		return nil, err
 	}
 	var response map[string]interface{}
 	runtime := &util.RuntimeOptions{}
