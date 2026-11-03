@@ -57,21 +57,21 @@ provider "alicloud" {
 # Master RDS in cn-beijing, created through the bj alias. GAD requires a dedicated
 # (mysql.x* / mssql.x* / pg.x*) RDS class; general-purpose classes are rejected.
 data "alicloud_db_zones" "master" {
-  provider            = alicloud.bj
-  engine              = "MySQL"
-  engine_version      = "8.0"
-  instance_charge_type = "PostPaid"
-  category            = "HighAvailability"
+  provider                 = alicloud.bj
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "master" {
-  provider           = alicloud.bj
-  zone_id            = data.alicloud_db_zones.master.zones.0.id
-  engine             = "MySQL"
-  engine_version     = "8.0"
-  instance_charge_type = "PostPaid"
-  category           = "HighAvailability"
+  provider                 = alicloud.bj
+  zone_id                  = data.alicloud_db_zones.master.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
@@ -97,25 +97,25 @@ resource "alicloud_vswitch" "master" {
 }
 
 resource "alicloud_db_instance" "master" {
-  provider               = alicloud.bj
-  engine                 = "MySQL"
-  engine_version         = "8.0"
-  instance_type          = local.gad_master_class
-  instance_storage       = "100"
+  provider                 = alicloud.bj
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = local.gad_master_class
+  instance_storage         = "100"
   db_instance_storage_type = "cloud_essd"
-  vswitch_id             = alicloud_vswitch.master.id
-  instance_name          = var.name
+  vswitch_id               = alicloud_vswitch.master.id
+  instance_name            = var.name
 }
 
 # GAD instance in cn-hangzhou (default provider), attaching the cn-beijing master as its DR primary.
 # All four master_* values come from the same RDS instance so they cannot drift apart.
 resource "alicloud_dts_gad_instance" "default" {
-  gad_instance_name          = var.name
-  db_engine_type             = alicloud_db_instance.master.engine
-  gad_instance_type          = "DR"
-  master_db_instance_id      = alicloud_db_instance.master.id
-  master_db_instance_region  = "cn-beijing"
-  master_db_zone_id          = data.alicloud_db_zones.master.zones.0.id
+  gad_instance_name         = var.name
+  db_engine_type            = alicloud_db_instance.master.engine
+  gad_instance_type         = "DR"
+  master_db_instance_id     = alicloud_db_instance.master.id
+  master_db_instance_region = "cn-beijing"
+  master_db_zone_id         = data.alicloud_db_zones.master.zones.0.id
 }
 ```
 
