@@ -3,6 +3,7 @@ package polardb
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strconv"
@@ -1016,22 +1017,30 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChanges("tde_status", "encrypt_new_tables", "encryption_key", "role_arn", "enable_automatic_rotation") {
 		if v, ok := d.GetOk("tde_status"); ok && v.(string) != "Disabled" {
 			action := "ModifyDBClusterTDE"
-			request := map[string]interface{}{
-				"DBClusterId": d.Id(),
-				"TDEStatus":   convertPolarDBTdeStatusUpdateRequest(v.(string)),
+			tdeStatus := convertPolarDBTdeStatusUpdateRequest(v.(string))
+			rotationValue, rotationConfigured := tdeAutomaticRotationRequestValue(d)
+			// The retry after InvalidTDEStatus.AlreadyEnabled only differs by
+			// TDEStatus, so both requests are built from the same parameters.
+			buildTdeRequest := func(includeTdeStatus bool) map[string]interface{} {
+				request := map[string]interface{}{"DBClusterId": d.Id()}
+				if includeTdeStatus {
+					request["TDEStatus"] = tdeStatus
+				}
+				if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" && d.HasChange("encrypt_new_tables") {
+					request["EncryptNewTables"] = s.(string)
+				}
+				if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+					request["EncryptionKey"] = v.(string)
+				}
+				if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
+					request["RoleArn"] = v.(string)
+				}
+				if rotationConfigured {
+					request["EnableAutomaticRotation"] = rotationValue
+				}
+				return request
 			}
-			if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" && d.HasChange("encrypt_new_tables") {
-				request["EncryptNewTables"] = s.(string)
-			}
-			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
-				request["EncryptionKey"] = v.(string)
-			}
-			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
-				request["RoleArn"] = v.(string)
-			}
-			if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
-				request["EnableAutomaticRotation"] = v
-			}
+			request := buildTdeRequest(true)
 			//retry: also retry OperationDenied.DBClusterStatus while a freshly created cluster (e.g. Oracle) settles into Running.
 			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
@@ -1047,7 +1056,31 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 				return nil
 			})
 			if err != nil {
-				if !errs.IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) {
+				if errs.IsExpectedErrors(err, []string{"InvalidTDEStatus.AlreadyEnabled"}) {
+					// The server rejects the whole request when TDE is already enabled, so
+					// TDEStatus=Enable combined with rotation/key parameters is discarded.
+					// Retry without TDEStatus so the other parameters are applied; a pure
+					// re-enable with no other parameters stays idempotent.
+					retryRequest := buildTdeRequest(false)
+					if len(retryRequest) > 1 {
+						waitRetry := helper.IncrementalWait(3*time.Second, 3*time.Second)
+						err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+							resp, e := client.RpcPost("polardb", "2017-08-01", action, nil, retryRequest, false)
+							if e != nil {
+								if helper.NeedRetry(e) || errs.IsExpectedErrors(e, []string{"OperationDenied.DBClusterStatus"}) {
+									waitRetry()
+									return retry.RetryableError(e)
+								}
+								return retry.NonRetryableError(e)
+							}
+							logs.AddDebug(action, resp, retryRequest)
+							return nil
+						})
+						if err != nil {
+							return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+						}
+					}
+				} else {
 					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 				}
 			}
@@ -2149,35 +2182,42 @@ func resourceClusterDelete(d *schema.ResourceData, meta interface{}) error {
 		return errs.WrapError(err)
 	}
 
-	// Pre paid cluster can not be release.
+	// A subscription cluster is released through the billing refund API; the
+	// PolarDB delete API only accepts pay-as-you-go clusters.
 	if PayType(cluster.PayType) == Prepaid {
-		return errs.WrapError(errs.Error("At present, 'Prepaid' instance cannot be deleted and must wait it to be expired and release it automatically."))
-	}
+		_, err = polarDBService.RefundPrePaidCluster(d.Id(), d.Timeout(schema.TimeoutDelete))
+		if err != nil {
+			if !errs.NotFoundError(err) && !errs.IsExpectedErrors(err, []string{"ResourceNotExists", "ExistRefundingOrderError"}) {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "RefundInstance", errs.ProviderERROR)
+			}
+			log.Printf("[WARN] PolarDB cluster %s is already refunded or releasing: %s", d.Id(), err)
+		}
+	} else {
+		request := polardb.CreateDeleteDBClusterRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		if v, ok := d.GetOk("backup_retention_policy_on_cluster_deletion"); ok && v.(string) != "" {
+			request.BackupRetentionPolicyOnClusterDeletion = v.(string)
+		}
+		err = retry.Retry(10*time.Minute, func() *retry.RetryError {
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.DeleteDBCluster(request)
+			})
 
-	request := polardb.CreateDeleteDBClusterRequest()
-	request.RegionId = client.RegionId
-	request.DBClusterId = d.Id()
-	if v, ok := d.GetOk("backup_retention_policy_on_cluster_deletion"); ok && v.(string) != "" {
-		request.BackupRetentionPolicyOnClusterDeletion = v.(string)
-	}
-	err = retry.Retry(10*time.Minute, func() *retry.RetryError {
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.DeleteDBCluster(request)
+			if err != nil && !errs.NotFoundError(err) {
+				if errs.IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "OperationDenied.PolarDBClusterStatus", "OperationDenied.ReadPolarDBClusterStatus"}) {
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+			return nil
 		})
 
-		if err != nil && !errs.NotFoundError(err) {
-			if errs.IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "OperationDenied.PolarDBClusterStatus", "OperationDenied.ReadPolarDBClusterStatus"}) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 		}
-		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-		return nil
-	})
-
-	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
 	}
 	stateConf := helper.BuildStateConf([]string{"Creating", "Running", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{}))
 	if _, err = stateConf.WaitForState(); err != nil {

@@ -210,6 +210,8 @@ The following arguments are supported:
   -> **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB cluster. it supports multiple zone.
 * `pay_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
+
+  -> **NOTE:** Destroying a `PrePaid` cluster releases it through the subscription refund API, then waits until the cluster is no longer returned by the PolarDB API. `backup_retention_policy_on_cluster_deletion` is only sent to `DeleteDBCluster` for `PostPaid` clusters and does not apply to this release path.
 * `renewal_status` - (Optional) Valid values are `AutoRenewal`, `Normal`, `NotRenewal`, Default to `NotRenewal`.
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
