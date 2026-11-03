@@ -1,5 +1,6 @@
 // Package polardb. This file is generated automatically. Please do not modify it manually, thank you!
-// Nested attributes require Terraform Plugin Protocol 6.
+// channel_infos uses ListAttribute of ObjectType (not ListNestedAttribute) because the
+// SDKv2-shared mux server serves Protocol v5, which rejects nested attributes.
 package polardb
 
 import (
@@ -66,85 +67,10 @@ func (r *networkChannelResource) Schema(ctx context.Context, req resource.Schema
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"channel_infos": schema.ListNestedAttribute{
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"channel_name": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Channel Name",
-						},
-						"target_port": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Target Port",
-						},
-						"vpc_id": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "VPC ID",
-						},
-						"target_db_cluster_id": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Target Database Cluster ID",
-						},
-						"db_cluster_id": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Database Cluster ID",
-						},
-						"target_type": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Target Type",
-						},
-						"target_ip": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Target IP",
-						},
-						"region_id": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Region ID",
-						},
-						"notes": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.RequiresReplaceIfConfigured(),
-							},
-							Description: "Notes",
-						},
-					},
-				},
-				Optional: true,
-				Computed: true,
+			"channel_infos": schema.ListAttribute{
+				ElementType: networkChannelChannelInfosObjType(),
+				Optional:    true,
+				Computed:    true,
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.RequiresReplaceIf(func(_ context.Context, req planmodifier.ListRequest, resp *listplanmodifier.RequiresReplaceIfFuncResponse) {
 						resp.RequiresReplace = fwConfiguredChanged(req.ConfigValue, req.PlanValue, req.StateValue)

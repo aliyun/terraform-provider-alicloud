@@ -31,26 +31,14 @@ type networkChannelsDataSource struct {
 }
 
 type networkChannelsModel struct {
-	Id           types.String               `tfsdk:"id"`
-	DBClusterId  types.String               `tfsdk:"db_cluster_id"`
-	ChannelName  types.String               `tfsdk:"channel_name"`
-	VpcId        types.String               `tfsdk:"vpc_id"`
-	NameRegex    types.String               `tfsdk:"name_regex"`
-	Ids          types.List                 `tfsdk:"ids"`
-	Names        types.List                 `tfsdk:"names"`
-	ChannelInfos []networkChannelsInfoModel `tfsdk:"channel_infos"`
-}
-
-type networkChannelsInfoModel struct {
-	ChannelName       types.String `tfsdk:"channel_name"`
-	DBClusterId       types.String `tfsdk:"db_cluster_id"`
-	TargetDBClusterId types.String `tfsdk:"target_db_cluster_id"`
-	TargetIp          types.String `tfsdk:"target_ip"`
-	TargetPort        types.String `tfsdk:"target_port"`
-	TargetType        types.String `tfsdk:"target_type"`
-	VpcId             types.String `tfsdk:"vpc_id"`
-	Notes             types.String `tfsdk:"notes"`
-	RegionId          types.String `tfsdk:"region_id"`
+	Id           types.String `tfsdk:"id"`
+	DBClusterId  types.String `tfsdk:"db_cluster_id"`
+	ChannelName  types.String `tfsdk:"channel_name"`
+	VpcId        types.String `tfsdk:"vpc_id"`
+	NameRegex    types.String `tfsdk:"name_regex"`
+	Ids          types.List   `tfsdk:"ids"`
+	Names        types.List   `tfsdk:"names"`
+	ChannelInfos types.List   `tfsdk:"channel_infos"`
 }
 
 var networkChannelsInfoObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
@@ -102,20 +90,8 @@ func (d *networkChannelsDataSource) Schema(ctx context.Context, req datasource.S
 				Computed:    true,
 				Description: "A list of network channel names.",
 			},
-			"channel_infos": schema.ListNestedAttribute{
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"channel_name":         schema.StringAttribute{Computed: true, Description: "Channel Name."},
-						"db_cluster_id":        schema.StringAttribute{Computed: true, Description: "Source cluster ID."},
-						"target_db_cluster_id": schema.StringAttribute{Computed: true, Description: "Target cluster ID."},
-						"target_ip":            schema.StringAttribute{Computed: true, Description: "Target cluster IP."},
-						"target_port":          schema.StringAttribute{Computed: true, Description: "Target cluster port."},
-						"target_type":          schema.StringAttribute{Computed: true, Description: "Target cluster type."},
-						"vpc_id":               schema.StringAttribute{Computed: true, Description: "VPC ID."},
-						"notes":                schema.StringAttribute{Computed: true, Description: "Notes."},
-						"region_id":            schema.StringAttribute{Computed: true, Description: "Region ID."},
-					},
-				},
+			"channel_infos": schema.ListAttribute{
+				ElementType: networkChannelsInfoObjectType,
 				Computed:    true,
 				Description: "The list of network channels.",
 			},
@@ -187,7 +163,7 @@ func (d *networkChannelsDataSource) Read(ctx context.Context, req datasource.Rea
 		}
 	}
 
-	var channelInfos []networkChannelsInfoModel
+	var channelInfoObjects []attr.Value
 	var ids []attr.Value
 	var names []attr.Value
 	for _, ch := range rawChannels {
@@ -199,17 +175,18 @@ func (d *networkChannelsDataSource) Read(ctx context.Context, req datasource.Rea
 		if dbClusterId == "" {
 			dbClusterId = config.DBClusterId.ValueString()
 		}
-		channelInfos = append(channelInfos, networkChannelsInfoModel{
-			ChannelName:       types.StringValue(channelName),
-			DBClusterId:       types.StringValue(dbClusterId),
-			TargetDBClusterId: types.StringValue(fwStringFromMap(ch, "TargetDBClusterId")),
-			TargetIp:          types.StringValue(fwStringFromMap(ch, "TargetIp")),
-			TargetPort:        types.StringValue(fwStringFromMap(ch, "TargetPort")),
-			TargetType:        types.StringValue(fwStringFromMap(ch, "TargetType")),
-			VpcId:             types.StringValue(fwStringFromMap(ch, "VpcId")),
-			Notes:             types.StringValue(fwStringFromMap(ch, "Notes")),
-			RegionId:          types.StringValue(fwStringFromMap(ch, "RegionId")),
+		obj, _ := types.ObjectValue(networkChannelsInfoObjectType.AttrTypes, map[string]attr.Value{
+			"channel_name":         types.StringValue(channelName),
+			"db_cluster_id":        types.StringValue(dbClusterId),
+			"target_db_cluster_id": types.StringValue(fwStringFromMap(ch, "TargetDBClusterId")),
+			"target_ip":            types.StringValue(fwStringFromMap(ch, "TargetIp")),
+			"target_port":          types.StringValue(fwStringFromMap(ch, "TargetPort")),
+			"target_type":          types.StringValue(fwStringFromMap(ch, "TargetType")),
+			"vpc_id":               types.StringValue(fwStringFromMap(ch, "VpcId")),
+			"notes":                types.StringValue(fwStringFromMap(ch, "Notes")),
+			"region_id":            types.StringValue(fwStringFromMap(ch, "RegionId")),
 		})
+		channelInfoObjects = append(channelInfoObjects, obj)
 		ids = append(ids, types.StringValue(fmt.Sprintf("%s:%s", dbClusterId, channelName)))
 		names = append(names, types.StringValue(channelName))
 	}
@@ -225,7 +202,14 @@ func (d *networkChannelsDataSource) Read(ctx context.Context, req datasource.Rea
 			return
 		}
 	}
-	config.ChannelInfos = channelInfos
+	if len(channelInfoObjects) == 0 {
+		config.ChannelInfos = types.ListNull(networkChannelsInfoObjectType)
+	} else {
+		config.ChannelInfos, resp.Diagnostics = types.ListValue(networkChannelsInfoObjectType, channelInfoObjects)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 }
 
