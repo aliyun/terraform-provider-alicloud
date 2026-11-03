@@ -8,12 +8,13 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	ossgateway "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
-	roa "github.com/alibabacloud-go/tea-roa/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
@@ -470,66 +471,201 @@ func TestUnitResolveTeaProxy(t *testing.T) {
 	}
 }
 
-// TestUnitApplyTeaProxyConfig exercises the production proxy wiring against a
-// real *roa.Client (the type tea-roa's DoRequest reads at request time) rather
-// than roa.Config, closing the Client.Init NoProxy-copy gap (pinned tea-roa
-// v1.3.4) that helper-only assertions miss. It verifies the decision reaches
-// client.NoProxy / client.HttpsProxy and that a bypass entry matches what tea
-// compares: request.Domain equals the host header, which tea-roa sets to
-// client.EndpointHost (= the endpoint) without setting request.Port, so an
-// endpoint such as "host:443" compares as "host:443".
-func TestUnitApplyTeaProxyConfig(t *testing.T) {
-	const proxyURL = "http://proxy.example.com:8080"
-
-	cases := []struct {
-		name     string
-		noProxy  string
-		endpoint string
-		bypass   bool
-	}{
-		{"suffix match", ".aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com", true},
-		{"wildcard match", "*.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com", true},
-		{"exact host match", "tablestore.cn-shanghai.aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com", true},
-		{"star match", "*", "tablestore.cn-shanghai.aliyuncs.com", true},
-		{"suffix match with explicit port", ".aliyuncs.com", "tablestore.cn-shanghai.aliyuncs.com:443", true},
-		{"no match routes through proxy", "other.example.com", "tablestore.cn-shanghai.aliyuncs.com", false},
+// TestUnitTeaRoaProxyRouting sends requests through the production constructors
+// and the pinned SDK transport. The origin and proxy independently record where
+// requests arrive; no proxy-selection algorithm or SDK transport is mocked.
+func TestUnitTeaRoaProxyRouting(t *testing.T) {
+	type observedRequest struct {
+		method string
+		host   string
+		path   string
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			// env is process-global; subtests run sequentially to avoid races.
-			t.Setenv("HTTPS_PROXY", proxyURL)
-			t.Setenv("https_proxy", "")
-			t.Setenv("NO_PROXY", tc.noProxy)
-			t.Setenv("no_proxy", "")
-
-			ac := &AliyunClient{config: &Config{Protocol: "HTTPS"}}
-			roaClient := &roa.Client{}
-			assert.NoError(t, ac.applyTeaProxyConfig(roaClient, tc.endpoint))
-
-			// tea-roa DoRequest sets the host header to client.EndpointHost and
-			// never sets request.Port, so tea compares request.Domain verbatim
-			// against each NO_PROXY entry; for a bare-hostname endpoint that is
-			// the endpoint itself (port preserved when present).
-			requestDomain := tc.endpoint
-			if tc.bypass {
-				// Direct connect: the bypass must reach client.NoProxy (the
-				// post-Init field DoRequest reads), not only roa.Config, and the
-				// entry must match request.Domain under tea's exact comparison.
-				assert.NotNil(t, roaClient.NoProxy, "bypass must reach client.NoProxy, not only roa.Config")
-				var matched bool
-				for _, entry := range strings.Split(tea.StringValue(roaClient.NoProxy), ",") {
-					if entry == requestDomain {
-						matched = true
-						break
-					}
+	entries := []struct {
+		name      string
+		protocols []string
+		request   func(*AliyunClient, string, *util.RuntimeOptions) (map[string]interface{}, error)
+	}{
+		{
+			name: "OTS", protocols: []string{"HTTP", "HTTPS"},
+			request: func(client *AliyunClient, endpoint string, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+				conn, err := client.NewOtsRoaClient("ots")
+				if err != nil {
+					return nil, err
 				}
-				assert.True(t, matched, "bypass entry %q must match request.Domain %q (tea exact comparison)", tea.StringValue(roaClient.NoProxy), requestDomain)
-				assert.Nil(t, roaClient.HttpsProxy, "bypass suppresses the proxy without needing HttpsProxy")
-			} else {
-				// Proxy: client.HttpsProxy must carry the proxy URL.
-				assert.Nil(t, roaClient.NoProxy, "non-match must not set a bypass entry")
-				assert.NotNil(t, roaClient.HttpsProxy, "non-match must route through the proxy")
-				assert.Equal(t, proxyURL, tea.StringValue(roaClient.HttpsProxy))
+				return conn.DoRequest(tea.String("2020-01-01"), nil, tea.String(http.MethodGet), tea.String("AK"), tea.String("/proxy-regression"), nil, nil, nil, runtime)
+			},
+		},
+		{
+			name: "common", protocols: []string{"HTTP", "HTTPS"},
+			request: func(client *AliyunClient, endpoint string, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+				conn, err := client.NewTeaRoaCommonClient(endpoint)
+				if err != nil {
+					return nil, err
+				}
+				return conn.DoRequestWithAction(tea.String("ProxyRegression"), tea.String("2020-01-01"), nil, tea.String(http.MethodGet), tea.String("AK"), tea.String("/proxy-regression"), nil, nil, nil, runtime)
+			},
+		},
+		{
+			// This wrapper owns its RuntimeOptions, so use HTTP here rather
+			// than changing production TLS verification for a test certificate.
+			name: "roaRequest", protocols: []string{"HTTP"},
+			request: func(client *AliyunClient, endpoint string, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+				return client.RoaDeleteWithApiName("cms", "2020-01-01", "ProxyRegression", "/proxy-regression", nil, nil, nil, false)
+			},
+		},
+	}
+	cases := []struct {
+		name    string
+		noProxy string
+		proxy   bool
+		bypass  bool
+	}{
+		{name: "suffix", noProxy: ".0.0.1", proxy: true, bypass: true},
+		{name: "wildcard", noProxy: "*.0.0.1", proxy: true, bypass: true},
+		{name: "exact hostname", noProxy: "127.0.0.1", proxy: true, bypass: true},
+		{name: "star", noProxy: "*", proxy: true, bypass: true},
+		{name: "nonmatching", noProxy: "unrelated.invalid", proxy: true},
+		{name: "no proxy configured", bypass: true},
+	}
+	for _, entry := range entries {
+		t.Run(entry.name, func(t *testing.T) {
+			for _, protocol := range entry.protocols {
+				t.Run(protocol, func(t *testing.T) {
+					for _, tc := range cases {
+						t.Run(tc.name, func(t *testing.T) {
+							// Environment and SDK pools are process-wide. Keep cases
+							// sequential and give each case a fresh origin/proxy port.
+							var originCount, proxyCount, wrongProxyCount atomic.Int32
+							originRequests := make(chan observedRequest, 1)
+							proxyRequests := make(chan observedRequest, 1)
+							handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								originCount.Add(1)
+								select {
+								case originRequests <- observedRequest{r.Method, r.Host, r.URL.Path}:
+								default:
+								}
+								w.Header().Set("Content-Type", "application/json")
+								if err := json.NewEncoder(w).Encode(map[string]string{"route": "origin"}); err != nil {
+									t.Error(err)
+								}
+							})
+							var origin *httptest.Server
+							if protocol == "HTTPS" {
+								origin = httptest.NewTLSServer(handler)
+							} else {
+								origin = httptest.NewServer(handler)
+							}
+							defer origin.Close()
+							endpoint := strings.TrimPrefix(strings.TrimPrefix(origin.URL, "https://"), "http://")
+
+							proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								proxyCount.Add(1)
+								select {
+								case proxyRequests <- observedRequest{r.Method, r.Host, r.URL.Path}:
+								default:
+								}
+								if r.Method == http.MethodConnect {
+									// Reproduce a corporate proxy refusing the tunnel.
+									http.Error(w, "proxy rejected CONNECT", http.StatusForbidden)
+									return
+								}
+								w.Header().Set("Content-Type", "application/json")
+								if err := json.NewEncoder(w).Encode(map[string]string{"route": "proxy"}); err != nil {
+									t.Error(err)
+								}
+							}))
+							defer proxy.Close()
+							wrongProxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+								wrongProxyCount.Add(1)
+								http.Error(w, "wrong protocol proxy", http.StatusBadGateway)
+							}))
+							defer wrongProxy.Close()
+							for _, key := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy"} {
+								t.Setenv(key, "")
+							}
+							if tc.proxy {
+								t.Setenv("HTTP_PROXY", wrongProxy.URL)
+								t.Setenv("HTTPS_PROXY", wrongProxy.URL)
+								t.Setenv(protocol+"_PROXY", proxy.URL)
+							}
+							t.Setenv("NO_PROXY", tc.noProxy)
+
+							credential, err := credentials.NewCredential(new(credentials.Config).
+								SetType("access_key").SetAccessKeyId("test-access-key").SetAccessKeySecret("test-secret-key"))
+							if err != nil {
+								t.Fatal(err)
+							}
+							endpoints := &sync.Map{}
+							endpoints.Store("ots", endpoint)
+							endpoints.Store("cms", endpoint)
+							config := &Config{Protocol: protocol, RegionId: "cn-hangzhou", Credential: credential, Endpoints: endpoints,
+								AccessKey: "test-access-key", SecretKey: "test-secret-key",
+								ClientReadTimeout: 2000, ClientConnectTimeout: 2000}
+							sdkConfig, err := config.getTeaRoaDslSdkConfig(true)
+							if err != nil {
+								t.Fatal(err)
+							}
+							client := &AliyunClient{config: config, teaRoaSdkConfig: sdkConfig}
+							// Only the isolated httptest TLS certificate is untrusted.
+							// Proxy and NoProxy runtime fields remain unset.
+							runtime := &util.RuntimeOptions{IgnoreSSL: tea.Bool(protocol == "HTTPS"), Autoretry: tea.Bool(false)}
+							response, err := entry.request(client, endpoint, runtime)
+							if protocol == "HTTPS" && !tc.bypass {
+								if err == nil || !strings.Contains(err.Error(), "Forbidden") {
+									t.Fatalf("request error = %v, want proxy CONNECT Forbidden", err)
+								}
+							} else {
+								if err != nil {
+									t.Fatal(err)
+								}
+								body := response
+								if value, ok := response["body"].(map[string]interface{}); ok {
+									body = value
+								}
+								wantRoute := "proxy"
+								if tc.bypass {
+									wantRoute = "origin"
+								}
+								assert.Equal(t, wantRoute, body["route"])
+							}
+							assert.Zero(t, wrongProxyCount.Load(), "must use the proxy for the configured protocol")
+							wantMethod := http.MethodGet
+							if entry.name == "roaRequest" {
+								wantMethod = http.MethodDelete
+							}
+							if tc.bypass {
+								assert.EqualValues(t, 1, originCount.Load())
+								assert.Zero(t, proxyCount.Load(), "bypassed request must not reach proxy")
+								select {
+								case request := <-originRequests:
+									assert.Equal(t, observedRequest{wantMethod, endpoint, "/proxy-regression"}, request)
+								default:
+									t.Error("origin did not receive the SDK request")
+								}
+								select {
+								case request := <-proxyRequests:
+									t.Errorf("bypassed request reached proxy: %+v", request)
+								default:
+								}
+							} else {
+								assert.Zero(t, originCount.Load(), "proxied request must not reach origin")
+								assert.EqualValues(t, 1, proxyCount.Load())
+								select {
+								case request := <-proxyRequests:
+									assert.Equal(t, endpoint, request.host)
+									if protocol == "HTTPS" {
+										assert.Equal(t, http.MethodConnect, request.method)
+									} else {
+										assert.Equal(t, wantMethod, request.method)
+										assert.Equal(t, "/proxy-regression", request.path)
+									}
+								default:
+									t.Error("proxy did not receive the SDK request")
+								}
+							}
+						})
+					}
+				})
 			}
 		})
 	}
