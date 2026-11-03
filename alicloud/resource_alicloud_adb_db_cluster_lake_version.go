@@ -518,16 +518,16 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 	if !d.IsNewResource() && d.HasChange("compute_resource") {
 		update = true
-	}
-	if v, ok := d.GetOk("compute_resource"); ok {
-		request["ComputeResource"] = v
+		if v, ok := d.GetOk("compute_resource"); ok {
+			request["ComputeResource"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("storage_resource") {
 		update = true
-	}
-	if v, ok := d.GetOk("storage_resource"); ok {
-		request["StorageResource"] = v
+		if v, ok := d.GetOk("storage_resource"); ok {
+			request["StorageResource"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("reserved_node_size") {
@@ -560,6 +560,14 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 			if err != nil {
+				if IsExpectedErrors(err, []string{"NoNeedToScale"}) {
+					// API reports no scaling is needed for this ModifyDBCluster
+					// request (e.g. a product_form change that doesn't require
+					// scaling, or the target scale already matches the current
+					// state). Skip the error and let state refresh reconcile
+					// the actual cluster state.
+					return nil
+				}
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
@@ -640,23 +648,14 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		// value (equal-to-equal), so the change routes to EnableSSL.
 		if d.HasChange("ssl_enabled") {
 			if v, ok := d.GetOk("ssl_enabled"); ok && v.(string) != "" {
+				// SSLEnabled (Enable/Disable/Update) is the operation command.
+				// The published API requires exactly one of SSLEnabled and
+				// EnableSSL; sending both is rejected with
+				// InvalidParameter.SSLEnabled ("specify exactly one of
+				// SSLEnabled and EnableSSL"). Send only SSLEnabled — the API
+				// applies the operation and the actual SSL state is read back
+				// via DescribeDBCluster.
 				modifyDBClusterSSLReq["SSLEnabled"] = v
-				// EnableSSL is mandatory for ModifyDBClusterSSL: the API
-				// rejects the request with MissingEnableSSL when it is omitted.
-				// Derive the required boolean from the SslEnabled command so
-				// both the operation command and the mandatory flag are sent:
-				// Enable turns SSL on, Disable turns it off, and Update
-				// derives EnableSSL from the actual old SSL state (preserved
-				// by CustomizeDiff via SetNew), not a hardcoded true.
-				switch v.(string) {
-				case "Enable":
-					modifyDBClusterSSLReq["EnableSSL"] = true
-				case "Disable":
-					modifyDBClusterSSLReq["EnableSSL"] = false
-				case "Update":
-					oldEnableSsl, _ := d.GetChange("enable_ssl")
-					modifyDBClusterSSLReq["EnableSSL"] = oldEnableSsl
-				}
 			}
 		} else if v, ok := d.GetOkExists("enable_ssl"); ok {
 			modifyDBClusterSSLReq["EnableSSL"] = v
