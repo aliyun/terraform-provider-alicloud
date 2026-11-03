@@ -3849,3 +3849,202 @@ func TestAccAliCloudRedisTairInstance_elastic_burst(t *testing.T) {
 		},
 	})
 }
+
+var AlicloudRedisTairInstanceMapBackupPolicy = map[string]string{
+	"port":           acctest.CHECKSET,
+	"status":         acctest.CHECKSET,
+	"engine_version": acctest.CHECKSET,
+	"payment_type":   "PayAsYouGo",
+	"backup_time":    acctest.CHECKSET,
+}
+
+// TestAccAliCloudRedisTairInstance_backupPolicy covers the update path of
+// backup_time/backup_period: an instance created without a backup policy is
+// left untouched by Create (the pair is incomplete, so ModifyBackupPolicy must
+// not be called and no 400 may surface), then both values are applied and
+// changed together and the result is read back from DescribeBackupPolicy.
+func TestAccAliCloudRedisTairInstance_backupPolicy(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMapBackupPolicy)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairbackuppolicy%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// IDRefreshIgnore covers the stock tags asymmetry: tags is Optional
+		// (not Computed) and only Read sets it, so refresh gains tags.% = 0
+		// that apply never persists. The backup pair stays in the check.
+		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"tags"},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": acctest.CHECKSET,
+					}),
+					resource.TestCheckResourceAttrSet(resourceId, "backup_period.#"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Monday", "Tuesday"},
+					"backup_time":   "02:00Z-03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "02:00Z-03:00Z",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Monday"),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Tuesday"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "04:00Z-05:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "1",
+						"backup_time":     "04:00Z-05:00Z",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Wednesday"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_backupPolicyOnCreate verifies that a pair
+// configured at create time is applied by the tail Update call (matching
+// alicloud_kvstore_instance), survives a no-op re-plan and is readable on
+// import.
+func TestAccAliCloudRedisTairInstance_backupPolicyOnCreate(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMapBackupPolicy)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairbackupcreate%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		// IDRefreshIgnore covers the stock tags asymmetry: tags is Optional
+		// (not Computed) and only Read sets it, so refresh gains tags.% = 0
+		// that apply never persists. The backup pair stays in the check.
+		IDRefreshName:     resourceId,
+		IDRefreshIgnore:   []string{"tags"},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"backup_period":      []string{"Monday", "Thursday"},
+					"backup_time":        "01:00Z-02:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "01:00Z-02:00Z",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Monday"),
+					resource.TestCheckTypeSetElemAttr(resourceId, "backup_period.*", "Thursday"),
+				),
+			},
+			{
+				Config:             testAccConfig(map[string]interface{}{}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRedisTairInstance_backupPolicyRequiresPair verifies that a
+// configuration carrying only one half of the backup policy pair is rejected at
+// plan time, so ModifyBackupPolicy is never called with incomplete parameters.
+func TestAccAliCloudRedisTairInstance_backupPolicyRequiresPair(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMapBackupPolicy)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairbackuppair%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceTdeUnsupported)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${alicloud_vswitch.defaultVSwitch.zone_id}",
+					"instance_class":     "tair.rdb.1g",
+					"tair_instance_name": name,
+					"vswitch_id":         "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":             "${alicloud_vpc.defaultVpc.id}",
+					"password":           "123456Tf",
+					"engine_version":     "5.0",
+					"backup_time":        "02:00Z-03:00Z",
+				}),
+				ExpectError: regexp.MustCompile("all of `backup_period,backup_time` must be specified"),
+			},
+		},
+	})
+}

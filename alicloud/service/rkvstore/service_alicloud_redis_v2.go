@@ -900,3 +900,39 @@ func (s *RedisServiceV2) DescribeTairInstanceDataNodes(id string) (nodes []map[s
 		return nodes, totalCount, nil
 	})
 }
+
+// DescribeBackupPolicy queries the backup policy of a Tair instance.
+func (s *RedisServiceV2) DescribeBackupPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeBackupPolicy"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound", "InvalidDBInstance.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("TairInstance", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
