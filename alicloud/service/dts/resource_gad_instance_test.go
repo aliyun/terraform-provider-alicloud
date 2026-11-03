@@ -105,12 +105,22 @@ func TestAccAliCloudDtsGadInstance_basic7553(t *testing.T) {
 				),
 			},
 			{
+				// Import only sets id; the subsequent refresh (Read) repopulates every field from
+				// DescribeGadInstanceDetail. gadInstanceCompleteRead now normalizes the misspelled
+				// response key "MasterDblnstanceZoneld" to MasterDbZoneId, so the imported state
+				// carries the real zone and ImportStateVerify no longer needs to ignore it.
 				ResourceName:      dtsGadInstanceResourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				// master_db_zone_id is write-only (it is sent to CreateGadInstance but never returned
-				// by DescribeGadInstanceDetail), so an imported state cannot carry it.
-				ImportStateVerifyIgnore: []string{"master_db_zone_id"},
+			},
+			{
+				// After import the state is refreshed from the API, so a plan with the same
+				// configuration must show no changes. This guards against the zone-read regression:
+				// if master_db_zone_id were null in state but set in config, RequiresReplaceIfConfigured
+				// would trigger an unexpected replacement (destroy/recreate of the GAD instance).
+				Config:             dtsGadInstanceDependence(name) + dtsGadInstanceBasicBody(name+"-update", "alicloud_resource_manager_resource_group.change.id"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
@@ -209,4 +219,134 @@ resource "alicloud_dts_gad_instance" "default" {
   resource_group_id         = %[2]s
 }
 `, gadName, resourceGroupIdExpr)
+}
+
+// TestAccAliCloudDtsGadInstance_sqlServerDR covers the original AIA (友邦) requirement: a
+// SQL Server master RDS under a DR (disaster recovery) GAD instance. The MySQL/DR lifecycle
+// (rename, resource_group_id ForceNew, import, post-import no-change plan) is already exercised
+// by TestAccAliCloudDtsGadInstance_basic7553, so this test focuses on the SQL Server engine path:
+// create a SQL Server HA master, attach it as the GAD DR primary, refresh, and import. The same
+// provider-region constraint documented in basic7553 applies (the framework muxed provider shares
+// one region), so the SQL Server master and the GAD instance are both in cn-hangzhou.
+//
+// SQL Server HA parameters mirror resourceDBInstanceSQLServerConfigDependence in
+// resource_alicloud_db_instance_test.go: engine_version 2012_std_ha, category HighAvailability,
+// Postpaid, cloud_essd, with a dedicated mssql.x* class (GAD rejects general-purpose specs the
+// same way it does for MySQL). collation/time_zone are SQL Server-specific required fields.
+func TestAccAliCloudDtsGadInstance_sqlServerDR(t *testing.T) {
+	name := fmt.Sprintf("tf-test-dts-gad-sql-%d", tfacctest.RandIntRange(10000, 99999))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			t.Setenv("ALICLOUD_REGION", "cn-hangzhou")
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: dtsGadInstanceSqlServerDependence(name) + dtsGadInstanceSqlServerBasicBody(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dtsGadInstanceResourceId, "gad_instance_name", name),
+					resource.TestCheckResourceAttr(dtsGadInstanceResourceId, "db_engine_type", "SQLServer"),
+					resource.TestCheckResourceAttr(dtsGadInstanceResourceId, "gad_instance_type", "DR"),
+					resource.TestCheckResourceAttr(dtsGadInstanceResourceId, "master_db_instance_region", "cn-hangzhou"),
+					resource.TestCheckResourceAttrPair(dtsGadInstanceResourceId, "master_db_instance_id", "alicloud_db_instance.master", "id"),
+					resource.TestCheckResourceAttrPair(dtsGadInstanceResourceId, "master_db_zone_id", "data.alicloud_db_zones.master", "zones.0.id"),
+					resource.TestCheckResourceAttrSet(dtsGadInstanceResourceId, "id"),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(dtsGadInstanceResourceId, tfjsonpath.New("create_time"), knownvalue.NotNull()),
+					statecheck.ExpectKnownValue(dtsGadInstanceResourceId, tfjsonpath.New("region_id"), knownvalue.NotNull()),
+					statecheck.ExpectKnownValue(dtsGadInstanceResourceId, tfjsonpath.New("status"), knownvalue.NotNull()),
+				},
+			},
+			{
+				ResourceName:      dtsGadInstanceResourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// dtsGadInstanceSqlServerDependence provisions a SQL Server HA master RDS the GAD instance
+// references. Mirrors the MySQL fixture in dtsGadInstanceDependence but with SQL Server HA
+// parameters (engine_version 2012_std_ha, category HighAvailability, Postpaid, cloud_essd) and
+// a dedicated mssql.x* class selected from the zone's available classes. SQL Server requires
+// collation and time_zone; storage is 100 GB.
+func dtsGadInstanceSqlServerDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%[1]s"
+}
+
+data "alicloud_db_zones" "master" {
+  engine                   = "SQLServer"
+  engine_version           = "2012_std_ha"
+  instance_charge_type     = "Postpaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "master" {
+  zone_id                  = data.alicloud_db_zones.master.zones.0.id
+  engine                   = "SQLServer"
+  engine_version           = "2012_std_ha"
+  instance_charge_type     = "Postpaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+locals {
+  # GAD rejects general-purpose/standard RDS specs; the dedicated GAD role must use a dedicated
+  # (mssql.x*) class. The data source returns general-purpose classes first, so the first returned
+  # class is replaced by the first dedicated class available in this zone.
+  gad_master_class = [
+    for c in data.alicloud_db_instance_classes.master.instance_classes : c.instance_class
+    if startswith(c.instance_class, "mssql.x")
+  ][0]
+}
+
+resource "alicloud_vpc" "master" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "master" {
+  vpc_id       = alicloud_vpc.master.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.master.zones.0.id
+  vswitch_name = var.name
+}
+
+resource "alicloud_db_instance" "master" {
+  engine                   = "SQLServer"
+  engine_version           = "2012_std_ha"
+  instance_type            = local.gad_master_class
+  instance_storage         = "100"
+  db_instance_storage_type = "cloud_essd"
+  vswitch_id               = alicloud_vswitch.master.id
+  instance_name            = var.name
+  collation                = "Chinese_PRC_CI_AS"
+  time_zone                = "China Standard Time"
+
+  timeouts {
+    create = "60m"
+    update = "60m"
+  }
+}
+`, name)
+}
+
+func dtsGadInstanceSqlServerBasicBody(gadName string) string {
+	return fmt.Sprintf(`
+resource "alicloud_dts_gad_instance" "default" {
+  gad_instance_name          = "%[1]s"
+  db_engine_type            = "SQLServer"
+  gad_instance_type         = "DR"
+  master_db_zone_id          = data.alicloud_db_zones.master.zones.0.id
+  master_db_instance_region = "cn-hangzhou"
+  master_db_instance_id     = alicloud_db_instance.master.id
+}
+`, gadName)
 }

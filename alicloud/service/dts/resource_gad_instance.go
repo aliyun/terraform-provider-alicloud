@@ -74,12 +74,12 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Database engine type",
+				Description: "Database engine type of the master RDS instance. Valid values: MySQL, SQLServer, PostgreSQL. Changing this forces a replacement.",
 			},
 			"gad_instance_name": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "GAD instance name",
+				Description: "GAD instance name. Globally unique across the Alibaba Cloud account.",
 			},
 			"gad_instance_type": schema.StringAttribute{
 				Optional: true,
@@ -87,7 +87,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "GAD instance type",
+				Description: "GAD instance type. Valid values: DR (disaster recovery), GAD (global active database, dual-active). Changing this forces a replacement.",
 			},
 			"master_db_instance_id": schema.StringAttribute{
 				Optional: true,
@@ -95,7 +95,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Master database instance ID",
+				Description: "ID of the master RDS instance the GAD instance attaches to. Use the ID of an existing RDS instance (alicloud_db_instance) or a data source such as data.alicloud_db_instances. Changing this forces a replacement.",
 			},
 			"master_db_instance_region": schema.StringAttribute{
 				Optional: true,
@@ -103,7 +103,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Master database instance region",
+				Description: "Region of the master RDS instance (e.g. cn-beijing). This is the region where the master RDS lives, which may differ from the provider region where the GAD instance itself is created. Changing this forces a replacement.",
 			},
 			"master_db_zone_id": schema.StringAttribute{
 				Optional: true,
@@ -111,7 +111,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Master database instance zone ID",
+				Description: "Zone ID of the master RDS instance (e.g. cn-beijing-l). It must be a zone in master_db_instance_region. Changing this forces a replacement.",
 			},
 			"region_id": schema.StringAttribute{
 				Computed:    true,
@@ -543,13 +543,25 @@ func gadInstanceState(object map[string]interface{}, prior *gadInstanceResourceM
 		GadInstanceType:        str("GadInstanceType"),
 		MasterDbInstanceId:     str("MasterDbInstanceId"),
 		MasterDbInstanceRegion: str("MasterDbInstanceRegion"),
-		RegionId:               str("RegionId"),
-		ResourceGroupId:        str("ResourceGroupId"),
-		Status:                 str("Status"),
+		// gadInstanceCompleteRead normalizes the misspelled response key
+		// "MasterDblnstanceZoneld" to "MasterDbZoneId", so Read populates it from
+		// DescribeGadInstanceDetail. Falling back to prior.MasterDbZoneId only when the
+		// response omits the zone keeps imported state (id-only ImportState then refresh)
+		// consistent with the configured value, preventing RequiresReplaceIfConfigured from
+		// triggering an unexpected replacement on the post-import plan.
+		MasterDbZoneId:  str("MasterDbZoneId"),
+		RegionId:        str("RegionId"),
+		ResourceGroupId: str("ResourceGroupId"),
+		Status:          str("Status"),
 	}
 	if prior != nil {
 		m.FwTimeouts = prior.FwTimeouts
-		m.MasterDbZoneId = prior.MasterDbZoneId
+		// Preserve the prior zone only when the response did not return one; a null response
+		// zone with a non-null prior (e.g. transient API omission) would otherwise drop a
+		// value the user configured, again risking a spurious replacement.
+		if m.MasterDbZoneId.IsNull() && !prior.MasterDbZoneId.IsNull() {
+			m.MasterDbZoneId = prior.MasterDbZoneId
+		}
 	}
 	return m
 }

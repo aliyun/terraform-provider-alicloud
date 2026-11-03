@@ -418,6 +418,15 @@ func gadInstanceCompleteRead(client *connectivity.AliyunClient, object map[strin
 		{Source: "$.InstanceType", Target: "$.GadInstanceType", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.MasterDbInstanceId", Target: "$.MasterDbInstanceId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.MasterDbInstanceRegion", Target: "$.MasterDbInstanceRegion", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
+		// DescribeGadInstanceDetail returns the master zone under the misspelled key
+		// "MasterDblnstanceZoneld" (lowercase L in place of capital I in both "Instance" and
+		// "Id"); the CreateGadInstance request uses the correctly-spelled "MasterDbZoneId".
+		// Without this normalization the zone is never read from the response, so
+		// gadInstanceState falls back to prior state and imports leave master_db_zone_id null.
+		// A null zone with RequiresReplaceIfConfigured then triggers an unexpected replacement
+		// when the configuration carries the real zone. Map the misspelled response key to the
+		// canonical MasterDbZoneId so Read populates it.
+		{Source: "$.MasterDblnstanceZoneld", Target: "$.MasterDbZoneId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.RegionId", Target: "$.RegionId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.ResourceGroupId", Target: "$.ResourceGroupId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.Status", Target: "$.Status", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
