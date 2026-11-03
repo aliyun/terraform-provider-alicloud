@@ -39,7 +39,7 @@ The following arguments are supported:
 * `target_port` - (Optional, ForceNew) The port of the target instance.
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC to which the access endpoint resides.
 
--> **NOTE:** PolarDB exposes no update API for network channels; every argument above is ForceNew, so changing any of them triggers resource replacement rather than an in-place update.
+  -> **NOTE:** PolarDB exposes no update API for network channels; every argument above is ForceNew, so changing any of them triggers resource replacement rather than an in-place update.
 
 
 ### `channel_infos`
