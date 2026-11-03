@@ -98,9 +98,9 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
   -> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 * `secondary_cidr_blocks` - (Optional, Computed, List, Deprecated since v1.185.0) Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_ipv4_cidr_block'. `secondary_cidr_blocks` attributes and `alicloud_vpc_ipv4_cidr_block` resource cannot be used at the same time.
-* `system_route_table_description` - (Optional) The description of the route table.
+* `system_route_table_description` - (Optional, Computed) The description of the route table.
 The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`.
-* `system_route_table_name` - (Optional) The name of the route table.
+* `system_route_table_name` - (Optional, Computed) The name of the route table.
 The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
 * `system_route_table_route_propagation_enable` - (Optional, Computed, Available since v1.248.0) Whether the system route table receives propagation routes.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of Vpc.

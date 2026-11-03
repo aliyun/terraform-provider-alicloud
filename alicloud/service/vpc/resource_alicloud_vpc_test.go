@@ -752,6 +752,81 @@ func TestAccAliCloudVPC_basic2(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudVPC_systemRouteTableComputed verifies that removing
+// system_route_table_description and system_route_table_name from the HCL
+// config after they were previously set does not produce a persistent diff.
+// The API DescribeRouteTableList returns values for these fields and the Read
+// function writes them to state. Without Computed on these fields, Terraform
+// detects a continuous diff (state=<set value> vs config="" after removal),
+// which marks the VPC as update in-place on every plan and propagates to
+// downstream route entries being force-replaced because their route_table_id
+// (Required + ForceNew) becomes (known after apply).
+func TestAccAliCloudVPC_systemRouteTableComputed(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVpcMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return NewVpcService(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpc")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVpcBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create a VPC with system_route_table_description and
+				// system_route_table_name explicitly set. After apply + read,
+				// state holds these values returned by the API.
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_name":                       name,
+					"description":                    name,
+					"dry_run":                        "false",
+					"system_route_table_name":        name,
+					"system_route_table_description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_name":                       name,
+						"description":                    name,
+						"dry_run":                        "false",
+						"system_route_table_name":        name,
+						"system_route_table_description": name,
+						"route_table_id":                 acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				// Step 2: Remove system_route_table_description and
+				// system_route_table_name from config. With Computed: true,
+				// Terraform knows these are provider-managed and keeps the
+				// state values — producing no diff. Without Computed, Terraform
+				// sees state=<name> vs config="" (removed) and flags an update
+				// in-place on every plan, causing a persistent diff.
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_name":    name,
+					"description": name,
+					"dry_run":     "false",
+				}),
+				PlanOnly: true,
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudVPC_isNotDefault(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc.default"
