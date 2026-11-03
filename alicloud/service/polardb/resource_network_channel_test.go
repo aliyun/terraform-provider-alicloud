@@ -103,12 +103,22 @@ resource "alicloud_polardb_cluster" "default" {
   description    = var.name
 }
 
+resource "alicloud_polardb_cluster" "target" {
+  db_type        = "PostgreSQL"
+  db_version     = "14"
+  pay_type       = "PostPaid"
+  db_node_class  = "polar.pg.x4.medium"
+  vswitch_id     = local.vswitch_id
+  description    = "${var.name}-target"
+}
+
 resource "alicloud_polardb_network_channel" "default" {
-  db_cluster_id = alicloud_polardb_cluster.default.id
-  channel_name  = var.name
-  target_ip     = alicloud_polardb_cluster.default.connection_string
-  target_port   = alicloud_polardb_cluster.default.port
-  vpc_id        = local.vpc_id
+  db_cluster_id        = alicloud_polardb_cluster.default.id
+  channel_name         = var.name
+  target_db_cluster_id = alicloud_polardb_cluster.target.id
+  target_ip            = alicloud_polardb_cluster.target.connection_string
+  target_port          = alicloud_polardb_cluster.target.port
+  vpc_id               = local.vpc_id
 }
 `, name)
 }
