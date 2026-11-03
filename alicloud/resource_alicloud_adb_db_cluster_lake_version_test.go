@@ -645,11 +645,17 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic_ssl(t *testing.T) {
 // upgrade. The same instance ID is captured in Step 1 and verified unchanged in
 // Step 2 via TestCheckResourceAttrWith.
 //
-// Note: product_version is NOT set in the upgrade step because it has ForceNew
-// in the schema — setting it would trigger a rebuild, contradicting the
-// customer's same-ID requirement. The ModifyDBCluster API does not accept
-// ProductVersion (it is only sent at Create time); the server handles it
-// internally during the form upgrade.
+// Note: product_version IS set in the upgrade step. The ModifyDBCluster API
+// requires ProductVersion for the in-place LegacyForm -> IntegrationForm
+// enterprise form conversion (per the published API: "LegacyForm 原地切换为
+// IntegrationForm 企业版时，取值为 enterprise_version，并同时指定 ProductForm、
+// ReservedNodeSize 和 ReservedNodeCount"). product_version no longer has
+// ForceNew in the schema because the conversion is in-place ("原地切换"), so
+// setting it does not rebuild the cluster — the instance ID stays unchanged,
+// satisfying the customer's same-ID requirement. ACC on the prior SHA
+// (e961ce9a3) confirmed that omitting ProductVersion fails with
+// InvalidParameter.ReservedNodeSize/ReservedNodeCount
+// ("...required for form conversion"), RequestId 01A1A015-9FC0-57E3-B660-B099CED89E9F.
 func TestAccAliCloudADBDBClusterLakeVersion_basic_upgrade(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
@@ -720,18 +726,20 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic_upgrade(t *testing.T) {
 				),
 			},
 			// Step 2: In-place upgrade LegacyForm → IntegrationForm.
-			// A single ModifyDBCluster sets ProductForm + ReservedNodeCount
-			// + ReservedNodeSize. compute_resource and storage_resource
-			// are removed from config (REMOVEKEY) since they are
-			// LegacyForm-specific; the state retains them via
-			// Optional+Computed. product_version is NOT set (ForceNew
-			// would rebuild — the server handles it internally).
-			// The instance ID must NOT change (no ForceNew) — this is
-			// the customer's core requirement: direct enterprise
-			// in-place upgrade, same instance ID, no rebuild.
+			// A single ModifyDBCluster sets ProductForm + ProductVersion +
+			// ReservedNodeCount + ReservedNodeSize. compute_resource and
+			// storage_resource are removed from config (REMOVEKEY) since
+			// they are LegacyForm-specific; the state retains them via
+			// Optional+Computed. product_version=EnterpriseVersion is set
+			// (no ForceNew — the conversion is in-place) and required by
+			// ModifyDBCluster for the form conversion. The instance ID
+			// must NOT change (no rebuild) — this is the customer's core
+			// requirement: direct enterprise in-place upgrade, same
+			// instance ID, no rebuild.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"product_form":        "IntegrationForm",
+					"product_version":     "EnterpriseVersion",
 					"reserved_node_size":  "8ACU",
 					"reserved_node_count": "3",
 					"compute_resource":    REMOVEKEY,
@@ -740,11 +748,9 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic_upgrade(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"product_form":        "IntegrationForm",
+						"product_version":     "EnterpriseVersion",
 						"reserved_node_size":  "8ACU",
 						"reserved_node_count": "3",
-						// product_version is not set in config (ForceNew);
-						// skip from Map0 CHECKSET to avoid false failure.
-						"product_version": REMOVEKEY,
 					}),
 					resource.TestCheckResourceAttrSet(resourceId, "id"),
 					resource.TestCheckResourceAttrWith(resourceId, "id", func(value string) error {

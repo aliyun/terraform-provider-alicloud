@@ -70,10 +70,17 @@ func resourceAliCloudAdbDbClusterLakeVersion() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			// ProductForm<->ProductVersion form conversion is an in-place
+			// ModifyDBCluster operation ("原地切换" per the published API):
+			// LegacyForm -> IntegrationForm enterprise upgrade sends
+			// ProductVersion=enterprise_version together with ProductForm,
+			// ReservedNodeSize and ReservedNodeCount, without rebuilding the
+			// cluster (DBClusterId is unchanged). ForceNew would rebuild and
+			// break the customer's same-instance upgrade requirement, so it
+			// must not be set here.
 			"product_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"compute_resource": {
@@ -554,20 +561,29 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		}
 	}
 
+	// ProductVersion is required by ModifyDBCluster for an in-place
+	// ProductForm form conversion (e.g. LegacyForm -> IntegrationForm
+	// enterprise upgrade: ProductVersion=enterprise_version together with
+	// ProductForm, ReservedNodeSize and ReservedNodeCount). Without it the
+	// API rejects the upgrade with InvalidParameter.ReservedNodeSize/
+	// ReservedNodeCount ("...required for form conversion"). It is also
+	// sent when the user changes product_version directly. Send the value
+	// as-is from config/state; the stored/returned format is CamelCase
+	// (e.g. EnterpriseVersion), matching CreateDBCluster.
+	if !d.IsNewResource() && d.HasChange("product_version") {
+		update = true
+
+		if v, ok := d.GetOk("product_version"); ok {
+			request["ProductVersion"] = v
+		}
+	}
+
 	if update {
 		action := "ModifyDBCluster"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, true)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"NoNeedToScale"}) {
-					// API reports no scaling is needed for this ModifyDBCluster
-					// request (e.g. a product_form change that doesn't require
-					// scaling, or the target scale already matches the current
-					// state). Skip the error and let state refresh reconcile
-					// the actual cluster state.
-					return nil
-				}
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
