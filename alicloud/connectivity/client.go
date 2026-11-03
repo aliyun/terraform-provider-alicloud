@@ -671,6 +671,7 @@ func (client *AliyunClient) WithOssClientV2(do func(*ossv2.Client) (interface{},
 		WithEndpoint(endpoint).
 		WithCredentialsProvider(&ossV2CredentialsProvider{client: client}).
 		WithUserAgent(client.config.getUserAgent())
+	cfg = withOssV2ClientTimeouts(cfg, client.config.ClientConnectTimeout, client.config.ClientReadTimeout)
 
 	if proxy, perr := client.getHttpProxy(); perr == nil && proxy != nil {
 		if skip, _ := client.skipProxy(endpoint); !skip {
@@ -689,6 +690,19 @@ func (client *AliyunClient) WithOssClientV2(do func(*ossv2.Client) (interface{},
 
 	client.ossconnV2 = ossv2.NewClient(cfg)
 	return do(client.ossconnV2)
+}
+
+// withOssV2ClientTimeouts leaves the SDK defaults (5s connect / 10s
+// read-write) in place for zero values, matching how the other clients treat
+// an unset provider timeout.
+func withOssV2ClientTimeouts(cfg *ossv2.Config, connectTimeout, readTimeout int) *ossv2.Config {
+	if connectTimeout > 0 {
+		cfg = cfg.WithConnectTimeout(time.Duration(connectTimeout) * time.Millisecond)
+	}
+	if readTimeout > 0 {
+		cfg = cfg.WithReadWriteTimeout(time.Duration(readTimeout) * time.Millisecond)
+	}
+	return cfg
 }
 
 func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, error)) (interface{}, error) {
@@ -1336,7 +1350,13 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 	// Receiving proxy config from environment
 	transport.Proxy = http.ProxyFromEnvironment
 	clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport),
-		fc.WithTimeout(30), fc.WithRetryCount(DefaultClientRetryCountSmall)}
+		fc.WithRetryCount(DefaultClientRetryCountSmall)}
+	// The FC SDK takes the whole-request timeout in seconds and treats 0 as
+	// "no timeout": keep its default when the provider value is unset, and
+	// round a positive sub-second value up instead of dropping it to 0.
+	if client.config.ClientReadTimeout > 0 {
+		clientOptions = append(clientOptions, fc.WithTimeout(uint((client.config.ClientReadTimeout+999)/1000)))
+	}
 
 	accessKey, secretKey, secretToken := client.config.GetRefreshCredential()
 	fcconn, err := fc.NewClient(fmt.Sprintf("https://%s", endpoint), string(ApiVersion20160815), accessKey, secretKey, clientOptions...)
