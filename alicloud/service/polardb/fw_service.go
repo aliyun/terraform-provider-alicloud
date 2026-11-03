@@ -451,24 +451,6 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 			wait()
 			return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned empty ChannelInfos, channel may not have propagated yet"))
 		}
-		// gap#10: After CreateNetworkChannel, DescribeNetworkChannel may return a non-empty
-		// ChannelInfos array with TargetDBClusterId already set but TargetIp/TargetPort/VpcId
-		// still empty strings while the network endpoint is being configured. The generator
-		// modeled these as request-only fields preserved from prior state; fwStr returns
-		// StringValue("") (not Null) for present-but-empty, so the IsNull fallback in
-		// networkChannelState does not trigger, causing "Provider produced inconsistent
-		// result after apply". Retry until these fields are populated.
-		if arr, ok := cur.([]interface{}); ok && len(arr) > 0 {
-			if ch, ok := arr[0].(map[string]interface{}); ok {
-				targetIp, _ := ch["TargetIp"].(string)
-				targetPort, _ := ch["TargetPort"].(string)
-				vpcId, _ := ch["VpcId"].(string)
-				if targetIp == "" || targetPort == "" || vpcId == "" {
-					wait()
-					return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned empty target fields (TargetIp/TargetPort/VpcId), network endpoint may not be fully configured yet"))
-				}
-			}
-		}
 		// Pass the full response — payload paths ($.ChannelInfos[*].*) walk the array
 		// from the response root; identity paths ($.DBClusterId/$.ChannelName) are not
 		// top-level in the response (they live inside ChannelInfos elements), so the
