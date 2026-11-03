@@ -404,10 +404,12 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 	if value, ok := request["ChannelName"].(string); !ok || value == "" || value != parts[1] {
 		return nil, fmt.Errorf("building DescribeNetworkChannel request: required identity does not match")
 	}
-	// gap: After CreateNetworkChannel, DescribeNetworkChannel may briefly return a null
-	// or empty ChannelInfos array before the channel propagates. retryRpcPost only retries
-	// on error responses, so wrap the full read in a retry loop with incremental backoff
-	// until the channel becomes visible.
+	// gap: After CreateNetworkChannel, DescribeNetworkChannel may return a null or empty
+	// ChannelInfos array for several minutes while the cluster transitions through a
+	// modifying state. retryRpcPost only retries on error responses, so wrap the full
+	// read in a retry loop with incremental backoff until the channel becomes visible.
+	// Empirical ACC evidence shows 2 minutes is insufficient; use 10 minutes to cover
+	// the cluster's transitional window.
 	//
 	// The payload paths ($.ChannelInfos[*].TargetPort etc.) and fwNormalizeResponse
 	// bindings are designed for the full response (which contains the ChannelInfos array),
@@ -415,7 +417,7 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var inner map[string]interface{}
 	var notFound bool
-	retryErr := retry.Retry(2*time.Minute, func() *retry.RetryError {
+	retryErr := retry.Retry(10*time.Minute, func() *retry.RetryError {
 		response, e := client.RpcPost("polardb", "2017-08-01", "DescribeNetworkChannel", nil, request, true)
 		if e != nil {
 			if isExpectedErrors(e, []string{"InvalidDBClusterId.NotFound"}) {

@@ -335,7 +335,7 @@ func (r *networkChannelResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 5*time.Minute)
+	operationTimeout, timeoutDiagnostics := fwTimeoutDuration(state.FwTimeouts, "delete", 10*time.Minute)
 	resp.Diagnostics.Append(timeoutDiagnostics...)
 	if resp.Diagnostics.HasError() {
 		return
