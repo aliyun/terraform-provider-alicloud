@@ -526,17 +526,21 @@ func networkChannelState(object map[string]interface{}, prior *networkChannelRes
 		m.ResourceGroupId = prior.ResourceGroupId
 		m.ResourceOwnerAccount = prior.ResourceOwnerAccount
 		m.ResourceOwnerId = prior.ResourceOwnerId
-		// Fall back to prior for target fields not present in the API response.
-		if m.TargetDBClusterId.IsNull() {
+		// Fall back to prior for target fields not present or empty in the API response.
+		// gap#10: fwStr returns StringValue("") (not Null) for present-but-empty strings.
+		// The API may return empty TargetIp/TargetPort/VpcId while the network endpoint is
+		// being configured; without the empty-string check the state would hold "" and cause
+		// "Provider produced inconsistent result after apply" against the planned values.
+		if m.TargetDBClusterId.IsNull() || m.TargetDBClusterId.ValueString() == "" {
 			m.TargetDBClusterId = prior.TargetDBClusterId
 		}
-		if m.TargetIp.IsNull() {
+		if m.TargetIp.IsNull() || m.TargetIp.ValueString() == "" {
 			m.TargetIp = prior.TargetIp
 		}
-		if m.TargetPort.IsNull() {
+		if m.TargetPort.IsNull() || m.TargetPort.ValueString() == "" {
 			m.TargetPort = prior.TargetPort
 		}
-		if m.VpcId.IsNull() {
+		if m.VpcId.IsNull() || m.VpcId.ValueString() == "" {
 			m.VpcId = prior.VpcId
 		}
 	}
