@@ -2798,7 +2798,10 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		sdkConfig = client.teaRpcOpenapiConfig
 	}
 	if apiProductCode == "sls" {
-		sdkConfig = openapi.Config{}
+		sdkConfig = openapi.Config{
+			ConnectTimeout: tea.Int(client.config.ClientConnectTimeout),
+			ReadTimeout:    tea.Int(client.config.ClientReadTimeout),
+		}
 	}
 	if apiParams.Protocol == nil || *apiParams.Protocol == "" {
 		apiParams.Protocol = tea.String(client.config.Protocol)
