@@ -102,6 +102,8 @@ The description must be 1 to 256 characters in length, and cannot start with `ht
 The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`.
 * `system_route_table_name` - (Optional, Computed) The name of the route table.
 The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
+
+  -> **NOTE:** Because these fields are `Computed`, removing them from your configuration does not clear the remote route table description or name. Terraform simply accepts the existing service value, preventing a persistent diff when the attribute is omitted from HCL.
 * `system_route_table_route_propagation_enable` - (Optional, Computed, Available since v1.248.0) Whether the system route table receives propagation routes.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of Vpc.
 * `user_cidrs` - (Optional, ForceNew, Computed, List, Available since v1.119.0) A list of user CIDRs. Up to `3` CIDR blocks can be specified.
