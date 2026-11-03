@@ -90,3 +90,31 @@ func TestUnitIsProviderNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitIsExpectedErrors(t *testing.T) {
+	cases := map[string]struct {
+		err         error
+		expectCodes []string
+		want        bool
+	}{
+		"nil":                               {err: nil, expectCodes: []string{"404"}, want: false},
+		"emptyCodeEmptyDataPermission":      {err: teaSDKError(403, "", "Permission denied", ""), expectCodes: []string{"404"}, want: false},
+		"emptyCodeEmptyDataMultipleExpects": {err: teaSDKError(403, "", "Permission denied", ""), expectCodes: []string{"404", "ServiceUnavailable"}, want: false},
+		"nonMatchingNonEmptyCode":           {err: teaSDKError(403, "APINotAuthorize", "forbidden", ""), expectCodes: []string{"404"}, want: false},
+		"exactCodeMatch":                    {err: teaSDKError(404, "404", "not found", ""), expectCodes: []string{"404"}, want: true},
+		"exactCodeAmongMultiple":            {err: teaSDKError(500, "InternalError", "boom", ""), expectCodes: []string{"ServiceUnavailable", "InternalError"}, want: true},
+		"reversePrefixHistoricalCompat":     {err: teaSDKError(404, "Invalid", "not found", ""), expectCodes: []string{"InvalidInstanceId.NotFound"}, want: true},
+		"dataMatchNonEmptyCode":             {err: teaSDKError(403, "APINotAuthorize", "forbidden", "previous response 404"), expectCodes: []string{"404"}, want: true},
+		"dataMatchEmptyCode":                {err: teaSDKError(403, "", "forbidden", "previous response 404"), expectCodes: []string{"404"}, want: true},
+		"emptyExpectCodes":                  {err: teaSDKError(404, "404", "not found", ""), expectCodes: []string{}, want: false},
+		"complexWrapsTeaExact":              {err: errs.WrapError(teaSDKError(404, "404", "not found", "")), expectCodes: []string{"404"}, want: true},
+		"complexWrapsTeaEmptyCode":          {err: errs.WrapError(teaSDKError(403, "", "Permission denied", "")), expectCodes: []string{"404"}, want: false},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			if got := errs.IsExpectedErrors(c.err, c.expectCodes); got != c.want {
+				t.Fatalf("IsExpectedErrors() = %v, want %v", got, c.want)
+			}
+		})
+	}
+}
