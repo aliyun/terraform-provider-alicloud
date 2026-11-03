@@ -2272,16 +2272,15 @@ func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("storage_auto_scale", clusterInfo["StorageAutoScale"])
 	}
 	if clusterInfo["StorageUpperBound"] != nil {
-		// 标准版 (ESSDPL*/ESSDAUTOPL, raw storage type "essdpl*" or "essdautopl")
-		// returns StorageUpperBound in GB, matching the schema unit.
-		// 企业版 (PSL5/PSL4, raw storage type "HighPerformance"/"Standard")
-		// returns it in MB; convert to GB to keep the round-trip consistent.
+		// Per the OpenAPI contract (CreateDBCluster/ModifyDBCluster),
+		// StorageUpperBound is a standard-version cluster parameter whose unit is
+		// GB, and StorageAutoScale is documented as a standard-version feature.
+		// Enterprise-version (PSL5/PSL4) clusters do not use storage auto-scaling,
+		// so StorageUpperBound is absent in their DescribeDBClusterAttribute
+		// response and the nil check above skips it. When present the value is
+		// already in GB, matching the schema unit.
 		resultStorageUpperBound, _ := clusterInfo["StorageUpperBound"].(json.Number).Int64()
-		if rawStorageType, ok := clusterInfo["StorageType"].(string); ok && (strings.HasPrefix(rawStorageType, "essdpl") || rawStorageType == "essdautopl") {
-			d.Set("storage_upper_bound", resultStorageUpperBound)
-		} else {
-			d.Set("storage_upper_bound", resultStorageUpperBound/1024)
-		}
+		d.Set("storage_upper_bound", resultStorageUpperBound)
 	}
 	if clusterInfo["DynamoDB"] != nil {
 		d.Set("enable_dynamodb", convertPolarDBEnableDynamoDBReadResponse(clusterInfo["DynamoDB"].(string)))
