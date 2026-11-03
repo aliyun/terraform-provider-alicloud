@@ -326,8 +326,11 @@ func needRetry(err error) bool {
 		// DependencyViolation. Including them here mirrors v1; all are transient and bounded
 		// by the call's retry timeout. DependencyViolation carries a product suffix
 		// (.HaVip/.GatewayRouteTable/...), so match by prefix.
+		// gap: OperationDenied.DBClusterStatus (403) is transient — the cluster status
+		// (Creating/Changing) blocks the operation momentarily; retrying mirrors v1 behavior.
 		if strings.HasPrefix(code, "DependencyViolation") || code == "OperationConflict" ||
-			code == "LastTokenProcessing" || code == "IncorrectStatus" || code == "SystemBusy" {
+			code == "LastTokenProcessing" || code == "IncorrectStatus" || code == "SystemBusy" ||
+			code == "OperationDenied.DBClusterStatus" {
 			return true
 		}
 	}
@@ -421,6 +424,26 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 		cur, ok = m[seg]
 		if !ok {
 			return nil, fmt.Errorf("DescribeNetworkChannel returned no declared singleton response object")
+		}
+	}
+	// gap: DescribeNetworkChannel returns ChannelInfos as an array (OpenAPI type: array),
+	// but the generator modeled it as a singleton object. The API filters by DBClusterId +
+	// ChannelName request parameters, so select the matching element from the array before
+	// the singleton object check in fwSelectScopedReadObject.
+	if arr, ok := cur.([]interface{}); ok {
+		for _, item := range arr {
+			if m, ok := item.(map[string]interface{}); ok {
+				if v, ok := m["ChannelName"]; ok && fmt.Sprint(v) == parts[1] {
+					cur = m
+					break
+				}
+			}
+		}
+		// Fallback: API already filtered by DBClusterId+ChannelName, use first element.
+		if _, stillArr := cur.([]interface{}); stillArr && len(arr) > 0 {
+			if m, ok := arr[0].(map[string]interface{}); ok {
+				cur = m
+			}
 		}
 	}
 	inner, identityErr := fwSelectScopedReadObject(cur, request, []fwScopedReadIdentity{
