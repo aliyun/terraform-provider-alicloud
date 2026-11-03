@@ -404,57 +404,82 @@ func networkChannelGet(client *connectivity.AliyunClient, id string, includeSeco
 	if value, ok := request["ChannelName"].(string); !ok || value == "" || value != parts[1] {
 		return nil, fmt.Errorf("building DescribeNetworkChannel request: required identity does not match")
 	}
-	response, err := retryRpcPost(client, "polardb", "2017-08-01", "DescribeNetworkChannel", request, 1*time.Minute)
-	if err != nil {
-		if isExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, nil
+	// gap: After CreateNetworkChannel, DescribeNetworkChannel may briefly return a null
+	// or empty ChannelInfos array before the channel propagates. retryRpcPost only retries
+	// on error responses, so wrap the full read (API call + navigation + array selection)
+	// in a retry loop with incremental backoff until the channel becomes visible.
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	var inner map[string]interface{}
+	var notFound bool
+	retryErr := retry.Retry(2*time.Minute, func() *retry.RetryError {
+		response, e := client.RpcPost("polardb", "2017-08-01", "DescribeNetworkChannel", nil, request, true)
+		if e != nil {
+			if isExpectedErrors(e, []string{"InvalidDBClusterId.NotFound"}) {
+				notFound = true
+				return nil
+			}
+			if needRetry(e) {
+				wait()
+				return retry.RetryableError(e)
+			}
+			return retry.NonRetryableError(e)
 		}
-		return nil, err
-	}
-	// Gets RootMapping "ChannelInfos" 嵌套：沿点分路径逐段导航 Get 响应，末段值若为
-	// 数组则取 [0]（列表包装响应如 $.TrailList[*]→TrailList 或 $.KeyPairs.KeyPair[*]→
-	// KeyPairs.KeyPair），若为 map 则直接取（对象包装如 $.ResourceGroup→ResourceGroup）。
-	// 扁平响应（readRootKey 空）原样返回。
-	cur := interface{}(response)
-	for _, seg := range strings.Split("ChannelInfos", ".") {
-		m, ok := cur.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("DescribeNetworkChannel returned no declared singleton response object")
+		// Navigate to ChannelInfos (direct array per OpenAPI definition).
+		cur := interface{}(response)
+		for _, seg := range strings.Split("ChannelInfos", ".") {
+			m, ok := cur.(map[string]interface{})
+			if !ok {
+				return retry.NonRetryableError(fmt.Errorf("DescribeNetworkChannel returned no declared singleton response object"))
+			}
+			cur, ok = m[seg]
+			if !ok {
+				return retry.NonRetryableError(fmt.Errorf("DescribeNetworkChannel returned no declared singleton response object"))
+			}
 		}
-		cur, ok = m[seg]
-		if !ok {
-			return nil, fmt.Errorf("DescribeNetworkChannel returned no declared singleton response object")
+		// gap: DescribeNetworkChannel returns ChannelInfos as an array (OpenAPI type: array),
+		// but the generator modeled it as a singleton object. Retry when the channel is not yet
+		// visible (nil or empty array); otherwise select the matching element by ChannelName.
+		if cur == nil {
+			wait()
+			return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned nil ChannelInfos, channel may not have propagated yet"))
 		}
-	}
-	// gap: DescribeNetworkChannel returns ChannelInfos as an array (OpenAPI type: array),
-	// but the generator modeled it as a singleton object. The API filters by DBClusterId +
-	// ChannelName request parameters, so select the matching element from the array before
-	// the singleton object check in fwSelectScopedReadObject.
-	if arr, ok := cur.([]interface{}); ok {
-		for _, item := range arr {
-			if m, ok := item.(map[string]interface{}); ok {
-				if v, ok := m["ChannelName"]; ok && fmt.Sprint(v) == parts[1] {
+		if arr, ok := cur.([]interface{}); ok {
+			if len(arr) == 0 {
+				wait()
+				return retry.RetryableError(fmt.Errorf("DescribeNetworkChannel returned empty ChannelInfos, channel may not have propagated yet"))
+			}
+			for _, item := range arr {
+				if m, ok := item.(map[string]interface{}); ok {
+					if v, ok := m["ChannelName"]; ok && fmt.Sprint(v) == parts[1] {
+						cur = m
+						break
+					}
+				}
+			}
+			// Fallback: API already filtered by DBClusterId+ChannelName, use first element.
+			if _, stillArr := cur.([]interface{}); stillArr && len(arr) > 0 {
+				if m, ok := arr[0].(map[string]interface{}); ok {
 					cur = m
-					break
 				}
 			}
 		}
-		// Fallback: API already filtered by DBClusterId+ChannelName, use first element.
-		if _, stillArr := cur.([]interface{}); stillArr && len(arr) > 0 {
-			if m, ok := arr[0].(map[string]interface{}); ok {
-				cur = m
-			}
+		selected, identityErr := fwSelectScopedReadObject(cur, request, []fwScopedReadIdentity{
+			{Source: "$.DBClusterId", Target: "DBClusterId", Value: parts[0]},
+			{Source: "$.ChannelName", Target: "ChannelName", Value: parts[1]},
+		}, []string{"$.ChannelInfos[*].TargetPort", "$.ChannelInfos[*].DBClusterId", "$.ChannelInfos[*].TargetDBClusterId", "$.ChannelInfos[*].VpcId", "$.ChannelInfos[*].ChannelName", "$.ChannelInfos[*].RegionId", "$.ChannelInfos[*].TargetIp", "$.ChannelInfos[*].Notes", "$.ChannelInfos[*].TargetType", "$.ChannelInfos"})
+		if identityErr != nil {
+			return retry.NonRetryableError(fmt.Errorf("selecting DescribeNetworkChannel resource: %w", identityErr))
 		}
+		inner = selected
+		return nil
+	})
+	if notFound {
+		return nil, nil
 	}
-	inner, identityErr := fwSelectScopedReadObject(cur, request, []fwScopedReadIdentity{
-		{Source: "$.DBClusterId", Target: "DBClusterId", Value: parts[0]},
-		{Source: "$.ChannelName", Target: "ChannelName", Value: parts[1]},
-	}, []string{"$.ChannelInfos[*].TargetPort", "$.ChannelInfos[*].DBClusterId", "$.ChannelInfos[*].TargetDBClusterId", "$.ChannelInfos[*].VpcId", "$.ChannelInfos[*].ChannelName", "$.ChannelInfos[*].RegionId", "$.ChannelInfos[*].TargetIp", "$.ChannelInfos[*].Notes", "$.ChannelInfos[*].TargetType", "$.ChannelInfos"})
-	if identityErr != nil {
-		return nil, fmt.Errorf("selecting DescribeNetworkChannel resource: %w", identityErr)
+	if retryErr != nil {
+		return nil, fmt.Errorf("reading alicloud_polardb_network_channel: %w", retryErr)
 	}
 	if inner != nil {
-
 		return networkChannelCompleteRead(client, inner, id, completeRead)
 	}
 	return nil, nil
