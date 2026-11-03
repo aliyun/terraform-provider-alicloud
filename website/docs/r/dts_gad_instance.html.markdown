@@ -39,6 +39,14 @@ exists, replace the `alicloud_db_instance.master` resource with a `data.alicloud
 instance the same way.
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
