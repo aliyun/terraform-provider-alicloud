@@ -374,9 +374,9 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 
 * `protocol` - (Optional, Available since v1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`.
 
-* `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000.
+* `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000. A zero value keeps each SDK's built-in default instead of the provider fallback; a negative value is invalid and may disable the read deadline.
 
-* `client_connect_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000.
+* `client_connect_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000. A zero value keeps each SDK's built-in default instead of the provider fallback; a negative value is invalid.
 
 * `max_retry_timeout` - (Optional, Available since v1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
@@ -431,7 +431,7 @@ The `sign_version` configuration block overrides the signature version used by t
 
 ### `features`
 
-The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behaviour. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
+The `features` configuration block groups the arguments that change how a resource behaves, as opposed to which account, region or endpoint the provider talks to. Every argument in it is optional, so leaving the block out keeps the provider's default behavior. The arguments of this block have no environment variable equivalent, and can only be set in the `provider` block.
 
 ```terraform
 provider "alicloud" {
