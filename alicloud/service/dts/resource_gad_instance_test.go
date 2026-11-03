@@ -231,7 +231,7 @@ resource "alicloud_dts_gad_instance" "default" {
 //
 // SQL Server HA parameters mirror resourceDBInstanceSQLServerConfigDependence in
 // resource_alicloud_db_instance_test.go: engine_version 2012_std_ha, category HighAvailability,
-// Postpaid, cloud_essd, with a dedicated mssql.x* class (GAD rejects general-purpose specs the
+// PostPaid, cloud_essd, with a dedicated mssql.x* class (GAD rejects general-purpose specs the
 // same way it does for MySQL). collation/time_zone are SQL Server-specific required fields.
 func TestAccAliCloudDtsGadInstance_sqlServerDR(t *testing.T) {
 	name := fmt.Sprintf("tf-test-dts-gad-sql-%d", tfacctest.RandIntRange(10000, 99999))
@@ -271,7 +271,7 @@ func TestAccAliCloudDtsGadInstance_sqlServerDR(t *testing.T) {
 
 // dtsGadInstanceSqlServerDependence provisions a SQL Server HA master RDS the GAD instance
 // references. Mirrors the MySQL fixture in dtsGadInstanceDependence but with SQL Server HA
-// parameters (engine_version 2012_std_ha, category HighAvailability, Postpaid, cloud_essd) and
+// parameters (engine_version 2012_std_ha, category HighAvailability, PostPaid, cloud_essd) and
 // a dedicated mssql.x* class selected from the zone's available classes. SQL Server requires
 // collation and time_zone; storage is 100 GB.
 func dtsGadInstanceSqlServerDependence(name string) string {
@@ -283,7 +283,7 @@ variable "name" {
 data "alicloud_db_zones" "master" {
   engine                   = "SQLServer"
   engine_version           = "2012_std_ha"
-  instance_charge_type     = "Postpaid"
+  instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
@@ -292,7 +292,7 @@ data "alicloud_db_instance_classes" "master" {
   zone_id                  = data.alicloud_db_zones.master.zones.0.id
   engine                   = "SQLServer"
   engine_version           = "2012_std_ha"
-  instance_charge_type     = "Postpaid"
+  instance_charge_type     = "PostPaid"
   category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
