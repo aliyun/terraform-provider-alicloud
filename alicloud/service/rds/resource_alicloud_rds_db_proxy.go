@@ -360,7 +360,7 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 	// The retries and waits of one update share a single budget: the timeout is
 	// not restarted for every sequential step, so a deferred or slow proxy cannot
 	// hold the update for a multiple of the configured timeout.
-	updateDeadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
+	updateBudget := newDBProxyUpdateBudget(time.Now, d.Timeout(schema.TimeoutUpdate))
 	proxy, proxyErr := rdsService.DescribeDBProxy(d.Id())
 	if proxyErr != nil {
 		if NotFoundError(proxyErr) {
@@ -501,43 +501,44 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 				request["DBProxyNodes"] = dbProxyNodes
 			}
 		}
-		requestTimeout, err := remainingDBProxyUpdateTimeout(updateDeadline, d.Timeout(schema.TimeoutUpdate))
-		if err != nil {
-			return WrapError(err)
-		}
-		if err := retry.Retry(client.GetRetryTimeout(requestTimeout), func() *retry.RetryError {
-			response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-			if err != nil {
-				if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError", "APICallingFailed"}) || NeedRetry(err) {
-					return retry.RetryableError(err)
+		steps := []func(timeout time.Duration) error{
+			func(timeout time.Duration) error {
+				if err := retry.Retry(client.GetRetryTimeout(timeout), func() *retry.RetryError {
+					response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+					if err != nil {
+						if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError", "APICallingFailed"}) || NeedRetry(err) {
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				}); err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				return retry.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		// waiting state changes to running
-		waitTimeout, err := remainingDBProxyUpdateTimeout(updateDeadline, d.Timeout(schema.TimeoutUpdate))
-		if err != nil {
-			return WrapError(err)
-		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, waitTimeout, 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+				return nil
+			},
+			// waiting state changes to running
+			func(timeout time.Duration) error {
+				stateConf := BuildStateConf([]string{}, []string{"Running"}, timeout, 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
+				if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+				return nil
+			},
 		}
 		// A finished migration task is not reflected in DescribeDBProxy at once, so the
 		// target network is polled before the state is refreshed from the API. A deferred
 		// effective time is not polled because the migration only starts at that time.
 		if networkChanged && effectiveTime == "Immediate" {
-			networkTimeout, err := remainingDBProxyUpdateTimeout(updateDeadline, d.Timeout(schema.TimeoutUpdate))
-			if err != nil {
-				return WrapError(err)
-			}
-			if err := waitForDBProxyNetwork(client, d.Id(), d.Get("vswitch_id").(string), d.Get("vpc_id").(string), networkTimeout); err != nil {
-				return WrapError(err)
-			}
+			vswitchId := d.Get("vswitch_id").(string)
+			vpcId := d.Get("vpc_id").(string)
+			steps = append(steps, func(timeout time.Duration) error {
+				return WrapError(waitForDBProxyNetwork(client, d.Id(), vswitchId, vpcId, timeout))
+			})
+		}
+		if err := runDBProxyUpdateSteps(updateBudget, steps...); err != nil {
+			return err
 		}
 	}
 	if d.HasChanges("db_proxy_endpoint_read_write_mode", "read_only_instance_max_delay_time", "read_only_instance_distribution_type", "db_proxy_features", "read_only_instance_weight") {
@@ -603,30 +604,33 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 				"PersistentConnectionStatus": v,
 				"SourceIp":                   client.SourceIp,
 			}
-			requestTimeout, err := remainingDBProxyUpdateTimeout(updateDeadline, d.Timeout(schema.TimeoutUpdate))
-			if err != nil {
-				return WrapError(err)
-			}
-			if err := retry.Retry(client.GetRetryTimeout(requestTimeout), func() *retry.RetryError {
-				response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-				if err != nil {
-					if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError"}) || NeedRetry(err) {
-						return retry.RetryableError(err)
+			steps := []func(timeout time.Duration) error{
+				func(timeout time.Duration) error {
+					if err := retry.Retry(client.GetRetryTimeout(timeout), func() *retry.RetryError {
+						response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+						if err != nil {
+							if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError"}) || NeedRetry(err) {
+								return retry.RetryableError(err)
+							}
+							return retry.NonRetryableError(err)
+						}
+						addDebug(action, response, request)
+						return nil
+					}); err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 					}
-					return retry.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					return nil
+				},
+				func(timeout time.Duration) error {
+					stateConf := BuildStateConf([]string{}, []string{"Running"}, timeout, 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
+					if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
+						return WrapErrorf(err, IdMsg, d.Id())
+					}
+					return nil
+				},
 			}
-			waitTimeout, err := remainingDBProxyUpdateTimeout(updateDeadline, d.Timeout(schema.TimeoutUpdate))
-			if err != nil {
-				return WrapError(err)
-			}
-			stateConf := BuildStateConf([]string{}, []string{"Running"}, waitTimeout, 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
-			if _, err := stateConf.WaitForStateContext(context.Background()); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+			if err := runDBProxyUpdateSteps(updateBudget, steps...); err != nil {
+				return err
 			}
 		}
 	}
@@ -898,16 +902,43 @@ func dbProxyMultiAZGuard(networkChanged, dbProxyNodesConfigured bool, layout []m
 	return nil
 }
 
-// remainingDBProxyUpdateTimeout returns the time left in the single timeout that
-// the sequential retries and waits of one update share. The SDK does not deduct
-// elapsed time from ResourceData.Timeout, so passing the full timeout to every
-// step would let a slow or deferred proxy run for a multiple of it.
-func remainingDBProxyUpdateTimeout(deadline time.Time, total time.Duration) (time.Duration, error) {
-	remaining := time.Until(deadline)
+// dbProxyUpdateBudget holds the single timeout that the sequential retries and
+// waits of one update share. The SDK does not deduct elapsed time from
+// ResourceData.Timeout, so passing the full timeout to every step would let a
+// slow or deferred proxy run for a multiple of it.
+type dbProxyUpdateBudget struct {
+	deadline time.Time
+	total    time.Duration
+	now      func() time.Time
+}
+
+func newDBProxyUpdateBudget(now func() time.Time, total time.Duration) *dbProxyUpdateBudget {
+	return &dbProxyUpdateBudget{deadline: now().Add(total), total: total, now: now}
+}
+
+// Remaining returns the time left in the shared budget.
+func (b *dbProxyUpdateBudget) Remaining() (time.Duration, error) {
+	remaining := b.deadline.Sub(b.now())
 	if remaining <= 0 {
-		return 0, fmt.Errorf("the %s update timeout was exhausted before the next proxy change could be applied", total)
+		return 0, fmt.Errorf("the %s update timeout was exhausted before the next proxy change could be applied", b.total)
 	}
 	return remaining, nil
+}
+
+// runDBProxyUpdateSteps runs the sequential retry and wait steps of one update.
+// Every step receives the time left in the shared budget, and no step is started
+// once that budget is exhausted.
+func runDBProxyUpdateSteps(budget *dbProxyUpdateBudget, steps ...func(timeout time.Duration) error) error {
+	for _, step := range steps {
+		timeout, err := budget.Remaining()
+		if err != nil {
+			return WrapError(err)
+		}
+		if err := step(timeout); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // waitForDBProxyNetwork waits until the proxy reports the target network,

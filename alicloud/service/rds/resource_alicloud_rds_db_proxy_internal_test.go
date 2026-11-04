@@ -75,14 +75,36 @@ func TestUnitDBProxyMultiAZGuard(t *testing.T) {
 	}
 }
 
-func TestUnitDBProxyRemainingUpdateTimeout(t *testing.T) {
-	remaining, err := remainingDBProxyUpdateTimeout(time.Now().Add(2*time.Second), 30*time.Minute)
-	assert.NoError(t, err)
-	assert.Positive(t, remaining)
-	assert.LessOrEqual(t, remaining, 2*time.Second)
+func TestUnitDBProxyUpdateBudgetSharedDeadline(t *testing.T) {
+	total := 30 * time.Minute
+	now := time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)
+	budget := newDBProxyUpdateBudget(func() time.Time { return now }, total)
 
-	remaining, err = remainingDBProxyUpdateTimeout(time.Now().Add(-time.Second), 30*time.Minute)
+	var timeouts []time.Duration
+	consume := func(elapsed time.Duration) func(timeout time.Duration) error {
+		return func(timeout time.Duration) error {
+			timeouts = append(timeouts, timeout)
+			now = now.Add(elapsed)
+			return nil
+		}
+	}
+
+	// Two sequential steps of one update: the first spends five minutes, so the
+	// second must receive the remaining 25 minutes of the same deadline instead
+	// of a freshly restarted full update timeout.
+	assert.NoError(t, runDBProxyUpdateSteps(budget, consume(5*time.Minute), consume(0)))
+	assert.Equal(t, []time.Duration{total, total - 5*time.Minute}, timeouts)
+	assert.NotEqual(t, total, timeouts[1])
+
+	// Once the shared budget is exhausted, the following write or wait must not
+	// start at all.
+	now = now.Add(total)
+	started := false
+	err := runDBProxyUpdateSteps(budget, func(time.Duration) error {
+		started = true
+		return nil
+	})
 	assert.Error(t, err)
-	assert.Zero(t, remaining)
 	assert.Contains(t, err.Error(), "update timeout was exhausted")
+	assert.False(t, started)
 }
