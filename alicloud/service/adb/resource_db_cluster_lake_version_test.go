@@ -119,6 +119,49 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "Disable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled": "Disable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "Update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled": "Update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_db_cluster_id": "",
+					"backup_set_id":        "",
+					"restore_type":         "backup",
+					"restore_to_time":      "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"restore_type": "backup",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -334,6 +377,34 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ips": "10.23.1.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_form":    "LegacyForm",
+					"product_version": "BasicVersion",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_form":    "LegacyForm",
+						"product_version": "BasicVersion",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"product_form":        "IntegrationForm",
+					"product_version":     "EnterpriseVersion",
+					"reserved_node_size":  "8ACU",
+					"reserved_node_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_form":        "IntegrationForm",
+						"product_version":     "EnterpriseVersion",
+						"reserved_node_size":  "8ACU",
+						"reserved_node_count": "3",
 					}),
 				),
 			},
