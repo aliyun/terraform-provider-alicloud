@@ -54,5 +54,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  NewAuthorizationTokenEphemeralResource,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_cr_diagnosis_task",
+				Factory:  NewDiagnosisTaskResource,
+			},
+		},
 	}
 }
