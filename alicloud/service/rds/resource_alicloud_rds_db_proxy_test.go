@@ -84,7 +84,7 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 						"vpc_id":                 acctest.CHECKSET,
 						"resource_group_id":      acctest.CHECKSET,
 					}),
-					captureRdsDBProxyEndpointId(resourceId, &proxyEndpointIdBefore),
+					captureDBProxyEndpointId(resourceId, &proxyEndpointIdBefore),
 				),
 			},
 			{
@@ -118,7 +118,7 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 						"vpc_id": acctest.CHECKSET,
 					}),
 					resource.TestCheckResourceAttrPair(resourceId, "vswitch_id", "alicloud_vswitch.second", "id"),
-					checkRdsDBProxyEndpointIdUnchanged(resourceId, &proxyEndpointIdBefore),
+					checkDBProxyEndpointIdUnchanged(resourceId, &proxyEndpointIdBefore),
 				),
 			},
 			{
@@ -325,7 +325,7 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 	})
 }
 
-func captureRdsDBProxyEndpointId(resourceId string, target *string) resource.TestCheckFunc {
+func captureDBProxyEndpointId(resourceId string, target *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceId]
 		if !ok {
@@ -342,7 +342,7 @@ func captureRdsDBProxyEndpointId(resourceId string, target *string) resource.Tes
 
 // A vSwitch update is applied as an in-place migration, so the proxy endpoint
 // survives the change; a replacement would create a new proxy endpoint.
-func checkRdsDBProxyEndpointIdUnchanged(resourceId string, expected *string) resource.TestCheckFunc {
+func checkDBProxyEndpointIdUnchanged(resourceId string, expected *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceId]
 		if !ok {
