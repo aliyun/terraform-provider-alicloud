@@ -307,22 +307,24 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 			// Moved before reserved_node tests to avoid the reserved_node
 			// timeout (17179 Step 2 ClassChanging >72min) blocking
 			// product_form verification.
-			// IntegrationForm→LegacyForm downgrade: ModifyDBCluster rejects
-			// a bare ProductForm=LegacyForm with NoNeedToScale because the
-			// request carries no scale target. The target LegacyForm requires
-			// ComputeResource and StorageResource, so they must be present in
-			// config (symmetric to basic_upgrade Step 2 specifying
-			// ReservedNodeSize/Count for the upgrade target).
+			// IntegrationForm→LegacyForm downgrade: ModifyDBCluster returns
+			// NoNeedToScale when the ComputeResource target equals the current
+			// LegacyForm equivalent that DescribeDBClusters returns for the
+			// IntegrationForm cluster (8ACU×3=24 → 32ACU equivalent). Use 48ACU
+			// to trigger an actual scale change alongside the form conversion.
+			// The Provider's form-conversion block force-sends ComputeResource/
+			// StorageResource via d.Get (not d.GetOk) to avoid the false-negative
+			// for Optional+Computed fields when config==state (no diff entry).
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"product_form":     "LegacyForm",
-					"compute_resource": "32ACU",
+					"compute_resource": "48ACU",
 					"storage_resource": "0ACU",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"product_form":     "LegacyForm",
-						"compute_resource": "32ACU",
+						"compute_resource": "48ACU",
 						"storage_resource": "0ACU",
 					}),
 				),
