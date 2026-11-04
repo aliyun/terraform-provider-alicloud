@@ -204,3 +204,51 @@ func dbInstanceVswitchIdsToStringSlice(list []interface{}) []string {
 	}
 	return out
 }
+
+// dbInstanceVswitchIdDiffSuppressFunc suppresses `vswitch_id` diffs that are
+// not independently applicable. The list form `vswitch_ids` and the string
+// form `vswitch_id` are mutually exclusive (ConflictsWith); when the user has
+// configured `vswitch_ids`, the `vswitch_id` diff is suppressed to avoid
+// perpetual drift between the two forms.
+//
+// Whether `vswitch_ids` is configured is read from the raw config, not from
+// d.GetOk: `vswitch_ids` is Optional+Computed and Read always backfills the
+// API value into state, so GetOk would report it as set even when the user
+// only configured `vswitch_id`, silently suppressing a single-vswitch
+// ForceNew change and drifting config from the instance (the F-1 regression).
+// A multi-zone `vswitch_id` ("vsw-a,vsw-b") is also suppressed, matching the
+// prior behavior for single-vswitch changes.
+func dbInstanceVswitchIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d == nil {
+		return dbInstanceVswitchIdDecide(true, false, new)
+	}
+	return dbInstanceVswitchIdDecide(d.Id() == "", dbInstanceVswitchIdsConfigured(d), new)
+}
+
+// dbInstanceVswitchIdsConfigured reports whether the user configured the list
+// form `vswitch_ids` in their HCL config. It reads the raw config so only
+// attributes the user actually set are considered, ignoring the Computed state
+// value Read backfills (see dbInstanceVswitchIdDiffSuppressFunc).
+func dbInstanceVswitchIdsConfigured(d *schema.ResourceData) bool {
+	raw := d.GetRawConfig()
+	if raw.IsNull() {
+		return false
+	}
+	v := raw.GetAttr("vswitch_ids")
+	return !v.IsNull() && v.IsKnown() && v.LengthInt() > 0
+}
+
+// dbInstanceVswitchIdDecide is the pure decision core of
+// dbInstanceVswitchIdDiffSuppressFunc, extracted for unit testing. isNew
+// reports a new resource (d.Id() == ""). vswitchIdsConfigured reports whether
+// the user configured the list form `vswitch_ids` (never the Computed state
+// value Read backfills). newVswitchId is the configured `vswitch_id`.
+func dbInstanceVswitchIdDecide(isNew, vswitchIdsConfigured bool, newVswitchId string) bool {
+	if isNew {
+		return false
+	}
+	if vswitchIdsConfigured {
+		return true
+	}
+	return len(strings.Split(newVswitchId, ",")) > 1
+}

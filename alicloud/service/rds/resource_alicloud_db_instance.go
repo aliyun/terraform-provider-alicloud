@@ -124,23 +124,11 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			},
 
 			"vswitch_id": {
-				Type:          schema.TypeString,
-				ForceNew:      true,
-				Optional:      true,
-				ConflictsWith: []string{"vswitch_ids"},
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					// If it is a new resource, do not suppress.
-					if d.Id() == "" {
-						return false
-					}
-					// If the list form `vswitch_ids` is configured, suppress the `vswitch_id`
-					// diff to avoid perpetual drift between the string and list forms.
-					if _, ok := d.GetOk("vswitch_ids"); ok {
-						return true
-					}
-					// If it is not a new resource and it is a multi-zone deployment, it needs to be suppressed.
-					return len(strings.Split(new, ",")) > 1
-				},
+				Type:             schema.TypeString,
+				ForceNew:         true,
+				Optional:         true,
+				ConflictsWith:    []string{"vswitch_ids"},
+				DiffSuppressFunc: dbInstanceVswitchIdDiffSuppressFunc,
 			},
 			"vswitch_ids": {
 				Type:             schema.TypeList,
