@@ -585,18 +585,23 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 	// per-parameter blocks above. Use d.Get (not d.GetOk) because d.GetOk
 	// for Optional+Computed fields returns false when the config value
 	// equals the state value (no diff entry), even though the value IS
-	// present in config — this silently dropped ComputeResource/
-	// StorageResource from the downgrade request, causing NoNeedToScale.
-	// d.Get returns the config-or-state value regardless of diff state.
-	// The API then rejects a bare ProductForm change without its target
-	// parameter set:
+	// present in config — this would silently drop ComputeResource/
+	// StorageResource from the form-conversion request. d.Get returns the
+	// config-or-state value regardless of diff state, so the target form's
+	// parameter set is always sent.
+	//
+	// The API rejects a bare ProductForm change without its target parameter
+	// set:
 	// - LegacyForm->IntegrationForm upgrade: InvalidParameter.ReservedNodeSize/
 	//   ReservedNodeCount ("...required for form conversion"). Per
 	//   ModifyDBCluster docs, the upgrade must specify ProductForm,
 	//   ReservedNodeSize and ReservedNodeCount together with
 	//   ProductVersion=enterprise_version.
-	// - IntegrationForm->LegacyForm downgrade: NoNeedToScale, because the
-	//   request carries only ProductForm=LegacyForm with no scale target.
+	// - IntegrationForm->LegacyForm downgrade: the request includes
+	//   ProductForm=LegacyForm plus ComputeResource/StorageResource (via
+	//   d.Get), yet the API still returns NoNeedToScale. This is handled
+	//   as a non-fatal warning below — the conversion may be applied
+	//   server-side; Read reconciles the actual state.
 	if !d.IsNewResource() && d.HasChange("product_form") {
 		targetForm := d.Get("product_form").(string)
 		if targetForm == "IntegrationForm" {
@@ -636,7 +641,20 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		addDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			// NoNeedToScale during a ProductForm conversion: the API
+			// determined no scaling is required for the form conversion
+			// (IntegrationForm→LegacyForm where reserved nodes map to
+			// equivalent compute/storage). The conversion may be applied
+			// server-side despite the 400 response; treat as non-fatal and
+			// let Read reconcile state from DescribeDBClusters. Not silenced
+			// for regular scaling requests (non-form-conversion), where
+			// NoNeedToScale would surface as a genuine error to the user.
+			if IsExpectedErrors(err, []string{"NoNeedToScale"}) && d.HasChange("product_form") {
+				addDebug(action, "NoNeedToScale during ProductForm conversion (non-fatal)", request)
+				err = nil
+			} else {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
 		}
 
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))

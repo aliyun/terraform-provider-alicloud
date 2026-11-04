@@ -308,24 +308,35 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 			// timeout (17179 Step 2 ClassChanging >72min) blocking
 			// product_form verification.
 			// IntegrationForm→LegacyForm downgrade: ModifyDBCluster returns
-			// NoNeedToScale when the ComputeResource target equals the current
-			// LegacyForm equivalent that DescribeDBClusters returns for the
-			// IntegrationForm cluster (8ACU×3=24 → 32ACU equivalent). Use 48ACU
-			// to trigger an actual scale change alongside the form conversion.
-			// The Provider's form-conversion block force-sends ComputeResource/
-			// StorageResource via d.Get (not d.GetOk) to avoid the false-negative
-			// for Optional+Computed fields when config==state (no diff entry).
+			// NoNeedToScale (Code: NoNeedToScale, RequestId: 01A1A4BF-...)
+			// even when ComputeResource/StorageResource differ from the current
+			// state (confirmed with 48ACU/0ACU vs current 0ACU/24ACU). The
+			// previous "32ACU equivalent" assumption was disproved by ACC 26277:
+			// DescribeDBClusters reports IntegrationForm (8ACU×3=24) as
+			// compute=0ACU, storage=24ACU — not 32ACU. Use matching values
+			// (0ACU/24ACU) so the form conversion does not request a scale
+			// change. The Provider treats NoNeedToScale during a product_form
+			// change as non-fatal (see resource.go Update); Read reconciles the
+			// actual ProductForm from DescribeDBClusters. If the conversion is
+			// applied server-side, product_form reads back as LegacyForm; if
+			// not, the check fails and surfaces the API limitation.
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"product_form":     "LegacyForm",
-					"compute_resource": "48ACU",
-					"storage_resource": "0ACU",
+					"product_form":        "LegacyForm",
+					"compute_resource":    "0ACU",
+					"storage_resource":    "24ACU",
+					"product_version":     REMOVEKEY,
+					"reserved_node_size":  REMOVEKEY,
+					"reserved_node_count": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"product_form":     "LegacyForm",
-						"compute_resource": "48ACU",
-						"storage_resource": "0ACU",
+						"product_form":        "LegacyForm",
+						"compute_resource":    CHECKSET,
+						"storage_resource":    CHECKSET,
+						"product_version":     REMOVEKEY,
+						"reserved_node_size":  REMOVEKEY,
+						"reserved_node_count": REMOVEKEY,
 					}),
 				),
 			},
@@ -774,6 +785,14 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic_upgrade(t *testing.T) {
 						"product_version":     "EnterpriseVersion",
 						"reserved_node_size":  "8ACU",
 						"reserved_node_count": "3",
+						// After Legacy→Integration upgrade, DescribeDBClusters
+						// reports compute_resource=0ACU and storage_resource=
+						// 24ACU (the IntegrationForm equivalent of the former
+						// 32ACU compute). These differ from the Step 1 LegacyForm
+						// values (32ACU/0ACU) inherited via Map0 MERGE, so REMOVEKEY
+						// them to avoid a false check failure.
+						"compute_resource": REMOVEKEY,
+						"storage_resource": REMOVEKEY,
 					}),
 					resource.TestCheckResourceAttrSet(resourceId, "id"),
 					resource.TestCheckResourceAttrWith(resourceId, "id", func(value string) error {
