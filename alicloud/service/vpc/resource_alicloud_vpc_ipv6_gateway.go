@@ -4,7 +4,6 @@ package vpc
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -39,7 +38,7 @@ func ResourceAliCloudVpcIpv6Gateway() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9_-]{2,256}$"), "The description of the IPv6 gateway. The description must be 2 to 256 characters in length. It cannot start with http:// or https://."),
+				ValidateFunc: StringLenBetween(0, 256),
 			},
 			"expired_time": {
 				Type:     schema.TypeString,
@@ -56,7 +55,7 @@ func ResourceAliCloudVpcIpv6Gateway() *schema.Resource {
 			"ipv6_gateway_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9_-]{1,128}$"), "The name of the IPv6 gateway. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://."),
+				ValidateFunc: StringLenBetween(0, 128),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,

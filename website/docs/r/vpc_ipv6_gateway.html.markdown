@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-testacc-example"
 }
@@ -59,8 +67,8 @@ resource "alicloud_vpc_ipv6_gateway" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional) The description of the IPv6 gateway. The description must be 2 to 256 characters in length. It cannot start with http:// or https://.
-* `ipv6_gateway_name` - (Optional) The name of the IPv6 gateway. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://.
+* `description` - (Optional) The description of the IPv6 gateway. The description must be 0 to 256 characters in length. It cannot start with http:// or https://.
+* `ipv6_gateway_name` - (Optional) The name of the IPv6 gateway. The name must be 0 to 128 characters in length. It cannot start with http:// or https://.
 * `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the instance belongs.
 * `spec` - (Optional, Computed, Deprecated since v1.205.0) IPv6 gateways do not distinguish between specifications. This parameter is no longer used.
 * `tags` - (Optional, Map, Available since v1.205.0) The tags for the resource.
