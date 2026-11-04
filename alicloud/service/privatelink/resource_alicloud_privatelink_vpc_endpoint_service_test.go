@@ -27,6 +27,13 @@ import (
 const (
 	testAccPrivateLinkCrossRegionServiceRegion  = "cn-hangzhou"
 	testAccPrivateLinkCrossRegionEndpointRegion = "cn-beijing"
+
+	// ALB is enabled only in cn-shanghai in the test account, so the ALB
+	// cross-region scenario uses cn-shanghai as the endpoint service region and
+	// cn-hangzhou (the NLB/PrivateLink cross-region region) as the peer endpoint
+	// region in supported_region_list.
+	testAccPrivateLinkAlbCrossRegionServiceRegion  = "cn-shanghai"
+	testAccPrivateLinkAlbCrossRegionEndpointRegion = "cn-hangzhou"
 )
 
 var privatelinkTestEndpoints sync.Map
@@ -774,6 +781,142 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_sameBackendDualZone(t *testing
 			},
 		},
 	})
+}
+
+func TestAccAliCloudPrivatelinkVpcEndpointService_albCrossRegionDualZone(t *testing.T) {
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	testAccCheck := ra.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccPrivateLinkAlbCrossRegion%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckPrivateLinkAlbCrossRegion(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      testAccCheckPrivateLinkVpcEndpointServiceDestroyInRegion(testAccPrivateLinkAlbCrossRegionServiceRegion),
+		Steps: []resource.TestStep{
+			{
+				// Original cross-region ALB one-step-create scenario: the SAME ALB
+				// is attached to the endpoint service in two availability zones via
+				// two inline resource blocks (identical resource_id + resource_type,
+				// different zone_id) while supported_region_list contains a peer
+				// region (the server requires >=2 zones for cross-region). Before
+				// PR #11104 the resource TypeSet hashed on resource_id +
+				// resource_type only, collapsing the two blocks into one and
+				// aborting with "Provider produced inconsistent final plan". With
+				// zone_id in the hash both attachments are preserved and
+				// CreateVpcEndpointService succeeds in a single apply. This cannot
+				// be replaced by the NLB same-region sameBackendDualZone case.
+				Config: testAccPrivateLinkVpcEndpointServiceAlbCrossRegionConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_description":     name,
+						"service_resource_type":   "alb",
+						"auto_accept_connection":  "true",
+						"resource.#":              "2",
+						"supported_region_list.#": "2",
+					}),
+					testAccCheckPrivateLinkVpcEndpointServiceSupportedRegions(resourceId, testAccPrivateLinkAlbCrossRegionServiceRegion, testAccPrivateLinkAlbCrossRegionEndpointRegion),
+				),
+			},
+			{
+				// A no-op plan must show no changes: zone_id is part of element
+				// identity and Read backfills it per item, so no detach/attach
+				// churn is generated for ALB cross-zone attachments.
+				Config:             testAccPrivateLinkVpcEndpointServiceAlbCrossRegionConfig(name),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func testAccPreCheckPrivateLinkAlbCrossRegion(t *testing.T) {
+	acctest.PreCheck(t)
+	if !testAccPrivateLinkRegionInList(connectivity.Shanghai, connectivity.AlbSupportRegions) {
+		t.Skipf("Skipping unsupported service region %s. ALB supported regions: %v.", connectivity.Shanghai, connectivity.AlbSupportRegions)
+		t.Skipped()
+	}
+}
+
+func testAccPrivateLinkVpcEndpointServiceAlbCrossRegionConfig(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+provider "alicloud" {
+  region = "%s"
+}
+
+data "alicloud_alb_zones" "default" {}
+
+resource "alicloud_vpc" "service" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "service_a" {
+  vswitch_name = "${var.name}-a"
+  vpc_id       = alicloud_vpc.service.id
+  zone_id      = data.alicloud_alb_zones.default.zones.0.id
+  cidr_block   = "192.168.0.0/18"
+}
+
+resource "alicloud_vswitch" "service_b" {
+  vswitch_name = "${var.name}-b"
+  vpc_id       = alicloud_vpc.service.id
+  zone_id      = data.alicloud_alb_zones.default.zones.1.id
+  cidr_block   = "192.168.64.0/18"
+}
+
+resource "alicloud_alb_load_balancer" "service" {
+  load_balancer_name      = var.name
+  address_type            = "Intranet"
+  address_allocated_mode  = "Fixed"
+  vpc_id                  = alicloud_vpc.service.id
+  load_balancer_edition   = "Standard"
+  load_balancer_billing_config {
+    pay_type = "PayAsYouGo"
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.service_a.id
+    zone_id    = data.alicloud_alb_zones.default.zones.0.id
+  }
+
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.service_b.id
+    zone_id    = data.alicloud_alb_zones.default.zones.1.id
+  }
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "default" {
+  service_description     = var.name
+  service_resource_type   = "alb"
+  auto_accept_connection  = true
+  supported_region_list = [
+    "%s",
+    "%s"
+  ]
+
+  resource {
+    resource_id   = alicloud_alb_load_balancer.service.id
+    resource_type = "alb"
+    zone_id       = data.alicloud_alb_zones.default.zones.0.id
+  }
+
+  resource {
+    resource_id   = alicloud_alb_load_balancer.service.id
+    resource_type = "alb"
+    zone_id       = data.alicloud_alb_zones.default.zones.1.id
+  }
+
+  depends_on = [alicloud_alb_load_balancer.service]
+}
+`, name, testAccPrivateLinkAlbCrossRegionServiceRegion, testAccPrivateLinkAlbCrossRegionServiceRegion, testAccPrivateLinkAlbCrossRegionEndpointRegion)
 }
 
 func AlicloudPrivatelinkVpcEndpointServiceResourceDependence(name string) string {
