@@ -26,13 +26,16 @@ Basic Usage
 </div></div>
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
 }
 
-resource "random_integer" "default" {
-  min = 10000000
-  max = 99999999
+variable "name" {
+  default = "terraform-example"
 }
 
 resource "alicloud_cr_ee_instance" "example" {
@@ -41,12 +44,12 @@ resource "alicloud_cr_ee_instance" "example" {
   renew_period   = 0
   renewal_status = "ManualRenewal"
   instance_type  = "Advanced"
-  instance_name  = "${var.name}-${random_integer.default.result}"
+  instance_name  = var.name
 }
 
 resource "alicloud_cr_chart_namespace" "example" {
   instance_id          = alicloud_cr_ee_instance.example.id
-  chart_namespace_name = "${var.name}-${random_integer.default.result}"
+  chart_namespace_name = var.name
 }
 ```
 
@@ -59,17 +62,19 @@ The following arguments are supported:
 * `auto_create_repo` - (Optional) Specifies whether to automatically create repositories in the namespace. Valid values:
   * `true` - automatically creates repositories in the namespace.
   * `false` - does not automatically create repositories in the namespace.
-* `chart_namespace_name` - (Optional, ForceNew, Computed, Available since v2.2.0) The name of the chart namespace that you want to create. Conflicts with `namespace_name`. One of `chart_namespace_name` or `namespace_name` must be specified.
-* `default_repo_type` - (Optional) The default type of the repository. Valid values: `PRIVATE`, `PUBLIC`.
-* `instance_id` - (Required, ForceNew) The ID of the instance.
-* `namespace_name` - (Optional, ForceNew, Computed, Deprecated since v2.2.0) Field `namespace_name` has been deprecated from provider version 2.2.0. New field `chart_namespace_name` instead. One of `chart_namespace_name` or `namespace_name` must be specified.
+* `chart_namespace_name` - (Optional, String, ForceNew, Computed, Available since v2.2.0) The name of the chart namespace that you want to create. Conflicts with `namespace_name`. One of `chart_namespace_name` or `namespace_name` must be specified.
+* `default_repo_type` - (Optional, String) The default type of the repository. Valid values:
+  * `PUBLIC`: a public repository.
+  * `PRIVATE`: a private repository.
+* `instance_id` - (Required, String, ForceNew) The ID of the instance.
+* `namespace_name` - (Optional, String, ForceNew, Computed, Deprecated since v2.2.0) Field `namespace_name` has been deprecated from provider version 2.2.0. New field `chart_namespace_name` instead. One of `chart_namespace_name` or `namespace_name` must be specified.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of Chart Namespace. The value formats as `<instance_id>:<namespace_name>`.
-* `resource_group_id` - (Available since v2.2.0) The ID of the resource group.
+* `resource_group_id` - (Computed, String, Available since v2.2.0) The ID of the resource group.
 
 ## Import
 

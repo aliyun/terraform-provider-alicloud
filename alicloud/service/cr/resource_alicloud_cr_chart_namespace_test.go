@@ -110,8 +110,8 @@ func TestAccAliCloudCRChartNamespace_namespaceName(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      rac.CheckResourceDestroy(),
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
