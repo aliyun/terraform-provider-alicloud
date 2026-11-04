@@ -108,15 +108,12 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 	//		"architecture": "rwsplit",
 	//	}),
 	//}
+	// The zone is pinned so these assertions run against a zone that is known to offer
+	// cloud-native Tair_rdb and OnECS instance classes; the test region is pinned below.
 	architectureNonCluster := acctest.DataSourceTestAccConfig{
 		ExistConfig: `
-data "alicloud_kvstore_zones" "tair_rdb" {
-  product_type         = "Tair_rdb"
-  instance_charge_type = "PrePaid"
-}
-
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = data.alicloud_kvstore_zones.tair_rdb.zones.0.id
+  zone_id      = "cn-hangzhou-b"
   product_type = "Tair_rdb"
   architecture = "non_cluster"
 }
@@ -127,13 +124,8 @@ data "alicloud_kvstore_instance_classes" "default" {
 	}
 	editionTypeEnhancedPerformance := acctest.DataSourceTestAccConfig{
 		ExistConfig: `
-data "alicloud_kvstore_zones" "tair_rdb" {
-  product_type         = "Tair_rdb"
-  instance_charge_type = "PrePaid"
-}
-
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = data.alicloud_kvstore_zones.tair_rdb.zones.0.id
+  zone_id      = "cn-hangzhou-b"
   product_type = "Tair_rdb"
   edition_type = "EnhancedPerformance"
 }
@@ -141,13 +133,8 @@ data "alicloud_kvstore_instance_classes" "default" {
 	}
 	productTypeOnECS := acctest.DataSourceTestAccConfig{
 		ExistConfig: `
-data "alicloud_kvstore_zones" "on_ecs" {
-  product_type         = "OnECS"
-  instance_charge_type = "PrePaid"
-}
-
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = data.alicloud_kvstore_zones.on_ecs.zones.0.id
+  zone_id      = "cn-hangzhou-b"
   product_type = "OnECS"
   architecture = "non_cluster"
 }
