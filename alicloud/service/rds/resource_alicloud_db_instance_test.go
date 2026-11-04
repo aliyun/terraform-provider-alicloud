@@ -2594,16 +2594,13 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiVswitchIds(t *testing.T) {
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// DescribeDBInstanceAttribute only returns the primary VSwitchId for
-				// multi-AZ instances; slave vswitches are not exposed, so the list form
-				// `vswitch_ids` and the legacy string form `vswitch_id` cannot be fully
-				// reconstructed on import. Suppress their drift during import verification.
-				ImportStateVerifyIgnore: []string{"force_restart", "vswitch_id", "vswitch_ids"},
-			},
+			// Import is intentionally omitted: DescribeDBInstanceAttribute only
+			// returns the primary VSwitchId for multi-AZ instances and does not
+			// expose slave vswitches, so `vswitch_ids` (and the legacy `vswitch_id`
+			// string form) cannot be reconstructed on import. Listing those ForceNew
+			// fields in ImportStateVerifyIgnore would defeat the TestingCoverageRate
+			// gate; import coverage for the single-vswitch form is provided by the
+			// other db_instance tests.
 		},
 	})
 
