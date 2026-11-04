@@ -34,6 +34,7 @@ type fwDeleteCondition struct {
 	Property, Action string
 	Values           []string
 }
+
 type fwScopedReadIdentity struct{ Source, Target, Value string }
 
 // Only attributes with an explicit JSON document contract use this string type.

@@ -1,7 +1,7 @@
-// Package fwadapt holds the terraform-plugin-framework wire and state adapters shared by the
-// framework-native resources. The helpers are pure functions over request maps, response maps
-// and framework attribute values; keeping one copy keeps behaviour identical across product
-// packages instead of relying on per-package generated duplicates.
+// Framework wire and state adapters shared by the framework-native resources. The helpers are
+// pure functions over request maps, response maps and framework attribute values; keeping one
+// copy keeps behaviour identical across product packages instead of relying on per-package
+// generated duplicates.
 package fwadapt
 
 import (
