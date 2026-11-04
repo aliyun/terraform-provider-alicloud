@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -1231,8 +1231,12 @@ func vvpNamespaceUpdateTestResource(t *testing.T, endpoint string) (fwresource.R
 	endpoints.Store("foasconsole", strings.TrimPrefix(endpoint, "http://"))
 
 	res := realtimecompute.NewVvpNamespaceResource()
+	configurable, ok := res.(fwresource.ResourceWithConfigure)
+	if !ok {
+		t.Fatalf("the resource does not implement the Configure interface")
+	}
 	var configureResp fwresource.ConfigureResponse
-	res.Configure(context.Background(), fwresource.ConfigureRequest{ProviderData: client}, &configureResp)
+	configurable.Configure(context.Background(), fwresource.ConfigureRequest{ProviderData: client}, &configureResp)
 	if configureResp.Diagnostics.HasError() {
 		t.Fatalf("configuring the resource: %v", configureResp.Diagnostics)
 	}
