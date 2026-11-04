@@ -3,6 +3,7 @@ package rds_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/rds"
@@ -61,7 +62,7 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 					"instance_charge_type":          "Prepaid",
 					"internet_charge_type":          "PayByTraffic",
 					"internet_max_bandwidth_out":    "0",
-					"image_id":                      "aliyun_3_x64_20G_alibase_20260625.vhd",
+					"image_id":                      "",
 					"security_enhancement_strategy": "Active",
 					"period_unit":                   "Month",
 					"password":                      "jingyiTEST@123",
@@ -100,7 +101,7 @@ func TestAccAliCloudRdsCustom_basic10836(t *testing.T) {
 						"instance_charge_type":          "Prepaid",
 						"internet_charge_type":          "PayByTraffic",
 						"internet_max_bandwidth_out":    "0",
-						"image_id":                      "aliyun_3_x64_20G_alibase_20260625.vhd",
+						"image_id":                      "",
 						"security_enhancement_strategy": "Active",
 						"period_unit":                   "Month",
 						"password":                      "jingyiTEST@123",
@@ -186,22 +187,19 @@ variable "test_zone_id" {
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-data "alicloud_vpcs" "default" {
-  ids = [data.alicloud_vswitches.default.vswitches.0.vpc_id]
-}
-
 data "alicloud_vswitches" "default" {
+  vpc_id  = "%s"
   status  = "Available"
   zone_id = var.test_zone_id
 }
 
 data "alicloud_security_groups" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = "%s"
 }
 
 resource "alicloud_ecs_key_pair" "KeyPairName" {
   key_pair_name = var.name
-}`, name)
+}`, name, rdsCustomFixtureVpcID, rdsCustomFixtureVpcID)
 }
 
 // Test Rds Custom. <<< Resource test cases, automatically generated.
@@ -352,17 +350,14 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "default" {
-  ids = [data.alicloud_vswitches.default.vswitches.0.vpc_id]
-}
-
 data "alicloud_vswitches" "default" {
+  vpc_id  = "%s"
   status  = "Available"
   zone_id = "cn-beijing-i"
 }
 
 data "alicloud_security_groups" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = "%s"
 }
 
 resource "alicloud_rds_custom_deployment_set" "deploymentSet" {
@@ -371,7 +366,7 @@ resource "alicloud_rds_custom_deployment_set" "deploymentSet" {
   group_count                           = 3
   on_unable_to_redeploy_failed_instance = "CancelMembershipAndStart"
   strategy                              = "Availability"
-}`, name)
+}`, name, rdsCustomFixtureVpcID, rdsCustomFixtureVpcID)
 }
 
 // Case resourceCase_20260415_01 12772
@@ -553,16 +548,266 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "default" {
-  ids = [data.alicloud_vswitches.default.vswitches.0.vpc_id]
+data "alicloud_vswitches" "default" {
+  vpc_id     = "%s"
+  cidr_block = "172.16.3.0/24"
+  status     = "Available"
+  zone_id    = "cn-beijing-i"
+}
+
+data "alicloud_security_groups" "default" {
+  vpc_id = "%s"
+}`, name, rdsCustomFixtureVpcID, rdsCustomFixtureVpcID)
+}
+
+// collection-order: bypass security_group_ids -- pre-existing stock attribute outside this change; the returned member order is defined by the VPC security-group echo rather than by the configuration
+
+// Case property_coverage 20260817: user_data, user_data_in_base64, auto_use_coupon, promotion_code,
+// enable_jumbo_frame, deletion_protection, reboot, reboot_time, reboot_when_finished,
+// data_disk.{device,encrypted,snapshot_id} and system_disk.performance_level.
+func TestAccAliCloudRdsCustom_newAttributes(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rds_custom.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRdsCustomNewAttributesMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rds.NewRdsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRdsCustom")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfaccrds%d", rand)
+	rebootTime := time.Now().Add(24 * time.Hour).UTC().Format("2006-01-02T15:04Z")
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRdsCustomBasicDependenceNewAttributes)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+		},
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "tf-testacc-rds-custom-attributes",
+					"instance_charge_type": "PostPaid",
+					"amount":               "1",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"security_group_ids": []string{
+						"${data.alicloud_security_groups.default.ids.0}"},
+					"auto_pay":             "true",
+					"force":                "true",
+					"instance_type":        "mysql.x2.large.9cm",
+					"create_mode":          "0",
+					"spot_strategy":        "NoSpot",
+					"host_name":            "tf-testacc-rds-custom",
+					"period_unit":          "Month",
+					"password":             "@MY7yxqc9YXQC",
+					"auto_use_coupon":      "true",
+					"enable_jumbo_frame":   "true",
+					"promotion_code":       "tfacc-test-promo",
+					"reboot":               "false",
+					"reboot_time":          rebootTime,
+					"reboot_when_finished": "true",
+					"user_data":            "echo Hello Terraform",
+					"create_extra_param":   "{}",
+					"system_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"size":              "40",
+							"performance_level": "PL1",
+						},
+					},
+					"data_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "40",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "50",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "60",
+							"encrypted":         "false",
+							"device":            "",
+							"snapshot_id":       "${var.snapshot_id}",
+						},
+					},
+					"timeouts": []map[string]interface{}{
+						{
+							"create": "40m",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_use_coupon":                 "true",
+						"enable_jumbo_frame":              "true",
+						"promotion_code":                  "tfacc-test-promo",
+						"reboot":                          "false",
+						"reboot_when_finished":            "true",
+						"user_data":                       "echo Hello Terraform",
+						"create_extra_param":              "{}",
+						"data_disk.#":                     "3",
+						"data_disk.0.encrypted":           "true",
+						"data_disk.2.size":                "60",
+						"system_disk.0.performance_level": "PL1",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.2.snapshot_id", rdsCustomSnapshotFixtureID),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]interface{}{
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "50",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "40",
+							"encrypted":         "true",
+							"device":            "",
+							"snapshot_id":       "",
+						},
+						{
+							"category":          "cloud_essd",
+							"performance_level": "PL0",
+							"size":              "60",
+							"encrypted":         "false",
+							"device":            "",
+							"snapshot_id":       "${var.snapshot_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disk.#":      "3",
+						"data_disk.0.size": "50",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "data_disk.2.snapshot_id", rdsCustomSnapshotFixtureID),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_jumbo_frame": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_jumbo_frame": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reboot": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"reboot": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "mysql.x4.large.9cm",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "mysql.x4.large.9cm",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"amount", "auto_pay", "auto_renew", "auto_use_coupon", "create_extra_param", "create_mode", "direction", "dry_run", "force", "force_stop", "host_name", "image_id", "instance_charge_type", "internet_charge_type", "internet_max_bandwidth_out", "io_optimized", "key_pair_name", "password", "period", "period_unit", "promotion_code", "reboot", "reboot_time", "reboot_when_finished", "security_enhancement_strategy", "spot_strategy", "support_case", "user_data_in_base64"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data":           "IyEvYmluL3NoCmVjaG8gSGVsbG8gVGVycmFmb3Jt",
+					"user_data_in_base64": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data":           "IyEvYmluL3NoCmVjaG8gSGVsbG8gVGVycmFmb3Jt",
+						"user_data_in_base64": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
+var AlicloudRdsCustomNewAttributesMap = map[string]string{
+	"region_id":      acctest.CHECKSET,
+	"system_disk_id": acctest.CHECKSET,
+}
+
+// rdsCustomFixtureVpcID pins the account VPC used by the generated RDS Custom
+// cases so the fixtures do not depend on account-wide data source ordering
+// (which changed when unrelated test security groups were created).
+const rdsCustomFixtureVpcID = "vpc-2ze059yng967hqhwmx9h9"
+
+// rdsCustomSnapshotFixtureID is an existing accomplished snapshot of a data disk
+// in the test account (cn-beijing). ECS rejects CreateSnapshot on a disk that was
+// never attached to an instance, so the case consumes this account snapshot for
+// data_disk.snapshot_id instead of creating one inside the fixture.
+const rdsCustomSnapshotFixtureID = "s-2ze5a4vzfo21qnyxjreg"
+
+func AlicloudRdsCustomBasicDependenceNewAttributes(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+variable "snapshot_id" {
+  default = "%s"
 }
 
 data "alicloud_vswitches" "default" {
+  vpc_id  = "%s"
   status  = "Available"
   zone_id = "cn-beijing-i"
 }
 
 data "alicloud_security_groups" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}`, name)
+  vpc_id = "%s"
+}`, name, rdsCustomSnapshotFixtureID, rdsCustomFixtureVpcID, rdsCustomFixtureVpcID)
 }

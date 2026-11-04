@@ -1038,3 +1038,64 @@ func TestRdsMutationRejectsParentHTTPNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitRdsCustomDataDiskOrder(t *testing.T) {
+	remote := []map[string]interface{}{
+		{"category": "cloud_essd", "performance_level": "PL0", "size": int64(40), "device": "/dev/xvdb"},
+		{"category": "cloud_essd", "performance_level": "PL0", "size": int64(50), "device": "/dev/xvdc"},
+	}
+	prior := []interface{}{
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 50, "device": "/dev/xvdc"},
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 40, "device": "/dev/xvdb"},
+	}
+	ordered := orderRdsCustomDataDisks(prior, remote)
+	if len(ordered) != 2 {
+		t.Fatalf("expected 2 data disks, got %d", len(ordered))
+	}
+	if ordered[0]["device"] != "/dev/xvdc" || ordered[1]["device"] != "/dev/xvdb" {
+		t.Fatalf("configured order is not preserved: %v", ordered)
+	}
+
+	identityPrior := []interface{}{
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 50, "device": ""},
+		map[string]interface{}{"category": "cloud_essd", "performance_level": "PL0", "size": 40, "device": ""},
+	}
+	ordered = orderRdsCustomDataDisks(identityPrior, remote)
+	if fmt.Sprint(ordered[0]["size"]) != "50" || fmt.Sprint(ordered[1]["size"]) != "40" {
+		t.Fatalf("members were not joined by identity: %v", ordered)
+	}
+
+	importOrder := orderRdsCustomDataDisks(nil, remote)
+	if importOrder[0]["device"] != "/dev/xvdb" || importOrder[1]["device"] != "/dev/xvdc" {
+		t.Fatalf("import must fall back to the canonical device order: %v", importOrder)
+	}
+}
+
+func TestUnitRdsCustomRebootTimeValidation(t *testing.T) {
+	now := time.Now().UTC()
+	valid := now.Add(2 * time.Hour).Format("2006-01-02T15:04Z")
+	tooLate := now.Add(72 * time.Hour).Format("2006-01-02T15:04Z")
+	past := now.Add(-2 * time.Hour).Format("2006-01-02T15:04Z")
+	testCases := []struct {
+		name             string
+		rebootTime       string
+		rebootWhenFinish bool
+		expectError      bool
+	}{
+		{"RebootWhenFinishedTrueSkipsTime", "", true, false},
+		{"MissingTimeWhenNotRebooting", "", false, true},
+		{"MalformedTime", "2026/01/01 10:00", false, true},
+		{"TimeBeyondWindow", tooLate, false, true},
+		{"TimeInPast", past, false, true},
+		{"ValidTime", valid, false, false},
+	}
+	for _, tc := range testCases {
+		err := validateRdsCustomRebootTime(tc.rebootTime, tc.rebootWhenFinish)
+		if tc.expectError && err == nil {
+			t.Fatalf("case %s: expected an error", tc.name)
+		}
+		if !tc.expectError && err != nil {
+			t.Fatalf("case %s: unexpected error: %v", tc.name, err)
+		}
+	}
+}
