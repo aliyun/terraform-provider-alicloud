@@ -2576,7 +2576,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiVswitchIds(t *testing.T) {
 					"db_instance_storage_type": "local_ssd",
 					"zone_id":                  "${data.alicloud_db_zones.default.zones.0.id}",
 					"zone_id_slave_a":          "${data.alicloud_db_zones.default.zones.1.id}",
-					"vswitch_ids":              "${alicloud_vswitch.default.*.id}",
+					"vswitch_ids":              []string{"${alicloud_vswitch.default.0.id}", "${alicloud_vswitch.default.1.id}"},
 					"monitoring_period":        "60",
 					"category":                 "HighAvailability",
 				}),
@@ -2593,6 +2593,30 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiVswitchIds(t *testing.T) {
 						"vswitch_id":               acctest.CHECKSET,
 					}),
 				),
+			},
+			// An order-only reorder of vswitch_ids must produce a clean plan:
+			// the DiffSuppressFunc treats same-members/different-order as no
+			// diff, so the ForceNew list does not trigger a recreation. The RDS
+			// API binds vswitch order to the zone order, so a reordered apply is
+			// not independently applicable; coverage is therefore the suppressed
+			// PlanOnly form rather than a convergent reordered apply.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "rds.mysql.t1.small",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes[1].storage_range[0].min}",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"db_instance_storage_type": "local_ssd",
+					"zone_id":                  "${data.alicloud_db_zones.default.zones.0.id}",
+					"zone_id_slave_a":          "${data.alicloud_db_zones.default.zones.1.id}",
+					"vswitch_ids":              []string{"${alicloud_vswitch.default.1.id}", "${alicloud_vswitch.default.0.id}"},
+					"monitoring_period":        "60",
+					"category":                 "HighAvailability",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 			// Import is intentionally omitted: DescribeDBInstanceAttribute only
 			// returns the primary VSwitchId for multi-AZ instances and does not
