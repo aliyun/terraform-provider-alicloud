@@ -888,7 +888,7 @@ func TestAccAliCloudAmqpInstanceResource_basic6128(t *testing.T) {
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAmqpInstanceBasicDependence6128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -1044,7 +1044,7 @@ func TestAccAliCloudAmqpInstanceResource_basic6128_twin(t *testing.T) {
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAmqpInstanceBasicDependence6128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -1105,7 +1105,7 @@ func TestAccAliCloudAmqpInstanceResource_encryptedServerlessDedicatedCreate(t *t
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAmqpInstanceEncryptedDependence6128)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			acctest.PreCheck(t)
 			testAccEnsureAmqpEncryptionServiceLinkedRole(t)
 		},
@@ -1224,6 +1224,7 @@ func AliCloudAmqpInstanceBasicDependence6128(name string) string {
 
 	data "alicloud_vpcs" "default" {
   		name_regex = "^default-NODELETING$"
+  		cidr_block = "172.16.0.0/12"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -1263,7 +1264,7 @@ func TestAccAliCloudAmqpInstanceResource_basic11166(t *testing.T) {
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -1437,7 +1438,7 @@ func TestAccAliCloudAmqpInstanceResource_basic11166_twin(t *testing.T) {
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudAmqpInstanceBasicDependence11166)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -1518,6 +1519,7 @@ func AliCloudAmqpInstanceBasicDependence11166(name string) string {
 
 	data "alicloud_vpcs" "default" {
   		name_regex = "^default-NODELETING$"
+  		cidr_block = "172.16.0.0/12"
 	}
 
 	data "alicloud_vswitches" "default" {
