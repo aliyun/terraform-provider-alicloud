@@ -205,18 +205,18 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 	request["RegionId"] = r.Meta().RegionId
 	createValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.Ha.IsNull() && !plan.Ha.IsUnknown() {
-		createValues["Ha"] = fwValueToInterface(plan.Ha, map[string]fwWireField{}, false)
+		createValues["Ha"] = fwadapt.ValueToInterface(plan.Ha, map[string]fwadapt.WireField{}, false)
 	}
 	if !plan.InstanceId.IsNull() && !plan.InstanceId.IsUnknown() {
-		createValues["InstanceId"] = fwValueToInterface(plan.InstanceId, map[string]fwWireField{}, false)
+		createValues["InstanceId"] = fwadapt.ValueToInterface(plan.InstanceId, map[string]fwadapt.WireField{}, false)
 	}
 	if !plan.Namespace.IsNull() && !plan.Namespace.IsUnknown() {
-		createValues["Namespace"] = fwValueToInterface(plan.Namespace, map[string]fwWireField{}, false)
+		createValues["Namespace"] = fwadapt.ValueToInterface(plan.Namespace, map[string]fwadapt.WireField{}, false)
 	}
 	if !plan.ResourceSpec.IsNull() && !plan.ResourceSpec.IsUnknown() {
-		createValues["ResourceSpec"] = fwValueToInterface(plan.ResourceSpec, map[string]fwWireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}}, true)
+		createValues["ResourceSpec"] = fwadapt.ValueToInterface(plan.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}, true)
 	}
-	if err := fwApplyMappings(request, createValues, []fwMapping{
+	if err := fwadapt.ApplyMappings(request, createValues, []fwadapt.Mapping{
 		{Source: "$.Ha", Target: "CreateNamespaceRequest.Ha", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
 		{Source: "$.InstanceId", Target: "CreateNamespaceRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
 		{Source: "$.Namespace", Target: "CreateNamespaceRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
@@ -257,15 +257,15 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 	// Persist the allocated identity before any asynchronous or configuration stage.
 	trackedPlan := plan
 	trackedPlan.Id = types.StringValue(id)
-	trackedPlan.GmtCreate = fwKnownValue(trackedPlan.GmtCreate).(types.Int64)
-	trackedPlan.GmtModified = fwKnownValue(trackedPlan.GmtModified).(types.Int64)
-	trackedPlan.Ha = fwKnownValue(trackedPlan.Ha).(types.Bool)
-	trackedPlan.InstanceId = fwKnownValue(trackedPlan.InstanceId).(types.String)
-	trackedPlan.Namespace = fwKnownValue(trackedPlan.Namespace).(types.String)
-	trackedPlan.ResourceSpec = fwKnownValue(trackedPlan.ResourceSpec).(types.List)
-	trackedPlan.ResourceUsed = fwKnownValue(trackedPlan.ResourceUsed).(types.List)
-	trackedPlan.Status = fwKnownValue(trackedPlan.Status).(types.String)
-	trackedPlan.Tags = fwKnownValue(trackedPlan.Tags).(types.Map)
+	trackedPlan.GmtCreate = fwadapt.KnownValue(trackedPlan.GmtCreate).(types.Int64)
+	trackedPlan.GmtModified = fwadapt.KnownValue(trackedPlan.GmtModified).(types.Int64)
+	trackedPlan.Ha = fwadapt.KnownValue(trackedPlan.Ha).(types.Bool)
+	trackedPlan.InstanceId = fwadapt.KnownValue(trackedPlan.InstanceId).(types.String)
+	trackedPlan.Namespace = fwadapt.KnownValue(trackedPlan.Namespace).(types.String)
+	trackedPlan.ResourceSpec = fwadapt.KnownValue(trackedPlan.ResourceSpec).(types.List)
+	trackedPlan.ResourceUsed = fwadapt.KnownValue(trackedPlan.ResourceUsed).(types.List)
+	trackedPlan.Status = fwadapt.KnownValue(trackedPlan.Status).(types.String)
+	trackedPlan.Tags = fwadapt.KnownValue(trackedPlan.Tags).(types.Map)
 	resp.Diagnostics.Append(resp.State.Set(ctx, trackedPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -340,33 +340,33 @@ func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRe
 
 	planValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.InstanceId.IsNull() && !plan.InstanceId.IsUnknown() {
-		planValues["InstanceId"] = fwValueToInterface(plan.InstanceId, map[string]fwWireField{}, false)
+		planValues["InstanceId"] = fwadapt.ValueToInterface(plan.InstanceId, map[string]fwadapt.WireField{}, false)
 	}
 	if !plan.Namespace.IsNull() && !plan.Namespace.IsUnknown() {
-		planValues["Namespace"] = fwValueToInterface(plan.Namespace, map[string]fwWireField{}, false)
+		planValues["Namespace"] = fwadapt.ValueToInterface(plan.Namespace, map[string]fwadapt.WireField{}, false)
 	}
 	if !plan.ResourceSpec.IsNull() && !plan.ResourceSpec.IsUnknown() {
-		planValues["ResourceSpec"] = fwValueToInterface(plan.ResourceSpec, map[string]fwWireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}}, true)
+		planValues["ResourceSpec"] = fwadapt.ValueToInterface(plan.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}, true)
 	}
 	stateValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !state.InstanceId.IsNull() && !state.InstanceId.IsUnknown() {
-		stateValues["InstanceId"] = fwValueToInterface(state.InstanceId, map[string]fwWireField{}, false)
+		stateValues["InstanceId"] = fwadapt.ValueToInterface(state.InstanceId, map[string]fwadapt.WireField{}, false)
 	}
 	if !state.Namespace.IsNull() && !state.Namespace.IsUnknown() {
-		stateValues["Namespace"] = fwValueToInterface(state.Namespace, map[string]fwWireField{}, false)
+		stateValues["Namespace"] = fwadapt.ValueToInterface(state.Namespace, map[string]fwadapt.WireField{}, false)
 	}
 	if !state.ResourceSpec.IsNull() && !state.ResourceSpec.IsUnknown() {
-		stateValues["ResourceSpec"] = fwValueToInterface(state.ResourceSpec, map[string]fwWireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}}, true)
+		stateValues["ResourceSpec"] = fwadapt.ValueToInterface(state.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}, true)
 	}
 	updated0 := false
-	if fwPlannedChanged(plan.ResourceSpec, state.ResourceSpec) {
+	if fwadapt.PlannedChanged(plan.ResourceSpec, state.ResourceSpec) {
 		updated0 = true
 	}
 	if updated0 {
 		operationValues0 := planValues
 		request0 := map[string]interface{}{"ClientToken": helper.BuildClientToken("ModifyNamespaceSpec")}
 		request0["RegionId"] = r.Meta().RegionId
-		if err := fwApplyMappings(request0, operationValues0, fwChangedUpdateMappings([]fwMapping{
+		if err := fwadapt.ApplyMappings(request0, operationValues0, fwadapt.ChangedUpdateMappings([]fwadapt.Mapping{
 			{Source: "$.InstanceId", Target: "ModifyNamespaceSpecRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
 			{Source: "$.Namespace", Target: "ModifyNamespaceSpecRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
 			{Source: "$.RegionId", Target: "ModifyNamespaceSpecRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
@@ -436,10 +436,10 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	deleteValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !state.InstanceId.IsNull() && !state.InstanceId.IsUnknown() {
-		deleteValues["InstanceId"] = fwValueToInterface(state.InstanceId, map[string]fwWireField{}, false)
+		deleteValues["InstanceId"] = fwadapt.ValueToInterface(state.InstanceId, map[string]fwadapt.WireField{}, false)
 	}
 	if !state.Namespace.IsNull() && !state.Namespace.IsUnknown() {
-		deleteValues["Namespace"] = fwValueToInterface(state.Namespace, map[string]fwWireField{}, false)
+		deleteValues["Namespace"] = fwadapt.ValueToInterface(state.Namespace, map[string]fwadapt.WireField{}, false)
 	}
 	identityParts := strings.Split(state.Id.ValueString(), ":")
 	if len(identityParts) > 0 {
@@ -454,7 +454,7 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 	}
 	request0 := map[string]interface{}{"ClientToken": helper.BuildClientToken("DeleteNamespace")}
 	request0["RegionId"] = r.Meta().RegionId
-	if err := fwApplyMappings(request0, deleteValues, []fwMapping{
+	if err := fwadapt.ApplyMappings(request0, deleteValues, []fwadapt.Mapping{
 		{Source: "$.InstanceId", Target: "DeleteNamespaceRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
 		{Source: "$.Namespace", Target: "DeleteNamespaceRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
 		{Source: "$.RegionId", Target: "DeleteNamespaceRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
@@ -618,8 +618,8 @@ func vvpNamespaceState(object map[string]interface{}, prior *vvpNamespaceResourc
 	}
 	if prior != nil {
 		m.FwTimeouts = prior.FwTimeouts
-		m.ResourceSpec = fwPreserveRequestValues(m.ResourceSpec, prior.ResourceSpec, map[string]fwWireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwWireField{}}}).(types.List)
-		m.ResourceUsed = fwPreserveRequestValues(m.ResourceUsed, prior.ResourceUsed, map[string]fwWireField{}).(types.List)
+		m.ResourceSpec = fwadapt.PreserveRequestValues(m.ResourceSpec, prior.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}).(types.List)
+		m.ResourceUsed = fwadapt.PreserveRequestValues(m.ResourceUsed, prior.ResourceUsed, map[string]fwadapt.WireField{}).(types.List)
 	}
 	return m
 }

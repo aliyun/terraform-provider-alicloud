@@ -94,7 +94,7 @@ func (r *createdByResource) Create(ctx context.Context, req resource.CreateReque
 	// the SDK RpcPost resolves the endpoint by region but does NOT inject RegionId into query/body.
 	request["RegionId"] = createdByControlRegion
 	createValues := map[string]interface{}{"RegionId": createdByControlRegion}
-	if err := fwApplyMappings(request, createValues, []fwMapping{
+	if err := fwadapt.ApplyMappings(request, createValues, []fwadapt.Mapping{
 		{Source: "$.RegionId", Target: "RegionId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 	}, false); err != nil {
 		resp.Diagnostics.AddError("Building create request", err.Error())
@@ -113,7 +113,7 @@ func (r *createdByResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	identityParts := []string{}
-	identityValues0 := fwWalkMappedPath(request, fwMappingPath("RegionId"), nil)
+	identityValues0 := fwadapt.WalkMappedPath(request, fwadapt.MappingPath("RegionId"), nil)
 	if len(identityValues0) == 0 || identityValues0[0].Value == nil || fmt.Sprint(identityValues0[0].Value) == "" {
 		resp.Diagnostics.AddError("Creating alicloud_tag_created_by: missing identity", "The create operation did not return or accept every identity component")
 		return
@@ -131,7 +131,7 @@ func (r *createdByResource) Create(ctx context.Context, req resource.CreateReque
 	// Persist the allocated identity before any asynchronous or configuration stage.
 	trackedPlan := plan
 	trackedPlan.Id = types.StringValue(id)
-	trackedPlan.OpenStatus = fwKnownValue(trackedPlan.OpenStatus).(types.Bool)
+	trackedPlan.OpenStatus = fwadapt.KnownValue(trackedPlan.OpenStatus).(types.Bool)
 	resp.Diagnostics.Append(resp.State.Set(ctx, trackedPlan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -233,7 +233,7 @@ func (r *createdByResource) Delete(ctx context.Context, req resource.DeleteReque
 	if deleteEligible0 {
 		request0 := map[string]interface{}{"ClientToken": helper.BuildClientToken("CloseCreatedBy")}
 		request0["RegionId"] = createdByControlRegion
-		if err := fwApplyMappings(request0, deleteValues, []fwMapping{
+		if err := fwadapt.ApplyMappings(request0, deleteValues, []fwadapt.Mapping{
 			{Source: "$.RegionId", Target: "RegionId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		}, false); err != nil {
 			resp.Diagnostics.AddError("Building CloseCreatedBy request", err.Error())

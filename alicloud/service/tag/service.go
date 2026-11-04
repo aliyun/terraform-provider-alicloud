@@ -1,9 +1,8 @@
 // Package tag. This file is generated automatically. Please do not modify it manually, thank you!
 // Service helpers for the framework-native alicloud_tag_created_by resource.
-// Shared client-token and incremental-wait helpers are imported from alicloud/helper;
-// the request, retry-classification and mapping helpers stay here because the root
-// package is not importable from a product package and connectivity leaves its
-// equivalents unexported.
+// Shared client-token and incremental-wait helpers are imported from alicloud/helper, and the
+// framework wire/state adapters from alicloud/provider/fwadapt; this file keeps the tag request,
+// retry-classification and tag-specific mapping helpers.
 package tag
 
 import (
@@ -12,8 +11,6 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwutil"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -32,33 +30,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-type fwWireField struct {
-	Name   string
-	Single bool
-	Read   bool
-	Input  bool
-	Fields map[string]fwWireField
-}
-
-type fwMapping struct {
-	Source, Target, Encoding, Constant string
-	Group, GroupKey, GroupValue        string
-	Repeat                             bool
-	IndexSources                       []int
-	Values                             map[string]string
-}
-
-type fwMappedValue struct {
-	Value   interface{}
-	Indexes []int
-}
 type fwDeleteCondition struct {
 	Property, Action string
 	Values           []string
-}
-type fwReadIdentity struct {
-	Path, Value  string
-	AllowMissing bool
 }
 type fwScopedReadIdentity struct{ Source, Target, Value string }
 
@@ -283,7 +257,7 @@ func createdByGet(ctx context.Context, client *connectivity.AliyunClient, id str
 	completeRead := len(includeSecondary) == 0 || includeSecondary[0]
 	getValues := map[string]interface{}{"RegionId": id}
 	request := map[string]interface{}{}
-	if err := fwApplyMappings(request, getValues, []fwMapping{
+	if err := fwadapt.ApplyMappings(request, getValues, []fwadapt.Mapping{
 		{Source: "$.RegionId", Target: "RegionId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 	}, false); err != nil {
 		return nil, fmt.Errorf("building CheckCreatedByEnabled request: %w", err)
@@ -320,7 +294,7 @@ func createdByGet(ctx context.Context, client *connectivity.AliyunClient, id str
 }
 
 func createdByCompleteRead(client *connectivity.AliyunClient, object map[string]interface{}, id string, includeSecondary bool) (map[string]interface{}, error) {
-	object = fwNormalizeResponse(object, []fwMapping{
+	object = fwadapt.NormalizeResponse(object, []fwadapt.Mapping{
 		{Source: "$.OpenStatus", Target: "$.OpenStatus", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 		{Source: "$.RegionId", Target: "$.RegionId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 	})
@@ -344,7 +318,7 @@ func createdByStateRefreshFunc(ctx context.Context, client *connectivity.AliyunC
 			return nil, "", nil
 		}
 		current := ""
-		if values := fwWalkMappedPath(object, fwMappingPath(field), nil); len(values) > 0 {
+		if values := fwadapt.WalkMappedPath(object, fwadapt.MappingPath(field), nil); len(values) > 0 {
 			current = fmt.Sprint(values[0].Value)
 		}
 		for _, fs := range failStates {
@@ -473,93 +447,6 @@ func fwTagsToAttributes(tags types.Map) []interface{} {
 	return out
 }
 
-// Missing request-scope components may use only explicitly declared API defaults.
-func fwGetIdentityParts(id, separator string, count int, defaults map[int]string, essential []int) ([]string, error) {
-	if separator == "" || count < 1 {
-		return nil, fmt.Errorf("invalid composite identity definition")
-	}
-	parts := strings.Split(id, separator)
-	if len(parts) > count {
-		return nil, fmt.Errorf("composite identity has too many components; expected %d", count)
-	}
-	for len(parts) < count {
-		parts = append(parts, "")
-	}
-	for index, part := range parts {
-		if strings.TrimSpace(part) != "" {
-			continue
-		}
-		required := false
-		for _, identityIndex := range essential {
-			if index == identityIndex {
-				required = true
-				break
-			}
-		}
-		if value, declared := defaults[index]; !required && declared && strings.TrimSpace(value) != "" {
-			parts[index] = value
-			continue
-		}
-		return nil, fmt.Errorf("composite identity component %d is missing", index+1)
-	}
-	return parts, nil
-}
-
-// Select by real response identity before CompleteRead can restore request-scoped fields.
-func fwSelectReadObject(raw interface{}, identities []fwReadIdentity) (map[string]interface{}, error) {
-	if raw == nil {
-		return nil, nil
-	}
-	if len(identities) == 0 {
-		return nil, fmt.Errorf("no readable resource identity was declared")
-	}
-	rows, isList := raw.([]interface{})
-	if !isList {
-		if object, ok := raw.(map[string]interface{}); ok {
-			rows = []interface{}{object}
-		} else {
-			return nil, fmt.Errorf("unexpected resource response shape")
-		}
-	}
-	var selected map[string]interface{}
-	for _, row := range rows {
-		object, ok := row.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("resource response item is not an object")
-		}
-		matches, readable := true, false
-		for _, identity := range identities {
-			values := fwWalkMappedPath(object, fwMappingPath(identity.Path), nil)
-			if len(values) > 1 {
-				return nil, fmt.Errorf("resource identity %s has multiple values", identity.Path)
-			}
-			if len(values) == 0 || values[0].Value == nil || fmt.Sprint(values[0].Value) == "" {
-				if !identity.AllowMissing {
-					matches = false
-				}
-				continue
-			}
-			readable = true
-			if identity.Value == "" || fmt.Sprint(values[0].Value) != identity.Value {
-				matches = false
-			}
-		}
-		if !readable {
-			if isList {
-				return nil, fmt.Errorf("resource response item has no readable identity")
-			}
-			continue
-		}
-		if matches {
-			if selected != nil {
-				return nil, fmt.Errorf("resource response contains multiple matching identities")
-			}
-			selected = object
-		}
-	}
-	return selected, nil
-}
-
 // A required exact request can identify a singleton configuration whose API omits its ID.
 func fwSelectScopedReadObject(raw interface{}, request map[string]interface{}, identities []fwScopedReadIdentity, payloadPaths []string) (map[string]interface{}, error) {
 	if len(identities) == 0 {
@@ -576,7 +463,7 @@ func fwSelectScopedReadObject(raw interface{}, request map[string]interface{}, i
 		return nil, fmt.Errorf("singleton response is not an object")
 	}
 	for _, identity := range identities {
-		values := fwWalkMappedPath(object, fwMappingPath(identity.Source), nil)
+		values := fwadapt.WalkMappedPath(object, fwadapt.MappingPath(identity.Source), nil)
 		if len(values) > 1 {
 			return nil, fmt.Errorf("singleton response has ambiguous identity")
 		}
@@ -585,7 +472,7 @@ func fwSelectScopedReadObject(raw interface{}, request map[string]interface{}, i
 		}
 	}
 	for _, path := range payloadPaths {
-		values := fwWalkMappedPath(object, fwMappingPath(path), nil)
+		values := fwadapt.WalkMappedPath(object, fwadapt.MappingPath(path), nil)
 		for _, value := range values {
 			if value.Value != nil {
 				return object, nil
@@ -616,7 +503,7 @@ func fwSelectScopedReadList(raw interface{}, request map[string]interface{}, ide
 		if !ok {
 			return nil, fmt.Errorf("scoped list item is not an object")
 		}
-		values := fwWalkMappedPath(object, fwMappingPath(selectorPath), nil)
+		values := fwadapt.WalkMappedPath(object, fwadapt.MappingPath(selectorPath), nil)
 		if len(values) != 1 || values[0].Value == nil {
 			return nil, fmt.Errorf("scoped list item has no declared kind")
 		}
@@ -633,24 +520,6 @@ func fwSelectScopedReadList(raw interface{}, request map[string]interface{}, ide
 		}
 	}
 	return selected, nil
-}
-
-// Optional update parameters only participate when their mapped value changed.
-func fwChangedUpdateMappings(bindings []fwMapping, desired, prior map[string]interface{}, requiredSources []string) []fwMapping {
-	selected := make([]fwMapping, 0, len(bindings))
-	for _, binding := range bindings {
-		required := false
-		for _, source := range requiredSources {
-			if binding.Source == source || strings.HasPrefix(binding.Source, source+".") || strings.HasPrefix(binding.Source, source+"[*]") {
-				required = true
-				break
-			}
-		}
-		if required || !fwValuesEqual(fwWalkMappedPath(desired, fwMappingPath(binding.Source), nil), fwWalkMappedPath(prior, fwMappingPath(binding.Source), nil)) {
-			selected = append(selected, binding)
-		}
-	}
-	return selected
 }
 
 // Ignore cloud-managed tags in old state without sending them to UntagResources.
@@ -759,45 +628,13 @@ func fwBool(m map[string]interface{}, key string) types.Bool {
 	return types.BoolNull()
 }
 
-// fwInt navigates a dotted key in m and returns a types.Int64.
-func fwInt(m map[string]interface{}, key string) types.Int64 {
-	cur := interface{}(m)
-	for _, seg := range strings.Split(key, ".") {
-		mm, ok := cur.(map[string]interface{})
-		if !ok {
-			return types.Int64Null()
-		}
-		cur, ok = mm[seg]
-		if !ok {
-			return types.Int64Null()
-		}
-	}
-	switch v := cur.(type) {
-	case float64:
-		return types.Int64Value(int64(v))
-	case int:
-		return types.Int64Value(int64(v))
-	case int64:
-		return types.Int64Value(v)
-	case json.Number:
-		if n, err := v.Int64(); err == nil {
-			return types.Int64Value(n)
-		}
-	case string:
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-			return types.Int64Value(n)
-		}
-	}
-	return types.Int64Null()
-}
-
 // fwListToJSONString converts a framework types.List of strings to a JSON array
 // string (e.g. ["a","b"]) for request params whose API expects a JSON-encoded list.
 // Returns "[]" for null/empty. Used by Create/Update/Delete request builders for
 // simple string-list fields (e.g. Lindorm ip_white_list) whose fwValueMethod is empty.
 // Emitted under fwReqList (any assignable array, incl. request-only responseKey=”)
 // rather than fwStateList so request-only arrays get the helper without dragging in
-// the response-side state helpers (fwStr/fwBool/fwInt/ToTypeList) that Go would flag unused.
+// the response-side state helpers (fwStr/fwBool/fwadapt.Int/ToTypeList) that Go would flag unused.
 func fwListToJSONString(l interface {
 	IsNull() bool
 	Elements() []attr.Value
@@ -807,7 +644,7 @@ func fwListToJSONString(l interface {
 	}
 	arr := make([]interface{}, 0, len(l.Elements()))
 	for _, e := range l.Elements() {
-		if raw := fwValueToInterface(e, nil, false); raw != nil {
+		if raw := fwadapt.ValueToInterface(e, nil, false); raw != nil {
 			arr = append(arr, raw)
 		}
 	}
@@ -815,7 +652,7 @@ func fwListToJSONString(l interface {
 	return string(b)
 }
 
-// fwWireField preserves API/source names independently of Terraform schema names.
+// fwadapt.WireField preserves API/source names independently of Terraform schema names.
 
 // fwConfiguredChanged distinguishes user unknown references from computed unknown outputs.
 // Terraform can defer immutable user input, so an unknown configuration is conservative.
@@ -827,7 +664,7 @@ func fwConfiguredChanged(config, plan, state attr.Value) bool {
 		return false
 	}
 	if config == nil || config.IsNull() || state == nil || state.IsNull() || state.IsUnknown() || plan.IsNull() {
-		return fwPlannedChanged(plan, state)
+		return fwadapt.PlannedChanged(plan, state)
 	}
 	switch desired := plan.(type) {
 	case types.Object:
@@ -865,7 +702,7 @@ func fwConfiguredChanged(config, plan, state attr.Value) bool {
 		if !configOK || !stateOK || fwContainsUnknown(configured) {
 			return true
 		}
-		return !fwSetMatches(configured.Elements(), previous.Elements(), fwConfiguredMatch)
+		return !fwadapt.SetMatches(configured.Elements(), previous.Elements(), fwadapt.ConfiguredMatch)
 	case types.Map:
 		configured, configOK := config.(types.Map)
 		previous, stateOK := state.(types.Map)
@@ -887,101 +724,6 @@ func fwConfiguredChanged(config, plan, state attr.Value) bool {
 		return !semantic.fwSemanticEqual(state)
 	}
 	return !plan.Equal(state)
-}
-
-// fwPlannedChanged ignores computed unknown leaves while comparing configured nested values.
-func fwPlannedChanged(plan, state attr.Value) bool {
-	if plan == nil || plan.IsUnknown() {
-		return false
-	}
-	if state == nil || state.IsNull() || state.IsUnknown() || plan.IsNull() {
-		return state == nil || !plan.Equal(state)
-	}
-	switch desired := plan.(type) {
-	case types.Object:
-		previous, ok := state.(types.Object)
-		if !ok {
-			return true
-		}
-		oldItems := previous.Attributes()
-		for key, value := range desired.Attributes() {
-			if fwPlannedChanged(value, oldItems[key]) {
-				return true
-			}
-		}
-		return false
-	case types.List:
-		previous, ok := state.(types.List)
-		if !ok {
-			return true
-		}
-		items, oldItems := desired.Elements(), previous.Elements()
-		if len(items) != len(oldItems) {
-			return true
-		}
-		for index, value := range items {
-			if fwPlannedChanged(value, oldItems[index]) {
-				return true
-			}
-		}
-		return false
-	case types.Set:
-		previous, ok := state.(types.Set)
-		if !ok {
-			return true
-		}
-		return !fwSetMatches(desired.Elements(), previous.Elements(), func(a, b attr.Value) bool { return !fwPlannedChanged(a, b) })
-	case types.Map:
-		previous, ok := state.(types.Map)
-		if !ok {
-			return true
-		}
-		items, oldItems := desired.Elements(), previous.Elements()
-		if len(items) != len(oldItems) {
-			return true
-		}
-		for key, value := range items {
-			if fwPlannedChanged(value, oldItems[key]) {
-				return true
-			}
-		}
-		return false
-	}
-	if semantic, ok := plan.(interface{ fwSemanticEqual(attr.Value) bool }); ok {
-		return !semantic.fwSemanticEqual(state)
-	}
-	return !plan.Equal(state)
-}
-
-// fwSetMatches pairs unordered members without depending on response or plan order.
-func fwSetMatches(left, right []attr.Value, compatible func(attr.Value, attr.Value) bool) bool {
-	if len(left) != len(right) {
-		return false
-	}
-	owners := make([]int, len(right))
-	for index := range owners {
-		owners[index] = -1
-	}
-	var assign func(int, []bool) bool
-	assign = func(index int, seen []bool) bool {
-		for candidate := range right {
-			if seen[candidate] || !compatible(left[index], right[candidate]) {
-				continue
-			}
-			seen[candidate] = true
-			if owners[candidate] == -1 || assign(owners[candidate], seen) {
-				owners[candidate] = index
-				return true
-			}
-		}
-		return false
-	}
-	for index := range left {
-		if !assign(index, make([]bool, len(right))) {
-			return false
-		}
-	}
-	return true
 }
 
 func fwContainsUnknown(value attr.Value) bool {
@@ -1020,107 +762,8 @@ func fwContainsUnknown(value attr.Value) bool {
 	return false
 }
 
-// Null configuration leaves are computed output, not member identity.
-func fwConfiguredMatch(config, state attr.Value) bool {
-	if config == nil || config.IsNull() {
-		return true
-	}
-	if config.IsUnknown() || state == nil || state.IsNull() || state.IsUnknown() {
-		return false
-	}
-	switch value := config.(type) {
-	case types.Object:
-		previous, ok := state.(types.Object)
-		if !ok {
-			return false
-		}
-		fields := previous.Attributes()
-		for key, child := range value.Attributes() {
-			if !fwConfiguredMatch(child, fields[key]) {
-				return false
-			}
-		}
-		return true
-	case types.List:
-		previous, ok := state.(types.List)
-		if !ok || len(value.Elements()) != len(previous.Elements()) {
-			return false
-		}
-		for index, child := range value.Elements() {
-			if !fwConfiguredMatch(child, previous.Elements()[index]) {
-				return false
-			}
-		}
-		return true
-	case types.Set:
-		previous, ok := state.(types.Set)
-		return ok && fwSetMatches(value.Elements(), previous.Elements(), fwConfiguredMatch)
-	case types.Map:
-		previous, ok := state.(types.Map)
-		if !ok || len(value.Elements()) != len(previous.Elements()) {
-			return false
-		}
-		for key, child := range value.Elements() {
-			if !fwConfiguredMatch(child, previous.Elements()[key]) {
-				return false
-			}
-		}
-		return true
-	}
-	if semantic, ok := config.(interface{ fwSemanticEqual(attr.Value) bool }); ok {
-		return semantic.fwSemanticEqual(state)
-	}
-	return config.Equal(state)
-}
-
-// Only readable configured inputs correlate set members; computed outputs may change.
-func fwSetMemberMatches(observed, prior attr.Value, fields map[string]fwWireField) bool {
-	if prior == nil || prior.IsNull() || prior.IsUnknown() {
-		return true
-	}
-	if observed == nil || observed.IsNull() || observed.IsUnknown() {
-		return false
-	}
-	switch current := observed.(type) {
-	case types.Object:
-		previous, ok := prior.(types.Object)
-		if !ok {
-			return false
-		}
-		now, old := current.Attributes(), previous.Attributes()
-		for key, field := range fields {
-			if !field.Read || !field.Input {
-				continue
-			}
-			if len(field.Fields) > 0 {
-				if !fwSetMemberMatches(now[key], old[key], field.Fields) {
-					return false
-				}
-			} else if !fwConfiguredMatch(old[key], now[key]) {
-				return false
-			}
-		}
-		return true
-	case types.List:
-		previous, ok := prior.(types.List)
-		if !ok || len(current.Elements()) != len(previous.Elements()) {
-			return false
-		}
-		for index, value := range current.Elements() {
-			if !fwSetMemberMatches(value, previous.Elements()[index], fields) {
-				return false
-			}
-		}
-		return true
-	case types.Set:
-		previous, ok := prior.(types.Set)
-		return ok && fwSetMatches(current.Elements(), previous.Elements(), func(a, b attr.Value) bool { return fwSetMemberMatches(a, b, fields) })
-	}
-	return fwConfiguredMatch(prior, observed)
-}
-
 // Ambiguous set members with different request-only values must retain prior state and diagnose.
-func fwValidateSetCorrelation(observed, prior attr.Value, fields map[string]fwWireField) error {
+func fwValidateSetCorrelation(observed, prior attr.Value, fields map[string]fwadapt.WireField) error {
 	if observed == nil || prior == nil || observed.IsNull() || observed.IsUnknown() || prior.IsNull() || prior.IsUnknown() {
 		return nil
 	}
@@ -1133,10 +776,10 @@ func fwValidateSetCorrelation(observed, prior attr.Value, fields map[string]fwWi
 		for _, item := range current.Elements() {
 			var retained attr.Value
 			for _, old := range previous.Elements() {
-				if !fwSetMemberMatches(item, old, fields) {
+				if !fwadapt.SetMemberMatches(item, old, fields) {
 					continue
 				}
-				candidate := fwPreserveRequestValues(item, old, fields)
+				candidate := fwadapt.PreserveRequestValues(item, old, fields)
 				if retained != nil && !retained.Equal(candidate) {
 					return fmt.Errorf("cannot uniquely correlate unordered members containing request-only configuration")
 				}
@@ -1174,73 +817,6 @@ func fwValidateSetCorrelation(observed, prior attr.Value, fields map[string]fwWi
 	return nil
 }
 
-// fwPreserveRequestValues retains configuration-only nested values absent from Get mappings.
-// Readable attributes, including API defaults, always come from the observed response.
-func fwPreserveRequestValues(observed, prior attr.Value, fields map[string]fwWireField) attr.Value {
-	if observed == nil || prior == nil || prior.IsNull() || prior.IsUnknown() {
-		return observed
-	}
-	switch current := observed.(type) {
-	case types.List:
-		previous, ok := prior.(types.List)
-		if !ok || current.IsNull() || current.IsUnknown() {
-			return observed
-		}
-		items, oldItems := current.Elements(), previous.Elements()
-		for index := range items {
-			if index < len(oldItems) {
-				items[index] = fwPreserveRequestValues(items[index], oldItems[index], fields)
-			}
-		}
-		return types.ListValueMust(current.ElementType(context.Background()), items)
-	case types.Set:
-		previous, ok := prior.(types.Set)
-		if !ok || current.IsNull() || current.IsUnknown() {
-			return observed
-		}
-		items, oldItems := current.Elements(), previous.Elements()
-		for index, item := range items {
-			var retained attr.Value
-			ambiguous := false
-			for _, old := range oldItems {
-				if !fwSetMemberMatches(item, old, fields) {
-					continue
-				}
-				candidate := fwPreserveRequestValues(item, old, fields)
-				if retained != nil && !retained.Equal(candidate) {
-					ambiguous = true
-					break
-				}
-				retained = candidate
-			}
-			// Never attach a different member's request-only configuration on ambiguity.
-			if retained != nil && !ambiguous {
-				items[index] = retained
-			}
-		}
-		return types.SetValueMust(current.ElementType(context.Background()), items)
-	case types.Object:
-		previous, ok := prior.(types.Object)
-		if !ok || current.IsNull() || current.IsUnknown() {
-			return observed
-		}
-		items, oldItems := current.Attributes(), previous.Attributes()
-		for key, field := range fields {
-			old, exists := oldItems[key]
-			if !exists {
-				continue
-			}
-			if !field.Read {
-				items[key] = fwKnownValue(old)
-			} else if len(field.Fields) > 0 {
-				items[key] = fwPreserveRequestValues(items[key], old, field.Fields)
-			}
-		}
-		return types.ObjectValueMust(current.AttributeTypes(context.Background()), items)
-	}
-	return observed
-}
-
 func fwDeleteEligible(values map[string]interface{}, conditions []fwDeleteCondition) (bool, error) {
 	return fwOperationEligible(values, conditions)
 }
@@ -1248,7 +824,7 @@ func fwDeleteEligible(values map[string]interface{}, conditions []fwDeleteCondit
 func fwOperationEligible(values map[string]interface{}, conditions []fwDeleteCondition) (bool, error) {
 	eligible := true
 	for _, condition := range conditions {
-		found := fwWalkMappedPath(values, fwMappingPath(condition.Property), nil)
+		found := fwadapt.WalkMappedPath(values, fwadapt.MappingPath(condition.Property), nil)
 		if len(found) == 0 || found[0].Value == nil {
 			return false, fmt.Errorf("cannot select an operation: %s is unknown", condition.Property)
 		}
@@ -1271,518 +847,8 @@ func fwOperationEligible(values map[string]interface{}, conditions []fwDeleteCon
 	return eligible, nil
 }
 
-func fwKnownValue(value attr.Value) attr.Value {
-	if value != nil && value.IsUnknown() {
-		if custom, ok := value.(interface{ fwNullValue() attr.Value }); ok {
-			return custom.fwNullValue()
-		}
-	}
-	switch v := value.(type) {
-	case types.String:
-		if v.IsUnknown() {
-			return types.StringNull()
-		}
-	case types.Bool:
-		if v.IsUnknown() {
-			return types.BoolNull()
-		}
-	case types.Int64:
-		if v.IsUnknown() {
-			return types.Int64Null()
-		}
-	case types.Float64:
-		if v.IsUnknown() {
-			return types.Float64Null()
-		}
-	case types.List:
-		if v.IsUnknown() {
-			return types.ListNull(v.ElementType(context.Background()))
-		}
-		if !v.IsNull() {
-			items := []attr.Value{}
-			for _, item := range v.Elements() {
-				items = append(items, fwKnownValue(item))
-			}
-			return types.ListValueMust(v.ElementType(context.Background()), items)
-		}
-	case types.Set:
-		if v.IsUnknown() {
-			return types.SetNull(v.ElementType(context.Background()))
-		}
-		if !v.IsNull() {
-			items := []attr.Value{}
-			for _, item := range v.Elements() {
-				items = append(items, fwKnownValue(item))
-			}
-			return types.SetValueMust(v.ElementType(context.Background()), items)
-		}
-	case types.Map:
-		if v.IsUnknown() {
-			return types.MapNull(v.ElementType(context.Background()))
-		}
-		if !v.IsNull() {
-			items := map[string]attr.Value{}
-			for key, item := range v.Elements() {
-				items[key] = fwKnownValue(item)
-			}
-			return types.MapValueMust(v.ElementType(context.Background()), items)
-		}
-	case types.Object:
-		if v.IsUnknown() {
-			return types.ObjectNull(v.AttributeTypes(context.Background()))
-		}
-		if !v.IsNull() {
-			items := map[string]attr.Value{}
-			for key, item := range v.Attributes() {
-				items[key] = fwKnownValue(item)
-			}
-			return types.ObjectValueMust(v.AttributeTypes(context.Background()), items)
-		}
-	}
-	return value
-}
-
-func fwValueToInterface(value attr.Value, fields map[string]fwWireField, single bool) interface{} {
-	if value == nil || value.IsNull() || value.IsUnknown() {
-		return nil
-	}
-	switch v := value.(type) {
-	case interface{ ValueString() string }:
-		return v.ValueString()
-	case types.Bool:
-		return v.ValueBool()
-	case types.Int64:
-		return v.ValueInt64()
-	case types.Float64:
-		return v.ValueFloat64()
-	case types.Object:
-		out := map[string]interface{}{}
-		for key, child := range v.Attributes() {
-			field, mapped := fields[key]
-			if !mapped {
-				field.Name = key
-			}
-			if raw := fwValueToInterface(child, field.Fields, field.Single); raw != nil {
-				out[field.Name] = raw
-			}
-		}
-		return out
-	case types.Map:
-		out := map[string]interface{}{}
-		for key, child := range v.Elements() {
-			if raw := fwValueToInterface(child, nil, false); raw != nil {
-				out[key] = raw
-			}
-		}
-		return out
-	case types.List:
-		out := make([]interface{}, 0, len(v.Elements()))
-		for _, child := range v.Elements() {
-			if raw := fwValueToInterface(child, fields, false); raw != nil {
-				out = append(out, raw)
-			}
-		}
-		if single {
-			if len(out) == 0 {
-				return nil
-			}
-			return out[0]
-		}
-		return out
-	case types.Set:
-		out := make([]interface{}, 0, len(v.Elements()))
-		for _, child := range v.Elements() {
-			if raw := fwValueToInterface(child, fields, false); raw != nil {
-				out = append(out, raw)
-			}
-		}
-		return out
-	}
-	return nil
-}
-
-func fwNestedListToSlice(l attr.Value, fields map[string]fwWireField, single bool) interface{} {
-	return fwValueToInterface(l, fields, single)
-}
-
-func fwMappingPath(path string) []string {
-	path = strings.TrimPrefix(path, "$.")
-	path = strings.TrimPrefix(path, "$")
-	path = strings.ReplaceAll(path, "[*]", ".*")
-	if path == "" {
-		return nil
-	}
-	return strings.Split(strings.TrimPrefix(path, "."), ".")
-}
-
-func fwWalkMappedPath(value interface{}, path []string, indexes []int) []fwMappedValue {
-	if len(path) == 0 {
-		return []fwMappedValue{{Value: value, Indexes: indexes}}
-	}
-	if path[0] == "*" {
-		var out []fwMappedValue
-		if items, ok := value.([]interface{}); ok {
-			for i, item := range items {
-				next := append(append([]int{}, indexes...), i)
-				out = append(out, fwWalkMappedPath(item, path[1:], next)...)
-			}
-		}
-		return out
-	}
-	if m, ok := value.(map[string]interface{}); ok {
-		if child, exists := m[path[0]]; exists {
-			return fwWalkMappedPath(child, path[1:], indexes)
-		}
-	}
-	return nil
-}
-
-func fwSetMappedPath(value interface{}, path []string, indexes []int, raw interface{}) interface{} {
-	if len(path) == 0 {
-		return raw
-	}
-	if path[0] == "*" {
-		if len(indexes) == 0 {
-			return value
-		}
-		items, _ := value.([]interface{})
-		for len(items) <= indexes[0] {
-			items = append(items, nil)
-		}
-		items[indexes[0]] = fwSetMappedPath(items[indexes[0]], path[1:], indexes[1:], raw)
-		return items
-	}
-	m, _ := value.(map[string]interface{})
-	if m == nil {
-		m = map[string]interface{}{}
-	}
-	m[path[0]] = fwSetMappedPath(m[path[0]], path[1:], indexes, raw)
-	return m
-}
-
-func fwApplyMappings(request, values map[string]interface{}, bindings []fwMapping, roa bool) error {
-	mapped := map[string]interface{}{}
-	repeated := map[string]bool{}
-	for _, binding := range bindings {
-		source, target := binding.Source, binding.Target
-		if binding.Encoding == "comma" || binding.Encoding == "first" || binding.Encoding == "wrap-json" || binding.Encoding == "wrap-array" {
-			source = strings.TrimSuffix(source, "[*]")
-			target = strings.TrimSuffix(target, "[*]")
-		}
-		entries := fwWalkMappedPath(values, fwMappingPath(source), nil)
-		if binding.Encoding == "scoped-const" {
-			parent := source[:strings.LastIndex(source, ".")]
-			entries = fwWalkMappedPath(values, fwMappingPath(parent), nil)
-		}
-		if strings.HasPrefix(binding.Encoding, "concat|") {
-			parts := strings.Split(binding.Encoding, "|")
-			fields := []string{}
-			complete := true
-			for _, propertyPath := range parts[2:] {
-				found := fwWalkMappedPath(values, fwMappingPath(propertyPath), nil)
-				if len(found) == 0 || found[0].Value == nil {
-					complete = false
-					break
-				}
-				fields = append(fields, fmt.Sprint(found[0].Value))
-			}
-			entries = nil
-			if complete {
-				entries = []fwMappedValue{{Value: strings.Join(fields, parts[1])}}
-			}
-		}
-		if strings.Contains(source, "[*]") && !strings.Contains(target, "[*]") && binding.Encoding == "" {
-			items := []interface{}{}
-			for _, entry := range entries {
-				if entry.Value != nil {
-					items = append(items, entry.Value)
-				}
-			}
-			if len(entries) > 0 {
-				entries = []fwMappedValue{{Value: items}}
-			}
-		}
-		concreteEntries := entries[:0]
-		for _, entry := range entries {
-			if entry.Value != nil {
-				concreteEntries = append(concreteEntries, entry)
-			}
-		}
-		entries = concreteEntries
-		if binding.Constant != "" && !(binding.Encoding == "default" && len(entries) > 0) {
-			if (binding.Encoding == "key" || binding.Encoding == "scoped-const") && len(entries) == 0 {
-				continue
-			}
-			var raw interface{}
-			if err := json.Unmarshal([]byte(binding.Constant), &raw); err != nil {
-				return err
-			}
-			if len(entries) == 0 {
-				entries = []fwMappedValue{{Value: raw}}
-			} else {
-				for index := range entries {
-					entries[index].Value = raw
-				}
-			}
-		}
-		if strings.HasPrefix(binding.Encoding, "uniform-scalar|") && len(entries) > 0 {
-			scalarType := strings.TrimPrefix(binding.Encoding, "uniform-scalar|")
-			for _, entry := range entries {
-				valid := false
-				switch scalarType {
-				case "boolean":
-					_, valid = entry.Value.(bool)
-				case "integer":
-					switch value := entry.Value.(type) {
-					case int, int8, int16, int32, int64, uint, uint8, uint16, uint32:
-						valid = true
-					case float64:
-						valid = value == float64(int64(value))
-					case json.Number:
-						_, err := value.Int64()
-						valid = err == nil
-					}
-				case "number":
-					switch entry.Value.(type) {
-					case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, float32, float64, json.Number:
-						valid = true
-					}
-				}
-				if !valid {
-					return fmt.Errorf("configured value does not match scalar API parameter %s type %s", target, scalarType)
-				}
-			}
-			first, err := json.Marshal(entries[0].Value)
-			if err != nil {
-				return err
-			}
-			for _, entry := range entries[1:] {
-				next, err := json.Marshal(entry.Value)
-				if err != nil {
-					return err
-				}
-				if string(next) != string(first) {
-					return fmt.Errorf("conflicting configured values for scalar API parameter %s", target)
-				}
-			}
-			entries = entries[:1]
-		}
-		for _, entry := range entries {
-			raw := entry.Value
-			if raw == nil {
-				continue
-			}
-			if mappedValue, ok := binding.Values[fmt.Sprint(raw)]; ok {
-				raw = mappedValue
-			}
-			if strings.HasPrefix(binding.Encoding, "suffix|") {
-				raw = fmt.Sprint(raw) + strings.TrimPrefix(binding.Encoding, "suffix|")
-			}
-			switch binding.Encoding {
-			case "first":
-				if list, ok := raw.([]interface{}); ok {
-					if len(list) == 0 {
-						continue
-					}
-					raw = list[0]
-				}
-			case "comma":
-				if list, ok := raw.([]interface{}); ok {
-					parts := make([]string, len(list))
-					for i, item := range list {
-						parts[i] = fmt.Sprint(item)
-					}
-					raw = strings.Join(parts, ",")
-				}
-			case "wrap-array":
-				raw = []interface{}{raw}
-			case "wrap-json":
-				encoded, err := json.Marshal([]interface{}{raw})
-				if err != nil {
-					return err
-				}
-				raw = string(encoded)
-			}
-			indexes := append([]int(nil), entry.Indexes...)
-			if len(binding.IndexSources) > 0 {
-				if len(binding.IndexSources) != strings.Count(target, "[*]") {
-					return fmt.Errorf("request wildcard alignment has an unexpected target dimension count")
-				}
-				indexes = make([]int, len(binding.IndexSources))
-				for position, sourceIndex := range binding.IndexSources {
-					if sourceIndex == -1 {
-						continue
-					}
-					if sourceIndex < 0 || sourceIndex >= len(entry.Indexes) {
-						return fmt.Errorf("request wildcard alignment is missing a source dimension")
-					}
-					indexes[position] = entry.Indexes[sourceIndex]
-				}
-			} else {
-				for len(indexes) < strings.Count(target, "[*]") {
-					indexes = append(indexes, 0)
-				}
-			}
-			mapped = fwSetMappedPath(mapped, fwMappingPath(target), indexes, raw).(map[string]interface{})
-		}
-		if binding.Repeat {
-			if parts := fwMappingPath(target); len(parts) > 0 {
-				repeated[parts[0]] = true
-			}
-		}
-	}
-	if err := fwCompactKvPairs(mapped, bindings); err != nil {
-		return err
-	}
-	for key, raw := range mapped {
-		if roa {
-			request[key] = raw
-			continue
-		}
-		switch raw.(type) {
-		case map[string]interface{}, []interface{}:
-			if repeated[key] {
-				fwFlattenRequest(request, key, raw)
-			} else {
-				encoded, err := json.Marshal(raw)
-				if err != nil {
-					return err
-				}
-				request[key] = string(encoded)
-			}
-		default:
-			request[key] = raw
-		}
-	}
-	return nil
-}
-
-// Only explicitly declared kvPairs groups are compacted; ordinary indexed lists retain shape.
-func fwCompactKvPairs(mapped map[string]interface{}, bindings []fwMapping) error {
-	groups := map[string][2]string{}
-	for _, binding := range bindings {
-		if binding.Group == "" {
-			continue
-		}
-		fields := [2]string{binding.GroupKey, binding.GroupValue}
-		if fields[0] == "" || fields[1] == "" || fields[0] == fields[1] {
-			return fmt.Errorf("Invalid kvPairs member declaration")
-		}
-		if previous, exists := groups[binding.Group]; exists && previous != fields {
-			return fmt.Errorf("Conflicting kvPairs member declaration")
-		}
-		groups[binding.Group] = fields
-	}
-	for group, fields := range groups {
-		raw, exists := mapped[group]
-		if !exists {
-			continue
-		}
-		members, ok := raw.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("kvPairs group is not an indexed object")
-		}
-		indexes := []int{}
-		for key := range members {
-			index, err := strconv.Atoi(key)
-			if err != nil || index < 1 || strconv.Itoa(index) != key {
-				return fmt.Errorf("Invalid kvPairs member index")
-			}
-			indexes = append(indexes, index)
-		}
-		sort.Ints(indexes)
-		compact := map[string]interface{}{}
-		codes := map[string]bool{}
-		for position, index := range indexes {
-			pair, valid := members[strconv.Itoa(index)].(map[string]interface{})
-			if !valid || len(pair) != 2 || pair[fields[0]] == nil || pair[fields[1]] == nil {
-				return fmt.Errorf("Incomplete kvPairs member")
-			}
-			code, valid := pair[fields[0]].(string)
-			if !valid || code == "" || codes[code] {
-				return fmt.Errorf("Invalid or duplicate kvPairs code")
-			}
-			codes[code] = true
-			compact[strconv.Itoa(position+1)] = pair
-		}
-		mapped[group] = compact
-	}
-	return nil
-}
-
-func fwFlattenRequest(request map[string]interface{}, key string, raw interface{}) {
-	switch v := raw.(type) {
-	case []interface{}:
-		for i, item := range v {
-			fwFlattenRequest(request, fmt.Sprintf("%s.%d", key, i+1), item)
-		}
-	case map[string]interface{}:
-		for name, item := range v {
-			fwFlattenRequest(request, key+"."+name, item)
-		}
-	default:
-		if v != nil {
-			request[key] = v
-		}
-	}
-}
-
-func fwNormalizeResponse(object map[string]interface{}, bindings []fwMapping) map[string]interface{} {
-	// Whole-object mappings must precede their leaf aliases, regardless of AM order.
-	// Stable insertion order preserves same-depth precedence and source array indexes.
-	bindings = append([]fwMapping(nil), bindings...)
-	for index := 1; index < len(bindings); index++ {
-		for current := index; current > 0 && len(fwMappingPath(bindings[current].Target)) < len(fwMappingPath(bindings[current-1].Target)); current-- {
-			bindings[current], bindings[current-1] = bindings[current-1], bindings[current]
-		}
-	}
-	out := map[string]interface{}{}
-	for key, value := range object {
-		out[key] = value
-	}
-	for _, binding := range bindings {
-		if strings.HasSuffix(binding.Source, "[*]") && strings.HasSuffix(binding.Target, "[*]") {
-			source := strings.TrimSuffix(binding.Source, "[*]")
-			target := strings.TrimSuffix(binding.Target, "[*]")
-			for _, container := range fwWalkMappedPath(object, fwMappingPath(source), nil) {
-				if values, ok := container.Value.([]interface{}); ok && len(values) == 0 {
-					out = fwSetMappedPath(out, fwMappingPath(target), container.Indexes, []interface{}{}).(map[string]interface{})
-				}
-			}
-		}
-		for _, entry := range fwWalkMappedPath(object, fwMappingPath(binding.Source), nil) {
-			raw := entry.Value
-			target := binding.Target
-			if binding.Encoding == "split-comma" {
-				target = strings.TrimSuffix(target, "[*]")
-				items := []interface{}{}
-				if text, ok := raw.(string); ok && text != "" {
-					for _, part := range strings.Split(text, ",") {
-						items = append(items, strings.TrimSpace(part))
-					}
-				}
-				raw = items
-			}
-			if binding.Encoding == "scalar-string" && raw != nil {
-				switch raw.(type) {
-				case string:
-				case int, int32, int64, float32, float64, json.Number:
-					raw = fmt.Sprint(raw)
-				}
-			}
-			if mapped, ok := binding.Values[fmt.Sprint(raw)]; ok {
-				raw = mapped
-			}
-			out = fwSetMappedPath(out, fwMappingPath(target), entry.Indexes, raw).(map[string]interface{})
-		}
-	}
-	return out
-}
-
-func fwValuesEqual(a, b interface{}) bool {
-	aa, errA := json.Marshal(a)
-	bb, errB := json.Marshal(b)
-	return errA == nil && errB == nil && string(aa) == string(bb)
+func fwNestedListToSlice(l attr.Value, fields map[string]fwadapt.WireField, single bool) interface{} {
+	return fwadapt.ValueToInterface(l, fields, single)
 }
 
 // fwDeltaBatches keeps removals and additions distinct, including scalar attach/detach.
@@ -1821,7 +887,7 @@ func fwDeltaBatches(oldValue, newValue interface{}, direction string, batchSize 
 		for _, item := range left {
 			found := false
 			for _, previous := range right {
-				if fwValuesEqual(item, previous) {
+				if fwadapt.ValuesEqual(item, previous) {
 					found = true
 					break
 				}
@@ -1843,7 +909,7 @@ func fwDeltaBatches(oldValue, newValue interface{}, direction string, batchSize 
 		}
 		return out
 	}
-	if fwValuesEqual(oldValue, newValue) {
+	if fwadapt.ValuesEqual(oldValue, newValue) {
 		return nil
 	}
 	value := newValue
