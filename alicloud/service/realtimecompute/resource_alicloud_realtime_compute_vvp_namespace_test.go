@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -450,6 +451,14 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_default0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccRealtimeComputeVvpCreateSideNamespace(&instanceId, fmt.Sprintf("%s-extra", name), 2, 8),
 				),
+			},
+			{
+				// Import right after the final successful configuration must still match. The side
+				// namespace only exists outside Terraform, so the comparison covers the managed
+				// default namespace exactly as the previous step left it.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -1169,36 +1178,75 @@ func testAccRealtimeComputeVvpCheckNoTags(resourceId string) resource.TestCheckF
 	}
 }
 
-// vvpNamespaceUpdateTestServer serves the foasconsole actions the update path can call and records
-// every Action it saw, so a case can assert that a stage did or did not reach the service. When
-// failReads is set, DescribeNamespaces answers 500 so a cancelled retry loop is what ends the read.
-func vvpNamespaceUpdateTestServer(t *testing.T, failReads bool) (*httptest.Server, func() []string) {
+// vvpNamespaceUpdateMock serves the foasconsole actions the update path can call and records the
+// ordered actions plus the specification the write request carried. The DescribeNamespaces response
+// follows the specification the last ModifyNamespaceSpec wrote, so the refreshed state proves that
+// the provider used the service answer rather than the plan.
+type vvpNamespaceUpdateMock struct {
+	mu           sync.Mutex
+	actions      []string
+	modifyCpu    string
+	modifyMemory string
+	currentCpu   int64
+	currentMem   int64
+}
+
+func (m *vvpNamespaceUpdateMock) snapshot() ([]string, string, string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.actions...), m.modifyCpu, m.modifyMemory
+}
+
+func (m *vvpNamespaceUpdateMock) spec() (int64, int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.currentCpu, m.currentMem
+}
+
+// vvpNamespaceUpdateTestServer starts a foasconsole stub. delay slows every DescribeNamespaces so a
+// case can let the operation budget run out after the write started; onModify runs right after the
+// write is accepted so a case can cancel the lifecycle in flight.
+func vvpNamespaceUpdateTestServer(t *testing.T, failReads bool, delay time.Duration, onModify func()) (*httptest.Server, *vvpNamespaceUpdateMock) {
 	t.Helper()
-	var mu sync.Mutex
-	var actions []string
+	mock := &vvpNamespaceUpdateMock{currentCpu: 1, currentMem: 4}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
 		action := r.FormValue("Action")
-		mu.Lock()
-		actions = append(actions, action)
-		mu.Unlock()
+		mock.mu.Lock()
+		mock.actions = append(mock.actions, action)
+		mock.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case action == "ModifyNamespaceSpec":
+		switch action {
+		case "ModifyNamespaceSpec":
+			mock.mu.Lock()
+			mock.modifyCpu = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.Cpu")
+			mock.modifyMemory = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.MemoryGB")
+			if cpu, err := strconv.ParseInt(mock.modifyCpu, 10, 64); err == nil {
+				mock.currentCpu = cpu
+			}
+			if memory, err := strconv.ParseInt(mock.modifyMemory, 10, 64); err == nil {
+				mock.currentMem = memory
+			}
+			mock.mu.Unlock()
+			if onModify != nil {
+				onModify()
+			}
 			fmt.Fprint(w, `{"RequestId":"mock"}`)
-		case failReads:
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock read failure"}`)
 		default:
-			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
+			if delay > 0 {
+				time.Sleep(delay)
+			}
+			if failReads {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock read failure"}`)
+				return
+			}
+			cpu, memory := mock.spec()
+			fmt.Fprintf(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":%d,"MemoryGB":%d},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`, cpu, memory)
 		}
 	}))
 	t.Cleanup(server.Close)
-	return server, func() []string {
-		mu.Lock()
-		defer mu.Unlock()
-		return append([]string(nil), actions...)
-	}
+	return server, mock
 }
 
 // vvpNamespaceUpdateTestResource configures a fresh resource against a local foasconsole endpoint.
@@ -1288,23 +1336,27 @@ func vvpNamespaceUpdateTestValue(t *testing.T, sch fwschema.Schema, updateTimeou
 }
 
 // TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget drives the public Update request
-// path and pins the confirmation read to the operation budget: an update whose timeouts.update is
-// already spent reports the exhausted budget and keeps the namespace in state without issuing a
-// read (also when the lifecycle is cancelled at the same time), a read that is cut short by the
-// cancelled lifecycle is reported as interrupted without dropping the namespace, and an update with
-// budget left runs ModifyNamespaceSpec, the SUCCESS wait and the confirmation read before writing
-// the refreshed state.
+// path. It pins the single operation budget across the stages that follow the write (the SUCCESS
+// wait and the confirmation read), the in-flight cancellation, the exact ModifyNamespaceSpec
+// request and the refreshed state: the mock answers with the specification the write carried, so a
+// successful case proves the provider stored the service answer rather than the plan.
 func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.T) {
 	cases := []struct {
 		name             string
 		updateTimeout    string
-		cancelLifecycle  bool
+		cancelBefore     bool
+		cancelAfterWrite bool
 		failReads        bool
+		readDelay        time.Duration
 		planCpu          int64
 		planMemoryGb     int64
 		wantErrSubstring string
 		wantModifies     int
 		wantReads        int
+		wantModifyCpu    string
+		wantModifyMem    string
+		wantStateCpu     int64
+		wantStateMem     int64
 	}{
 		{
 			name:             "exhausted budget keeps state without a read",
@@ -1312,23 +1364,45 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 			planCpu:          1,
 			planMemoryGb:     4,
 			wantErrSubstring: "timeouts.update",
+			wantStateCpu:     1,
+			wantStateMem:     4,
 		},
 		{
 			name:             "exhausted budget on a cancelled lifecycle keeps state without a read",
 			updateTimeout:    "1ns",
-			cancelLifecycle:  true,
+			cancelBefore:     true,
 			planCpu:          1,
 			planMemoryGb:     4,
 			wantErrSubstring: "timeouts.update",
+			wantStateCpu:     1,
+			wantStateMem:     4,
 		},
 		{
-			name:             "interrupted confirmation read keeps state",
-			updateTimeout:    "1m",
-			cancelLifecycle:  true,
-			failReads:        true,
-			planCpu:          1,
-			planMemoryGb:     4,
+			name:             "confirmation read after the write runs out of the same budget",
+			updateTimeout:    "800ms",
+			readDelay:        500 * time.Millisecond,
+			planCpu:          2,
+			planMemoryGb:     8,
 			wantErrSubstring: "confirmation read interrupted",
+			wantModifies:     1,
+			wantReads:        2,
+			wantModifyCpu:    "2",
+			wantModifyMem:    "8",
+			wantStateCpu:     1,
+			wantStateMem:     4,
+		},
+		{
+			name:             "cancelled lifecycle interrupts the wait after the write",
+			updateTimeout:    "1m",
+			cancelAfterWrite: true,
+			planCpu:          2,
+			planMemoryGb:     8,
+			wantErrSubstring: "waiting for SUCCESS",
+			wantModifies:     1,
+			wantModifyCpu:    "2",
+			wantModifyMem:    "8",
+			wantStateCpu:     1,
+			wantStateMem:     4,
 		},
 		{
 			name:          "remaining budget updates and refreshes the state",
@@ -1337,21 +1411,32 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 			planMemoryGb:  8,
 			wantModifies:  1,
 			wantReads:     2,
+			wantModifyCpu: "2",
+			wantModifyMem: "8",
+			wantStateCpu:  2,
+			wantStateMem:  8,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server, observed := vvpNamespaceUpdateTestServer(t, tc.failReads)
+			ctx := context.Background()
+			var cancel context.CancelFunc
+			if tc.cancelBefore || tc.cancelAfterWrite {
+				ctx, cancel = context.WithCancel(ctx)
+				defer cancel()
+			}
+			if tc.cancelBefore {
+				cancel()
+			}
+			server, mock := vvpNamespaceUpdateTestServer(t, tc.failReads, tc.readDelay, func() {
+				if tc.cancelAfterWrite {
+					cancel()
+				}
+			})
 			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
 			stateValue := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout, 1, 4)
 			planValue := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout, tc.planCpu, tc.planMemoryGb)
 
-			ctx := context.Background()
-			if tc.cancelLifecycle {
-				cancelled, cancel := context.WithCancel(ctx)
-				cancel()
-				ctx = cancelled
-			}
 			req := fwresource.UpdateRequest{
 				Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
 				State: tfsdk.State{Schema: sch, Raw: stateValue},
@@ -1359,8 +1444,9 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 			resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
 			res.Update(ctx, req, resp)
 
+			actions, modifyCpu, modifyMem := mock.snapshot()
 			modifies, reads := 0, 0
-			for _, action := range observed() {
+			for _, action := range actions {
 				switch action {
 				case "ModifyNamespaceSpec":
 					modifies++
@@ -1370,12 +1456,20 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 			}
 			if modifies != tc.wantModifies || reads != tc.wantReads {
 				t.Fatalf("ModifyNamespaceSpec = %d, DescribeNamespaces = %d, want %d/%d (actions: %v)",
-					modifies, reads, tc.wantModifies, tc.wantReads, observed())
+					modifies, reads, tc.wantModifies, tc.wantReads, actions)
 			}
-
+			if tc.wantModifyCpu != "" && (modifyCpu != tc.wantModifyCpu || modifyMem != tc.wantModifyMem) {
+				t.Fatalf("ModifyNamespaceSpec carried cpu=%q memory_gb=%q, want %q/%q", modifyCpu, modifyMem, tc.wantModifyCpu, tc.wantModifyMem)
+			}
 			if tc.wantErrSubstring == "" {
 				if resp.Diagnostics.HasError() {
 					t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+				}
+				for i, action := range actions {
+					want := []string{"ModifyNamespaceSpec", "DescribeNamespaces", "DescribeNamespaces"}
+					if i < len(want) && action != want[i] {
+						t.Fatalf("action order = %v, want %v", actions, want)
+					}
 				}
 			} else {
 				if !resp.Diagnostics.HasError() {
@@ -1395,6 +1489,352 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 			if id.ValueString() != "inst-unit:demo" {
 				t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
 			}
+			var spec types.List
+			resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+			if spec.IsNull() || len(spec.Elements()) != 1 {
+				t.Fatalf("state resource_spec = %v, want one element", spec)
+			}
+			attrs := spec.Elements()[0].(types.Object).Attributes()
+			cpu := attrs["cpu"].(types.Int64).ValueInt64()
+			memory := attrs["memory_gb"].(types.Int64).ValueInt64()
+			if cpu != tc.wantStateCpu || memory != tc.wantStateMem {
+				t.Fatalf("state resource_spec = %d/%d, want %d/%d", cpu, memory, tc.wantStateCpu, tc.wantStateMem)
+			}
 		})
+	}
+}
+
+// testAccRealtimeComputeVvpPurchaseHACapacity buys same-city HA capacity for the workspace and waits
+// until DescribeInstances reports it. HA namespaces are refused with 903100 on a workspace that has
+// no HA capacity, so the HA lifecycle test provisions it first.
+func testAccRealtimeComputeVvpPurchaseHACapacity(instanceId string, cpu, memoryGb, haCpu, haMemoryGb int, haVSwitchIds []string) error {
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	resourceSpec, err := json.Marshal(map[string]int{"Cpu": cpu, "MemoryGB": memoryGb})
+	if err != nil {
+		return fmt.Errorf("encoding the capacity spec %d/%d failed: %s", cpu, memoryGb, err)
+	}
+	haSpec, err := json.Marshal(map[string]int{"Cpu": haCpu, "MemoryGB": haMemoryGb})
+	if err != nil {
+		return fmt.Errorf("encoding the HA capacity spec %d/%d failed: %s", haCpu, haMemoryGb, err)
+	}
+	vswitches, err := json.Marshal(haVSwitchIds)
+	if err != nil {
+		return fmt.Errorf("encoding the HA vswitch ids failed: %s", err)
+	}
+	request := map[string]interface{}{
+		"Region":         client.RegionId,
+		"InstanceId":     instanceId,
+		"ResourceSpec":   string(resourceSpec),
+		"Ha":             true,
+		"HaResourceSpec": string(haSpec),
+		"HaVSwitchIds":   string(vswitches),
+	}
+	if _, err := client.RpcPost("foasconsole", "2021-10-28", "ModifyInstanceSpec", nil, request, true); err != nil {
+		return fmt.Errorf("buying HA capacity %d/%d failed: %s", haCpu, haMemoryGb, err)
+	}
+	deadline := time.Now().Add(15 * time.Minute)
+	var lastResponse map[string]interface{}
+	var lastErr error
+	for {
+		response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
+			map[string]interface{}{"Region": client.RegionId, "InstanceId": instanceId}, nil)
+		lastResponse, lastErr = response, err
+		if err == nil {
+			if instances, ok := response["Instances"].([]interface{}); ok && len(instances) == 1 {
+				instance, _ := instances[0].(map[string]interface{})
+				haSpecValue, _ := instance["HaResourceSpec"].(map[string]interface{})
+				if haSpecValue != nil &&
+					fmt.Sprint(haSpecValue["Cpu"]) == fmt.Sprint(haCpu) &&
+					fmt.Sprint(haSpecValue["MemoryGB"]) == fmt.Sprint(haMemoryGb) &&
+					fmt.Sprint(instance["ClusterStatus"]) == "RUNNING" {
+					return nil
+				}
+			}
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("waiting for the HA capacity to become %d/%d: last response %v, last error %v",
+				haCpu, haMemoryGb, lastResponse, lastErr)
+		}
+		time.Sleep(15 * time.Second)
+	}
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_ha0 covers the HA namespace lifecycle: the workspace
+// buys same-city HA capacity first (ModifyInstanceSpec Ha/HaResourceSpec/HaVSwitchIds), then the
+// namespace is created with ha = true, read back, imported, replaced when ha flips to false and
+// finally destroyed with the workspace.
+func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
+	resourceId := "alicloud_realtime_compute_vvp_namespace.default"
+	region := "cn-hangzhou"
+	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
+		t.Fatalf("setting ALICLOUD_REGION failed: %s", err)
+	}
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srtcnsha%d", strings.ReplaceAll(region, "-", ""), rand)
+	namespace := fmt.Sprintf("tf-testacc-ns-ha-%d", rand)
+	zone := realtimeComputeTestZone(region)
+	var instanceId, haVSwitchId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, "", zone, 4, 16),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_instance.default", "id"),
+					resource.TestCheckResourceAttrSet("alicloud_vswitch.ha", "id"),
+					testAccRealtimeComputeVvpCaptureInstanceId(&instanceId),
+					testAccRealtimeComputeVvpCaptureResourceId("alicloud_vswitch.ha", &haVSwitchId),
+					testAccRealtimeComputeVvpCheckDefaultNamespace(name, 4, 16),
+				),
+			},
+			{
+				PreConfig: func() {
+					if err := testAccRealtimeComputeVvpPurchaseCapacity(instanceId, 8, 32); err != nil {
+						t.Fatalf("purchasing capacity for %s failed: %s", instanceId, err)
+					}
+					if err := testAccRealtimeComputeVvpPurchaseHACapacity(instanceId, 8, 32, 2, 8, []string{haVSwitchId}); err != nil {
+						t.Fatalf("purchasing HA capacity for %s failed: %s", instanceId, err)
+					}
+				},
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, zone, 8, 32),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
+				),
+			},
+			{
+				// Import right after the HA create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Flipping ha is a replacement: the same name is destroyed and created without HA.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, zone, 8, 32, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+				),
+			},
+			{
+				// Import right after the replacement must reproduce the replaced state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceHa0 renders the workspace fixture with a backup-AZ
+// vSwitch for HA capacity and, when namespace is not empty, an HA namespace next to it. The
+// namespace defaults to ha = true; pass ha=false to render the replacement configuration.
+func testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, zone string, instanceCpu, instanceMemoryGb int, ha ...bool) string {
+	namespaceHa := true
+	if len(ha) > 0 {
+		namespaceHa = ha[0]
+	}
+	namespaceBlock := ""
+	if namespace != "" {
+		namespaceBlock = fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+  ha          = %t
+
+  resource_spec = [
+    {
+      cpu       = 2
+      memory_gb = 8
+    }
+  ]
+}`, namespace, namespaceHa)
+	}
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = %s
+}
+
+resource "alicloud_vswitch" "ha" {
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = "10.4.20.0/24"
+  zone_id      = [for z in data.alicloud_zones.default.zones : z.id if z.id != %s][0]
+  vswitch_name = var.name
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+
+resource "alicloud_realtime_compute_vvp_instance" "default" {
+  storage {
+    oss {
+      bucket = alicloud_oss_bucket.default.bucket
+    }
+  }
+  vvp_instance_name = var.name
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  zone_id           = %s
+  vswitch_ids       = [data.alicloud_vswitches.default.ids.0]
+  payment_type      = "PayAsYouGo"
+
+  resource_spec {
+    cpu       = %d
+    memory_gb = %d
+  }
+}
+%s
+`, name, zone, zone, zone, instanceCpu, instanceMemoryGb, namespaceBlock)
+}
+
+// testAccRealtimeComputeVvpCaptureResourceId stores the id of the given resource in target.
+func testAccRealtimeComputeVvpCaptureResourceId(resourceName string, target *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("cannot find %s in state", resourceName)
+		}
+		*target = rs.Primary.ID
+		return nil
+	}
+}
+
+// vvpNamespaceCreateRecoveryTestServer answers CreateNamespace with a 5xx that does not prove the
+// request was rejected, while DescribeNamespaces already lists the namespace the request asked for.
+// A create that adopts the object it finds is what the recovery path must do.
+func vvpNamespaceCreateRecoveryTestServer(t *testing.T) (*httptest.Server, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action == "CreateNamespace" {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock create failure"}`)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}]}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// vvpNamespaceCreateTestValue builds a create plan for the unit recovery test.
+func vvpNamespaceCreateTestValue(t *testing.T, sch fwschema.Schema, createTimeout string, cpu, memoryGb int64) tftypes.Value {
+	t.Helper()
+	objectType, ok := sch.Type().TerraformType(context.Background()).(tftypes.Object)
+	if !ok {
+		t.Fatalf("resource schema does not describe an object")
+	}
+	specListType, ok := objectType.AttributeTypes["resource_spec"].(tftypes.List)
+	if !ok {
+		t.Fatalf("resource_spec is not a list: %T", objectType.AttributeTypes["resource_spec"])
+	}
+	spec := tftypes.NewValue(specListType, []tftypes.Value{
+		tftypes.NewValue(specListType.ElementType, map[string]tftypes.Value{
+			"cpu":       tftypes.NewValue(tftypes.Number, cpu),
+			"memory_gb": tftypes.NewValue(tftypes.Number, memoryGb),
+		}),
+	})
+	timeouts := tftypes.NewValue(objectType.AttributeTypes["timeouts"], map[string]tftypes.Value{
+		"create": tftypes.NewValue(tftypes.String, createTimeout),
+		"update": tftypes.NewValue(tftypes.String, nil),
+		"delete": tftypes.NewValue(tftypes.String, nil),
+	})
+	return tftypes.NewValue(objectType, map[string]tftypes.Value{
+		"id":            tftypes.NewValue(tftypes.String, nil),
+		"gmt_create":    tftypes.NewValue(tftypes.Number, nil),
+		"gmt_modified":  tftypes.NewValue(tftypes.Number, nil),
+		"ha":            tftypes.NewValue(tftypes.Bool, false),
+		"instance_id":   tftypes.NewValue(tftypes.String, "inst-unit"),
+		"namespace":     tftypes.NewValue(tftypes.String, "demo"),
+		"resource_spec": spec,
+		"resource_used": tftypes.NewValue(objectType.AttributeTypes["resource_used"], nil),
+		"status":        tftypes.NewValue(objectType.AttributeTypes["status"], nil),
+		"tags":          tftypes.NewValue(objectType.AttributeTypes["tags"], nil),
+		"timeouts":      timeouts,
+	})
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateAdoptsUncertainResult drives the public Create path
+// against a service whose CreateNamespace answers 5xx while the namespace exists: the provider must
+// look it up by <instance_id>:<namespace>, adopt it with a warning and keep it in state instead of
+// reporting a failure that would leave an untracked namespace.
+func TestUnitRealtimeComputeVvpNamespaceCreateAdoptsUncertainResult(t *testing.T) {
+	server, observed := vvpNamespaceCreateRecoveryTestServer(t)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	planValue := vvpNamespaceCreateTestValue(t, sch, "1s", 2, 8)
+
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: sch, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: sch}}
+	res.Create(context.Background(), req, resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("create reported an error instead of adopting the namespace: %v", resp.Diagnostics)
+	}
+	warned := false
+	for _, warning := range resp.Diagnostics.Warnings() {
+		if strings.Contains(warning.Summary()+warning.Detail(), "create response lost") {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Fatalf("missing the create-response-lost warning: %v", resp.Diagnostics)
+	}
+	actions := observed()
+	creates, reads := 0, 0
+	for _, action := range actions {
+		switch action {
+		case "CreateNamespace":
+			creates++
+		case "DescribeNamespaces":
+			reads++
+		}
+	}
+	if creates == 0 || reads == 0 {
+		t.Fatalf("recovery did not call CreateNamespace and DescribeNamespaces (actions: %v)", actions)
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+	var spec types.List
+	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+	if spec.IsNull() || len(spec.Elements()) != 1 {
+		t.Fatalf("state resource_spec = %v, want one element", spec)
 	}
 }
