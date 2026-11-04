@@ -1583,7 +1583,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, "", zone, 4, 16),
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHaCapacity0(name, "", zone, 4, 16),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_instance.default", "id"),
 					resource.TestCheckResourceAttrSet("alicloud_vswitch.ha", "id"),
@@ -1601,7 +1601,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 						t.Fatalf("purchasing HA capacity for %s failed: %s", instanceId, err)
 					}
 				},
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, zone, 8, 32),
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHaCapacity0(name, namespace, zone, 8, 32),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
 					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
@@ -1620,7 +1620,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 			},
 			{
 				// Flipping ha is a replacement: the same name is destroyed and created without HA.
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, zone, 8, 32, false),
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHaCapacity0(name, namespace, zone, 8, 32, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
 					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
@@ -1640,7 +1640,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
 // testAccAliCloudRealtimeComputeVvpNamespaceHa0 renders the workspace fixture with a backup-AZ
 // vSwitch for HA capacity and, when namespace is not empty, an HA namespace next to it. The
 // namespace defaults to ha = true; pass ha=false to render the replacement configuration.
-func testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, zone string, instanceCpu, instanceMemoryGb int, ha ...bool) string {
+func testAccAliCloudRealtimeComputeVvpNamespaceHaCapacity0(name, namespace, zone string, instanceCpu, instanceMemoryGb int, ha ...bool) string {
 	namespaceHa := true
 	if len(ha) > 0 {
 		namespaceHa = ha[0]
