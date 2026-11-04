@@ -305,6 +305,20 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 				}),
 				ExpectError: regexp.MustCompile("expected length of description to be in the range \\(0 - 256\\)"),
 			},
+			// End on a valid config: the harness destroys with the last step's
+			// configuration, and an invalid value there would block cleanup.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": "1tf.test-gw",
+					"description":       "tf test, gateway.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_gateway_name": "1tf.test-gw",
+						"description":       "tf test, gateway.",
+					}),
+				),
+			},
 		},
 	})
 }
