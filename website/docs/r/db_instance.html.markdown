@@ -368,6 +368,10 @@ resource "alicloud_db_instance" "example" {
   db_instance_storage_type = "local_ssd"
   zone_id                  = data.alicloud_db_zones.example.zones.0.id
   zone_id_slave_a          = data.alicloud_db_zones.example.zones.1.id
+
+  timeouts {
+    delete = "60m"
+  }
 }
 ```
 
@@ -1078,6 +1082,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 * `delete` - (Defaults to 30 mins) Used when terminating the db instance.
 
   -> **NOTE:** If the current instance is an instance of SqlServer _std_ha Standard Edition, you are advised to set the Timeouts time to 100 minutes when releasing the instance.
+
+  -> **NOTE:** If the current instance is an Enterprise Edition instance (`category = "Finance"`), releasing it can take longer than the default 30 minutes. Set the `delete` timeout explicitly, for example `timeouts { delete = "60m" }`.
 
 ## Import
 
