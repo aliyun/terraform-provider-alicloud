@@ -316,8 +316,9 @@ func TestUnitRealtimeComputeVvpNamespaceOperationBudget(t *testing.T) {
 }
 
 // vvpNamespaceUpdateTestServer serves the foasconsole actions the update path can call and records
-// every Action it saw, so a case can assert that a stage did or did not reach the service.
-func vvpNamespaceUpdateTestServer(t *testing.T) (*httptest.Server, func() []string) {
+// every Action it saw, so a case can assert that a stage did or did not reach the service. When
+// failReads is set, DescribeNamespaces answers 500 so a cancelled retry loop is what ends the read.
+func vvpNamespaceUpdateTestServer(t *testing.T, failReads bool) (*httptest.Server, func() []string) {
 	t.Helper()
 	var mu sync.Mutex
 	var actions []string
@@ -328,11 +329,15 @@ func vvpNamespaceUpdateTestServer(t *testing.T) (*httptest.Server, func() []stri
 		actions = append(actions, action)
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		if action == "ModifyNamespaceSpec" {
+		switch {
+		case action == "ModifyNamespaceSpec":
 			fmt.Fprint(w, `{"RequestId":"mock"}`)
-			return
+		case failReads:
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock read failure"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
 		}
-		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
 	}))
 	t.Cleanup(server.Close)
 	return server, func() []string {
@@ -386,10 +391,9 @@ func vvpNamespaceUpdateTestResource(t *testing.T, endpoint string) (*vvpNamespac
 	return res, schemaResp.Schema
 }
 
-// vvpNamespaceUpdateTestValue builds one state/plan value with an unchanged 1/4 specification and
-// the given timeouts.update, so the update skips ModifyNamespaceSpec and goes straight to the
-// confirmation read.
-func vvpNamespaceUpdateTestValue(t *testing.T, sch fwschema.Schema, updateTimeout string) tftypes.Value {
+// vvpNamespaceUpdateTestValue builds one state or plan value at the given specification with the
+// given timeouts.update.
+func vvpNamespaceUpdateTestValue(t *testing.T, sch fwschema.Schema, updateTimeout string, cpu, memoryGb int64) tftypes.Value {
 	t.Helper()
 	objectType, ok := sch.Type().TerraformType(context.Background()).(tftypes.Object)
 	if !ok {
@@ -401,8 +405,8 @@ func vvpNamespaceUpdateTestValue(t *testing.T, sch fwschema.Schema, updateTimeou
 	}
 	spec := tftypes.NewValue(specListType, []tftypes.Value{
 		tftypes.NewValue(specListType.ElementType, map[string]tftypes.Value{
-			"cpu":       tftypes.NewValue(tftypes.Number, 1),
-			"memory_gb": tftypes.NewValue(tftypes.Number, 4),
+			"cpu":       tftypes.NewValue(tftypes.Number, cpu),
+			"memory_gb": tftypes.NewValue(tftypes.Number, memoryGb),
 		}),
 	})
 	timeouts := tftypes.NewValue(objectType.AttributeTypes["timeouts"], map[string]tftypes.Value{
@@ -428,40 +432,61 @@ func vvpNamespaceUpdateTestValue(t *testing.T, sch fwschema.Schema, updateTimeou
 // TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget drives the public Update request
 // path and pins the confirmation read to the operation budget: an update whose timeouts.update is
 // already spent reports the exhausted budget and keeps the namespace in state without issuing a
-// read, a cancelled lifecycle behaves the same way, and a budget that still has time refreshes the
-// state with one read.
+// read (also when the lifecycle is cancelled at the same time), a read that is cut short by the
+// cancelled lifecycle is reported as interrupted without dropping the namespace, and an update with
+// budget left runs ModifyNamespaceSpec, the SUCCESS wait and the confirmation read before writing
+// the refreshed state.
 func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.T) {
 	cases := []struct {
 		name             string
 		updateTimeout    string
 		cancelLifecycle  bool
+		failReads        bool
+		planCpu          int64
+		planMemoryGb     int64
 		wantErrSubstring string
+		wantModifies     int
 		wantReads        int
 	}{
 		{
 			name:             "exhausted budget keeps state without a read",
 			updateTimeout:    "1ns",
+			planCpu:          1,
+			planMemoryGb:     4,
 			wantErrSubstring: "timeouts.update",
-			wantReads:        0,
 		},
 		{
 			name:             "exhausted budget on a cancelled lifecycle keeps state without a read",
 			updateTimeout:    "1ns",
 			cancelLifecycle:  true,
+			planCpu:          1,
+			planMemoryGb:     4,
 			wantErrSubstring: "timeouts.update",
-			wantReads:        0,
 		},
 		{
-			name:          "remaining budget refreshes the state",
+			name:             "interrupted confirmation read keeps state",
+			updateTimeout:    "1m",
+			cancelLifecycle:  true,
+			failReads:        true,
+			planCpu:          1,
+			planMemoryGb:     4,
+			wantErrSubstring: "confirmation read interrupted",
+		},
+		{
+			name:          "remaining budget updates and refreshes the state",
 			updateTimeout: "1m",
-			wantReads:     1,
+			planCpu:       2,
+			planMemoryGb:  8,
+			wantModifies:  1,
+			wantReads:     2,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server, observed := vvpNamespaceUpdateTestServer(t)
+			server, observed := vvpNamespaceUpdateTestServer(t, tc.failReads)
 			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
-			value := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout)
+			stateValue := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout, 1, 4)
+			planValue := vvpNamespaceUpdateTestValue(t, sch, tc.updateTimeout, tc.planCpu, tc.planMemoryGb)
 
 			ctx := context.Background()
 			if tc.cancelLifecycle {
@@ -470,20 +495,24 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 				ctx = cancelled
 			}
 			req := fwresource.UpdateRequest{
-				Plan:  tfsdk.Plan{Schema: sch, Raw: value},
-				State: tfsdk.State{Schema: sch, Raw: value},
+				Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
+				State: tfsdk.State{Schema: sch, Raw: stateValue},
 			}
-			resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
 			res.Update(ctx, req, resp)
 
-			reads := 0
+			modifies, reads := 0, 0
 			for _, action := range observed() {
-				if action == "DescribeNamespaces" {
+				switch action {
+				case "ModifyNamespaceSpec":
+					modifies++
+				case "DescribeNamespaces":
 					reads++
 				}
 			}
-			if reads != tc.wantReads {
-				t.Fatalf("DescribeNamespaces calls = %d, want %d (actions: %v)", reads, tc.wantReads, observed())
+			if modifies != tc.wantModifies || reads != tc.wantReads {
+				t.Fatalf("ModifyNamespaceSpec = %d, DescribeNamespaces = %d, want %d/%d (actions: %v)",
+					modifies, reads, tc.wantModifies, tc.wantReads, observed())
 			}
 
 			if tc.wantErrSubstring == "" {
