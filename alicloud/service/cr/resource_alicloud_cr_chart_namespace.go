@@ -30,6 +30,14 @@ func resourceAlicloudCrChartNamespace() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"chart_namespace_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"namespace_name"},
+				AtLeastOneOf:  []string{"namespace_name", "chart_namespace_name"},
+			},
 			"default_repo_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -42,9 +50,17 @@ func resourceAlicloudCrChartNamespace() *schema.Resource {
 				ForceNew: true,
 			},
 			"namespace_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"chart_namespace_name"},
+				AtLeastOneOf:  []string{"namespace_name", "chart_namespace_name"},
+				Deprecated:    "Field `namespace_name` has been deprecated from provider version 2.2.0. New field `chart_namespace_name` instead.",
+			},
+			"resource_group_id": {
 				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Computed: true,
 			},
 		},
 	}
@@ -63,7 +79,12 @@ func resourceAlicloudCrChartNamespaceCreate(d *schema.ResourceData, meta interfa
 		request["DefaultRepoType"] = v
 	}
 	request["InstanceId"] = d.Get("instance_id")
-	request["NamespaceName"] = d.Get("namespace_name")
+	if v, ok := d.GetOk("namespace_name"); ok {
+		request["NamespaceName"] = v
+	}
+	if v, ok := d.GetOk("chart_namespace_name"); ok {
+		request["NamespaceName"] = v
+	}
 	request["RegionId"] = client.RegionId
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
@@ -102,9 +123,11 @@ func resourceAlicloudCrChartNamespaceRead(d *schema.ResourceData, meta interface
 		return errs.WrapError(err)
 	}
 	d.Set("instance_id", parts[0])
+	d.Set("chart_namespace_name", parts[1])
 	d.Set("namespace_name", parts[1])
 	d.Set("auto_create_repo", object["AutoCreateRepo"])
 	d.Set("default_repo_type", object["DefaultRepoType"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	return nil
 }
 func resourceAlicloudCrChartNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
