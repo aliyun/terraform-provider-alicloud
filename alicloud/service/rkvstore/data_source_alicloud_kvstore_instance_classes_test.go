@@ -108,37 +108,47 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 	//		"architecture": "rwsplit",
 	//	}),
 	//}
-	// The zone is pinned so these assertions run against a zone that is known to offer
-	// cloud-native Tair_rdb and OnECS instance classes; the test region is pinned below.
+	// The zone is pinned because these assertions need a zone that offers Tair_rdb and
+	// OnECS instance classes. Picking it through alicloud_kvstore_zones is not usable
+	// here: that data source reads every zone of the region, and the region-level
+	// DescribeAvailableResource response exceeds the API payload limit and fails with
+	// HTTP 503. The test region is pinned below.
+	cloudNativeZone := "cn-hangzhou-b"
 	architectureNonCluster := acctest.DataSourceTestAccConfig{
-		ExistConfig: `
+		ExistConfig: fmt.Sprintf(`
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = "cn-hangzhou-b"
+  zone_id      = %q
   product_type = "Tair_rdb"
   architecture = "non_cluster"
 }
-`,
+`, cloudNativeZone),
 		ExistChangMap: map[string]string{
 			"instance_classes.0": acctest.REGEXMATCH + `^tair\.rdb\.`,
 		},
 	}
 	editionTypeEnhancedPerformance := acctest.DataSourceTestAccConfig{
-		ExistConfig: `
+		ExistConfig: fmt.Sprintf(`
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = "cn-hangzhou-b"
+  zone_id      = %q
   product_type = "Tair_rdb"
   edition_type = "EnhancedPerformance"
 }
-`,
+`, cloudNativeZone),
+		ExistChangMap: map[string]string{
+			"instance_classes.0": acctest.REGEXMATCH + `^tair\.rdb\.`,
+		},
 	}
 	productTypeOnECS := acctest.DataSourceTestAccConfig{
-		ExistConfig: `
+		ExistConfig: fmt.Sprintf(`
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = "cn-hangzhou-b"
+  zone_id      = %q
   product_type = "OnECS"
   architecture = "non_cluster"
 }
-`,
+`, cloudNativeZone),
+		ExistChangMap: map[string]string{
+			"instance_classes.0": acctest.REGEXMATCH + `^redis\.shard\.`,
+		},
 	}
 	NodeType := acctest.DataSourceTestAccConfig{
 		ExistConfig: testAccConfig(map[string]interface{}{
