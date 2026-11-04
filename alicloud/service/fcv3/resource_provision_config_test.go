@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest/helpers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// These pre-existing fields lack reorder coverage. This change only selects the
+// test provider dependencies; schemas and HCL configurations remain unchanged.
+// See scripts/collection-order/README.md, "Bypassing stock attributes".
+// collection-order: bypass scheduled_actions -- pre-existing attribute outside this test-provider change
+// collection-order: bypass target_tracking_policies -- pre-existing attribute outside this test-provider change
 
 // Test Fcv3 ProvisionConfig. >>> Resource test cases, automatically generated.
 // Case ProvisionConfig_Base 7182
@@ -17,20 +23,20 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7182(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_provision_config.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7182)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeProvisionConfig")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7182)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			fcSuite.PreCheck(t)
+			fcSuite.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -219,20 +225,20 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_provision_config.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeProvisionConfig")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sfcv3provisionconfig%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+			fcSuite.PreCheck(t)
+			fcSuite.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{

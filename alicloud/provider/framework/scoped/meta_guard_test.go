@@ -1,4 +1,4 @@
-package framework
+package scoped
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func (observer) Before(context.Context, intercept.Call) error { return nil }
 
 func (observer) After(_ context.Context, _ intercept.Call, err error) error { return err }
 
-func TestAppendUnlessMetaCapable(t *testing.T) {
+func TestUnitAppendUnlessMetaCapable(t *testing.T) {
 	if got := appendUnlessMetaCapable(nil, "data source", "alicloud_unit_test", "DataSourceBase", &carrier{}); got != nil {
 		t.Fatalf("a pointer to an embedder must pass the guard, got %v", got)
 	}
@@ -43,7 +43,7 @@ func TestAppendUnlessMetaCapable(t *testing.T) {
 	}
 }
 
-func TestAppendIfInterceptorsDropped(t *testing.T) {
+func TestUnitAppendIfInterceptorsDropped(t *testing.T) {
 	if got := appendIfInterceptorsDropped(nil, "action", "alicloud_unit_test", nil); got != nil {
 		t.Fatalf("an empty chain must pass the guard, got %v", got)
 	}
@@ -68,12 +68,12 @@ func TestAppendIfInterceptorsDropped(t *testing.T) {
 	}
 }
 
-func TestMustRegisterSilentWhenClean(t *testing.T) {
+func TestUnitMustRegisterSilentWhenClean(t *testing.T) {
 	mustRegister(nil)
 	mustRegister([]string{})
 }
 
-func TestMustRegisterPanicsOnProblems(t *testing.T) {
+func TestUnitMustRegisterPanicsOnProblems(t *testing.T) {
 	defer func() {
 		r := recover()
 		if r == nil {

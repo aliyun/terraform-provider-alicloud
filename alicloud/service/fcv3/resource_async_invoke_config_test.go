@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	acctest "github.com/aliyun/terraform-provider-alicloud/alicloud/acctest/helpers"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -17,19 +17,19 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7336(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_async_invoke_config.default"
 	ra := acctest.ResourceAttrInit(resourceId, AliCloudFcv3AsyncInvokeConfigMap7336)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAsyncInvokeConfig")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudFcv3AsyncInvokeConfigBasicDependence7336)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
+			fcSuite.PreCheck(t)
 		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		ProtoV5ProviderFactories: fcSuite.ProtoV5ProviderFactories(),
 		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -190,19 +190,19 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7336_1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_async_invoke_config.default"
 	ra := acctest.ResourceAttrInit(resourceId, AliCloudFcv3AsyncInvokeConfigMap7336)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAsyncInvokeConfig")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudFcv3AsyncInvokeConfigBasicDependence7336)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
+			fcSuite.PreCheck(t)
 		},
-		Providers:    acctest.SDKProviders,
+		Providers:    fcSuite.SDKProviders,
 		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -355,19 +355,19 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7336_2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_async_invoke_config.default"
 	ra := acctest.ResourceAttrInit(resourceId, AliCloudFcv3AsyncInvokeConfigMap7336)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAsyncInvokeConfig")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudFcv3AsyncInvokeConfigBasicDependence7336)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
+			fcSuite.PreCheck(t)
 		},
-		Providers:    acctest.SDKProviders,
+		Providers:    fcSuite.SDKProviders,
 		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
@@ -520,19 +520,19 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7336_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_async_invoke_config.default"
 	ra := acctest.ResourceAttrInit(resourceId, AliCloudFcv3AsyncInvokeConfigMap7336)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	rc := acctest.ResourceCheckInitWithDescribeMethod(fcSuite.Provider, resourceId, &v, func() interface{} {
+		return fcv3.NewService(fcSuite.Provider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeAsyncInvokeConfig")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sFcv3asyncinvokeconfig%d", fcSuite.DefaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudFcv3AsyncInvokeConfigBasicDependence7336)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheck(t)
+			fcSuite.PreCheck(t)
 		},
-		Providers:    acctest.SDKProviders,
+		Providers:    fcSuite.SDKProviders,
 		CheckDestroy: rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
