@@ -581,8 +581,15 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 	// Form conversion (ProductForm changed): force-send the target form's
 	// required parameter set. These Computed attributes may be read back
 	// from DescribeDBClusters with the same value the user configured,
-	// making d.HasChange false and omitting them from the request. The API
-	// then rejects:
+	// making d.HasChange false and omitting them from the regular
+	// per-parameter blocks above. Use d.Get (not d.GetOk) because d.GetOk
+	// for Optional+Computed fields returns false when the config value
+	// equals the state value (no diff entry), even though the value IS
+	// present in config — this silently dropped ComputeResource/
+	// StorageResource from the downgrade request, causing NoNeedToScale.
+	// d.Get returns the config-or-state value regardless of diff state.
+	// The API then rejects a bare ProductForm change without its target
+	// parameter set:
 	// - LegacyForm->IntegrationForm upgrade: InvalidParameter.ReservedNodeSize/
 	//   ReservedNodeCount ("...required for form conversion"). Per
 	//   ModifyDBCluster docs, the upgrade must specify ProductForm,
@@ -590,24 +597,23 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 	//   ProductVersion=enterprise_version.
 	// - IntegrationForm->LegacyForm downgrade: NoNeedToScale, because the
 	//   request carries only ProductForm=LegacyForm with no scale target.
-	// Force-send the parameters from config/state on form conversion.
 	if !d.IsNewResource() && d.HasChange("product_form") {
 		targetForm := d.Get("product_form").(string)
 		if targetForm == "IntegrationForm" {
-			if v, ok := d.GetOk("product_version"); ok {
+			if v := d.Get("product_version").(string); v != "" {
 				request["ProductVersion"] = v
 			}
-			if v, ok := d.GetOk("reserved_node_size"); ok {
+			if v := d.Get("reserved_node_size").(string); v != "" {
 				request["ReservedNodeSize"] = v
 			}
-			if v, ok := d.GetOkExists("reserved_node_count"); ok {
+			if v := d.Get("reserved_node_count").(int); v != 0 {
 				request["ReservedNodeCount"] = v
 			}
 		} else if targetForm == "LegacyForm" {
-			if v, ok := d.GetOk("compute_resource"); ok {
+			if v := d.Get("compute_resource").(string); v != "" {
 				request["ComputeResource"] = v
 			}
-			if v, ok := d.GetOk("storage_resource"); ok {
+			if v := d.Get("storage_resource").(string); v != "" {
 				request["StorageResource"] = v
 			}
 		}
