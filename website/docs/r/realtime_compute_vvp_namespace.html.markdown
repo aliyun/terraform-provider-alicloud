@@ -127,7 +127,7 @@ resource "alicloud_realtime_compute_vvp_instance" "default" {
 The following arguments are supported:
 * `instance_id` - (Required, ForceNew, String) The ID of the Realtime Compute instance that owns the namespace.
 * `namespace` - (Required, ForceNew, String) The name of the namespace. A workspace gets its default namespace automatically, named `<workspace_name>-default` (or `<workspace_name>-default-ha` when the workspace is multi-availability-zone).
-* `ha` - (Optional, ForceNew, Bool) Whether the namespace is highly available. It can only be set when the namespace is created, and changing a configured value forces a new namespace; removing the argument keeps the value already in state. When it is omitted, the service decides, and a namespace created on a single-availability-zone workspace reports `false`.
+* `ha` - (Optional, ForceNew, Bool) Whether the namespace is highly available. It can only be set when the namespace is created, and changing a configured value forces a new namespace; removing the argument keeps the value already in state. When it is omitted, the service decides, and a namespace created on a single-availability-zone workspace reports `false`. An HA namespace also needs HA capacity on the parent workspace: a workspace without it refuses the create with `903100`.
 * `resource_spec` - (Optional, List) The resource specification (CU) of the namespace. See [`resource_spec`](#resource_spec) below.
 * `timeouts` - (Optional) See [Timeouts](#timeouts) below.
 

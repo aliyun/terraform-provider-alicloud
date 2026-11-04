@@ -133,31 +133,12 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				ExpectError: regexp.MustCompile("903099"),
 			},
 			{
-				// An HA namespace is a separate creation path: ha is accepted at creation and cannot be
-				// changed afterwards, so flipping it must replace the namespace (same name, new object).
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32, true),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "namespace", namespaceHa),
-					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "ha", "true"),
-					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_namespace.ha", "id"),
-					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_namespace.ha", "gmt_create"),
-					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "resource_spec.0.cpu", "1"),
-					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "resource_spec.0.memory_gb", "4"),
-				),
-			},
-			{
-				// Import right after the HA create must reproduce the created state.
-				ResourceName:      "alicloud_realtime_compute_vvp_namespace.ha",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				// Turning HA off is a replacement, not an in-place update.
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32, false),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "ha", "false"),
-					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_namespace.ha", "id"),
-				),
+				// An HA namespace needs HA capacity on the parent workspace. The workspace this fixture
+				// creates is non-HA (the provider's workspace resource cannot provision HA capacity), so
+				// the product refuses the create with 903100. Asserting that refusal keeps the ha=true
+				// path exercised and pins the prerequisite instead of pretending the lifecycle ran.
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32),
+				ExpectError: regexp.MustCompile("903100"),
 			},
 		},
 	})
@@ -1085,9 +1066,9 @@ resource "alicloud_realtime_compute_vvp_namespace" "default" {
 }
 
 // testAccAliCloudRealtimeComputeVvpNamespaceHa0 keeps the main namespace at its grown
-// specification (3/12) and adds an HA namespace next to it, so the HA creation and the replacement
-// that turns HA off run against the same workspace and the main resource stays unchanged.
-func testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone string, instanceCpu, instanceMemoryGb int, ha bool) string {
+// specification (3/12) and adds an HA namespace next to it. The non-HA workspace refuses that
+// create with 903100, which is what the caller asserts.
+func testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone string, instanceCpu, instanceMemoryGb int) string {
 	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + fmt.Sprintf(`
 resource "alicloud_realtime_compute_vvp_namespace" "default" {
   instance_id = alicloud_realtime_compute_vvp_instance.default.id
@@ -1104,7 +1085,7 @@ resource "alicloud_realtime_compute_vvp_namespace" "default" {
 resource "alicloud_realtime_compute_vvp_namespace" "ha" {
   instance_id = alicloud_realtime_compute_vvp_instance.default.id
   namespace   = %q
-  ha          = %t
+  ha          = true
 
   resource_spec = [
     {
@@ -1112,7 +1093,7 @@ resource "alicloud_realtime_compute_vvp_namespace" "ha" {
       memory_gb = 4
     }
   ]
-}`, namespace, namespaceHa, ha)
+}`, namespace, namespaceHa)
 }
 
 // testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace renders only the workspace part of
