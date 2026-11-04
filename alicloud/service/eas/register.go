@@ -4,9 +4,15 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 )
 
-// ServicePackage is a placeholder for the eas service; declarations move here when the product adopts the split layout.
+// ServicePackage returns the registration declaration of the EAS (PAI) service.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "EAS",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_pai_eas_resource",
+				Factory:  NewPaiEasResourceResource,
+			},
+		},
 	}
 }
