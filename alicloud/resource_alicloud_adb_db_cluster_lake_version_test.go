@@ -307,13 +307,23 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 			// Moved before reserved_node tests to avoid the reserved_node
 			// timeout (17179 Step 2 ClassChanging >72min) blocking
 			// product_form verification.
+			// IntegrationForm→LegacyForm downgrade: ModifyDBCluster rejects
+			// a bare ProductForm=LegacyForm with NoNeedToScale because the
+			// request carries no scale target. The target LegacyForm requires
+			// ComputeResource and StorageResource, so they must be present in
+			// config (symmetric to basic_upgrade Step 2 specifying
+			// ReservedNodeSize/Count for the upgrade target).
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"product_form": "LegacyForm",
+					"product_form":     "LegacyForm",
+					"compute_resource": "32ACU",
+					"storage_resource": "0ACU",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"product_form": "LegacyForm",
+						"product_form":     "LegacyForm",
+						"compute_resource": "32ACU",
+						"storage_resource": "0ACU",
 					}),
 				),
 			},
@@ -323,9 +333,20 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 			// (Integration→Legacy→Integration), NOT the customer's direct
 			// Legacy→Integration upgrade. The direct upgrade from a
 			// LegacyForm creation is tested by basic_upgrade.
+			// LegacyForm→IntegrationForm upgrade: symmetric to basic_upgrade
+			// Step 2, the upgrade target requires ProductVersion=
+			// EnterpriseVersion together with ReservedNodeSize and
+			// ReservedNodeCount. Without them the API rejects with
+			// InvalidParameter ("...required for form conversion").
+			// compute_resource/storage_resource are Optional+Computed and
+			// omitted from config; state retains them without triggering a
+			// change.
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"product_form": "IntegrationForm",
+					"product_form":        "IntegrationForm",
+					"product_version":     "EnterpriseVersion",
+					"reserved_node_size":  "8ACU",
+					"reserved_node_count": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
