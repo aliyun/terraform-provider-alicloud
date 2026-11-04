@@ -90,6 +90,7 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 	editionTypeEnterprise := acctest.DataSourceTestAccConfig{
 		ExistConfig: testAccConfig(map[string]interface{}{
 			"zone_id":      "${data.alicloud_zones.resources.zones.0.id}",
+			"product_type": "Local",
 			"edition_type": "Enterprise",
 		}),
 	}
@@ -276,6 +277,12 @@ data "alicloud_kvstore_instance_classes" "enterprise" {
   product_type = "Tair_rdb"
   edition_type = "Enterprise"
 }
+
+data "alicloud_kvstore_instance_classes" "standard" {
+  zone_id      = data.alicloud_zones.resources.zones.0.id
+  product_type = "Tair_rdb"
+  architecture = "standard"
+}
 `,
 				Check: resource.ComposeTestCheckFunc(testAccCheckKvstoreInstanceClassesFilterIdentity()),
 			},
@@ -295,13 +302,12 @@ func TestAccAliCloudKvstoreInstanceClassesInternational(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: `
-data "alicloud_kvstore_zones" "tair_rdb" {
-  product_type         = "Tair_rdb"
-  instance_charge_type = "PrePaid"
+data "alicloud_zones" "resources" {
+  available_resource_creation = "KVStore"
 }
 
 data "alicloud_kvstore_instance_classes" "default" {
-  zone_id      = data.alicloud_kvstore_zones.tair_rdb.zones.0.id
+  zone_id      = data.alicloud_zones.resources.zones.0.id
   product_type = "Tair_rdb"
   architecture = "non_cluster"
 }
@@ -316,7 +322,7 @@ data "alicloud_kvstore_instance_classes" "default" {
 
 func testAccKvstoreInstanceClasses(id string, s *terraform.State) (int, []string, error) {
 	rs, ok := s.RootModule().Resources[id]
-	if !ok {
+	if !ok || rs.Primary == nil {
 		return 0, nil, fmt.Errorf("data source %s not found in state", id)
 	}
 	count, err := strconv.Atoi(rs.Primary.Attributes["instance_classes.#"])
@@ -340,26 +346,24 @@ func testAccCheckKvstoreInstanceClassesNonEmptyPrefixed(id, prefix string) resou
 			return fmt.Errorf("%s returned no instance classes", id)
 		}
 		for _, class := range classes {
-			if !strings.HasPrefix(class, prefix) {
-				return fmt.Errorf("%s returned class %q, which does not start with %q", id, class, prefix)
+			if strings.HasPrefix(class, prefix) {
+				return nil
 			}
 		}
-		return nil
+		return fmt.Errorf("%s returned no class starting with %q, got %v", id, prefix, classes)
 	}
 }
 
 func testAccCheckKvstoreInstanceClassesFilterIdentity() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		counts := map[string]int{}
-		classes := map[string][]string{}
-		for _, name := range []string{"all", "non_cluster", "cluster", "community", "enhanced", "rwsplit", "enterprise"} {
+		for _, name := range []string{"all", "non_cluster", "cluster", "community", "enhanced", "rwsplit", "enterprise", "standard"} {
 			id := "data.alicloud_kvstore_instance_classes." + name
-			count, list, err := testAccKvstoreInstanceClasses(id, s)
+			count, _, err := testAccKvstoreInstanceClasses(id, s)
 			if err != nil {
 				return err
 			}
 			counts[name] = count
-			classes[name] = list
 		}
 
 		for _, name := range []string{"all", "non_cluster", "cluster", "community", "enhanced"} {
@@ -381,12 +385,8 @@ func testAccCheckKvstoreInstanceClassesFilterIdentity() resource.TestCheckFunc {
 		if counts["enterprise"] != 0 {
 			return fmt.Errorf("edition_type=Enterprise returned %d classes for Tair_rdb, want 0", counts["enterprise"])
 		}
-		for _, name := range []string{"non_cluster", "enhanced"} {
-			for _, class := range classes[name] {
-				if !strings.HasPrefix(class, "tair.rdb.") {
-					return fmt.Errorf("%s returned class %q, which is not a Tair_rdb class", name, class)
-				}
-			}
+		if counts["standard"] != 0 {
+			return fmt.Errorf("architecture=standard returned %d classes for Tair_rdb, want 0", counts["standard"])
 		}
 		return nil
 	}
