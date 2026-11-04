@@ -329,10 +329,10 @@ func vvpNamespaceUpdateTestServer(t *testing.T) (*httptest.Server, func() []stri
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		if action == "ModifyNamespaceSpec" {
-			fmt.Fprint(w, `{"RequestId":"mock-modify"}`)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
 			return
 		}
-		fmt.Fprint(w, `{"RequestId":"mock-describe","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":1,"MemoryGB":4},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`)
 	}))
 	t.Cleanup(server.Close)
 	return server, func() []string {
