@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,6 +72,87 @@ func TestUnitDBProxyMultiAZGuard(t *testing.T) {
 			}
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errContains)
+		})
+	}
+}
+
+func TestUnitDBProxyModifyRetryError(t *testing.T) {
+	newSDKError := func(code string, statusCode int) error {
+		return tea.NewSDKError(map[string]interface{}{
+			"code":       code,
+			"message":    code,
+			"statusCode": statusCode,
+			"data":       map[string]interface{}{"Code": code},
+		})
+	}
+
+	for _, tc := range []struct {
+		name      string
+		err       error
+		shutdown  bool
+		retryable bool
+		success   bool
+	}{
+		{
+			// The proxy reports MaxscaleInternalError (HTTP 400) while it is
+			// still changing, so both actions have to retry it.
+			name:      "startup retries MaxscaleInternalError",
+			err:       newSDKError("MaxscaleInternalError", 400),
+			retryable: true,
+		},
+		{
+			name:      "shutdown retries MaxscaleInternalError",
+			err:       newSDKError("MaxscaleInternalError", 400),
+			shutdown:  true,
+			retryable: true,
+		},
+		{
+			name:      "startup retries MaxscaleCreating",
+			err:       newSDKError("MaxscaleCreating", 404),
+			retryable: true,
+		},
+		{
+			// MaxscaleCreating is HTTP 404. Shutdown must retry it instead of
+			// reading the status as a proxy that is already gone.
+			name:      "shutdown retries MaxscaleCreating instead of treating it as deleted",
+			err:       newSDKError("MaxscaleCreating", 404),
+			shutdown:  true,
+			retryable: true,
+		},
+		{
+			name:     "shutdown keeps treating a missing proxy as deleted",
+			err:      newSDKError("InvalidDBInstanceId.NotFound", 404),
+			shutdown: true,
+			success:  true,
+		},
+		{
+			name: "startup does not treat a missing proxy as success",
+			err:  newSDKError("InvalidDBInstanceId.NotFound", 404),
+		},
+		{
+			name:      "shutdown keeps retrying OperationDenied.DBStatus",
+			err:       newSDKError("OperationDenied.DBStatus", 400),
+			shutdown:  true,
+			retryable: true,
+		},
+		{
+			name: "startup does not retry OperationDenied.DBStatus",
+			err:  newSDKError("OperationDenied.DBStatus", 400),
+		},
+		{
+			name: "terminal error fails fast",
+			err:  newSDKError("InvalidDBProxyStatus", 400),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			retryErr := dbProxyModifyRetryError(tc.err, tc.shutdown)
+			if tc.success {
+				assert.Nil(t, retryErr)
+				return
+			}
+			assert.NotNil(t, retryErr)
+			assert.Equal(t, tc.retryable, retryErr.Retryable)
+			assert.ErrorIs(t, retryErr.Err, tc.err)
 		})
 	}
 }

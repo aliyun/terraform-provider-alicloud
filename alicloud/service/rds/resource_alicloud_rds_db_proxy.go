@@ -236,10 +236,7 @@ func resourceAlicloudRdsDBProxyCreate(d *schema.ResourceData, meta interface{}) 
 	if err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
-				return retry.RetryableError(err)
-			}
-			return retry.NonRetryableError(err)
+			return dbProxyModifyRetryError(err, false)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -742,13 +739,7 @@ func resourceAlicloudRdsDBProxyDelete(d *schema.ResourceData, meta interface{}) 
 	if err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
-			if IsExpectedErrors(err, OperationDeniedDBStatus) || NeedRetry(err) {
-				return retry.RetryableError(err)
-			}
-			if NotFoundError(err) {
-				return nil
-			}
-			return retry.NonRetryableError(err)
+			return dbProxyModifyRetryError(err, true)
 		}
 		addDebug(action, response, request)
 		return nil
@@ -900,6 +891,28 @@ func dbProxyMultiAZGuard(networkChanged, dbProxyNodesConfigured bool, layout []m
 		return fmt.Errorf("the proxy is deployed across availability zones (%s); db_proxy_nodes must be configured when a multi-AZ proxy is modified", zoneList)
 	}
 	return nil
+}
+
+// dbProxyModifyServiceTransientErrors are the ModifyDBProxy state conflicts
+// that both Startup and Shutdown can observe while another proxy task is
+// running. MaxscaleInternalError is HTTP 400 and MaxscaleCreating is HTTP 404,
+// so they are matched before Shutdown can read the not-found status as a proxy
+// that is already deleted.
+var dbProxyModifyServiceTransientErrors = []string{"MaxscaleInternalError", "MaxscaleCreating"}
+
+// dbProxyModifyRetryError classifies a ModifyDBProxy Startup or Shutdown error.
+// A nil return means the error is treated as success, which only the Shutdown
+// path does for a missing proxy.
+func dbProxyModifyRetryError(err error, shutdown bool) *retry.RetryError {
+	if IsExpectedErrors(err, dbProxyModifyServiceTransientErrors) ||
+		(shutdown && IsExpectedErrors(err, OperationDeniedDBStatus)) ||
+		NeedRetry(err) {
+		return retry.RetryableError(err)
+	}
+	if shutdown && NotFoundError(err) {
+		return nil
+	}
+	return retry.NonRetryableError(err)
 }
 
 // dbProxyUpdateBudget holds the single timeout that the sequential retries and
