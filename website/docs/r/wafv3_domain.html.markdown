@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_wafv3_instances" "default" {}
 
 resource "alicloud_ssl_certificates_service_certificate" "default" {
@@ -159,6 +167,7 @@ The redirect supports the following:
   - If you specify IP addresses, specify the value in the **\["ip1","ip2",...]** format. You can enter up to 20 IP addresses.
   - If you specify domain names, specify the value in the **\["domain"]** format. You can enter up to 20 domain names.
 * `backup_backends` - (Optional, Computed, List, Available since v1.257.0) The secondary IP address or domain name of the origin server.
+* `backend_ports` - (Optional, Computed, Set, Available since v2.2.0) The custom port configurations that map listening ports to back-to-source ports. Each item contains the listening port, back-to-source port, and protocol; all three fields must be set together. If this parameter is not specified when the domain is created, the back-to-source port is the same as the listening port. Once configured, the value is read back from the server, so removing it from the configuration does not restore the default mapping; to reset a mapping, set the back-to-source port to the same value as the listening port. When an existing state does not contain this attribute, the provider omits the parameter instead of sending an empty list; mappings configured outside Terraform are read back on refresh and resent on later updates. When this parameter is configured, every listening port in `listen` must have a mapping; the API rejects partial mappings (`Waf.Pullin.BackendPortNotMatched`). See [`backend_ports`](#redirect-backend_ports) below.
 * `connect_timeout` - (Optional, Int) Connection timeout duration. Unit: seconds.
 Value range: 1~3600. Default value: 5.
 * `focus_http_backend` - (Optional) Specifies whether to enable force redirect from HTTPS to HTTP for back-to-origin requests. This parameter is available only if you specify `HttpsPorts`. Valid values:
@@ -209,6 +218,13 @@ By specifying custom request header fields and corresponding values, when the ac
 * `xff_proto` - (Optional, Available since v1.257.0) Specifies whether to use the X-Forward-For-Proto header field to pass the protocol used by WAF to forward requests to the origin server. Valid values:
   - `true`  (default)
   - `false`
+
+### `redirect-backend_ports`
+
+The redirect-backend_ports supports the following:
+* `backend_port` - (Optional, Int, Available since v2.2.0) The back-to-source port. Valid values: `1` to `65535`. Required together with `listen_port` and `protocol`.
+* `listen_port` - (Optional, Int, Available since v2.2.0) The listening port. Valid values: `1` to `65535`. Required together with `backend_port` and `protocol`.
+* `protocol` - (Optional, String, Available since v2.2.0) The protocol type. Valid values: `http` and `https`. Required together with `listen_port` and `backend_port`.
 
 ### `redirect-request_headers`
 
