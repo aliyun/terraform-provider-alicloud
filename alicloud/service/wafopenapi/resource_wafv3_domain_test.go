@@ -1,14 +1,24 @@
 package wafopenapi_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/wafopenapi"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -832,3 +842,498 @@ data "alicloud_wafv3_instances" "default" {
 }
 
 // Test Wafv3 Domain. <<< Resource test cases, automatically generated.
+
+// Case: redirect.backend_ports regression for Waf.Pullin.BackendPortIncompatible.
+func TestAccAliCloudWafv3DomainBackendPorts(t *testing.T) {
+	acctest.CheckoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_wafv3_domain.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudWafv3DomainMap2308)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return wafopenapi.NewWafOpenapiService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeWafv3Domain")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	rand := tfacctest.RandString(10)
+	name := fmt.Sprintf("tftest%s.tftest.top", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudWafv3DomainBasicDependence2308)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithAccountSiteType(t, acctest.DomesticSite)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.APSouthEast1})
+			acctest.PreCheck(t)
+			testAccPreCheckForCleanUpInstances(t, string(connectivity.APSouthEast1), "waf", "waf", "waf", "waf")
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id": "${data.alicloud_wafv3_instances.default.ids.0}",
+					"listen": []map[string]interface{}{
+						{
+							"https_ports":         []string{"443"},
+							"http_ports":          []string{"80"},
+							"cert_id":             "${local.certificate_id}",
+							"cipher_suite":        "99",
+							"xff_header_mode":     "2",
+							"protection_resource": "share",
+							"tls_version":         "tlsv1",
+							"enable_tlsv3":        "true",
+							"http2_enabled":       "true",
+							"custom_ciphers":      []string{"ECDHE-ECDSA-AES128-GCM-SHA256"},
+							"focus_https":         "false",
+							"exclusive_ip":        "false",
+							"xff_headers":         []string{"A", "B"},
+							"ipv6_enabled":        "false",
+						},
+					},
+					"redirect": []map[string]interface{}{
+						{
+							"backends":           []string{"1.1.1.1"},
+							"loadbalance":        "iphash",
+							"sni_enabled":        "true",
+							"sni_host":           "www.aliyun.com",
+							"focus_http_backend": "false",
+							"keepalive":          "true",
+							"retry":              "true",
+							"keepalive_requests": "1000",
+							"keepalive_timeout":  "15",
+							"connect_timeout":    "5",
+							"read_timeout":       "30",
+							"write_timeout":      "30",
+							"request_headers": []map[string]interface{}{
+								{
+									"key":   "A",
+									"value": "B",
+								},
+							},
+							"backend_ports": []map[string]interface{}{
+								{
+									"listen_port":  "80",
+									"backend_port": "8080",
+									"protocol":     "http",
+								},
+								{
+									"listen_port":  "443",
+									"backend_port": "8443",
+									"protocol":     "https",
+								},
+							},
+						},
+					},
+					"domain":      "${var.name}",
+					"access_type": "share",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "redirect.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "redirect.0.backend_ports.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "redirect.0.backend_ports.*", map[string]string{
+						"listen_port":  "80",
+						"backend_port": "8080",
+						"protocol":     "http",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "redirect.0.backend_ports.*", map[string]string{
+						"listen_port":  "443",
+						"backend_port": "8443",
+						"protocol":     "https",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redirect": []map[string]interface{}{
+						{
+							"backends":           []string{"1.1.1.1"},
+							"loadbalance":        "iphash",
+							"sni_enabled":        "true",
+							"sni_host":           "www.aliyun.com",
+							"focus_http_backend": "false",
+							"keepalive":          "true",
+							"retry":              "true",
+							"keepalive_requests": "1000",
+							"keepalive_timeout":  "15",
+							"connect_timeout":    "5",
+							"read_timeout":       "60",
+							"write_timeout":      "30",
+							"request_headers": []map[string]interface{}{
+								{
+									"key":   "A",
+									"value": "B",
+								},
+							},
+							"backend_ports": []map[string]interface{}{
+								{
+									"listen_port":  "80",
+									"backend_port": "8080",
+									"protocol":     "http",
+								},
+								{
+									"listen_port":  "443",
+									"backend_port": "8443",
+									"protocol":     "https",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "redirect.0.read_timeout", "60"),
+					resource.TestCheckResourceAttr(resourceId, "redirect.0.backend_ports.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "redirect.0.backend_ports.*", map[string]string{
+						"listen_port":  "443",
+						"backend_port": "8443",
+						"protocol":     "https",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"redirect": []map[string]interface{}{
+						{
+							"backends":           []string{"1.1.1.1"},
+							"loadbalance":        "iphash",
+							"sni_enabled":        "true",
+							"sni_host":           "www.aliyun.com",
+							"focus_http_backend": "false",
+							"keepalive":          "true",
+							"retry":              "true",
+							"keepalive_requests": "1000",
+							"keepalive_timeout":  "15",
+							"connect_timeout":    "5",
+							"read_timeout":       "30",
+							"write_timeout":      "30",
+							"request_headers": []map[string]interface{}{
+								{
+									"key":   "A",
+									"value": "B",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "redirect.0.read_timeout", "30"),
+					resource.TestCheckResourceAttr(resourceId, "redirect.0.backend_ports.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "redirect.0.backend_ports.*", map[string]string{
+						"listen_port":  "80",
+						"backend_port": "8080",
+						"protocol":     "http",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "redirect.0.backend_ports.*", map[string]string{
+						"listen_port":  "443",
+						"backend_port": "8443",
+						"protocol":     "https",
+					}),
+				),
+			},
+		},
+	})
+}
+
+const wafv3WireDescribeResponse = `{"Cname":"c.example.test","Domain":"example.test","DomainId":"d-1","Status":1,"Listen":{"CertId":"cert-id","CipherSuite":99,"CustomCiphers":["ECDHE-ECDSA-AES128-GCM-SHA256"],"EnableTLSv3":true,"ExclusiveIp":false,"FocusHttps":false,"Http2Enabled":true,"HttpPorts":[80],"HttpsPorts":[443],"IPv6Enabled":false,"ProtectionResource":"share","TLSVersion":"tlsv1","XffHeaderMode":2,"XffHeaders":["A"]},"Redirect":{"Backends":["1.1.1.1"],"BackupBackends":[],"BackendPorts":[{"ListenPort":80,"BackendPort":8080,"Protocol":"http"},{"ListenPort":443,"BackendPort":8443,"Protocol":"https"}],"Loadbalance":"iphash"}}`
+
+type wafv3DomainWireFixture struct {
+	server *httptest.Server
+	mu     sync.Mutex
+	forms  []map[string]string
+}
+
+func newWafv3DomainWireFixture(t *testing.T) *wafv3DomainWireFixture {
+	t.Helper()
+	fixture := &wafv3DomainWireFixture{}
+	fixture.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		form := make(map[string]string, len(r.PostForm))
+		for k := range r.PostForm {
+			form[k] = r.PostForm.Get(k)
+		}
+		for k := range r.URL.Query() {
+			if _, ok := form[k]; !ok {
+				form[k] = r.URL.Query().Get(k)
+			}
+		}
+		action := form["Action"]
+		if action == "" {
+			action = r.PostForm.Get("Action")
+		}
+		form["Action"] = action
+		fixture.mu.Lock()
+		fixture.forms = append(fixture.forms, form)
+		fixture.mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		switch action {
+		case "CreateDomain":
+			_, _ = w.Write([]byte(`{"DomainInfo":{"Domain":"example.test"},"Status":1}`))
+		case "DescribeDomainDetail":
+			_, _ = w.Write([]byte(wafv3WireDescribeResponse))
+		case "ListTagResources":
+			_, _ = w.Write([]byte(`{"TagResources":[],"Status":1}`))
+		case "ModifyDomain":
+			_, _ = w.Write([]byte(`{"Status":1}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	return fixture
+}
+
+func (f *wafv3DomainWireFixture) since(action string, offset int) []map[string]string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	result := make([]map[string]string, 0)
+	seen := 0
+	for _, form := range f.forms {
+		if form["Action"] != action {
+			continue
+		}
+		seen++
+		if seen > offset {
+			result = append(result, form)
+		}
+	}
+	return result
+}
+
+func (f *wafv3DomainWireFixture) count(action string) int {
+	return len(f.since(action, 0))
+}
+
+// TestUnitWafv3DomainBackendPortsWire drives the public resource Create/Update/Read
+// through the real client bound to a local HTTP fixture, asserting the serialized
+// Redirect.BackendPorts on the wire and the state read back through Read.
+//
+// lintignore: R001
+func TestUnitWafv3DomainBackendPortsWire(t *testing.T) {
+	fixture := newWafv3DomainWireFixture(t)
+	defer fixture.server.Close()
+	client := newWafv3WireClient(t, strings.TrimPrefix(fixture.server.URL, "http://"))
+	res := wafopenapi.ResourceWafv3Domain()
+
+	mappings := []interface{}{
+		map[string]interface{}{"listen_port": 80, "backend_port": 8080, "protocol": "http"},
+		map[string]interface{}{"listen_port": 443, "backend_port": 8443, "protocol": "https"},
+	}
+	expected := map[string]map[string]interface{}{
+		"80":  {"listen_port": float64(80), "backend_port": float64(8080), "protocol": "http"},
+		"443": {"listen_port": float64(443), "backend_port": float64(8443), "protocol": "https"},
+	}
+
+	t.Run("create without backend_ports omits the wire key", func(t *testing.T) {
+		d := schema.TestResourceDataRaw(t, res.Schema, wafv3WireConfig(nil, 30))
+		if err := res.Create(d, client); err != nil {
+			t.Fatalf("Create failed: %v", err)
+		}
+		forms := fixture.since("CreateDomain", 0)
+		if len(forms) != 1 {
+			t.Fatalf("expected one CreateDomain request, got %d", len(forms))
+		}
+		redirect := decodeWireRedirect(t, forms[0])
+		if _, ok := redirect["BackendPorts"]; ok {
+			t.Fatalf("CreateDomain must not contain BackendPorts when unset: %v", redirect["BackendPorts"])
+		}
+	})
+
+	var created *schema.ResourceData
+	t.Run("create with mappings serializes exact values", func(t *testing.T) {
+		d := schema.TestResourceDataRaw(t, res.Schema, wafv3WireConfig(mappings, 30))
+		if err := res.Create(d, client); err != nil {
+			t.Fatalf("Create failed: %v", err)
+		}
+		created = d
+		forms := fixture.since("CreateDomain", 1)
+		if len(forms) != 1 {
+			t.Fatalf("expected one CreateDomain request, got %d", len(forms))
+		}
+		assertWireBackendPorts(t, decodeWireRedirect(t, forms[0]), expected)
+	})
+
+	t.Run("read maps DescribeDomainDetail back into state", func(t *testing.T) {
+		if created == nil {
+			t.Fatal("create subtest must run first")
+		}
+		if err := res.Read(created, client); err != nil {
+			t.Fatalf("Read failed: %v", err)
+		}
+		ports, ok := created.Get("redirect.0.backend_ports").(*schema.Set)
+		if !ok {
+			t.Fatalf("backend_ports state is not a set: %T", created.Get("redirect.0.backend_ports"))
+		}
+		if ports.Len() != 2 {
+			t.Fatalf("expected 2 backend ports in state, got %d", ports.Len())
+		}
+		seen := map[string]bool{}
+		for _, item := range ports.List() {
+			port := item.(map[string]interface{})
+			listen := portIntString(port["listen_port"])
+			seen[listen] = true
+			if listen == "80" && (portIntString(port["backend_port"]) != "8080" || port["protocol"] != "http") {
+				t.Fatalf("unexpected 80 mapping in state: %v", port)
+			}
+			if listen == "443" && (portIntString(port["backend_port"]) != "8443" || port["protocol"] != "https") {
+				t.Fatalf("unexpected 443 mapping in state: %v", port)
+			}
+		}
+		if !seen["80"] || !seen["443"] {
+			t.Fatalf("state is missing expected mappings: %v", seen)
+		}
+	})
+
+	t.Run("unrelated update still sends state mappings", func(t *testing.T) {
+		if created == nil {
+			t.Fatal("create subtest must run first")
+		}
+		offset := fixture.count("ModifyDomain")
+		updated := wafv3WireUpdate(t, res, client, created.State(), wafv3WireConfig(mappings, 60))
+		assertWireBackendPorts(t, decodeWireRedirect(t, lastWireForm(t, fixture.since("ModifyDomain", offset))), expected)
+		created = updated
+	})
+
+	t.Run("state-only value is resent when config omits the block", func(t *testing.T) {
+		if created == nil {
+			t.Fatal("create subtest must run first")
+		}
+		offset := fixture.count("ModifyDomain")
+		wafv3WireUpdate(t, res, client, created.State(), wafv3WireConfig(nil, 90))
+		forms := fixture.since("ModifyDomain", offset)
+		if len(forms) != 1 {
+			t.Fatalf("expected one ModifyDomain request, got %d", len(forms))
+		}
+		assertWireBackendPorts(t, decodeWireRedirect(t, forms[0]), expected)
+	})
+}
+
+func newWafv3WireClient(t *testing.T, endpoint string) *connectivity.AliyunClient {
+	t.Helper()
+	cred, err := credentials.NewCredential(&credentials.Config{
+		Type:            tea.String("access_key"),
+		AccessKeyId:     tea.String("wire-test-ak"),
+		AccessKeySecret: tea.String("wire-test-sk"),
+	})
+	if err != nil {
+		t.Fatalf("build test credential: %v", err)
+	}
+	endpoints := &sync.Map{}
+	endpoints.Store("waf", endpoint)
+	endpoints.Store("waf_openapi", endpoint)
+	client, err := (&connectivity.Config{
+		AccessKey:            "wire-test-ak",
+		SecretKey:            "wire-test-sk",
+		Region:               connectivity.Hangzhou,
+		RegionId:             "cn-hangzhou",
+		Protocol:             "HTTP",
+		AccountType:          "Domestic",
+		SkipRegionValidation: true,
+		Endpoints:            endpoints,
+		Credential:           cred,
+	}).Client()
+	if err != nil {
+		t.Fatalf("build test client: %v", err)
+	}
+	return client
+}
+
+func wafv3WireConfig(backendPorts []interface{}, readTimeout int) map[string]interface{} {
+	redirect := map[string]interface{}{
+		"backends":     []interface{}{"1.1.1.1"},
+		"loadbalance":  "iphash",
+		"read_timeout": readTimeout,
+	}
+	if backendPorts != nil {
+		redirect["backend_ports"] = backendPorts
+	}
+	return map[string]interface{}{
+		"instance_id": "waf-test",
+		"domain":      "example.test",
+		"access_type": "share",
+		"listen": []interface{}{
+			map[string]interface{}{
+				"http_ports":          []interface{}{"80"},
+				"https_ports":         []interface{}{"443"},
+				"cert_id":             "cert-id",
+				"protection_resource": "share",
+				"tls_version":         "tlsv1",
+			},
+		},
+		"redirect": []interface{}{redirect},
+	}
+}
+
+func wafv3WireUpdate(t *testing.T, res *schema.Resource, meta interface{}, state *terraform.InstanceState, config map[string]interface{}) *schema.ResourceData {
+	t.Helper()
+	diff, err := res.Diff(context.Background(), state, terraform.NewResourceConfigRaw(config), meta)
+	if err != nil {
+		t.Fatalf("build update diff: %v", err)
+	}
+	d, err := schema.InternalMap(res.Schema).Data(state, diff)
+	if err != nil {
+		t.Fatalf("build update resource data: %v", err)
+	}
+	if err := res.Update(d, meta); err != nil {
+		t.Fatalf("Update failed: %v", err)
+	}
+	return d
+}
+
+func lastWireForm(t *testing.T, forms []map[string]string) map[string]string {
+	t.Helper()
+	if len(forms) == 0 {
+		t.Fatal("no captured request for the expected action")
+	}
+	return forms[len(forms)-1]
+}
+
+func decodeWireRedirect(t *testing.T, form map[string]string) map[string]interface{} {
+	t.Helper()
+	raw, ok := form["Redirect"]
+	if !ok {
+		t.Fatal("captured request has no Redirect parameter")
+	}
+	var redirect map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &redirect); err != nil {
+		t.Fatalf("decode Redirect %q: %v", raw, err)
+	}
+	return redirect
+}
+
+func assertWireBackendPorts(t *testing.T, redirect map[string]interface{}, expected map[string]map[string]interface{}) {
+	t.Helper()
+	ports, ok := redirect["BackendPorts"].([]interface{})
+	if !ok {
+		t.Fatalf("wire Redirect has no BackendPorts list: %v", redirect)
+	}
+	if len(ports) != len(expected) {
+		t.Fatalf("expected %d mappings, got %v", len(expected), ports)
+	}
+	for _, item := range ports {
+		mapping, ok := item.(map[string]interface{})
+		if !ok {
+			t.Fatalf("unexpected mapping shape: %v", item)
+		}
+		listen := portIntString(mapping["ListenPort"])
+		want, ok := expected[listen]
+		if !ok {
+			t.Fatalf("unexpected listen port %v in %v", mapping["ListenPort"], mapping)
+		}
+		if portIntString(mapping["ListenPort"]) != portIntString(want["listen_port"]) ||
+			portIntString(mapping["BackendPort"]) != portIntString(want["backend_port"]) ||
+			mapping["Protocol"] != want["protocol"] {
+			t.Fatalf("mapping %v does not match %v", mapping, want)
+		}
+	}
+}
+
+func portIntString(v interface{}) string {
+	switch value := v.(type) {
+	case int:
+		return strconv.Itoa(value)
+	case int64:
+		return strconv.FormatInt(value, 10)
+	case float64:
+		return strconv.Itoa(int(value))
+	case string:
+		return value
+	default:
+		return fmt.Sprint(value)
+	}
+}
