@@ -978,3 +978,218 @@ func (r *userResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 		t.Error("A migrated SDKv2->framework entity must not report phantom breaking changes")
 	}
 }
+
+// TestUnitNestedOptionalBlockRequiredNotBreaking covers acceptance (a): a Required
+// subfield declared inside a newly added Optional parent block must not be
+// reported as a new top-level required attribute, because configurations
+// written before the block existed never reference it.
+func TestUnitNestedOptionalBlockRequiredNotBreaking(t *testing.T) {
+	oldSrc := `package ecs
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+func ResourceEip() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+		},
+	}
+}
+`
+	newSrc := `package ecs
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+func ResourceEip() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"additional_bandwidth": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"bandwidth": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+`
+	newAttrs := ParseSchemaFromAST(newSrc)
+	if _, ok := newAttrs["additional_bandwidth.bandwidth"]; !ok {
+		t.Fatalf("nested required subfield was flattened away; want key additional_bandwidth.bandwidth, got %v", newAttrs)
+	}
+	if _, ok := newAttrs["bandwidth"]; !ok {
+		t.Fatalf("top-level bandwidth must remain under its bare name; got %v", newAttrs)
+	}
+	if IsBreakingChange(ParseSchemaFromAST(oldSrc), newAttrs) {
+		t.Error("a Required subfield under a newly added Optional block must not be a breaking change")
+	} else {
+		fmt.Println("✓ Test passed: new optional block with a required subfield is safe")
+	}
+}
+
+// TestUnitNestedRequiredUnderExistingBlockBreaking covers acceptance (b): a new
+// Required subfield added under a block that already existed does invalidate
+// old configurations that use the block, so it must stay a breaking change.
+func TestUnitNestedRequiredUnderExistingBlockBreaking(t *testing.T) {
+	oldSrc := `package ecs
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+func ResourceEip() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"additional_bandwidth": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"other": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+`
+	newSrc := `package ecs
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+func ResourceEip() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"additional_bandwidth": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"other": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"bandwidth": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+`
+	if !IsBreakingChange(ParseSchemaFromAST(oldSrc), ParseSchemaFromAST(newSrc)) {
+		t.Error("a new Required subfield under an existing block must be a breaking change")
+	} else {
+		fmt.Println("✓ Test passed: required subfield under existing block is breaking")
+	}
+}
+
+// TestUnitNestedSameNameFieldsComparedSeparately covers acceptance (c): two
+// subfields that share a name but live under different parent blocks are
+// captured and judged under their full parent path. The same name "shared" is
+// breaking under block_a (an existing field flipped Optional->Required) while
+// it is waived under block_b (a new Optional block); a flat map would have
+// collapsed them and could not tell the two apart.
+func TestUnitNestedSameNameFieldsComparedSeparately(t *testing.T) {
+	oldSrc := `package ecs
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+func ResourceEip() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"block_a": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"shared": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+`
+	newSrc := `package ecs
+
+import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+func ResourceEip() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"block_a": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"shared": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"block_b": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"shared": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+`
+	newAttrs := ParseSchemaFromAST(newSrc)
+	if _, ok := newAttrs["block_a.shared"]; !ok {
+		t.Error("block_a.shared must be captured with its parent path")
+	}
+	if _, ok := newAttrs["block_b.shared"]; !ok {
+		t.Error("block_b.shared must be captured with its parent path")
+	}
+	if _, ok := newAttrs["shared"]; ok {
+		t.Error("same-named nested subfields must not collapse onto the bare name 'shared'")
+	}
+	if !IsBreakingChange(ParseSchemaFromAST(oldSrc), newAttrs) {
+		t.Error("block_a.shared flipped Optional->Required must be breaking even when block_b.shared is waived")
+	} else {
+		fmt.Println("✓ Test passed: same-named nested fields compared per parent path")
+	}
+}
+
+// TestUnitBreakingChangeSmoke is a TestUnit* so ci-check-quick compiles the
+// compatibility package: the breaking-change checker is launched by PR CI via
+// go run rather than by local-ci-check.sh, so a unit test is what brings it
+// under the quick gate alongside the resource-name helper. It pins the
+// non-breaking baseline for empty schemas.
+func TestUnitBreakingChangeSmoke(t *testing.T) {
+	if IsBreakingChange(map[string]map[string]interface{}{}, map[string]map[string]interface{}{}) {
+		t.Fatal("empty schemas must not be reported as a breaking change")
+	}
+}
