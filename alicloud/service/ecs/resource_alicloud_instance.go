@@ -1095,13 +1095,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 			primaryNetworkInterfacesMap["NetworkInterfaceId"] = networkInterfaceId
 		} else {
 			if v, ok := d.GetOk("security_groups"); ok {
-				// At present, the classic network instance does not support multi sg in runInstances
+				// The classic network instance has been discontinued, so the security_groups
+				// are always passed as SecurityGroupIds regardless of whether vswitch_id is set.
 				sgs := expandStringList(v.(*schema.Set).List())
-				if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
-					primaryNetworkInterfacesMap["SecurityGroupId"] = sgs[0]
-				} else {
-					primaryNetworkInterfacesMap["SecurityGroupIds"] = sgs
-				}
+				primaryNetworkInterfacesMap["SecurityGroupIds"] = sgs
 			}
 
 			if vswitchValue != "" {
@@ -1148,13 +1145,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if v, ok := d.GetOk("security_groups"); ok {
-			// At present, the classic network instance does not support multi sg in runInstances
+			// The classic network instance has been discontinued, so the security_groups
+			// are always passed as SecurityGroupIds regardless of whether vswitch_id is set.
 			sgs := expandStringList(v.(*schema.Set).List())
-			if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
-				request["SecurityGroupId"] = sgs[0]
-			} else {
-				request["SecurityGroupIds"] = sgs
-			}
+			request["SecurityGroupIds"] = sgs
 		}
 
 		if v, ok := d.GetOk("ipv6_addresses"); ok {
@@ -1823,28 +1817,25 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if !d.IsNewResource() && !d.HasChange("vpc_id") && d.HasChange("security_groups") {
-		if !d.IsNewResource() || d.Get("vswitch_id").(string) == "" {
-			o, n := d.GetChange("security_groups")
-			os := o.(*schema.Set)
-			ns := n.(*schema.Set)
+		o, n := d.GetChange("security_groups")
+		os := o.(*schema.Set)
+		ns := n.(*schema.Set)
 
-			rl := expandStringList(os.Difference(ns).List())
-			al := expandStringList(ns.Difference(os).List())
+		rl := expandStringList(os.Difference(ns).List())
+		al := expandStringList(ns.Difference(os).List())
 
-			if len(rl) > 0 {
-				err := ecsService.LeaveSecurityGroups(d.Id(), rl)
-				if err != nil {
-					return WrapError(err)
-				}
+		if len(rl) > 0 {
+			err := ecsService.LeaveSecurityGroups(d.Id(), rl)
+			if err != nil {
+				return WrapError(err)
 			}
+		}
 
-			if len(al) > 0 {
-				err := ecsService.JoinSecurityGroups(d.Id(), al)
-				if err != nil {
-					return WrapError(err)
-				}
+		if len(al) > 0 {
+			err := ecsService.JoinSecurityGroups(d.Id(), al)
+			if err != nil {
+				return WrapError(err)
 			}
-
 		}
 	}
 

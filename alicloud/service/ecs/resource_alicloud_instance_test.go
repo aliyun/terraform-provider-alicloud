@@ -1032,6 +1032,17 @@ func testAccCheckECSInstanceSecurityGroupMembers(instanceResource, sgResource st
 	}
 }
 
+// NOTE: The "omit vswitch_id / security_groups -> system default" path (RunInstances
+// without VSwitchId/SecurityGroupIds) is an API behavior available only to new users
+// in a region with no VPC: the system auto-creates a default VPC/VSwitch/security
+// group. Standard ACC accounts are not new users and have no default VPC, so the API
+// rejects the request (OperationDenied.InvalidNetworkType / InvalidSecurityGroupId).
+// This is an environment gate, not a code defect; the baseline code fails identically.
+// Per the PD decision this path is not a required ACC item; evidence is the RunInstances
+// API documentation (doc_id 2679677) plus old-code same-path failure. Schema Computed
+// and Read read-back are verified by source inspection. If a new-user account (region
+// with no VPC) becomes available, ACC coverage can be added.
+
 func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
