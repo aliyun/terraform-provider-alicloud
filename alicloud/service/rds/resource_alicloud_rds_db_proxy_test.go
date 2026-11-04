@@ -274,16 +274,9 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_proxy_ssl_enabled": "Open",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_proxy_ssl_enabled": "Open",
-					}),
-				),
-			},
-			{
+				// The persistent connection and proxy node steps run before SSL is
+				// configured, so their imports compare only the attributes that this
+				// change adds or already restores.
 				Config: testAccConfig(map[string]interface{}{
 					"persistent_connection_status": "Enabled",
 				}),
@@ -394,6 +387,16 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_ssl_enabled": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_proxy_ssl_enabled": "Open",
+					}),
+				),
 			},
 			{
 				// node_counts has no default, so an incomplete block is rejected before
