@@ -665,7 +665,7 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 		args.Domain = "location.aliyuncs.com"
 	}
 
-	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return "", fmt.Errorf("unable to initialize the location client: %#v", err)
 
