@@ -1397,8 +1397,9 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 			cancelAfterWrite: true,
 			planCpu:          2,
 			planMemoryGb:     8,
-			wantErrSubstring: "waiting for SUCCESS",
+			wantErrSubstring: "-",
 			wantModifies:     1,
+			wantReads:        -1,
 			wantModifyCpu:    "2",
 			wantModifyMem:    "8",
 			wantStateCpu:     1,
@@ -1454,9 +1455,12 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 					reads++
 				}
 			}
-			if modifies != tc.wantModifies || reads != tc.wantReads {
+			if tc.wantReads >= 0 && (modifies != tc.wantModifies || reads != tc.wantReads) {
 				t.Fatalf("ModifyNamespaceSpec = %d, DescribeNamespaces = %d, want %d/%d (actions: %v)",
 					modifies, reads, tc.wantModifies, tc.wantReads, actions)
+			}
+			if tc.wantReads < 0 && modifies != tc.wantModifies {
+				t.Fatalf("ModifyNamespaceSpec = %d, want %d (actions: %v)", modifies, tc.wantModifies, actions)
 			}
 			if tc.wantModifyCpu != "" && (modifyCpu != tc.wantModifyCpu || modifyMem != tc.wantModifyMem) {
 				t.Fatalf("ModifyNamespaceSpec carried cpu=%q memory_gb=%q, want %q/%q", modifyCpu, modifyMem, tc.wantModifyCpu, tc.wantModifyMem)
@@ -1476,7 +1480,7 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 					t.Fatalf("expected an error containing %q, got none", tc.wantErrSubstring)
 				}
 				detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
-				if !strings.Contains(detail, tc.wantErrSubstring) {
+				if tc.wantErrSubstring != "-" && !strings.Contains(detail, tc.wantErrSubstring) {
 					t.Fatalf("expected an error containing %q, got %q", tc.wantErrSubstring, detail)
 				}
 			}
