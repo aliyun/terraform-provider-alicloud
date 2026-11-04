@@ -117,12 +117,17 @@ binary had executed.
   "no tests to run". No acceptance case executes and no resource is created.
 - `-count=1` disables the Go test result cache, so a cached pass cannot mask
   a real compile/link/init failure — the test binary is actually executed.
-- A pass additionally requires a genuine "no test ran" signal: the wrapper
-  rejects any output containing `=== RUN` / `--- PASS` / `--- FAIL` / `--- SKIP`
-  (a test body ran) or `?` (no test files; binary never built), so a stub or a
-  misconfigured filter cannot fake PASS. A non-zero exit (compile error,
-  link error, init panic, build-failed) fails the check and the enclosing
-  quick/CI run, with the original stdout/stderr and the exact command printed.
+- A pass additionally requires a genuine go-test "no tests to run" signal:
+  the wrapper rejects any output containing `=== RUN` / `--- PASS` /
+  `--- FAIL` / `--- SKIP` (a test body ran) or `?` (no test files; binary
+  never built), AND requires the real no-tests marker — `testing: warning:
+  no tests to run` and/or the `[no tests to run]` suffix on the `ok` line —
+  that go test only emits when the binary truly compiled, linked and
+  initialized with no `Test*` function matched. A bare `ok`/`PASS` line
+  without that marker is rejected, so a stub or a misconfigured filter cannot
+  fake PASS. A non-zero exit (compile error, link error, init panic,
+  build-failed) fails the check and the enclosing quick/CI run, with the
+  original stdout/stderr and the exact command printed.
 
 ### Scope (what it is NOT)
 

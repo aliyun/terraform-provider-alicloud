@@ -22,9 +22,11 @@
 # A compile, link or init failure (non-zero exit, panic, build-failed) makes
 # this check AND the enclosing quick/CI run fail. A cached result is never
 # accepted as a pass: `-count=1` forces the real binary execution, and the
-# pass decision additionally requires a genuine "no test ran" signal (no
-# `=== RUN` / `--- PASS` / `--- FAIL` / `--- SKIP` lines) so a stub or a
-# misconfigured filter that accidentally runs a test is rejected instead of
+# pass decision additionally requires a genuine go-test "no tests to run"
+# marker — `testing: warning: no tests to run` and/or the `[no tests to run]`
+# suffix on the `ok` line, with no `=== RUN` / `--- PASS` / `--- FAIL` /
+# `--- SKIP` lines — so a stub or a misconfigured filter that prints a bare
+# ok/PASS without actually running the test binary is rejected instead of
 # being faked as PASS.
 #
 # Usage:
@@ -117,10 +119,26 @@ if printf '%s\n' "$output" | grep -qE '^\?[[:space:]]'; then
         exit 1
 fi
 
-# Positive signal: the package compiled + linked + initialized and reported ok.
+# Defense in depth: a total absence of any ok/PASS line means the test binary
+# never reported success (e.g. garbage output), so reject that first with a
+# clear message.
 if ! printf '%s\n' "$output" | grep -qE '^(ok[[:space:]]|PASS[[:space:]]*$)'; then
         emit_receipt fail
         echo "✗ FAILED: no ok/PASS signal from the test binary" >&2
+        exit 1
+fi
+
+# The real positive signal: go test only emits a genuine "no tests to run"
+# marker — either the `testing: warning: no tests to run` line or the
+# `[no tests to run]` suffix on the `ok` line — when the test binary truly
+# compiled, linked and initialized and no Test* function matched. A stub (or a
+# misconfigured filter) that prints a bare ok/PASS WITHOUT this marker is
+# rejected: a cached or faked pass cannot masquerade as a real initialization
+# success. This is what distinguishes "the binary actually ran no-tests" from
+# "something printed ok".
+if ! printf '%s\n' "$output" | grep -qE 'testing: warning: no tests to run|\[no tests to run\]'; then
+        emit_receipt fail
+        echo "✗ FAILED: no genuine no-tests signal (testing: warning: no tests to run / [no tests to run]) from the test binary; a bare ok/PASS line is not sufficient" >&2
         exit 1
 fi
 
