@@ -124,17 +124,31 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			},
 
 			"vswitch_id": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
+				Type:          schema.TypeString,
+				ForceNew:      true,
+				Optional:      true,
+				ConflictsWith: []string{"vswitch_ids"},
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					// If it is a new resource, do not suppress.
 					if d.Id() == "" {
 						return false
 					}
+					// If the list form `vswitch_ids` is configured, suppress the `vswitch_id`
+					// diff to avoid perpetual drift between the string and list forms.
+					if _, ok := d.GetOk("vswitch_ids"); ok {
+						return true
+					}
 					// If it is not a new resource and it is a multi-zone deployment, it needs to be suppressed.
 					return len(strings.Split(new, ",")) > 1
 				},
+			},
+			"vswitch_ids": {
+				Type:          schema.TypeList,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"vswitch_id"},
 			},
 			"private_ip_address": {
 				Type:     schema.TypeString,
@@ -1936,7 +1950,12 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if netUpdate {
 		v := d.Get("vswitch_id").(string)
-		vsw, err := vpcService.DescribeVSwitch(v)
+		if ids, ok := d.GetOk("vswitch_ids"); ok && len(ids.([]interface{})) > 0 {
+			v = strings.Join(expandStringList(ids.([]interface{})), COMMA_SEPARATED)
+		}
+		// Use the first vswitch to look up the VPC, consistent with the create flow,
+		// since DescribeVSwitch only accepts a single vswitch id.
+		vsw, err := vpcService.DescribeVSwitch(strings.Split(v, COMMA_SEPARATED)[0])
 		if err != nil {
 			return WrapError(err)
 		}
@@ -2298,6 +2317,20 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_charge_type", payType)
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance["VSwitchId"])
+	apiVsw, _ := instance["VSwitchId"].(string)
+	existingVswitchIds := expandStringList(d.Get("vswitch_ids").([]interface{}))
+	if len(existingVswitchIds) > 1 {
+		// For multi-AZ deployments DescribeDBInstanceAttribute exposes only the
+		// primary VSwitchId; slave vswitches are not returned (each SlaveZone
+		// entry carries only its ZoneId). Preserve the configured list to avoid
+		// state drift and spurious recreation, keeping it consistent with the
+		// value supplied at create time.
+		d.Set("vswitch_ids", existingVswitchIds)
+	} else if apiVsw != "" {
+		d.Set("vswitch_ids", []string{apiVsw})
+	} else {
+		d.Set("vswitch_ids", []interface{}{})
+	}
 	// some instance class without connection string
 	if instance["ConnectionString"] != nil {
 		d.Set("connection_string", instance["ConnectionString"])
@@ -2658,6 +2691,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
+	}
+	if v, ok := d.GetOk("vswitch_ids"); ok && len(v.([]interface{})) > 0 {
+		request["VSwitchId"] = strings.Join(expandStringList(v.([]interface{})), COMMA_SEPARATED)
 	}
 
 	request["InstanceNetworkType"] = Classic

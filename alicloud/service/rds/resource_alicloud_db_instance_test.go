@@ -2543,6 +2543,116 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiAZ(t *testing.T) {
 
 }
 
+func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiVswitchIds(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return rds.NewRdsService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeDBInstance")
+	ra := acctest.ResourceAttrInit(resourceId, instanceBasicMap)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstance_multi_vswitch_ids"
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceDBInstanceMysqlMultiVswitchIdsConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+
+		// module name
+
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "rds.mysql.t1.small",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes[1].storage_range[0].min}",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"db_instance_storage_type": "local_ssd",
+					"zone_id":                  "${data.alicloud_db_zones.default.zones.0.id}",
+					"zone_id_slave_a":          "${data.alicloud_db_zones.default.zones.1.id}",
+					"vswitch_ids":              "${alicloud_vswitch.default.*.id}",
+					"monitoring_period":        "60",
+					"category":                 "HighAvailability",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"db_instance_storage_type": "local_ssd",
+						"category":                 "HighAvailability",
+						"instance_storage":         acctest.CHECKSET,
+						"instance_name":            "tf-testAccDBInstance_multi_vswitch_ids",
+						"vswitch_ids.#":            "2",
+						"zone_id_slave_a":          acctest.CHECKSET,
+						"vswitch_id":               acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// DescribeDBInstanceAttribute only returns the primary VSwitchId for
+				// multi-AZ instances; slave vswitches are not exposed, so the list form
+				// `vswitch_ids` and the legacy string form `vswitch_id` cannot be fully
+				// reconstructed on import. Suppress their drift during import verification.
+				ImportStateVerifyIgnore: []string{"force_restart", "vswitch_id", "vswitch_ids"},
+			},
+		},
+	})
+
+}
+
+func resourceDBInstanceMysqlMultiVswitchIdsConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+  instance_charge_type     = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  count        = 2
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = format("172.16.%%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_db_zones.default.zones[count.index].id
+  vswitch_name = format("%%s_%%d", var.name, count.index)
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+`, name)
+}
+
 func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}

@@ -261,7 +261,7 @@ resource "alicloud_db_instance" "example" {
   instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
   instance_charge_type     = "Postpaid"
   instance_name            = var.name
-  vswitch_id               = join(",", alicloud_vswitch.example.*.id)
+  vswitch_ids              = alicloud_vswitch.example.*.id
   monitoring_period        = "60"
   db_instance_storage_type = "cloud_essd"
   zone_id                  = data.alicloud_db_zones.example.zones.0.id
@@ -613,7 +613,8 @@ The following arguments are supported:
 * `zone_id` - (ForceNew, Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
   If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
   The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `vswitch_id` - (ForceNew, Optional) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
+* `vswitch_id` - (ForceNew, Optional) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas. This field conflicts with `vswitch_ids`.
+* `vswitch_ids` - (ForceNew, Optional) The list of virtual switch IDs to launch DB instances in one VPC. It is an alternative list form of `vswitch_id` and the two fields conflict with each other. For a multi-zone deployment, pass the vswitch IDs in the order of `zone_id`, `zone_id_slave_a` and `zone_id_slave_b`.
 * `private_ip_address` - (Optional, Available since v1.125.0) The private IP address of the instance. The private IP address must be within the Classless Inter-Domain Routing (CIDR) block of the vSwitch that is specified by the VSwitchId parameter.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_instance_ip_array_name` - (Optional, Available since v1.125.0) The name of the IP address whitelist. Default value: Default.
@@ -821,7 +822,7 @@ The following arguments are supported:
   * **serverless_standard**: RDS Serverless Basic Edition. This edition is available only for instances that run MySQL and PostgreSQL. (Available since v1.204.0)
   * **serverless_ha**: RDS Serverless High-availability Edition for SQL Server. (Available since v1.204.0)
   
-  -> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation , for example, `zone_id` = "zone-a" and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids , separated by commas.
+  -> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` (or the list form `vswitch_ids`) needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b" (or equivalently `vswitch_ids = ["vsw-zone-a", "vsw-zone-c", "vsw-zone-b"]). Of course, you can also choose automatic allocation , for example, `zone_id` = "zone-a" and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids , separated by commas.
 * `pg_hba_conf` - (Optional, Available since v1.155.0) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
 * `babelfish_port` - (Optional, Available since v1.176.0) The TDS port of the instance for which Babelfish is enabled.
 
