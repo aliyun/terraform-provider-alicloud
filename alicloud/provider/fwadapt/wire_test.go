@@ -7,12 +7,17 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // semanticString lives in the test package on purpose: it proves a type outside fwadapt can
 // satisfy the exported semantic hooks. The unexported hooks this replaced could never be
 // implemented across a Go package boundary.
-type semanticString struct{ types.String }
+type semanticString struct{ basetypes.StringValue }
+
+func semanticValueOf(value types.String) semanticString {
+	return semanticString{StringValue: value.StringValue}
+}
 
 func (v semanticString) SemanticEqual(other attr.Value) bool {
 	value, ok := other.(semanticString)
@@ -23,7 +28,7 @@ func (v semanticString) SemanticEqual(other attr.Value) bool {
 }
 
 func (v semanticString) NullValue() attr.Value {
-	return semanticString{String: types.StringNull()}
+	return semanticValueOf(types.StringNull())
 }
 
 var (
@@ -32,8 +37,8 @@ var (
 )
 
 func TestUnitFwadaptSemanticHooksCrossPackage(t *testing.T) {
-	semanticA := semanticString{String: types.StringValue("{\"a\": 1}")}
-	semanticB := semanticString{String: types.StringValue("{\"A\": 1}")}
+	semanticA := semanticValueOf(types.StringValue("{\"a\": 1}"))
+	semanticB := semanticValueOf(types.StringValue("{\"A\": 1}"))
 	if fwadapt.PlannedChanged(semanticA, semanticB) {
 		t.Fatal("semantic equality should treat case-only differences as unchanged")
 	}
@@ -46,7 +51,7 @@ func TestUnitFwadaptSemanticHooksCrossPackage(t *testing.T) {
 		t.Fatal("plain strings should still compare with Equal")
 	}
 
-	unknown := semanticString{String: types.StringUnknown()}
+	unknown := semanticValueOf(types.StringUnknown())
 	known := fwadapt.KnownValue(unknown)
 	if known == nil || !known.IsNull() {
 		t.Fatalf("unknown custom value should become a typed null, got %#v", known)
