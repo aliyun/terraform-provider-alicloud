@@ -62,12 +62,12 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 			"architecture": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard", "cluster", "rwsplit"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"standard", "non_cluster", "cluster", "rwsplit"}, false),
 			},
 			"edition_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Community", "Enterprise"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Community", "Enterprise", "EnhancedPerformance"}, false),
 			},
 			"series_type": {
 				Type:         schema.TypeString,

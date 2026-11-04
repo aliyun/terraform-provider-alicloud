@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 )
 
@@ -107,6 +108,51 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 	//		"architecture": "rwsplit",
 	//	}),
 	//}
+	architectureNonCluster := acctest.DataSourceTestAccConfig{
+		ExistConfig: `
+data "alicloud_kvstore_zones" "tair_rdb" {
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PrePaid"
+}
+
+data "alicloud_kvstore_instance_classes" "default" {
+  zone_id      = data.alicloud_kvstore_zones.tair_rdb.zones.0.id
+  product_type = "Tair_rdb"
+  architecture = "non_cluster"
+}
+`,
+		ExistChangMap: map[string]string{
+			"instance_classes.0": acctest.REGEXMATCH + `^tair\.rdb\.`,
+		},
+	}
+	editionTypeEnhancedPerformance := acctest.DataSourceTestAccConfig{
+		ExistConfig: `
+data "alicloud_kvstore_zones" "tair_rdb" {
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PrePaid"
+}
+
+data "alicloud_kvstore_instance_classes" "default" {
+  zone_id      = data.alicloud_kvstore_zones.tair_rdb.zones.0.id
+  product_type = "Tair_rdb"
+  edition_type = "EnhancedPerformance"
+}
+`,
+	}
+	productTypeOnECS := acctest.DataSourceTestAccConfig{
+		ExistConfig: `
+data "alicloud_kvstore_zones" "on_ecs" {
+  product_type         = "OnECS"
+  instance_charge_type = "PrePaid"
+}
+
+data "alicloud_kvstore_instance_classes" "default" {
+  zone_id      = data.alicloud_kvstore_zones.on_ecs.zones.0.id
+  product_type = "OnECS"
+  architecture = "non_cluster"
+}
+`,
+	}
 	NodeType := acctest.DataSourceTestAccConfig{
 		ExistConfig: testAccConfig(map[string]interface{}{
 			"zone_id":   "${data.alicloud_zones.resources.zones.0.id}",
@@ -165,10 +211,14 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 	//	StorageTypeInmemory, PackageTypeStandard, PackageTypeCustomized, ArchitectureStandard, ArchitectureCluster,
 	//	ArchitectureRwsplit, NodeTypeDouble, NodeTypeSingle, NodeTypeReadone, NodeTypeReadthree, NodeTypeReadfive,
 	//	ArchitectureStandard, allConf)
-	KVStoreInstanceCheckInfo.DataSourceTestCheck(t, rand, EngineVersionConfRedis,
+	KVStoreInstanceCheckInfo.DataSourceTestCheckWithPreCheck(t, rand, func() {
+		acctest.PreCheck(t)
+		acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+	}, EngineVersionConfRedis,
 		//prePaidSortedByConfRedis, postPaidSortedByConfRedis
 		ChargeTypeConfPostpaid, seriesTypeEnhancedPerformanceType, editionTypeCommunity,
 		shardNumber8, ArchitectureStandard, ArchitectureCluster,
+		architectureNonCluster, editionTypeEnhancedPerformance, productTypeOnECS,
 		NodeType, allConf, EngineVersionConfMemcache)
 }
 

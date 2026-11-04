@@ -16,6 +16,14 @@ This data source provides the Tair (Redis OSS-Compatible) And Memcache (KVStore)
 ## Example Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_zones" "resources" {
   available_resource_creation = "KVStore"
 }
@@ -41,19 +49,22 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PrePaid`.
 * `engine` - (Optional) Database type. Options are `Redis`, `Memcache`. Default to `Redis`.
 * `engine_version` - (Optional) Database version required by the user. Value options of Redis can refer to the latest docs [detail info](https://www.alibabacloud.com/help/en/redis/developer-reference/api-r-kvstore-2015-01-01-createinstance-redis) `EngineVersion`. Value of Memcache should be empty.
-* `architecture` - (Optional) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance system architecture required by the user. Valid values: `standard`, `cluster` and `rwsplit`.
+* `architecture` - (Optional) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance system architecture required by the user. Valid values: `standard`, `non_cluster`, `cluster` and `rwsplit`. `standard` is the standard architecture of the classic edition and `rwsplit` is the read/write splitting architecture of the classic edition, while `non_cluster` is the standard architecture of the cloud-native edition. `cluster` covers the cluster architecture of both the classic and the cloud-native edition, including the read/write splitting architecture of the cloud-native edition. The `non_cluster` and `cluster` values are returned for the `Tair_rdb`, `Tair_essd` and `OnECS` instance types.
 * `performance_type` - (Optional, Deprecated) It has been deprecated from 1.68.0. 
 * `storage_type` - (Optional, Deprecated) It has been deprecated from 1.68.0. 
 * `node_type` - (Optional) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance node type required by the user. Valid values: `double`, `single`, `readone`, `readthree` and `readfive`.
 * `package_type` - (Optional, Deprecated) It has been deprecated from 1.68.0.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform apply`).
-* `edition_type` - (Optional, Available since v1.68.0) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance edition type required by the user. Valid values: `Community` and `Enterprise`.
+* `edition_type` - (Optional, Available since v1.68.0) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance edition type required by the user. Valid values: `Community`, `Enterprise` and `EnhancedPerformance`. `Community` is the Redis OSS-compatible edition, `Enterprise` is the Tair (Enterprise) edition, and `EnhancedPerformance` is returned for some cloud-native instance types such as `Tair_rdb`.
 * `series_type` - (Optional, Available since v1.68.0) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance series type required by the user. Valid values: `enhanced_performance_type` and `hybrid_storage`.
 * `shard_number` - (Optional, Available since v1.68.0) The number of shard.Valid values: `1`, `2`, `4`, `8`, `16`, `32`, `64`, `128`, `256`.
 * `sorted_by` - (Optional) The field used to sort the returned instance classes. Valid values: `Price`.
-* `product_type` - (Optional, Available since v1.130.0) The type of the service. Valid values:
-  * Local: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a local disk.
-  * OnECS: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a standard disk. This type is available only on the Alibaba Cloud China site.
+* `product_type` - (Optional, Available since v1.130.0) The type of the service. Defaults to `Local`. Valid values:
+  * `Local`: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a local disk, which is the classic edition.
+  * `Tair_rdb`: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance of the in-memory type, which is the cloud-native edition.
+  * `Tair_scm`: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance of the persistent memory type.
+  * `Tair_essd`: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance of the disk type.
+  * `OnECS`: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a standard disk, which is the cloud-native edition of the Redis OSS-compatible instance.
 
 ## Attributes Reference
 
