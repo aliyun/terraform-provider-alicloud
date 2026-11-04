@@ -152,8 +152,8 @@ func (r *gadInstanceResource) Create(ctx context.Context, req resource.CreateReq
 	// gap#9: RPC APIs require RegionId as a request param (separate from endpoint resolution);
 	// the SDK RpcPost resolves the endpoint by region but does NOT inject RegionId into query/body.
 	// v1 sets request["RegionId"] = client.RegionId authoritatively (provider region wins).
-	request["RegionId"] = r.Client().RegionId
-	createValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	request["RegionId"] = r.Meta().RegionId
+	createValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.CreateTime.IsNull() && !plan.CreateTime.IsUnknown() {
 		createValues["CreateTime"] = fwValueToInterface(plan.CreateTime, map[string]fwWireField{}, false)
 	}
@@ -198,7 +198,7 @@ func (r *gadInstanceResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	response, err := retryRpcPost(r.Client(), "Dts", "2020-01-01", "CreateGadInstance", request, operationTimeout)
+	response, err := retryRpcPost(r.Meta(), "Dts", "2020-01-01", "CreateGadInstance", request, operationTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling CreateGadInstance", gadInstanceTypeName),
@@ -241,7 +241,7 @@ func (r *gadInstanceResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	object, err := gadInstanceGet(r.Client(), id)
+	object, err := gadInstanceGet(r.Meta(), id)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: reading after create", gadInstanceTypeName),
@@ -266,7 +266,7 @@ func (r *gadInstanceResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	object, err := gadInstanceGet(r.Client(), state.Id.ValueString())
+	object, err := gadInstanceGet(r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeGadInstanceDetail", gadInstanceTypeName),
@@ -296,7 +296,7 @@ func (r *gadInstanceResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	planValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	planValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.CreateTime.IsNull() && !plan.CreateTime.IsUnknown() {
 		planValues["CreateTime"] = fwValueToInterface(plan.CreateTime, map[string]fwWireField{}, false)
 	}
@@ -327,7 +327,7 @@ func (r *gadInstanceResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.Status.IsNull() && !plan.Status.IsUnknown() {
 		planValues["Status"] = fwValueToInterface(plan.Status, map[string]fwWireField{}, false)
 	}
-	stateValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	stateValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !state.CreateTime.IsNull() && !state.CreateTime.IsUnknown() {
 		stateValues["CreateTime"] = fwValueToInterface(state.CreateTime, map[string]fwWireField{}, false)
 	}
@@ -376,7 +376,7 @@ func (r *gadInstanceResource) Update(ctx context.Context, req resource.UpdateReq
 			"InstanceId":  state.Id.ValueString(),
 			"ClientToken": buildClientToken("ModifyGadInstanceName"),
 		}
-		request0["RegionId"] = r.Client().RegionId
+		request0["RegionId"] = r.Meta().RegionId
 		if err := fwApplyMappings(request0, operationValues0, fwChangedUpdateMappings([]fwMapping{
 			{Source: "$.GadInstanceId", Target: "InstanceId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 			{Source: "$.GadInstanceName", Target: "InstanceName", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
@@ -385,7 +385,7 @@ func (r *gadInstanceResource) Update(ctx context.Context, req resource.UpdateReq
 			resp.Diagnostics.AddError("Building ModifyGadInstanceName request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(r.Client(), "Dts", "2020-01-01", "ModifyGadInstanceName", request0, operationTimeout); err != nil {
+		if _, err := retryRpcPost(r.Meta(), "Dts", "2020-01-01", "ModifyGadInstanceName", request0, operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_dts_gad_instance: ModifyGadInstanceName", err.Error())
 			return
 		}
@@ -397,7 +397,7 @@ func (r *gadInstanceResource) Update(ctx context.Context, req resource.UpdateReq
 	// Forbidden.InstanceNotFound for gad-* ids (AccTest Step 3) — so no in-place call is made.
 	// DetachGadInstanceDbMember is marked as a separate association resource in metadata.
 	// Shared input fields do not make it part of this resource's update contract.
-	object, err := gadInstanceGet(r.Client(), state.Id.ValueString())
+	object, err := gadInstanceGet(r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeGadInstanceDetail", gadInstanceTypeName),
@@ -425,7 +425,7 @@ func (r *gadInstanceResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	deleteValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	deleteValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !state.CreateTime.IsNull() && !state.CreateTime.IsUnknown() {
 		deleteValues["CreateTime"] = fwValueToInterface(state.CreateTime, map[string]fwWireField{}, false)
 	}
@@ -470,7 +470,7 @@ func (r *gadInstanceResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 	if deleteEligible0 {
 		request0 := map[string]interface{}{"ClientToken": buildClientToken("DeleteGadInstance")}
-		request0["RegionId"] = r.Client().RegionId
+		request0["RegionId"] = r.Meta().RegionId
 		if err := fwApplyMappings(request0, deleteValues, []fwMapping{
 			{Source: "$.GadInstanceId", Target: "InstanceId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 			{Source: "$.RegionId", Target: "RegionId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
@@ -479,7 +479,7 @@ func (r *gadInstanceResource) Delete(ctx context.Context, req resource.DeleteReq
 			resp.Diagnostics.AddError("Building DeleteGadInstance request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(r.Client(), "Dts", "2020-01-01", "DeleteGadInstance", request0, operationTimeout); err != nil && !isExpectedErrors(err, []string{"DTS.Msg.GADInstanceNotFound"}) {
+		if _, err := retryRpcPost(r.Meta(), "Dts", "2020-01-01", "DeleteGadInstance", request0, operationTimeout); err != nil && !isExpectedErrors(err, []string{"DTS.Msg.GADInstanceNotFound"}) {
 			resp.Diagnostics.AddError("Deleting alicloud_dts_gad_instance: DeleteGadInstance", err.Error())
 			return
 		}

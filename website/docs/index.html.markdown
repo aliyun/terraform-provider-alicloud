@@ -374,9 +374,9 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 
 * `protocol` - (Optional, Available since v1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`.
 
-* `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000.
+* `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000. The value must be non-negative.
 
-* `client_connect_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000.
+* `client_connect_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000. The value must be non-negative.
 
 * `max_retry_timeout` - (Optional, Available since v1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
