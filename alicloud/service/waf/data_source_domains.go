@@ -1,0 +1,306 @@
+package waf
+
+import (
+	"fmt"
+	"regexp"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceDomains() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceDomainsRead,
+		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"domains": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cname": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connection_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"domain_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"http2_port": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"http_port": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"http_to_user_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"https_port": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"https_redirect": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"is_access_product": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"load_balancing": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"log_headers": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"read_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"source_ips": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"version": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"write_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+		},
+	}
+}
+
+func dataSourceDomainsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeDomainNames"
+	request := make(map[string]interface{})
+	request["InstanceId"] = d.Get("instance_id")
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	var domainNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		domainNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	var response map[string]interface{}
+	var err error
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, true)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_waf_domains", action, errs.AlibabaCloudSdkGoERROR)
+	}
+	logs.AddDebug(action, response, request)
+
+	ids := make([]string, 0)
+	names := make([]string, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range response["DomainNames"].([]interface{}) {
+		if domainNameRegex != nil {
+			if !domainNameRegex.MatchString(object.(string)) {
+				continue
+			}
+		}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[object.(string)]; !ok {
+				continue
+			}
+		}
+		mapping := map[string]interface{}{
+			"id":          fmt.Sprint(object),
+			"domain_name": object,
+			"domain":      object,
+		}
+		ids = append(ids, fmt.Sprint(object.(string)))
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			names = append(names, object.(string))
+			s = append(s, mapping)
+			continue
+		}
+
+		waf_openapiService := NewService(client)
+		id := fmt.Sprint(request["InstanceId"], ":", object.(string))
+		getResp, err := waf_openapiService.DescribeWafDomain(id)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		clusterType, err := convert.FormatInt(getResp["ClusterType"])
+		if err != nil {
+			return err
+		}
+		mapping["cluster_type"] = convertClusterTypeResponse(clusterType)
+		mapping["cname"] = getResp["Cname"]
+		mapping["connection_time"] = getResp["ConnectionTime"]
+		http2Port, err := convert.ConvertJsonStringToStringList(getResp["Http2Port"])
+		if err != nil {
+			return err
+		}
+		mapping["http2_port"] = http2Port
+		httpPort, err := convert.ConvertJsonStringToStringList(getResp["HttpPort"])
+		if err != nil {
+			return err
+		}
+		mapping["http_port"] = httpPort
+		httpToUserIp, err := convert.FormatInt(getResp["HttpToUserIp"])
+		if err != nil {
+			return err
+		}
+		mapping["http_to_user_ip"] = convertHttpToUserIpResponse(httpToUserIp)
+		httpsPort, err := convert.ConvertJsonStringToStringList(getResp["HttpsPort"])
+		if err != nil {
+			return err
+		}
+		mapping["https_port"] = httpsPort
+		httpsRedirect, err := convert.FormatInt(getResp["HttpsRedirect"])
+		if err != nil {
+			return err
+		}
+		mapping["https_redirect"] = convertHttpsRedirectResponse(httpsRedirect)
+		isAccessProduct, err := convert.FormatInt(getResp["IsAccessProduct"])
+		if err != nil {
+			return err
+		}
+		mapping["is_access_product"] = convertIsAccessProductResponse(isAccessProduct)
+		loadBalancing, err := convert.FormatInt(getResp["LoadBalancing"])
+		if err != nil {
+			return err
+		}
+		mapping["load_balancing"] = convertLoadBalancingResponse(loadBalancing)
+		if v, ok := getResp["LogHeaders"].([]interface{}); ok {
+			logHeaders := make([]map[string]interface{}, 0)
+			for _, val := range v {
+				item := val.(map[string]interface{})
+				logHeaders = append(logHeaders, map[string]interface{}{
+					"key":   item["k"].(string),
+					"value": item["v"].(string),
+				})
+			}
+			mapping["log_headers"] = logHeaders
+		}
+		mapping["read_time"] = getResp["ReadTime"]
+		mapping["resource_group_id"] = getResp["ResourceGroupId"]
+		mapping["source_ips"] = getResp["SourceIps"]
+		mapping["version"] = getResp["Version"]
+		mapping["write_time"] = getResp["WriteTime"]
+		names = append(names, object.(string))
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("domains", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

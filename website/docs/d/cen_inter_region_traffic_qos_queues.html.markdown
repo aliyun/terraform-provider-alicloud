@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Cen Inter Region Traffic Qos Queue available to the user.
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_inter_region_traffic_qos_queues" "default" {
   ids                   = ["${alicloud_cen_inter_region_traffic_qos_queue.default.id}"]
   name_regex            = alicloud_cen_inter_region_traffic_qos_queue.default.name
@@ -30,7 +30,7 @@ output "alicloud_cen_inter_region_traffic_qos_queue_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `traffic_qos_policy_id` - (ForceNew,Required) The ID of the traffic scheduling policy.
+* `traffic_qos_policy_id` - (ForceNew, Required) The ID of the traffic scheduling policy.
 * `ids` - (Optional, ForceNew, Computed) A list of Inter Region Traffic Qos Queue IDs.
 * `names` - (Optional, ForceNew) The name of inter Region Traffic Qos Queue. You can specify at most 10 names.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
@@ -50,3 +50,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `dscps` - The DSCP value of the traffic packet to be matched in the current queue, ranging from 0 to 63.
   * `remain_bandwidth_percent` - The percentage of cross-region bandwidth that the current queue can use.
   * `status` - The status of the traffic scheduling policy. -**Creating**: The function is being created.-**Active**: available.-**Modifying**: is being modified.-**Deleting**: Deleted.-**Deleted**: Deleted.
+  * `id` - The ID of the Inter Region Traffic Qos Queue.

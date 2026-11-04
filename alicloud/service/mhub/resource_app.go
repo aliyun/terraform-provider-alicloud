@@ -1,0 +1,232 @@
+package mhub
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceApp() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAppCreate,
+		Read:   resourceAppRead,
+		Update: resourceAppUpdate,
+		Delete: resourceAppDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"app_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"product_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"bundle_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"package_name"},
+			},
+			"encoded_icon": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"industry_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"package_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"bundle_id"},
+			},
+			"type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Android", "iOS"}, false),
+			},
+		},
+	}
+}
+
+func resourceAppCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateApp"
+	request := make(map[string]interface{})
+	var err error
+	request["Name"] = d.Get("app_name")
+	request["ProductId"] = d.Get("product_id")
+
+	if v, ok := d.GetOk("package_name"); ok {
+		request["PackageName"] = v.(string)
+	} else if v, ok := d.GetOk("bundle_id"); ok {
+		request["BundleId"] = v.(string)
+	} else {
+		return errs.WrapError(fmt.Errorf("either bundle_id or package_name must be set"))
+	}
+
+	request["Type"] = convertTypeRequest(d.Get("type").(string))
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_mhub_app", action, errs.AlibabaCloudSdkGoERROR)
+	}
+	responseAppInfo := response["AppInfo"].(map[string]interface{})
+	d.SetId(fmt.Sprint(responseAppInfo["ProductId"], ":", responseAppInfo["AppKey"]))
+
+	return resourceAppUpdate(d, meta)
+}
+func resourceAppRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	mhubService := NewService(client)
+	object, err := mhubService.DescribeMhubApp(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_mhub_app mhubService.DescribeMhubApp Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	d.Set("app_name", object["Name"])
+	d.Set("bundle_id", object["BundleId"])
+	d.Set("product_id", parts[0])
+
+	appType, err := convert.FormatInt(object["Type"])
+	if err != nil {
+		return err
+	}
+	d.Set("type", convertTypeResponse(appType))
+	d.Set("encoded_icon", object["EncodedIcon"])
+	industryId, err := convert.FormatInt(object["IndustryId"])
+	if err != nil {
+		return err
+	}
+	d.Set("industry_id", fmt.Sprint(industryId))
+	d.Set("package_name", object["PackageName"])
+	return nil
+}
+func resourceAppUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+	var response map[string]interface{}
+	update := false
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	request := map[string]interface{}{
+		"AppKey": parts[1],
+	}
+	if !d.IsNewResource() && d.HasChange("app_name") {
+		update = true
+		request["Name"] = d.Get("app_name")
+	}
+	if d.HasChange("encoded_icon") {
+		update = true
+		if v, ok := d.GetOk("encoded_icon"); ok {
+			request["EncodedIcon"] = v
+		}
+	}
+	if d.HasChange("industry_id") {
+		update = true
+		if v, ok := d.GetOk("industry_id"); ok {
+			request["IndustryId"] = v
+		}
+	}
+	if update {
+		action := "ModifyApp"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	return resourceAppRead(d, meta)
+}
+func resourceAppDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteApp"
+	var response map[string]interface{}
+	var err error
+	parts, err := helper.ParseResourceId(d.Id(), 2)
+	request := map[string]interface{}{
+		"AppKey": parts[1],
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("Mhub", "2017-08-25", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func convertTypeResponse(source int) string {
+	switch source {
+	case 1:
+		return "iOS"
+	case 2:
+		return "Android"
+	}
+	return ""
+}
+func convertTypeRequest(source string) string {
+	switch source {
+	case "iOS":
+		return "1"
+	case "Android":
+		return "2"
+	}
+	return source
+}

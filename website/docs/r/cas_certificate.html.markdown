@@ -15,8 +15,6 @@ For information about SSL Certificates Certificate and how to use it, see [What 
 
 -> **NOTE:** Available since v1.35.0.
 
--> **NOTE:** Deprecated since v1.129.0.
-
 -> **NOTE:** The Certificate name which you want to add must be already registered and had not added by another account. Every Certificate name can only exist in a unique group.
 
 -> **NOTE:** The Cas Certificate region only support cn-hangzhou, me-east-1, eu-central-1, ap-northeast-1.
@@ -98,9 +96,21 @@ EOF
 
 The following arguments are supported:
 
-* `name` - (Required, ForcesNew) Name of the Certificate. This name must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
-* `cert` - (Required, ForcesNew) Cert of the Certificate in which the Certificate will add.
-* `key` - (Required, ForcesNew) Key of the Certificate in which the Certificate will add.
+-> **NOTE:** `alicloud_cas_certificate` is a deprecated alias of [alicloud_ssl_certificates_service_certificate](https://www.terraform.io/docs/providers/alicloud/r/ssl_certificates_service_certificate). The alias exposes the same schema; the arguments below mirror that resource.
+
+* `cert` - (Optional, ForceNew) The content of a non-SM certificate in PEM format.
+* `key` - (Optional, ForceNew) The private key of a non-SM certificate in PEM format. It conflicts with `key_wo`.
+* `key_wo` - (Optional, Available since v2.0.0-beta5) The write-only private key of a non-SM certificate in PEM format. It is only sent to the server when the resource is created and is never stored in the state or plan. It requires Terraform v1.11.0 or later and must be used together with `key_wo_version`. It conflicts with `key`.
+* `key_wo_version` - (Optional, ForceNew, Available since v2.0.0-beta5) The version of the write-only private key. The write-only private key is re-sent to the server only when this argument changes, so changing it recreates the resource with the new `key_wo` value.
+* `encrypt_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM encryption certificate in PEM format.
+* `encrypt_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM encryption certificate in PEM format.
+* `sign_cert` - (Optional, ForceNew, Available since v1.260.1) The content of an SM signing certificate in PEM format.
+* `sign_private_key` - (Optional, ForceNew, Available since v1.260.1) The private key of an SM signing certificate in PEM format.
+* `certificate_name` - (Optional) A custom name for the certificate. The name can be up to 64 characters long and can contain any character type, such as letters, numbers, and underscores. **NOTE:** From version 1.260.1, `certificate_name` can be modified.
+* `resource_group_id` - (Optional, Available since v1.260.1) The ID of the resource group.
+* `tags` - (Optional, Map, Available since v1.260.1) The tag of the resource.
+* `name` - (Optional, Deprecated since v1.129.0) Field `name` has been deprecated from provider version 1.129.0 and it will be removed in the future version. Please use the new attribute `certificate_name` instead.
+* `lang` - (Deprecated since v1.260.1) Field `lang` has been deprecated from provider version 1.260.1 and it will be removed in the future version.
 
 ## Attributes Reference
 

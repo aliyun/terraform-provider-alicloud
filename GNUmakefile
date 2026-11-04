@@ -280,6 +280,8 @@ minimal-test-set:
 # the same account and you only want to clean up stale leftovers.
 # SWEEP_ALL traverses a whole dependency graph and may exceed Go's default 10m.
 # SWEEP_TIMEOUT overrides this inner Go deadline; remote runner deadlines still apply.
+# Resolve the owning test binary after product tests and sweepers move out of the root.
+# SWEEP_PACKAGE may disambiguate a resource registered in multiple test binaries.
 SWEEP_TIMEOUT ?= $(if $(filter 1,$(SWEEP_ALL)),3h,10m)
 sweep:
 	@if [ -z "$(REGION)" ]; then \
@@ -290,12 +292,13 @@ sweep:
 		echo "Error: RESOURCE is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
 		exit 1; \
 	fi
-	@if [ "$(SWEEP_ALL)" = "1" ]; then \
+	@package=$$(go run ./scripts/testing/sweeppackage -resource "$(RESOURCE)" -package "$(SWEEP_PACKAGE)") || exit $$?; \
+	if [ "$(SWEEP_ALL)" = "1" ]; then \
 		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test "$$package" -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	else \
 		echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
-		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test ./alicloud -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test "$$package" -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
 .PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native provider-build check-production-deps

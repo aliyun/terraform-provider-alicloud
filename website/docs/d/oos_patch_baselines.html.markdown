@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Oos Patch Baselines of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -61,21 +61,21 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `share_type` - (Optional, ForceNew) Patch baseline sharing type. Valid values: `Private`, `Public`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Patch Baseline names.
 * `baselines` - A list of Oos Patch Baselines. Each element contains the following attributes:
-	* `approval_rules` - Accept the rules.
-	* `create_time` - The create time of patch baselines.
-	* `created_by` - The user who created the patch baselines.
-	* `description` - Patches baseline description information.
-	* `id` - The ID of the Patch Baseline. Its value is same as `patch_baseline_name`.
-	* `is_default` - Whether it is the default patch baseline.
-	* `operation_system` - Operating system type.
-	* `patch_baseline_id` - Patch baseline ID.
-	* `patch_baseline_name` - The name of the patch baseline.
-	* `share_type` - Patch baseline sharing type.
-	* `updated_by` - The user who updated the patch baselines.
-	* `updated_date` - The update time of patch baselines.
+  * `approval_rules` - Accept the rules.
+  * `create_time` - The create time of patch baselines.
+  * `created_by` - The user who created the patch baselines.
+  * `description` - Patches baseline description information.
+  * `id` - The ID of the Patch Baseline. Its value is same as `patch_baseline_name`.
+  * `is_default` - Whether it is the default patch baseline.
+  * `operation_system` - Operating system type.
+  * `patch_baseline_id` - Patch baseline ID.
+  * `patch_baseline_name` - The name of the patch baseline.
+  * `share_type` - Patch baseline sharing type.
+  * `updated_by` - The user who updated the patch baselines.
+  * `updated_date` - The update time of patch baselines.

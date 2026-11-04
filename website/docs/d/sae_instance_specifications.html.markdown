@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Sae Instance Specifications of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.139.0+.
+-> **NOTE:** Available since v1.139.0.
 
 ## Example Usage
 
@@ -32,17 +32,17 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Instance Specification IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `specifications` - A list of Sae Instance Specifications. Each element contains the following attributes:
-	* `cpu` - CPU Size, Specifications for Micronucleus.
-	* `enable` - Whether the instance is available. The value description is as follows:
-	  * `true` - indicates that it is available.
-	  * `false` - means unavailable.
-	* `id` - The ID of the Instance Specification.
-	* `instance_specification_id` - The first ID of the resource.
-	* `memory` - The Memory specifications for the MB.
-	* `spec_info` - The specification configuration name.
-	* `version` - The specification configuration version.
+  * `cpu` - CPU Size, Specifications for Micronucleus.
+  * `enable` - Whether the instance is available. The value description is as follows:
+    * `true` - indicates that it is available.
+    * `false` - means unavailable.
+  * `id` - The ID of the Instance Specification.
+  * `instance_specification_id` - The first ID of the resource.
+  * `memory` - The Memory specifications for the MB.
+  * `spec_info` - The specification configuration name.
+  * `version` - The specification configuration version.

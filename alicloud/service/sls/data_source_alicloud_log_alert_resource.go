@@ -1,0 +1,87 @@
+package sls
+
+import (
+	"errors"
+	"fmt"
+	"time"
+
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudLogAlertResource() *schema.Resource {
+	return &schema.Resource{
+		Read:               dataSourceAlicloudLogAlertResourceRead,
+		DeprecationMessage: "This data source has been deprecated since v1.219.0 and will be removed in the future. Please use 'alicloud_log_alert_resource' resource instead.",
+		Schema: map[string]*schema.Schema{
+			"type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"user", "project"}, true),
+			},
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+
+}
+func dataSourceAlicloudLogAlertResourceRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	resourceType := d.Get("type").(string)
+	lang := d.Get("lang").(string)
+	project := d.Get("project").(string)
+	if err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+		_, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
+			switch resourceType {
+			case "user":
+				request := slsPop.CreateInitUserAlertResourceRequest()
+				request.Region = client.RegionId
+				request.App = "none"
+				request.Language = lang
+				return slsPopClient.InitUserAlertResource(request)
+			case "project":
+				_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+					return slsClient.GetLogStore(project, "internal-alert-history")
+				})
+				if err != nil {
+					if errs.IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
+						request := slsPop.CreateAnalyzeProductLogRequest()
+						request.CloudProduct = "sls.alert"
+						request.Project = project
+						request.Logstore = "internal-alert-history"
+						request.Overwrite = "true"
+						request.Region = client.RegionId
+						return slsPopClient.AnalyzeProductLog(request)
+					}
+					return nil, err
+				}
+				return nil, nil
+			default:
+				return nil, errs.WrapErrorf(errors.New("type error"), errs.DefaultErrorMsg, "alicloud_log_alert_resource", "CreateAlertResource", errs.AliyunLogGoSdkERROR)
+			}
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{errs.LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	}); err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_log_alert_resource", "CreateAlertResource", errs.AliyunLogGoSdkERROR)
+	}
+	d.SetId(fmt.Sprintf("alert_resource_%s", resourceType))
+	return nil
+}

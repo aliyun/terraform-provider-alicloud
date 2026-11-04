@@ -1,0 +1,257 @@
+package bastionhost
+
+import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strconv"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceInstances() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceInstancesRead,
+
+		Schema: map[string]*schema.Schema{
+			"description_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"descriptions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"user_vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"private_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"public_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"license_code": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"public_network_access": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"storage": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"security_group_ids": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
+			"tags": tags.TagsSchema(),
+		},
+	}
+}
+
+func dataSourceInstancesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "DescribeInstances"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = helper.PageSizeLarge
+	request["PageNumber"] = 1
+
+	var objects []map[string]interface{}
+
+	// get name Regex
+	var descriptionRegex *regexp.Regexp
+	if v, ok := d.GetOk("description_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		descriptionRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		var idsStr []string
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+			idsStr = append(idsStr, vv.(string))
+		}
+		request["InstanceId"] = idsStr
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		tags := make([]map[string]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
+		}
+		request["Tag.*"] = tags
+	}
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_bastionhost_instances", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Instances", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Instances", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if descriptionRegex != nil {
+				if !descriptionRegex.MatchString(fmt.Sprint(item["Description"])) {
+					continue
+				}
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if len(result) < helper.PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":                    object["InstanceId"],
+			"description":           object["Description"],
+			"user_vswitch_id":       object["VswitchId"],
+			"private_domain":        object["IntranetEndpoint"],
+			"public_domain":         object["InternetEndpoint"],
+			"instance_status":       object["InstanceStatus"],
+			"license_code":          object["LicenseCode"],
+			"public_network_access": object["PublicNetworkAccess"],
+		}
+
+		id := fmt.Sprint(object["InstanceId"])
+		bastionhostService := NewService(client)
+
+		getResp, err := bastionhostService.DescribeBastionhostInstance(id)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		mapping["security_group_ids"] = getResp["AuthorizedSecurityGroups"]
+		// instance["Storage"] is in byte, and it is larger than request param
+		if v, err := strconv.ParseInt(getResp["Storage"].(json.Number).String(), 10, 64); err != nil {
+			return errs.WrapError(err)
+		} else {
+			mapping["storage"] = fmt.Sprint(helper.BytesToTB(v) - 1)
+		}
+
+		mapping["bandwidth"] = getResp["BandwidthPackage"]
+
+		getResp2, err := bastionhostService.ListTagResources(id, "INSTANCE")
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		mapping["tags"] = tags.TagsToMap(getResp2)
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Description"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("descriptions", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("instances", s); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+	return nil
+}

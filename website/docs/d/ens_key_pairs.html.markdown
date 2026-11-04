@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ens Key Pairs to the user.
 ---
 
-# alicloud\_ens\_key\_pairs
+# alicloud_ens_key_pairs
 
 This data source provides the Ens Key Pairs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available since v1.133.0.
 
 ## Example Usage
 
@@ -36,15 +36,15 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `version` - (Required, ForceNew) The version number.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Key Pair IDs.
 * `names` - A list of Key Pair names.
 * `pairs` - A list of Ens Key Pairs. Each element contains the following attributes:
-	* `create_time` - The creation time of the key pair. The date format is in accordance with ISO8601 notation and uses UTC time. The format is yyyy-MM-ddTHH:mm:ssZ.
-	* `id` - The ID of the Key Pair.
-	* `key_pair_finger_print` - Fingerprint of the key pair.
-	* `key_pair_name` - The name of the key pair.
-	* `version` - The version number.
+  * `create_time` - The creation time of the key pair. The date format is in accordance with ISO8601 notation and uses UTC time. The format is yyyy-MM-ddTHH:mm:ssZ.
+  * `id` - The ID of the Key Pair.
+  * `key_pair_finger_print` - Fingerprint of the key pair.
+  * `key_pair_name` - The name of the key pair.
+  * `version` - The version number.

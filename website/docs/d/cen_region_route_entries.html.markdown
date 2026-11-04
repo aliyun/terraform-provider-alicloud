@@ -7,13 +7,15 @@ description: |-
     Provides a list of CEN Route Entries from specific region owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_region\_route\_entries
+# alicloud_cen_region_route_entries
 
 This data source provides CEN Regional Route Entries available to the user.
 
+-> **NOTE:** Available since v1.22.0+
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_region_route_entries" "entry" {
   instance_id = "cen-id1"
   region_id   = "cn-beijing"
@@ -30,6 +32,7 @@ The following arguments are supported:
 
 * `instance_id` - (Required) ID of the CEN instance.
 * `region_id` - (Required) ID of the region.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 

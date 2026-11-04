@@ -1,0 +1,355 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package dataworks
+
+import (
+	"fmt"
+	"log"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceProject() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceProjectCreate,
+		Read:   resourceProjectRead,
+		Update: resourceProjectUpdate,
+		Delete: resourceProjectDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(15 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"dev_environment_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"dev_role_disabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"display_name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[\\w.,;/@-]+$"), "Workspace Display Name"),
+			},
+			"pai_task_enabled": {
+				Type:     schema.TypeBool,
+				Required: true,
+			},
+			"project_name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[\\w.,;/@-]+$"), "Workspace Name"),
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Available", "Initializing", "Forbidden", "InitFailed", "Deleting", "DeleteFailed", "Frozen", "Updating", "UpdateFailed"}, false),
+			},
+			"tags": tags.TagsSchema(),
+		},
+	}
+}
+
+func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateProject"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	request["Name"] = d.Get("project_name")
+	request["DisplayName"] = d.Get("display_name")
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["AliyunResourceGroupId"] = v
+	}
+	request["PaiTaskEnabled"] = d.Get("pai_task_enabled")
+	if v, ok := d.GetOkExists("dev_environment_enabled"); ok {
+		request["DevEnvironmentEnabled"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := tags.ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
+	if v, ok := d.GetOkExists("dev_role_disabled"); ok {
+		request["DevRoleDisabled"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_data_works_project", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["ProjectId"]))
+
+	dataWorksServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	// Enabling PAI for a project is asynchronous: DescribeDataWorksProject may keep
+	// returning PaiTaskEnabled=false for a short while after the project reaches the
+	// Available state, which leads to a perpetual "false -> true" diff. Wait until the
+	// server-side value converges to the requested one before reading the resource back.
+	//
+	// Use a bounded timeout (2 minutes) and degrade gracefully if it elapses:
+	// some accounts/regions silently reject PAI enablement (e.g. PAI is not
+	// purchased in the target region). In that case the value will never
+	// converge and we should not fail Create — proceed to Read and let the
+	// caller see the actual server-side value rather than hanging until the
+	// Create timeout elapses.
+	paiStateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("pai_task_enabled"))}, 2*time.Minute, 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.PaiTaskEnabled", []string{}))
+	if _, err := paiStateConf.WaitForState(); err != nil {
+		log.Printf("[WARN] alicloud_data_works_project %s: PaiTaskEnabled did not converge to %v within timeout; the account may not have PAI enabled in this region. Proceeding with current server-side value: %s",
+			d.Id(), d.Get("pai_task_enabled"), err)
+	}
+
+	return resourceProjectUpdate(d, meta)
+}
+
+func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	dataWorksServiceV2 := NewService(client)
+
+	objectRaw, err := dataWorksServiceV2.DescribeDataWorksProject(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_data_works_project DescribeDataWorksProject Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	project1RawObj, _ := jsonpath.Get("$.Project", objectRaw)
+	project1Raw := make(map[string]interface{})
+	if project1RawObj != nil {
+		project1Raw = project1RawObj.(map[string]interface{})
+	}
+	if project1Raw["Description"] != nil {
+		d.Set("description", project1Raw["Description"])
+	}
+	if project1Raw["DevEnvironmentEnabled"] != nil {
+		d.Set("dev_environment_enabled", project1Raw["DevEnvironmentEnabled"])
+	}
+	if project1Raw["DevRoleDisabled"] != nil {
+		d.Set("dev_role_disabled", project1Raw["DevRoleDisabled"])
+	}
+	if project1Raw["DisplayName"] != nil {
+		d.Set("display_name", project1Raw["DisplayName"])
+	}
+	if project1Raw["PaiTaskEnabled"] != nil {
+		d.Set("pai_task_enabled", project1Raw["PaiTaskEnabled"])
+	}
+	if project1Raw["Name"] != nil {
+		d.Set("project_name", project1Raw["Name"])
+	}
+	if project1Raw["AliyunResourceGroupId"] != nil {
+		d.Set("resource_group_id", project1Raw["AliyunResourceGroupId"])
+	}
+	if project1Raw["Status"] != nil {
+		d.Set("status", project1Raw["Status"])
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.Project.AliyunResourceTags", objectRaw)
+	d.Set("tags", tags.TagsToMap(tagsMaps))
+
+	return nil
+}
+
+func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+
+	action := "ChangeResourceManagerResourceGroup"
+	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "project"
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["ResourceManagerResourceGroupId"] = d.Get("resource_group_id")
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("dataworks-public", "2020-05-18", action, query, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "UpdateProject"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["Id"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
+	if d.HasChange("status") {
+		update = true
+		request["Status"] = d.Get("status")
+	}
+
+	if !d.IsNewResource() && d.HasChange("dev_environment_enabled") {
+		update = true
+		request["DevEnvironmentEnabled"] = d.Get("dev_environment_enabled")
+	}
+
+	if !d.IsNewResource() && d.HasChange("dev_role_disabled") {
+		update = true
+		request["DevRoleDisabled"] = d.Get("dev_role_disabled")
+	}
+
+	if !d.IsNewResource() && d.HasChange("display_name") {
+		update = true
+	}
+	request["DisplayName"] = d.Get("display_name")
+	if !d.IsNewResource() && d.HasChange("pai_task_enabled") {
+		update = true
+	}
+	request["PaiTaskEnabled"] = d.Get("pai_task_enabled")
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		dataWorksServiceV2 := NewService(client)
+		stateConf := helper.BuildStateConf([]string{}, []string{"Available", "Forbidden"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+
+	if d.HasChange("tags") {
+		dataWorksServiceV2 := NewService(client)
+		if err := dataWorksServiceV2.SetResourceTags(d, "project"); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	d.Partial(false)
+	return resourceProjectRead(d, meta)
+}
+
+func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteProject"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["Id"] = d.Id()
+	request["RegionId"] = client.RegionId
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("dataworks-public", "2024-05-18", action, query, request, true)
+
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"9990020002", "9990040003"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"1101080008"}) || errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	dataWorksServiceV2 := NewService(client)
+	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, dataWorksServiceV2.DataWorksProjectStateRefreshFunc(d.Id(), "$.Project.Id", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return nil
+}

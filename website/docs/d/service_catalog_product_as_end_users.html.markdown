@@ -31,6 +31,8 @@ output "alicloud_service_catalog_product_as_end_user_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
+* `sort_by` - (Optional) The field that is used to sort the queried data.
+* `sort_order` - (Optional) The sorting method. Valid values: `Asc`, `Desc`.
 * `ids` - (Optional, ForceNew, Computed) A list of Product As End User IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by product name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -41,12 +43,12 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Product As End User IDs.
 * `users` - A list of Product As End User Entries. Each element contains the following attributes:
-    * `id` - ID of product, Its value is the same as `product_id`.
-    * `create_time` - Product creation time.According to ISO8601 standard, UTC time is used in the format: YYYY-MM-DDThh:mm:ssZ.
-    * `description` - Product description.
-    * `has_default_launch_option` - Whether there is a default Startup option. Value:-true: There is a default Startup option, and there is no need to fill in the portfolio when starting the product or updating the instance.-false: there is no default Startup option. You must fill in the portfolio when starting the product or updating the instance. > If the product is added to only one product portfolio, there will be a default Startup option. If the product is added to multiple product combinations, there will be multiple startup options at the same time, but there is no default Startup option at this time.
-    * `product_arn` - Product ARN.
-    * `product_id` - Product ID.
-    * `product_name` - Product name.
-    * `product_type` - Type of product.The value is Ros, which indicates the resource orchestration service (ROS).
-    * `provider_name` - Product provider.
+  * `id` - ID of product, Its value is the same as `product_id`.
+  * `create_time` - Product creation time.According to ISO8601 standard, UTC time is used in the format: YYYY-MM-DDThh:mm:ssZ.
+  * `description` - Product description.
+  * `has_default_launch_option` - Whether there is a default Startup option. Value:-true: There is a default Startup option, and there is no need to fill in the portfolio when starting the product or updating the instance.-false: there is no default Startup option. You must fill in the portfolio when starting the product or updating the instance. > If the product is added to only one product portfolio, there will be a default Startup option. If the product is added to multiple product combinations, there will be multiple startup options at the same time, but there is no default Startup option at this time.
+  * `product_arn` - Product ARN.
+  * `product_id` - Product ID.
+  * `product_name` - Product name.
+  * `product_type` - Type of product.The value is Ros, which indicates the resource orchestration service (ROS).
+  * `provider_name` - Product provider.

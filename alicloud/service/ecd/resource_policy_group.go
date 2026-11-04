@@ -1,0 +1,855 @@
+package ecd
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourcePolicyGroup() *schema.Resource {
+	return &schema.Resource{
+		Create: resourcePolicyGroupCreate,
+		Read:   resourcePolicyGroupRead,
+		Update: resourcePolicyGroupUpdate,
+		Delete: resourcePolicyGroupDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+			clientTypes, _ := d.Get("client_types").(*schema.Set)
+			if clientTypes == nil {
+				return nil
+			}
+			return ValidatePolicyGroupClientTypes(clientTypes.List())
+		},
+		Schema: map[string]*schema.Schema{
+			"authorize_access_policy_rules": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cidr_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"authorize_security_policy_rules": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cidr_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"ip_protocol": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"port_range": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"priority": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"clipboard": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "read", "readwrite"}, false),
+			},
+			"domain_list": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"html_access": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
+			"html_file_transfer": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"all", "download", "off", "upload"}, false),
+			},
+			"local_drive": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"readwrite", "off", "read"}, false),
+			},
+			"policy_group_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"usb_redirect": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
+			"visual_quality": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"high", "lossless", "low", "medium"}, false),
+			},
+			"watermark": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
+			"watermark_transparency": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"DARK", "LIGHT", "MIDDLE"}, false),
+			},
+			"watermark_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"EndUserId", "HostName"}, false),
+			},
+			"recording": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "alltime", "period"}, false),
+			},
+			"recording_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("recording"); ok && v.(string) == "period" {
+						return false
+					}
+					return true
+				},
+			},
+			"recording_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("recording"); ok && v.(string) == "period" {
+						return false
+					}
+					return true
+				},
+			},
+			"recording_fps": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntInSlice([]int{2, 5, 10, 15}),
+			},
+			"camera_redirect": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
+			},
+			"recording_expires": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(15, 180),
+			},
+			"internet_communication_protocol": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"BOTH", "TCP"}, false),
+			},
+			"recording_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntInSlice([]int{10, 20, 30, 60}),
+			},
+			"client_types": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"client_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"android", "html5", "ios", "macos", "windows"}, false),
+						},
+						"status": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+						},
+					},
+				},
+			},
+			"end_user_apply_admin_coordinate": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
+			"end_user_group_coordinate": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"off", "on"}, false),
+			},
+		},
+	}
+}
+
+func resourcePolicyGroupCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreatePolicyGroup"
+	request := make(map[string]interface{})
+	var err error
+	if v, ok := d.GetOk("authorize_access_policy_rules"); ok {
+		for authorizeAccessPolicyRulesPtr, authorizeAccessPolicyRules := range v.(*schema.Set).List() {
+			authorizeAccessPolicyRulesArg := authorizeAccessPolicyRules.(map[string]interface{})
+			request["AuthorizeAccessPolicyRule."+fmt.Sprint(authorizeAccessPolicyRulesPtr+1)+".CidrIp"] = authorizeAccessPolicyRulesArg["cidr_ip"]
+			request["AuthorizeAccessPolicyRule."+fmt.Sprint(authorizeAccessPolicyRulesPtr+1)+".Description"] = authorizeAccessPolicyRulesArg["description"]
+		}
+	}
+	if v, ok := d.GetOk("authorize_security_policy_rules"); ok {
+		for authorizeSecurityPolicyRulesPtr, authorizeSecurityPolicyRules := range v.(*schema.Set).List() {
+			authorizeSecurityPolicyRulesArg := authorizeSecurityPolicyRules.(map[string]interface{})
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".CidrIp"] = authorizeSecurityPolicyRulesArg["cidr_ip"]
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Description"] = authorizeSecurityPolicyRulesArg["description"]
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".IpProtocol"] = authorizeSecurityPolicyRulesArg["ip_protocol"]
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Policy"] = authorizeSecurityPolicyRulesArg["policy"]
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".PortRange"] = authorizeSecurityPolicyRulesArg["port_range"]
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Priority"] = authorizeSecurityPolicyRulesArg["priority"]
+			request["AuthorizeSecurityPolicyRule."+fmt.Sprint(authorizeSecurityPolicyRulesPtr+1)+".Type"] = authorizeSecurityPolicyRulesArg["type"]
+		}
+	}
+	if v, ok := d.GetOk("clipboard"); ok {
+		request["Clipboard"] = v
+	}
+	if v, ok := d.GetOk("domain_list"); ok {
+		request["DomainList"] = v
+	}
+	if v, ok := d.GetOk("html_access"); ok {
+		request["Html5Access"] = v
+	}
+	if v, ok := d.GetOk("html_file_transfer"); ok {
+		request["Html5FileTransfer"] = v
+	}
+	if v, ok := d.GetOk("local_drive"); ok {
+		request["LocalDrive"] = v
+	}
+	if v, ok := d.GetOk("policy_group_name"); ok {
+		request["Name"] = v
+	}
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("usb_redirect"); ok {
+		request["UsbRedirect"] = v
+	}
+	if v, ok := d.GetOk("visual_quality"); ok {
+		request["VisualQuality"] = v
+	}
+	if v, ok := d.GetOk("watermark"); ok {
+		request["Watermark"] = v
+	}
+	if v, ok := d.GetOk("watermark_transparency"); ok {
+		request["WatermarkTransparency"] = v
+	}
+	if v, ok := d.GetOk("watermark_type"); ok {
+		request["WatermarkType"] = v
+	}
+	if v, ok := d.GetOk("recording"); ok {
+		request["Recording"] = v
+	}
+	if v, ok := d.GetOk("recording_start_time"); ok {
+		request["RecordingStartTime"] = v
+	}
+	if v, ok := d.GetOk("recording_end_time"); ok {
+		request["RecordingEndTime"] = v
+	}
+	if v, ok := d.GetOk("recording_fps"); ok {
+		request["RecordingFps"] = v
+	}
+	if v, ok := d.GetOk("camera_redirect"); ok {
+		request["CameraRedirect"] = v
+	}
+	if v, ok := d.GetOk("recording_expires"); ok {
+		request["RecordingExpires"] = v
+	}
+	if v, ok := d.GetOk("internet_communication_protocol"); ok {
+		request["InternetCommunicationProtocol"] = v
+	}
+	if v, ok := d.GetOk("recording_duration"); ok {
+		request["RecordingDuration"] = v
+	}
+	if v, ok := d.GetOk("client_types"); ok {
+		for clientTypesPtr, clientTypes := range v.(*schema.Set).List() {
+			clientTypesArg, ok := clientTypes.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".ClientType"] = clientTypesArg["client_type"]
+			// Status is optional: send it only when configured, otherwise the API
+			// keeps the type's default. The wire enum is uppercase OFF/ON.
+			if status, ok := clientTypesArg["status"].(string); ok && status != "" {
+				request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".Status"] = strings.ToUpper(status)
+			}
+		}
+	}
+	if v, ok := d.GetOk("end_user_apply_admin_coordinate"); ok {
+		request["EndUserApplyAdminCoordinate"] = v
+	}
+	if v, ok := d.GetOk("end_user_group_coordinate"); ok {
+		request["EndUserGroupCoordinate"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ecd_policy_group", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["PolicyGroupId"]))
+
+	return resourcePolicyGroupRead(d, meta)
+}
+func resourcePolicyGroupRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecdService := NewService(client)
+	object, err := ecdService.DescribeEcdPolicyGroup(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecd_policy_group ecdService.DescribeEcdPolicyGroup Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	if authorizeAccessPolicyRulesList, ok := object["AuthorizeAccessPolicyRules"]; ok && authorizeAccessPolicyRulesList != nil {
+		authorizeAccessPolicyRulesMaps := make([]map[string]interface{}, 0)
+		for _, authorizeAccessPolicyRulesListItem := range authorizeAccessPolicyRulesList.([]interface{}) {
+			if authorizeAccessPolicyRulesListItemMap, ok := authorizeAccessPolicyRulesListItem.(map[string]interface{}); ok {
+				authorizeAccessPolicyRulesMap := make(map[string]interface{})
+				authorizeAccessPolicyRulesMap["cidr_ip"] = authorizeAccessPolicyRulesListItemMap["CidrIp"]
+				authorizeAccessPolicyRulesMap["description"] = authorizeAccessPolicyRulesListItemMap["Description"]
+				authorizeAccessPolicyRulesMaps = append(authorizeAccessPolicyRulesMaps, authorizeAccessPolicyRulesMap)
+			}
+		}
+		d.Set("authorize_access_policy_rules", authorizeAccessPolicyRulesMaps)
+	}
+	if v, ok := object["AuthorizeSecurityPolicyRules"].([]interface{}); ok {
+		authorizeSecurityPolicyRules := make([]map[string]interface{}, 0)
+		for _, val := range v {
+			item := val.(map[string]interface{})
+			temp := map[string]interface{}{
+				"cidr_ip":     item["CidrIp"],
+				"description": item["Description"],
+				"ip_protocol": item["IpProtocol"],
+				"policy":      item["Policy"],
+				"port_range":  item["PortRange"],
+				"priority":    item["Priority"],
+				"type":        item["Type"],
+			}
+
+			authorizeSecurityPolicyRules = append(authorizeSecurityPolicyRules, temp)
+		}
+		if err := d.Set("authorize_security_policy_rules", authorizeSecurityPolicyRules); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	d.Set("clipboard", object["Clipboard"])
+	d.Set("domain_list", object["DomainList"])
+	d.Set("html_access", object["Html5Access"])
+	d.Set("html_file_transfer", object["Html5FileTransfer"])
+	d.Set("local_drive", object["LocalDrive"])
+	d.Set("policy_group_name", object["Name"])
+	d.Set("status", object["PolicyStatus"])
+	d.Set("usb_redirect", object["UsbRedirect"])
+	d.Set("visual_quality", object["VisualQuality"])
+	d.Set("watermark", object["Watermark"])
+	d.Set("watermark_transparency", object["WatermarkTransparency"])
+	d.Set("watermark_type", object["WatermarkType"])
+	d.Set("recording", object["Recording"])
+	recording_fpsVal, err := convert.FormatInt(object["RecordingFps"])
+	if err != nil {
+		return err
+	}
+	d.Set("recording_fps", recording_fpsVal)
+	d.Set("camera_redirect", object["CameraRedirect"])
+	recording_expiresVal, err := convert.FormatInt(object["RecordingExpires"])
+	if err != nil {
+		return err
+	}
+	d.Set("recording_expires", recording_expiresVal)
+	if protocol, ok := object["InternetCommunicationProtocol"].(string); ok && protocol != "" {
+		d.Set("internet_communication_protocol", strings.ToUpper(protocol))
+	}
+	recordingDurationVal, err := convert.FormatInt(object["RecordingDuration"])
+	if err != nil {
+		return err
+	}
+	d.Set("recording_duration", recordingDurationVal)
+	// DescribePolicyGroups returns client types under the plural "ClientTypes"
+	// key, consistent with AuthorizeAccessPolicyRules / AuthorizeSecurityPolicyRules
+	// in this same Read: the request uses the singular repeatList prefix
+	// ClientType.{N}.ClientType/.Status, and the response echoes it as a plural
+	// array. The singular "ClientType" key is empty (verified via ACC). The
+	// Status enum is uppercase OFF/ON on the wire, so it is lowercased for state.
+	if err := setPolicyGroupClientTypes(d, object); err != nil {
+		return err
+	}
+	d.Set("end_user_apply_admin_coordinate", object["EndUserApplyAdminCoordinate"])
+	d.Set("end_user_group_coordinate", object["EndUserGroupCoordinate"])
+	return nil
+}
+
+// ValidatePolicyGroupClientTypes rejects client_types entries that could never
+// converge: an empty client_type cannot be matched back during Read, and a
+// duplicated client_type is collapsed into one state element.
+func ValidatePolicyGroupClientTypes(clientTypes []interface{}) error {
+	seen := make(map[string]bool, len(clientTypes))
+	for _, rawEntry := range clientTypes {
+		entryMap, ok := rawEntry.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("client_types: client_type is required when a client_types block is configured")
+		}
+		clientType, _ := entryMap["client_type"].(string)
+		if clientType == "" {
+			return fmt.Errorf("client_types: client_type is required when a client_types block is configured")
+		}
+		if seen[clientType] {
+			return fmt.Errorf("client_types: duplicate client_type %q", clientType)
+		}
+		seen[clientType] = true
+	}
+	return nil
+}
+
+// policyGroupClientTypeSelection is one client type the user configured, plus
+// whether an explicit status was configured for it.
+type policyGroupClientTypeSelection struct {
+	status    string
+	hasStatus bool
+}
+
+// policyGroupClientTypeFilterFromConfig reads the configured client types. The
+// second return is false when client_types is absent from the configuration, in
+// which case state follows the prior state.
+func policyGroupClientTypeFilterFromConfig(rawConfig cty.Value) (map[string]policyGroupClientTypeSelection, bool) {
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return nil, false
+	}
+	configList := rawConfig.GetAttr("client_types")
+	if configList.IsNull() || !configList.IsKnown() {
+		return nil, false
+	}
+	selection := make(map[string]policyGroupClientTypeSelection)
+	for it := configList.ElementIterator(); it.Next(); {
+		_, rawEntry := it.Element()
+		clientType := rawEntry.GetAttr("client_type")
+		if clientType.IsNull() || !clientType.IsKnown() || clientType.AsString() == "" {
+			continue
+		}
+		entry := policyGroupClientTypeSelection{}
+		status := rawEntry.GetAttr("status")
+		if !status.IsNull() && status.IsKnown() && status.AsString() != "" {
+			entry.status = strings.ToLower(status.AsString())
+			entry.hasStatus = true
+		}
+		selection[clientType.AsString()] = entry
+	}
+	return selection, true
+}
+
+// policyGroupClientTypeFilterFromState mirrors the last applied subset during
+// refresh, where Terraform does not pass the configuration to Read.
+func policyGroupClientTypeFilterFromState(clientTypes *schema.Set) (map[string]policyGroupClientTypeSelection, bool) {
+	if clientTypes == nil || clientTypes.Len() == 0 {
+		return nil, false
+	}
+	selection := make(map[string]policyGroupClientTypeSelection)
+	for _, rawEntry := range clientTypes.List() {
+		entryMap, ok := rawEntry.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		clientType, _ := entryMap["client_type"].(string)
+		if clientType == "" {
+			continue
+		}
+		entry := policyGroupClientTypeSelection{}
+		if status, _ := entryMap["status"].(string); status != "" {
+			entry.status = strings.ToLower(status)
+			entry.hasStatus = true
+		}
+		selection[clientType] = entry
+	}
+	return selection, true
+}
+
+// client_types is Optional and DescribePolicyGroups always returns every client
+// type, so state must mirror exactly what the user configured instead of echoing
+// the API set: raw configuration during apply, prior state during refresh, and
+// an empty set when the blocks are removed. Import has neither configuration nor
+// prior state, so it leaves client_types empty.
+func setPolicyGroupClientTypes(d *schema.ResourceData, object map[string]interface{}) error {
+	clientTypesList, _ := object["ClientTypes"].([]interface{})
+	apiClientTypes := make(map[string]map[string]interface{}, len(clientTypesList))
+	for _, rawEntry := range clientTypesList {
+		entryMap, ok := rawEntry.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if clientType, ok := entryMap["ClientType"].(string); ok && clientType != "" {
+			apiClientTypes[clientType] = entryMap
+		}
+	}
+
+	selection, filtered := policyGroupClientTypeFilterFromConfig(d.GetRawConfig())
+	if !filtered {
+		clientTypes, _ := d.Get("client_types").(*schema.Set)
+		selection, filtered = policyGroupClientTypeFilterFromState(clientTypes)
+	}
+	if !filtered {
+		selection = map[string]policyGroupClientTypeSelection{}
+	}
+
+	clientTypesMaps := make([]map[string]interface{}, 0, len(selection))
+	for clientType, entry := range selection {
+		clientTypesMap := map[string]interface{}{"client_type": clientType}
+		// Only entries with a configured status are echoed back, so an entry whose
+		// status is left unset keeps an identical element hash across refresh.
+		if entry.hasStatus {
+			status := entry.status
+			if apiEntry, ok := apiClientTypes[clientType]; ok {
+				if apiStatus, ok := apiEntry["Status"].(string); ok && apiStatus != "" {
+					status = strings.ToLower(apiStatus)
+				}
+			}
+			clientTypesMap["status"] = status
+		}
+		clientTypesMaps = append(clientTypesMaps, clientTypesMap)
+	}
+	if err := d.Set("client_types", clientTypesMaps); err != nil {
+		return errs.WrapError(err)
+	}
+	return nil
+}
+
+func resourcePolicyGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecdService := NewService(client)
+	var err error
+	var response map[string]interface{}
+	update := false
+	request := map[string]interface{}{
+		"PolicyGroupId": d.Id(),
+	}
+	request["RegionId"] = client.RegionId
+	if d.HasChange("authorize_access_policy_rules") {
+		update = true
+		err := ecdService.setAuthAccessPolicyRules(d, request, "authorize_access_policy_rules")
+		if err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	if d.HasChange("authorize_security_policy_rules") {
+		update = true
+		err := ecdService.setAuthSecurityPolicyRules(d, request, "authorize_security_policy_rules")
+		if err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	if d.HasChange("cidr_ip") {
+		update = true
+		if v, ok := d.GetOk("cidr_ip"); ok {
+			request["AuthorizeSecurityPolicyRule.*.CidrIp"] = v
+		}
+	}
+	if d.HasChange("description") {
+		update = true
+		if v, ok := d.GetOk("description"); ok {
+			request["AuthorizeSecurityPolicyRule.*.Description"] = v
+		}
+	}
+	if d.HasChange("ip_protocol") {
+		update = true
+		if v, ok := d.GetOk("ip_protocol"); ok {
+			request["AuthorizeSecurityPolicyRule.*.IpProtocol"] = v
+		}
+	}
+	if d.HasChange("policy") {
+		update = true
+		if v, ok := d.GetOk("policy"); ok {
+			request["AuthorizeSecurityPolicyRule.*.Policy"] = v
+		}
+	}
+	if d.HasChange("port_range") {
+		update = true
+		if v, ok := d.GetOk("port_range"); ok {
+			request["AuthorizeSecurityPolicyRule.*.PortRange"] = v
+		}
+	}
+	if d.HasChange("priority") {
+		update = true
+		if v, ok := d.GetOk("priority"); ok {
+			request["AuthorizeSecurityPolicyRule.*.Priority"] = v
+		}
+	}
+	if d.HasChange("type") {
+		update = true
+		if v, ok := d.GetOk("type"); ok {
+			request["AuthorizeSecurityPolicyRule.*.Type"] = v
+		}
+	}
+	if d.HasChange("clipboard") {
+		update = true
+		if v, ok := d.GetOk("clipboard"); ok {
+			request["Clipboard"] = v
+		}
+	}
+	if d.HasChange("domain_list") {
+		update = true
+		if v, ok := d.GetOk("domain_list"); ok {
+			request["DomainList"] = v
+		}
+	}
+	if d.HasChange("html_access") {
+		update = true
+		if v, ok := d.GetOk("html_access"); ok {
+			request["Html5Access"] = v
+		}
+	}
+	if d.HasChange("html_file_transfer") {
+		update = true
+		if v, ok := d.GetOk("html_file_transfer"); ok {
+			request["Html5FileTransfer"] = v
+		}
+	}
+	if d.HasChange("local_drive") {
+		update = true
+		if v, ok := d.GetOk("local_drive"); ok {
+			request["LocalDrive"] = v
+		}
+	}
+	if d.HasChange("policy_group_name") {
+		update = true
+		if v, ok := d.GetOk("policy_group_name"); ok {
+			request["Name"] = v
+		}
+	}
+	if d.HasChange("usb_redirect") {
+		update = true
+		if v, ok := d.GetOk("usb_redirect"); ok {
+			request["UsbRedirect"] = v
+		}
+	}
+	if d.HasChange("visual_quality") {
+		update = true
+	}
+	if v, ok := d.GetOk("visual_quality"); ok {
+		request["VisualQuality"] = v
+	}
+	if d.HasChange("watermark") {
+		update = true
+	}
+	if v, ok := d.GetOk("watermark"); ok {
+		request["Watermark"] = v
+	}
+	if d.HasChange("watermark_transparency") {
+		update = true
+	}
+	if v, ok := d.GetOk("watermark_transparency"); ok {
+		request["WatermarkTransparency"] = v
+	}
+	if d.HasChange("watermark_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("watermark_type"); ok {
+		request["WatermarkType"] = v
+	}
+	if d.HasChange("recording") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording"); ok {
+		request["Recording"] = v
+	}
+	if d.HasChange("recording_start_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_start_time"); ok {
+		request["RecordingStartTime"] = v
+	}
+	if d.HasChange("recording_end_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_end_time"); ok {
+		request["RecordingEndTime"] = v
+	}
+	if d.HasChange("recording_fps") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_fps"); ok {
+		request["RecordingFps"] = v
+	}
+	if d.HasChange("camera_redirect") {
+		update = true
+	}
+	if v, ok := d.GetOk("camera_redirect"); ok {
+		request["CameraRedirect"] = v
+	}
+	if d.HasChange("recording_expires") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_expires"); ok {
+		request["RecordingExpires"] = v
+	}
+	if d.HasChange("internet_communication_protocol") {
+		update = true
+	}
+	if v, ok := d.GetOk("internet_communication_protocol"); ok {
+		request["InternetCommunicationProtocol"] = v
+	}
+	if d.HasChange("recording_duration") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_duration"); ok {
+		request["RecordingDuration"] = v
+	}
+	if d.HasChange("client_types") {
+		update = true
+	}
+	// Send the configured client types on every update, like the sibling
+	// attributes: ModifyPolicyGroup treats omitted repeatList parameters as
+	// unmanaged, so skipping them on an unrelated update could silently drop the
+	// access-control rules. Removing every block sends none, which is the
+	// documented "allow all client types" form.
+	if v, ok := d.GetOk("client_types"); ok {
+		for clientTypesPtr, clientTypes := range v.(*schema.Set).List() {
+			clientTypesArg, ok := clientTypes.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".ClientType"] = clientTypesArg["client_type"]
+			// Status is optional: send it only when configured, otherwise the API
+			// keeps the type's default. The wire enum is uppercase OFF/ON.
+			if status, ok := clientTypesArg["status"].(string); ok && status != "" {
+				request["ClientType."+fmt.Sprint(clientTypesPtr+1)+".Status"] = strings.ToUpper(status)
+			}
+		}
+	}
+	if d.HasChange("end_user_apply_admin_coordinate") {
+		update = true
+	}
+	if v, ok := d.GetOk("end_user_apply_admin_coordinate"); ok {
+		request["EndUserApplyAdminCoordinate"] = v
+	}
+	if d.HasChange("end_user_group_coordinate") {
+		update = true
+	}
+	if v, ok := d.GetOk("end_user_group_coordinate"); ok {
+		request["EndUserGroupCoordinate"] = v
+	}
+	if update {
+		action := "ModifyPolicyGroup"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	return resourcePolicyGroupRead(d, meta)
+}
+func resourcePolicyGroupDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeletePolicyGroups"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"PolicyGroupId": []string{d.Id()},
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}

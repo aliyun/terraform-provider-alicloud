@@ -17,7 +17,7 @@ Provides a EMR Cluster resource. With this you can create, read, and release  EM
 
 ## Example Usage
 
-#### 1. Create A Cluster
+### 1. Create A Cluster
 
 ```terraform
 data "alicloud_emr_main_versions" "default" {}
@@ -95,7 +95,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-  name = "terraform-create-cluster-test"
+  name = "terraform-create-cluster"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -149,8 +149,9 @@ resource "alicloud_emr_cluster" "default" {
 }
 ```
 
-#### 2. Scale Up
-The hosts of EMR Cluster are orginized as host group. Scaling up/down is operating host group. 
+### 2. Scale Up
+
+The hosts of EMR Cluster are orginized as host group. Scaling up/down is operating host group.
 
 In the case of scaling up cluster, we should add the node_count of some host group. 
 
@@ -235,7 +236,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-  name = "terraform-resize-cluster-test"
+  name = "terraform-resize-cluster"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -289,7 +290,7 @@ resource "alicloud_emr_cluster" "default" {
 }
 ```
 
-#### 3. Scale Down
+### 3. Scale Down
 
 In the case of scaling down a cluster, we need to specified the host group and the instance list. 
 
@@ -373,7 +374,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "default" {
-  name = "terraform-resize-cluster-test"
+  name = "terraform-resize-cluster"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -427,7 +428,7 @@ resource "alicloud_emr_cluster" "default" {
 }
 ```
 
-#### 4. Create a emr gateway cluster
+### 4. Create a emr gateway cluster
 
 ```terraform
 data "alicloud_emr_main_versions" "default" {}
@@ -505,7 +506,7 @@ resource "alicloud_ram_role" "default" {
 }
 
 resource "alicloud_emr_cluster" "gateway" {
-  name = "terraform-gateway-cluster-test"
+  name = "terraform-gateway-cluster"
 
   emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
 
@@ -549,7 +550,7 @@ The following arguments are supported:
 * `name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
 * `emr_ver` - (Required, ForceNew) EMR Version, e.g. EMR-3.22.0. You can find the all valid EMR Version in emr web console.
 * `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. HADOOP, KAFKA, DRUID, GATEWAY etc. You can find all valid EMR cluster type in emr web console. Supported 'GATEWAY' available in 1.61.0+.
-* `charge_type` - (Required, ForceNew) Charge Type for this cluster. Supported value: PostPaid or PrePaid. Default value: PostPaid.
+* `charge_type` - (Optional, ForceNew) Charge Type for this cluster. Supported value: PostPaid or PrePaid. Default value: PostPaid.
 * `zone_id` - (Required, ForceNew) Zone ID, e.g. cn-huhehaote-a
 * `security_group_id` (Optional, ForceNew) Security Group ID for Cluster, you can also specify this key for each host group.
 * `vswitch_id` (Optional, ForceNew) Global vswitch id, you can also specify it in host group.
@@ -563,38 +564,39 @@ The following arguments are supported:
 * `key_pair_name` (Optional, ForceNew) Ssh key pair.
 * `deposit_type` (Optional, ForceNew) Cluster deposit type, HALF_MANAGED or FULL_MANAGED.
 * `related_cluster_id` (Optional, ForceNew) This specify the related cluster id, if this cluster is a Gateway.
-* `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example).
+* `host_group` - (Optional) Groups of Host, You can specify MASTER as a group, CORE as a group (just like the above example). See [`host_group`](#host_group) below.
 * `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
 * `period` - (Optional, Available since v1.101.0) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
 * `is_open_public_ip` (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
-* `bootstrap_action` (Optional) Boot action parameters.
+* `bootstrap_action` (Optional) Boot action parameters. See [`bootstrap_action`](#bootstrap_action) below.
 * `resource_group_id` - (Optional, Available since v1.182.0) The Id of resource group which the emr-cluster belongs.
-* `meta_store_type` - (Optional, Available since v1.182.0) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
-* `meta_store_conf` - (Optional, Available since v1.182.0) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified.
-* `configs` - (Optional, Available since v1.182.0) The custom configurations of emr-cluster service.
-* `modify_cluster_service_config` - (Optional, Available since v1.182.0) The configurations of emr-cluster service modification after cluster created.
+* `meta_store_type` - (Optional, ForceNew, Available since v1.182.0) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
+* `meta_store_conf` - (Optional, Available since v1.182.0) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified. See [`meta_store_conf`](#meta_store_conf) below.
+* `configs` - (Optional, Available since v1.182.0) The custom configurations of emr-cluster service. See [`configs`](#configs) below.
+* `modify_cluster_service_config` - (Optional, Available since v1.182.0) The configurations of emr-cluster service modification after cluster created. See [`modify_cluster_service_config`](#modify_cluster_service_config) below.
 
-#### Block host_group
+### `host_group`
 
-The host_group mapping supports the following: 
+The host_group mapping supports the following:
 
-* `host_group_name` - (Required, ForceNew) host group name.
-* `host_group_type` - (Required) host group type, supported value: MASTER, CORE or TASK, supported 'GATEWAY' available in 1.61.0+.
+* `host_group_name` - (Optional) host group name.
+* `host_group_type` - (Optional) host group type, supported value: MASTER, CORE or TASK, supported 'GATEWAY' available in 1.61.0+.
 * `charge_type` - (Optional) Charge Type for this group of hosts: PostPaid or PrePaid. If this is not specified, charge type will follow global charge_type value.
 * `period` - (Optional) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
-* `node_count` - (Required) Host number in this group.
-* `instance_type` - (Required) Host Ecs instance type.
-* `disk_type` - (Required) Data disk type. Supported value: cloud,cloud_efficiency,cloud_ssd,local_disk,cloud_essd.
-* `disk_capacity` - (Required) Data disk capacity.
-* `disk_count` - (Required) Data disk count.
-* `sys_disk_type` - (Required) System disk type. Supported value: cloud,cloud_efficiency,cloud_ssd,cloud_essd.
-* `sys_disk_capacity` - (Required) System disk capacity.
+* `node_count` - (Optional) Host number in this group.
+* `instance_type` - (Optional) Host Ecs instance type.
+* `disk_type` - (Optional) Data disk type. Supported value: cloud,cloud_efficiency,cloud_ssd,local_disk,cloud_essd.
+* `disk_capacity` - (Optional) Data disk capacity.
+* `disk_count` - (Optional) Data disk count.
+* `sys_disk_type` - (Optional) System disk type. Supported value: cloud,cloud_efficiency,cloud_ssd,cloud_essd.
+* `sys_disk_capacity` - (Optional) System disk capacity.
 * `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
+* `gpu_driver` - (Optional) GPU driver.
 * `instance_list` - (Optional) Instance list for cluster scale down. This value follows the json format, e.g. ["instance_id1","instance_id2"]. escape character for " is \".
 * `enable_graceful_decommission` - (Optional, Available since v1.168.0) Enable hadoop cluster of task node graceful decommission, ’true’ or ‘false’ . Default value: false.
 * `decommission_timeout` - (Optional, Available since v1.168.0) Graceful decommission timeout, unit: seconds.
 
-#### Block bootstrap_action
+### `bootstrap_action`
 
 The bootstrap_action mapping supports the following:
 
@@ -605,29 +607,29 @@ The bootstrap_action mapping supports the following:
 * `execution_moment` - (Optional, Available since v1.173.0) bootstrap action execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ . Default value: "BEFORE_INSTALL".
 * `execution_fail_strategy` - (Optional, Available since v1.173.0) bootstrap action execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ . Default value: "FAILED_BLOCKED
 
-### Block meta_store_conf
+### `meta_store_conf`
 
 The meta_store_conf mapping supports the following:
 
-* `db_url` - (Optional, Available since v1.182.0) Custom rds database connection url.
-* `db_user_name` - (Optional, Available since v1.182.0) Custom rds database user name.
-* `db_password` - (Optional, Available since v1.182.0) Custom rds database password.
+* `db_url` - (Required, Available since v1.182.0) Custom rds database connection url.
+* `db_user_name` - (Required, Available since v1.182.0) Custom rds database user name.
+* `db_password` - (Required, Available since v1.182.0) Custom rds database password.
 
-### Block configs
-
-The configs mapping supports the following:
-
-* `service_name` - (Optional, Available since v1.182.0) Custom configuration service name, e.g. ’HDFS’.
-* `file_name` - (Optional, Available since v1.182.0) Custom configuration service file name, e.g. ’hdfs-site’.
-* `config_key` - (Optional, Available since v1.182.0) Custom configuration service config key, e.g. ’dfs.replication’.
-* `config_value` - (Optional, Available since v1.182.0) Custom configuration service config value, e.g. ’3’.
-
-### Block modify_cluster_service_config
+### `configs`
 
 The configs mapping supports the following:
 
-* `service_name` - (Optional, Available since v1.182.0) Cluster service configuration modification name, e.g. ’HDFS’.
-* `config_params` - (Optional, Available since v1.182.0) Cluster service configuration modification params, e.g. ’{"hdfs-site":{"dfs.replication":"3"}}’.
+* `service_name` - (Required, Available since v1.182.0) Custom configuration service name, e.g. ’HDFS’.
+* `file_name` - (Required, Available since v1.182.0) Custom configuration service file name, e.g. ’hdfs-site’.
+* `config_key` - (Required, Available since v1.182.0) Custom configuration service config key, e.g. ’dfs.replication’.
+* `config_value` - (Required, Available since v1.182.0) Custom configuration service config value, e.g. ’3’.
+
+### `modify_cluster_service_config`
+
+The configs mapping supports the following:
+
+* `service_name` - (Required, Available since v1.182.0) Cluster service configuration modification name, e.g. ’HDFS’.
+* `config_params` - (Required, Available since v1.182.0) Cluster service configuration modification params, e.g. ’{"hdfs-site":{"dfs.replication":"3"}}’.
 * `custom_config_params` - (Optional, Available since v1.182.0) Cluster service configuration modification custom params, e.g. ’{"tez-site":{"key":{"Value":"value"}}}’.
 * `group_id` - (Optional, Available since v1.182.0) Cluster service configuration modification node group id, e.g. ’G-XXX’.
 * `host_instance_id` - (Optional, Available since v1.182.0) Cluster service configuration modification host instance id, e.g. ’i-bp146tnrkq4tcxxxxx’.

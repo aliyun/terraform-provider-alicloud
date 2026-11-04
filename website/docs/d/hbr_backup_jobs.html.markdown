@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Hbr Backup Jobs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
@@ -81,49 +81,53 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
-### Block filter
+* `filter` - (Optional) More complex filters can be expressed using one or more `filter` sub-blocks, which take the following arguments. See [`filter`](#filter) below.
 
-More complex filters can be expressed using one or more `filter` sub-blocks,
-which take the following arguments:
-* `key`      - (Required) The key of the field to filter. Valid values: `PlanId`, `VaultId`, `InstanceId`, `Bucket`, `FileSystemId`, `CompleteTime`.
-* `operator` - (Required) The operator of the field to filter. Valid values: `EQUAL`, `NOT_EQUAL`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `BETWEEN`, `IN`.
-* `values`   - (Required) Set of values that are accepted for the given field.
+### `filter`
+
+The filter supports the following:
+
+* `key` - (Optional) The key of the field to filter. Valid values: `PlanId`, `VaultId`, `InstanceId`, `Bucket`, `FileSystemId`, `CompleteTime`.
+* `operator` - (Optional) The operator of the field to filter. Valid values: `EQUAL`, `NOT_EQUAL`, `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL`, `BETWEEN`, `IN`.
+* `values` - (Optional) Set of values that are accepted for the given field.
 
   -> **NOTE:** Numeric types such as `CompleteTime` do not support `IN` operations for the time being.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `jobs` - A list of Hbr Backup Jobs. Each element contains the following attributes:
-	* `id` - The ID of the backup job.
-	* `backup_job_id` - The ID of the backup job.
-	* `source_type` - The type of data source. Valid Values: `ECS_FILE`, `OSS`, `NAS`, `UDM_DISK`.
-	* `back_job_name` - The name of backup job.
-	* `plan_id` - The ID of a backup plan.
-	* `vault_id` - The ID of backup vault.
-	* `actual_bytes` - The actual data volume of the backup task (After deduplication) . Unit byte.
-	* `actual_items` - The actual number of items in the backup task. (Currently only file backup is available).
-	* `backup_type` - Backup type. Valid values: `COMPLETE`(full backup).
-	* `bucket` - The name of target OSS bucket.
-	* `bytes_done` - The amount of backup data (Incremental). Unit byte.
-	* `bytes_total` - The total amount of data sources. Unit byte.
-	* `create_time` - The creation time of backup job. UNIX time seconds.
-	* `start_time` - The scheduled backup start time. UNIX time seconds.
-	* `complete_time` -  The completion time of backup job. UNIX time seconds.
-	* `updated_time` - The update time of backup job. UNIX time seconds.
-	* `file_system_id` - The ID of destination file system.
-	* `nas_create_time` - File system creation time. UNIX time in seconds.
-	* `instance_id` - The ID of target ECS instance.
-	* `items_done` - The number of items restore job recovered.
-	* `items_total` - The total number of items restore job recovered.
-	* `paths` - List of backup path. e.g. `["/home", "/var"]`.
-	* `prefix` - The prefix of Oss bucket files.
-	* `include` - Include path. String of Json list. Up to 255 characters. e.g. `"[\"/var\"]"`
-	* `exclude` - Exclude path. String of Json list. Up to 255 characters. e.g. `"[\"/home/work\"]"`
-	* `status` - The status of restore job. Valid values: `COMPLETE` , `PARTIAL_COMPLETE`, `FAILED`.
-	* `progress` - Backup progress. The value is 100%*100.
-	* `error_message` - Error message.
-	* `cross_account_type` - (Available in v1.190.0+) The type of the cross account backup. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
-	* `cross_account_user_id` - (Available in v1.190.0+) The original account ID of the cross account backup managed by the current account. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
-	* `cross_account_role_name` - (Available in v1.190.0+) The role name created in the original account RAM backup by the cross account managed by the current account. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
+  * `id` - The ID of the backup job.
+  * `backup_job_id` - The ID of the backup job.
+  * `source_type` - The type of data source. Valid Values: `ECS_FILE`, `OSS`, `NAS`, `UDM_DISK`.
+  * `back_job_name` - The name of backup job.
+  * `plan_id` - The ID of a backup plan.
+  * `vault_id` - The ID of backup vault.
+  * `actual_bytes` - The actual data volume of the backup task (After deduplication) . Unit byte.
+  * `actual_items` - The actual number of items in the backup task. (Currently only file backup is available).
+  * `backup_type` - Backup type. Valid values: `COMPLETE`(full backup).
+  * `bucket` - The name of target OSS bucket.
+  * `bytes_done` - The amount of backup data (Incremental). Unit byte.
+  * `bytes_total` - The total amount of data sources. Unit byte.
+  * `create_time` - The creation time of backup job. UNIX time seconds.
+  * `start_time` - The scheduled backup start time. UNIX time seconds.
+  * `complete_time` -  The completion time of backup job. UNIX time seconds.
+  * `updated_time` - The update time of backup job. UNIX time seconds.
+  * `file_system_id` - The ID of destination file system.
+  * `nas_create_time` - File system creation time. UNIX time in seconds.
+  * `instance_id` - The ID of target ECS instance.
+  * `items_done` - The number of items restore job recovered.
+  * `items_total` - The total number of items restore job recovered.
+  * `paths` - List of backup path. e.g. `["/home", "/var"]`.
+  * `prefix` - The prefix of Oss bucket files.
+  * `include` - Include path. String of Json list. Up to 255 characters. e.g. `"[\"/var\"]"`
+  * `exclude` - Exclude path. String of Json list. Up to 255 characters. e.g. `"[\"/home/work\"]"`
+  * `status` - The status of restore job. Valid values: `COMPLETE` , `PARTIAL_COMPLETE`, `FAILED`.
+  * `progress` - Backup progress. The value is 100%*100.
+  * `error_message` - Error message.
+  * `cross_account_type` - (Available in v1.190.0+) The type of the cross account backup. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
+  * `cross_account_user_id` - (Available in v1.190.0+) The original account ID of the cross account backup managed by the current account. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
+  * `cross_account_role_name` - (Available in v1.190.0+) The role name created in the original account RAM backup by the cross account managed by the current account. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
+  * `ots_detail` - The details about the Table store instance.
+    * `table_names` - The names of the destination tables in the Tablestore instance.
