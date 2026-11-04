@@ -275,8 +275,13 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 
 	if e, ok := err.(*tea.SDKError); ok {
 		for _, code := range expectCodes {
-			// The second statement aims to match the tea sdk history bug
-			if *e.Code == code || strings.HasPrefix(code, *e.Code) || strings.Contains(*e.Data, code) {
+			// The second statement preserves the tea sdk history behavior where
+			// the error Code is a prefix of the expected code. Guard an empty
+			// Code: strings.HasPrefix(code, "") is true for every non-empty
+			// expected code, which would misclassify a permission or other
+			// error whose Code failed to populate as expected/retryable.
+			errCode := tea.StringValue(e.Code)
+			if errCode == code || (errCode != "" && strings.HasPrefix(code, errCode)) || strings.Contains(tea.StringValue(e.Data), code) {
 				return true
 			}
 		}
