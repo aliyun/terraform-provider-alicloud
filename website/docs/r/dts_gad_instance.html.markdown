@@ -140,7 +140,7 @@ The following arguments are supported:
 
   -> **NOTE:** Changing this forces a replacement.
 
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group. Create-only: CreateGadInstance accepts ResourceGroupId at creation, but DTS exposes no GAD-specific resource-group relocation API and ConvertInstanceResourceGroup (the DTS instance relocation API) returns Forbidden.InstanceNotFound for GAD instance IDs (`gad-*`), so a resource_group_id change forces replacement.
+* `resource_group_id` - (Optional, Computed, ForceNew, String) The ID of the resource group to which the GAD instance belongs. Changing this value forces replacement.
 
 ## Attributes Reference
 

@@ -123,7 +123,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "The ID of the resource group. Create-only: CreateGadInstance accepts ResourceGroupId at creation, but DTS exposes no GAD-specific resource-group relocation API and ConvertInstanceResourceGroup (the DTS instance relocation API) returns Forbidden.InstanceNotFound for GAD instance IDs (gad-*), so a resource_group_id change forces replacement.",
+				Description: "The ID of the resource group to which the GAD instance belongs. Changing this value forces replacement.",
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
