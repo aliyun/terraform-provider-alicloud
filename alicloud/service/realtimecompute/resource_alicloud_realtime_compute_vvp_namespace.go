@@ -457,16 +457,29 @@ func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRe
 			return
 		}
 	}
-	readCtx := operationCtx
-	if remaining() <= 0 {
-		// The update itself succeeded; the confirmation read must not fail just because the shared
-		// budget elapsed, so it gets its own short deadline.
-		var cancelRead context.CancelFunc
-		readCtx, cancelRead = context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
-		defer cancelRead()
+	// The confirmation read is the last stage of the same update: it spends what is left of
+	// timeouts.update and stays attached to the caller's cancellation. Restarting a fresh deadline
+	// here would let an update that already ran out of budget keep talking to the service after
+	// Terraform stopped waiting for it.
+	readBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		// The namespace stays tracked with the state this apply started from, instead of being
+		// dropped because the refresh did not run.
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: operation budget exhausted", vvpNamespaceTypeName),
+			fmt.Sprintf("The update of %s consumed timeouts.update before the confirmation read could run, so the state was not refreshed. The namespace remains tracked; run terraform refresh (or apply again with a larger timeouts.update) to confirm the applied specification.", state.Id.ValueString()),
+		)
+		return
 	}
-	object, err := vvpNamespaceGet(readCtx, r.Meta(), state.Id.ValueString())
+	object, err := vvpNamespaceGetWithTimeout(operationCtx, r.Meta(), state.Id.ValueString(), readBudget)
 	if err != nil {
+		if operationCtx.Err() != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Updating %s: confirmation read interrupted", vvpNamespaceTypeName),
+				errs.WrapErrorf(err, "Updating %s: the confirmation read for %s did not finish within timeouts.update or was cancelled, so the state was not refreshed. The namespace remains tracked; run terraform refresh (or apply again with a larger timeouts.update) to confirm the applied specification", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
+			)
+			return
+		}
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName),
 			errs.WrapErrorf(err, "Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName).Error(),

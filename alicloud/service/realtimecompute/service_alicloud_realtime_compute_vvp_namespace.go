@@ -162,6 +162,13 @@ func vvpNamespaceBudgetForCall(remaining func() time.Duration) (time.Duration, e
 // vvpNamespaceGet describes the resource by id. Returns (nil, nil) when it is gone, mirroring
 // v1 GwlbServiceV2.DescribeGwlbListener (Get RPC + retry + ResourceNotFound -> not found).
 func vvpNamespaceGet(ctx context.Context, client *connectivity.AliyunClient, id string, includeSecondary ...bool) (map[string]interface{}, error) {
+	return vvpNamespaceGetWithTimeout(ctx, client, id, 1*time.Minute, includeSecondary...)
+}
+
+// vvpNamespaceGetWithTimeout describes the resource with the read bounded by the caller's remaining
+// operation budget, so a stage late in a lifecycle cannot spend more time than the operation is
+// allowed to take. The context still carries the caller's cancellation.
+func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.AliyunClient, id string, readTimeout time.Duration, includeSecondary ...bool) (map[string]interface{}, error) {
 	completeRead := len(includeSecondary) == 0 || includeSecondary[0]
 	getValues := map[string]interface{}{"RegionId": client.RegionId, "InstanceId": id}
 	parts, identityPartsErr := fwadapt.GetIdentityParts(id, ":", 2, map[int]string{}, []int{1})
@@ -187,7 +194,7 @@ func vvpNamespaceGet(ctx context.Context, client *connectivity.AliyunClient, id 
 	if len(parts) > 1 {
 		identities = append(identities, fwadapt.ReadIdentity{Path: "$.Namespace", Value: parts[1], AllowMissing: false})
 	}
-	response, err := retryRpcGet(ctx, client, "foasconsole", "2019-06-01", "DescribeNamespaces", request, 1*time.Minute)
+	response, err := retryRpcGet(ctx, client, "foasconsole", "2019-06-01", "DescribeNamespaces", request, readTimeout)
 	if err != nil {
 		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.VvpNamespace", "ResourceNotFound"}) {
 			return nil, nil
