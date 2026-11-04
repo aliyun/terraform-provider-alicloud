@@ -8,8 +8,8 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func DataSourceVpcEndpointZones() *schema.Resource {
@@ -23,7 +23,7 @@ func DataSourceVpcEndpointZones() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"Connected", "Connecting", "Creating", "Deleted", "Deleting", "Disconnected", "Disconnecting", "Wait"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Connected", "Connecting", "Creating", "Deleted", "Deleting", "Disconnected", "Disconnecting", "Wait"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,

@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -22,7 +21,7 @@ func DataSourceVpcEndpoints() *schema.Resource {
 			"connection_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"Pending", "Connecting", "Connected", "Disconnecting", "Disconnected", "Deleting", "ServiceDeleted"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Pending", "Connecting", "Connected", "Disconnecting", "Disconnected", "Deleting", "ServiceDeleted"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -37,7 +36,7 @@ func DataSourceVpcEndpoints() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validators.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Inactive", "Pending"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleted", "Deleting", "Inactive", "Pending"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
