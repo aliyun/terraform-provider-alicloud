@@ -131,16 +131,13 @@ resource "alicloud_dts_gad_instance" "default" {
 
 The following arguments are supported:
 
-* `db_engine_type` - (Optional, ForceNew) Database engine type of the master RDS instance. Valid values: `MySQL`, `SQLServer`, `PostgreSQL`. Must match the engine of `master_db_instance_id`. Changing this forces a replacement.
+* `db_engine_type` - (Optional, ForceNew) Database engine type of the master RDS instance. Valid values: `MySQL`, `SQLServer`, `PostgreSQL`. Must match the engine of `master_db_instance_id`.
 * `gad_instance_name` - (Optional) GAD instance name. Globally unique across the Alibaba Cloud account.
-* `gad_instance_type` - (Optional, ForceNew) GAD instance type. Valid values: `DR` (disaster recovery) and `GAD` (global active database, dual-active). Changing this forces a replacement.
-* `master_db_instance_id` - (Optional, ForceNew) ID of the master RDS instance the GAD instance attaches to. Use the ID of an existing RDS instance (e.g. `alicloud_db_instance` resource or `data.alicloud_db_instances` data source). Changing this forces a replacement.
-* `master_db_instance_region` - (Optional, ForceNew) Region of the master RDS instance (e.g. `cn-beijing`). This is where the master RDS lives and may differ from the provider region where the GAD instance is created. Changing this forces a replacement.
+* `gad_instance_type` - (Optional, ForceNew) GAD instance type. Valid values: `DR` (disaster recovery) and `GAD` (global active database, dual-active).
+* `master_db_instance_id` - (Optional, ForceNew) ID of the master RDS instance the GAD instance attaches to. Use the ID of an existing RDS instance (e.g. `alicloud_db_instance` resource or `data.alicloud_db_instances` data source).
+* `master_db_instance_region` - (Optional, ForceNew) Region of the master RDS instance (e.g. `cn-beijing`). This is where the master RDS lives and may differ from the provider region where the GAD instance is created.
 * `master_db_zone_id` - (Optional, ForceNew) Zone ID of the master RDS instance (e.g. `cn-beijing-l`). Must be a zone in `master_db_instance_region`.
-
-  -> **NOTE:** Changing this forces a replacement.
-
-* `resource_group_id` - (Optional, Computed, ForceNew, String) The ID of the resource group to which the GAD instance belongs. Changing this value forces replacement.
+* `resource_group_id` - (Optional, Computed, ForceNew, String) The ID of the resource group to which the GAD instance belongs.
 
 ## Attributes Reference
 

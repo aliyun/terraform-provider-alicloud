@@ -74,7 +74,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Database engine type of the master RDS instance. Valid values: MySQL, SQLServer, PostgreSQL. Changing this forces a replacement.",
+				Description: "Database engine type of the master RDS instance. Valid values: MySQL, SQLServer, PostgreSQL.",
 			},
 			"gad_instance_name": schema.StringAttribute{
 				Optional:    true,
@@ -87,7 +87,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "GAD instance type. Valid values: DR (disaster recovery), GAD (global active database, dual-active). Changing this forces a replacement.",
+				Description: "GAD instance type. Valid values: DR (disaster recovery), GAD (global active database, dual-active).",
 			},
 			"master_db_instance_id": schema.StringAttribute{
 				Optional: true,
@@ -95,7 +95,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "ID of the master RDS instance the GAD instance attaches to. Use the ID of an existing RDS instance (alicloud_db_instance) or a data source such as data.alicloud_db_instances. Changing this forces a replacement.",
+				Description: "ID of the master RDS instance the GAD instance attaches to. Use the ID of an existing RDS instance (alicloud_db_instance) or a data source such as data.alicloud_db_instances.",
 			},
 			"master_db_instance_region": schema.StringAttribute{
 				Optional: true,
@@ -103,7 +103,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Region of the master RDS instance (e.g. cn-beijing). This is the region where the master RDS lives, which may differ from the provider region where the GAD instance itself is created. Changing this forces a replacement.",
+				Description: "Region of the master RDS instance (e.g. cn-beijing). This is the region where the master RDS lives, which may differ from the provider region where the GAD instance itself is created.",
 			},
 			"master_db_zone_id": schema.StringAttribute{
 				Optional: true,
@@ -111,7 +111,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "Zone ID of the master RDS instance (e.g. cn-beijing-l). It must be a zone in master_db_instance_region. Changing this forces a replacement.",
+				Description: "Zone ID of the master RDS instance (e.g. cn-beijing-l). It must be a zone in master_db_instance_region.",
 			},
 			"region_id": schema.StringAttribute{
 				Computed:    true,
@@ -123,7 +123,7 @@ func (r *gadInstanceResource) Schema(ctx context.Context, req resource.SchemaReq
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Description: "The ID of the resource group to which the GAD instance belongs. Changing this value forces replacement.",
+				Description: "The ID of the resource group to which the GAD instance belongs.",
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
