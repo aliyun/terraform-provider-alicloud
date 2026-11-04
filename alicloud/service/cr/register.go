@@ -53,6 +53,6 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_cr_ee_authorization_token",
 				Factory:  NewAuthorizationTokenEphemeralResource,
 			},
-		},
+		}, Resources: []conns.Resource{{TypeName: "alicloud_cr_repository", Factory: NewRepositoryResource}},
 	}
 }
