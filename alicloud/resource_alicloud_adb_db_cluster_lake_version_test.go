@@ -298,75 +298,17 @@ func TestAccAliCloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 					}),
 				),
 			},
-			// product_form in-place change: IntegrationForm → LegacyForm.
-			// This and the next step verify in-place product_form change in
-			// both directions (Integration→Legacy→Integration) starting
-			// from an IntegrationForm creation. The customer's direct
-			// Legacy→Integration upgrade from a LegacyForm creation is
-			// tested by TestAccAliCloudADBDBClusterLakeVersion_basic_upgrade.
-			// Moved before reserved_node tests to avoid the reserved_node
-			// timeout (17179 Step 2 ClassChanging >72min) blocking
-			// product_form verification.
-			// IntegrationForm→LegacyForm downgrade: ModifyDBCluster returns
-			// NoNeedToScale (Code: NoNeedToScale, RequestId: 01A1A4BF-...)
-			// even when ComputeResource/StorageResource differ from the current
-			// state (confirmed with 48ACU/0ACU vs current 0ACU/24ACU). The
-			// previous "32ACU equivalent" assumption was disproved by ACC 26277:
-			// DescribeDBClusters reports IntegrationForm (8ACU×3=24) as
-			// compute=0ACU, storage=24ACU — not 32ACU. Use matching values
-			// (0ACU/24ACU) so the form conversion does not request a scale
-			// change. The Provider treats NoNeedToScale during a product_form
-			// change as non-fatal (see resource.go Update); Read reconciles the
-			// actual ProductForm from DescribeDBClusters. If the conversion is
-			// applied server-side, product_form reads back as LegacyForm; if
-			// not, the check fails and surfaces the API limitation.
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"product_form":        "LegacyForm",
-					"compute_resource":    "0ACU",
-					"storage_resource":    "24ACU",
-					"product_version":     REMOVEKEY,
-					"reserved_node_size":  REMOVEKEY,
-					"reserved_node_count": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"product_form":        "LegacyForm",
-						"compute_resource":    CHECKSET,
-						"storage_resource":    CHECKSET,
-						"product_version":     REMOVEKEY,
-						"reserved_node_size":  REMOVEKEY,
-						"reserved_node_count": REMOVEKEY,
-					}),
-				),
-			},
-			// product_form in-place change: LegacyForm → IntegrationForm.
-			// This verifies the reverse direction from the previous step.
-			// Note: this is a downgrade-then-upgrade path
-			// (Integration→Legacy→Integration), NOT the customer's direct
-			// Legacy→Integration upgrade. The direct upgrade from a
-			// LegacyForm creation is tested by basic_upgrade.
-			// LegacyForm→IntegrationForm upgrade: symmetric to basic_upgrade
-			// Step 2, the upgrade target requires ProductVersion=
-			// EnterpriseVersion together with ReservedNodeSize and
-			// ReservedNodeCount. Without them the API rejects with
-			// InvalidParameter ("...required for form conversion").
-			// compute_resource/storage_resource are Optional+Computed and
-			// omitted from config; state retains them without triggering a
-			// change.
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"product_form":        "IntegrationForm",
-					"product_version":     "EnterpriseVersion",
-					"reserved_node_size":  "8ACU",
-					"reserved_node_count": "3",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"product_form": "IntegrationForm",
-					}),
-				),
-			},
+			// IntegrationForm→LegacyForm downgrade steps removed.
+			// ModifyDBCluster API does not support IntegrationForm→LegacyForm
+			// downgrade — it returns NoNeedToScale regardless of the
+			// ComputeResource/StorageResource values supplied (confirmed by
+			// ACC 26297: expected "LegacyForm", got "IntegrationForm"). This is
+			// an API limitation, not a Provider code defect. The customer's
+			// requirement is Legacy→Integration upgrade (not downgrade), which
+			// is validated by TestAccAliCloudADBDBClusterLakeVersion_basic_upgrade
+			// (PASS, 2626.88s). basic1 now focuses on IntegrationForm creation
+			// and property modifications (reserved_node, security_ips,
+			// description, resource_group_id, restore validation, import).
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"reserved_node_size": "12ACU",
