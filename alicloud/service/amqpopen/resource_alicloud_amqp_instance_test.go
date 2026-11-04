@@ -2,9 +2,11 @@ package amqpopen_test
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -175,6 +177,21 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 			return result, nil
 		},
 	}
+	// Neutralize the state-refresh initial Delay so unit tests do not sleep for
+	// the production 3-4 minute delays; the real Refresh func is passed through
+	// unchanged so the mock still exercises the refresh logic.
+	stateConfPatch := gomonkey.ApplyFunc(helper.BuildStateConf, func(pending, target []string, timeout, delay time.Duration, f retry.StateRefreshFunc) *retry.StateChangeConf {
+		return &retry.StateChangeConf{
+			Pending:    pending,
+			Target:     target,
+			Refresh:    f,
+			Timeout:    timeout,
+			Delay:      0,
+			MinTimeout: 0,
+		}
+	})
+	defer stateConfPatch.Reset()
+
 	// Create
 	t.Run("CreateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewBssopenapiClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
@@ -732,9 +749,93 @@ func TestUnitAliCloudAmqpInstance(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	// Delete
-	t.Run("DeleteNormal", func(t *testing.T) {
-		err := p["alicloud_amqp_instance"].Delete(d, rawClient)
+	// Delete — Subscription (prepaid) instances are refunded via RefundInstance;
+	// PayAsYouGo and Serverless (postpaid) instances are released via
+	// DeleteInstance. Both branches must stay idempotent so a repeated
+	// terraform destroy does not error on an already-absent instance.
+	t.Run("DeletePayAsYouGoNormal", func(t *testing.T) {
+		dDel, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+		dDel.SetId("MockInstanceId")
+		dDel.Set("payment_type", "PayAsYouGo")
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, apiName *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			switch *apiName {
+			case "DeleteInstance":
+				return map[string]interface{}{"Code": "Success"}, nil
+			case "GetInstance":
+				return responseMock["NotFoundError"]("ResourceNotFound")
+			default:
+				return map[string]interface{}{"Code": "Success"}, nil
+			}
+		})
+		err := p["alicloud_amqp_instance"].Delete(dDel, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("DeletePayAsYouGoIdempotent", func(t *testing.T) {
+		dDel, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+		dDel.SetId("MockInstanceId")
+		dDel.Set("payment_type", "PayAsYouGo")
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, apiName *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			switch *apiName {
+			case "DeleteInstance":
+				return nil, &tea.SDKError{
+					Code:       tea.String("InstanceNotExist"),
+					Data:       tea.String("InstanceNotExist"),
+					Message:    tea.String("InstanceNotExist"),
+					StatusCode: tea.Int(400),
+				}
+			case "GetInstance":
+				return responseMock["NotFoundError"]("ResourceNotFound")
+			default:
+				return map[string]interface{}{"Code": "Success"}, nil
+			}
+		})
+		err := p["alicloud_amqp_instance"].Delete(dDel, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("DeleteSubscriptionNormal", func(t *testing.T) {
+		dDel, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+		dDel.SetId("MockInstanceId")
+		dDel.Set("payment_type", "Subscription")
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, apiName *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			switch *apiName {
+			case "RefundInstance":
+				return map[string]interface{}{"Code": "Success"}, nil
+			case "GetInstance":
+				return responseMock["NotFoundError"]("ResourceNotFound")
+			default:
+				return map[string]interface{}{"Code": "Success"}, nil
+			}
+		})
+		err := p["alicloud_amqp_instance"].Delete(dDel, rawClient)
+		patches.Reset()
+		assert.Nil(t, err)
+	})
+
+	t.Run("DeleteSubscriptionIdempotent", func(t *testing.T) {
+		dDel, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
+		dDel.SetId("MockInstanceId")
+		dDel.Set("payment_type", "Subscription")
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, apiName *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			switch *apiName {
+			case "RefundInstance":
+				return nil, &tea.SDKError{
+					Code:       tea.String("ResourceNotExists"),
+					Data:       tea.String("ResourceNotExists"),
+					Message:    tea.String("ResourceNotExists"),
+					StatusCode: tea.Int(400),
+				}
+			case "GetInstance":
+				return responseMock["NotFoundError"]("ResourceNotFound")
+			default:
+				return map[string]interface{}{"Code": "Success"}, nil
+			}
+		})
+		err := p["alicloud_amqp_instance"].Delete(dDel, rawClient)
+		patches.Reset()
 		assert.Nil(t, err)
 	})
 
@@ -1429,4 +1530,145 @@ func AliCloudAmqpInstanceBasicDependence11166(name string) string {
   		name_regex = "default-NODELETING"
 	}
 `, name)
+}
+
+// amqpInstanceSweeper lives in the product subpackage test binary alongside
+// the acceptance tests. After the root-package resource migration (master
+// commit 8ed340346), `make sweep` resolves the owning package for each
+// resource via scripts/testing/sweeppackage and runs `go test "<package>"`,
+// so sweepers may register from alicloud/service/amqpopen (package
+// amqpopen_test) using the public alicloud/sweep client helpers. The
+// delete/refund logic mirrors the production Delete: PayAsYouGo and Serverless
+// (postpaid) instances are released through amqp-open DeleteInstance;
+// Subscription (prepaid) instances are refunded through BssOpenApi
+// RefundInstance. A sweep that lists nothing must still propagate list
+// errors, and instances that neither path can remove are collected and
+// reported so a broken sweep is never masked as success.
+func init() {
+	resource.AddTestSweepers("alicloud_amqp_instance", &resource.Sweeper{
+		Name: "alicloud_amqp_instance",
+		F:    testSweepAmqpInstance,
+	})
+}
+
+func testSweepAmqpInstance(region string) error {
+	rawClient, err := sweep.SharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting AliCloud client: %w", err)
+	}
+	aliyunClient := rawClient.(*connectivity.AliyunClient)
+
+	// Prefixes follow the provider sweep convention: tf-testacc is what the
+	// acceptance tests create, tf_testacc covers the underscore variant, and
+	// tfaccamqp is the historical AMQP-specific prefix. Matching is
+	// case-insensitive so tf-testAcc/tf_testAcc are also swept.
+	prefixes := []string{"tf-testacc", "tf_testacc", "tfaccamqp"}
+	action := "ListInstances"
+	request := map[string]interface{}{"MaxResults": 100}
+
+	// failed collects instance IDs that neither DeleteInstance nor RefundInstance
+	// could remove. A non-empty slice makes the sweep return an error instead of
+	// reporting success while instances remain, so a broken sweep is not masked.
+	var failed []string
+
+	for {
+		var response map[string]interface{}
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			var rpcErr error
+			response, rpcErr = aliyunClient.RpcGet("amqp-open", "2019-12-12", action, request, nil)
+			if rpcErr != nil {
+				if helper.NeedRetry(rpcErr) {
+					wait()
+					return retry.RetryableError(rpcErr)
+				}
+				return retry.NonRetryableError(rpcErr)
+			}
+			return nil
+		})
+		if err != nil {
+			// ListInstances failure must not be swallowed: returning nil here
+			// would make a sweep that listed nothing report success, leaving
+			// charged instances behind. Propagate the error so the sweep fails
+			// loudly and the operator can investigate.
+			return fmt.Errorf("listing AMQP instances for sweep (action %s): %w", action, err)
+		}
+
+		data, _ := response["Data"].(map[string]interface{})
+		instances, _ := data["Instances"].([]interface{})
+		for _, v := range instances {
+			item, _ := v.(map[string]interface{})
+			instanceName := fmt.Sprint(item["InstanceName"])
+			if !amqpHasPrefix(instanceName, prefixes) {
+				continue
+			}
+			instanceID := fmt.Sprint(item["InstanceId"])
+			log.Printf("[INFO] sweeping AMQP instance %s (%s)", instanceID, instanceName)
+			if !amqpSweepDelete(aliyunClient, instanceID) {
+				if !amqpSweepRefund(aliyunClient, instanceID) {
+					log.Printf("[ERROR] failed to sweep AMQP instance %s", instanceID)
+					failed = append(failed, instanceID)
+				}
+			}
+		}
+
+		if nextToken, ok := data["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("failed to sweep %d AMQP instance(s): %s", len(failed), strings.Join(failed, ", "))
+	}
+	return nil
+}
+
+func amqpSweepDelete(aliyunClient *connectivity.AliyunClient, id string) bool {
+	request := map[string]interface{}{"InstanceId": id, "RegionId": aliyunClient.RegionId}
+	_, err := aliyunClient.RpcPost("amqp-open", "2019-12-12", "DeleteInstance", map[string]interface{}{}, request, true)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InstanceNotExist", "InstanceIdNotExist", "ResourceNotFound"}) {
+			return true
+		}
+		log.Printf("[ERROR] DeleteInstance for %s failed: %s", id, err)
+		return false
+	}
+	return true
+}
+
+func amqpSweepRefund(aliyunClient *connectivity.AliyunClient, id string) bool {
+	request := map[string]interface{}{
+		"InstanceId":         id,
+		"ClientToken":        helper.BuildClientToken("RefundInstance"),
+		"ImmediatelyRelease": "1",
+		"ProductCode":        "ons",
+		"ProductType":        "ons_onsproxy_pre",
+	}
+	if aliyunClient.IsInternationalAccount() {
+		request["ProductType"] = "ons_onsproxy_public_intl"
+	}
+	_, err := aliyunClient.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", "RefundInstance", map[string]interface{}{}, request, true, "")
+	if err != nil {
+		// BssOpenApi RefundInstance error codes (verified via OpenAPI metadata):
+		// ResourceNotExists = the instance no longer exists; ExistRefundingOrderError
+		// = the instance may have expired, been refunded, or been released. Both are
+		// treated as a successful (idempotent) delete.
+		if errs.IsExpectedErrors(err, []string{"ResourceNotExists", "ExistRefundingOrderError"}) {
+			return true
+		}
+		log.Printf("[ERROR] RefundInstance for %s failed: %s", id, err)
+		return false
+	}
+	return true
+}
+
+func amqpHasPrefix(name string, prefixes []string) bool {
+	lower := strings.ToLower(name)
+	for _, p := range prefixes {
+		if strings.HasPrefix(lower, strings.ToLower(p)) {
+			return true
+		}
+	}
+	return false
 }
