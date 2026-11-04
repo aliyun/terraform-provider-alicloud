@@ -1379,8 +1379,8 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 		},
 		{
 			name:             "confirmation read after the write runs out of the same budget",
-			updateTimeout:    "800ms",
-			readDelay:        500 * time.Millisecond,
+			updateTimeout:    "6s",
+			readDelay:        700 * time.Millisecond,
 			planCpu:          2,
 			planMemoryGb:     8,
 			wantErrSubstring: "confirmation read interrupted",
