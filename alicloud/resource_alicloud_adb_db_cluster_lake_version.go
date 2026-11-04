@@ -578,6 +578,41 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 		}
 	}
 
+	// Form conversion (ProductForm changed): force-send the target form's
+	// required parameter set. These Computed attributes may be read back
+	// from DescribeDBClusters with the same value the user configured,
+	// making d.HasChange false and omitting them from the request. The API
+	// then rejects:
+	// - LegacyForm->IntegrationForm upgrade: InvalidParameter.ReservedNodeSize/
+	//   ReservedNodeCount ("...required for form conversion"). Per
+	//   ModifyDBCluster docs, the upgrade must specify ProductForm,
+	//   ReservedNodeSize and ReservedNodeCount together with
+	//   ProductVersion=enterprise_version.
+	// - IntegrationForm->LegacyForm downgrade: NoNeedToScale, because the
+	//   request carries only ProductForm=LegacyForm with no scale target.
+	// Force-send the parameters from config/state on form conversion.
+	if !d.IsNewResource() && d.HasChange("product_form") {
+		targetForm := d.Get("product_form").(string)
+		if targetForm == "IntegrationForm" {
+			if v, ok := d.GetOk("product_version"); ok {
+				request["ProductVersion"] = v
+			}
+			if v, ok := d.GetOk("reserved_node_size"); ok {
+				request["ReservedNodeSize"] = v
+			}
+			if v, ok := d.GetOkExists("reserved_node_count"); ok {
+				request["ReservedNodeCount"] = v
+			}
+		} else if targetForm == "LegacyForm" {
+			if v, ok := d.GetOk("compute_resource"); ok {
+				request["ComputeResource"] = v
+			}
+			if v, ok := d.GetOk("storage_resource"); ok {
+				request["StorageResource"] = v
+			}
+		}
+	}
+
 	if update {
 		action := "ModifyDBCluster"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
