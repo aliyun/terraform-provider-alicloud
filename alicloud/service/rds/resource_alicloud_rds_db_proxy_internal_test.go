@@ -157,6 +157,68 @@ func TestUnitDBProxyModifyRetryError(t *testing.T) {
 	}
 }
 
+func TestUnitDBProxyModifyConfigRetryError(t *testing.T) {
+	newSDKError := func(code string, statusCode int) error {
+		return tea.NewSDKError(map[string]interface{}{
+			"code":       code,
+			"message":    code,
+			"statusCode": statusCode,
+			"data":       map[string]interface{}{"Code": code},
+		})
+	}
+
+	for _, tc := range []struct {
+		name      string
+		err       error
+		retryable bool
+	}{
+		{
+			// The same operation reports this 404 while the associated proxy is
+			// being created or deleted, so the persistent connection update has to
+			// retry it instead of failing before the switch is applied.
+			name:      "transient 404 MaxscaleCreating is retried",
+			err:       newSDKError("MaxscaleCreating", 404),
+			retryable: true,
+		},
+		{
+			name:      "MaxscaleInternalError is retried",
+			err:       newSDKError("MaxscaleInternalError", 400),
+			retryable: true,
+		},
+		{
+			name:      "TaskExists is retried",
+			err:       newSDKError("TaskExists", 400),
+			retryable: true,
+		},
+		{
+			name:      "OperationDenied.DBStatus is retried",
+			err:       newSDKError("OperationDenied.DBStatus", 400),
+			retryable: true,
+		},
+		{
+			// A missing proxy stays a terminal error on this write: unlike the
+			// Shutdown path it is not success.
+			name: "missing proxy is terminal",
+			err:  newSDKError("InvalidDBInstanceId.NotFound", 404),
+		},
+		{
+			name: "other 404 is terminal",
+			err:  newSDKError("Request.NotFound", 404),
+		},
+		{
+			name: "terminal error fails fast",
+			err:  newSDKError("InvalidDBProxyStatus", 400),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			retryErr := dbProxyModifyConfigRetryError(tc.err)
+			assert.NotNil(t, retryErr)
+			assert.Equal(t, tc.retryable, retryErr.Retryable)
+			assert.ErrorIs(t, retryErr.Err, tc.err)
+		})
+	}
+}
+
 func TestUnitDBProxyUpdateBudgetSharedDeadline(t *testing.T) {
 	total := 30 * time.Minute
 	now := time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)

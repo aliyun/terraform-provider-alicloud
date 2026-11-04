@@ -606,10 +606,7 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 					if err := retry.Retry(client.GetRetryTimeout(timeout), func() *retry.RetryError {
 						response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 						if err != nil {
-							if IsExpectedErrors(err, OperationDeniedDBStatus) || IsExpectedErrors(err, []string{"TaskExists", "MaxscaleInternalError"}) || NeedRetry(err) {
-								return retry.RetryableError(err)
-							}
-							return retry.NonRetryableError(err)
+							return dbProxyModifyConfigRetryError(err)
 						}
 						addDebug(action, response, request)
 						return nil
@@ -911,6 +908,25 @@ func dbProxyModifyRetryError(err error, shutdown bool) *retry.RetryError {
 	}
 	if shutdown && NotFoundError(err) {
 		return nil
+	}
+	return retry.NonRetryableError(err)
+}
+
+// dbProxyModifyConfigTransientErrors are the ModifyDBProxy state conflicts that
+// the ConfigDBProxyService=Modify write can observe while another proxy task is
+// running. MaxscaleCreating is HTTP 404 but only reports that the associated
+// proxy is being created or deleted, so it has to be retried instead of failing
+// the persistent connection update.
+var dbProxyModifyConfigTransientErrors = []string{"TaskExists", "MaxscaleInternalError", "MaxscaleCreating"}
+
+// dbProxyModifyConfigRetryError classifies a ModifyDBProxy
+// ConfigDBProxyService=Modify error. A missing proxy stays terminal here: only
+// the Shutdown path treats it as an already deleted proxy.
+func dbProxyModifyConfigRetryError(err error) *retry.RetryError {
+	if IsExpectedErrors(err, OperationDeniedDBStatus) ||
+		IsExpectedErrors(err, dbProxyModifyConfigTransientErrors) ||
+		NeedRetry(err) {
+		return retry.RetryableError(err)
 	}
 	return retry.NonRetryableError(err)
 }

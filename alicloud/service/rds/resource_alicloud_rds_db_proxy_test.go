@@ -3,6 +3,8 @@ package rds_test
 import (
 	"fmt"
 	"regexp"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,11 +18,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// Attributes that cannot be compared through an import:
+//   - effective_time, effective_specific_time, upgrade_time and switch_time are
+//     local scheduling settings that the proxy API does not return;
+//   - db_proxy_features is write-only configuration that DescribeDBProxy does
+//     not return;
+//   - resource_group_id is applied only when the proxy is created: the update
+//     path does not change it and Read does not restore it, so restoring it in
+//     Read without an in-place update would leave a permanent diff. That is
+//     pre-existing behavior unrelated to the attributes verified here.
+var dbProxyImportStateVerifyIgnore = []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id"}
+
+// db_proxy_nodes is additionally empty after an import until it is configured
+// again, which is stated in the resource documentation.
+var dbProxyNodesImportStateVerifyIgnore = []string{"effective_time", "effective_specific_time", "upgrade_time", "switch_time", "db_proxy_features", "resource_group_id", "db_proxy_nodes"}
+
 func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 	var connection map[string]interface{}
 	var primary map[string]interface{}
 	var readonly map[string]interface{}
 	var proxyEndpointIdBefore string
+	var proxyNodeLayoutBefore []string
 
 	resourceId := "alicloud_rds_db_proxy.default"
 	var DBProxyMap = map[string]string{
@@ -120,6 +138,13 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceId, "vswitch_id", "alicloud_vswitch.second", "id"),
 					checkDBProxyEndpointIdUnchanged(resourceId, &proxyEndpointIdBefore),
 				),
+			},
+			{
+				// The migrated proxy has to survive an import with the same state.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -266,7 +291,14 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"persistent_connection_status": "Enabled",
 					}),
+					checkDBProxyRemotePersistentConnectionStatus(resourceId, "Enabled"),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -276,7 +308,32 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"persistent_connection_status": "Disabled",
 					}),
+					checkDBProxyRemotePersistentConnectionStatus(resourceId, "Disabled"),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
+			},
+			{
+				// Removing the attribute stops Terraform from managing the switch:
+				// the value recorded in the state is kept and the proxy keeps its
+				// current setting instead of being reset.
+				Config: testAccConfig(map[string]interface{}{
+					"persistent_connection_status": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "persistent_connection_status", "Disabled"),
+					checkDBProxyRemotePersistentConnectionStatus(resourceId, "Disabled"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -300,7 +357,38 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 						"cpu_cores":   "2",
 						"node_counts": "2",
 					}),
+					captureDBProxyNodeLayout(resourceId, &proxyNodeLayoutBefore),
 				),
+			},
+			{
+				// The block is not restored by an import until it is configured
+				// again, which is documented behavior, so only it is ignored here.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: dbProxyNodesImportStateVerifyIgnore,
+			},
+			{
+				// Removing the block stops Terraform from managing the node layout
+				// and leaves the existing layout unchanged.
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionUpdate),
+					},
+				},
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_nodes": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "db_proxy_nodes.#", "0"),
+					checkDBProxyNodeLayoutUnchanged(resourceId, &proxyNodeLayoutBefore),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
 			},
 			{
 				// node_counts has no default, so an incomplete block is rejected before
@@ -353,6 +441,94 @@ func checkDBProxyEndpointIdUnchanged(resourceId string, expected *string) resour
 		}
 		if endpointId := rs.Primary.Attributes["db_proxy_endpoint_id"]; endpointId != *expected {
 			return fmt.Errorf("proxy endpoint id changed from %q to %q, the proxy was replaced instead of migrated", *expected, endpointId)
+		}
+		return nil
+	}
+}
+
+// describeDBProxyForCheck queries the proxy directly so the behavior checks do
+// not reuse the resource Read path they verify.
+func describeDBProxyForCheck(resourceId string, state *terraform.State) (map[string]interface{}, error) {
+	rs, ok := state.RootModule().Resources[resourceId]
+	if !ok {
+		return nil, fmt.Errorf("resource %s not found in state", resourceId)
+	}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	response, err := client.RpcPost("Rds", "2014-08-15", "DescribeDBProxy", nil, map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": rs.Primary.ID,
+		"SourceIp":     client.SourceIp,
+	}, true)
+	if err != nil {
+		return nil, fmt.Errorf("DescribeDBProxy %s: %w", rs.Primary.ID, err)
+	}
+	return response, nil
+}
+
+func checkDBProxyRemotePersistentConnectionStatus(resourceId, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		response, err := describeDBProxyForCheck(resourceId, s)
+		if err != nil {
+			return err
+		}
+		if status := fmt.Sprint(response["DBProxyPersistentConnectionStatus"]); status != expected {
+			return fmt.Errorf("remote persistent connection status is %q, want %q", status, expected)
+		}
+		return nil
+	}
+}
+
+func dbProxyNodeLayoutOfResponse(response map[string]interface{}) ([]string, error) {
+	wrapper, ok := response["DBProxyNodes"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	rawNodes, _ := wrapper["DBProxyNodes"].([]interface{})
+	layout := make([]string, 0, len(rawNodes))
+	for _, raw := range rawNodes {
+		node, ok := raw.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("unexpected proxy node entry in the response: %T", raw)
+		}
+		layout = append(layout, fmt.Sprintf("%s/%s", fmt.Sprint(node["zoneId"]), fmt.Sprint(node["cpuCores"])))
+	}
+	sort.Strings(layout)
+	return layout, nil
+}
+
+func captureDBProxyNodeLayout(resourceId string, target *[]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		response, err := describeDBProxyForCheck(resourceId, s)
+		if err != nil {
+			return err
+		}
+		layout, err := dbProxyNodeLayoutOfResponse(response)
+		if err != nil {
+			return err
+		}
+		if len(layout) == 0 {
+			return fmt.Errorf("the proxy did not report any proxy node")
+		}
+		*target = layout
+		return nil
+	}
+}
+
+func checkDBProxyNodeLayoutUnchanged(resourceId string, expected *[]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if len(*expected) == 0 {
+			return fmt.Errorf("the proxy node layout was not captured before db_proxy_nodes was removed")
+		}
+		response, err := describeDBProxyForCheck(resourceId, s)
+		if err != nil {
+			return err
+		}
+		layout, err := dbProxyNodeLayoutOfResponse(response)
+		if err != nil {
+			return err
+		}
+		if strings.Join(layout, ",") != strings.Join(*expected, ",") {
+			return fmt.Errorf("the remote proxy node layout changed from %v to %v after db_proxy_nodes was removed", *expected, layout)
 		}
 		return nil
 	}
