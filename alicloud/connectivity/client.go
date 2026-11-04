@@ -292,7 +292,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
 	}
@@ -337,7 +337,7 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
 	}
@@ -378,7 +378,7 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
 	}
@@ -473,7 +473,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	slbconn, err := slb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	slbconn, err := slb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
 	}
@@ -514,7 +514,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
 	}
@@ -555,7 +555,7 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	essconn, err := ess.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	essconn, err := ess.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
 	}
@@ -718,7 +718,7 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		endpoints.AddEndpointMapping(client.config.RegionId, string(DNSCode), endpoint)
 	}
 
-	dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
 	}
@@ -759,7 +759,7 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
 	}
@@ -865,7 +865,7 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
 	}
-	crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
 	}
@@ -907,7 +907,7 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
 	}
-	creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
 	}
@@ -971,7 +971,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, string(CDNCode), endpoint)
 	}
-	cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
 	}
@@ -1014,7 +1014,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
 	}
@@ -1091,7 +1091,7 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
 	}
@@ -1131,7 +1131,7 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 		return nil, err
 	}
 
-	logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
 	}
@@ -1219,7 +1219,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
 	}
@@ -1261,7 +1261,7 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
 
-	ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the mongoDB client: %#v", err)
 	}
@@ -1304,7 +1304,7 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
 
-	gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
 	}
@@ -1348,7 +1348,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")
 	}
 
-	config := client.getSdkConfig(0)
+	config := client.getSdkConfig()
 	transport := config.HttpTransport
 	// Receiving proxy config from environment
 	transport.Proxy = http.ProxyFromEnvironment
@@ -1386,7 +1386,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.RegionId, product, endpoint)
 	}
-	cloudapiconn, err := cloudapi.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	cloudapiconn, err := cloudapi.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
 	}
@@ -1502,7 +1502,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
 	}
@@ -1801,8 +1801,13 @@ func (client *AliyunClient) isInternationalRegion() bool {
 	return !strings.HasPrefix(client.config.RegionId, "cn-")
 }
 
-func (client *AliyunClient) getSdkConfig(timeout time.Duration) *sdk.Config {
-	if timeout == 0 {
+func (client *AliyunClient) getSdkConfig() *sdk.Config {
+	// The sdk-level timeout follows the provider client_read_timeout and
+	// falls back to 30s when the value is non-positive, so callers without a
+	// provider configuration (e.g. the sweeper client) keep a request deadline
+	// instead of dropping to the sdk default.
+	timeout := time.Duration(client.config.ClientReadTimeout) * time.Millisecond
+	if timeout <= 0 {
 		timeout = time.Duration(30) * time.Second
 	}
 	// WithUserAgent will add a prefix Extra/ for user agent value
@@ -1967,7 +1972,7 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, string(STSCode), endpoint)
 	}
-	stsClient, err := sts.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	stsClient, err := sts.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
 	}
@@ -1998,7 +2003,7 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
 	}
@@ -2039,7 +2044,7 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	alikafkaconn, err := alikafka.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	alikafkaconn, err := alikafka.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
 	}
@@ -2081,7 +2086,7 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
 	}
@@ -2123,7 +2128,7 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
 	}
@@ -2165,7 +2170,7 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
 	}
@@ -2206,7 +2211,7 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	marketconn, err := market.NewClientWithOptions(client.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	marketconn, err := market.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
 	}
@@ -2248,7 +2253,7 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	hbaseconn, err := hbase.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	hbaseconn, err := hbase.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
 	}
@@ -2291,7 +2296,7 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	adbconn, err := adb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	adbconn, err := adb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
 
@@ -2333,7 +2338,7 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
 	}
@@ -2375,7 +2380,7 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+	edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
 	}
@@ -2419,7 +2424,7 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
 
-	alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
 	}
@@ -2460,7 +2465,7 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, product, endpoint)
 	}
-	cassandraConn, err := cassandra.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	cassandraConn, err := cassandra.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
 	}
@@ -2503,7 +2508,7 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 		endpoints.AddEndpointMapping(client.config.RegionId, string(EciCode), endpoint)
 	}
 
-	eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
 	}
@@ -2543,7 +2548,7 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 	if endpoint != "" {
 		endpoints.AddEndpointMapping(client.config.RegionId, "r-kvstore", endpoint)
 	}
-	r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+	r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
 	}
