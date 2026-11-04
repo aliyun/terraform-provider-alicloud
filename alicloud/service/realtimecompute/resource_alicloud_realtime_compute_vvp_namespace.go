@@ -214,6 +214,24 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// One budget for the whole create: the RPC, the visibility wait and the SUCCESS wait all spend
+	// the same deadline instead of restarting a full timeout each time.
+	operationCtx, remaining, cancelOperation := vvpNamespaceOperationBudget(ctx, operationTimeout)
+	defer cancelOperation()
+
+	// The composite identity is built from the required plan fields that are mapped into the
+	// request below, so it is known before the call and can be used to recover an uncertain result.
+	instanceId := strings.TrimSpace(plan.InstanceId.ValueString())
+	if instanceId == "" {
+		resp.Diagnostics.AddError("Creating alicloud_realtime_compute_vvp_namespace: missing identity", "The create request did not carry the instance_id component")
+		return
+	}
+	namespaceName := strings.TrimSpace(plan.Namespace.ValueString())
+	if namespaceName == "" {
+		resp.Diagnostics.AddError("Creating alicloud_realtime_compute_vvp_namespace: missing identity", "The create request did not carry the namespace component")
+		return
+	}
+	id := strings.Join([]string{instanceId, namespaceName}, ":")
 
 	request := map[string]interface{}{
 		"ClientToken": helper.BuildClientToken("CreateNamespace"),
@@ -247,31 +265,37 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	if _, err := retryRpcPost(ctx, r.Meta(), "foasconsole", "2019-06-01", "CreateNamespace", request, operationTimeout); err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Creating %s: calling CreateNamespace", vvpNamespaceTypeName),
-			errs.WrapErrorf(err, "Creating %s: calling CreateNamespace", vvpNamespaceTypeName).Error(),
+	createBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName), budgetErr.Error())
+		return
+	}
+	if _, err := retryRpcPost(operationCtx, r.Meta(), "foasconsole", "2019-06-01", "CreateNamespace", request, createBudget); err != nil {
+		recovered, recoveryErr := vvpNamespaceRecoverCreate(operationCtx, r.Meta(), id, err)
+		if recoveryErr != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: calling CreateNamespace", vvpNamespaceTypeName),
+				errs.WrapErrorf(recoveryErr, "Creating %s: CreateNamespace failed with %v and the result could not be verified", vvpNamespaceTypeName, err).Error(),
+			)
+			return
+		}
+		if recovered == nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: calling CreateNamespace", vvpNamespaceTypeName),
+				errs.WrapErrorf(err, "Creating %s: calling CreateNamespace", vvpNamespaceTypeName).Error(),
+			)
+			return
+		}
+		// The namespace exists, so the create was accepted even though its response was lost. Track
+		// the object that was found instead of failing and leaving an untracked namespace; the next
+		// refresh reconciles any remaining asynchronous transition.
+		resp.Diagnostics.AddWarning(
+			fmt.Sprintf("Creating %s: create response lost", vvpNamespaceTypeName),
+			fmt.Sprintf("CreateNamespace failed with %v, but %s exists afterwards; the provider adopted the existing namespace.", err, id),
 		)
+		resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(recovered, &plan))...)
 		return
 	}
-
-	// The request is flattened to dotted keys ("CreateNamespaceRequest.InstanceId") before it is
-	// sent, so walking it for the nested path always comes back empty. The composite identity is
-	// built from the required plan fields that were mapped into that request just above.
-	identityParts := []string{}
-	instanceId := strings.TrimSpace(plan.InstanceId.ValueString())
-	if instanceId == "" {
-		resp.Diagnostics.AddError("Creating alicloud_realtime_compute_vvp_namespace: missing identity", "The create request did not carry the instance_id component")
-		return
-	}
-	identityParts = append(identityParts, instanceId)
-	namespaceName := strings.TrimSpace(plan.Namespace.ValueString())
-	if namespaceName == "" {
-		resp.Diagnostics.AddError("Creating alicloud_realtime_compute_vvp_namespace: missing identity", "The create request did not carry the namespace component")
-		return
-	}
-	identityParts = append(identityParts, namespaceName)
-	id := strings.Join(identityParts, ":")
 
 	// Persist the allocated identity before any asynchronous or configuration stage.
 	trackedPlan := plan
@@ -292,7 +316,12 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 
 	// The model's create async detection is assertNotEmpty on $.Namespace, so poll until
 	// DescribeNamespaces returns the namespace instead of waiting for a status string.
-	object, err := vvpNamespaceWaitForState(ctx, r.Meta(), id, "#$.Namespace", []string{"#CHECKSET"}, nil, operationTimeout)
+	visibilityBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName), budgetErr.Error())
+		return
+	}
+	object, err := vvpNamespaceWaitForState(operationCtx, r.Meta(), id, "#$.Namespace", []string{"#CHECKSET"}, nil, visibilityBudget)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for the namespace to become visible", vvpNamespaceTypeName),
@@ -310,7 +339,12 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 	// The namespace is listed as soon as the create request is accepted, while its capacity
 	// allocation still runs in the background; any follow-up call fails with 903047 until that
 	// allocation settles, so wait for SUCCESS before reporting the create as done.
-	if object, err = vvpNamespaceWaitForState(ctx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, operationTimeout); err != nil {
+	successBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName), budgetErr.Error())
+		return
+	}
+	if object, err = vvpNamespaceWaitForState(operationCtx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, successBudget); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for SUCCESS", vvpNamespaceTypeName),
 			errs.WrapErrorf(err, "Creating %s: waiting for SUCCESS (%s)", vvpNamespaceTypeName, id).Error(),
@@ -356,6 +390,10 @@ func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// One budget for the whole update: the ModifyNamespaceSpec RPC, the SUCCESS wait and the final
+	// read share the configured timeouts.update instead of restarting it per stage.
+	operationCtx, remaining, cancelOperation := vvpNamespaceOperationBudget(ctx, operationTimeout)
+	defer cancelOperation()
 
 	planValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.InstanceId.IsNull() && !plan.InstanceId.IsUnknown() {
@@ -395,13 +433,23 @@ func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRe
 			resp.Diagnostics.AddError("Building ModifyNamespaceSpec request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(ctx, r.Meta(), "foasconsole", "2019-06-01", "ModifyNamespaceSpec", request0, operationTimeout); err != nil {
+		updateBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+		if budgetErr != nil {
+			resp.Diagnostics.AddError("Updating alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+			return
+		}
+		if _, err := retryRpcPost(operationCtx, r.Meta(), "foasconsole", "2019-06-01", "ModifyNamespaceSpec", request0, updateBudget); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_realtime_compute_vvp_namespace: ModifyNamespaceSpec", err.Error())
 			return
 		}
 		// ModifyNamespaceSpec returns before the new capacity is in place; wait for SUCCESS so the
 		// state written below and the next operation see a settled namespace.
-		if _, err := vvpNamespaceWaitForState(ctx, r.Meta(), state.Id.ValueString(), "Status", []string{"SUCCESS"}, []string{"FAILED"}, operationTimeout); err != nil {
+		updateWaitBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+		if budgetErr != nil {
+			resp.Diagnostics.AddError("Updating alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+			return
+		}
+		if _, err := vvpNamespaceWaitForState(operationCtx, r.Meta(), state.Id.ValueString(), "Status", []string{"SUCCESS"}, []string{"FAILED"}, updateWaitBudget); err != nil {
 			resp.Diagnostics.AddError(
 				"Updating alicloud_realtime_compute_vvp_namespace: waiting for SUCCESS",
 				errs.WrapErrorf(err, "Updating %s: waiting for SUCCESS (%s)", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
@@ -409,7 +457,15 @@ func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRe
 			return
 		}
 	}
-	object, err := vvpNamespaceGet(ctx, r.Meta(), state.Id.ValueString())
+	readCtx := operationCtx
+	if remaining() <= 0 {
+		// The update itself succeeded; the confirmation read must not fail just because the shared
+		// budget elapsed, so it gets its own short deadline.
+		var cancelRead context.CancelFunc
+		readCtx, cancelRead = context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cancelRead()
+	}
+	object, err := vvpNamespaceGet(readCtx, r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeNamespaces", vvpNamespaceTypeName),
@@ -436,6 +492,10 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// One budget for the whole delete: the pre-delete read, the DeleteNamespace RPC and the gone
+	// wait consume the configured timeouts.delete instead of each starting a fresh one.
+	operationCtx, remaining, cancelOperation := vvpNamespaceOperationBudget(ctx, operationTimeout)
+	defer cancelOperation()
 
 	// Delete drops the state entry only when the pre-delete read proves the namespace is gone: an
 	// explicit namespace-not-found response (ResourceNotFound.VvpNamespace or ResourceNotFound) or a
@@ -444,7 +504,7 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 	// Deleting the parent workspace first is not one of those cases either: DescribeNamespaces
 	// reports 903021, which is surfaced as a delete error and keeps the resource in state.
 	if state.Id.ValueString() != "" {
-		existing, err := vvpNamespaceGet(ctx, r.Meta(), state.Id.ValueString())
+		existing, err := vvpNamespaceGet(operationCtx, r.Meta(), state.Id.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: DescribeNamespaces", err.Error())
 			return
@@ -482,7 +542,12 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 		resp.Diagnostics.AddError("Building DeleteNamespace request", err.Error())
 		return
 	}
-	if _, err := retryRpcPost(ctx, r.Meta(), "foasconsole", "2019-06-01", "DeleteNamespace", request0, operationTimeout); err != nil {
+	deleteBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+		return
+	}
+	if _, err := retryRpcPost(operationCtx, r.Meta(), "foasconsole", "2019-06-01", "DeleteNamespace", request0, deleteBudget); err != nil {
 		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.VvpNamespace", "ResourceNotFound"}) {
 			// Already gone; fall through to the gone-wait so the state entry is dropped.
 		} else if errs.IsExpectedErrors(err, []string{"903054"}) {
@@ -509,7 +574,12 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 	// NotFoundError("couldn't find resource (N retries)") 而非 success——此前 route_table destroy
 	// 即栽此。非空 deleteTargetStatus 则发 Target=["<status>"] 等待该终态。Get 在 not-found 返回
 	// (nil,nil)（非 error），故 wait 不挂；同步删除资源首检即 gone（nil,"",nil→Target 空→done），无 hang。
-	if _, err := vvpNamespaceWaitForState(ctx, r.Meta(), state.Id.ValueString(), "Namespace", []string{}, nil, operationTimeout); err != nil {
+	goneBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
+	if budgetErr != nil {
+		resp.Diagnostics.AddError("Deleting alicloud_realtime_compute_vvp_namespace: operation budget", budgetErr.Error())
+		return
+	}
+	if _, err := vvpNamespaceWaitForState(operationCtx, r.Meta(), state.Id.ValueString(), "Namespace", []string{}, nil, goneBudget); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s: waiting for gone", vvpNamespaceTypeName),
 			errs.WrapErrorf(err, "Deleting %s: waiting for gone (%s)", vvpNamespaceTypeName, state.Id.ValueString()).Error(),

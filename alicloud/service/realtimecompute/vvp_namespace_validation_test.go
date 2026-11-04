@@ -2,10 +2,14 @@ package realtimecompute
 
 import (
 	"context"
+	"errors"
+	"net"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -224,5 +228,79 @@ func TestUnitRealtimeComputeVvpNamespaceRetryable(t *testing.T) {
 				t.Fatalf("vvpNamespaceRetryable(%v) = %v, want %v", tc.err, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCreateResultUncertain pins the boundary of the post-create
+// identity recovery: only failures that do not prove the request was rejected (timeouts, transport
+// errors, 5xx) may be turned into a lookup by <instance_id>:<namespace>; deterministic product
+// answers must be reported unchanged.
+func TestUnitRealtimeComputeVvpNamespaceCreateResultUncertain(t *testing.T) {
+	status := func(code int) *int { return &code }
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: false},
+		{name: "cancelled", err: context.Canceled, want: false},
+		{name: "deadline exceeded", err: context.DeadlineExceeded, want: true},
+		{name: "net timeout", err: &net.OpError{Op: "dial", Err: &timeoutError{}}, want: true},
+		{name: "server 503", err: &tea.SDKError{StatusCode: status(503), Message: tea.String("service unavailable")}, want: true},
+		{name: "server 500 wrapped", err: errors.Join(errors.New("calling CreateNamespace failed"), &tea.SDKError{StatusCode: status(500)}), want: true},
+		{name: "server 503 through the shared error wrapper", err: errs.WrapErrorf(&tea.SDKError{StatusCode: status(503), Message: tea.String("service unavailable")}, "calling CreateNamespace failed"), want: true},
+		{name: "validation through the shared error wrapper", err: errs.WrapErrorf(&tea.SDKError{StatusCode: status(400), Code: tea.String("903038")}, "calling CreateNamespace failed"), want: false},
+		{name: "validation 400", err: &tea.SDKError{StatusCode: status(400), Message: tea.String("InvalidParameter")}, want: false},
+		{name: "product 903038", err: &tea.SDKError{StatusCode: status(400), Code: tea.String("903038")}, want: false},
+		{name: "timeout text", err: errors.New("Post https://foasconsole.aliyuncs.com: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"), want: true},
+		{name: "connection reset text", err: errors.New("read tcp 10.0.0.1:1234->10.0.0.2:443: connection reset by peer"), want: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := vvpNamespaceCreateResultUncertain(tc.err); got != tc.want {
+				t.Fatalf("vvpNamespaceCreateResultUncertain(%v) = %v, want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+type timeoutError struct{}
+
+func (timeoutError) Error() string   { return "i/o timeout" }
+func (timeoutError) Timeout() bool   { return true }
+func (timeoutError) Temporary() bool { return true }
+
+// TestUnitRealtimeComputeVvpNamespaceOperationBudget pins the single-budget contract: every stage
+// of one operation shares one deadline, the remaining budget shrinks instead of restarting, and a
+// cancelled parent context still aborts the operation.
+func TestUnitRealtimeComputeVvpNamespaceOperationBudget(t *testing.T) {
+	parent, cancelParent := context.WithCancel(context.Background())
+	opCtx, remaining, cancel := vvpNamespaceOperationBudget(parent, 2*time.Second)
+	if _, ok := opCtx.Deadline(); !ok {
+		t.Fatalf("operation context has no deadline")
+	}
+	first := remaining()
+	if first <= 0 || first > 2*time.Second {
+		t.Fatalf("initial remaining budget = %v, want (0, 2s]", first)
+	}
+	time.Sleep(20 * time.Millisecond)
+	second := remaining()
+	if second >= first {
+		t.Fatalf("remaining budget did not shrink: first=%v second=%v", first, second)
+	}
+	cancelParent()
+	if opCtx.Err() != context.Canceled {
+		t.Fatalf("cancelling the parent did not cancel the operation context: %v", opCtx.Err())
+	}
+	cancel()
+
+	short, shortRemaining, cancelShort := vvpNamespaceOperationBudget(context.Background(), 10*time.Millisecond)
+	defer cancelShort()
+	time.Sleep(30 * time.Millisecond)
+	if shortRemaining() > 0 {
+		t.Fatalf("expired budget still reports time left: %v", shortRemaining())
+	}
+	if short.Err() != context.DeadlineExceeded {
+		t.Fatalf("expired operation context error = %v, want deadline exceeded", short.Err())
 	}
 }

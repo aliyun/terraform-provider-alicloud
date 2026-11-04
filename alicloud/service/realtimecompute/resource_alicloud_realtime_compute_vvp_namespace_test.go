@@ -37,6 +37,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 	// emitting names the product rejects.
 	name := fmt.Sprintf("tf-testacc%srtcns%d", strings.ReplaceAll(region, "-", ""), rand)
 	namespace := fmt.Sprintf("tf-testacc-ns-%d", rand)
+	namespaceHa := fmt.Sprintf("tf-testacc-ns-ha-%d", rand)
 	zone := realtimeComputeTestZone(region)
 	var instanceId string
 
@@ -64,13 +65,22 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 						t.Fatalf("purchasing capacity for %s failed: %s", instanceId, err)
 					}
 				},
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, namespace, zone, 8, 32, 2, 8),
+				// The minimal configuration omits ha and uses explicit timeouts: the created namespace
+				// must still come back with the service default (false on a single-zone workspace), and
+				// the local timeouts block must be accepted without a per-apply change.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 2, 8),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
 					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
 					resource.TestCheckResourceAttrSet(resourceId, "instance_id"),
 					resource.TestCheckResourceAttrSet(resourceId, "status"),
 					resource.TestCheckResourceAttrSet(resourceId, "gmt_create"),
+					resource.TestCheckResourceAttrSet(resourceId, "gmt_modified"),
+					resource.TestCheckResourceAttr(resourceId, "resource_used.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceId, "resource_used.0.cpu"),
+					resource.TestCheckResourceAttrSet(resourceId, "resource_used.0.cu"),
+					resource.TestCheckResourceAttrSet(resourceId, "resource_used.0.memory_gb"),
+					testAccRealtimeComputeVvpCheckNoTags(resourceId),
 					resource.TestCheckResourceAttrSet(resourceId, "id"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
@@ -84,7 +94,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, namespace, zone, 8, 32, 2, 8),
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 2, 8),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
@@ -102,7 +112,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				// covered: ModifyNamespaceSpec rejects a target below the sum of the namespace's
 				// resource queues (903099), and that rejected shrink is asserted later in this test
 				// as the negative case.
-				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, namespace, zone, 8, 32, 3, 12),
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 3, 12),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "3"),
@@ -119,8 +129,35 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				// Shrinking below the capacity the namespace's resource queues already use is
 				// rejected by the product, so the update is asserted as a negative case rather
 				// than dropped: 903099 is the expected, identifiable error.
-				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, namespace, zone, 8, 32, 2, 8),
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone, 8, 32, 2, 8),
 				ExpectError: regexp.MustCompile("903099"),
+			},
+			{
+				// An HA namespace is a separate creation path: ha is accepted at creation and cannot be
+				// changed afterwards, so flipping it must replace the namespace (same name, new object).
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "namespace", namespaceHa),
+					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "ha", "true"),
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_namespace.ha", "id"),
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_namespace.ha", "gmt_create"),
+					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "resource_spec.0.cpu", "1"),
+					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "resource_spec.0.memory_gb", "4"),
+				),
+			},
+			{
+				// Import right after the HA create must reproduce the created state.
+				ResourceName:      "alicloud_realtime_compute_vvp_namespace.ha",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Turning HA off is a replacement, not an in-place update.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_realtime_compute_vvp_namespace.ha", "ha", "false"),
+					resource.TestCheckResourceAttrSet("alicloud_realtime_compute_vvp_namespace.ha", "id"),
+				),
 			},
 		},
 	})
@@ -1017,4 +1054,124 @@ resource "alicloud_realtime_compute_vvp_namespace" "default" {
   instance_id = "f-example-instance"
   namespace   = "tf-example-ns"
 }`
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceMinimal0 is the shared-VPC fixture with a minimal
+// namespace block: ha is omitted so the service default is exercised, and the timeouts block uses
+// non-default values so the local operation budget is actually configured.
+func testAccAliCloudRealtimeComputeVvpNamespaceMinimal0(name, namespace, zone string, instanceCpu, instanceMemoryGb, cpu, memoryGb int) string {
+	namespaceBlock := ""
+	if namespace != "" {
+		namespaceBlock = fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+
+  timeouts {
+    create = "30m"
+    update = "30m"
+    delete = "30m"
+  }
+}`, namespace, cpu, memoryGb)
+	}
+	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + namespaceBlock
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceHa0 keeps the main namespace at its grown
+// specification (3/12) and adds an HA namespace next to it, so the HA creation and the replacement
+// that turns HA off run against the same workspace and the main resource stays unchanged.
+func testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone string, instanceCpu, instanceMemoryGb int, ha bool) string {
+	return testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone, instanceCpu, instanceMemoryGb) + fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+
+  resource_spec = [
+    {
+      cpu       = 3
+      memory_gb = 12
+    }
+  ]
+}
+
+resource "alicloud_realtime_compute_vvp_namespace" "ha" {
+  instance_id = alicloud_realtime_compute_vvp_instance.default.id
+  namespace   = %q
+  ha          = %t
+
+  resource_spec = [
+    {
+      cpu       = 1
+      memory_gb = 4
+    }
+  ]
+}`, namespace, namespaceHa, ha)
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace renders only the workspace part of
+// the shared-VPC fixture, so the fixture variants can append their own namespace blocks.
+func testAccAliCloudRealtimeComputeVvpNamespaceSharedVpcWorkspace(name, zone string, instanceCpu, instanceMemoryGb int) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = %s
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+
+resource "alicloud_realtime_compute_vvp_instance" "default" {
+  storage {
+    oss {
+      bucket = alicloud_oss_bucket.default.bucket
+    }
+  }
+  vvp_instance_name = var.name
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  zone_id           = %s
+  vswitch_ids       = [data.alicloud_vswitches.default.ids.0]
+  payment_type      = "PayAsYouGo"
+
+  resource_spec {
+    cpu       = %d
+    memory_gb = %d
+  }
+}
+`, name, zone, zone, instanceCpu, instanceMemoryGb)
+}
+
+// testAccRealtimeComputeVvpCheckNoTags accepts the two ways an untagged namespace can be rendered:
+// the service omits Tags (the attribute is null and absent from the flat state) or returns an empty
+// array (tags.% = 0). A namespace that reports tags fails the check.
+func testAccRealtimeComputeVvpCheckNoTags(resourceId string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("cannot find %s in state", resourceId)
+		}
+		if count, ok := rs.Primary.Attributes["tags.%"]; ok && count != "0" {
+			return fmt.Errorf("%s reports %s tags, expected none", resourceId, count)
+		}
+		return nil
+	}
 }

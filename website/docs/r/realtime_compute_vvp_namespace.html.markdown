@@ -127,7 +127,7 @@ resource "alicloud_realtime_compute_vvp_instance" "default" {
 The following arguments are supported:
 * `instance_id` - (Required, ForceNew, String) The ID of the Realtime Compute instance that owns the namespace.
 * `namespace` - (Required, ForceNew, String) The name of the namespace. A workspace gets its default namespace automatically, named `<workspace_name>-default` (or `<workspace_name>-default-ha` when the workspace is multi-availability-zone).
-* `ha` - (Optional, ForceNew, Bool) Whether the namespace is highly available. It can only be set when the namespace is created.
+* `ha` - (Optional, ForceNew, Bool) Whether the namespace is highly available. It can only be set when the namespace is created, and changing a configured value forces a new namespace; removing the argument keeps the value already in state. When it is omitted, the service decides, and a namespace created on a single-availability-zone workspace reports `false`.
 * `resource_spec` - (Optional, List) The resource specification (CU) of the namespace. See [`resource_spec`](#resource_spec) below.
 * `timeouts` - (Optional) See [Timeouts](#timeouts) below.
 
@@ -141,13 +141,13 @@ The resource_spec supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<namespace>`.
-* `gmt_create` - (Computed, Int) The creation time.
-* `gmt_modified` - (Computed, Int) The modification time.
+* `gmt_create` - (Computed, Int) The creation time reported by the service, as a Unix epoch timestamp in milliseconds.
+* `gmt_modified` - (Computed, Int) The last modification time reported by the service, as a Unix epoch timestamp in milliseconds.
 * `resource_used` - (Computed, List) The resource usage of the namespace.
   * `cpu` - (Computed, Float) The used CPU cores.
   * `cu` - (Computed, Float) The used compute units.
   * `memory_gb` - (Computed, Float) The used memory size in GB.
-* `status` - (Computed, String) The status of the namespace.
+* `status` - (Computed, String) The lifecycle state reported by the service, for example `CREATING` (being created), `DELETING` (being deleted), `MODIFYING` (its resource specification is being changed), `SUCCESS` (the last operation succeeded) or `FAILED` (the last operation failed). The provider itself only depends on `SUCCESS`, which it waits for after create and update, and `FAILED`, which it reports as a failure.
 * `tags` - (Computed, Map) The tags of the namespace.
 
 ## Timeouts

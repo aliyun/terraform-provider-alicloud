@@ -9,7 +9,9 @@ package realtimecompute
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -60,6 +62,101 @@ func vvpNamespaceRetryable(err error) bool {
 	return strings.HasPrefix(code, "DependencyViolation") || code == "OperationConflict" ||
 		code == "LastTokenProcessing" || code == "IncorrectStatus" || code == "SystemBusy" ||
 		code == "903047"
+}
+
+// vvpNamespaceOperationBudget bounds one lifecycle operation. Every stage of the operation (RPC,
+// visibility wait, SUCCESS/gone wait) spends the same deadline instead of restarting a full
+// timeout, so the configured timeouts.<operation> is a ceiling for the whole operation and a
+// cancelled Terraform lifecycle still aborts the stage in flight.
+func vvpNamespaceOperationBudget(ctx context.Context, timeout time.Duration) (context.Context, func() time.Duration, context.CancelFunc) {
+	deadline := time.Now().Add(timeout)
+	operationCtx, cancel := context.WithDeadline(ctx, deadline)
+	return operationCtx, func() time.Duration { return time.Until(deadline) }, cancel
+}
+
+// vvpNamespaceCreateResultUncertain reports whether a failed CreateNamespace call may still have
+// created the namespace. Transport timeouts, connection failures and server-side 5xx responses do
+// not prove the request was rejected, so the caller looks the namespace up by its
+// <instance_id>:<namespace> identity instead of reporting a failure and leaving an untracked
+// namespace. Deterministic product answers (validation, quota, conflict codes) are not ambiguous.
+func vvpNamespaceCreateResultUncertain(err error) bool {
+	return vvpNamespaceCreateResultUncertainDepth(err, 0)
+}
+
+// vvpNamespaceCreateResultUncertainDepth bounds the wrapper unwrapping so a cyclic cause can never
+// spin here.
+func vvpNamespaceCreateResultUncertainDepth(err error, depth int) bool {
+	if err == nil || depth > 8 {
+		return false
+	}
+	// errs.ComplexError does not implement Unwrap, so the cause has to be unwrapped explicitly;
+	// otherwise every classification below only ever sees the wrapper.
+	var complexErr errs.ComplexError
+	if errors.As(err, &complexErr) && complexErr.Cause != nil && complexErr.Cause != err {
+		return vvpNamespaceCreateResultUncertainDepth(complexErr.Cause, depth+1)
+	}
+	var complexErrPtr *errs.ComplexError
+	if errors.As(err, &complexErrPtr) && complexErrPtr.Cause != nil && complexErrPtr.Cause != err {
+		return vvpNamespaceCreateResultUncertainDepth(complexErrPtr.Cause, depth+1)
+	}
+	if errors.Is(err, context.Canceled) {
+		// The caller cancelled the operation; adopting a result here would fight the cancellation.
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+	var sdkErr *tea.SDKError
+	if errors.As(err, &sdkErr) && sdkErr.StatusCode != nil && *sdkErr.StatusCode >= 500 {
+		return true
+	}
+	message := strings.ToLower(err.Error())
+	for _, marker := range []string{
+		"timeout", "timed out", "connection reset", "connection refused", "broken pipe",
+		"unexpected eof", "no such host", "tls handshake", "server closed",
+	} {
+		if strings.Contains(message, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+// vvpNamespaceRecoverCreate checks the identity after an uncertain CreateNamespace failure. It
+// returns true when the namespace exists, which means the create was accepted even though its
+// response was lost. A lookup failure is returned so the caller can report both causes.
+func vvpNamespaceRecoverCreate(ctx context.Context, client *connectivity.AliyunClient, id string, cause error) (map[string]interface{}, error) {
+	if !vvpNamespaceCreateResultUncertain(cause) {
+		return nil, nil
+	}
+	// The create may have failed because the operation budget itself elapsed. The lookup must still
+	// run, so it gets its own short deadline instead of inheriting the expired one.
+	lookupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer cancel()
+	object, err := vvpNamespaceGet(lookupCtx, client, id)
+	if err != nil {
+		return nil, fmt.Errorf("checking whether %s was created despite %v failed: %w", id, cause, err)
+	}
+	// A namespace that exists but reached the failure state is not a successful create.
+	if object != nil && fmt.Sprint(object["Status"]) == "FAILED" {
+		return nil, nil
+	}
+	return object, nil
+}
+
+// vvpNamespaceBudgetForCall returns the time left in the operation budget for one call and fails
+// fast once the budget is spent, so the caller reports an exhausted budget instead of handing a
+// non-positive timeout to a retry loop or a wait.
+func vvpNamespaceBudgetForCall(remaining func() time.Duration) (time.Duration, error) {
+	left := remaining()
+	if left <= 0 {
+		return 0, fmt.Errorf("the operation timeout elapsed before this stage could run")
+	}
+	return left, nil
 }
 
 // vvpNamespaceGet describes the resource by id. Returns (nil, nil) when it is gone, mirroring

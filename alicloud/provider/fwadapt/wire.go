@@ -967,7 +967,8 @@ func NormalizeResponse(object map[string]interface{}, bindings []Mapping) map[st
 	return out
 }
 
-// ValuesEqual compares two mapped values with numeric tolerance.
+// ValuesEqual compares two mapped values by their JSON encoding: equal encodings are equal and any
+// other pair (including numbers that differ only in representation) is not.
 func ValuesEqual(a, b interface{}) bool {
 	aa, errA := json.Marshal(a)
 	bb, errB := json.Marshal(b)
