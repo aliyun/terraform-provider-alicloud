@@ -146,7 +146,26 @@ func (vvpNamespaceResourceSpecValidator) ValidateList(ctx context.Context, req v
 	}
 	for i, element := range req.ConfigValue.Elements() {
 		object, ok := element.(types.Object)
-		if !ok || object.IsNull() || object.IsUnknown() {
+		if !ok {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtListIndex(i),
+				"Invalid resource specification",
+				fmt.Sprintf("resource_spec[%d] must be an object carrying cpu and memory_gb.", i),
+			)
+			continue
+		}
+		// An unknown element is deferred to apply time. A known null element is rejected here: the
+		// serializer skips null elements, so accepting it would send Create/Update without a spec
+		// even though SizeAtLeast(1) already counted the list as non-empty.
+		if object.IsUnknown() {
+			continue
+		}
+		if object.IsNull() {
+			resp.Diagnostics.AddAttributeError(
+				req.Path.AtListIndex(i),
+				"Missing required value",
+				fmt.Sprintf("resource_spec[%d] is null; resource_spec elements must be objects carrying cpu and memory_gb.", i),
+			)
 			continue
 		}
 		attributes := object.Attributes()
@@ -418,11 +437,12 @@ func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	// Delete drops the state entry when the pre-delete read returns no object: an explicit
-	// namespace-not-found response (ResourceNotFound.VvpNamespace or ResourceNotFound), no row
-	// matching the stored identity, or a response path that cannot be navigated. Deleting the
-	// parent workspace first is not one of those cases: DescribeNamespaces reports 903021, which
-	// is surfaced as a delete error and keeps the resource in state.
+	// Delete drops the state entry only when the pre-delete read proves the namespace is gone: an
+	// explicit namespace-not-found response (ResourceNotFound.VvpNamespace or ResourceNotFound) or a
+	// decoded DescribeNamespaces list without the stored identity. An unreadable response (omitted,
+	// null or mistyped Namespaces) is surfaced as a delete error and keeps the resource in state.
+	// Deleting the parent workspace first is not one of those cases either: DescribeNamespaces
+	// reports 903021, which is surfaced as a delete error and keeps the resource in state.
 	if state.Id.ValueString() != "" {
 		existing, err := vvpNamespaceGet(ctx, r.Meta(), state.Id.ValueString())
 		if err != nil {

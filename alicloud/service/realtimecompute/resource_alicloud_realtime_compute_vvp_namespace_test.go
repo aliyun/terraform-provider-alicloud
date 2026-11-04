@@ -78,12 +78,24 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				),
 			},
 			{
+				// Import right after the create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, namespace, zone, 8, 32, 2, 8),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
 				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				// Growing the namespace is the supported update. A successful shrink is not
@@ -98,6 +110,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				),
 			},
 			{
+				// Import right after the grow must reproduce the updated state.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -161,12 +174,24 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_intl0(t *testing.T) {
 				),
 			},
 			{
+				// Import right after the create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				// Second apply of the same configuration: the plan must be empty.
 				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone, 8, 32, 2, 8),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "2"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "8"),
 				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -255,6 +280,12 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_intlAccount(t *testing.T) {
 				),
 			},
 			{
+				// Import right after the create must reproduce the created state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				// Second apply of the same configuration: the plan must be empty.
 				Config: testAccAliCloudRealtimeComputeVvpNamespaceBasic0(name, namespace, zone, 8, 32, 2, 8),
 				Check: resource.ComposeTestCheckFunc(
@@ -263,6 +294,7 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_intlAccount(t *testing.T) {
 				),
 			},
 			{
+				// Import right after re-applying the same configuration must still match.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -346,12 +378,26 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_default0(t *testing.T) {
 				),
 			},
 			{
+				// Import right after the grow must reproduce the updated state; every attribute this
+				// resource tracks is returned by DescribeNamespaces, so the comparison needs no
+				// ignore list.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				// Re-applying the same configuration must produce an empty plan.
 				Config: testAccAliCloudRealtimeComputeVvpNamespaceSharedVpc0(name, defaultNamespace, zone, 16, 64, 8, 32),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "8"),
 					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "32"),
 				),
+			},
+			{
+				// Import right after re-applying the same configuration must still match.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 			{
 				// Removing the namespace while it is the workspace's last one must fail with the
@@ -380,8 +426,9 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_default0(t *testing.T) {
 }
 
 // TestAccAliCloudRealtimeComputeVvpNamespace_validation0 covers the plan-time input rules: an
-// invalid cpu/memory ratio and an explicitly empty resource_spec must be rejected while planning
-// (no cloud resource is created), and omitting resource_spec altogether must still plan.
+// invalid cpu/memory ratio, an explicitly empty resource_spec and a null resource_spec element must
+// be rejected while planning (no cloud resource is created), while omitting resource_spec
+// altogether or leaving its values unknown must still plan.
 func TestAccAliCloudRealtimeComputeVvpNamespace_validation0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -401,6 +448,18 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_validation0(t *testing.T) {
 			{
 				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSpecEmpty(),
 				ExpectError: regexp.MustCompile("at least 1"),
+			},
+			{
+				// [null] satisfies SizeAtLeast(1) but carries no cpu/memory_gb; the serializer would
+				// skip the element and send the request without a spec, so it is rejected at plan time.
+				Config:      testAccAliCloudRealtimeComputeVvpNamespaceSpecNullElement(),
+				ExpectError: regexp.MustCompile(`resource_spec\[0\] is null`),
+			},
+			{
+				// Values that are unknown at plan time are deferred to apply time, not rejected.
+				Config:             testAccAliCloudRealtimeComputeVvpNamespaceSpecUnknown(),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			{
 				Config:             testAccAliCloudRealtimeComputeVvpNamespaceSpecOmitted(),
@@ -917,6 +976,38 @@ resource "alicloud_realtime_compute_vvp_namespace" "default" {
   namespace   = "tf-example-ns"
 
   resource_spec = []
+}`
+}
+
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecNullElement() string {
+	return `
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+
+  resource_spec = [null]
+}`
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceSpecUnknown keeps the cpu/memory_gb pair unknown at
+// plan time by deriving it from a resource that does not exist yet, so the plan-time validator has
+// to defer the ratio check to apply time instead of rejecting the configuration.
+func testAccAliCloudRealtimeComputeVvpNamespaceSpecUnknown() string {
+	return `
+resource "alicloud_oss_bucket" "default" {
+  bucket = "tf-example-vvp-ns-unknown"
+}
+
+resource "alicloud_realtime_compute_vvp_namespace" "default" {
+  instance_id = "f-example-instance"
+  namespace   = "tf-example-ns"
+
+  resource_spec = [
+    {
+      cpu       = length(alicloud_oss_bucket.default.id)
+      memory_gb = 4 * length(alicloud_oss_bucket.default.id)
+    }
+  ]
 }`
 }
 

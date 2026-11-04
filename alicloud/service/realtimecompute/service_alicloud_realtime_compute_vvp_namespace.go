@@ -97,31 +97,47 @@ func vvpNamespaceGet(ctx context.Context, client *connectivity.AliyunClient, id 
 		}
 		return nil, err
 	}
-	// Gets RootMapping "Namespaces": navigate the dotted path into the Get response. The list is
-	// then handed to fwadapt.SelectReadObject, which selects the row whose $.Namespace equals the
-	// requested identity; multiple matching rows and list items without a readable identity are
-	// errors, and the first element is never used as a fallback. A missing path segment yields no
-	// object.
-	cur := interface{}(response)
-	for _, seg := range strings.Split("Namespaces", ".") {
-		m, ok := cur.(map[string]interface{})
-		if !ok {
-			return nil, nil
-		}
-		cur, ok = m[seg]
-		if !ok {
-			return nil, nil
-		}
+	// Gets RootMapping "Namespaces". Only a decoded collection is evidence of what the workspace
+	// holds: the list is handed to fwadapt.SelectReadObject, which selects the row whose $.Namespace
+	// equals the requested identity; multiple matching rows and list items without a readable
+	// identity are errors, and the first element is never used as a fallback. A decoded list without
+	// this identity is a positive not-found, while an omitted, null or mistyped field is an
+	// unreadable response and fails the read instead of clearing state.
+	rows, rowsErr := vvpNamespaceResponseRows(response)
+	if rowsErr != nil {
+		return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, rowsErr)
 	}
-	inner, identityErr := fwadapt.SelectReadObject(cur, identities)
+	inner, identityErr := fwadapt.SelectReadObject(rows, identities)
 	if identityErr != nil {
 		return nil, fmt.Errorf("selecting DescribeNamespaces resource: %w", identityErr)
 	}
-	if inner != nil {
-
-		return vvpNamespaceCompleteRead(client, inner, id, completeRead)
+	if inner == nil {
+		return nil, nil
 	}
-	return nil, nil
+	return vvpNamespaceCompleteRead(client, inner, id, completeRead)
+}
+
+// vvpNamespaceResponseRows extracts the "Namespaces" collection from a DescribeNamespaces response.
+// The 2019-06-01 response schema is not published in the API metadata, so an omitted, null or
+// mistyped Namespaces field is treated as an unreadable response instead of an empty one: guessing
+// "empty" would let Read drop a live namespace from state on a decoding or product-shape change.
+// Only an explicitly decoded array is accepted, and an empty array is a legal empty collection.
+func vvpNamespaceResponseRows(response map[string]interface{}) ([]interface{}, error) {
+	if response == nil {
+		return nil, fmt.Errorf("DescribeNamespaces returned an empty response")
+	}
+	raw, ok := response["Namespaces"]
+	if !ok {
+		return nil, fmt.Errorf("DescribeNamespaces response does not contain Namespaces")
+	}
+	if raw == nil {
+		return nil, fmt.Errorf("DescribeNamespaces response Namespaces is null")
+	}
+	rows, ok := raw.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("DescribeNamespaces response Namespaces has unexpected type %T", raw)
+	}
+	return rows, nil
 }
 
 func vvpNamespaceCompleteRead(client *connectivity.AliyunClient, object map[string]interface{}, id string, includeSecondary bool) (map[string]interface{}, error) {
