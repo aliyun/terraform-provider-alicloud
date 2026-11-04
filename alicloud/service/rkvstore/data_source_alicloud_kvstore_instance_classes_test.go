@@ -125,9 +125,6 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 			"product_type": "Tair_rdb",
 			"architecture": "non_cluster",
 		}),
-		ExistChangMap: map[string]string{
-			"instance_classes.0": acctest.REGEXMATCH + `^tair\.rdb\.`,
-		},
 	}
 	editionTypeEnhancedPerformance := acctest.DataSourceTestAccConfig{
 		ExistConfig: testAccConfig(map[string]interface{}{
@@ -135,9 +132,6 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 			"product_type": "Tair_rdb",
 			"edition_type": "EnhancedPerformance",
 		}),
-		ExistChangMap: map[string]string{
-			"instance_classes.0": acctest.REGEXMATCH + `^tair\.rdb\.`,
-		},
 	}
 	productTypeOnECS := acctest.DataSourceTestAccConfig{
 		ExistConfig: testAccConfig(map[string]interface{}{
@@ -145,9 +139,6 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 			"product_type": "OnECS",
 			"architecture": "non_cluster",
 		}),
-		ExistChangMap: map[string]string{
-			"instance_classes.0": acctest.REGEXMATCH + `^redis\.shard\.`,
-		},
 	}
 	NodeType := acctest.DataSourceTestAccConfig{
 		ExistConfig: testAccConfig(map[string]interface{}{
@@ -220,9 +211,10 @@ func TestAccAliCloudKvstoreInstanceClasses(t *testing.T) {
 
 // TestAccAliCloudKvstoreInstanceClassesFilterIdentity checks that the architecture and
 // edition filters partition the unfiltered result instead of merely returning a
-// non-empty list: the filtered counts add up to the unfiltered count, a sibling value
-// yields no classes at all, and every returned class belongs to the requested product
-// type.
+// non-empty list: the filtered counts add up to the unfiltered count and sibling values
+// yield no classes at all. The equalities hold while Tair_rdb exposes exactly the
+// non_cluster/cluster architectures and the Community/EnhancedPerformance editions,
+// which is the case in the pinned zone.
 func TestAccAliCloudKvstoreInstanceClassesFilterIdentity(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -283,15 +275,27 @@ data "alicloud_kvstore_instance_classes" "standard" {
   product_type = "Tair_rdb"
   architecture = "standard"
 }
+
+data "alicloud_kvstore_instance_classes" "on_ecs" {
+  zone_id      = data.alicloud_zones.resources.zones.0.id
+  product_type = "OnECS"
+  architecture = "non_cluster"
+}
 `,
-				Check: resource.ComposeTestCheckFunc(testAccCheckKvstoreInstanceClassesFilterIdentity()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKvstoreInstanceClassesFilterIdentity(),
+					testAccCheckKvstoreInstanceClassesContains("data.alicloud_kvstore_instance_classes.non_cluster", "tair.rdb."),
+					testAccCheckKvstoreInstanceClassesContains("data.alicloud_kvstore_instance_classes.enhanced", "tair.rdb."),
+					testAccCheckKvstoreInstanceClassesContains("data.alicloud_kvstore_instance_classes.on_ecs", "redis.shard."),
+				),
 			},
 		},
 	})
 }
 
 // TestAccAliCloudKvstoreInstanceClassesInternational runs the cloud-native query in an
-// international region, where the original issue was reported.
+// international region, where the original issue was reported. It changes the process
+// wide region, so it must be selected by name rather than run as part of the package.
 func TestAccAliCloudKvstoreInstanceClassesInternational(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -313,7 +317,7 @@ data "alicloud_kvstore_instance_classes" "default" {
 }
 `,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckKvstoreInstanceClassesNonEmptyPrefixed("data.alicloud_kvstore_instance_classes.default", "tair.rdb."),
+					testAccCheckKvstoreInstanceClassesContains("data.alicloud_kvstore_instance_classes.default", "tair.rdb."),
 				),
 			},
 		},
@@ -336,7 +340,7 @@ func testAccKvstoreInstanceClasses(id string, s *terraform.State) (int, []string
 	return count, classes, nil
 }
 
-func testAccCheckKvstoreInstanceClassesNonEmptyPrefixed(id, prefix string) resource.TestCheckFunc {
+func testAccCheckKvstoreInstanceClassesContains(id, prefix string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		count, classes, err := testAccKvstoreInstanceClasses(id, s)
 		if err != nil {
