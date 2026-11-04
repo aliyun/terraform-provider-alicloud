@@ -52,6 +52,8 @@ func testSweepVpcIpv6Gateway(region string) error {
 		"tf-example",
 		"tf_example",
 		"terraform-example",
+		// Fixed name required by the digit-leading/dot validation case; kept
+		// here so an interrupted run can still be swept.
 		"1tf.test-gw",
 	}
 	action := "DescribeIpv6Gateways"
@@ -238,7 +240,9 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%svpcipv6gatewayboundary%d", defaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVPCIpv6GatewayBasicDependence0)
 
-	name128 := strings.Repeat("a", 128)
+	// 128 characters and still reachable by testSweepVpcIpv6Gateway via the
+	// "tf-testacc" prefix, so an interrupted run leaves nothing behind.
+	name128 := "tf-testacc" + strings.Repeat("a", 118)
 	description256 := strings.Repeat("b", 256)
 
 	resource.Test(t, resource.TestCase{
@@ -263,6 +267,12 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"ipv6_gateway_name": "1tf.test-gw",
 					"description":       "tf test, gateway.",
@@ -273,6 +283,12 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 						"description":       "tf test, gateway.",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -318,6 +334,12 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 						"description":       "tf test, gateway.",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
 			},
 		},
 	})
