@@ -228,7 +228,7 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudVPCIpv6GatewayMap0)
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudVPCIpv6GatewayMapValidation)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpv6Gateway")
@@ -307,6 +307,10 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 			},
 		},
 	})
+}
+
+var AlicloudVPCIpv6GatewayMapValidation = map[string]string{
+	"status": acctest.CHECKSET,
 }
 
 var AlicloudVPCIpv6GatewayMap0 = map[string]string{
