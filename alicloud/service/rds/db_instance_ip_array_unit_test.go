@@ -128,24 +128,26 @@ func TestUnitAliCloudDBInstanceModifySecurityIpsRetryGate(t *testing.T) {
 }
 
 type fakeSecurityIpsGroupAccess struct {
-	present          bool
-	coverErr         error
-	deleteErr        error
-	absentErr        error
-	coverRemoves     bool
-	deleteRemoves    bool
-	coverDelay       time.Duration
-	visibleReads     int
-	modes            []string
-	ips              []string
-	absentBudgets    []time.Duration
-	groupAbsentCalls int
+	present                bool
+	coverErr               error
+	deleteErr              error
+	absentErr              error
+	absentErrAfterCalls    int
+	coverRemoves           bool
+	deleteRemoves          bool
+	coverDelay             time.Duration
+	visibleReads           int
+	visibleReadsAfterWrite int
+	modes                  []string
+	ips                    []string
+	absentBudgets          []time.Duration
+	groupAbsentCalls       int
 }
 
 func (f *fakeSecurityIpsGroupAccess) groupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error) {
 	f.absentBudgets = append(f.absentBudgets, timeout)
 	f.groupAbsentCalls++
-	if f.absentErr != nil {
+	if f.absentErr != nil && (f.absentErrAfterCalls == 0 || f.groupAbsentCalls > f.absentErrAfterCalls) {
 		return false, f.absentErr
 	}
 	if f.visibleReads > 0 {
@@ -184,6 +186,9 @@ func (f *fakeSecurityIpsGroupAccess) modifyGroup(instanceId, groupName, ips, mod
 		}
 		if f.coverRemoves {
 			f.present = false
+			if f.visibleReadsAfterWrite > 0 {
+				f.visibleReads = f.visibleReadsAfterWrite
+			}
 		}
 		return nil
 	}
@@ -192,6 +197,9 @@ func (f *fakeSecurityIpsGroupAccess) modifyGroup(instanceId, groupName, ips, mod
 	}
 	if f.deleteRemoves {
 		f.present = false
+		if f.visibleReadsAfterWrite > 0 {
+			f.visibleReads = f.visibleReadsAfterWrite
+		}
 	}
 	return nil
 }
@@ -305,6 +313,62 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsAbsenceErrorPropagates(t *testin
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "read failed")
 	assert.Empty(t, access.modes, "a failed read must stop before any write")
+}
+
+// A group removed by the Delete fallback can stay visible for a short while.
+// The fallback must poll after the write instead of deciding on one read.
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsDeleteFallbackDelayedVisibility(t *testing.T) {
+	fastAbsencePolling(t)
+	access := &fakeSecurityIpsGroupAccess{
+		present:                true,
+		coverErr:               sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"cover failed"}`, ""),
+		deleteRemoves:          true,
+		visibleReadsAfterWrite: 3,
+	}
+	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"Cover", "Delete"}, access.modes)
+	assert.GreaterOrEqual(t, access.groupAbsentCalls, 5, "the Delete fallback must poll after the write until the group disappears")
+	for i := 1; i < len(access.absentBudgets); i++ {
+		assert.LessOrEqual(t, access.absentBudgets[i], access.absentBudgets[i-1], "the budget must never be rebuilt between reads")
+	}
+}
+
+// A read error that only appears while polling after the Cover write must
+// reach the caller. The old single-read implementation could not observe it.
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsPostCoverPollReadErrorPropagates(t *testing.T) {
+	fastAbsencePolling(t)
+	access := &fakeSecurityIpsGroupAccess{
+		present:                true,
+		coverRemoves:           true,
+		visibleReadsAfterWrite: 2,
+		absentErr:              sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"read failed"}`, ""),
+		absentErrAfterCalls:    3,
+	}
+	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "read failed")
+	assert.Equal(t, []string{"Cover"}, access.modes, "the write happens before the failing poll read")
+	assert.GreaterOrEqual(t, access.groupAbsentCalls, 4, "the poll must read again before the error is surfaced")
+}
+
+// A read error that only appears while polling after the Delete fallback write
+// must reach the caller instead of being reported as the group still existing.
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsPostDeletePollReadErrorPropagates(t *testing.T) {
+	fastAbsencePolling(t)
+	access := &fakeSecurityIpsGroupAccess{
+		present:                true,
+		coverErr:               sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"cover failed"}`, ""),
+		deleteRemoves:          true,
+		visibleReadsAfterWrite: 1,
+		absentErr:              sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"read failed"}`, ""),
+		absentErrAfterCalls:    2,
+	}
+	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "read failed")
+	assert.Equal(t, []string{"Cover", "Delete"}, access.modes, "the fallback write happens before the failing poll read")
+	assert.GreaterOrEqual(t, access.groupAbsentCalls, 3, "the poll must read again before the error is surfaced")
 }
 
 func TestUnitAliCloudDBInstanceLifecycleBudget(t *testing.T) {
