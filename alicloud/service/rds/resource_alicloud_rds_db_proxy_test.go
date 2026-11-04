@@ -301,14 +301,20 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
 			},
 			{
+				// Removing the attribute while it is Enabled stops Terraform from
+				// managing the switch: the enabled setting is kept instead of being
+				// reset, which is what the documented omission semantics promise.
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
 				Config: testAccConfig(map[string]interface{}{
-					"persistent_connection_status": "Disabled",
+					"persistent_connection_status": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"persistent_connection_status": "Disabled",
-					}),
-					checkDBProxyRemotePersistentConnectionStatus(resourceId, "Disabled"),
+					resource.TestCheckResourceAttr(resourceId, "persistent_connection_status", "Enabled"),
+					checkDBProxyRemotePersistentConnectionStatus(resourceId, "Enabled"),
 				),
 			},
 			{
@@ -318,14 +324,13 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 				ImportStateVerifyIgnore: dbProxyImportStateVerifyIgnore,
 			},
 			{
-				// Removing the attribute stops Terraform from managing the switch:
-				// the value recorded in the state is kept and the proxy keeps its
-				// current setting instead of being reset.
 				Config: testAccConfig(map[string]interface{}{
-					"persistent_connection_status": acctest.REMOVEKEY,
+					"persistent_connection_status": "Disabled",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "persistent_connection_status", "Disabled"),
+					testAccCheck(map[string]string{
+						"persistent_connection_status": "Disabled",
+					}),
 					checkDBProxyRemotePersistentConnectionStatus(resourceId, "Disabled"),
 				),
 			},

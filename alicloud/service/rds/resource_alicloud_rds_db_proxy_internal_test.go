@@ -197,9 +197,16 @@ func TestUnitDBProxyModifyConfigRetryError(t *testing.T) {
 		},
 		{
 			// A missing proxy stays a terminal error on this write: unlike the
-			// Shutdown path it is not success.
+			// Shutdown path it is not success, and the proxy cannot be created by
+			// retrying the switch.
 			name: "missing proxy is terminal",
-			err:  newSDKError("InvalidDBInstanceId.NotFound", 404),
+			err:  newSDKError("Maxscale.NotFound", 404),
+		},
+		{
+			// The same code is reported as HTTP 400 by ModifyDBProxy, so it must not
+			// be retried because of a hardcoded 404 assumption.
+			name: "missing instance id fails fast",
+			err:  newSDKError("InvalidDBInstanceId.NotFound", 400),
 		},
 		{
 			name: "other 404 is terminal",
