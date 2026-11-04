@@ -349,8 +349,11 @@ func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"db_proxy_instance_num":  "2",
 						"db_proxy_instance_type": "common",
-						"db_proxy_nodes.#":       "1",
 					}),
+					// The node count is asserted per step instead of through the
+					// accumulating attribute map, because the block is removed by a
+					// later step of this test.
+					resource.TestCheckResourceAttr(resourceId, "db_proxy_nodes.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "db_proxy_nodes.*", map[string]string{
 						"cpu_cores":   "2",
 						"node_counts": "2",
