@@ -70,6 +70,14 @@ func (v fwJSONStringValue) SemanticEqual(other attr.Value) bool {
 	equal, err := fwJSONDocumentsEqual(v.ValueString(), value.ValueString())
 	return err == nil && equal
 }
+
+// The shared adapters assert these exported contracts; keep the compile-time proof here so a
+// rename cannot silently drop the tag type back to plain equality or a non-typed null.
+var (
+	_ fwadapt.SemanticValue = fwJSONStringValue{}
+	_ fwadapt.NullValue     = fwJSONStringValue{}
+)
+
 func (v fwJSONStringValue) StringSemanticEquals(_ context.Context, other basetypes.StringValuable) (bool, diag.Diagnostics) {
 	value, ok := other.(fwJSONStringValue)
 	if !ok || v.IsNull() || v.IsUnknown() || value.IsNull() || value.IsUnknown() {
