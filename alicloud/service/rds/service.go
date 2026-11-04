@@ -99,6 +99,12 @@ func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{
 	return s.describeDBInstance(id, 5*time.Minute)
 }
 
+// DescribeDBInstanceWithTimeout reads the instance with the caller's remaining
+// lifecycle budget instead of opening a fresh five-minute retry window.
+func (s *RdsService) DescribeDBInstanceWithTimeout(id string, timeout time.Duration) (object map[string]interface{}, err error) {
+	return s.describeDBInstance(id, timeout)
+}
+
 func (s *RdsService) describeDBInstance(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
 	return s.queryDBInstance(id, retryTimeout, false)
 }
@@ -1248,11 +1254,33 @@ func (a serviceSecurityIpsGroupAccess) groupAbsent(instanceId, groupName string,
 	return a.service.dbSecurityIpsGroupAbsent(instanceId, groupName, timeout)
 }
 
+// dbSecurityIpsAbsencePollInterval bounds how often a removal check re-reads the
+// group list. Tests override it so the poll runs deterministically.
+var dbSecurityIpsAbsencePollInterval = 2 * time.Second
+
+// dbSecurityIpsCoverAbsenceWindow caps how long a group may stay visible after
+// Cover mode before Delete mode is used as the fallback. The window never
+// extends past the remaining update budget, and it is capped at half of that
+// budget so the fallback still has time to run.
+var dbSecurityIpsCoverAbsenceWindow = 30 * time.Second
+
+// dbSecurityIpsDeleteAbsenceWindow caps the read-back wait after Delete mode.
+// A group that never disappears then fails with the removal error instead of a
+// generic timeout. The window never extends past the remaining update budget.
+var dbSecurityIpsDeleteAbsenceWindow = 60 * time.Second
+
+// remainingLifecycleBudget reports the budget left before deadline and whether
+// any time remains.
+func remainingLifecycleBudget(deadline time.Time) (time.Duration, bool) {
+	left := time.Until(deadline)
+	return left, left > 0
+}
+
 func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout time.Duration, access securityIpsGroupAccess) error {
 	deadline := time.Now().Add(timeout)
 	remaining := func() (time.Duration, error) {
-		left := time.Until(deadline)
-		if left <= 0 {
+		left, ok := remainingLifecycleBudget(deadline)
+		if !ok {
 			return 0, WrapErrorf(fmt.Errorf("update timeout budget is exhausted while removing whitelist group %q", groupName), DefaultErrorMsg, instanceId, "ModifySecurityIps", AlibabaCloudSdkGoERROR)
 		}
 		return left, nil
@@ -1276,11 +1304,13 @@ func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout 
 	}
 	coverErr := access.modifyGroup(instanceId, groupName, "", "Cover", budget)
 	if coverErr == nil || IsExpectedErrors(coverErr, []string{"InvalidSecurityIps.MalFormed"}) {
-		budget, err = remaining()
-		if err != nil {
-			return err
+		// A removed group can stay visible for a short while, so poll for it
+		// inside the shared budget instead of deciding on a single read.
+		coverWindow := dbSecurityIpsCoverAbsenceWindow
+		if left, budgetErr := remaining(); budgetErr == nil && left/2 < coverWindow {
+			coverWindow = left / 2
 		}
-		absent, err = access.groupAbsent(instanceId, groupName, budget)
+		absent, err = pollDBSecurityIpsGroupAbsent(access, instanceId, groupName, remaining, coverWindow)
 		if err != nil {
 			return err
 		}
@@ -1298,11 +1328,7 @@ func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout 
 		if deleteErr != nil && !IsExpectedErrors(deleteErr, []string{"InvalidSecurityIps.MalFormed"}) {
 			return deleteErr
 		}
-		budget, err = remaining()
-		if err != nil {
-			return err
-		}
-		absent, err = access.groupAbsent(instanceId, groupName, budget)
+		absent, err = pollDBSecurityIpsGroupAbsent(access, instanceId, groupName, remaining, dbSecurityIpsDeleteAbsenceWindow)
 		if err != nil {
 			return err
 		}
@@ -1315,6 +1341,41 @@ func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout 
 		return coverErr
 	}
 	return WrapErrorf(fmt.Errorf("whitelist group %q still exists after it was removed", groupName), DefaultErrorMsg, instanceId, "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+}
+
+// pollDBSecurityIpsGroupAbsent re-reads the group list until the named group is
+// gone or the wait window closes. Every read uses the shared remaining budget,
+// so a slow API cannot extend the lifecycle deadline. A read error is returned
+// unchanged so the caller keeps the real cause.
+func pollDBSecurityIpsGroupAbsent(access securityIpsGroupAccess, instanceId, groupName string, remaining func() (time.Duration, error), window time.Duration) (bool, error) {
+	end := time.Now().Add(window)
+	for {
+		budget, err := remaining()
+		if err != nil {
+			return false, err
+		}
+		absent, err := access.groupAbsent(instanceId, groupName, budget)
+		if err != nil {
+			return false, err
+		}
+		if absent {
+			return true, nil
+		}
+		pause := dbSecurityIpsAbsencePollInterval
+		if left := time.Until(end); left <= 0 {
+			return false, nil
+		} else if left < pause {
+			pause = left
+		}
+		if left, err := remaining(); err != nil {
+			return false, err
+		} else if left < pause {
+			pause = left
+		}
+		if pause > 0 {
+			time.Sleep(pause)
+		}
+	}
 }
 
 // dbSecurityIpsGroupAbsent reports whether a named whitelist group no longer
@@ -1352,7 +1413,7 @@ func (s *RdsService) modifyDBSecurityIpsGroup(instanceId, groupName, ips, modify
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	startedAt := time.Now()
+	deadline := time.Now().Add(timeout)
 	err = retry.Retry(timeout, func() *retry.RetryError {
 		response, err = s.client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
 		if err != nil {
@@ -1369,11 +1430,11 @@ func (s *RdsService) modifyDBSecurityIpsGroup(instanceId, groupName, ips, modify
 	}
 	addDebug(action, response, request)
 
-	remaining := timeout - time.Since(startedAt)
-	if remaining <= 0 {
+	remaining, ok := remainingLifecycleBudget(deadline)
+	if !ok {
 		return WrapErrorf(fmt.Errorf("no time left to wait for the instance after ModifySecurityIps"), IdMsg, instanceId)
 	}
-	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, remaining, 1*time.Second, s.RdsDBInstanceStateRefreshFunc(instanceId, []string{"Deleting"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, remaining, 1*time.Second, s.RdsDBInstanceStateRefreshFuncWithinDeadline(instanceId, []string{"Deleting"}, deadline))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, instanceId)
 	}
@@ -1851,6 +1912,35 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
 	}
 }
+
+// RdsDBInstanceStateRefreshFuncWithinDeadline is the lifecycle-scoped variant of
+// RdsDBInstanceStateRefreshFunc. Every refresh spends only the budget that is
+// left before deadline, so a persistent retryable error cannot open a new
+// five-minute window inside a wait that already has less time than that.
+func (s *RdsService) RdsDBInstanceStateRefreshFuncWithinDeadline(id string, failStates []string, deadline time.Time) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		budget, ok := remainingLifecycleBudget(deadline)
+		if !ok {
+			return nil, "", WrapError(fmt.Errorf("timeout budget is exhausted while waiting for DB instance %q", id))
+		}
+		object, err := s.DescribeDBInstanceWithTimeout(id, budget)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["DBInstanceStatus"] == failState {
+				return object, fmt.Sprint(object["DBInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, object["DBInstanceStatus"]))
+			}
+		}
+		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
+	}
+}
+
 func (s *RdsService) RdsDBInstanceNodeIdRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		describeDBInstanceHAConfigObject, err := s.DescribeDBInstanceHAConfig(id)

@@ -1006,8 +1006,8 @@ The following arguments are supported:
 
 The db_instance_ip_arrays mapping supports the following:
 
-* `name` - (Required, String) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. Renaming the group deletes the old group and creates the new one.
-* `security_ips` - (Optional, Set) A set of IP addresses in the group. At least one IP address, CIDR block, or address range is required; a group without any entry is rejected during plan.
+* `name` - (Required, String, Available since v2.2.0) The name of the IP address whitelist group. It must be 1 to 64 characters long, must be unique within this block set, and must differ from `db_instance_ip_array_name`. Renaming the group deletes the old group and creates the new one.
+* `security_ips` - (Optional, Set, Available since v2.2.0) A set of IP addresses in the group. At least one IP address or CIDR block is required; a group without any entry is rejected during plan.
 
 ### `parameters`
 

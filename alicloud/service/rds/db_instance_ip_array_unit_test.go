@@ -128,20 +128,48 @@ func TestUnitAliCloudDBInstanceModifySecurityIpsRetryGate(t *testing.T) {
 }
 
 type fakeSecurityIpsGroupAccess struct {
-	present       bool
-	coverErr      error
-	deleteErr     error
-	coverRemoves  bool
-	deleteRemoves bool
-	coverDelay    time.Duration
-	modes         []string
-	ips           []string
-	absentBudgets []time.Duration
+	present          bool
+	coverErr         error
+	deleteErr        error
+	absentErr        error
+	coverRemoves     bool
+	deleteRemoves    bool
+	coverDelay       time.Duration
+	visibleReads     int
+	modes            []string
+	ips              []string
+	absentBudgets    []time.Duration
+	groupAbsentCalls int
 }
 
 func (f *fakeSecurityIpsGroupAccess) groupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error) {
 	f.absentBudgets = append(f.absentBudgets, timeout)
+	f.groupAbsentCalls++
+	if f.absentErr != nil {
+		return false, f.absentErr
+	}
+	if f.visibleReads > 0 {
+		f.visibleReads--
+		return false, nil
+	}
 	return !f.present, nil
+}
+
+// fastAbsencePolling shrinks the removal poll window and interval so tests do
+// not spend the production grace periods in real time.
+func fastAbsencePolling(t *testing.T) {
+	t.Helper()
+	oldInterval := dbSecurityIpsAbsencePollInterval
+	oldCoverWindow := dbSecurityIpsCoverAbsenceWindow
+	oldDeleteWindow := dbSecurityIpsDeleteAbsenceWindow
+	dbSecurityIpsAbsencePollInterval = time.Millisecond
+	dbSecurityIpsCoverAbsenceWindow = 30 * time.Millisecond
+	dbSecurityIpsDeleteAbsenceWindow = 30 * time.Millisecond
+	t.Cleanup(func() {
+		dbSecurityIpsAbsencePollInterval = oldInterval
+		dbSecurityIpsCoverAbsenceWindow = oldCoverWindow
+		dbSecurityIpsDeleteAbsenceWindow = oldDeleteWindow
+	})
 }
 
 func (f *fakeSecurityIpsGroupAccess) modifyGroup(instanceId, groupName, ips, mode string, timeout time.Duration) error {
@@ -169,6 +197,7 @@ func (f *fakeSecurityIpsGroupAccess) modifyGroup(instanceId, groupName, ips, mod
 }
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsCoverPath(t *testing.T) {
+	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{present: true, coverRemoves: true}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
 	assert.NoError(t, err)
@@ -177,6 +206,7 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsCoverPath(t *testing.T) {
 }
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsDeleteFallback(t *testing.T) {
+	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{
 		present:       true,
 		coverErr:      sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"cover failed"}`, ""),
@@ -189,6 +219,7 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsDeleteFallback(t *testing.T) {
 }
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsMalformedStillPresent(t *testing.T) {
+	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{
 		present:       true,
 		coverErr:      sdkerrors.NewServerError(400, `{"Code":"InvalidSecurityIps.MalFormed","Message":"malformed"}`, ""),
@@ -200,6 +231,7 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsMalformedStillPresent(t *testing
 }
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsStillExists(t *testing.T) {
+	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{present: true}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
 	assert.Error(t, err)
@@ -227,15 +259,19 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsBudgetExhausted(t *testing.T) {
 }
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsBudgetPassedDown(t *testing.T) {
+	fastAbsencePolling(t)
 	access := &fakeSecurityIpsGroupAccess{present: true, coverRemoves: false, coverDelay: 1200 * time.Millisecond}
 	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", 3*time.Second, access)
 	assert.Error(t, err)
 	assert.Equal(t, []string{"Cover", "Delete"}, access.modes)
-	assert.Equal(t, 3, len(access.absentBudgets))
+	assert.NotEmpty(t, access.absentBudgets)
 	first := access.absentBudgets[0]
 	last := access.absentBudgets[len(access.absentBudgets)-1]
 	assert.True(t, first <= 3*time.Second && first > 0)
-	assert.True(t, last < first, "read-back must receive the remaining budget, got %s then %s", first, last)
+	assert.True(t, last < first, "every read-back must receive the remaining budget, got %s then %s", first, last)
+	for i := 1; i < len(access.absentBudgets); i++ {
+		assert.LessOrEqual(t, access.absentBudgets[i], access.absentBudgets[i-1], "the budget must never be rebuilt between reads")
+	}
 }
 
 func TestUnitAliCloudDBInstanceDeleteSecurityIpsNoFallbackAfterBudgetExhausted(t *testing.T) {
@@ -248,6 +284,45 @@ func TestUnitAliCloudDBInstanceDeleteSecurityIpsNoFallbackAfterBudgetExhausted(t
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "budget is exhausted")
 	assert.Equal(t, []string{"Cover"}, access.modes)
+}
+
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsDelayedVisibility(t *testing.T) {
+	fastAbsencePolling(t)
+	access := &fakeSecurityIpsGroupAccess{present: true, coverRemoves: true, visibleReads: 3}
+	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"Cover"}, access.modes)
+	assert.GreaterOrEqual(t, access.groupAbsentCalls, 4, "a group that stays visible briefly must be polled again")
+}
+
+func TestUnitAliCloudDBInstanceDeleteSecurityIpsAbsenceErrorPropagates(t *testing.T) {
+	fastAbsencePolling(t)
+	access := &fakeSecurityIpsGroupAccess{
+		present:   true,
+		absentErr: sdkerrors.NewServerError(500, `{"Code":"InternalError","Message":"read failed"}`, ""),
+	}
+	err := deleteDBSecurityIpsGroup("rm-test", "office", "10.0.0.1", time.Minute, access)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "read failed")
+	assert.Empty(t, access.modes, "a failed read must stop before any write")
+}
+
+func TestUnitAliCloudDBInstanceLifecycleBudget(t *testing.T) {
+	left, ok := remainingLifecycleBudget(time.Now().Add(time.Minute))
+	assert.True(t, ok)
+	assert.True(t, left > 0 && left <= time.Minute)
+
+	left, ok = remainingLifecycleBudget(time.Now().Add(-time.Second))
+	assert.False(t, ok)
+	assert.True(t, left <= 0)
+}
+
+func TestUnitAliCloudDBInstanceStateRefreshWithinDeadlineExhausted(t *testing.T) {
+	service := &RdsService{}
+	refresh := service.RdsDBInstanceStateRefreshFuncWithinDeadline("rm-test", []string{"Deleting"}, time.Now().Add(-time.Second))
+	_, _, err := refresh()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "budget is exhausted")
 }
 
 type fakeSecurityIpsReader struct {
