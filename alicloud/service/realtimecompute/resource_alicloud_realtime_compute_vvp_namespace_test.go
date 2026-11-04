@@ -1685,7 +1685,7 @@ data "alicloud_vswitches" "default" {
 
 resource "alicloud_vswitch" "ha" {
   vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = "10.4.20.0/24"
+  cidr_block   = "10.4.250.0/24"
   zone_id      = [for z in data.alicloud_zones.default.zones : z.id if z.id != %s][0]
   vswitch_name = var.name
 }
