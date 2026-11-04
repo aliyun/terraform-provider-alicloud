@@ -516,13 +516,7 @@ resource "alicloud_db_instance" "example" {
 }
 ```
 
-### Create a Serverless RDS SQLServer Instance
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_db_instance&exampleId=1b056009-c0c0-8b06-5c28-a9f20c80f344d64f33d0&activeTab=example&spm=docs.r.db_instance.7.1b056009c0&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
+### Create an RDS SQLServer Instance
 
 ```terraform
 terraform {
@@ -543,20 +537,19 @@ provider "alicloud" {
 
 data "alicloud_db_zones" "example" {
   engine                   = "SQLServer"
-  engine_version           = "2019_std_sl"
-  instance_charge_type     = "Serverless"
-  category                 = "serverless_ha"
+  engine_version           = "2019_std_ha"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "example" {
-  zone_id                  = data.alicloud_db_zones.example.ids.1
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
   engine                   = "SQLServer"
-  engine_version           = "2019_std_sl"
-  category                 = "serverless_ha"
+  engine_version           = "2019_std_ha"
+  category                 = "HighAvailability"
   db_instance_storage_type = "cloud_essd"
-  instance_charge_type     = "Serverless"
-  commodity_code           = "rds_serverless_public_cn"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "example" {
@@ -567,28 +560,22 @@ resource "alicloud_vpc" "example" {
 resource "alicloud_vswitch" "example" {
   vpc_id       = alicloud_vpc.example.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_db_zones.example.ids.1
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
   vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "example" {
   engine                   = "SQLServer"
-  engine_version           = "2019_std_sl"
+  engine_version           = "2019_std_ha"
   instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_charge_type     = "Serverless"
+  instance_charge_type     = "Postpaid"
   instance_name            = var.name
-  zone_id                  = data.alicloud_db_zones.example.ids.1
-  zone_id_slave_a          = data.alicloud_db_zones.example.ids.1
-  vswitch_id               = join(",", [alicloud_vswitch.example.id, alicloud_vswitch.example.id])
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  vswitch_id               = alicloud_vswitch.example.id
   db_instance_storage_type = "cloud_essd"
-  category                 = "serverless_ha"
-  serverless_config {
-    max_capacity = 8
-    min_capacity = 2
-  }
+  category                 = "HighAvailability"
 }
-
 ```
 
 ### Create a RDS MySQL instance with multiple whitelist groups
