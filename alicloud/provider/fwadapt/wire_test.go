@@ -15,8 +15,8 @@ import (
 // implemented across a Go package boundary.
 type semanticString struct{ basetypes.StringValue }
 
-func semanticValueOf(value types.String) semanticString {
-	return semanticString{StringValue: value.StringValue}
+func semanticValueOf(value basetypes.StringValue) semanticString {
+	return semanticString{StringValue: value}
 }
 
 func (v semanticString) SemanticEqual(other attr.Value) bool {
@@ -28,7 +28,7 @@ func (v semanticString) SemanticEqual(other attr.Value) bool {
 }
 
 func (v semanticString) NullValue() attr.Value {
-	return semanticValueOf(types.StringNull())
+	return semanticValueOf(basetypes.NewStringNull())
 }
 
 var (
@@ -37,8 +37,8 @@ var (
 )
 
 func TestUnitFwadaptSemanticHooksCrossPackage(t *testing.T) {
-	semanticA := semanticValueOf(types.StringValue("{\"a\": 1}"))
-	semanticB := semanticValueOf(types.StringValue("{\"A\": 1}"))
+	semanticA := semanticValueOf(basetypes.NewStringValue("{\"a\": 1}"))
+	semanticB := semanticValueOf(basetypes.NewStringValue("{\"A\": 1}"))
 	if fwadapt.PlannedChanged(semanticA, semanticB) {
 		t.Fatal("semantic equality should treat case-only differences as unchanged")
 	}
@@ -51,7 +51,7 @@ func TestUnitFwadaptSemanticHooksCrossPackage(t *testing.T) {
 		t.Fatal("plain strings should still compare with Equal")
 	}
 
-	unknown := semanticValueOf(types.StringUnknown())
+	unknown := semanticValueOf(basetypes.NewStringUnknown())
 	known := fwadapt.KnownValue(unknown)
 	if known == nil || !known.IsNull() {
 		t.Fatalf("unknown custom value should become a typed null, got %#v", known)
