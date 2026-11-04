@@ -102,7 +102,7 @@ func TestUnitFwadaptSelectReadObject(t *testing.T) {
 
 func TestUnitFwadaptApplyMappingsAndPreserveRequestOnlyState(t *testing.T) {
 	request := map[string]interface{}{}
-	values := map[string]interface{}{"$.Name": "alpha"}
+	values := map[string]interface{}{"Name": "alpha"}
 	if err := fwadapt.ApplyMappings(request, values, []fwadapt.Mapping{{Source: "$.Name", Target: "Name"}}, false); err != nil {
 		t.Fatalf("applying a scalar mapping failed: %s", err)
 	}
@@ -111,7 +111,7 @@ func TestUnitFwadaptApplyMappingsAndPreserveRequestOnlyState(t *testing.T) {
 	}
 
 	flattened := map[string]interface{}{}
-	flattenValues := map[string]interface{}{"$.Deep": map[string]interface{}{"Key": "value"}}
+	flattenValues := map[string]interface{}{"Deep": map[string]interface{}{"Key": "value"}}
 	bindings := []fwadapt.Mapping{{Source: "$.Deep.Key", Target: "Deep.Key", Repeat: true}}
 	if err := fwadapt.ApplyMappings(flattened, flattenValues, bindings, false); err != nil {
 		t.Fatalf("applying a repeated nested mapping failed: %s", err)
