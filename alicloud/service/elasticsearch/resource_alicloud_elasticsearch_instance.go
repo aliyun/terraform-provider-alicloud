@@ -164,6 +164,47 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validators.StringInSlice([]string{"x-pack", "IS"}, false),
 			},
+			// index_node_configuration is available for the 9.x Agent engine version
+			// (instance_category = x-pack). It maps to the indexNodeConfiguration
+			// request body field of CreateInstance/UpdateInstance.
+			"index_node_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"amount": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							ValidateFunc: validators.StringInSlice([]string{"cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
+						},
+						"performance_level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validators.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+						},
+						"spec": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"kibana_configuration": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -324,6 +365,47 @@ func resourceAliCloudElasticsearchInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			// search_node_configuration is available for the 9.x Agent engine version
+			// (instance_category = x-pack). It maps to the searchNodeConfiguration
+			// request body field of CreateInstance/UpdateInstance.
+			"search_node_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"amount": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"disk_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							ValidateFunc: validators.StringInSlice([]string{"cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
+						},
+						"performance_level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validators.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+						},
+						"spec": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
 			},
 			// lintignore: S006
 			"setting_config": {
@@ -697,6 +779,60 @@ func resourceAliCloudElasticsearchInstanceCreate(d *schema.ResourceData, meta in
 		request["kibanaConfiguration"] = kibanaConfiguration
 	}
 
+	indexNodeConfiguration := make(map[string]interface{})
+
+	if v := d.Get("index_node_configuration"); !helper.IsNil(v) {
+		amount9, _ := jsonpath.Get("$[0].amount", v)
+		if amount9 != nil && amount9 != "" {
+			indexNodeConfiguration["amount"] = amount9
+		}
+		disk11, _ := jsonpath.Get("$[0].disk", v)
+		if disk11 != nil && disk11 != "" {
+			indexNodeConfiguration["disk"] = disk11
+		}
+		diskType11, _ := jsonpath.Get("$[0].disk_type", v)
+		if diskType11 != nil && diskType11 != "" {
+			indexNodeConfiguration["diskType"] = diskType11
+		}
+		performanceLevel3, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel3 != nil && performanceLevel3 != "" {
+			indexNodeConfiguration["performanceLevel"] = performanceLevel3
+		}
+		spec11, _ := jsonpath.Get("$[0].spec", v)
+		if spec11 != nil && spec11 != "" {
+			indexNodeConfiguration["spec"] = spec11
+		}
+
+		request["indexNodeConfiguration"] = indexNodeConfiguration
+	}
+
+	searchNodeConfiguration := make(map[string]interface{})
+
+	if v := d.Get("search_node_configuration"); !helper.IsNil(v) {
+		amount11, _ := jsonpath.Get("$[0].amount", v)
+		if amount11 != nil && amount11 != "" {
+			searchNodeConfiguration["amount"] = amount11
+		}
+		disk13, _ := jsonpath.Get("$[0].disk", v)
+		if disk13 != nil && disk13 != "" {
+			searchNodeConfiguration["disk"] = disk13
+		}
+		diskType13, _ := jsonpath.Get("$[0].disk_type", v)
+		if diskType13 != nil && diskType13 != "" {
+			searchNodeConfiguration["diskType"] = diskType13
+		}
+		performanceLevel4, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel4 != nil && performanceLevel4 != "" {
+			searchNodeConfiguration["performanceLevel"] = performanceLevel4
+		}
+		spec13, _ := jsonpath.Get("$[0].spec", v)
+		if spec13 != nil && spec13 != "" {
+			searchNodeConfiguration["spec"] = spec13
+		}
+
+		request["searchNodeConfiguration"] = searchNodeConfiguration
+	}
+
 	if v, ok := d.GetOk("instance_category"); ok {
 		request["instanceCategory"] = v
 	}
@@ -910,6 +1046,24 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 	if err := d.Set("client_node_configuration", clientNodeConfigurationMaps); err != nil {
 		return err
 	}
+	indexNodeConfigurationMaps := make([]map[string]interface{}, 0)
+	indexNodeConfigurationMap := make(map[string]interface{})
+	indexNodeConfigurationRaw := make(map[string]interface{})
+	if objectRaw["indexNodeConfiguration"] != nil {
+		indexNodeConfigurationRaw = objectRaw["indexNodeConfiguration"].(map[string]interface{})
+	}
+	if len(indexNodeConfigurationRaw) > 0 {
+		indexNodeConfigurationMap["amount"] = indexNodeConfigurationRaw["amount"]
+		indexNodeConfigurationMap["disk"] = indexNodeConfigurationRaw["disk"]
+		indexNodeConfigurationMap["disk_type"] = indexNodeConfigurationRaw["diskType"]
+		indexNodeConfigurationMap["performance_level"] = indexNodeConfigurationRaw["performanceLevel"]
+		indexNodeConfigurationMap["spec"] = indexNodeConfigurationRaw["spec"]
+
+		indexNodeConfigurationMaps = append(indexNodeConfigurationMaps, indexNodeConfigurationMap)
+	}
+	if err := d.Set("index_node_configuration", indexNodeConfigurationMaps); err != nil {
+		return err
+	}
 	dataNodeConfigurationMaps := make([]map[string]interface{}, 0)
 	dataNodeConfigurationMap := make(map[string]interface{})
 
@@ -1005,6 +1159,24 @@ func resourceAliCloudElasticsearchInstanceRead(d *schema.ResourceData, meta inte
 		warmNodeConfigurationMaps = append(warmNodeConfigurationMaps, warmNodeConfigurationMap)
 	}
 	if err := d.Set("warm_node_configuration", warmNodeConfigurationMaps); err != nil {
+		return err
+	}
+	searchNodeConfigurationMaps := make([]map[string]interface{}, 0)
+	searchNodeConfigurationMap := make(map[string]interface{})
+	searchNodeConfigurationRaw := make(map[string]interface{})
+	if objectRaw["searchNodeConfiguration"] != nil {
+		searchNodeConfigurationRaw = objectRaw["searchNodeConfiguration"].(map[string]interface{})
+	}
+	if len(searchNodeConfigurationRaw) > 0 {
+		searchNodeConfigurationMap["amount"] = searchNodeConfigurationRaw["amount"]
+		searchNodeConfigurationMap["disk"] = searchNodeConfigurationRaw["disk"]
+		searchNodeConfigurationMap["disk_type"] = searchNodeConfigurationRaw["diskType"]
+		searchNodeConfigurationMap["performance_level"] = searchNodeConfigurationRaw["performanceLevel"]
+		searchNodeConfigurationMap["spec"] = searchNodeConfigurationRaw["spec"]
+
+		searchNodeConfigurationMaps = append(searchNodeConfigurationMaps, searchNodeConfigurationMap)
+	}
+	if err := d.Set("search_node_configuration", searchNodeConfigurationMaps); err != nil {
 		return err
 	}
 
@@ -1718,6 +1890,66 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		request["kibanaConfiguration"] = kibanaConfiguration
 	}
 
+	if !d.IsNewResource() && d.HasChange("index_node_configuration") {
+		update = true
+	}
+	indexNodeConfiguration := make(map[string]interface{})
+
+	if v := d.Get("index_node_configuration"); !helper.IsNil(v) || d.HasChange("index_node_configuration") {
+		amount9, _ := jsonpath.Get("$[0].amount", v)
+		if amount9 != nil && amount9 != "" {
+			indexNodeConfiguration["amount"] = amount9
+		}
+		disk11, _ := jsonpath.Get("$[0].disk", v)
+		if disk11 != nil && disk11 != "" {
+			indexNodeConfiguration["disk"] = disk11
+		}
+		diskType11, _ := jsonpath.Get("$[0].disk_type", v)
+		if diskType11 != nil && diskType11 != "" {
+			indexNodeConfiguration["diskType"] = diskType11
+		}
+		performanceLevel3, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel3 != nil && performanceLevel3 != "" {
+			indexNodeConfiguration["performanceLevel"] = performanceLevel3
+		}
+		spec11, _ := jsonpath.Get("$[0].spec", v)
+		if spec11 != nil && spec11 != "" {
+			indexNodeConfiguration["spec"] = spec11
+		}
+
+		request["indexNodeConfiguration"] = indexNodeConfiguration
+	}
+
+	if !d.IsNewResource() && d.HasChange("search_node_configuration") {
+		update = true
+	}
+	searchNodeConfiguration := make(map[string]interface{})
+
+	if v := d.Get("search_node_configuration"); !helper.IsNil(v) || d.HasChange("search_node_configuration") {
+		amount11, _ := jsonpath.Get("$[0].amount", v)
+		if amount11 != nil && amount11 != "" {
+			searchNodeConfiguration["amount"] = amount11
+		}
+		disk13, _ := jsonpath.Get("$[0].disk", v)
+		if disk13 != nil && disk13 != "" {
+			searchNodeConfiguration["disk"] = disk13
+		}
+		diskType13, _ := jsonpath.Get("$[0].disk_type", v)
+		if diskType13 != nil && diskType13 != "" {
+			searchNodeConfiguration["diskType"] = diskType13
+		}
+		performanceLevel4, _ := jsonpath.Get("$[0].performance_level", v)
+		if performanceLevel4 != nil && performanceLevel4 != "" {
+			searchNodeConfiguration["performanceLevel"] = performanceLevel4
+		}
+		spec13, _ := jsonpath.Get("$[0].spec", v)
+		if spec13 != nil && spec13 != "" {
+			searchNodeConfiguration["spec"] = spec13
+		}
+
+		request["searchNodeConfiguration"] = searchNodeConfiguration
+	}
+
 	if v, ok := d.GetOkExists("force"); ok {
 		query["force"] = helper.StringPointer(strconv.FormatBool(v.(bool)))
 	}
@@ -1726,13 +1958,72 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		query["orderActionType"] = helper.StringPointer(v.(string))
 	}
 
+	// The UpdateInstance body selects the per-upgrade strategy through
+	// updateType (normal=in-place, blue_green=blue-green node replacement).
+	// When it is omitted the upgrade defaults to in-place (normal), which
+	// cannot change the spec of 9.x Agent compute-attached nodes and hangs
+	// indefinitely. When update_strategy is blue_green, set updateType=
+	// blue_green so the upgrade performs a blue-green node replacement that
+	// completes. update_strategy=intelligent leaves updateType unset to keep
+	// the cluster's intelligent-update behavior for non-blue_green strategies.
+	if v, ok := d.GetOk("update_strategy"); ok && v.(string) == "blue_green" {
+		request["updateType"] = "blue_green"
+	}
+
+	// The 9.x Agent engine ships with Intelligent Update enabled at the cluster
+	// level. Before a node spec upgrade can select blue-green node replacement
+	// (via updateType=blue_green set in the body above), Intelligent Update must
+	// be turned off through instance-settings, otherwise the upgrade is rejected
+	// with InvalidInPlaceStrategy or defaults to in-place and hangs. This pre-
+	// call is therefore limited to update_strategy=blue_green, the only strategy
+	// that selects blue-green replacement and the path exercised by ACC; other
+	// strategies (e.g. intelligent) keep the cluster's existing update behavior
+	// untouched. It runs before the upgrade regardless of whether setting_config
+	// also changes: the esConfig (setting_config) update is still applied by the
+	// instance-settings call further below, preserving the original behavior, so
+	// the strategy is never ordered after the upgrade. This does not trigger on
+	// update_strategy alone, consistent with the documented behavior ("Changing
+	// this parameter alone will not trigger a resource update").
+	if update {
+		if v, ok := d.GetOk("update_strategy"); ok && v.(string) == "blue_green" {
+			settingsAction := fmt.Sprintf("/openapi/instances/%s/instance-settings", InstanceId)
+			settingsQuery := map[string]*string{}
+			settingsBody := map[string]interface{}{}
+			settingsQuery["updateStrategy"] = helper.StringPointer(v.(string))
+			if fv, ok := d.GetOkExists("force"); ok {
+				settingsQuery["force"] = helper.StringPointer(strconv.FormatBool(fv.(bool)))
+			}
+			settingsWait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err = client.RoaPost("elasticsearch", "2017-06-13", settingsAction, settingsQuery, header, settingsBody, true)
+				if err != nil {
+					if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+						settingsWait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			logs.AddDebug(settingsAction, response, settingsBody)
+			if err != nil && !errs.IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), settingsAction, errs.AlibabaCloudSdkGoERROR)
+			}
+			elasticsearchServiceV2 := ElasticsearchServiceV2{client}
+			settingsStateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, elasticsearchServiceV2.ElasticsearchInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+			if _, err := settingsStateConf.WaitForState(); err != nil {
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			}
+		}
+	}
+
 	body = request
 	if update {
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction", "UpgradeInstanceNotHealth"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}

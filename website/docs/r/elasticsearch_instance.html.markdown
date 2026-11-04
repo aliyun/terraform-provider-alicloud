@@ -94,6 +94,7 @@ The following arguments are supported:
 * `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Edition type:  
   - x-pack: Creates a commercial edition instance, or a kernel-enhanced edition instance without Indexing Service or OpenStore enabled.  
   - IS: Creates a kernel-enhanced edition instance with Indexing Service or OpenStore enabled.  
+* `index_node_configuration` - (Optional, Computed, List) Index node configuration for the 9.x Agent engine (`instance_category = x-pack`, `version = 9.99`). See [`index_node_configuration`](#index_node_configuration) below.
 * `kibana_configuration` - (Optional, Computed, Set, Available since v1.267.0) The configuration of Elasticsearch Kibana nodes. See [`kibana_configuration`](#kibana_configuration) below.
 * `kibana_private_security_group_id` - (Optional) List of security groups.
 * `kibana_private_whitelist` - (Optional, Computed, List, Available since v1.87.0) List of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.  
@@ -127,6 +128,7 @@ The following arguments are supported:
   -> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs. Updating this field moves the instance to the target resource group via ResourceManager MoveResources.
+* `search_node_configuration` - (Optional, Computed, List) Search node configuration for the 9.x Agent engine (`instance_category = x-pack`, `version = 9.99`). See [`search_node_configuration`](#search_node_configuration) below.
 * `setting_config` - (Optional, Computed, Map, Available since v1.125.0) YML configuration file settings for the instance.
 * `tags` - (Optional, Computed, Map, Available since v1.73.0) Instance tag group.
 * `update_strategy` - (Optional, Available since v1.267.0) Elasticsearch update strategy (for example, index updates, cluster upgrades, or service deployments). Valid values:
@@ -195,6 +197,15 @@ The data_node_configuration supports the following:
 * `performance_level` - (Optional, Computed, Available since v1.267.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
 * `spec` - (Required, Available since v1.267.0) Node specification. For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
+### `index_node_configuration`
+
+The index_node_configuration supports the following:
+* `amount` - (Optional, Computed, Int) Number of index nodes.
+* `disk` - (Optional, Computed, Int) Storage capacity per node, in GB. When upgrading the performance level to PL2, the disk size must be at least 461 GB; PL3 requires at least 1261 GB.
+* `disk_type` - (Optional, ForceNew, Computed) Node disk type. Supported values: `cloud_ssd`, `cloud_essd`, `cloud_efficiency`.
+* `performance_level` - (Optional, Computed) Performance level of ESSD cloud disks. This parameter is required when `disk_type` is set to `cloud_essd`. Supported values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `spec` - (Optional, Computed) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
 ### `kibana_configuration`
 
 The kibana_configuration supports the following:
@@ -220,6 +231,15 @@ The warm_node_configuration supports the following:
   - false: Disabled.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Storage type for the node. Only `cloud_efficiency` (ultra disk) is supported.
 * `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
+### `search_node_configuration`
+
+The search_node_configuration supports the following:
+* `amount` - (Optional, Computed, Int) Number of search nodes.
+* `disk` - (Optional, Computed, Int) Storage capacity per node, in GB. When upgrading the performance level to PL2, the disk size must be at least 461 GB; PL3 requires at least 1261 GB.
+* `disk_type` - (Optional, ForceNew, Computed) Node disk type. Supported values: `cloud_ssd`, `cloud_essd`, `cloud_efficiency`.
+* `performance_level` - (Optional, Computed) Performance level of ESSD cloud disks. This parameter is required when `disk_type` is set to `cloud_essd`. Supported values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `spec` - (Optional, Computed) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ## Attributes Reference
 
