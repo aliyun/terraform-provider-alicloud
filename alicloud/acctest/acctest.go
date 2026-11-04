@@ -8,6 +8,7 @@ import (
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/recording"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
@@ -66,6 +67,7 @@ func ProtoV6ProviderFactories(names ...string) map[string]func() (tfprotov6.Prov
 // value. Package alicloud's own defaultRegionToTest stays unexported and only tests in
 // that package read it.
 func PreCheck(t *testing.T) {
+	recording.BindTest(t)
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
 	}

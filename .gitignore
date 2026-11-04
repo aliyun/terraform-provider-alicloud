@@ -57,3 +57,6 @@ coverage.out
 .mux/
 .pi/
 skills-lock.json
+
+# Private local HTTP recording pilot artifacts
+/.terraform-recordings/
