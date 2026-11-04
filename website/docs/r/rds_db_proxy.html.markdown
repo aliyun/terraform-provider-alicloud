@@ -186,7 +186,7 @@ The following arguments are supported:
 
 * `db_proxy_nodes` - (Optional, Set, Available since v2.2.0) The nodes of the database proxy. It is required when the database proxy is deployed in multiple availability zones. See [`db_proxy_nodes`](#db_proxy_nodes) below.
 
-  -> **NOTE:** The node layout is refreshed from the proxy node list only when this block is configured. Removing this block from the configuration stops Terraform from managing the node layout and leaves the existing layout unchanged. After `terraform import`, this block is empty until it is configured. When a proxy that is deployed in multiple availability zones is modified, this block has to be configured, because the API requires the node layout for such a proxy. If it is missing, Terraform reports an error before calling the API. Because an in-place network change moves every proxy node into the target availability zone, a two-zone layout cannot change `vswitch_id` or `vpc_id` in place.
+  -> **NOTE:** The node layout is refreshed from the proxy node list only when this block is configured. Removing this block from the configuration stops Terraform from managing the node layout and leaves the existing layout unchanged. After `terraform import`, this block is empty until it is configured. When the specification of a proxy that is deployed in multiple availability zones is updated, this block has to be configured, because the API requires the node layout for such a proxy. If it is missing, Terraform reports an error before calling the API. Because an in-place network change moves every proxy node into the target availability zone, a two-zone layout cannot change `vswitch_id` or `vpc_id` in place.
 
 ### `read_only_instance_weight`
 
