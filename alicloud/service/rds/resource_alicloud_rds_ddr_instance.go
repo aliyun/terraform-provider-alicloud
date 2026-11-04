@@ -1554,12 +1554,12 @@ func resourceAlicloudRdsDdrInstanceDelete(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 
-	instance, err := rdsService.DescribeDBInstance(d.Id())
+	instance, exists, err := rdsService.lookupDBInstanceForDelete(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			return nil
-		}
 		return WrapError(err)
+	}
+	if !exists {
+		return nil
 	}
 	if PayType(instance["PayType"].(string)) == Prepaid {
 		return WrapError(Error("'Subscription' instance cannot be destroyed: please convert it to 'PayAsYouGo' (set payment_type = \"PayAsYouGo\" and re-apply) or unsubscribe it in the console. To remove it from the state only, run 'terraform state rm'."))
@@ -1575,7 +1575,7 @@ func resourceAlicloudRdsDdrInstanceDelete(d *schema.ResourceData, meta interface
 	}
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
-		if err != nil && !NotFoundError(err) {
+		if err != nil && !rdsInstanceMissingCode(err) {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "OperationDenied.ReadDBInstanceStatus"}) || NeedRetry(err) {
 				return retry.RetryableError(err)
 			}

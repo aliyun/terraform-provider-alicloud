@@ -1038,3 +1038,434 @@ func TestRdsMutationRejectsParentHTTPNotFound(t *testing.T) {
 		})
 	}
 }
+
+// TestUnitMatchDBConnectionNetInfo covers the connection identity match used by
+// DescribeDBConnection: the first DNS label must equal the requested prefix
+// exactly, otherwise "abc" could select "abcdef" depending on response order.
+func TestUnitMatchDBConnectionNetInfo(t *testing.T) {
+	netInfos := []interface{}{
+		map[string]interface{}{"ConnectionString": "abcdef.mysql.rds.aliyuncs.com", "Port": "3306"},
+		"unexpected non-map entry",
+		map[string]interface{}{"ConnectionString": "abc.mysql.rds.aliyuncs.com", "Port": "3307"},
+	}
+
+	got, ok := matchDBConnectionNetInfo(netInfos, "abc")
+	if !ok {
+		t.Fatalf("expected to find the connection with prefix %q", "abc")
+	}
+	if got["Port"] != "3307" {
+		t.Fatalf("matched connection Port = %v, want 3307 (a prefix match would have selected abcdef)", got["Port"])
+	}
+
+	for _, prefix := range []string{"ab", "abcdefg", "Abc"} {
+		if _, ok := matchDBConnectionNetInfo(netInfos, prefix); ok {
+			t.Fatalf("prefix %q must not match any connection", prefix)
+		}
+	}
+}
+
+// TestUnitDBConnectionAllocateTransientError pins the retry classification of
+// AllocateInstancePublicConnection: a connection that is still being created
+// (NetworkConnectionCreating) and a busy instance are transient, a permission or
+// not-found error is not.
+func TestUnitDBConnectionAllocateTransientError(t *testing.T) {
+	cases := []struct {
+		code string
+		want bool
+	}{
+		{code: "NetworkConnectionCreating", want: true},
+		{code: "OperationDenied.DBInstanceStatus", want: true},
+		{code: "InvalidDBInstanceId.NotFound", want: false},
+	}
+	for _, c := range cases {
+		err := newTestServerError(t, 400, c.code, "synthetic failure")
+		if got := isDBConnectionAllocateTransientError(err); got != c.want {
+			t.Fatalf("isDBConnectionAllocateTransientError(%s) = %v, want %v", c.code, got, c.want)
+		}
+	}
+}
+
+// TestUnitRdsTaskStateRefreshFuncDeletion covers the delete waiter shared by
+// alicloud_db_instance and alicloud_rds_ddr_instance: DescribeTasks can stop
+// listing the finished delete task (or never record it) once the instance is
+// removed, so the waiter must confirm the instance absence instead of reporting
+// Pending until the delete timeout.
+func TestUnitRdsTaskStateRefreshFuncDeletion(t *testing.T) {
+	t.Run("task gone and instance missing", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Form.Get("Action") {
+			case "DescribeTasks":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{"TaskProgressInfo": []interface{}{}},
+				})
+			case "DescribeDBInstanceAttribute":
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Code": "InvalidDBInstanceName.NotFound", "Message": "instance not found",
+				})
+			default:
+				t.Errorf("unexpected action %q", r.Form.Get("Action"))
+			}
+		})
+		service := RdsService{client}
+		object, state, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if object != nil || state != "" {
+			t.Fatalf("refresh = (%v, %q), want an empty result so the waiter reports absence", object, state)
+		}
+	})
+
+	t.Run("task gone but instance still present", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Form.Get("Action") {
+			case "DescribeTasks":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{"TaskProgressInfo": []interface{}{}},
+				})
+			case "DescribeDBInstanceAttribute":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{
+						"DBInstanceAttribute": []interface{}{map[string]interface{}{"DBInstanceStatus": "Running", "PayType": "Postpaid"}},
+					},
+				})
+			default:
+				t.Errorf("unexpected action %q", r.Form.Get("Action"))
+			}
+		})
+		service := RdsService{client}
+		object, state, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if object == nil || state != "Pending" {
+			t.Fatalf("refresh = (%v, %q), want a non-nil object and state Pending", object, state)
+		}
+	})
+
+	t.Run("non-instance 404 does not end the wait", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Form.Get("Action") {
+			case "DescribeTasks":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{"TaskProgressInfo": []interface{}{}},
+				})
+			case "DescribeDBInstanceAttribute":
+				w.WriteHeader(http.StatusNotFound)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+				})
+			default:
+				t.Errorf("unexpected action %q", r.Form.Get("Action"))
+			}
+		})
+		service := RdsService{client}
+		object, state, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")()
+		if err == nil {
+			t.Fatalf("refresh = (%v, %q, nil), a generic 404 must be returned as an error", object, state)
+		}
+	})
+
+	t.Run("query failure propagates", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Form.Get("Action") {
+			case "DescribeTasks":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{"TaskProgressInfo": []interface{}{}},
+				})
+			case "DescribeDBInstanceAttribute":
+				w.WriteHeader(http.StatusForbidden)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Code": "Forbidden.RAM", "Message": "not authorized",
+				})
+			default:
+				t.Errorf("unexpected action %q", r.Form.Get("Action"))
+			}
+		})
+		service := RdsService{client}
+		if _, _, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")(); err == nil {
+			t.Fatal("a permission failure must be returned, not treated as instance absence")
+		}
+	})
+
+	t.Run("non-target task keeps pending", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch r.Form.Get("Action") {
+			case "DescribeTasks":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{"TaskProgressInfo": []interface{}{
+						map[string]interface{}{"TaskAction": "CreateDBInstance", "Status": "Processing"},
+					}},
+				})
+			case "DescribeDBInstanceAttribute":
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
+					"Items": map[string]interface{}{
+						"DBInstanceAttribute": []interface{}{map[string]interface{}{"DBInstanceStatus": "Running", "PayType": "Postpaid"}},
+					},
+				})
+			default:
+				t.Errorf("unexpected action %q", r.Form.Get("Action"))
+			}
+		})
+		service := RdsService{client}
+		object, state, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")()
+		if err != nil || object == nil || state != "Pending" {
+			t.Fatalf("refresh = (%v, %q, %v), want Pending for a non-target task", object, state, err)
+		}
+	})
+
+	t.Run("DescribeTasks generic 404 does not end the wait", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if action := r.Form.Get("Action"); action != "DescribeTasks" {
+				t.Errorf("unexpected action %q", action)
+			}
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+			})
+		})
+		service := RdsService{client}
+		if object, state, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")(); err == nil {
+			t.Fatalf("refresh = (%v, %q, nil), a generic DescribeTasks 404 must be an error", object, state)
+		}
+	})
+
+	t.Run("DescribeTasks generic error with instance-not-found wording does not end the wait", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if action := r.Form.Get("Action"); action != "DescribeTasks" {
+				t.Errorf("unexpected action %q", action)
+			}
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code": "Request.NotFound", "Message": "The specified DBInstance rm-test is not found.",
+			})
+		})
+		service := RdsService{client}
+		if _, _, err := service.RdsTaskStateRefreshFunc("rm-test", "DeleteDBInstance")(); err == nil {
+			t.Fatal("matching error text alone must not be read as instance absence")
+		}
+	})
+}
+
+// TestUnitRdsInstanceMissingCodeClassification pins the error-code rule shared by
+// the delete waiter and the two delete entry points: only instance-specific
+// NotFound codes prove that the instance is gone.
+func TestUnitRdsInstanceMissingCodeClassification(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "instance not found name code", err: newTestServerError(t, 400, "InvalidDBInstanceName.NotFound", "instance not found"), want: true},
+		{name: "instance not found id code", err: newTestServerError(t, 404, "InvalidDBInstanceId.NotFound", "instance not found"), want: true},
+		{name: "generic 404", err: newTestServerError(t, 404, "Request.NotFound", "resource not found"), want: false},
+		{name: "permission failure", err: newTestServerError(t, 403, "Forbidden.RAM", "not authorized"), want: false},
+		{name: "generic error with instance-not-found wording", err: WrapErrorf(Error("The specified DBInstance rm-test is not found."), NotFoundMsg, ProviderERROR), want: false},
+		{name: "nil", err: nil, want: false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := rdsInstanceMissingCode(c.err); got != c.want {
+				t.Fatalf("rdsInstanceMissingCode(%v) = %v, want %v", c.err, got, c.want)
+			}
+		})
+	}
+}
+
+// TestUnitLookupDBInstanceForDelete pins the explicit existence result used by
+// the delete path: absence comes from an instance-specific NotFound code or an
+// empty DescribeDBInstanceAttribute list, never from a generic error text.
+func TestUnitLookupDBInstanceForDelete(t *testing.T) {
+	instancePayload := map[string]interface{}{
+		"Items": map[string]interface{}{
+			"DBInstanceAttribute": []interface{}{map[string]interface{}{"DBInstanceStatus": "Running", "PayType": "Postpaid"}},
+		},
+	}
+	t.Run("instance present", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(instancePayload)
+		})
+		service := RdsService{client}
+		instance, exists, err := service.lookupDBInstanceForDelete("rm-test")
+		if err != nil || !exists || instance == nil || instance["PayType"] != "Postpaid" {
+			t.Fatalf("lookup = (%v, %v, %v), want the instance", instance, exists, err)
+		}
+	})
+
+	t.Run("empty attribute list means absent", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Items": map[string]interface{}{"DBInstanceAttribute": []interface{}{}},
+			})
+		})
+		service := RdsService{client}
+		instance, exists, err := service.lookupDBInstanceForDelete("rm-test")
+		if err != nil || exists || instance != nil {
+			t.Fatalf("lookup = (%v, %v, %v), want an explicit absence", instance, exists, err)
+		}
+	})
+
+	t.Run("instance not found code means absent", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code": "InvalidDBInstanceName.NotFound", "Message": "instance not found",
+			})
+		})
+		service := RdsService{client}
+		_, exists, err := service.lookupDBInstanceForDelete("rm-test")
+		if err != nil || exists {
+			t.Fatalf("lookup exists = %v, err = %v; want absent without error", exists, err)
+		}
+	})
+
+	t.Run("generic 404 is an error", func(t *testing.T) {
+		client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+			})
+		})
+		service := RdsService{client}
+		if _, exists, err := service.lookupDBInstanceForDelete("rm-test"); err == nil || exists {
+			t.Fatalf("lookup exists = %v, err = %v; a generic 404 must be an error", exists, err)
+		}
+	})
+}
+
+// TestUnitDBInstanceDeleteRejectsNonInstanceNotFound covers the public
+// alicloud_db_instance delete entry: a generic 404 must not be read as a
+// completed deletion, and the instance id must stay in state.
+func TestUnitDBInstanceDeleteRejectsNonInstanceNotFound(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, resourceAliCloudDBInstance().Schema, dbInstanceMockCreateConfig(nil))
+	d.SetId("rm-test")
+	client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if action := r.Form.Get("Action"); action != "DescribeDBInstanceAttribute" {
+			t.Errorf("unexpected action %q", action)
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+		})
+	})
+	if err := resourceAliCloudDBInstanceDelete(d, client); err == nil {
+		t.Fatal("a generic 404 must not be treated as a completed deletion")
+	}
+	if d.Id() == "" {
+		t.Fatal("the instance id must be kept when the instance cannot be confirmed absent")
+	}
+}
+
+// TestUnitRdsDdrInstanceDeleteRejectsNonInstanceNotFound covers the public
+// alicloud_rds_ddr_instance delete entry, which shares the same classification
+// and delete waiter.
+func TestUnitRdsDdrInstanceDeleteRejectsNonInstanceNotFound(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, resourceAlicloudRdsDdrInstance().Schema, map[string]interface{}{
+		"engine":           "MySQL",
+		"engine_version":   "8.0",
+		"instance_type":    "mysql.n2.small.2c",
+		"instance_storage": 20,
+		"payment_type":     "PayAsYouGo",
+	})
+	d.SetId("rm-test")
+	client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if action := r.Form.Get("Action"); action != "DescribeDBInstanceAttribute" {
+			t.Errorf("unexpected action %q", action)
+		}
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+		})
+	})
+	if err := resourceAlicloudRdsDdrInstanceDelete(d, client); err == nil {
+		t.Fatal("a generic 404 must not be treated as a completed deletion")
+	}
+	if d.Id() == "" {
+		t.Fatal("the instance id must be kept when the instance cannot be confirmed absent")
+	}
+}
+
+// TestUnitDBInstanceDeleteRejectsGenericDeleteNotFound covers the
+// DeleteDBInstance write call of the public alicloud_db_instance delete entry: a
+// generic 404 must fail the delete instead of being read as "already deleted".
+func TestUnitDBInstanceDeleteRejectsGenericDeleteNotFound(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, resourceAliCloudDBInstance().Schema, dbInstanceMockCreateConfig(nil))
+	d.SetId("rm-test")
+	instancePayload := map[string]interface{}{
+		"Items": map[string]interface{}{
+			"DBInstanceAttribute": []interface{}{map[string]interface{}{"DBInstanceStatus": "Running", "PayType": "Postpaid"}},
+		},
+	}
+	client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			_ = json.NewEncoder(w).Encode(instancePayload)
+		case "DeleteDBInstance":
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+			})
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+	if err := resourceAliCloudDBInstanceDelete(d, client); err == nil {
+		t.Fatal("a generic DeleteDBInstance 404 must not be treated as a completed deletion")
+	}
+	if d.Id() == "" {
+		t.Fatal("the instance id must be kept when the delete call fails")
+	}
+}
+
+// TestUnitRdsDdrInstanceDeleteRejectsGenericDeleteNotFound covers the same
+// DeleteDBInstance write call of the shared DDR delete entry.
+func TestUnitRdsDdrInstanceDeleteRejectsGenericDeleteNotFound(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, resourceAlicloudRdsDdrInstance().Schema, map[string]interface{}{
+		"engine":           "MySQL",
+		"engine_version":   "8.0",
+		"instance_type":    "mysql.n2.small.2c",
+		"instance_storage": 20,
+		"payment_type":     "PayAsYouGo",
+	})
+	d.SetId("rm-test")
+	instancePayload := map[string]interface{}{
+		"Items": map[string]interface{}{
+			"DBInstanceAttribute": []interface{}{map[string]interface{}{"DBInstanceStatus": "Running", "PayType": "Postpaid"}},
+		},
+	}
+	client := dbInstanceMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeDBInstanceAttribute":
+			_ = json.NewEncoder(w).Encode(instancePayload)
+		case "DeleteDBInstance":
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code": "Request.NotFound", "Message": "The specified resource does not exist.",
+			})
+		default:
+			t.Errorf("unexpected action %q", r.Form.Get("Action"))
+		}
+	})
+	if err := resourceAlicloudRdsDdrInstanceDelete(d, client); err == nil {
+		t.Fatal("a generic DeleteDBInstance 404 must not be treated as a completed deletion")
+	}
+	if d.Id() == "" {
+		t.Fatal("the instance id must be kept when the delete call fails")
+	}
+}
