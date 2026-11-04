@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -21,11 +22,17 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/lindorm"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/function"
+	"github.com/zclconf/go-cty/cty/function/stdlib"
 )
 
 // lindormTestClientForRegion delegates the package-level sweeper client to the
@@ -847,9 +854,10 @@ var lindormHangzhouSaleZoneIds = []string{
 // No data source exposes Lindorm's per-zone engine inventory. A create in an
 // automatically selected sale zone was rejected with
 // LindormErrorCode.FilestoreSoldOut, while cn-hangzhou-h is the zone where the
-// previous acceptance batches created the same shapes. Prefer it when the data
-// sources still list it and a switch exists; otherwise fall back to the first
-// sale zone that has a switch.
+// previous acceptance batches created the same shapes. It stays a preference
+// only: the candidate set is the intersection of the sale zones with the
+// switches that exist in the default VPC, so a sale zone without a switch is
+// skipped rather than emptying the set.
 var lindormHangzhouInventoryZoneId = "cn-hangzhou-h"
 
 // Multi-zone instances must use one of the preset combinations published by
@@ -892,11 +900,20 @@ func hangzhouLindormDependence(name, instanceType string) string {
 	locals {
 		lindorm_hangzhou_sale_zone_ids = [%s]
 		lindorm_zone_ids               = [for z in data.alicloud_zones.default.zones : z.id if contains(local.lindorm_hangzhou_sale_zone_ids, z.id)]
-		lindorm_inventory_zone_ids     = [for z in local.lindorm_zone_ids : z if z == "%s"]
-		lindorm_candidate_zone_ids     = length(local.lindorm_inventory_zone_ids) > 0 ? local.lindorm_inventory_zone_ids : local.lindorm_zone_ids
-		lindorm_sale_vswitches         = [for v in data.alicloud_vswitches.all.vswitches : v if contains(local.lindorm_candidate_zone_ids, v.zone_id)]
-		lindorm_zone_id                = local.lindorm_sale_vswitches[0].zone_id
-		lindorm_vswitch_id             = local.lindorm_sale_vswitches[0].id
+		lindorm_sale_vswitches         = [for v in data.alicloud_vswitches.all.vswitches : v if contains(local.lindorm_zone_ids, v.zone_id)]
+		lindorm_inventory_vswitches    = [for v in local.lindorm_sale_vswitches : v if v.zone_id == "%s"]
+		lindorm_selected_vswitches     = length(local.lindorm_inventory_vswitches) > 0 ? local.lindorm_inventory_vswitches : local.lindorm_sale_vswitches
+		lindorm_zone_id                = try(local.lindorm_selected_vswitches[0].zone_id, "")
+		lindorm_vswitch_id             = try(local.lindorm_selected_vswitches[0].id, "")
+	}
+
+	output "lindorm_zone_selection" {
+		value = local.lindorm_vswitch_id
+
+		precondition {
+			condition     = length(local.lindorm_selected_vswitches) > 0
+			error_message = "No vSwitch exists in the default VPC in any Hangzhou Lindorm sale zone (cn-hangzhou-e/f/g/h/i/j/k); create a vSwitch in one of those zones before running this acceptance test."
+		}
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {
@@ -1809,4 +1826,199 @@ func TestUnitLindormPostCreateReadToleranceForCreateTimeout(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestUnitLindormHangzhouDependenceZoneSelection evaluates the rendered
+// acceptance-test dependency against controlled zone and switch sets. It pins
+// the sale-zone/switch intersection, the cn-hangzhou-h preference and the
+// explicit precondition reported when no sale zone has a switch.
+func TestUnitLindormHangzhouDependenceZoneSelection(t *testing.T) {
+	file, diags := hclparse.NewParser().ParseHCL([]byte(hangzhouLindormDependence("tf-testacc-lindorm", "")), "lindorm_dependence.tf")
+	if diags.HasErrors() {
+		t.Fatalf("rendered dependency is invalid HCL: %s", diags.Error())
+	}
+	body, ok := file.Body.(*hclsyntax.Body)
+	if !ok {
+		t.Fatalf("unexpected HCL body type %T", file.Body)
+	}
+	localsBlock := lindormTestHCLBlock(body, "locals")
+	if localsBlock == nil {
+		t.Fatal("rendered dependency has no locals block")
+	}
+	outputBlock := lindormTestHCLBlock(body, "output")
+	if outputBlock == nil {
+		t.Fatal("rendered dependency has no zone selection output")
+	}
+	if len(outputBlock.Body.Blocks) != 1 || outputBlock.Body.Blocks[0].Type != "precondition" {
+		t.Fatalf("zone selection output must carry exactly one precondition, got %d blocks", len(outputBlock.Body.Blocks))
+	}
+	condition, ok := outputBlock.Body.Blocks[0].Body.Attributes["condition"]
+	if !ok {
+		t.Fatal("zone selection precondition has no condition")
+	}
+
+	cases := []struct {
+		name             string
+		zones            []string
+		vswitches        map[string]string
+		expectedSwitches []string
+		expectedZones    []string
+		expectedGated    bool
+	}{
+		{
+			name:             "preferred zone without a switch falls back to other sale zones",
+			zones:            []string{"cn-hangzhou-h", "cn-hangzhou-e", "cn-hangzhou-i"},
+			vswitches:        map[string]string{"vsw-e": "cn-hangzhou-e", "vsw-i": "cn-hangzhou-i"},
+			expectedSwitches: []string{"vsw-e", "vsw-i"},
+			expectedZones:    []string{"cn-hangzhou-e", "cn-hangzhou-i"},
+		},
+		{
+			name:             "preferred zone with a switch is kept",
+			zones:            []string{"cn-hangzhou-h", "cn-hangzhou-e"},
+			vswitches:        map[string]string{"vsw-e": "cn-hangzhou-e", "vsw-h": "cn-hangzhou-h"},
+			expectedSwitches: []string{"vsw-h"},
+			expectedZones:    []string{"cn-hangzhou-h"},
+		},
+		{
+			name:          "no switch in any sale zone is rejected",
+			zones:         []string{"cn-hangzhou-h"},
+			vswitches:     map[string]string{"vsw-b": "cn-hangzhou-b"},
+			expectedGated: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			locals := lindormTestEvaluateLocals(t, localsBlock.Body.Attributes, lindormTestDataValue(c.zones, c.vswitches))
+			selected, ok := locals["lindorm_selected_vswitches"]
+			if !ok {
+				t.Fatal("lindorm_selected_vswitches was not evaluated")
+			}
+			ids := make([]string, 0)
+			zones := make([]string, 0)
+			for it := selected.ElementIterator(); it.Next(); {
+				_, value := it.Element()
+				ids = append(ids, value.GetAttr("id").AsString())
+				zones = append(zones, value.GetAttr("zone_id").AsString())
+			}
+			accepted := lindormTestEvaluateCondition(t, condition, locals)
+			if c.expectedGated {
+				if len(ids) != 0 {
+					t.Fatalf("expected no candidate switch, got %v", ids)
+				}
+				if accepted {
+					t.Fatal("expected the zone selection precondition to reject the configuration")
+				}
+				return
+			}
+			if got, want := strings.Join(ids, ","), strings.Join(c.expectedSwitches, ","); got != want {
+				t.Fatalf("expected vSwitches %q, got %q", want, got)
+			}
+			if got, want := strings.Join(zones, ","), strings.Join(c.expectedZones, ","); got != want {
+				t.Fatalf("expected zones %q, got %q", want, got)
+			}
+			if !accepted {
+				t.Fatal("expected the zone selection precondition to accept the configuration")
+			}
+		})
+	}
+}
+
+func lindormTestHCLBlock(body *hclsyntax.Body, blockType string) *hclsyntax.Block {
+	for _, block := range body.Blocks {
+		if block.Type == blockType {
+			return block
+		}
+	}
+	return nil
+}
+
+func lindormTestDataValue(zones []string, vswitches map[string]string) cty.Value {
+	zoneValues := make([]cty.Value, 0, len(zones))
+	for _, zone := range zones {
+		zoneValues = append(zoneValues, cty.ObjectVal(map[string]cty.Value{"id": cty.StringVal(zone)}))
+	}
+	switchIds := make([]string, 0, len(vswitches))
+	for id := range vswitches {
+		switchIds = append(switchIds, id)
+	}
+	sort.Strings(switchIds)
+	switchValues := make([]cty.Value, 0, len(switchIds))
+	for _, id := range switchIds {
+		switchValues = append(switchValues, cty.ObjectVal(map[string]cty.Value{
+			"id":      cty.StringVal(id),
+			"zone_id": cty.StringVal(vswitches[id]),
+		}))
+	}
+	return cty.ObjectVal(map[string]cty.Value{
+		"alicloud_zones": cty.ObjectVal(map[string]cty.Value{
+			"default": cty.ObjectVal(map[string]cty.Value{"zones": cty.ListVal(zoneValues)}),
+		}),
+		"alicloud_vswitches": cty.ObjectVal(map[string]cty.Value{
+			"all": cty.ObjectVal(map[string]cty.Value{"vswitches": cty.ListVal(switchValues)}),
+		}),
+	})
+}
+
+// lindormTestEvaluateLocals resolves the rendered local values in dependency
+// order. lindorm_zone_id and lindorm_vswitch_id are skipped because they rely on
+// Terraform's try() function to index the selected switches.
+func lindormTestEvaluateLocals(t *testing.T, attributes hclsyntax.Attributes, data cty.Value) map[string]cty.Value {
+	t.Helper()
+	functions := map[string]function.Function{
+		"contains": stdlib.ContainsFunc,
+		"length":   stdlib.LengthFunc,
+	}
+	pending := map[string]*hclsyntax.Attribute{}
+	for name, attribute := range attributes {
+		if name == "lindorm_zone_id" || name == "lindorm_vswitch_id" {
+			continue
+		}
+		pending[name] = attribute
+	}
+	values := map[string]cty.Value{}
+	for len(pending) > 0 {
+		progress := false
+		for name, attribute := range pending {
+			ctx := &hcl.EvalContext{
+				Variables: map[string]cty.Value{
+					"data":  data,
+					"local": cty.ObjectVal(values),
+				},
+				Functions: functions,
+			}
+			value, diags := attribute.Expr.Value(ctx)
+			if diags.HasErrors() {
+				continue
+			}
+			values[name] = value
+			delete(pending, name)
+			progress = true
+		}
+		if !progress {
+			remaining := make([]string, 0, len(pending))
+			for name := range pending {
+				remaining = append(remaining, name)
+			}
+			sort.Strings(remaining)
+			t.Fatalf("could not evaluate locals %v", remaining)
+		}
+	}
+	return values
+}
+
+func lindormTestEvaluateCondition(t *testing.T, condition *hclsyntax.Attribute, locals map[string]cty.Value) bool {
+	t.Helper()
+	ctx := &hcl.EvalContext{
+		Variables: map[string]cty.Value{"local": cty.ObjectVal(locals)},
+		Functions: map[string]function.Function{
+			"contains": stdlib.ContainsFunc,
+			"length":   stdlib.LengthFunc,
+		},
+	}
+	value, diags := condition.Expr.Value(ctx)
+	if diags.HasErrors() {
+		t.Fatalf("evaluate zone selection precondition: %s", diags.Error())
+	}
+	return value.True()
 }
