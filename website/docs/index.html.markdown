@@ -359,6 +359,9 @@ In addition to [generic `provider` arguments](https://developer.hashicorp.com/te
 * `credentials_uri` - (Optional, Available since v1.141.0) The URI of sidecar credentials service.
   Can also be set with the `ALIBABA_CLOUD_CREDENTIALS_URI` environment variable since v1.228.0.
   Environment variable `ALICLOUD_CREDENTIALS_URI` has been deprecated since v1.228.0.
+  The provider requests this URI again before the returned STS token expires, so a rotating sidecar
+  keeps a long-running apply authenticated. The refresh relies on the response carrying an RFC3339
+  `Expiration` field; without it the credentials are read once at provider configuration.
 
 * `endpoints` - (Optional) An [`endpoints`](#endpoints) block to support custom endpoints.
 
