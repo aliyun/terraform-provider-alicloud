@@ -46,6 +46,18 @@ type ReadIdentity struct {
 	AllowMissing bool
 }
 
+// SemanticValue lets a custom attribute value decide semantic equality. The methods are
+// exported so a type in another package can satisfy the contract; unexported method names
+// carry package identity in Go and cannot cross that boundary.
+type SemanticValue interface {
+	SemanticEqual(attr.Value) bool
+}
+
+// NullValue lets a custom attribute value return its own typed null placeholder.
+type NullValue interface {
+	NullValue() attr.Value
+}
+
 // GetIdentityParts splits a composite id and validates the required components.
 func GetIdentityParts(id, separator string, count int, defaults map[int]string, essential []int) ([]string, error) {
 	if separator == "" || count < 1 {
@@ -241,8 +253,8 @@ func PlannedChanged(plan, state attr.Value) bool {
 		}
 		return false
 	}
-	if semantic, ok := plan.(interface{ fwSemanticEqual(attr.Value) bool }); ok {
-		return !semantic.fwSemanticEqual(state)
+	if semantic, ok := plan.(SemanticValue); ok {
+		return !semantic.SemanticEqual(state)
 	}
 	return !plan.Equal(state)
 }
@@ -325,8 +337,8 @@ func ConfiguredMatch(config, state attr.Value) bool {
 		}
 		return true
 	}
-	if semantic, ok := config.(interface{ fwSemanticEqual(attr.Value) bool }); ok {
-		return semantic.fwSemanticEqual(state)
+	if semantic, ok := config.(SemanticValue); ok {
+		return semantic.SemanticEqual(state)
 	}
 	return config.Equal(state)
 }
@@ -446,8 +458,8 @@ func PreserveRequestValues(observed, prior attr.Value, fields map[string]WireFie
 // KnownValue returns a known value, replacing an unknown or null placeholder.
 func KnownValue(value attr.Value) attr.Value {
 	if value != nil && value.IsUnknown() {
-		if custom, ok := value.(interface{ fwNullValue() attr.Value }); ok {
-			return custom.fwNullValue()
+		if custom, ok := value.(NullValue); ok {
+			return custom.NullValue()
 		}
 	}
 	switch v := value.(type) {

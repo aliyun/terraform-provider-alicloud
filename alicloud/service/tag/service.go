@@ -61,8 +61,8 @@ func (v fwJSONStringValue) Equal(other attr.Value) bool {
 	value, ok := other.(fwJSONStringValue)
 	return ok && v.StringValue.Equal(value.StringValue)
 }
-func (v fwJSONStringValue) fwNullValue() attr.Value { return fwJSONString(types.StringNull()) }
-func (v fwJSONStringValue) fwSemanticEqual(other attr.Value) bool {
+func (v fwJSONStringValue) NullValue() attr.Value { return fwJSONString(types.StringNull()) }
+func (v fwJSONStringValue) SemanticEqual(other attr.Value) bool {
 	value, ok := other.(fwJSONStringValue)
 	if !ok || v.IsNull() || v.IsUnknown() || value.IsNull() || value.IsUnknown() {
 		return false
@@ -721,8 +721,8 @@ func fwConfiguredChanged(config, plan, state attr.Value) bool {
 		}
 		return false
 	}
-	if semantic, ok := plan.(interface{ fwSemanticEqual(attr.Value) bool }); ok {
-		return !semantic.fwSemanticEqual(state)
+	if semantic, ok := plan.(fwadapt.SemanticValue); ok {
+		return !semantic.SemanticEqual(state)
 	}
 	return !plan.Equal(state)
 }
