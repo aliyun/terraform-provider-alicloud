@@ -172,37 +172,37 @@ The following attributes are exported:
 * `create_from` - The source from which the gateway was created.
 * `create_time` - The creation timestamp. Unit: milliseconds.
 * `environments` - The list of environments associated with the gateway.
-    * `alias` - The alias of the environment.
-    * `environment_id` - The ID of the environment.
-    * `name` - The name of the environment.
+  * `alias` - The alias of the environment.
+  * `environment_id` - The ID of the environment.
+  * `name` - The name of the environment.
 * `expire_time` - Timestamp indicating when the subscription expires. Unit: milliseconds.
 * `load_balancers` - The list of Gateway ingress addresses.
-    * `address` - The address of the load balancer for the gateway.
-    * `address_ip_version` - The IP version of the load balancer.
-    * `address_type` - The load balancer address type.
-    * `gateway_default` - Indicates whether this is the default ingress address of the gateway.
-    * `ipv4_addresses` - The list of IPv4 addresses.
-    * `ipv6_addresses` - The list of IPv6 addresses.
-    * `load_balancer_id` - The ID of the load balancer associated with the gateway.
-    * `mode` - The load balancing provisioning mode for the gateway.
-    * `ports` - The list of listening ports.
-        * `port` - The port number of the load balancer listener.
-        * `protocol` - The protocol of the load balancer listener.
-    * `status` - The status of the load balancer.
-    * `type` - The type of the load balancer.
+  * `address` - The address of the load balancer for the gateway.
+  * `address_ip_version` - The IP version of the load balancer.
+  * `address_type` - The load balancer address type.
+  * `gateway_default` - Indicates whether this is the default ingress address of the gateway.
+  * `ipv4_addresses` - The list of IPv4 addresses.
+  * `ipv6_addresses` - The list of IPv6 addresses.
+  * `load_balancer_id` - The ID of the load balancer associated with the gateway.
+  * `mode` - The load balancing provisioning mode for the gateway.
+  * `ports` - The list of listening ports.
+    * `port` - The port number of the load balancer listener.
+    * `protocol` - The protocol of the load balancer listener.
+  * `status` - The status of the load balancer.
+  * `type` - The type of the load balancer.
 * `security_group` - The security group of the gateway.
-    * `name` - The name of the security group.
-    * `security_group_id` - The ID of the security group.
+  * `name` - The name of the security group.
+  * `security_group_id` - The ID of the security group.
 * `status` - The status of the gateway.
 * `target_version` - The target version of the gateway instance.
 * `update_time` - The timestamp when the gateway was last updated. Unit: milliseconds.
 * `vswitch` - The vSwitch associated with the gateway.
-    * `name` - The name of the virtual switch associated with the gateway.
+  * `name` - The name of the virtual switch associated with the gateway.
 * `version` - The current running version of the gateway instance.
 * `vpc` - The Virtual Private Cloud (VPC) associated with the gateway.
-    * `name` - The name of the VPC gateway.
+  * `name` - The name of the VPC gateway.
 * `zones` - The list of zones associated with the gateway.
-    * `name` - The name of the availability zone for the gateway.
+  * `name` - The name of the availability zone for the gateway.
 
 ## Timeouts
 
