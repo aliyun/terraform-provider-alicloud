@@ -4677,10 +4677,6 @@ func TestUnitRedisTairInstanceImportReadback(t *testing.T) {
 	}
 }
 
-// tairInstanceImportStateVerifyIgnore lists the arguments an import cannot recover: write-only
-// arguments and creation-only options that DescribeInstanceAttribute does not return.
-var tairInstanceImportStateVerifyIgnore = []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"}
-
 // TestAccAliCloudRedisTairInstance_propertyCompleteness covers the CreateTairInstance
 // parameters and the in-place ModifyInstanceSpec storage change. The prepaid conversion
 // (TransformInstanceChargeType) and its coupon parameter are covered by
@@ -4745,7 +4741,7 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 			{
 				// storage_performance_level and storage_size_gb now go through ModifyInstanceSpec
@@ -4772,7 +4768,7 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 			{
 				// A storage size change without a performance level change must still send
@@ -4790,12 +4786,25 @@ func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
 				),
 			},
 			{
+				// auto_use_coupon only applies when the instance is created. Changing it on an
+				// existing instance must be suppressed instead of sending a request, so the
+				// state keeps the create-time value and the instance is not replaced.
+				Config: testAccConfig(map[string]interface{}{
+					"auto_use_coupon": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_use_coupon": "false",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
 				// coupon_no, auto_use_coupon and instance_endpoint_type are write-only and are
 				// absent from the DescribeInstanceAttribute response, so an import cannot recover them.
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 		},
 	})
@@ -5427,7 +5436,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 			{
 				// E-02 forward direction: converting a PayAsYouGo instance to Subscription must
@@ -5449,7 +5458,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 			{
 				// E-02 reverse direction: converting back to PayAsYouGo must be accepted so the
@@ -5474,7 +5483,7 @@ func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 		},
 	})
@@ -5531,7 +5540,7 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 			{
 				// EG-01: a prepaid replica count decrease is submitted through the single
@@ -5551,7 +5560,7 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -5567,7 +5576,7 @@ func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: tairInstanceImportStateVerifyIgnore,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
 			},
 		},
 	})

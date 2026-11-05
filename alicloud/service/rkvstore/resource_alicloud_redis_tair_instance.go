@@ -921,7 +921,9 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if redisTairInstanceOrderRetryable(err) {
+				// The expected error codes stay inline: the compatibility check reads the
+				// ModifyInstanceSpec retry codes from this call site.
+				if errs.IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict", "Order.LatestOrderIsHanding"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
