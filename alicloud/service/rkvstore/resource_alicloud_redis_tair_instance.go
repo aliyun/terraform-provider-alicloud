@@ -79,11 +79,26 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"auto_use_coupon": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				// The coupon is only used by CreateTairInstance, so changes after creation are
+				// suppressed instead of forcing a new instance. The check is based on the state
+				// ID because a plan-time diff is not marked as a new resource yet: keying on
+				// IsNewResource() would also suppress the create-time value.
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != ""
+				},
+			},
 			"bandwidth_burst": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"cluster_backup_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"coupon_no": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -135,6 +150,12 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"instance_endpoint_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"AzIndependentEndpoint", "UnifiedEndpoint"}, false),
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
@@ -250,15 +271,15 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"replica_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validators.IntBetween(1, 4),
-			},
-			"region_id": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -352,14 +373,13 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 			"storage_performance_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validators.StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
 			},
 			"storage_size_gb": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
@@ -496,6 +516,21 @@ func ResourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("connection_string_prefix"); ok {
 		request["ConnectionStringPrefix"] = v
+	}
+	if v, ok := d.GetOk("maintain_start_time"); ok {
+		request["MaintainStartTime"] = v
+	}
+	if v, ok := d.GetOk("maintain_end_time"); ok {
+		request["MaintainEndTime"] = v
+	}
+	if v, ok := d.GetOk("coupon_no"); ok {
+		request["CouponNo"] = v
+	}
+	if v, ok := tairInstanceConfiguredValue(d, "auto_use_coupon"); ok {
+		request["AutoUseCoupon"] = convert.ConvertBoolToString(v.(bool))
+	}
+	if v, ok := d.GetOk("instance_endpoint_type"); ok {
+		request["InstanceEndpointType"] = v
 	}
 	wait := helper.IncrementalWait(180*time.Second, 180*time.Second)
 	internalErrRetryCount := 0
@@ -779,10 +814,10 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
+	var err error
 	d.Partial(true)
 
 	action := "ModifyInstanceAttribute"
-	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
@@ -841,10 +876,10 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 	}
 	request["InstanceClass"] = d.Get("instance_class")
-	if v, ok := d.GetOkExists("force_upgrade"); ok {
+	if v := optionalTairInstanceUpdateOption(d, "force_upgrade"); v != nil {
 		request["ForceUpgrade"] = v
 	}
-	if v, ok := d.GetOk("effective_time"); ok {
+	if v := optionalTairInstanceUpdateOption(d, "effective_time"); v != nil {
 		request["EffectiveTime"] = v
 	}
 	request["AutoPay"] = "true"
@@ -861,6 +896,23 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if !d.IsNewResource() && replicaCountsRequest(request, d, d.HasChange("replica_count"), d.HasChange("slave_replica_count")) {
 		update = true
 	}
+	if !d.IsNewResource() && d.HasChange("storage_size_gb") {
+		update = true
+		request["Storage"] = d.Get("storage_size_gb")
+		// ModifyInstanceSpec requires StorageType whenever the storage size of a tair_essd
+		// instance changes, even when the performance level itself is unchanged.
+		if v, ok := d.Get("storage_performance_level").(string); ok && v != "" {
+			request["StorageType"] = convertRedisTairInstanceStorageTypeRequest(v)
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("storage_performance_level") {
+		// Removing the attribute must not serialize an empty StorageType: the API only
+		// accepts essd_pl1, essd_pl2 and essd_pl3.
+		if v, ok := d.Get("storage_performance_level").(string); ok && v != "" {
+			update = true
+			request["StorageType"] = convertRedisTairInstanceStorageTypeRequest(v)
+		}
+	}
 
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -869,7 +921,9 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"}) || helper.NeedRetry(err) {
+				// The expected error codes stay inline: the compatibility check reads the
+				// ModifyInstanceSpec retry codes from this call site.
+				if errs.IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict", "Order.LatestOrderIsHanding"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -881,9 +935,11 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		redisServiceV2 := RedisServiceV2{client}
-		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "$.IsOrderCompleted", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
+		specOrderId := ""
+		if v, ok := response["OrderId"]; ok && v != nil {
+			specOrderId = fmt.Sprint(v)
+		}
+		if err := waitTairInstanceSpecApplied(d, RedisServiceV2{client}, request, specOrderId); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 	}
@@ -1006,6 +1062,9 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("auto_renew_period"); ok {
 		request["AutoRenewPeriod"] = v
 	}
+	if v, ok := d.GetOk("coupon_no"); ok {
+		request["CouponNo"] = v
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -1013,7 +1072,7 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if redisTairInstanceOrderRetryable(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1627,6 +1686,200 @@ func configuredConfigKeysFromRawConfig(d *schema.ResourceData) map[string]struct
 		}
 	}
 	return keys
+}
+
+// tairInstanceConfiguredValue returns the value the user configured for an attribute and
+// whether that attribute is present and non-null in the configuration. Values that come only
+// from API read-back (Optional+Computed) or from state are not treated as configured, so an
+// explicit zero value stays distinguishable from an unset or removed attribute.
+func tairInstanceConfiguredValue(d *schema.ResourceData, key string) (interface{}, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return nil, false
+	}
+	rawType := rawConfig.Type()
+	if !rawType.IsObjectType() || !rawType.HasAttribute(key) {
+		return nil, false
+	}
+	value := rawConfig.GetAttr(key)
+	if value.IsNull() || !value.IsKnown() {
+		return nil, false
+	}
+	return d.Get(key), true
+}
+
+// optionalTairInstanceUpdateOption returns the configured value of an execution option and
+// nil when the user did not set it or removed it, so the option is omitted from the request
+// instead of being sent with its zero value or with a stale state value.
+func optionalTairInstanceUpdateOption(d *schema.ResourceData, key string) interface{} {
+	if v, ok := tairInstanceConfiguredValue(d, key); ok {
+		return v
+	}
+	return nil
+}
+
+// redisTairInstanceOrderRetryable reports whether an order-style RPC should be retried:
+// transient errors plus the order code returned while the previous order is still being
+// processed. It is consumed by the TransformInstanceChargeType retry; ModifyInstanceSpec keeps
+// its expected error codes inline because the compatibility check reads them from that call
+// site.
+func redisTairInstanceOrderRetryable(err error) bool {
+	return helper.NeedRetry(err) || errs.IsExpectedErrors(err, []string{"Order.LatestOrderIsHanding", "MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"})
+}
+
+// tairInstanceSpecAppliedAttributes returns the attributes of a ModifyInstanceSpec request
+// whose applied value DescribeInstanceAttribute reports. IsOrderCompleted stays true after a
+// completed order, so comparing these values is what separates the submitted order from the
+// previous one when the first poll happens before the new order is registered.
+func tairInstanceSpecAppliedAttributes(d *schema.ResourceData, request map[string]interface{}) map[string]interface{} {
+	expected := map[string]interface{}{}
+	if v, ok := request["ReplicaCount"].(int); ok && d.HasChange("replica_count") {
+		expected["ReplicaCount"] = v
+	}
+	if v, ok := request["SlaveReplicaCount"].(int); ok && d.HasChange("slave_replica_count") {
+		expected["SlaveReplicaCount"] = v
+	}
+	if v, ok := request["Storage"].(int); ok && d.HasChange("storage_size_gb") {
+		expected["Storage"] = v
+	}
+	if v, ok := request["InstanceClass"].(string); ok && v != "" && d.HasChange("instance_class") {
+		expected["RealInstanceClass"] = v
+	}
+	if v, ok := request["StorageType"].(string); ok && v != "" && d.HasChange("storage_performance_level") {
+		expected["StorageType"] = v
+	}
+	if v, ok := request["ReadOnlyCount"].(int); ok && d.HasChange("read_only_count") {
+		expected["ReadOnlyCount"] = v
+	}
+	if v, ok := request["SlaveReadOnlyCount"].(int); ok && d.HasChange("slave_read_only_count") {
+		expected["SlaveReadOnlyCount"] = v
+	}
+	if v, ok := request["NodeType"].(string); ok && v != "" && d.HasChange("node_type") {
+		// Both the configuration and the response may use either the schema values or the raw
+		// 'double'/'single' values, so the expectation is normalized the same way as the response.
+		expected["NodeType"] = fmt.Sprint(convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(v))
+	}
+	return expected
+}
+
+// tairInstanceAttributesApplied reports whether the response carries every compared attribute
+// with the requested value. A compared attribute the response does not carry yet has not been
+// observed as applied, so it keeps the waiter pending instead of releasing it early.
+func tairInstanceAttributesApplied(object map[string]interface{}, expected map[string]interface{}) bool {
+	for field, want := range expected {
+		value, ok := object[field]
+		if !ok || value == nil {
+			return false
+		}
+		switch wanted := want.(type) {
+		case int:
+			actual, err := convert.FormatInt(value)
+			if err != nil || actual != wanted {
+				return false
+			}
+		case string:
+			actual := fmt.Sprint(value)
+			if field == "NodeType" {
+				actual = fmt.Sprint(convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(value))
+			}
+			if actual != wanted {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// waitTairInstanceSpecApplied waits until the change submitted by ModifyInstanceSpec is applied.
+// Waiting on IsOrderCompleted alone has an early-release window: the flag stays true from the
+// previous order until the new one is registered, so a poll taken right after the request can
+// release the update before the change happens. An immediate change therefore also requires the
+// applied values to be visible (ForceUpgrade only controls whether the change may be forced, not
+// when it runs).
+//
+// A change deferred to the maintenance window (EffectiveTime=MaintainTime) cannot be observed
+// right away. When the API returns the id of the new order, that id is the proof that this
+// request was accepted and scheduled, so the previous order's completed flag is not used as
+// completion evidence. Without an order id the waiter requires an observed transition instead of
+// trusting a flag that may still describe the previous order.
+func waitTairInstanceSpecApplied(d *schema.ResourceData, service RedisServiceV2, request map[string]interface{}, orderId string) error {
+	expected := tairInstanceSpecAppliedAttributes(d, request)
+	deferred := false
+	if v, ok := request["EffectiveTime"].(string); ok && v == "MaintainTime" {
+		deferred = true
+	}
+	if deferred {
+		if orderId != "" {
+			return nil
+		}
+		return waitTairInstanceOrderTransition(d, service, tairInstanceOrderTransitionWindow)
+	}
+	if len(expected) == 0 {
+		// No compared attribute changed, so the flag alone would have to prove completion; an
+		// initial true may still describe the previous order, so a transition is required here
+		// as well.
+		return waitTairInstanceOrderTransition(d, service, tairInstanceOrderTransitionWindow)
+	}
+	refresh := func() (interface{}, string, error) {
+		object, err := service.DescribeRedisTairInstance(d.Id())
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+		if fmt.Sprint(object["IsOrderCompleted"]) != "true" || !tairInstanceAttributesApplied(object, expected) {
+			return object, "pending", nil
+		}
+		return object, "true", nil
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, refresh)
+	_, err := stateConf.WaitForState()
+	return err
+}
+
+// tairInstanceOrderTransitionWindow bounds the observation of an order transition. A deferred
+// change without an order id cannot be verified once this window expires, so the update fails
+// explicitly instead of blocking for the whole update timeout.
+const tairInstanceOrderTransitionWindow = 2 * time.Minute
+
+// waitTairInstanceOrderTransition waits until the order submitted by this request is observed in
+// progress and then completed. An initial completed flag is not accepted as proof: while the new
+// order is not registered yet it still describes the previous order.
+func waitTairInstanceOrderTransition(d *schema.ResourceData, service RedisServiceV2, window time.Duration) error {
+	timeout := window
+	if configured := d.Timeout(schema.TimeoutUpdate); configured < timeout {
+		timeout = configured
+	}
+	observedInProgress := false
+	refresh := func() (interface{}, string, error) {
+		object, err := service.DescribeRedisTairInstance(d.Id())
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+		if fmt.Sprint(object["IsOrderCompleted"]) != "true" {
+			observedInProgress = true
+			return object, "pending", nil
+		}
+		if !observedInProgress {
+			return object, "pending", nil
+		}
+		return object, "true", nil
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"true"}, timeout, 3*time.Second, refresh)
+	if _, err := stateConf.WaitForState(); err != nil {
+		// Keep the underlying describe/timeout error so an immediate API failure is not reported
+		// as an elapsed transition window.
+		var timeoutErr *retry.TimeoutError
+		if errors.As(err, &timeoutErr) {
+			return fmt.Errorf("the deferred change did not transition within %s (no order id returned): %w", timeout, err)
+		}
+		return fmt.Errorf("the deferred change could not observe the order state (no order id returned): %w", err)
+	}
+	return nil
 }
 
 // configuredTopLevelKeys returns the top-level attributes the user actually configured.

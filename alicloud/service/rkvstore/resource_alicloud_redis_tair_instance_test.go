@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	sdkv2schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -4674,4 +4675,1528 @@ func TestUnitRedisTairInstanceImportReadback(t *testing.T) {
 	if state.Attributes["replica_count"] != "2" || state.Attributes["slave_replica_count"] != "2" {
 		t.Fatalf("import must read back both counts, got %#v", state.Attributes)
 	}
+}
+
+// TestAccAliCloudRedisTairInstance_propertyCompleteness covers the CreateTairInstance
+// parameters and the in-place ModifyInstanceSpec storage change. The prepaid conversion
+// (TransformInstanceChargeType) and its coupon parameter are covered by
+// TestAccAliCloudRedisTairInstance_prepaidCouponConversion and
+// TestUnitRedisTairInstanceCreateRequestParameters.
+func TestAccAliCloudRedisTairInstance_propertyCompleteness(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMapPropertyCompleteness)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependencePropertyCompleteness)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":              "PayAsYouGo",
+					"instance_type":             "tair_essd",
+					"zone_id":                   "${local.zone_id}",
+					"instance_class":            "${local.essd_pl1_class}",
+					"vswitch_id":                "${alicloud_vswitch.defaultVSwitch.id}",
+					"vpc_id":                    "${alicloud_vpc.defaultVpc.id}",
+					"storage_performance_level": "PL1",
+					"storage_size_gb":           "60",
+					"maintain_start_time":       "02:00Z",
+					"maintain_end_time":         "06:00Z",
+					"coupon_no":                 "default",
+					"auto_use_coupon":           "false",
+					"instance_endpoint_type":    "AzIndependentEndpoint",
+					"tair_instance_name":        name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":              "PayAsYouGo",
+						"instance_type":             "tair_essd",
+						"instance_class":            acctest.CHECKSET,
+						"storage_performance_level": "PL1",
+						"storage_size_gb":           "60",
+						"maintain_start_time":       "02:00Z",
+						"maintain_end_time":         "06:00Z",
+						"coupon_no":                 "default",
+						"instance_endpoint_type":    "AzIndependentEndpoint",
+						"replica_count":             acctest.CHECKSET,
+						"slave_replica_count":       acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				// Verify the import after every step, not only at the end: an import must reflect
+				// the state the preceding step applied.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				// storage_performance_level and storage_size_gb now go through ModifyInstanceSpec
+				// instead of forcing a new instance. PL2 requires an 8C class and a storage size
+				// between 470 and 1000 GB, so the class and size are scaled up in the same request.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":            "${local.essd_pl2_class}",
+					"storage_performance_level": "PL2",
+					"storage_size_gb":           "480",
+					"maintain_start_time":       "03:00Z",
+					"maintain_end_time":         "07:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":            acctest.CHECKSET,
+						"storage_performance_level": "PL2",
+						"storage_size_gb":           "480",
+						"maintain_start_time":       "03:00Z",
+						"maintain_end_time":         "07:00Z",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				// A storage size change without a performance level change must still send
+				// StorageType: ModifyInstanceSpec rejects the request with
+				// "StorageType is mandatory for this action" otherwise. The API does not
+				// allow shrinking an ESSD disk, so the size is increased here.
+				Config: testAccConfig(map[string]interface{}{
+					"storage_size_gb": "490",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_performance_level": "PL2",
+						"storage_size_gb":           "490",
+					}),
+				),
+			},
+			{
+				// The size-only update is a successful configuration step of its own, so the state
+				// it applied must be importable before the next step runs.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				// auto_use_coupon only applies when the instance is created. Changing it on an
+				// existing instance must be suppressed instead of sending a request, so the
+				// state keeps the create-time value and the instance is not replaced.
+				Config: testAccConfig(map[string]interface{}{
+					"auto_use_coupon": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_use_coupon": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// coupon_no, auto_use_coupon and instance_endpoint_type are write-only and are
+				// absent from the DescribeInstanceAttribute response, so an import cannot recover them.
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+		},
+	})
+}
+
+var AlicloudRedisTairInstanceMapPropertyCompleteness = map[string]string{
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+}
+
+func AlicloudRedisTairInstanceBasicDependencePropertyCompleteness(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_essd"
+}
+
+data "alicloud_kvstore_instance_classes" "essd" {
+  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
+  product_type         = "Tair_essd"
+  instance_charge_type = "PostPaid"
+}
+
+resource "alicloud_vpc" "defaultVpc" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "defaultVSwitch" {
+  vpc_id       = alicloud_vpc.defaultVpc.id
+  zone_id      = local.zone_id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = format("%%s1", var.name)
+}
+
+locals {
+  zone_id        = data.alicloud_kvstore_zones.default.zones.0.id
+  essd_classes   = [for c in data.alicloud_kvstore_instance_classes.essd.instance_classes : c if startswith(c, "tair.essd.standard.")]
+  essd_pl1_class = [for c in local.essd_classes : c if endswith(c, ".xlarge")][0]
+  essd_pl2_class = [for c in local.essd_classes : c if endswith(c, ".2xlarge")][0]
+}
+
+`, name)
+}
+
+// newTairInstanceFixtureClient builds a client pointed at an in-process fixture server so
+// the unit tests exercise the real request serialization without any cloud call.
+func newTairInstanceFixtureClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
+	t.Helper()
+	t.Cleanup(server.Close)
+
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatalf("failed to build the fixture credential: %s", err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{
+		AccessKey: "test-key", SecretKey: "test-secret", Credential: credential,
+		RegionId: "cn-hangzhou", AccountType: "test", Protocol: "http",
+		Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("failed to build the fixture client: %s", err)
+	}
+	endpoints.Store("r_kvstore", endpoint)
+	return client
+}
+
+// tairInstanceUpdateFixtureData builds ResourceData for an existing instance with only the
+// requested attributes changed, plus the configuration the user applied.
+func tairInstanceUpdateFixtureData(t *testing.T, changes map[string][2]string, rawConfig map[string]cty.Value, extraState map[string]string) *sdkv2schema.ResourceData {
+	t.Helper()
+	resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff := &sdktf.InstanceDiff{Attributes: map[string]*sdktf.ResourceAttrDiff{}}
+	for key, values := range changes {
+		diff.Attributes[key] = &sdktf.ResourceAttrDiff{Old: values[0], New: values[1]}
+	}
+	diff.RawConfig = cty.ObjectVal(rawConfig)
+	attributes := map[string]string{
+		"instance_class":      "tair.rdb.2g",
+		"instance_type":       "tair_rdb",
+		"zone_id":             "cn-hangzhou-j",
+		"vpc_id":              "vpc-tftest",
+		"vswitch_id":          "vsw-tftest",
+		"payment_type":        "PayAsYouGo",
+		"replica_count":       "1",
+		"slave_replica_count": "1",
+	}
+	for key, value := range extraState {
+		attributes[key] = value
+	}
+	state := &sdktf.InstanceState{
+		ID:         "r-tftest",
+		Attributes: attributes,
+	}
+	d, err := sdkv2schema.InternalMap(resourceInstance.Schema).Data(state, diff)
+	if err != nil {
+		t.Fatalf("failed to build the fixture resource data: %s", err)
+	}
+	return d
+}
+
+// tairInstanceUpdateFixtureClient serves the RPC calls of ResourceAliCloudRedisTairInstanceUpdate
+// and mirrors every applied ModifyInstanceSpec value in the following DescribeInstanceAttribute,
+// so the order waiter converges on the specification the request asked for.
+func tairInstanceUpdateFixtureClient(t *testing.T, requests *[]map[string]string) *connectivity.AliyunClient {
+	t.Helper()
+	applied := map[string]string{
+		"ReplicaCount":      "1",
+		"SlaveReplicaCount": "1",
+		"RealInstanceClass": "tair.rdb.2g",
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			fields := []string{`"InstanceId":"r-tftest"`, `"InstanceStatus":"Normal"`, `"IsOrderCompleted":"true"`}
+			for key, value := range applied {
+				if key == "RealInstanceClass" || key == "StorageType" {
+					fields = append(fields, fmt.Sprintf("%q:%q", key, value))
+					continue
+				}
+				fields = append(fields, fmt.Sprintf("%q:%s", key, value))
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{`+strings.Join(fields, ",")+`}]}}`)
+		case "ModifyInstanceSpec":
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "InstanceClass", "ForceUpgrade", "EffectiveTime", "Storage", "StorageType", "NodeType", "ReadOnlyCount", "SlaveReadOnlyCount"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "Storage", "InstanceClass", "StorageType"} {
+				value, ok := captured[key]
+				if !ok {
+					continue
+				}
+				if key == "InstanceClass" {
+					applied["RealInstanceClass"] = value
+					continue
+				}
+				applied[key] = value
+			}
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		case "TransformInstanceChargeType":
+			captured := map[string]string{}
+			for _, key := range []string{"ChargeType", "Period", "CouponNo", "AutoPay"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			// Update ends with a Read; the auxiliary describes accept an empty payload.
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+// tairInstanceStaleOrderFixtureClient reports the previous order as completed together with the
+// old replica count on the first describe after a ModifyInstanceSpec, like the API does until the
+// new order is registered, and reports the requested count afterwards.
+func tairInstanceStaleOrderFixtureClient(t *testing.T, requests *[]map[string]string, describes *int) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			*describes++
+			replicaCount := 1
+			if *describes > 1 {
+				replicaCount = 2
+			}
+			fmt.Fprintf(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":"true","ReplicaCount":%d}]}}`, replicaCount)
+		case "ModifyInstanceSpec":
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+// TestUnitRedisTairInstanceWaitsForAppliedSpec covers the early-release window of the order
+// waiter: the fixture reports IsOrderCompleted=true with the old replica count for the first
+// describe after the request, so an update that only reads the flag would return before the new
+// value is visible.
+func TestUnitRedisTairInstanceWaitsForAppliedSpec(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	client := tairInstanceStaleOrderFixtureClient(t, &requests, &describes)
+	d := tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"replica_count": {"1", "2"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"replica_count":  cty.NumberIntVal(2),
+		},
+		nil)
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "2", requests[0]["ReplicaCount"])
+	assert.GreaterOrEqual(t, describes, 3, "the update must not release on the stale completed-order flag")
+}
+
+// tairInstanceSpecFixtureClient serves the RPC calls of ResourceAliCloudRedisTairInstanceUpdate
+// with a per-describe-instance payload, so a test can control which attributes the instance
+// reports at each poll.
+func tairInstanceSpecFixtureClient(t *testing.T, requests *[]map[string]string, describes *int, fields func(int) []string) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			*describes++
+			instanceFields := []string{`"InstanceId":"r-tftest"`, `"InstanceStatus":"Normal"`, `"IsOrderCompleted":"true"`}
+			instanceFields = append(instanceFields, fields(*describes)...)
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{`+strings.Join(instanceFields, ",")+`}]}}`)
+		case "ModifyInstanceSpec":
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "Storage", "StorageType", "InstanceClass", "NodeType", "ReadOnlyCount", "SlaveReadOnlyCount", "ForceUpgrade", "EffectiveTime"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+// TestUnitRedisTairInstanceWaitsForForcedUpgradeDisabled covers the case that used to be treated
+// as deferred: ForceUpgrade=false only disables the forced upgrade, it does not move the change
+// to the maintenance window, so an immediate change must still be observed as applied.
+func TestUnitRedisTairInstanceWaitsForForcedUpgradeDisabled(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	client := tairInstanceSpecFixtureClient(t, &requests, &describes, func(describe int) []string {
+		replicaCount := "1"
+		if describe > 1 {
+			replicaCount = "2"
+		}
+		return []string{fmt.Sprintf(`"ReplicaCount":%s`, replicaCount)}
+	})
+	d := tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"replica_count": {"1", "2"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"replica_count":  cty.NumberIntVal(2),
+			"force_upgrade":  cty.False,
+		},
+		map[string]string{"force_upgrade": "false"})
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "false", requests[0]["ForceUpgrade"])
+	assert.GreaterOrEqual(t, describes, 2, "a non-forced immediate change must still wait for the applied value")
+}
+
+// TestUnitRedisTairInstanceWaitsForMissingAttribute covers a response that does not carry the
+// compared attribute yet: the waiter must keep waiting instead of treating the absence as applied.
+func TestUnitRedisTairInstanceWaitsForMissingAttribute(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	client := tairInstanceSpecFixtureClient(t, &requests, &describes, func(describe int) []string {
+		if describe <= 2 {
+			return nil
+		}
+		return []string{`"ReplicaCount":2`}
+	})
+	d := tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"replica_count": {"1", "2"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"replica_count":  cty.NumberIntVal(2),
+		},
+		nil)
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.GreaterOrEqual(t, describes, 3, "a compared attribute the response does not carry is not applied yet")
+}
+
+// TestUnitRedisTairInstanceWaitsForNodeTypeAndReadOnlyCount covers the read-only/node_type paths
+// that previously had no comparable attribute. The fixture reports the previous values on the
+// first poll, so an update that only waited for the order flag would release too early. Both the
+// schema values and the raw 'double'/'single' values are accepted by the schema and must be
+// compared after the same normalization the response uses.
+func TestUnitRedisTairInstanceWaitsForNodeTypeAndReadOnlyCount(t *testing.T) {
+	cases := []struct {
+		name       string
+		configured string
+		applied    string
+	}{
+		{name: "schema value", configured: "MASTER_SLAVE", applied: "double"},
+		{name: "raw api value", configured: "double", applied: "double"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var requests []map[string]string
+			describes := 0
+			client := tairInstanceSpecFixtureClient(t, &requests, &describes, func(describe int) []string {
+				if describe == 1 {
+					return []string{`"NodeType":"single"`, `"ReadOnlyCount":1`}
+				}
+				return []string{fmt.Sprintf(`"NodeType":%q`, tc.applied), `"ReadOnlyCount":2`}
+			})
+			d := tairInstanceUpdateFixtureData(t,
+				map[string][2]string{
+					"node_type":       {"STAND_ALONE", tc.configured},
+					"read_only_count": {"1", "2"},
+				},
+				map[string]cty.Value{
+					"config":          cty.NullVal(cty.Map(cty.String)),
+					"instance_class":  cty.StringVal("tair.rdb.2g"),
+					"node_type":       cty.StringVal(tc.configured),
+					"read_only_count": cty.NumberIntVal(2),
+				},
+				map[string]string{"node_type": "STAND_ALONE", "read_only_count": "1"})
+
+			if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+				t.Fatalf("update failed: %v", err)
+			}
+			assert.Len(t, requests, 1)
+			assert.Equal(t, tc.configured, requests[0]["NodeType"])
+			assert.Equal(t, "2", requests[0]["ReadOnlyCount"])
+			assert.GreaterOrEqual(t, describes, 2, "the waiter must not release before the applied node type and read-only count are visible")
+		})
+	}
+}
+
+// tairInstanceDeferredFixtureClient serves a deferred ModifyInstanceSpec. The describe sequence is
+// controlled by completed(describe) and the ModifyInstanceSpec response carries orderId when it
+// is not empty.
+func tairInstanceDeferredFixtureClient(t *testing.T, requests *[]map[string]string, describes *int, orderId string, completed func(int) bool) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			*describes++
+			orderCompleted := "false"
+			if completed(*describes) {
+				orderCompleted = "true"
+			}
+			fmt.Fprintf(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":%s,"ReplicaCount":2}]}}`, orderCompleted)
+		case "ModifyInstanceSpec":
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount", "EffectiveTime", "ForceUpgrade"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			if orderId != "" {
+				fmt.Fprintf(w, `{"RequestId":"mock","OrderId":%q}`, orderId)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+func tairInstanceDeferredFixtureData(t *testing.T) *sdkv2schema.ResourceData {
+	t.Helper()
+	return tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"replica_count": {"1", "2"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"replica_count":  cty.NumberIntVal(2),
+			"effective_time": cty.StringVal("MaintainTime"),
+		},
+		// effective_time is a request option without a state attribute of its own, so it has to be
+		// present in the state for d.Get to return the configured value.
+		map[string]string{"effective_time": "MaintainTime"})
+}
+
+// TestUnitRedisTairInstanceWaitsForDeferredOrderTransition covers a deferred change whose
+// ModifyInstanceSpec response carries no order id: the completed flag is already true from the
+// previous order, so the waiter must observe the new order in progress before it can complete.
+func TestUnitRedisTairInstanceWaitsForDeferredOrderTransition(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	// First poll: the previous order still reports completed. Second poll: the new order runs.
+	// Afterwards the new order completes.
+	client := tairInstanceDeferredFixtureClient(t, &requests, &describes, "", func(describe int) bool {
+		return describe != 2
+	})
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
+	assert.GreaterOrEqual(t, describes, 3, "a deferred change must not be released by the previous order's completed flag")
+}
+
+// TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity covers a deferred change whose
+// response returns the new order id: that id is the proof of the accepted order, so the waiter
+// neither polls on the previous order's completed flag nor claims the values are visible. The
+// fixture keeps reporting an incomplete order, which the old flag-based wait could never finish.
+func TestUnitRedisTairInstanceDeferredOrderAcceptedByIdentity(t *testing.T) {
+	var requests []map[string]string
+	describes := 0
+	client := tairInstanceDeferredFixtureClient(t, &requests, &describes, "20722623431", func(int) bool { return false })
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	assert.Len(t, requests, 1)
+	assert.Equal(t, "MaintainTime", requests[0]["EffectiveTime"])
+	assert.LessOrEqual(t, describes, 1, "the accepted order id is the proof; an incomplete order does not block the deferred update")
+}
+
+// TestUnitRedisTairInstanceDeferredOrderTransitionKeepsDescribeError covers a describe that fails
+// terminally while the deferred transition is observed: the original cause must survive in the
+// returned error instead of being replaced by a transition-window message.
+func TestUnitRedisTairInstanceDeferredOrderTransitionKeepsDescribeError(t *testing.T) {
+	var requests []map[string]string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			w.WriteHeader(http.StatusForbidden)
+			fmt.Fprint(w, `{"Code":"Forbidden.RAM","Message":"user not authorized","RequestId":"mock"}`)
+		case "ModifyInstanceSpec":
+			requests = append(requests, map[string]string{"EffectiveTime": r.Form.Get("EffectiveTime")})
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	start := time.Now()
+	err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(tairInstanceDeferredFixtureData(t), client)
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("the describe failure must surface")
+	}
+	assert.Contains(t, err.Error(), "Forbidden", "the underlying describe error must be preserved")
+	assert.Less(t, elapsed, 30*time.Second, "an immediate describe failure must not wait for the transition window")
+	assert.Len(t, requests, 1)
+}
+
+// tairInstanceTransformRetryFixtureClient fails the first TransformInstanceChargeType call
+// with the in-progress order code and succeeds afterwards, so the retry predicate of the
+// production update path is exercised end to end.
+func tairInstanceTransformRetryFixtureClient(t *testing.T, requests *[]map[string]string) *connectivity.AliyunClient {
+	t.Helper()
+	transformCalls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-tftest","InstanceStatus":"Normal","IsOrderCompleted":"true"}]}}`)
+		case "TransformInstanceChargeType":
+			transformCalls++
+			captured := map[string]string{}
+			for _, key := range []string{"ChargeType", "CouponNo"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+			if transformCalls == 1 {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprint(w, `{"Code":"Order.LatestOrderIsHanding","Message":"the previous order is still processing","RequestId":"mock"}`)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+func TestUnitRedisTairInstanceTransformRetry(t *testing.T) {
+	// The production retry predicate must keep the in-progress order code retryable: the first
+	// TransformInstanceChargeType call fails with it and the second call succeeds.
+	var requests []map[string]string
+	client := tairInstanceTransformRetryFixtureClient(t, &requests)
+	d := tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"payment_type": {"PayAsYouGo", "Subscription"}},
+		map[string]cty.Value{
+			"config":         cty.NullVal(cty.Map(cty.String)),
+			"instance_class": cty.StringVal("tair.rdb.2g"),
+			"payment_type":   cty.StringVal("Subscription"),
+			"period":         cty.NumberIntVal(1),
+			"coupon_no":      cty.StringVal("default"),
+		},
+		map[string]string{"payment_type": "PayAsYouGo", "period": "1", "coupon_no": "default"})
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+		t.Fatalf("update failed after retrying the in-progress order: %v", err)
+	}
+	assert.Len(t, requests, 2)
+	assert.Equal(t, "default", requests[1]["CouponNo"])
+}
+
+// tairInstanceCreateFixtureClient serves CreateTairInstance from an in-process HTTP fixture and
+// captures the serialized request. The fixture answers with a non retryable error so the
+// resource exits before the instance state waiter, which keeps the test in the unit budget
+// while still exercising the public create entry and the real client serialization.
+func tairInstanceCreateFixtureClient(t *testing.T, requests *[]map[string]string) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") == "CreateTairInstance" {
+			captured := map[string]string{}
+			for _, key := range []string{"ReplicaCount", "SlaveReplicaCount", "InstanceClass", "MaintainStartTime", "MaintainEndTime", "CouponNo", "AutoUseCoupon", "InstanceEndpointType"} {
+				if values, ok := r.Form[key]; ok && len(values) > 0 {
+					captured[key] = values[0]
+				}
+			}
+			*requests = append(*requests, captured)
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"fixture rejects the request","RequestId":"mock"}`)
+	}))
+	return newTairInstanceFixtureClient(t, server)
+}
+
+func TestUnitRedisTairInstanceCreateRequestParameters(t *testing.T) {
+	// The governance parameters of CreateTairInstance must reach the serialized request through
+	// the public Diff/Apply entry, while an unset auto_use_coupon must stay omitted.
+	createRequest := func(t *testing.T, values map[string]cty.Value) map[string]string {
+		t.Helper()
+		var requests []map[string]string
+		client := tairInstanceCreateFixtureClient(t, &requests)
+		schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+		raw, config := replicaPublicConfig(t, values)
+		diff, err := schemaResource.Diff(context.Background(), nil, config, nil)
+		if err != nil || diff == nil {
+			t.Fatalf("create diff through the public entry failed: %v", err)
+		}
+		diff.RawConfig = raw
+		if _, diags := schemaResource.Apply(context.Background(), nil, diff, client); !diags.HasError() {
+			t.Fatalf("expected the fixture API error to stop the create")
+		}
+		if len(requests) != 1 {
+			t.Fatalf("expected one CreateTairInstance request, got %d", len(requests))
+		}
+		return requests[0]
+	}
+
+	t.Run("unset governance parameters are omitted", func(t *testing.T) {
+		request := createRequest(t, map[string]cty.Value{})
+		_, hasAutoUseCoupon := request["AutoUseCoupon"]
+		_, hasCouponNo := request["CouponNo"]
+		assert.False(t, hasAutoUseCoupon, "an unset auto_use_coupon must not be serialized")
+		assert.False(t, hasCouponNo, "an unset coupon_no must not be serialized")
+	})
+
+	t.Run("explicit auto_use_coupon true is serialized", func(t *testing.T) {
+		request := createRequest(t, map[string]cty.Value{
+			"auto_use_coupon": cty.True,
+		})
+		assert.Equal(t, "true", request["AutoUseCoupon"])
+	})
+
+	t.Run("explicit auto_use_coupon false is serialized", func(t *testing.T) {
+		request := createRequest(t, map[string]cty.Value{
+			"auto_use_coupon": cty.False,
+		})
+		assert.Equal(t, "false", request["AutoUseCoupon"])
+	})
+
+	t.Run("maintenance window, coupon and endpoint parameters are serialized", func(t *testing.T) {
+		request := createRequest(t, map[string]cty.Value{
+			"maintain_start_time":    cty.StringVal("02:00Z"),
+			"maintain_end_time":      cty.StringVal("06:00Z"),
+			"coupon_no":              cty.StringVal("default"),
+			"auto_use_coupon":        cty.True,
+			"instance_endpoint_type": cty.StringVal("AzIndependentEndpoint"),
+		})
+		assert.Equal(t, "02:00Z", request["MaintainStartTime"])
+		assert.Equal(t, "06:00Z", request["MaintainEndTime"])
+		assert.Equal(t, "default", request["CouponNo"])
+		assert.Equal(t, "true", request["AutoUseCoupon"])
+		assert.Equal(t, "AzIndependentEndpoint", request["InstanceEndpointType"])
+	})
+}
+
+// tairInstanceStoragePublicApply drives one storage configuration change through the public
+// Diff/Apply entry and returns the ModifyInstanceSpec requests it sent.
+func tairInstanceStoragePublicApply(t *testing.T, state map[string]string, values map[string]cty.Value) []map[string]string {
+	t.Helper()
+	stateAttributes := map[string]string{
+		"instance_class": "tair.essd.standard.2xlarge",
+		"instance_type":  "tair_essd",
+		"zone_id":        "cn-hangzhou-h",
+		"vpc_id":         "vpc-test",
+		"vswitch_id":     "vsw-test",
+	}
+	for key, value := range state {
+		stateAttributes[key] = value
+	}
+	configValues := map[string]cty.Value{
+		"instance_class": cty.StringVal("tair.essd.standard.2xlarge"),
+		"instance_type":  cty.StringVal("tair_essd"),
+		"zone_id":        cty.StringVal("cn-hangzhou-h"),
+		"vpc_id":         cty.StringVal("vpc-test"),
+		"vswitch_id":     cty.StringVal("vsw-test"),
+	}
+	for key, value := range values {
+		configValues[key] = value
+	}
+	var requests []map[string]string
+	client := tairInstanceUpdateFixtureClient(t, &requests)
+	schemaResource := rkvstore.ResourceAliCloudRedisTairInstance()
+	raw, config := replicaPublicConfig(t, configValues)
+	instanceState := &sdktf.InstanceState{ID: "r-tftest", Attributes: stateAttributes}
+	diff, err := schemaResource.Diff(context.Background(), instanceState, config, nil)
+	if err != nil {
+		t.Fatalf("diff through the public entry failed: %v", err)
+	}
+	if diff == nil || diff.Empty() {
+		return requests
+	}
+	diff.RawConfig = raw
+	if _, diags := schemaResource.Apply(context.Background(), instanceState, diff, client); diags.HasError() {
+		t.Fatalf("apply failed: %s", replicaDiagsText(diags))
+	}
+	return requests
+}
+
+func TestUnitRedisTairInstanceStoragePerformanceLevelRequests(t *testing.T) {
+	// Every case drives the real Diff/Apply lifecycle: storage_performance_level is
+	// Optional+Computed, so removing it from the configuration keeps the applied value instead of
+	// producing a synthetic removal diff.
+	t.Run("changed storage performance level is serialized", func(t *testing.T) {
+		requests := tairInstanceStoragePublicApply(t,
+			map[string]string{"storage_performance_level": "PL2", "storage_size_gb": "480"},
+			map[string]cty.Value{
+				"storage_performance_level": cty.StringVal("PL3"),
+				"storage_size_gb":           cty.NumberIntVal(480),
+			})
+		assert.Len(t, requests, 1)
+		assert.Equal(t, "essd_pl3", requests[0]["StorageType"])
+	})
+
+	t.Run("storage size change keeps the current storage performance level", func(t *testing.T) {
+		requests := tairInstanceStoragePublicApply(t,
+			map[string]string{"storage_performance_level": "PL2", "storage_size_gb": "480"},
+			map[string]cty.Value{
+				"storage_size_gb": cty.NumberIntVal(490),
+			})
+		assert.Len(t, requests, 1)
+		assert.Equal(t, "490", requests[0]["Storage"])
+		assert.Equal(t, "essd_pl2", requests[0]["StorageType"], "a storage size change must carry the unchanged performance level because ModifyInstanceSpec requires StorageType")
+	})
+
+	t.Run("removed storage performance level alone plans no specification change", func(t *testing.T) {
+		requests := tairInstanceStoragePublicApply(t,
+			map[string]string{"storage_performance_level": "PL2", "storage_size_gb": "480"},
+			map[string]cty.Value{
+				"storage_size_gb": cty.NumberIntVal(480),
+			})
+		assert.Empty(t, requests, "removing an Optional+Computed performance level must not send a specification change on its own")
+	})
+}
+
+func TestUnitRedisTairInstanceCreateThenUpdate(t *testing.T) {
+	// A successful prepaid create calls the update entry while the instance is still new
+	// (SDKv2 marks the resource new before Create, and Update must not treat the create diff as
+	// an existing-instance specification change). The resource data below is built from the
+	// create diff and marked new exactly as the create entry receives it, so the update runs in
+	// the same context without the create waiter.
+	var requests []map[string]string
+	client := tairInstanceUpdateFixtureClient(t, &requests)
+	resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
+	diff := &sdktf.InstanceDiff{
+		Attributes: map[string]*sdktf.ResourceAttrDiff{
+			"instance_class":            {Old: "", New: "tair.essd.standard.2xlarge"},
+			"instance_type":             {Old: "", New: "tair_essd"},
+			"zone_id":                   {Old: "", New: "cn-hangzhou-j"},
+			"vpc_id":                    {Old: "", New: "vpc-tftest"},
+			"vswitch_id":                {Old: "", New: "vsw-tftest"},
+			"payment_type":              {Old: "", New: "Subscription"},
+			"replica_count":             {Old: "", New: "2"},
+			"storage_size_gb":           {Old: "", New: "100"},
+			"storage_performance_level": {Old: "", New: "PL1"},
+		},
+		RawConfig: cty.ObjectVal(map[string]cty.Value{
+			"config":                    cty.NullVal(cty.Map(cty.String)),
+			"instance_class":            cty.StringVal("tair.essd.standard.2xlarge"),
+			"instance_type":             cty.StringVal("tair_essd"),
+			"zone_id":                   cty.StringVal("cn-hangzhou-j"),
+			"vpc_id":                    cty.StringVal("vpc-tftest"),
+			"vswitch_id":                cty.StringVal("vsw-tftest"),
+			"payment_type":              cty.StringVal("Subscription"),
+			"replica_count":             cty.NumberIntVal(2),
+			"storage_size_gb":           cty.NumberIntVal(100),
+			"storage_performance_level": cty.StringVal("PL1"),
+			"password_wo":               cty.NullVal(cty.String),
+		}),
+	}
+	d, err := sdkv2schema.InternalMap(resourceInstance.Schema).Data(nil, diff)
+	if err != nil {
+		t.Fatalf("failed to build the fixture resource data: %s", err)
+	}
+	d.SetId("r-tftest")
+	d.MarkNewResource()
+
+	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+		t.Fatalf("a successful prepaid create must not be rejected by the create-time update: %v", err)
+	}
+	assert.Empty(t, requests, "a new resource must not send ModifyInstanceSpec or TransformInstanceChargeType")
+}
+
+// captureTairInstanceId stores the created instance ID so a prepaid test can release it even
+// when a step fails before the test converts the instance back to pay-as-you-go.
+func captureTairInstanceId(target *string, object *map[string]interface{}) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		if object == nil || *object == nil {
+			return nil
+		}
+		if id, ok := (*object)["InstanceId"].(string); ok {
+			*target = id
+		}
+		return nil
+	}
+}
+
+// findTairInstanceIdByName returns the ID of the instance whose name matches exactly, or an
+// empty string when the account has no such instance. DescribeInstances only offers the fuzzy
+// SearchKey filter, so every result page is scanned and the exact name is matched on the client;
+// two different instances with the exact same name are reported instead of deleting an arbitrary
+// one.
+func findTairInstanceIdByName(client *connectivity.AliyunClient, name string) (string, error) {
+	const pageSize = 50
+	const maxSearchPages = 50
+	found := ""
+	collected := 0
+	exhausted := false
+	for page := 1; page <= maxSearchPages; page++ {
+		request := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"PageSize":   pageSize,
+			"PageNumber": page,
+			"SearchKey":  name,
+		}
+		response, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeInstances", nil, request, true)
+		if err != nil {
+			return "", fmt.Errorf("describe instances matching %q: %s", name, err)
+		}
+		instances, _ := response["Instances"].(map[string]interface{})
+		items, _ := instances["KVStoreInstance"].([]interface{})
+		for _, item := range items {
+			instance, _ := item.(map[string]interface{})
+			if fmt.Sprint(instance["InstanceName"]) != name {
+				continue
+			}
+			id := fmt.Sprint(instance["InstanceId"])
+			if found != "" && found != id {
+				return "", fmt.Errorf("multiple instances are named %q (%s, %s)", name, found, id)
+			}
+			found = id
+		}
+		collected += len(items)
+		total, totalErr := strconv.Atoi(fmt.Sprint(response["TotalCount"]))
+		if totalErr != nil {
+			// Without a total the page size is the only stop condition.
+			if len(items) < pageSize {
+				exhausted = true
+				break
+			}
+			continue
+		}
+		if collected >= total {
+			exhausted = true
+			break
+		}
+		if len(items) == 0 {
+			return "", fmt.Errorf("empty page %d while %d of %d instances were returned", page, collected, total)
+		}
+	}
+	if !exhausted {
+		// A full last page means more results may exist: the search did not prove that the
+		// leftover is absent or unique, so it must not be reported as a completed lookup.
+		return "", fmt.Errorf("the search for instances named %q did not finish within %d pages, so a leftover cannot be ruled out", name, maxSearchPages)
+	}
+	return found, nil
+}
+
+// releasePrepaidTairInstance releases an instance left behind by a failed step and reports a
+// cleanup failure on the test.
+func releasePrepaidTairInstance(t *testing.T, instanceId, instanceName string) {
+	t.Helper()
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	if err := releasePrepaidTairInstanceWithClient(client, instanceId, instanceName); err != nil {
+		t.Errorf("cleanup: %s", err)
+	}
+}
+
+// releasePrepaidTairInstanceWithClient releases an instance left behind by a failed step. A
+// Subscription instance cannot be deleted directly, so a leftover is converted back to
+// pay-as-you-go first. Every failure is returned instead of being logged away, and the instance
+// is only reported as released after the API stops returning it.
+func releasePrepaidTairInstanceWithClient(client *connectivity.AliyunClient, instanceId, instanceName string) error {
+	service := rkvstore.NewRedisServiceV2(client)
+	if instanceId == "" {
+		// A failed create can stop before the first Check captured the ID. The instance name is
+		// unique per test, so the leftover is still released by an exact-name lookup.
+		id, err := findTairInstanceIdByName(client, instanceName)
+		if err != nil {
+			return err
+		}
+		if id == "" {
+			return nil
+		}
+		instanceId = id
+	}
+	object, err := service.DescribeRedisTairInstance(instanceId)
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return fmt.Errorf("describe %s: %s", instanceId, err)
+	}
+	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
+		request := map[string]interface{}{"InstanceId": instanceId, "RegionId": client.RegionId, "ChargeType": "PostPaid", "AutoPay": "true"}
+		if _, err := client.RpcPost("R-kvstore", "2015-01-01", "TransformInstanceChargeType", nil, request, true); err != nil {
+			return fmt.Errorf("convert %s back to pay-as-you-go: %s", instanceId, err)
+		}
+		stateConf := helper.BuildStateConf([]string{}, []string{"true"}, 30*time.Minute, 10*time.Second, service.RedisTairInstanceStateRefreshFunc(instanceId, "$.IsOrderCompleted", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return fmt.Errorf("wait for the conversion of %s: %s", instanceId, err)
+		}
+		converted, err := service.DescribeRedisTairInstance(instanceId)
+		if err != nil {
+			return fmt.Errorf("read the billing method of %s after the conversion: %s", instanceId, err)
+		}
+		if fmt.Sprint(converted["ChargeType"]) == "PrePaid" {
+			return fmt.Errorf("%s is still prepaid after the conversion", instanceId)
+		}
+	}
+	request := map[string]interface{}{"InstanceId": instanceId, "RegionId": client.RegionId}
+	if _, err := client.RpcPost("R-kvstore", "2015-01-01", "DeleteInstance", nil, request, true); err != nil && !errs.NotFoundError(err) {
+		return fmt.Errorf("delete %s: %s", instanceId, err)
+	}
+	goneConf := helper.BuildStateConf([]string{}, []string{"NotFound"}, 30*time.Minute, 10*time.Second, func() (interface{}, string, error) {
+		// A direct RPC keeps the check free of the one-minute not-found retry of
+		// DescribeRedisTairInstance: the instance is only reported as released once the API
+		// answers NotFound.
+		request := map[string]interface{}{"InstanceId": instanceId, "RegionId": client.RegionId}
+		if _, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeInstanceAttribute", nil, request, true); err != nil {
+			if errs.NotFoundError(err) {
+				return map[string]interface{}{}, "NotFound", nil
+			}
+			return nil, "", err
+		}
+		return map[string]interface{}{}, "Exists", nil
+	})
+	if _, err := goneConf.WaitForState(); err != nil {
+		return fmt.Errorf("wait for %s to disappear: %s", instanceId, err)
+	}
+	return nil
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupByName covers a failure before the first Check captured
+// the instance ID: the leftover is found through the fuzzy SearchKey filter, every page is
+// scanned, and only the exactly named instance is released. A prefix-similar instance on the
+// first page must be left alone, and the request must not use the unsupported InstanceName
+// filter.
+func TestUnitRedisTairInstancePrepaidCleanupByName(t *testing.T) {
+	var deletes []string
+	var searchKeys []string
+	instanceNameFilterUsed := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			searchKeys = append(searchKeys, r.Form.Get("SearchKey"))
+			if _, ok := r.Form["InstanceName"]; ok {
+				instanceNameFilterUsed = true
+			}
+			if r.Form.Get("PageNumber") == "1" {
+				fmt.Fprint(w, `{"RequestId":"mock","TotalCount":2,"Instances":{"KVStoreInstance":[{"InstanceId":"r-prefix","InstanceName":"tf-testaccexact-10"}]}}`)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","TotalCount":2,"Instances":{"KVStoreInstance":[{"InstanceId":"r-exact","InstanceName":"tf-testaccexact-1"}]}}`)
+		case "DescribeInstanceAttribute":
+			if len(deletes) > 0 {
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, `{"Code":"InvalidInstanceId.NotFound","Message":"not found","RequestId":"mock"}`)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-exact","InstanceStatus":"Normal","IsOrderCompleted":"true","ChargeType":"PostPaid"}]}}`)
+		case "DeleteInstance":
+			deletes = append(deletes, r.Form.Get("InstanceId"))
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	if err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1"); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+	assert.Equal(t, []string{"r-exact"}, deletes, "only the instance with the exact name is released")
+	assert.Equal(t, []string{"tf-testaccexact-1", "tf-testaccexact-1"}, searchKeys, "every page is queried through SearchKey")
+	assert.False(t, instanceNameFilterUsed, "DescribeInstances has no InstanceName request parameter")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupAmbiguousName covers two instances that carry the exact
+// same name: the lookup reports the ambiguity instead of deleting an arbitrary one.
+func TestUnitRedisTairInstancePrepaidCleanupAmbiguousName(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			fmt.Fprint(w, `{"RequestId":"mock","TotalCount":2,"Instances":{"KVStoreInstance":[{"InstanceId":"r-dup1","InstanceName":"tf-testaccexact-1"},{"InstanceId":"r-dup2","InstanceName":"tf-testaccexact-1"}]}}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "two instances with the same exact name must be reported instead of deleted")
+}
+
+// tairInstanceSearchPage builds one DescribeInstances page. A negative total omits TotalCount.
+func tairInstanceSearchPage(total, filler int, exactId string) string {
+	items := make([]string, 0, filler+1)
+	for i := 0; i < filler; i++ {
+		items = append(items, fmt.Sprintf(`{"InstanceId":"r-filler-%d","InstanceName":"tf-other"}`, i))
+	}
+	if exactId != "" {
+		items = append(items, fmt.Sprintf(`{"InstanceId":%q,"InstanceName":"tf-testaccexact-1"}`, exactId))
+	}
+	if total < 0 {
+		return fmt.Sprintf(`{"RequestId":"mock","Instances":{"KVStoreInstance":[%s]}}`, strings.Join(items, ","))
+	}
+	return fmt.Sprintf(`{"RequestId":"mock","TotalCount":%d,"Instances":{"KVStoreInstance":[%s]}}`, total, strings.Join(items, ","))
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupPageGuard covers a search that reaches the page guard
+// while the result set is still not exhausted: the lookup must report an incomplete search instead
+// of returning "no leftover".
+func TestUnitRedisTairInstancePrepaidCleanupPageGuard(t *testing.T) {
+	pages := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") != "DescribeInstances" {
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		pages++
+		fmt.Fprint(w, tairInstanceSearchPage(10000, 50, ""))
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "an unfinished search must not be reported as no leftover")
+	assert.Contains(t, err.Error(), "did not finish")
+	assert.Equal(t, 50, pages, "the guard stops the search after 50 pages")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupMatchBeyondGuard covers a match found inside the guarded
+// pages while the search is still incomplete: the collected ID is not a verified result, so it must
+// not be released and the incomplete search must be reported.
+func TestUnitRedisTairInstancePrepaidCleanupMatchBeyondGuard(t *testing.T) {
+	deleted := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			// The exact target sits inside the guarded pages, but the search never finishes.
+			fmt.Fprint(w, tairInstanceSearchPage(10000, 49, "r-exact"))
+		case "DeleteInstance":
+			deleted = true
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "a match found in an incomplete search is not a verified result")
+	assert.False(t, deleted, "nothing may be deleted before the search is complete")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupWithoutTotal covers a response without TotalCount: a full
+// page continues the search and a non-full page terminates it.
+func TestUnitRedisTairInstancePrepaidCleanupWithoutTotal(t *testing.T) {
+	var deletes []string
+	pages := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstances":
+			pages++
+			if r.Form.Get("PageNumber") == "1" {
+				fmt.Fprint(w, tairInstanceSearchPage(-1, 50, ""))
+				return
+			}
+			fmt.Fprint(w, tairInstanceSearchPage(-1, 0, "r-exact"))
+		case "DescribeInstanceAttribute":
+			if len(deletes) > 0 {
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, `{"Code":"InvalidInstanceId.NotFound","Message":"not found","RequestId":"mock"}`)
+				return
+			}
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-exact","InstanceStatus":"Normal","IsOrderCompleted":"true","ChargeType":"PostPaid"}]}}`)
+		case "DeleteInstance":
+			deletes = append(deletes, r.Form.Get("InstanceId"))
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	if err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1"); err != nil {
+		t.Fatalf("cleanup failed: %v", err)
+	}
+	assert.Equal(t, 2, pages, "a full page without a total continues the search")
+	assert.Equal(t, []string{"r-exact"}, deletes)
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupEmptyPage covers an empty page that arrives before the
+// declared total: the incomplete listing is reported instead of being treated as absence.
+func TestUnitRedisTairInstancePrepaidCleanupEmptyPage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if r.Form.Get("Action") == "DescribeInstances" {
+			fmt.Fprint(w, tairInstanceSearchPage(3, 0, ""))
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock"}`)
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "", "tf-testaccexact-1")
+	assert.Error(t, err, "an empty page before the declared total is an incomplete listing")
+	assert.Contains(t, err.Error(), "empty page")
+}
+
+// TestUnitRedisTairInstancePrepaidCleanupFailureIsReported covers a cleanup that cannot delete the
+// instance: the failure is returned so the test reports it instead of silently leaving the
+// instance behind.
+func TestUnitRedisTairInstancePrepaidCleanupFailureIsReported(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse request: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeInstanceAttribute":
+			fmt.Fprint(w, `{"RequestId":"mock","Instances":{"DBInstanceAttribute":[{"InstanceId":"r-exact","InstanceStatus":"Normal","IsOrderCompleted":"true","ChargeType":"PostPaid"}]}}`)
+		case "DeleteInstance":
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"Code":"InvalidParameter","Message":"delete refused by the fixture","RequestId":"mock"}`)
+		default:
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+		}
+	}))
+	client := newTairInstanceFixtureClient(t, server)
+
+	err := releasePrepaidTairInstanceWithClient(client, "r-exact", "tf-testaccexact-1")
+	assert.Error(t, err, "a cleanup that cannot release the instance must be reported")
+}
+
+// AlicloudRedisTairInstanceBasicDependencePrepaidCoupon reuses the shared 3314 fixture and adds
+// the instance class data source, so the prepaid conversion case does not hard code a class.
+func AlicloudRedisTairInstanceBasicDependencePrepaidCoupon(name string) string {
+	return AlicloudRedisTairInstanceBasicDependence3314(name) + `
+data "alicloud_kvstore_instance_classes" "rdb" {
+  zone_id              = data.alicloud_kvstore_zones.default.zones.0.id
+  product_type         = "Tair_rdb"
+  instance_charge_type = "PostPaid"
+}
+
+locals {
+  rdb_class = data.alicloud_kvstore_instance_classes.rdb.instance_classes.0
+}
+`
+}
+
+func TestAccAliCloudRedisTairInstance_prepaidCouponConversion(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceMap3314)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependencePrepaidCoupon)
+	var instanceId string
+	t.Cleanup(func() { releasePrepaidTairInstance(t, instanceId, name) })
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":       "PayAsYouGo",
+					"instance_type":      "tair_rdb",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "${local.rdb_class}",
+					"shard_count":        "2",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":   "PayAsYouGo",
+						"instance_class": acctest.CHECKSET,
+						"shard_count":    "2",
+					}),
+					captureTairInstanceId(&instanceId, &v),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				// E-02 forward direction: converting a PayAsYouGo instance to Subscription must
+				// send TransformInstanceChargeType with ChargeType=PrePaid, Period and CouponNo.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "Subscription",
+					"period":       "1",
+					"coupon_no":    "default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "Subscription",
+						"period":       "1",
+						"coupon_no":    "default",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				// E-02 reverse direction: converting back to PayAsYouGo must be accepted so the
+				// instance can be released by CheckDestroy.
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+					"period":       acctest.REMOVEKEY,
+					"coupon_no":    acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+						// The check map accumulates across steps; period and coupon_no were
+						// removed from the configuration in this step, so drop their earlier
+						// expectations instead of comparing against stale values.
+						"period":    acctest.REMOVEKEY,
+						"coupon_no": acctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRedisTairInstance_prepaidDowngrade(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_redis_tair_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudRedisTairInstanceReplicaCountMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return rkvstore.NewRedisServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeRedisTairInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sredistairinstance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudRedisTairInstanceBasicDependenceReplicaCount)
+	var instanceId string
+	t.Cleanup(func() { releasePrepaidTairInstance(t, instanceId, name) })
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":        "Subscription",
+					"period":              "1",
+					"instance_type":       "tair_rdb",
+					"zone_id":             "${local.primary_zone_id}",
+					"secondary_zone_id":   "${local.secondary_zone_id}",
+					"instance_class":      "${local.instance_class}",
+					"shard_count":         "2",
+					"replica_count":       "2",
+					"slave_replica_count": "1",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
+					"tair_instance_name":  name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":        "Subscription",
+						"period":              "1",
+						"replica_count":       "2",
+						"slave_replica_count": "1",
+					}),
+					captureTairInstanceId(&instanceId, &v),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				// EG-01: a prepaid replica count decrease is submitted through the single
+				// ModifyInstanceSpec request without an explicit OrderType (upstream #10799
+				// semantics); the order must still converge on the new count.
+				Config: testAccConfig(map[string]interface{}{
+					"replica_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replica_count":       "1",
+						"slave_replica_count": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "coupon_no", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id", "auto_use_coupon", "instance_endpoint_type"},
+			},
+		},
+	})
+}
+
+func TestUnitRedisTairInstanceAutoUseCouponSuppression(t *testing.T) {
+	// auto_use_coupon only applies at create time. A plan-time diff is not marked as a new
+	// resource, so the suppression must key on the state ID: otherwise the create-time value is
+	// dropped and CreateTairInstance receives false even when the user configured true.
+	resourceInstance := rkvstore.ResourceAliCloudRedisTairInstance()
+	suppress := resourceInstance.Schema["auto_use_coupon"].DiffSuppressFunc
+	newResourceData, err := sdkv2schema.InternalMap(resourceInstance.Schema).Data(nil, &sdktf.InstanceDiff{
+		Attributes: map[string]*sdktf.ResourceAttrDiff{"auto_use_coupon": {Old: "", New: "true"}},
+		RawConfig:  cty.ObjectVal(map[string]cty.Value{"auto_use_coupon": cty.True}),
+	})
+	if err != nil {
+		t.Fatalf("failed to build the fixture resource data: %s", err)
+	}
+	assert.False(t, suppress("auto_use_coupon", "", "true", newResourceData), "the create-time coupon setting must not be suppressed")
+
+	existingResourceData := tairInstanceUpdateFixtureData(t,
+		map[string][2]string{"auto_use_coupon": {"false", "true"}},
+		map[string]cty.Value{
+			"config":          cty.NullVal(cty.Map(cty.String)),
+			"instance_class":  cty.StringVal("tair.rdb.2g"),
+			"auto_use_coupon": cty.True,
+		},
+		map[string]string{"auto_use_coupon": "false"})
+	assert.True(t, suppress("auto_use_coupon", "false", "true", existingResourceData), "a coupon change after creation stays suppressed")
 }
