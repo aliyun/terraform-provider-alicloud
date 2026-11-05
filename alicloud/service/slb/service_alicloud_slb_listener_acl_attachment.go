@@ -196,6 +196,19 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 	return helper.NeedRetry(listenerAclErrorCause(err))
 }
 
+// isUnresolvedListenerAclWrite treats a write budget that expired while the
+// parent operation is still alive as an unresolved outcome: the request may
+// have reached the service, so the caller reconciles it against the listener.
+func isUnresolvedListenerAclWrite(parent context.Context, err error) bool {
+	if isUnknownListenerAclWriteOutcome(err) {
+		return true
+	}
+	if parent.Err() != nil {
+		return false
+	}
+	return errors.Is(listenerAclErrorCause(err), context.DeadlineExceeded)
+}
+
 // listenerAclErrorCause exposes the original error behind the provider's
 // ComplexError wrapper so the transport checks keep working on wrapped errors.
 func listenerAclErrorCause(err error) error {

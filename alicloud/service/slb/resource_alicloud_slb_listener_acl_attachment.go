@@ -144,11 +144,7 @@ func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource
 		return
 	}
 
-	// One deadline covers every request of this operation, so retries and reads
-	// share a single budget.
-	opCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
-	defer cancel()
-	model, warnings, err := createListenerAclAttachment(opCtx, r.api(), plan)
+	model, warnings, err := createListenerAclAttachment(ctx, r.api(), plan)
 	for _, warning := range warnings {
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Created %s with a warning", listenerAclAttachmentTypeName),
@@ -172,9 +168,7 @@ func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	opCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
-	defer cancel()
-	model, found, err := readListenerAclAttachment(opCtx, r.api(), state)
+	model, found, err := readListenerAclAttachment(ctx, r.api(), state)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s", listenerAclAttachmentTypeName),
@@ -197,9 +191,7 @@ func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	opCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
-	defer cancel()
-	model, warnings, err := updateListenerAclAttachment(opCtx, r.api(), plan, state)
+	model, warnings, err := updateListenerAclAttachment(ctx, r.api(), plan, state)
 	for _, warning := range warnings {
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Updated %s with a warning", listenerAclAttachmentTypeName),
@@ -232,11 +224,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		return
 	}
 
-	// One deadline covers the pre-read, the disabling write and the status
-	// polling, so a Delete cannot spend the budget three times over.
-	deleteCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
-	defer cancel()
-	if err := deleteListenerAclAttachment(deleteCtx, r.api(), listenerId); err != nil {
+	if err := deleteListenerAclAttachment(ctx, r.api(), listenerId); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s", listenerAclAttachmentTypeName),
 			err.Error(),
@@ -270,8 +258,10 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	aclId := plan.AclId.ValueString()
 	aclType := plan.AclType.ValueString()
 
-	if err := api.SetAcl(ctx, listenerId, aclId, aclType, true); err != nil {
-		if !isUnknownListenerAclWriteOutcome(err) {
+	writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
+	defer cancelWrite()
+	if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
+		if !isUnresolvedListenerAclWrite(ctx, err) {
 			return listenerAclAttachmentResourceModel{}, nil, err
 		}
 		// The request may have been applied. Confirm the enabled status, the
@@ -293,7 +283,9 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	// read. The read waits for the listener to report the planned settings, so a
 	// stale response cannot store the previous type against the new plan.
 	planState := listenerAclAttachmentPlanState(plan)
-	object, converged, err := waitListenerAclAttachmentConverged(ctx, api, listenerId, aclId, aclType)
+	readCtx, cancelRead := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
+	defer cancelRead()
+	object, converged, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
 	if err != nil {
 		return planState, []string{
 			fmt.Sprintf("The policy group %s was bound to listener %s, but reading the listener failed: %s. The binding is kept in state and will be reconciled on the next refresh.", aclId, listenerId, err),
@@ -316,8 +308,10 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	aclType := plan.AclType.ValueString()
 
 	if !plan.AclId.Equal(state.AclId) || !plan.AclType.Equal(state.AclType) {
-		if err := api.SetAcl(ctx, listenerId, aclId, aclType, true); err != nil {
-			if !isUnknownListenerAclWriteOutcome(err) {
+		writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
+		defer cancelWrite()
+		if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
+			if !isUnresolvedListenerAclWrite(ctx, err) {
 				return listenerAclAttachmentResourceModel{}, nil, err
 			}
 			confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
@@ -334,7 +328,9 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		// The write was acknowledged: wait for the listener to report the
 		// planned settings instead of storing a stale response.
 		planState := listenerAclAttachmentPlanState(plan)
-		object, converged, err := waitListenerAclAttachmentConverged(ctx, api, listenerId, aclId, aclType)
+		readCtx, cancelRead := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
+		defer cancelRead()
+		object, converged, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
 		if err != nil {
 			return planState, []string{
 				fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
@@ -363,6 +359,8 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 // readListenerAclAttachment resolves the managed policy group and reports
 // whether the resource still exists.
 func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, state listenerAclAttachmentResourceModel) (listenerAclAttachmentResourceModel, bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
+	defer cancel()
 	listenerId, idAclId, err := parseListenerAclAttachmentId(state.Id.ValueString())
 	if err != nil {
 		return listenerAclAttachmentResourceModel{}, false, err
@@ -421,6 +419,10 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 // deleteListenerAclAttachment only disables access control and never deletes or
 // rebuilds the listener. The caller supplies the single operation deadline.
 func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, listenerId string) error {
+	// A single deadline covers the pre-read, the disabling write and the
+	// status polling, so a Delete cannot spend the budget three times over.
+	ctx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
+	defer cancel()
 	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
 		if errs.NotFoundError(err) {
