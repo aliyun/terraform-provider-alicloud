@@ -326,6 +326,25 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckListenerAclAttachmentDestroy,
 		Steps: []resource.TestStep{
+			// A combined ACL value would bind several groups while the resource
+			// tracks one, so it is rejected during validation.
+			{
+				Config:      testAccListenerAclAttachmentConfigCombinedAcl(),
+				ExpectError: regexp.MustCompile(`(?i)comma`),
+			},
+			// The listener identity is validated locally for both the
+			// configuration and the import path. The patterns use tokens that
+			// Terraform does not wrap across lines.
+			{
+				Config:      testAccListenerAclAttachmentConfigInvalidListenerPort(),
+				ExpectError: regexp.MustCompile(`65536`),
+			},
+			{
+				Config:      testAccListenerAclAttachmentConfigInvalidListenerProtocol(),
+				ExpectError: regexp.MustCompile(`smtp`),
+			},
+			// The cloud backed negative steps stay last: the final config must
+			// remain valid so the post-test destroy can clean up.
 			{
 				Config:      testAccListenerAclAttachmentConfigMissingListener(name),
 				ExpectError: regexp.MustCompile(`(?i)(not exist|notfound|invalidloadbalancerid)`),
@@ -337,22 +356,6 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 			{
 				Config:      testAccListenerAclAttachmentConfigIpVersionConflict(name),
 				ExpectError: regexp.MustCompile(`(?i)(ipversionconflict|ip version|invalidparameter)`),
-			},
-			// A combined ACL value would bind several groups while the resource
-			// tracks one, so it is rejected during validation.
-			{
-				Config:      testAccListenerAclAttachmentConfigCombinedAcl(),
-				ExpectError: regexp.MustCompile(`(?i)single access control policy group`),
-			},
-			// The listener identity is validated locally for both the
-			// configuration and the import path.
-			{
-				Config:      testAccListenerAclAttachmentConfigInvalidListenerPort(),
-				ExpectError: regexp.MustCompile(`(?i)between 1 and 65535`),
-			},
-			{
-				Config:      testAccListenerAclAttachmentConfigInvalidListenerProtocol(),
-				ExpectError: regexp.MustCompile(`(?i)protocol must be one of`),
 			},
 		},
 	})
