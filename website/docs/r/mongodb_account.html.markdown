@@ -109,7 +109,7 @@ The following arguments are supported:
 
   -> **NOTE:** When setting the account type to normal without `roles`, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account. When `roles` is configured, a replica set `normal` account is created through `CreateAccount` with the configured roles.
 
-* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.3.0) The database where the account resides. Defaults to `admin` when the account is created.
+* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.3.0) The database where the account resides. Defaults to `admin` when the account is created. It cannot contain `/`, `\`, `.`, spaces, `"` or `$`, cannot be `local`, and can be 1 to 63 characters long.
 * `instance_id` - (Required, ForceNew) Instance Id
 * `roles` - (Optional, ForceNew, Set, Available since v2.3.0) The list of roles granted to the account. See [`roles`](#roles) below.
 

@@ -1,12 +1,18 @@
 package mongodb_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -48,7 +54,7 @@ func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
-		CheckDestroy:      nil,
+		CheckDestroy:      testAccCheckAccountDependenciesDestroyed,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -663,13 +669,13 @@ resource "alicloud_mongodb_instance" "default7eOftZ" {
 
 // Test Mongodb Account. <<< Resource test cases, automatically generated.
 
-// TestAccAliCloudMongodbAccount_completeShardingAccountRoles covers the product
+// TestAccAliCloudMongodbAccount_complete_sharding_account_roles covers the product
 // decision for CreateAccount roles: shard direct-connection (db) accounts reject
 // roles with InvalidRoles.NotSupported, config server (cs) accounts require and
 // honor custom roles.
-func TestAccAliCloudMongodbAccount_completeShardingAccountRoles(t *testing.T) {
+func TestAccAliCloudMongodbAccount_complete_sharding_account_roles(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf_testacc_roles_%d", rand)
+	name := fmt.Sprintf("tf-testAcc-roles-%d", rand)
 	dbAccountName := fmt.Sprintf("tf_db_%d", rand)
 	dbRolesAccountName := fmt.Sprintf("tf_dbr_%d", rand)
 	csAccountName := fmt.Sprintf("tf_cs_%d", rand)
@@ -769,12 +775,12 @@ func TestAccAliCloudMongodbAccount_completeShardingAccountRoles(t *testing.T) {
 	})
 }
 
-// TestAccAliCloudMongodbAccount_completeNormalAccountRoles covers replica set
+// TestAccAliCloudMongodbAccount_complete_normal_account_roles covers replica set
 // accounts with custom roles, including the description update that must carry
 // the database name (C8).
-func TestAccAliCloudMongodbAccount_completeNormalAccountRoles(t *testing.T) {
+func TestAccAliCloudMongodbAccount_complete_normal_account_roles(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf_testacc_normal_%d", rand)
+	name := fmt.Sprintf("tf-testAcc-normal-%d", rand)
 	accountName := fmt.Sprintf("tf_n_%d", rand)
 	resourceId := "alicloud_mongodb_account.default"
 	description := fmt.Sprintf("desc_%d", rand)
@@ -977,8 +983,16 @@ variable "name" {
   default = "%s"
 }
 
-variable "zone_id" {
-  default = "cn-shanghai-b"
+data "alicloud_mongodb_zones" "default" {}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+locals {
+  vswitch_zone_ids = [for zone in data.alicloud_zones.default.zones : zone.id]
+  mongodb_zone_ids = [for zone in data.alicloud_mongodb_zones.default.zones : zone.id if contains(local.vswitch_zone_ids, zone.id)]
+  zone_id          = local.mongodb_zone_ids[0]
 }
 
 resource "alicloud_vpc" "default" {
@@ -988,7 +1002,7 @@ resource "alicloud_vpc" "default" {
 
 resource "alicloud_vswitch" "default" {
   vpc_id     = alicloud_vpc.default.id
-  zone_id    = var.zone_id
+  zone_id    = local.zone_id
   cidr_block = "10.0.0.0/24"
 }
 
@@ -999,7 +1013,7 @@ resource "alicloud_mongodb_instance" "default" {
   vpc_id              = alicloud_vpc.default.id
   storage_engine      = "WiredTiger"
   network_type        = "VPC"
-  zone_id             = var.zone_id
+  zone_id             = local.zone_id
   db_instance_storage = "20"
   db_instance_class   = "mdb.shard.4x.large.d"
   name                = var.name
@@ -1654,4 +1668,221 @@ func TestUnitAccountCreateRequiresRolesForCsAccount(t *testing.T) {
 func TestUnitAccountDeleteNoop(t *testing.T) {
 	d := unitAccountResourceData(t, "dds-1:acc", map[string]interface{}{}, nil)
 	assert.Nil(t, mongodb.ResourceAliCloudMongodbAccountDelete(d, &connectivity.AliyunClient{}))
+}
+
+// accountWireCall records one serialized HTTP request as it left the SDK. The
+// query and the urlencoded body are captured after signing, so they are the
+// final wire values for the account API parameters.
+type accountWireCall struct {
+	Action string
+	Method string
+	Query  url.Values
+	Form   url.Values
+}
+
+func (c accountWireCall) form() url.Values {
+	if c.Form != nil {
+		return c.Form
+	}
+	return url.Values{}
+}
+
+func accountWireCallsByName(calls []accountWireCall, action string) []accountWireCall {
+	matched := make([]accountWireCall, 0, 1)
+	for _, call := range calls {
+		if call.Action == action {
+			matched = append(matched, call)
+		}
+	}
+	return matched
+}
+
+// accountWireClient points the DDS RPC client at a local HTTP server so the
+// tests observe the serialized request instead of the pre-serialization
+// DoRequest map.
+func accountWireClient(t *testing.T, describe map[string]interface{}) (*connectivity.AliyunClient, *[]accountWireCall) {
+	t.Helper()
+	calls := make([]accountWireCall, 0)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("failed to read the serialized request body: %v", err)
+		}
+		form, err := url.ParseQuery(string(raw))
+		if err != nil {
+			t.Errorf("failed to parse the serialized request body: %v", err)
+		}
+		action := r.URL.Query().Get("Action")
+		calls = append(calls, accountWireCall{Action: action, Method: r.Method, Query: r.URL.Query(), Form: form})
+		w.Header().Set("Content-Type", "application/json")
+		if action == "DescribeAccounts" {
+			if err := json.NewEncoder(w).Encode(describe); err != nil {
+				t.Errorf("failed to write the DescribeAccounts response: %v", err)
+			}
+			return
+		}
+		_, _ = io.WriteString(w, `{"RequestId":"wire-test"}`)
+	}))
+	t.Cleanup(server.Close)
+
+	endpoints := &sync.Map{}
+	endpoints.Store("dds", strings.TrimPrefix(server.URL, "http://"))
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("test-access-key").
+		SetAccessKeySecret("test-secret-key"))
+	if err != nil {
+		t.Fatalf("failed to build the test credential: %v", err)
+	}
+	client, err := (&connectivity.Config{
+		Region:               connectivity.Region("cn-shanghai"),
+		RegionId:             "cn-shanghai",
+		AccessKey:            "test-access-key",
+		SecretKey:            "test-secret-key",
+		Protocol:             "HTTP",
+		Endpoints:            endpoints,
+		SignVersion:          &sync.Map{},
+		ClientReadTimeout:    30000,
+		ClientConnectTimeout: 60000,
+		SkipRegionValidation: true,
+		AccountType:          "Domestic",
+		AccountId:            "1234567890123456",
+		Credential:           credential,
+	}).Client()
+	if err != nil {
+		t.Fatalf("failed to build the wire test client: %v", err)
+	}
+	return client, &calls
+}
+
+func accountWireDescribe(instanceId, dbName, accountName, characterType, description string, roles []map[string]string) map[string]interface{} {
+	account := map[string]interface{}{
+		"DBInstanceId":  instanceId,
+		"AccountName":   accountName,
+		"DBName":        dbName,
+		"AccountStatus": "Available",
+		"CharacterType": characterType,
+	}
+	if description != "" {
+		account["AccountDescription"] = description
+	}
+	if len(roles) > 0 {
+		roleList := make([]interface{}, 0, len(roles))
+		for _, role := range roles {
+			roleList = append(roleList, map[string]interface{}{"Role": role["role"], "DBName": role["db_name"]})
+		}
+		account["Roles"] = map[string]interface{}{"Role": roleList}
+	}
+	return map[string]interface{}{
+		"RequestId": "wire-test",
+		"Accounts":  map[string]interface{}{"Account": []interface{}{account}},
+	}
+}
+
+// TestUnitAccountWritesExposeSerializedCreateAccount asserts the final
+// serialized CreateAccount request for a replica set account with roles, which
+// covers C1-C5 at the wire boundary.
+func TestUnitAccountWritesExposeSerializedCreateAccount(t *testing.T) {
+	client, calls := accountWireClient(t, accountWireDescribe("dds-1", "admin", "normal_acc", "normal", "normal description", []map[string]string{{"role": "read", "db_name": "admin"}}))
+	d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
+		"instance_id":         "dds-1",
+		"account_name":        "normal_acc",
+		"account_password":    "YourPassword+12345",
+		"character_type":      "normal",
+		"db_name":             "admin",
+		"account_description": "normal description",
+		"roles": []interface{}{
+			map[string]interface{}{"role": "read", "db_name": "admin"},
+		},
+	})
+
+	assert.NoError(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
+	matched := accountWireCallsByName(*calls, "CreateAccount")
+	if len(matched) != 1 {
+		t.Fatalf("expected exactly one serialized CreateAccount request, got %d", len(matched))
+	}
+	form := matched[0].form()
+	assert.Equal(t, "POST", matched[0].Method)
+	assert.Equal(t, "normal_acc", form.Get("AccountName"))
+	assert.Equal(t, "dds-1", form.Get("DBInstanceId"))
+	assert.Equal(t, "admin", form.Get("DBName"))
+	assert.Equal(t, "normal", form.Get("CharacterType"))
+	assert.Equal(t, "normal description", form.Get("AccountDescription"))
+	assert.Equal(t, "read", form.Get("Roles.1.Role"))
+	assert.Equal(t, "admin", form.Get("Roles.1.DBName"))
+	assert.Empty(t, form.Get("Roles.2.Role"), "only one role may be serialized")
+}
+
+// TestUnitAccountWritesExposeSerializedResetPassword asserts the final
+// serialized ResetAccountPassword request for both the create-time root path and
+// the update path, which covers C6 and C7 at the wire boundary.
+func TestUnitAccountWritesExposeSerializedResetPassword(t *testing.T) {
+	t.Run("create root account", func(t *testing.T) {
+		client, calls := accountWireClient(t, accountWireDescribe("dds-1", "admin", "root", "normal", "", nil))
+		d := schema.TestResourceDataRaw(t, unitAccountResourceSchema(t), map[string]interface{}{
+			"instance_id":      "dds-1",
+			"account_name":     "root",
+			"account_password": "YourPassword+12345",
+		})
+
+		assert.NoError(t, mongodb.ResourceAliCloudMongodbAccountCreate(d, client))
+		matched := accountWireCallsByName(*calls, "ResetAccountPassword")
+		if len(matched) != 1 {
+			t.Fatalf("expected exactly one serialized ResetAccountPassword request, got %d", len(matched))
+		}
+		form := matched[0].form()
+		assert.Equal(t, "root", form.Get("AccountName"))
+		assert.Equal(t, "dds-1", form.Get("DBInstanceId"))
+		assert.Equal(t, "admin", form.Get("DBName"))
+		assert.Empty(t, form.Get("Roles.1.Role"), "ResetAccountPassword must not serialize roles")
+	})
+
+	t.Run("update password", func(t *testing.T) {
+		client, calls := accountWireClient(t, accountWireDescribe("dds-1", "appdb", "acc", "db", "", nil))
+		d := unitAccountResourceData(t, "dds-1:appdb:acc", map[string]interface{}{
+			"instance_id":      "dds-1",
+			"account_name":     "acc",
+			"db_name":          "appdb",
+			"character_type":   "db",
+			"account_password": "YourPassword+12345",
+		}, map[string]interface{}{
+			"account_password": "YourPassword+123456",
+		})
+
+		assert.NoError(t, mongodb.ResourceAliCloudMongodbAccountUpdate(d, client))
+		matched := accountWireCallsByName(*calls, "ResetAccountPassword")
+		if len(matched) != 1 {
+			t.Fatalf("expected exactly one serialized ResetAccountPassword request, got %d", len(matched))
+		}
+		form := matched[0].form()
+		assert.Equal(t, "acc", form.Get("AccountName"))
+		assert.Equal(t, "appdb", form.Get("DBName"))
+		assert.Equal(t, "db", form.Get("CharacterType"))
+	})
+}
+
+// TestUnitAccountWritesExposeSerializedModifyDescription asserts the final
+// serialized ModifyAccountDescription request, which covers C8 at the wire
+// boundary.
+func TestUnitAccountWritesExposeSerializedModifyDescription(t *testing.T) {
+	client, calls := accountWireClient(t, accountWireDescribe("dds-1", "appdb", "acc", "normal", "after", nil))
+	d := unitAccountResourceData(t, "dds-1:appdb:acc", map[string]interface{}{
+		"instance_id":         "dds-1",
+		"account_name":        "acc",
+		"db_name":             "appdb",
+		"account_description": "before",
+	}, map[string]interface{}{
+		"account_description": "after",
+	})
+
+	assert.NoError(t, mongodb.ResourceAliCloudMongodbAccountUpdate(d, client))
+	matched := accountWireCallsByName(*calls, "ModifyAccountDescription")
+	if len(matched) != 1 {
+		t.Fatalf("expected exactly one serialized ModifyAccountDescription request, got %d", len(matched))
+	}
+	form := matched[0].form()
+	assert.Equal(t, "acc", form.Get("AccountName"))
+	assert.Equal(t, "dds-1", form.Get("DBInstanceId"))
+	assert.Equal(t, "appdb", form.Get("DBName"))
+	assert.Equal(t, "after", form.Get("AccountDescription"))
 }
