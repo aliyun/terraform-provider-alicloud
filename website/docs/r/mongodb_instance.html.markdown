@@ -30,6 +30,14 @@ You can see detail product introduction [MongoDB documentation](https://www.alib
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -136,19 +144,20 @@ The following arguments are supported:
   - `Standard`: standard backup.
   - `Flash`: single-digit second backup.
 * `backup_interval` - (Optional, Available since v1.212.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
-* `cross_backup_period` - (Optional, Set, Available since v2.2.0) The days of the week on which geo-redundant backups are performed. Valid values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`. The specified days must be a subset of `backup_period` for conventional backups.
-* `cross_backup_type` - (Optional, String, Available since v2.2.0) The policy for geo-redundant backups. Valid values:
-  - `update`: Modify the geo-redundancy policy.
+* `cross_backup_period` - (Optional, Set, Available since v2.3.0) The days of the week on which geo-redundant backups are performed. Valid values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`. The specified days must be a subset of `backup_period` for conventional backups.
+* `cross_backup_type` - (Optional, String, Available since v2.3.0) The policy for geo-redundant backups. Valid values:
+  - `update`: Create or modify the geo-redundancy policy.
   - `delete`: Delete the geo-redundant policy. **NOTE:** A delete must carry the same `src_region` and `dest_region` as the policy to remove; the retention and backup period parameters do not apply to `delete`.
-* `cross_retention_type` - (Optional, String, Available since v2.2.0) The retention policy for geo-redundant backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
-* `cross_retention_value` - (Optional, Int, Available since v2.2.0) The number of days to retain geo-redundant backups. Valid values: `3` to `1825`. **NOTE:** This parameter is required when `cross_retention_type` is set to `delay`.
-* `cross_log_retention_type` - (Optional, String, Available since v2.2.0) The retention policy for cross-region log backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
-* `cross_log_retention_value` - (Optional, Int, Available since v2.2.0) The number of days to retain cross-region log backups. Valid values: `3` to `1825`. The value must be less than or equal to `cross_retention_value`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
-* `dest_region` - (Optional, String, Available since v2.2.0) The region ID of the geo-redundant backup destination. **NOTE:** This parameter is required when `cross_backup_type` is set to `update` or `delete`; a delete must name the destination region of the policy it removes.
-* `enable_cross_log_backup` - (Optional, Int, Available since v2.2.0) Specifies whether to enable cross-region log backup. Valid values: `0`, `1`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`. Sharded cluster instances require `1`.
-* `high_frequency_backup_retention` - (Optional, Int, Available since v2.2.0) The number of days to retain high-frequency backups. **NOTE:** Requires a minute-level `backup_interval` (`15` or `30`) that is already in effect; when `backup_interval` is changed in the same configuration, apply that change first and set this parameter afterwards. Otherwise the service keeps the default retention of 1 day.
-* `preserve_one_each_hour` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable hourly sparse backup. Valid values: `true`, `false`. **NOTE:** Requires a minute-level `backup_interval` (`15` or `30`) that is already in effect; when `backup_interval` is changed in the same configuration, apply that change first and set this parameter afterwards. Otherwise the service reports `false`.
-* `src_region` - (Optional, String, Available since v2.2.0) The source region ID of the instance, used for geo-redundant backups. **NOTE:** This parameter is required when `cross_backup_type` is set to `update` or `delete`; a delete must name the source region of the policy it removes.
+  -> **NOTE:** This argument is a write-only action selector. It selects the operation sent to the service and is not reported back by the backup policy API, so Terraform keeps the configured value in state. An imported instance does not have it: set it again before you modify or delete an existing geo-redundant policy. Changing another geo-redundant attribute while this argument stays `delete` still sends a delete, which is located by `src_region` and `dest_region`.
+* `cross_retention_type` - (Optional, String, Available since v2.3.0) The retention policy for geo-redundant backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
+* `cross_retention_value` - (Optional, Int, Available since v2.3.0) The number of days to retain geo-redundant backups. Valid values: `3` to `1825`. **NOTE:** This parameter is required when `cross_retention_type` is set to `delay`.
+* `cross_log_retention_type` - (Optional, String, Available since v2.3.0) The retention policy for cross-region log backups. Valid values: `delay`, `never`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
+* `cross_log_retention_value` - (Optional, Int, Available since v2.3.0) The number of days to retain cross-region log backups. Valid values: `3` to `1825`. The value must be less than or equal to `cross_retention_value`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`.
+* `dest_region` - (Optional, String, Available since v2.3.0) The region ID of the geo-redundant backup destination. **NOTE:** This parameter is required when `cross_backup_type` is set to `update` or `delete`; a delete must name the destination region of the policy it removes.
+* `enable_cross_log_backup` - (Optional, Int, Available since v2.3.0) Specifies whether to enable cross-region log backup. Valid values: `0`, `1`. **NOTE:** This parameter is required when `cross_backup_type` is set to `update`. Sharded cluster instances require `1`.
+* `high_frequency_backup_retention` - (Optional, Int, Available since v2.3.0) The number of days to retain high-frequency backups. **NOTE:** Requires a minute-level `backup_interval` (`15` or `30`) that is already in effect; when `backup_interval` is changed in the same configuration, apply that change first and set this parameter afterwards. Otherwise the service keeps the default retention of 1 day.
+* `preserve_one_each_hour` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable hourly sparse backup. Valid values: `true`, `false`. **NOTE:** Requires a minute-level `backup_interval` (`15` or `30`) that is already in effect; when `backup_interval` is changed in the same configuration, apply that change first and set this parameter afterwards. Otherwise the service reports `false`.
+* `src_region` - (Optional, String, Available since v2.3.0) The source region ID of the instance, used for geo-redundant backups. **NOTE:** This parameter is required when `cross_backup_type` is set to `update` or `delete`; a delete must name the source region of the policy it removes.
 * `ssl_action` - (Optional, Available since v1.78.0) Actions performed on SSL functions. Valid values:
   - `Open`: turn on SSL encryption.
   - `Close`: turn off SSL encryption.

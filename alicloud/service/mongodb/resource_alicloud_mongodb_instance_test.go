@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -1096,6 +1097,19 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	})
 }
 
+// mongodbInstanceImportStateVerifyIgnore lists the input-only attributes the instance
+// tests exempt from import verification: the backup and policy APIs never return them,
+// so an imported state cannot reproduce the configured value.
+var mongodbInstanceImportStateVerifyIgnore = []string{
+	"account_password",
+	"kms_encrypted_password",
+	"kms_encryption_context",
+	"ssl_action",
+	"effective_time",
+	"order_type",
+	"parameters",
+}
+
 // TestAccAliCloudMongoDBInstance_crossBackup verifies the cross-region
 // (geo-redundant) backup attributes and high-frequency backup retention
 // introduced for the MongoDB replica set instance. It enables geo-redundant
@@ -1176,6 +1190,14 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				),
 			},
 			{
+				// Import of the baseline configuration must rebuild the same managed
+				// state; no geo-redundant attribute is configured yet.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"cross_backup_period":       []string{"Monday", "Tuesday"},
 					"cross_backup_type":         "update",
@@ -1201,9 +1223,28 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 					}),
 					// Read keeps the configured value when DescribeBackupPolicy omits a
 					// key, so the state assertions above cannot prove the write reached the
-					// service. Read the policy straight from the API as well.
-					testAccCheckMongoDBInstanceCrossBackupPolicy(resourceId, true),
+					// service. Compare every geo-redundant field against the API response
+					// instead of only checking that the policy reports a period.
+					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, []string{"Monday", "Tuesday"}, map[string]string{
+						"CrossRetentionType":     "delay",
+						"CrossRetentionValue":    "7",
+						"CrossLogRetentionType":  "delay",
+						"CrossLogRetentionValue": "7",
+						"DestRegion":             "cn-shanghai",
+						"SrcRegion":              "cn-beijing",
+						"EnableCrossLogBackup":   "1",
+					}),
 				),
+			},
+			{
+				// An import must rebuild the same managed state as the applied
+				// configuration; cross_backup_type is the write-only selector that the
+				// policy response does not carry, so it is the only geo-redundant
+				// attribute exempted from the comparison.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 			{
 				// Switching cross-region log backup off used to drop the explicit 0 and
@@ -1218,6 +1259,14 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 					}),
 					testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId, false),
 				),
+			},
+			{
+				// The explicit zero must survive an import: the API-backed switch is
+				// readable, so only the write-only selector is exempted.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 			{
 				// The delete branch of ModifyBackupPolicy locates the policy by its source
@@ -1243,8 +1292,71 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 					testAccCheckMongoDBInstanceCrossBackupPolicy(resourceId, false),
 				),
 			},
+			{
+				// Import after the policy is deleted still has to rebuild a usable
+				// resource state. The selector and the removed policy fields are
+				// write-only/retained values that a policy-less instance cannot report
+				// back, so this import compares the instance-level state and only those
+				// policy attributes are exempted; the enable/zero imports above keep them
+				// under full verification.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_backup_period",
+					"cross_retention_type",
+					"cross_retention_value",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+					"src_region",
+					"dest_region",
+					"enable_cross_log_backup",
+				}, mongodbInstanceImportStateVerifyIgnore...),
+			},
 		},
 	})
+}
+
+// testAccCheckMongoDBInstanceCrossBackupPolicyValues reads the backup policy from the
+// DDS API, passing the source region so the service resolves the geo-redundant entry,
+// and compares the exact values the configuration asked for. Terraform state is not
+// consulted: Read keeps the configured value when the response omits a key, so a
+// state-only assertion cannot prove that the write reached the service.
+func testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId string, expectPeriod []string, expected map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is not present in the state", resourceId)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		request := map[string]interface{}{"DBInstanceId": rs.Primary.ID}
+		if v, ok := rs.Primary.Attributes["src_region"]; ok && v != "" {
+			request["SrcRegion"] = v
+		}
+		policy, err := client.RpcPost("Dds", "2015-12-01", "DescribeBackupPolicy", nil, request, true)
+		if err != nil {
+			return fmt.Errorf("failed to describe the backup policy of %s: %s", rs.Primary.ID, err)
+		}
+		rawPeriod := fmt.Sprint(policy["CrossBackupPeriod"])
+		gotPeriod := strings.Split(rawPeriod, ",")
+		sort.Strings(gotPeriod)
+		wantPeriod := append([]string(nil), expectPeriod...)
+		sort.Strings(wantPeriod)
+		if rawPeriod == "" || strings.Join(gotPeriod, ",") != strings.Join(wantPeriod, ",") {
+			return fmt.Errorf("DescribeBackupPolicy must report CrossBackupPeriod=%v, got %q (policy %#v)", wantPeriod, rawPeriod, policy)
+		}
+		for key, want := range expected {
+			got := ""
+			if v, ok := policy[key]; ok && v != nil {
+				got = fmt.Sprint(v)
+			}
+			if got != want {
+				return fmt.Errorf("DescribeBackupPolicy must report %s=%q, got %q (policy %#v)", key, want, got, policy)
+			}
+		}
+		return nil
+	}
 }
 
 // testAccCheckMongoDBInstanceCrossBackupPolicy reads the backup policy straight from
@@ -1308,10 +1420,15 @@ func testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId string, expectEn
 // billing, and restore source) that cannot be exercised end to end in the
 // shared ACC environment. Following the established convention used by peer
 // resources, these attributes are set in a config that omits the required
-// `db_instance_class`, so the plan is rejected for that missing argument; the
-// steps only register the attributes for must-set and modification coverage.
-// The high-frequency backup attributes never reach the API here: their request
-// contract is asserted in TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization.
+// `db_instance_class`, so the plan is rejected for that missing argument.
+//
+// The high-frequency backup attributes appear in these configs only because the
+// attribute set is complete. The plan fails before any update request is built, so
+// these steps prove the missing-argument rejection and nothing about those
+// attributes: they are not must-set, modify or behavior coverage. Their request
+// contract is asserted in
+// TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization, and a real
+// Flash + minute-level interval run is still unavailable in the shared ACC account.
 func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 	resourceId := "alicloud_mongodb_instance.default"
 	acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Region(mongodbTestRegion())})
@@ -1344,8 +1461,9 @@ func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 					"restore_time":           "2026-01-01T00:00:00Z",
 					// High-frequency backup only takes effect when the instance already runs
 					// Flash snapshots with a minute-level BackupInterval, which the shared ACC
-					// account cannot provision (local_ssd instance class), so these two
-					// attributes are registered here for must-set/modification coverage only.
+					// account cannot provision (local_ssd instance class). These two keys only
+					// complete the attribute set; the step is rejected for the missing instance
+					// class before any request is built and is not coverage for them.
 					"high_frequency_backup_retention": 3,
 					"preserve_one_each_hour":          true,
 				}),
@@ -1825,6 +1943,39 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		mongodbBackupPolicyFixtureAssertSent(t, request, "EnableCrossLogBackup", "1")
 	})
 
+	t.Run("update mode serializes both retention values", func(t *testing.T) {
+		// The retention values only accompany a "delay" retention type, so the
+		// never-typed fixture above cannot prove they are serialized at all.
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"cross_backup_period":       []interface{}{"Monday"},
+			"cross_backup_type":         "update",
+			"cross_retention_type":      "delay",
+			"cross_retention_value":     7,
+			"cross_log_retention_type":  "delay",
+			"cross_log_retention_value": 3,
+			"dest_region":               "cn-shanghai",
+			"src_region":                "cn-beijing",
+			"enable_cross_log_backup":   1,
+		})
+		values := map[string]cty.Value{
+			"cross_backup_period":       cty.SetVal([]cty.Value{cty.StringVal("Monday")}),
+			"cross_backup_type":         cty.StringVal("update"),
+			"cross_retention_type":      cty.StringVal("delay"),
+			"cross_retention_value":     cty.NumberIntVal(7),
+			"cross_log_retention_type":  cty.StringVal("delay"),
+			"cross_log_retention_value": cty.NumberIntVal(3),
+			"dest_region":               cty.StringVal("cn-shanghai"),
+			"src_region":                cty.StringVal("cn-beijing"),
+			"enable_cross_log_backup":   cty.NumberIntVal(1),
+		}
+		state := mongodbBackupPolicyFixtureState(map[string]string{"enable_cross_log_backup": "0"})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionType", "delay")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionValue", "7")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "delay")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionValue", "3")
+	})
+
 	t.Run("delete mode carries the regions and omits the retention attributes", func(t *testing.T) {
 		// The service assembles the delete entry from the region and type fields only:
 		// the policy cannot be located without both regions, and the retention/period
@@ -1862,6 +2013,86 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		mongodbBackupPolicyFixtureAssertSent(t, request, "SrcRegion", "cn-beijing")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "DestRegion", "cn-shanghai")
 		mongodbBackupPolicyFixtureAssertOmitted(t, request, "CrossBackupPeriod", "CrossRetentionType", "CrossRetentionValue", "CrossLogRetentionType", "CrossLogRetentionValue", "EnableCrossLogBackup")
+	})
+
+	t.Run("delete mode re-issues a delete request when only a region changes", func(t *testing.T) {
+		// cross_backup_type is write-only and stays "delete" in both the state and the
+		// configuration, so the selector itself reports no change. A region change is
+		// still a delete that has to locate the policy, which needs the selector and
+		// both regions; gating the delete shape on the selector change alone sent a
+		// partial request that could not resolve to any policy.
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"cross_backup_type": "delete",
+			"src_region":        "cn-beijing",
+			"dest_region":       "cn-hangzhou",
+		})
+		values := map[string]cty.Value{
+			"cross_backup_type": cty.StringVal("delete"),
+			"src_region":        cty.StringVal("cn-beijing"),
+			"dest_region":       cty.StringVal("cn-hangzhou"),
+		}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"cross_backup_type": "delete",
+			"src_region":        "cn-beijing",
+			"dest_region":       "cn-shanghai",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossBackupType", "delete")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "SrcRegion", "cn-beijing")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "DestRegion", "cn-hangzhou")
+		mongodbBackupPolicyFixtureAssertOmitted(t, request, "CrossBackupPeriod", "CrossRetentionType", "CrossRetentionValue", "CrossLogRetentionType", "CrossLogRetentionValue", "EnableCrossLogBackup")
+	})
+
+	t.Run("delete mode re-issues a delete request when only the source region changes", func(t *testing.T) {
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"cross_backup_type": "delete",
+			"src_region":        "cn-hangzhou",
+			"dest_region":       "cn-shanghai",
+		})
+		values := map[string]cty.Value{
+			"cross_backup_type": cty.StringVal("delete"),
+			"src_region":        cty.StringVal("cn-hangzhou"),
+			"dest_region":       cty.StringVal("cn-shanghai"),
+		}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"cross_backup_type": "delete",
+			"src_region":        "cn-beijing",
+			"dest_region":       "cn-shanghai",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossBackupType", "delete")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "SrcRegion", "cn-hangzhou")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "DestRegion", "cn-shanghai")
+	})
+
+	t.Run("delete mode rejects a missing region on a region-driven delete", func(t *testing.T) {
+		// The delete shape needs both regions even when the selector did not change; a
+		// missing location must be named before any request leaves the provider.
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"cross_backup_type":       "delete",
+			"src_region":              "cn-beijing",
+			"enable_cross_log_backup": 0,
+		})
+		values := map[string]cty.Value{
+			"cross_backup_type":       cty.StringVal("delete"),
+			"src_region":              cty.StringVal("cn-beijing"),
+			"enable_cross_log_backup": cty.NumberIntVal(0),
+		}
+		// The selector already reads "delete" and only a policy field changes, so the
+		// delete branch is selected; the destination region is absent and the policy
+		// cannot be located, which must be reported before the request is built.
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"cross_backup_type":       "delete",
+			"src_region":              "cn-beijing",
+			"enable_cross_log_backup": "1",
+		})
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, state, raw, values)
+		if !strings.Contains(errText, "dest_region") {
+			t.Fatalf("the error must name the missing dest_region, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("an incomplete delete must not reach the API, got %d requests", len(requests))
+		}
 	})
 }
 

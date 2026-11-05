@@ -725,6 +725,37 @@ func isMinuteLevelBackupInterval(interval string) bool {
 	return interval == "15" || interval == "30"
 }
 
+// crossBackupDeleteSelected reports whether this update has to issue the delete shape
+// of ModifyBackupPolicy. cross_backup_type is write-only, so once the state and the
+// configuration both read "delete" the selector itself never changes again; the policy
+// to remove is identified by its locations, so any later change to a policy field while
+// the selector stays "delete" is still a delete operation and must carry the selector
+// and both regions. Gating only on a selector change made a region-only change send a
+// partial request that the service could not resolve to a policy.
+func crossBackupDeleteSelected(d *schema.ResourceData) bool {
+	if v, _ := d.Get("cross_backup_type").(string); v != "delete" {
+		return false
+	}
+	if d.HasChange("cross_backup_type") {
+		return true
+	}
+	for _, key := range []string{
+		"cross_backup_period",
+		"cross_retention_type",
+		"cross_retention_value",
+		"cross_log_retention_type",
+		"cross_log_retention_value",
+		"src_region",
+		"dest_region",
+		"enable_cross_log_backup",
+	} {
+		if d.HasChange(key) {
+			return true
+		}
+	}
+	return false
+}
+
 // attributeConfiguredInConfig reports whether the attribute is explicitly present in
 // the planned configuration. Optional+Computed attributes are null in the raw config
 // when the user leaves them out, so this distinguishes "not configured" from a
@@ -763,9 +794,11 @@ func validateMongoDBCrossBackupPolicy(d *schema.ResourceData) error {
 	if crossBackupType == "" && len(configuredCrossAttributes) > 0 {
 		return fmt.Errorf("cross_backup_type must be set to \"update\" or \"delete\" when the geo-redundant backup attributes %s are configured", strings.Join(configuredCrossAttributes, ", "))
 	}
-	if crossBackupType == "delete" && d.HasChange("cross_backup_type") {
+	if crossBackupDeleteSelected(d) {
 		// The service locates the geo-redundant policy to delete by its source and
-		// destination regions, so both must accompany the delete request.
+		// destination regions, so both must accompany the delete request. The selector
+		// alone is not enough: a region change under an already-selected "delete" is
+		// still a delete and needs the same two locations.
 		missing := make([]string, 0, 2)
 		if v, ok := d.GetOk("src_region"); !ok || fmt.Sprint(v) == "" {
 			missing = append(missing, "src_region")
@@ -887,7 +920,7 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	// The delete branch of ModifyBackupPolicy only assembles the region and type fields
 	// of the policy entry, so it must carry both regions and must not receive the
 	// retention/period fields that belong to the update branch.
-	crossBackupDelete := crossBackupType == "delete" && d.HasChange("cross_backup_type")
+	crossBackupDelete := crossBackupDeleteSelected(d)
 	snapshotBackupType, _ := d.Get("snapshot_backup_type").(string)
 	backupInterval, _ := d.Get("backup_interval").(string)
 	highFrequencyBackupApplicable := snapshotBackupType == "Flash" && isMinuteLevelBackupInterval(backupInterval)
@@ -899,7 +932,7 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		}
 	}
 
-	if v, ok := d.GetOk("cross_backup_type"); ok && (d.HasChange("cross_backup_type") || crossBackupUpdate) {
+	if v, ok := d.GetOk("cross_backup_type"); ok && (d.HasChange("cross_backup_type") || crossBackupUpdate || crossBackupDelete) {
 		request["CrossBackupType"] = v
 	}
 
