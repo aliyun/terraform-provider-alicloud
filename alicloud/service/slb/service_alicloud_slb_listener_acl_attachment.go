@@ -304,6 +304,13 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 	if errors.Is(cause, connectivity.ErrRpcRejectedResponse) {
 		return false
 	}
+	// The shared retry helper reports an exhausted state-change budget with its
+	// own timeout text. That error neither matches a transport type nor wraps the
+	// deadline, but it proves only that the attempt stopped being observed: the
+	// request may have reached the service.
+	if cause != nil && strings.Contains(strings.ToLower(cause.Error()), "timeout while waiting for state to become") {
+		return true
+	}
 	// A transport level failure (dial, TLS, reset or timeout) never proves that
 	// the request was not applied. It is classified by type rather than by the
 	// scheme dependent error message, so an http test endpoint behaves like the
@@ -318,14 +325,15 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 // isUnconfirmedListenerAclWrite reports whether a failed write may still have
 // been applied: a transport level failure, an unreadable response, a write budget
 // that expired, or any other error that does not prove the service refused the
-// request. It deliberately does not look at the parent operation context: a
-// parent deadline or cancellation stops further requests but says nothing about a
-// request that was already on the wire, so the caller still has to keep the
-// planned identity.
+// request. The parent operation context is deliberately not consulted: a parent
+// deadline ends writeCtx and may abort a request that was already on the wire, so
+// the planned identity still has to be kept in that case.
 //
-// A decoded service answer is checked first: it proves the request was answered,
-// so the terminal classification wins over a write budget that expired at the
-// same moment. Reconciling such a rejection could otherwise adopt a pre-existing
+// A bare cancellation returned before the request is sent (the write helper checks
+// the context first) remains a refusal: nothing was transmitted. A decoded service
+// answer is checked first as well, because it proves the request was answered, so
+// the terminal classification wins over a write budget that expired at the same
+// moment. Reconciling such a rejection could otherwise adopt a pre-existing
 // matching binding as the result of a refused write.
 func isUnconfirmedListenerAclWrite(writeCtx context.Context, err error) bool {
 	if err == nil {

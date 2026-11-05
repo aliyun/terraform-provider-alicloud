@@ -315,6 +315,12 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 		// The retry helper reports an exhausted write budget as a generic timeout;
 		// the expired budget itself proves that the outcome is unknown.
 		{"expired write budget with a generic timeout", expiredCtx, writeBudgetTimeout, true},
+		// Even before the context flips, the helper's own timeout text proves that
+		// the attempt stopped being observed while the request may have been sent.
+		{"retry helper timeout with a live budget", liveCtx, writeBudgetTimeout, true},
+		// A cancellation returned before the request is sent proves that nothing
+		// was transmitted, so it stays a refusal.
+		{"cancellation before the request is sent", liveCtx, context.Canceled, false},
 		// The parent deadline ends the write context as well; the request may have
 		// been in flight, so the planned identity is still kept.
 		{"cancelled parent leaves the write unconfirmed", expiredCtx, transport, true},

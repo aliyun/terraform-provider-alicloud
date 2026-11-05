@@ -2901,22 +2901,50 @@ func sanitizeRpcError(err error) error {
 		return nil
 	}
 	if sdkErr, ok := err.(*tea.SDKError); ok {
-		clone := *sdkErr
-		if clone.Message != nil {
-			message := redactSignedURLs(*clone.Message)
-			clone.Message = &message
+		// The SDK error caches its first rendered text, so copying the struct would
+		// keep an already rendered message with the original credentials. A fresh
+		// error is built from the exported fields only, which leaves the cache empty
+		// and makes Error() render the redacted fields.
+		sanitized := &tea.SDKError{
+			Code:        copyStringPointer(sdkErr.Code),
+			StatusCode:  copyIntPointer(sdkErr.StatusCode),
+			Stack:       copyStringPointer(sdkErr.Stack),
+			Description: copyStringPointer(sdkErr.Description),
 		}
-		if clone.Data != nil {
-			data := redactSerializedPayload(*clone.Data)
-			clone.Data = &data
+		if sdkErr.Message != nil {
+			message := redactSignedURLs(*sdkErr.Message)
+			sanitized.Message = &message
 		}
-		return &clone
+		if sdkErr.Data != nil {
+			data := redactSerializedPayload(*sdkErr.Data)
+			sanitized.Data = &data
+		}
+		if sdkErr.AccessDeniedDetail != nil {
+			sanitized.AccessDeniedDetail = redactLogValue(sdkErr.AccessDeniedDetail, false).(map[string]interface{})
+		}
+		return sanitized
 	}
 	sanitized := redactSignedURLs(err.Error())
 	if sanitized == err.Error() {
 		return err
 	}
 	return &redactedError{cause: err, message: sanitized}
+}
+
+func copyStringPointer(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
+}
+
+func copyIntPointer(value *int) *int {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }
 
 // redactSerializedPayload redacts a payload that is already serialised (the SDK

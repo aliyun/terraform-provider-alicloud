@@ -508,3 +508,36 @@ func TestUnitDecodeRpcResponseRedirectWithJsonBodyIsRejected(t *testing.T) {
 		t.Fatalf("the redirect status was lost: %v", err)
 	}
 }
+
+// The SDK error caches its first rendered text. A caller (or a log layer) may
+// render it before the sanitizer sees the error, so the sanitizer must not reuse
+// that cache: the result has to render only the redacted fields.
+func TestUnitSanitizeRpcErrorRenderedBeforeRedaction(t *testing.T) {
+	sdkErr := &tea.SDKError{
+		Code:       tea.String("InvalidParameter"),
+		StatusCode: tea.Int(400),
+		Message:    tea.String(`{"Signature":"synthetic-rendered-signature"}`),
+		Data:       tea.String(`{"SecurityToken":"synthetic-rendered-token","RequestId":"req-1"}`),
+	}
+	// Render and cache the original text before redaction.
+	if rendered := sdkErr.Error(); !strings.Contains(rendered, "synthetic-rendered-signature") {
+		t.Fatalf("the fixture did not render the original text: %s", rendered)
+	}
+	sanitized, ok := sanitizeRpcError(sdkErr).(*tea.SDKError)
+	if !ok {
+		t.Fatalf("the SDK error type was not preserved: %T", sanitizeRpcError(sdkErr))
+	}
+	rendered := sanitized.Error()
+	for _, secret := range []string{"synthetic-rendered-signature", "synthetic-rendered-token"} {
+		if strings.Contains(rendered, secret) {
+			t.Fatalf("the rendered sanitized error still exposes %q: %s", secret, rendered)
+		}
+	}
+	if !strings.Contains(rendered, "InvalidParameter") || !strings.Contains(rendered, "req-1") {
+		t.Fatalf("the rendered sanitized error lost its usable items: %s", rendered)
+	}
+	// The original error keeps rendering what it always did; it is not mutated.
+	if !strings.Contains(sdkErr.Error(), "synthetic-rendered-signature") {
+		t.Fatal("the original error was mutated by the sanitizer")
+	}
+}

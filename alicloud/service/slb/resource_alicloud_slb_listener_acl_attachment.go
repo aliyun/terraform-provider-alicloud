@@ -532,21 +532,21 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	if targetAclId == "" {
 		// Imported without the ACL part. A single bound policy group is
 		// unambiguous; several groups need the four segment import form so the
-		// target identity is never guessed.
-		switch len(aclIds) {
-		case 0:
-			if pending {
-				return state, true, nil
-			}
-			return listenerAclAttachmentResourceModel{}, false, nil
-		case 1:
-			targetAclId = aclIds[0]
-		default:
+		// target identity is never guessed. An empty member list never reaches this
+		// point: it is reported as unreadable above.
+		if len(aclIds) > 1 {
 			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
 				"listener %s has multiple access control policy groups (%s); import with the four segment ID <load_balancer_id>:<protocol>:<listener_port>:<acl_id> to select the managed group",
 				listenerId, strings.Join(aclIds, ", "),
 			)
 		}
+		if len(aclIds) == 0 {
+			// Defensive: an empty list is classified as unreadable above, and this
+			// path must never panic or drop a live object if that classification
+			// changes.
+			return state, true, nil
+		}
+		targetAclId = aclIds[0]
 	} else if !listenerAclContains(object, targetAclId) {
 		if pending {
 			// The old group or another group is still bound. That does not prove the

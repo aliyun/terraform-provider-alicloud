@@ -777,6 +777,9 @@ func testAccCheckListenerAclAttachmentAttrs(aclResource, aclType string) resourc
 		resource.TestCheckResourceAttrPair(listenerAclAttachmentResourceId, "acl_id", aclResource, "id"),
 		resource.TestCheckResourceAttr(listenerAclAttachmentResourceId, "acl_type", aclType),
 		resource.TestCheckResourceAttr(listenerAclAttachmentResourceId, "acl_status", "on"),
+		// A successful apply is confirmed by the listener, so the pending marker
+		// must be false; only an unconfirmed write leaves it true.
+		resource.TestCheckResourceAttr(listenerAclAttachmentResourceId, "acl_pending", "false"),
 		resource.TestCheckResourceAttrSet(listenerAclAttachmentResourceId, "id"),
 	)
 }
