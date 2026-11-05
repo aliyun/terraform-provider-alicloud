@@ -311,6 +311,7 @@ func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 	var v map[string]interface{}
 	var firstParameterGroupId string
 	var secondParameterGroupId string
+	var thirdParameterGroupId string
 	resourceId := "alicloud_polardb_parameter_group.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudPolarDbParameterGroupResourceGroupIdMap)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -360,6 +361,12 @@ func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_version":           "8.0",
 					"parameter_group_name": name,
@@ -394,6 +401,12 @@ func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_version":           "8.0",
 					"parameter_group_name": name,
@@ -419,9 +432,33 @@ func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default2", "id"),
 					checkPolarDbParameterGroupInResourceGroup(resourceId, "alicloud_resource_manager_resource_group.default2"),
 					func(s *terraform.State) error {
-						thirdParameterGroupId := s.RootModule().Resources[resourceId].Primary.ID
+						thirdParameterGroupId = s.RootModule().Resources[resourceId].Primary.ID
 						if thirdParameterGroupId == secondParameterGroupId {
 							return fmt.Errorf("switching resource_group_id between two explicit resource groups should have replaced the parameter group, but the ID stayed %q", thirdParameterGroupId)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": acctest.REMOVEKEY,
+					}),
+					resource.TestCheckNoResourceAttr(resourceId, "resource_group_id"),
+					func(s *terraform.State) error {
+						fourthParameterGroupId := s.RootModule().Resources[resourceId].Primary.ID
+						if fourthParameterGroupId == thirdParameterGroupId {
+							return fmt.Errorf("removing resource_group_id should have replaced the parameter group, but the ID stayed %q", fourthParameterGroupId)
 						}
 						return nil
 					},
