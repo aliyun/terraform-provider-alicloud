@@ -189,9 +189,9 @@ resource "alicloud_ga_endpoint_group" "default" {
 }
 ```
 
-### Probe and Health Check Usage
+### Health Check Usage
 
-The following example shows how to configure health check and delay detection for an endpoint group.
+The following example shows how to configure health checks for an endpoint group.
 
 ```terraform
 terraform {
@@ -344,6 +344,8 @@ The endpoint_configurations supports the following:
 * `vswitch_ids` - (Optional, List, Available since v1.262.0) A list of vSwitches in the VPC. You can specify a maximum of two vSwitch IDs for an endpoint group of an intelligent routing listener. This parameter is required when the endpoint type is IpTarget. The vSwitch must belong to the VPC specified by the VpcId parameter.
 * `probe_port` - (Optional, Int, Available since v2.3.0) The port that is used for delay detection. Valid values: `1` to `65535`.
 * `probe_protocol` - (Optional, String, Available since v2.3.0) The protocol that is used for delay detection. Valid values: `tcp`, `icmp`.
+
+  -> **NOTE:** `probe_port` and `probe_protocol` take effect only when `enable` is set to `true`.
 
 ### `port_overrides`
 
