@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	testingterraform "github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -252,8 +253,8 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	// checkApiReadback asserts what the provider sent against what the VPC API
 	// returns for the resource, independent of the Terraform state, and logs both
 	// sides so the ACC run log carries the request targets and the API response.
-	checkApiReadback := func(expectedName, expectedDescription string) resource.TestCheckFunc {
-		return func(state *terraform.State) error {
+	checkApiReadback := func(expectedName, expectedDescription string) func(*testingterraform.State) error {
+		return func(state *testingterraform.State) error {
 			rs, ok := state.RootModule().Resources[resourceId]
 			if !ok {
 				return fmt.Errorf("resource %s is not in state", resourceId)
