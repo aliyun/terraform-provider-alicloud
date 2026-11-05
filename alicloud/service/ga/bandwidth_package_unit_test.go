@@ -40,6 +40,7 @@ func TestUnitAliCloudGaBandwidthPackage(t *testing.T) {
 		"cbn_geographic_region_idb": "CreateBandwidthPackageValue",
 		"duration":                  "CreateBandwidthPackageValue",
 		"payment_type":              "CreateBandwidthPackageValue",
+		"pricing_cycle":             "Month",
 		"ratio":                     10,
 		"type":                      "CreateBandwidthPackageValue",
 		"auto_renew_duration":       1,
@@ -338,4 +339,78 @@ func TestUnitAliCloudGaBandwidthPackage(t *testing.T) {
 		}
 	}
 
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
+	p := unitTestProviderResources()
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+
+	describedResponse := func() map[string]interface{} {
+		return map[string]interface{}{
+			"Bandwidth":          10,
+			"BandwidthPackageId": "MockBandwidthPackageId",
+			"BandwidthType":      "Basic",
+			"ChargeType":         "PREPAY",
+			"RegionId":           region,
+			"State":              "active",
+			"Type":               "Basic",
+		}
+	}
+
+	cases := []struct {
+		name             string
+		paymentType      string
+		pricingCycle     string
+		expectedCycle    string
+		expectCycleInReq bool
+	}{
+		{name: "explicit year cycle", paymentType: "Subscription", pricingCycle: "Year", expectedCycle: "Year", expectCycleInReq: true},
+		{name: "default month cycle", paymentType: "Subscription", expectedCycle: "Month", expectCycleInReq: true},
+		{name: "postpaid without cycle", paymentType: "PayAsYouGo", pricingCycle: "Year", expectCycleInReq: false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			d, _ := schema.InternalMap(p["alicloud_ga_bandwidth_package"].Schema).Data(nil, nil)
+			d.MarkNewResource()
+			assert.Nil(t, d.Set("bandwidth", 10))
+			assert.Nil(t, d.Set("type", "Basic"))
+			assert.Nil(t, d.Set("payment_type", c.paymentType))
+			if c.pricingCycle != "" {
+				assert.Nil(t, d.Set("pricing_cycle", c.pricingCycle))
+			}
+
+			var createRequest map[string]interface{}
+			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, params map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+				if *action == "CreateBandwidthPackage" {
+					createRequest = make(map[string]interface{}, len(params))
+					for k, v := range params {
+						createRequest[k] = v
+					}
+					return map[string]interface{}{"BandwidthPackageId": "MockBandwidthPackageId"}, nil
+				}
+				return describedResponse(), nil
+			})
+			err := resourceAliCloudGaBandwidthPackageCreate(d, rawClient)
+			patches.Reset()
+
+			assert.Nil(t, err)
+			if !assert.NotNil(t, createRequest, "CreateBandwidthPackage request was not captured") {
+				return
+			}
+			if c.expectCycleInReq {
+				assert.Equal(t, c.expectedCycle, createRequest["PricingCycle"])
+			} else {
+				_, ok := createRequest["PricingCycle"]
+				assert.False(t, ok)
+			}
+		})
+	}
 }

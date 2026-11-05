@@ -56,6 +56,12 @@ func ResourceAliCloudGaBandwidthPackage() *schema.Resource {
 				Default:      "Subscription",
 				ValidateFunc: validators.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
+			"pricing_cycle": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Month", "Year"}, false),
+			},
 			"billing_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -159,7 +165,11 @@ func resourceAliCloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 		request["ChargeType"] = convertGaBandwidthPackagePaymentTypeRequest(v.(string))
 
 		if request["ChargeType"].(string) == "PREPAY" {
-			request["PricingCycle"] = "Month"
+			if pc, ok := d.GetOk("pricing_cycle"); ok {
+				request["PricingCycle"] = pc
+			} else {
+				request["PricingCycle"] = "Month"
+			}
 		}
 	}
 
