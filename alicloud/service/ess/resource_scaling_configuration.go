@@ -357,6 +357,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"instance_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				Computed:      true,
 				ValidateFunc:  validators.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 				ConflictsWith: []string{"instance_types", "instance_type_override"},
 			},
@@ -381,6 +382,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"security_group_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"security_group_ids"},
 			},
 			"security_group_ids": {
@@ -2325,28 +2327,16 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		d.Set("system_disk_bursting_enabled", v)
 	}
 
-	// The singular instance type and security group are only refreshed when the
-	// configuration sets them, so a plural-only configuration is never forced to
-	// adopt the singular form. During import there is no configuration at all,
-	// and skipping the backfill would drop readable remote values from the
-	// imported state. The check must use the raw configuration: d.GetOk reflects
-	// the prior state, so it would keep re-setting a singular that the
-	// configuration removed and produce a perpetual diff.
-	rawConfigForImport := d.GetRawConfig()
-	importRead := rawConfigForImport.IsNull() || !rawConfigForImport.IsKnown()
-	if rawConfigValueIsSet(rawConfigForImport, "security_group_id") || importRead {
-		if v := response["SecurityGroupId"]; v != nil && fmt.Sprint(v) != "" {
-			d.Set("security_group_id", v)
-		}
-	} else {
-		d.Set("security_group_id", "")
+	// instance_type and security_group_id are Optional+Computed: ESS resolves the
+	// instance type and always reports a primary security group, and the Read RPC
+	// carries no configuration that could tell an import from a refresh. The read
+	// path therefore backfills both from the response, and the computed flag keeps
+	// plural-only and override configurations free of perpetual drift.
+	if v := response["SecurityGroupId"]; v != nil && fmt.Sprint(v) != "" {
+		d.Set("security_group_id", v)
 	}
-	if rawConfigValueIsSet(rawConfigForImport, "instance_type") || importRead {
-		if v := response["InstanceType"]; v != nil && fmt.Sprint(v) != "" {
-			d.Set("instance_type", v)
-		}
-	} else {
-		d.Set("instance_type", "")
+	if v := response["InstanceType"]; v != nil && fmt.Sprint(v) != "" {
+		d.Set("instance_type", v)
 	}
 	userData := d.Get("user_data")
 	if userData.(string) != "" {
