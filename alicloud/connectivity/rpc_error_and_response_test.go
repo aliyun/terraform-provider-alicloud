@@ -283,10 +283,17 @@ func TestUnitRedactLogValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshalling the redacted payload: %s", err)
 	}
-	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "LTAI-test", "synthetic", "token-value", "nonce-value"} {
+	// The parameter names may stay in the log; only their values are secret.
+	for _, secret := range []string{"LTAI-test", "synthetic", "token-value", "nonce-value"} {
 		if strings.Contains(string(payload), secret) {
 			t.Fatalf("the logged payload still exposes %q: %s", secret, payload)
 		}
+	}
+	if strings.Contains(string(payload), "Signature=nonce") || strings.Contains(string(payload), "AccessKeyId=LTAI") {
+		t.Fatalf("a signed parameter pair survived the redaction: %s", payload)
+	}
+	if !strings.Contains(string(payload), "redacted") {
+		t.Fatalf("the signed parameter rule did not run: %s", payload)
 	}
 	if !strings.Contains(string(payload), "slb.aliyuncs.com") || !strings.Contains(string(payload), "AclStatus") {
 		t.Fatalf("the redaction dropped the usable payload: %s", payload)

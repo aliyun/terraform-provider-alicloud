@@ -254,7 +254,8 @@ func TestUnitListenerAclAttachmentDebugLogIsRedacted(t *testing.T) {
 	if !strings.Contains(output, "DescribeLoadBalancerHTTPListenerAttribute") {
 		t.Fatalf("the debug log did not record the call: %q", output)
 	}
-	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key", "synthetic-signature", "synthetic-nonce", "synthetic-token"} {
+	// The parameter names may stay in the log; only their values are secret.
+	for _, secret := range []string{"unit-test-access-key", "synthetic-signature", "synthetic-nonce", "synthetic-token"} {
 		if strings.Contains(output, secret) {
 			// Do not print the leaking line: it contains the protected value.
 			t.Fatalf("the debug log leaked %q", secret)
