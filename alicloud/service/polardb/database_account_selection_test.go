@@ -157,15 +157,15 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 		wantPrivilege   string
 	}{
 		{
-			name:            "legal empty list clears the stale privilege",
+			name:            "legal empty list clears the stale identity and privilege",
 			response:        databaseAccountResponse(),
-			wantAccountName: "alice",
+			wantAccountName: "",
 			wantPrivilege:   "",
 		},
 		{
-			name:            "empty accounts container clears the stale privilege",
+			name:            "empty accounts container clears the stale identity and privilege",
 			response:        map[string]interface{}{"Accounts": map[string]interface{}{}},
-			wantAccountName: "alice",
+			wantAccountName: "",
 			wantPrivilege:   "",
 		},
 		{
@@ -181,9 +181,9 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 			wantPrivilege:   "ReadOnly",
 		},
 		{
-			name:            "other accounts only clear the stale privilege",
+			name:            "other accounts only clear the stale identity and privilege",
 			response:        databaseAccountResponse(accountB),
-			wantAccountName: "alice",
+			wantAccountName: "",
 			wantPrivilege:   "",
 		},
 		{

@@ -944,31 +944,15 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
 				}),
 			},
 			{
-				// A plannable import starts from a state without the managed resource,
-				// so persisting it gives the next step a real imported state to plan
-				// the replacement against.
+				// A plannable import builds an isolated plan from the imported state,
+				// so it can prove that keeping account_privilege in the configuration
+				// replaces this database (ForceNew) without applying the replacement.
 				ResourceName:       resourceId,
 				ImportState:        true,
 				ImportStateKind:    resource.ImportBlockWithID,
-				ImportStateVerify:  false,
-				ImportStatePersist: true,
-				ImportStateCheck: checkImportedDatabaseState(map[string]string{
-					"db_name": name,
-					"engine":  "PostgreSQL",
-				}),
-			},
-			{
-				// Keeping account_privilege in the configuration after the import
-				// must replace this database (ForceNew). This step only plans
-				// against the persisted imported state: PlanOnly skips the
-				// apply path, so the exact replacement action is asserted on the
-				// plan-only follow-up plan and the expected non-empty plan is
-				// allowed instead of being applied.
-				Config:             testAccConfig(privilegeConfig),
-				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PostApplyPreRefresh: []plancheck.PlanCheck{
+				ImportPlanChecks: resource.ImportPlanChecks{
+					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
 					},
 				},
