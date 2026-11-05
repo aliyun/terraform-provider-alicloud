@@ -83,11 +83,11 @@ resource "alicloud_realtime_compute_vvp_instance" "default" {
 }
 
 resource "alicloud_realtime_compute_udf_artifact" "default" {
-  workspace    = alicloud_realtime_compute_vvp_instance.default.resource_id
-  namespace    = "${alicloud_realtime_compute_vvp_instance.default.vvp_instance_name}-default"
-  name         = var.name
+  workspace     = alicloud_realtime_compute_vvp_instance.default.resource_id
+  namespace     = "${alicloud_realtime_compute_vvp_instance.default.vvp_instance_name}-default"
+  name          = var.name
   artifact_type = "ARTIFACT_TYPE_PYTHON"
-  jar_url      = "oss://${alicloud_oss_bucket.default.id}/udf/UpperUdf.py"
+  jar_url       = "oss://${alicloud_oss_bucket.default.id}/udf/UpperUdf.py"
 }
 ```
 
