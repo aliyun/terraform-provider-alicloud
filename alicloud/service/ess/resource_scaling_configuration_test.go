@@ -3652,7 +3652,8 @@ func resourceEssScalingConfiguration_NetworkInterfaces(name string) string {
   		owners      = "system"
 	}
     data "alicloud_instance_types" "c6" {
-        instance_type_family = "ecs.c9i.lar"
+        availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+        image_id          = "${data.alicloud_images.default1.images.0.id}"
     }
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
