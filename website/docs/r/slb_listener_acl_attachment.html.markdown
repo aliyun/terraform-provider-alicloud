@@ -107,12 +107,18 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of the listener ACL attachment. It formats as `<load_balancer_id>:<protocol>:<listener_port>:<acl_id>`.
+* `id` - The resource ID in terraform of the listener ACL attachment. It formats as `<load_balancer_id>:<protocol>:<listener_port>`, which is the ID of the listener whose ACL binding is managed.
 * `acl_status` - The access control status of the listener.
 
 ## Import
 
-Classic Load Balancer (SLB) Listener ACL Attachment can be imported using the id, e.g.
+Classic Load Balancer (SLB) Listener ACL Attachment can be imported using the listener ID, optionally followed by the ACL ID, e.g.
+
+```shell
+$ terraform import alicloud_slb_listener_acl_attachment.example <load_balancer_id>:<protocol>:<listener_port>
+```
+
+or
 
 ```shell
 $ terraform import alicloud_slb_listener_acl_attachment.example <load_balancer_id>:<protocol>:<listener_port>:<acl_id>

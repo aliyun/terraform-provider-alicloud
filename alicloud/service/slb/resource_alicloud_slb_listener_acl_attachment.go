@@ -166,7 +166,14 @@ func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.R
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	if !listenerAclContains(object, aclId) {
+	if aclId == "" {
+		// Imported without the ACL part: adopt the ACL that is bound now.
+		aclId = listenerFirstAclId(object)
+		if aclId == "" {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+	} else if !listenerAclContains(object, aclId) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -278,7 +285,15 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 }
 
 func (r *listenerAclAttachmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	listenerId, _, err := parseListenerAclAttachmentId(req.ID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Importing %s: parsing import ID", listenerAclAttachmentTypeName),
+			err.Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), listenerId)...)
 }
 
 // updateListenerAcl only sends the ACL related parameters of the protocol
@@ -337,7 +352,7 @@ func updateListenerAcl(client *connectivity.AliyunClient, listenerId, aclId, acl
 
 func listenerAclAttachmentState(listenerId, aclId string, object map[string]interface{}) listenerAclAttachmentResourceModel {
 	model := listenerAclAttachmentResourceModel{
-		Id:         types.StringValue(listenerId + ":" + aclId),
+		Id:         types.StringValue(listenerId),
 		ListenerId: types.StringValue(listenerId),
 		AclId:      types.StringValue(aclId),
 	}
@@ -376,12 +391,35 @@ func listenerAclContains(object map[string]interface{}, aclId string) bool {
 	return false
 }
 
+// listenerFirstAclId returns the first policy group reported by
+// DescribeLoadBalancer*ListenerAttribute, used when the resource is imported
+// without the optional ACL part.
+func listenerFirstAclId(object map[string]interface{}) string {
+	if v, ok := object["AclId"].(string); ok && v != "" {
+		for _, id := range strings.Split(v, ",") {
+			if id = strings.TrimSpace(id); id != "" {
+				return id
+			}
+		}
+	}
+	if v, ok := object["AclIds"].(map[string]interface{}); ok {
+		if items, ok := v["AclId"].([]interface{}); ok {
+			for _, item := range items {
+				if id, ok := item.(string); ok && id != "" {
+					return id
+				}
+			}
+		}
+	}
+	return ""
+}
+
 func parseListenerAclAttachmentId(id string) (listenerId, aclId string, err error) {
 	parts := strings.Split(id, ":")
-	if len(parts) != 4 || parts[0] == "" || parts[1] == "" || parts[2] == "" || parts[3] == "" {
-		return "", "", fmt.Errorf("invalid %s ID %s, expected <load_balancer_id>:<protocol>:<listener_port>:<acl_id>", listenerAclAttachmentTypeName, id)
+	if (len(parts) != 3 && len(parts) != 4) || parts[0] == "" || parts[1] == "" || parts[2] == "" || (len(parts) == 4 && parts[3] == "") {
+		return "", "", fmt.Errorf("invalid %s ID %s, expected <load_balancer_id>:<protocol>:<listener_port>[:<acl_id>]", listenerAclAttachmentTypeName, id)
 	}
-	return strings.Join(parts[:3], ":"), parts[3], nil
+	return strings.Join(parts[:3], ":"), strings.Join(parts[3:], ":"), nil
 }
 
 func parseListenerPort(port string) (int, error) {
