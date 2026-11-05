@@ -250,6 +250,12 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"replica_count": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.IntBetween(1, 4),
+			},
 			"region_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -310,6 +316,12 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 			"slave_read_only_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
+			},
+			"slave_replica_count": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.IntAtLeast(0),
 			},
 			"src_db_instance_id": {
 				Type:     schema.TypeString,
@@ -465,6 +477,8 @@ func ResourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOkExists("read_only_count"); ok {
 		request["ReadOnlyCount"] = v
 	}
+	configuredKeys := configuredTopLevelKeysFromRawConfig(d)
+	replicaCountsCreateRequest(request, d, configuredKeys)
 	if v, ok := d.GetOk("node_type"); ok {
 		request["ShardType"] = convertRedisTairInstanceShardTypeRequest(v.(string))
 	}
@@ -586,6 +600,12 @@ func ResourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["ShardCount"] != nil && objectRaw["ShardCount"] != 0 {
 		d.Set("shard_count", objectRaw["ShardCount"])
+	}
+	if objectRaw["ReplicaCount"] != nil {
+		d.Set("replica_count", objectRaw["ReplicaCount"])
+	}
+	if objectRaw["SlaveReplicaCount"] != nil {
+		d.Set("slave_replica_count", objectRaw["SlaveReplicaCount"])
 	}
 	if objectRaw["InstanceStatus"] != nil {
 		d.Set("status", objectRaw["InstanceStatus"])
@@ -838,6 +858,9 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 		request["NodeType"] = d.Get("node_type")
 	}
+	if !d.IsNewResource() && replicaCountsRequest(request, d, d.HasChange("replica_count"), d.HasChange("slave_replica_count")) {
+		update = true
+	}
 
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -846,7 +869,7 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1604,4 +1627,46 @@ func configuredConfigKeysFromRawConfig(d *schema.ResourceData) map[string]struct
 		}
 	}
 	return keys
+}
+
+// configuredTopLevelKeys returns the top-level attributes the user actually configured.
+// Optional+Computed attributes are also filled from the API during Read, so d.Get cannot
+// tell an explicit zero from an omitted attribute.
+func configuredTopLevelKeys(rawConfig cty.Value) map[string]struct{} {
+	keys := make(map[string]struct{})
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return keys
+	}
+	for key, value := range rawConfig.AsValueMap() {
+		if value.IsKnown() && !value.IsNull() {
+			keys[key] = struct{}{}
+		}
+	}
+	return keys
+}
+
+func configuredTopLevelKeysFromRawConfig(d *schema.ResourceData) map[string]struct{} {
+	return configuredTopLevelKeys(d.GetRawConfig())
+}
+
+func replicaCountsCreateRequest(request map[string]interface{}, d *schema.ResourceData, configuredKeys map[string]struct{}) {
+	if _, ok := configuredKeys["replica_count"]; ok {
+		request["ReplicaCount"] = d.Get("replica_count")
+	}
+	if _, ok := configuredKeys["slave_replica_count"]; ok {
+		request["SlaveReplicaCount"] = d.Get("slave_replica_count")
+	}
+}
+
+func replicaCountsRequest(request map[string]interface{}, d *schema.ResourceData, replicaChanged, slaveChanged bool) bool {
+	changed := false
+	if replicaChanged {
+		request["ReplicaCount"] = d.Get("replica_count")
+		changed = true
+	}
+	if slaveChanged {
+		request["SlaveReplicaCount"] = d.Get("slave_replica_count")
+		changed = true
+	}
+	return changed
 }
