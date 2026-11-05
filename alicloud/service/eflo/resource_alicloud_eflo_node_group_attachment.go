@@ -420,10 +420,7 @@ func resourceNodeGroupAttachmentDelete(d *schema.ResourceData, meta interface{})
 func expandNodeGroupAttachmentIpAllocationPolicy(policies *schema.Set) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0)
 	for _, item := range policies.List() {
-		policyRaw, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
+		policyRaw := item.(map[string]interface{})
 		policy := make(map[string]interface{})
 
 		if bondPolicies, ok := policyRaw["bond_policy"].([]interface{}); ok && len(bondPolicies) > 0 && bondPolicies[0] != nil {
@@ -474,20 +471,8 @@ func expandNodeGroupAttachmentIpAllocationPolicy(policies *schema.Set) []map[str
 
 func expandNodeGroupAttachmentBonds(v interface{}) []map[string]interface{} {
 	bonds := make([]map[string]interface{}, 0)
-	var items []interface{}
-	switch raw := v.(type) {
-	case *schema.Set:
-		items = raw.List()
-	case []interface{}:
-		items = raw
-	default:
-		return bonds
-	}
-	for _, item := range items {
-		bondRaw, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
+	for _, item := range v.(*schema.Set).List() {
+		bondRaw := item.(map[string]interface{})
 		bond := make(map[string]interface{})
 		if v, ok := bondRaw["name"]; ok {
 			bond["Name"] = v
