@@ -722,12 +722,14 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 					"metric_name":               "CpuUtilization",
 					"disable_scale_in":          "false",
 					"estimated_instance_warmup": "200",
-					"alarm_options":             acctest.REMOVEKEY,
+					"alarm_options": []map[string]interface{}{
+						{},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alarm_options.#":        "0",
-						"alarm_options.0.period": acctest.REMOVEKEY,
+						"alarm_options.#":        "1",
+						"alarm_options.0.period": "60",
 					}),
 					testAccCheckEssScalingRuleAlarmPeriod("60"),
 				),
@@ -747,13 +749,39 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 					"disable_scale_in":          "false",
 					"estimated_instance_warmup": "200",
 					"alarm_options": []map[string]interface{}{
-						{},
+						{
+							"period": 300,
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"alarm_options.#":        "1",
-						"alarm_options.0.period": "60",
+						"alarm_options.0.period": "300",
+					}),
+					testAccCheckEssScalingRuleAlarmPeriod("300"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alarm_options"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"target_value":              "25.5",
+					"metric_name":               "CpuUtilization",
+					"disable_scale_in":          "false",
+					"estimated_instance_warmup": "200",
+					"alarm_options":             acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alarm_options.#":        "0",
+						"alarm_options.0.period": acctest.REMOVEKEY,
 					}),
 					testAccCheckEssScalingRuleAlarmPeriod("60"),
 				),
@@ -909,10 +937,12 @@ func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
 		}
 	}
 	updatePeriod("15")
+	// An empty block falls back to the schema default 60.
+	updatePeriod("60")
 
 	removeData := newUpdateData(map[string]*sdktf.ResourceAttrDiff{
 		"alarm_options.#":        {Old: "1", New: "0"},
-		"alarm_options.0.period": {Old: "15", New: ""},
+		"alarm_options.0.period": {Old: "300", New: ""},
 	})
 	if err := res.Update(removeData, client); err != nil {
 		t.Fatalf("remove alarm_options: %v", err)
@@ -926,7 +956,7 @@ func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
 	}
 
 	modifies := recorder.callsFor("ModifyScalingRule")
-	wantPeriods := []string{"15", "60", ""}
+	wantPeriods := []string{"15", "60", "60", ""}
 	if len(modifies) != len(wantPeriods) {
 		t.Fatalf("expected %d ModifyScalingRule calls, got %d", len(wantPeriods), len(modifies))
 	}
@@ -936,11 +966,11 @@ func TestUnitAliCloudEssScalingRuleAlarmOptionsRequest(t *testing.T) {
 			t.Fatalf("ModifyScalingRule call %d AlarmOptions.Period = %q, want %q", i+1, got, want)
 		}
 	}
-	// The second call is the removal: the provider must explicitly reset the
-	// period instead of dropping the parameter. The third call updates an
-	// unrelated field and must not send AlarmOptions.Period at all.
-	if modifies[2].Get("AlarmOptions.Period") != "" {
-		t.Fatalf("an unrelated update must not send AlarmOptions.Period, got %q", modifies[2].Get("AlarmOptions.Period"))
+	// The second call is the empty block (default 60), the third call is the
+	// removal: both must send the parameter explicitly. The fourth call updates
+	// an unrelated field and must not send AlarmOptions.Period at all.
+	if modifies[3].Get("AlarmOptions.Period") != "" {
+		t.Fatalf("an unrelated update must not send AlarmOptions.Period, got %q", modifies[3].Get("AlarmOptions.Period"))
 	}
 }
 
