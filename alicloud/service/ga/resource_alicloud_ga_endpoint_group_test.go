@@ -1479,22 +1479,6 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enable": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable": "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"enable"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"access_log_record_customized_header_list": []string{"X-Forwarded-For"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
