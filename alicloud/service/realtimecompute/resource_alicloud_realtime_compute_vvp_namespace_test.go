@@ -1508,6 +1508,238 @@ func TestUnitRealtimeComputeVvpNamespaceUpdateConfirmationReadBudget(t *testing.
 	}
 }
 
+// vvpNamespaceConfirmationCancelTestServer cancels the lifecycle while the confirmation read is in
+// flight: the first DescribeNamespaces answers SUCCESS for the SUCCESS wait, the second cancels the
+// context from inside the handler and answers a retryable 500, so the read ends through the
+// cancelled operation context instead of a lifecycle that was already cancelled beforehand.
+func vvpNamespaceConfirmationCancelTestServer(t *testing.T, cancel func()) (*httptest.Server, *vvpNamespaceUpdateMock) {
+	t.Helper()
+	mock := &vvpNamespaceUpdateMock{currentCpu: 1, currentMem: 4}
+	var reads int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mock.mu.Lock()
+		mock.actions = append(mock.actions, action)
+		if action == "ModifyNamespaceSpec" {
+			mock.modifyCpu = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.Cpu")
+			mock.modifyMemory = r.FormValue("ModifyNamespaceSpecRequest.ResourceSpec.MemoryGB")
+			if cpu, err := strconv.ParseInt(mock.modifyCpu, 10, 64); err == nil {
+				mock.currentCpu = cpu
+			}
+			if memory, err := strconv.ParseInt(mock.modifyMemory, 10, 64); err == nil {
+				mock.currentMem = memory
+			}
+			mock.mu.Unlock()
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		reads++
+		index := reads
+		cpu, memory := mock.currentCpu, mock.currentMem
+		mock.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if index == 1 {
+			fmt.Fprintf(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"GmtCreate":1700000000,"GmtModified":1700000000,"ResourceSpec":{"Cpu":%d,"MemoryGB":%d},"ResourceUsed":{"Cpu":1,"Cu":1,"MemoryGB":4},"Tags":[]}]}`, cpu, memory)
+			return
+		}
+		// The confirmation read is now in flight. Cancelling here, while the handler is still
+		// answering, is what distinguishes an in-flight cancellation from a pre-cancelled lifecycle.
+		cancel()
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"RequestId":"mock","Code":"InternalError","Message":"mock read failure"}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, mock
+}
+
+// TestUnitRealtimeComputeVvpNamespaceCancelledConfirmationReadKeepsState cancels the lifecycle while
+// the confirmation read is in flight and pins the resulting behaviour: the provider reports the
+// interrupted read, keeps the previous state and ID, and returns within a bounded window instead of
+// waiting for the remaining budget.
+func TestUnitRealtimeComputeVvpNamespaceCancelledConfirmationReadKeepsState(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	server, mock := vvpNamespaceConfirmationCancelTestServer(t, cancel)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	stateValue := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+	planValue := vvpNamespaceUpdateTestValue(t, sch, "1m", 2, 8)
+
+	req := fwresource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: sch, Raw: planValue},
+		State: tfsdk.State{Schema: sch, Raw: stateValue},
+	}
+	resp := &fwresource.UpdateResponse{State: tfsdk.State{Schema: sch, Raw: stateValue}}
+	started := time.Now()
+	res.Update(ctx, req, resp)
+	elapsed := time.Since(started)
+
+	actions, modifyCpu, modifyMem := mock.snapshot()
+	modifies, reads := 0, 0
+	for _, action := range actions {
+		switch action {
+		case "ModifyNamespaceSpec":
+			modifies++
+		case "DescribeNamespaces":
+			reads++
+		}
+	}
+	if modifies != 1 || modifyCpu != "2" || modifyMem != "8" {
+		t.Fatalf("ModifyNamespaceSpec = %d carrying %q/%q, want 1 carrying 2/8 (actions: %v)", modifies, modifyCpu, modifyMem, actions)
+	}
+	if reads != 2 {
+		t.Fatalf("DescribeNamespaces = %d, want 2 (one SUCCESS wait, one confirmation read) (actions: %v)", reads, actions)
+	}
+	if elapsed > 30*time.Second {
+		t.Fatalf("the cancelled update took %s, which is not a bounded return", elapsed)
+	}
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("expected the interrupted confirmation read to be reported, got none")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "confirmation read interrupted") {
+		t.Fatalf("expected the confirmation read diagnostic, got %q", detail)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the cancelled update dropped the namespace from state")
+	}
+	var id types.String
+	resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+	var spec types.List
+	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
+	if spec.IsNull() || len(spec.Elements()) != 1 {
+		t.Fatalf("state resource_spec = %v, want one element", spec)
+	}
+	attrs := spec.Elements()[0].(types.Object).Attributes()
+	if cpu := attrs["cpu"].(types.Int64).ValueInt64(); cpu != 1 {
+		t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu)
+	}
+	if memory := attrs["memory_gb"].(types.Int64).ValueInt64(); memory != 4 {
+		t.Fatalf("state resource_spec.memory_gb = %d, want the previous 4", memory)
+	}
+}
+
+// vvpNamespaceUnreadableCollectionTestServer answers every DescribeNamespaces with the given body
+// and records the actions, so the public Read and Delete entry points can be driven against an
+// unreadable collection without a namespace object behind it.
+func vvpNamespaceUnreadableCollectionTestServer(t *testing.T, body string) (*httptest.Server, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action == "DescribeNamespaces" {
+			fmt.Fprint(w, body)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock"}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// vvpNamespaceUnreadableCollectionCases are the three response shapes the read decoding must refuse
+// instead of treating them as "the namespace is gone".
+func vvpNamespaceUnreadableCollectionCases() []struct {
+	name    string
+	body    string
+	wantErr string
+} {
+	return []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{name: "missing collection", body: `{"RequestId":"mock"}`, wantErr: "does not contain Namespaces"},
+		{name: "null collection", body: `{"RequestId":"mock","Namespaces":null}`, wantErr: "is null"},
+		{name: "mistyped collection", body: `{"RequestId":"mock","Namespaces":"unexpected"}`, wantErr: "unexpected type"},
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnUnreadableCollection drives the public Read
+// entry point: an omitted, null or mistyped Namespaces field is reported and the namespace stays in
+// state instead of being removed as if it no longer existed.
+func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnUnreadableCollection(t *testing.T) {
+	for _, tc := range vvpNamespaceUnreadableCollectionCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			server, _ := vvpNamespaceUnreadableCollectionTestServer(t, tc.body)
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+
+			if !resp.Diagnostics.HasError() {
+				t.Fatalf("expected an unreadable response to be reported, got none")
+			}
+			detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+			if !strings.Contains(detail, tc.wantErr) {
+				t.Fatalf("expected a diagnostic containing %q, got %q", tc.wantErr, detail)
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the read dropped the namespace from state")
+			}
+			var id types.String
+			resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+			if id.ValueString() != "inst-unit:demo" {
+				t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteKeepsStateWithoutWriteOnUnreadableCollection drives the
+// public Delete entry point: when the pre-delete read cannot be decoded the provider reports it,
+// keeps the resource in state and never sends DeleteNamespace.
+func TestUnitRealtimeComputeVvpNamespaceDeleteKeepsStateWithoutWriteOnUnreadableCollection(t *testing.T) {
+	for _, tc := range vvpNamespaceUnreadableCollectionCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			server, observed := vvpNamespaceUnreadableCollectionTestServer(t, tc.body)
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+			req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Delete(context.Background(), req, resp)
+
+			if !resp.Diagnostics.HasError() {
+				t.Fatalf("expected the unreadable pre-delete read to be reported, got none")
+			}
+			detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+			if !strings.Contains(detail, tc.wantErr) {
+				t.Fatalf("expected a diagnostic containing %q, got %q", tc.wantErr, detail)
+			}
+			for _, action := range observed() {
+				if action == "DeleteNamespace" {
+					t.Fatalf("Delete sent DeleteNamespace although the pre-delete read was unreadable: %v", observed())
+				}
+			}
+			if resp.State.Raw.IsNull() {
+				t.Fatalf("the delete dropped the namespace from state")
+			}
+			var id types.String
+			resp.State.GetAttribute(context.Background(), path.Root("id"), &id)
+			if id.ValueString() != "inst-unit:demo" {
+				t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+			}
+		})
+	}
+}
+
 // testAccRealtimeComputeVvpCaptureResourceId stores the id of the given resource in target.
 func testAccRealtimeComputeVvpCaptureResourceId(resourceName string, target *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
