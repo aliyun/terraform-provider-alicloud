@@ -1377,7 +1377,7 @@ func TestAccAliCloudMongoDBInstance_governanceActions(t *testing.T) {
 						{
 							"preferred_backup_time":                       "19:00Z-20:00Z",
 							"snapshot_backup_type":                        "Flash",
-							"backup_retention_policy_on_cluster_deletion": "7",
+							"backup_retention_policy_on_cluster_deletion": "1",
 							"backup_tamper_proof_enabled":                 "true",
 							"advanced_backup_data_policies":               "[{\"BackupType\":\"full\"}]",
 							"advanced_backup_log_policies":                "[{\"BackupType\":\"log\"}]",
