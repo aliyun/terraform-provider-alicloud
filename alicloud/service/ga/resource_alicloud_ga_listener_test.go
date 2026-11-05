@@ -747,7 +747,7 @@ func TestAccAliCloudGaListener_endpointGroupConfigurations(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"accelerator_id":                  CHECKSET,
+						"accelerator_id":                  acctest.CHECKSET,
 						"port_ranges.#":                   "1",
 						"endpoint_group_configurations.#": "1",
 					}),
@@ -810,7 +810,7 @@ func TestAccAliCloudGaListener_customRoutingEndpointGroupConfigurations(t *testi
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"accelerator_id": CHECKSET,
+						"accelerator_id": acctest.CHECKSET,
 						"listener_type":  "CustomRouting",
 						"port_ranges.#":  "1",
 						"custom_routing_endpoint_group_configurations.#": "1",
@@ -866,7 +866,7 @@ func TestAccAliCloudGaListener_backendPorts(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"accelerator_id":  CHECKSET,
+						"accelerator_id":  acctest.CHECKSET,
 						"protocol":        "HTTP",
 						"port_ranges.#":   "1",
 						"backend_ports.#": "1",

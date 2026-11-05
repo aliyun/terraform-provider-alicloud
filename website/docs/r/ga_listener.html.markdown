@@ -148,7 +148,7 @@ The endpoint_group_configurations supports the following:
 * `endpoint_ip_version` - (Optional) The IP version that GA uses to communicate with the endpoint service. Valid values: `IPv4`, `IPv6`, `ProtocolAffinity`.
 * `health_check_host` - (Optional) The host header that is used for health checks.
 
-### `endpoint_configurations`
+### `endpoint_group_configurations.endpoint_configurations`
 
 The endpoint_configurations supports the following:
 
@@ -163,7 +163,7 @@ The endpoint_configurations supports the following:
 * `provider` - (Optional) The service provider of the endpoint.
 * `enable_client_ip_preservation` - (Optional, Bool) Specifies whether to preserve client IP addresses for the endpoint.
 
-### `port_overrides`
+### `endpoint_group_configurations.port_overrides`
 
 The port_overrides supports the following:
 
@@ -180,7 +180,7 @@ The custom_routing_endpoint_group_configurations supports the following:
 * `destination_configurations` - (Optional, Set) The traffic destinations of the endpoint group. See [`destination_configurations`](#destination_configurations) below.
 * `custom_routing_endpoint_configurations` - (Optional, Set) The endpoints of the custom routing endpoint group. See [`custom_routing_endpoint_configurations`](#custom_routing_endpoint_configurations) below.
 
-### `destination_configurations`
+### `custom_routing_endpoint_group_configurations.destination_configurations`
 
 The destination_configurations supports the following:
 
@@ -188,7 +188,7 @@ The destination_configurations supports the following:
 * `from_port` - (Optional, Int) The starting port of the traffic destination.
 * `to_port` - (Optional, Int) The ending port of the traffic destination.
 
-### `custom_routing_endpoint_configurations`
+### `custom_routing_endpoint_group_configurations.custom_routing_endpoint_configurations`
 
 The custom_routing_endpoint_configurations supports the following:
 
@@ -197,14 +197,14 @@ The custom_routing_endpoint_configurations supports the following:
 * `traffic_to_endpoint_policy` - (Optional) The traffic policy for the endpoint. Valid values: `AllowAll`, `DenyAll`, `AllowCustom`.
 * `policy_configurations` - (Optional, Set) The traffic policy configurations of the endpoint. See [`policy_configurations`](#policy_configurations) below.
 
-### `policy_configurations`
+### `custom_routing_endpoint_group_configurations.custom_routing_endpoint_configurations.policy_configurations`
 
 The policy_configurations supports the following:
 
 * `address` - (Optional) The destination address of the traffic policy.
 * `custom_routing_port_ranges` - (Optional, Set) The port ranges of the traffic policy. See [`custom_routing_port_ranges`](#custom_routing_port_ranges) below.
 
-### `custom_routing_port_ranges`
+### `custom_routing_endpoint_group_configurations.custom_routing_endpoint_configurations.policy_configurations.custom_routing_port_ranges`
 
 The custom_routing_port_ranges supports the following:
 
