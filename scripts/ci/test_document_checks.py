@@ -5,6 +5,7 @@ import io
 import os
 from pathlib import Path
 import shlex
+import subprocess
 import tempfile
 import unittest
 
@@ -82,6 +83,49 @@ class ContentScopeTest(unittest.TestCase):
         content = checks.scoped_commands([index, resource])['Content']
         self.assertIn('./' + resource, content)
         self.assertNotIn('./' + index, content)
+
+
+class DocumentToolDirectoryTest(unittest.TestCase):
+    def test_default_home_tools_work_without_new_environment_variable(self):
+        self.check_tool_directory(override=False)
+
+    def test_explicit_tool_directory_overrides_home_for_scoped_and_full_checks(self):
+        self.check_tool_directory(override=True)
+
+    def check_tool_directory(self, override):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / 'home'
+            default = home / '.cache' / 'terraform-doc-tools'
+            alternate = root / 'explicit tools with spaces'
+            for tools in (default, alternate):
+                tools.mkdir(parents=True)
+                for tool in ('misspell', 'terrafmt'):
+                    binary = tools / tool
+                    binary.write_text('#!/bin/sh\nprintf "%s\\n" "$0" >> "$DOC_TOOL_LOG"\n')
+                    binary.chmod(0o755)
+            doc = root / 'website/docs/r/example.html.markdown'
+            doc.parent.mkdir(parents=True)
+            doc.write_text('# Example\n')
+            log = root / 'invoked-tools'
+            env = dict(os.environ, HOME=str(home), DOC_TOOL_LOG=str(log))
+            env.pop('TF_DOC_TOOLS_DIR', None)
+            if override:
+                env['TF_DOC_TOOLS_DIR'] = str(alternate)
+            previous = Path.cwd()
+            try:
+                os.chdir(root)
+                for full in (False, True):
+                    with self.subTest(full=full):
+                        commands = checks.scoped_commands(['website/docs/r/example.html.markdown'], full=full)
+                        log.write_text('')
+                        for tool in ('misspell', 'terrafmt'):
+                            subprocess.run(['bash', '-e', '-c', commands[tool]], env=env, check=True)
+                        expected = alternate if override else default
+                        self.assertEqual(log.read_text().splitlines(),
+                                         [str(expected / tool) for tool in ('misspell', 'terrafmt')])
+            finally:
+                os.chdir(previous)
 
 
 if __name__ == '__main__':

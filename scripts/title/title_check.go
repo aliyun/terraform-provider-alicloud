@@ -21,6 +21,28 @@
 // yet; they only clear the docs-only and testcase-only states, and so do
 // register.go and shared helper files that implement no registration.
 //
+// A whole-product migration can name too many entities for one title —
+// the per-entity fragments ran the largest packages (RAM, ResourceManager,
+// CR, CloudMonitorService) past the SCM title length and were rejected
+// with SCM_PR_CONTENT_INVALID. The concise form migrate/<product>:
+// waives the per-entity fragments for one product's existing migration
+// only: every changed service resource or data source must belong to that
+// single product, every one must already exist at the base (a migration,
+// never a new entity), and the marker's product must match. New entities,
+// flat entities and a cross-product mix keep demanding their declarations,
+// so the marker is a scoped shortcut, not a "migrate" bypass. The base
+// index also reads the root alicloud/provider.go so a public alias
+// registered there (Quotas #11288) is announced as modified when it moves
+// into a service register, not as new.
+//
+// The base index is kind-aware: a Resource and a Data Source may share a
+// type name — it is legal and common in the Provider — so the index keeps
+// the two kinds apart. A migration that moves a root DataSource alias into
+// a service Resource register, or vice versa, must announce the new kind,
+// not waive it behind migrate/<product>:. The root alicloud/provider.go
+// DataSourcesMap yields data sources and ResourcesMap yields resources, so
+// ProviderRegisteredNames returns the kind each map belongs to.
+//
 // The gate runs as the base-restored copy of itself in CI — the workflows
 // check out the pull request head, then restore scripts/title and
 // scripts/internal/splitlayout from the base so master's code judges the
@@ -36,6 +58,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/scripts/internal/splitlayout"
@@ -57,6 +80,11 @@ type entity struct {
 	// an entity that moved from the flat layout into the split one is
 	// announced with the modified form, not the new-entity one.
 	existing bool
+	// product is the split-layout package key a service entity belongs to
+	// ("" for flat entities). The whole-product migration aggregate is
+	// scoped to one product, so the title gate needs each entity's product
+	// to refuse a cross-product change hiding behind a single marker.
+	product string
 }
 
 // titleFile is what the title policy needs to know about one diff file.
@@ -201,15 +229,20 @@ func flatEntities(name string, added bool) []entity {
 // testcase-only states. Whether an entity counts as new is decided by the
 // base commit's index, not by the file's diff status: a migration into
 // the split layout adds implementation files for entities that already
-// exist.
+// exist. The index is kind-aware, so a base DataSource does not satisfy a
+// same-named service Resource: the two kinds are kept apart.
 func serviceEntities(name string, index *baseIndex) []entity {
+	product, _, _, ok := splitlayout.IsSplitSource(name)
+	if !ok {
+		return nil
+	}
 	var entities []entity
 	for _, r := range joinRegistrations(name) {
 		switch r.Kind {
 		case splitlayout.KindResource:
-			entities = append(entities, entity{typeName: r.TypeName, existing: index.has(r.TypeName)})
+			entities = append(entities, entity{typeName: r.TypeName, existing: index.has(r.TypeName, false), product: product})
 		case splitlayout.KindDataSource:
-			entities = append(entities, entity{typeName: r.TypeName, dataSource: true, existing: index.has(r.TypeName)})
+			entities = append(entities, entity{typeName: r.TypeName, dataSource: true, existing: index.has(r.TypeName, true), product: product})
 		}
 	}
 	return entities
@@ -262,23 +295,44 @@ func resolveLines(path string) []string {
 	return lines
 }
 
-// baseIndex is the set of provider entity names that existed at the base
-// commit, in either layout: the flat source files directly, and the
-// registrations of every product register.go. It decides whether a
-// service entity is announced as new or as existing.
+// baseIndex is the set of provider entities that existed at the base
+// commit, in either layout: the flat source files directly, the
+// registrations of every product register.go, and the root
+// alicloud/provider.go public aliases. It decides whether a service entity
+// is announced as new or as existing. The index is kind-aware: resources
+// and data sources are kept in separate maps, because a Resource and a
+// Data Source may share a type name, and a same-name collision must not
+// let one kind waive the other's declaration. Ephemeral, list and action
+// registrations have no house title form, so they never satisfy a resource
+// or data-source lookup; they are retained in a separate others map rather
+// than folded into resources, so a base ephemeral (or list/action) does
+// not let a same-named head Resource be waived behind migrate/<product>:.
 type baseIndex struct {
-	names map[string]bool
+	resources   map[string]bool
+	dataSources map[string]bool
+	others      map[string]bool
 }
 
-// has reports whether typeName existed at the indexed base commit.
-func (b *baseIndex) has(typeName string) bool {
-	return b != nil && b.names[typeName]
+// has reports whether typeName existed at the indexed base commit as the
+// given kind: dataSource consults the data-source map, otherwise the
+// resource map. A nil index or a missing kind reports not existing.
+func (b *baseIndex) has(typeName string, dataSource bool) bool {
+	if b == nil {
+		return false
+	}
+	if dataSource {
+		return b.dataSources[typeName]
+	}
+	return b.resources[typeName]
 }
 
 // loadBaseIndex builds the entity index of one base commit from git: the
-// flat sources directly under alicloud/, and every register.go under
-// alicloud/service/. A base without the split layout lists no products
-// and simply carries the flat names.
+// flat sources directly under alicloud/, every register.go under
+// alicloud/service/ and alicloud/provider/core, and the root
+// alicloud/provider.go whose DataSourcesMap and ResourcesMap register the
+// public aliases the flat layout keeps at the provider root. A base without
+// the split layout lists no products and simply carries the flat and root
+// names.
 func loadBaseIndex(base string) (*baseIndex, error) {
 	flat, err := gitLines("ls-tree", "--name-only", base, "--", "alicloud/")
 	if err != nil {
@@ -299,34 +353,171 @@ func loadBaseIndex(base string) (*baseIndex, error) {
 			sources[path] = src
 		}
 	}
-	return baseIndexFromSources(flat, sources), nil
+	// The root provider.go registers aliases (Quotas #11288) that no flat
+	// filename stem and no service register.go carries; without them a
+	// migration that moves such an alias into a service register is
+	// misannounced as new. A base predating provider.go simply has none.
+	providerSrc, err := exec.Command("git", "show", base+":alicloud/provider.go").Output()
+	if err != nil {
+		providerSrc = nil
+	}
+	return baseIndexFromSources(flat, sources, providerSrc), nil
 }
 
-// baseIndexFromSources builds the entity index from the flat source paths
-// and the register.go sources of one tree; the git plumbing in
-// loadBaseIndex only gathers those.
-func baseIndexFromSources(flatFiles []string, registers map[string][]byte) *baseIndex {
-	index := &baseIndex{names: make(map[string]bool)}
+// baseIndexFromSources builds the entity index from the flat source paths,
+// the register.go sources of one tree and the root provider.go source; the
+// git plumbing in loadBaseIndex only gathers those. Flat stems, register
+// entries and root aliases are all filed by kind, so a same-name
+// Resource/DataSource collision never lets one kind satisfy the other.
+func baseIndexFromSources(flatFiles []string, registers map[string][]byte, providerSrc []byte) *baseIndex {
+	index := &baseIndex{resources: make(map[string]bool), dataSources: make(map[string]bool), others: make(map[string]bool)}
 	for _, file := range flatFiles {
-		if !strings.HasSuffix(file, ".go") {
+		if !strings.HasSuffix(file, ".go") || strings.HasSuffix(file, "_test.go") {
 			continue
 		}
 		stem := strings.TrimSuffix(file[strings.LastIndex(file, "/")+1:], ".go")
-		index.names[strings.TrimPrefix(strings.TrimPrefix(stem, "resource_"), "data_source_")] = true
+		// Only a real flat implementation file — resource_alicloud_* or
+		// data_source_alicloud_* — names a provider entity; the _test.go
+		// files were skipped above, and a helper or provider.go stem with no
+		// resource_/data_source_ prefix names no entity. A type name that
+		// legitimately ends in _test is still proven by a real register.go
+		// or root provider.go registration, not by a test-file stem.
+		var kind splitlayout.Kind
+		var typeName string
+		switch {
+		case strings.HasPrefix(stem, "resource_"):
+			kind = splitlayout.KindResource
+			typeName = strings.TrimPrefix(stem, "resource_")
+		case strings.HasPrefix(stem, "data_source_"):
+			kind = splitlayout.KindDataSource
+			typeName = strings.TrimPrefix(stem, "data_source_")
+		default:
+			continue
+		}
+		index.add(typeName, kind)
 	}
 	for _, src := range registers {
 		entries := append(splitlayout.SDKRegisterEntries(src), splitlayout.FrameworkRegisterEntries(src)...)
 		for _, e := range entries {
-			index.names[e.TypeName] = true
+			index.add(e.TypeName, e.Kind)
 		}
 	}
+	for _, e := range splitlayout.ProviderRegisteredNames(providerSrc) {
+		index.add(e.TypeName, e.Kind)
+	}
 	return index
+}
+
+// add records typeName at the base commit as the given kind. A Data Source
+// goes into the data-source map and a Resource into the resource map; any
+// other kind (ephemeral, action, list) goes into the separate others map,
+// so it is retained without satisfying a resource or data-source lookup.
+// The title gate only resolves Resource and DataSource entities, so those
+// kinds never reach a title demand, but folding them into resources would
+// let a base ephemeral satisfy a same-named head Resource and be waived
+// behind migrate/<product>: — keeping them apart closes that gap.
+func (b *baseIndex) add(typeName string, kind splitlayout.Kind) {
+	switch kind {
+	case splitlayout.KindDataSource:
+		b.dataSources[typeName] = true
+	case splitlayout.KindResource:
+		b.resources[typeName] = true
+	default:
+		b.others[typeName] = true
+	}
+}
+
+// aggregateMarkerRe matches the concise whole-product migration form
+// migrate/<product>:. The product segment mirrors the split-layout package
+// key charset, so a path-like description or the bare word "migrate" never
+// parses as a marker, and resource/<type>:/data-source/<type>:/ fragments
+// stay distinct from it.
+var aggregateMarkerRe = regexp.MustCompile(`migrate/([0-9A-Za-z_-]+):`)
+
+// aggregate reports whether the title's migrate/<product>: marker waives the
+// per-entity resource/<type>:/data-source/<type>:/ fragments for one
+// product's existing migration. The waiver applies only when every changed
+// service resource or data source belongs to a single product, every one of
+// them already existed at the base (a migration, never a new entity) and the
+// product the marker names is that same product. A title that merely
+// contains the word "migrate", or a change that mixes products, adds new
+// entities or names the wrong product, gets no waiver: the per-entity rules
+// keep applying, and a title that leaned on the waiver then fails. New
+// entities and flat entities are never waived, so the marker cannot hide an
+// undeclared addition or a flat alias left in the root layout.
+type aggregate struct {
+	product string
+	ok      bool
+}
+
+// covers reports whether the aggregate waives the modified-form requirement
+// for one existing service entity.
+func (a aggregate) covers(e entity) bool {
+	return a.ok && e.product != "" && e.product == a.product
+}
+
+// parseAggregate decides whether the title's migrate/<product>: marker
+// waives the per-entity fragments for one product's existing migration. It
+// is a pure waiver decision: when the change does not qualify it simply
+// returns ok=false, and the per-entity loop enforces the ordinary rules —
+// a new entity still demands its New Resource/New Data Source form, an
+// existing entity still demands its resource/<type>:/data-source/<type>:/
+// fragment. So a cross-product mix, a new entity or a wrong product is
+// identifiable through the very declarations the waiver would have hidden,
+// and a title that declares every entity beside the marker still passes.
+func parseAggregate(prTitle string, files []titleFile) aggregate {
+	product := aggregateMarker(prTitle)
+	if product == "" {
+		return aggregate{}
+	}
+	var products []string
+	newEntity := false
+	for _, file := range files {
+		for _, e := range file.entities {
+			if e.product == "" {
+				continue // flat entities are not part of a product migration
+			}
+			if !e.existing {
+				newEntity = true
+			}
+			products = append(products, e.product)
+		}
+	}
+	if len(products) == 0 {
+		// No service entity to migrate: the marker is ordinary text, and
+		// the docs-only, testcase-only and per-entity rules still judge it.
+		return aggregate{product: product}
+	}
+	first := products[0]
+	single := true
+	for _, p := range products {
+		if p != first {
+			single = false
+			break
+		}
+	}
+	if single && !newEntity && first == product {
+		return aggregate{product: product, ok: true}
+	}
+	return aggregate{product: product}
+}
+
+// aggregateMarker returns the product named by a migrate/<product>: marker,
+// or "" when the title uses no such marker.
+func aggregateMarker(prTitle string) string {
+	m := aggregateMarkerRe.FindStringSubmatch(prTitle)
+	if m == nil {
+		return ""
+	}
+	return m[1]
 }
 
 // checkTitle enforces the title conventions: every registered entity a
 // changed source file implements must be announced in the title — the
 // new-entity form for entities the base did not know, the modified form
-// otherwise — a docs-only change must start with the docs marker, a
+// otherwise, unless the concise whole-product migration form
+// migrate/<product>: waives the per-entity fragments for one product's
+// existing migration — a docs-only change must start with the docs marker, a
 // testcase-only one must carry the testcase marker, and no title may
 // truncate with an ellipsis.
 func checkTitle(prTitle string, files []titleFile) bool {
@@ -339,6 +530,8 @@ func checkTitle(prTitle string, files []titleFile) bool {
 	if strings.Contains(prTitle, "…") || strings.HasSuffix(prTitle, "...") {
 		reportError("The PR title should not omit important infos about added or modified files. xxx... is not recommended.")
 	}
+
+	agg := parseAggregate(prTitle, files)
 
 	docsOnly, testcaseOnly := true, true
 	docsChanged, testcaseChanged := false, false
@@ -362,6 +555,9 @@ func checkTitle(prTitle string, files []titleFile) bool {
 				} else if !strings.Contains(prTitle, "New Resource: "+e.typeName) {
 					reportError("The PR title should contains new resource info New Resource: %s", e.typeName)
 				}
+				continue
+			}
+			if agg.covers(e) {
 				continue
 			}
 			titleStr := "resource/"

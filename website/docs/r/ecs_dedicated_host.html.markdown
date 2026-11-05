@@ -16,6 +16,7 @@ This resouce used to create a dedicated host and store its initial version. For 
 -> **NOTE:** Destroying a `PrePaid` instance fails with an error since v2.1.0. To destroy it, convert the instance to `PostPaid` by setting `payment_type = "PostPaid"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
 
 ## Example Usage
+
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -61,6 +62,7 @@ resource "alicloud_ecs_dedicated_host" "example" {
   sale_cycle          = "Month"
 }
 ```
+
 ### Deleting alicloud_ecs_dedicated_host or removing it from your configuration
 
 The alicloud_ecs_dedicated_host resource allows you to manage payment_type = "PrePaid" dedicated host, but Terraform cannot destroy it.
@@ -85,9 +87,7 @@ The following arguments are supported:
 * `detail_fee` - (Optional) Specifies whether to return the billing details of the order when the billing method is changed from subscription to pay-as-you-go. Default: `false`.
 * `dry_run` - (Optional) Specifies whether to only validate the request. Default: `false`.
 * `expired_time` - (Optional, Computed) The subscription period of the dedicated host. The Period parameter takes effect and is required only when the ChargeType parameter is set to PrePaid.
-* `network_attributes` - (Optional) dedicated host network parameters. contains the following attributes:
-  * `slb_udp_timeout` - The timeout period for a UDP session between Server Load Balancer (SLB) and the dedicated host. Unit: seconds. Valid values: 15 to 310.
-  * `udp_timeout` - The timeout period for a UDP session between a user and an Alibaba Cloud service on the dedicated host. Unit: seconds. Valid values: 15 to 310.
+* `network_attributes` - (Optional) Dedicated host network parameters. See [`network_attributes`](#network_attributes) below.
 * `payment_type` - (Optional, Computed) The billing method of the dedicated host. Valid values: `PrePaid`, `PostPaid`. Default: `PostPaid`.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the dedicated host belongs.
 * `sale_cycle` - (Optional, Computed) The unit of the subscription period of the dedicated host.
@@ -96,6 +96,13 @@ The following arguments are supported:
 * `cpu_over_commit_ratio` - (Optional, Available since v1.123.1) CPU oversold ratio. Only custom specifications g6s, c6s, r6s support setting the CPU oversold ratio.
 * `dedicated_host_cluster_id` - (Optional, Available since v1.123.1) The dedicated host cluster ID to which the dedicated host belongs.
 * `min_quantity` - (Optional, Available since v1.123.1) Specify the minimum purchase quantity of a dedicated host.
+
+### `network_attributes`
+
+The network_attributes supports the following:
+
+* `slb_udp_timeout` - (Optional) The timeout period for a UDP session between Server Load Balancer (SLB) and the dedicated host. Unit: seconds. Valid values: 15 to 310.
+* `udp_timeout` - (Optional) The timeout period for a UDP session between a user and an Alibaba Cloud service on the dedicated host. Unit: seconds. Valid values: 15 to 310.
 
 ## Attributes Reference
 

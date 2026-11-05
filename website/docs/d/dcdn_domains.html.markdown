@@ -7,11 +7,11 @@ description: |-
   Provides a collection of DCDN Domains to the specified filters.
 ---
 
-# alicloud\_dcdn\_domains
+# alicloud_dcdn_domains
 
 Provides a collection of DCDN Domains to the specified filters.
 
--> **NOTE:** Available since 1.94.0.
+-> **NOTE:** Available since v1.94.0.
 
 ## Example Usage
 
@@ -36,6 +36,7 @@ The following arguments are supported:
 * `check_domain_show` - (Optional) Specifies whether to display the domains in the checking, check_failed, or configure_failed status. Valid values: `true` or `false`.
 * `domain_search_type` - (Optional) The search method. Default value: `fuzzy_match`. Valid values: `fuzzy_match`, `pre_match`, `suf_match`, `full_match`.
 * `resource_group_id` - (Optional) The ID of the resource group.
+* `security_token` - (Optional) The security token.
 * `status` - (Optional) The status of DCDN Domain.
 * `enable_details` - (Optional) Default to `false`. Set it to true can output more details.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

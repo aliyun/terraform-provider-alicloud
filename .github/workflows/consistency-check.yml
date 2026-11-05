@@ -24,8 +24,9 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: terraform-ci-policy
-    timeout-minutes: 3
+    # API-only discovery has its own restricted pool, separate from Gate workers.
+    runs-on: terraform-ci-route
+    timeout-minutes: 5
     outputs:
       classification: ${{ steps.select.outputs.classification }}
       relevant: ${{ steps.select.outputs.relevant }}
@@ -33,7 +34,7 @@ jobs:
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@b0f628c5d908294282232241905bb7d5ba385e9e
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@cc0a874ce1783a88cc1bacfb961e4dd7c909cbb6
 
   consistency:
     name: Consistency
@@ -53,6 +54,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -63,11 +65,53 @@ jobs:
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Test CI change scopes
+        shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
-          if [[ -f scripts/ci/test_check_scope.py && -f scripts/ci/check_scope.py ]]; then
-            python3 -m unittest discover -s scripts/ci -p test_check_scope.py
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
+          fi
+          python3 "$helper" scope
+      - name: Prepare writable Go/tool cache
+        # Route A: keep caches when HOME-owned defaults are writable; redirect
+        # only the unwritable ones to a per-job $RUNNER_TEMP subdir so a polluted
+        # /home/runner on the trusted fleet no longer causes EACCES in setup-go,
+        # the node-local seed restore, consistency_check or the master tfproviderlint
+        # build. Runs before setup-go so the env it exports is in effect throughout.
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
           fi
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -105,6 +149,30 @@ jobs:
             git archive "$PR_BASE_SHA" -- "${cache_inputs[@]}" | tar -x -C "$test_root"
           fi
           python3 -m unittest discover -s "$test_root/scripts/ci" -p test_go_cache.py
+      - name: Restore node-local Go cache
+        id: local-go-cache
+        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Older PR heads may lack the helper. Use their exact base fixture.
+          helper=scripts/ci/restore-local-go-cache.py
+          if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/restore-local-go-cache.py"
+            if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
+              rm -f "$helper"
+            fi
+          fi
+          # The administrator helper is read-only and still validates checkout hashes.
+          if [[ ! -s "$helper" && -f /opt/terraform-ci-cache/restore.py ]]; then
+            helper=/opt/terraform-ci-cache/restore.py
+          fi
+          if [[ -s "$helper" ]]; then
+            python3 "$helper"
+          else
+            echo 'hit=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: Resolve Go cache paths
         id: go-cache
         shell: bash
@@ -114,7 +182,7 @@ jobs:
           echo "module=$(go env GOMODCACHE)/cache/download" >> "$GITHUB_OUTPUT"
           echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
       - name: Restore trusted Go cache
-        if: ${{ needs.route.outputs.classification == 'trusted' }}
+        if: ${{ needs.route.outputs.classification == 'trusted' && steps.local-go-cache.outputs.hit != 'true' }}
         id: cache-restore
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -134,7 +202,7 @@ jobs:
             go run scripts/consistency/consistency_check.go -fileNames="diff.out"
           fi
       - name: Save master Go cache
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.cache-restore.outputs.cache-hit != 'true' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.local-go-cache.outputs.hit != 'true' && steps.cache-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -146,21 +214,22 @@ jobs:
         id: tfproviderlint-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/terraform-ci-tools/tfproviderlint
-          key: tfproviderlint-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-v0.31.0
+          path: ${{ env.TF_CI_TOOLS_DIR }}/tfproviderlint
+          key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0
       - name: Build master tfproviderlint binary
         id: tfproviderlint-build
         continue-on-error: true
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.tfproviderlint-cache.outputs.cache-hit != 'true' }}
         env:
+          GOTOOLCHAIN: go1.26.10
           GOBIN: ${{ runner.temp }}/tfproviderlint-bin
         run: |
-          mkdir -p "$GOBIN" "$HOME/.cache/terraform-ci-tools"
+          mkdir -p "$GOBIN" "$TF_CI_TOOLS_DIR"
           go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
-          cp "$GOBIN/tfproviderlint" "$HOME/.cache/terraform-ci-tools/tfproviderlint"
+          cp "$GOBIN/tfproviderlint" "$TF_CI_TOOLS_DIR/tfproviderlint"
       - name: Save master tfproviderlint binary
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.route.outputs.classification == 'trusted' && steps.tfproviderlint-cache.outputs.cache-hit != 'true' && steps.tfproviderlint-build.outcome == 'success' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/terraform-ci-tools/tfproviderlint
-          key: tfproviderlint-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.go-version') }}-v0.31.0
+          path: ${{ env.TF_CI_TOOLS_DIR }}/tfproviderlint
+          key: tfproviderlint-v2-${{ runner.os }}-${{ runner.arch }}-go1.26.10-v0.31.0

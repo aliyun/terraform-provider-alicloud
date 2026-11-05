@@ -32,12 +32,20 @@ func init() {
 
 var (
 	fileNames    = flag.String("fileNames", "", "the files to check diff")
+	diffBase     = flag.String("base", os.Getenv("DIFF_BASE"), "base commit of the complete change range")
+	diffHead     = flag.String("head", os.Getenv("DIFF_HEAD"), "head commit of the complete change range")
 	resourceName = flag.String("resource", "", "directly specify a resource name to check (e.g., alicloud_ecs_instance)")
 )
 
 func main() {
 	exitCode := 0
 	flag.Parse()
+	var err error
+	*diffBase, *diffHead, err = resolveRevisions(*diffBase, *diffHead)
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
 
 	// Mode 1: Direct resource name check (for local use)
 	if resourceName != nil && len(*resourceName) > 0 {
@@ -53,8 +61,16 @@ func main() {
 		log.Warningf("the diff file is empty")
 		return
 	}
-	byt, _ := ioutil.ReadFile(*fileNames)
-	diff, _ := diffparser.Parse(string(byt))
+	byt, err := ioutil.ReadFile(*fileNames)
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
+	diff, err := diffparser.Parse(string(byt))
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
 	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
 	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
 	for _, file := range diff.Files {
@@ -74,7 +90,7 @@ func main() {
 			}
 			log.Infof("==> Checking %s %s breaking change...", kind, resName)
 
-			if !checkBreakingChange(file.NewName, resName, legacyStem, "HEAD^", "HEAD") {
+			if !checkBreakingChange(file.NewName, resName, legacyStem, *diffBase, *diffHead) {
 				exitCode = 1
 			}
 		} else if product, stem, isTest, ok := splitlayout.IsSplitSource(file.NewName); ok {
@@ -95,7 +111,7 @@ func main() {
 					legacyStem = "resource_"
 				}
 				log.Infof("==> Checking %s %s breaking change...", r.Kind, r.TypeName)
-				if !checkBreakingChange(r.ImplPath, r.TypeName, legacyStem, "HEAD^", "HEAD") {
+				if !checkBreakingChange(r.ImplPath, r.TypeName, legacyStem, *diffBase, *diffHead) {
 					exitCode = 1
 				}
 			}
@@ -116,7 +132,7 @@ func main() {
 					legacyStem = "data_source_"
 				}
 				log.Infof("==> Checking %s %s breaking change...", r.Kind, r.TypeName)
-				if !checkBreakingChange(r.ImplPath, r.TypeName, legacyStem, "HEAD^", "HEAD") {
+				if !checkBreakingChange(r.ImplPath, r.TypeName, legacyStem, *diffBase, *diffHead) {
 					exitCode = 1
 				}
 			}
@@ -127,6 +143,30 @@ func main() {
 	}
 
 	os.Exit(exitCode)
+}
+
+// CI must supply the same range used to select files. Standalone local use
+// retains the historical last-commit default; partial/invalid ranges fail closed.
+func resolveRevisions(base, head string) (string, string, error) {
+	if base == "" && head == "" && os.Getenv("GITHUB_ACTIONS") != "true" {
+		base, head = "HEAD^", "HEAD"
+	}
+	if base == "" || head == "" {
+		return "", "", fmt.Errorf("both DIFF_BASE and DIFF_HEAD (or -base and -head) are required")
+	}
+	resolve := func(rev string) (string, error) {
+		out, err := exec.Command("git", "rev-parse", "--verify", "--end-of-options", rev+"^{commit}").Output()
+		if err != nil {
+			return "", fmt.Errorf("invalid comparison revision %q: %w", rev, err)
+		}
+		return strings.TrimSpace(string(out)), nil
+	}
+	b, err := resolve(base)
+	if err != nil {
+		return "", "", err
+	}
+	h, err := resolve(head)
+	return b, h, err
 }
 
 // checkSingleResource checks a single registered entity by its full type
@@ -152,7 +192,7 @@ func checkSingleResource(fullName string) bool {
 			kind = "data source"
 		}
 		log.Infof("==> Checking %s %s breaking change...", kind, typeName)
-		passed = checkBreakingChange(filePath, typeName, legacyStem, "HEAD^", "HEAD") && passed
+		passed = checkBreakingChange(filePath, typeName, legacyStem, *diffBase, *diffHead) && passed
 	}
 	if checked {
 		return passed
@@ -166,7 +206,7 @@ func checkSingleResource(fullName string) bool {
 			legacyStem = "resource_"
 		}
 		log.Infof("==> Checking %s %s breaking change...", r.Kind, typeName)
-		return checkBreakingChange(r.ImplPath, typeName, legacyStem, "HEAD^", "HEAD")
+		return checkBreakingChange(r.ImplPath, typeName, legacyStem, *diffBase, *diffHead)
 	}
 	// Framework-native entities are checked through the same AST parsers.
 	if r := splitlayout.FrameworkFindByTypeName(typeName); r != nil {
@@ -178,7 +218,7 @@ func checkSingleResource(fullName string) bool {
 			legacyStem = "data_source_"
 		}
 		log.Infof("==> Checking %s %s breaking change...", r.Kind, typeName)
-		return checkBreakingChange(r.ImplPath, typeName, legacyStem, "HEAD^", "HEAD")
+		return checkBreakingChange(r.ImplPath, typeName, legacyStem, *diffBase, *diffHead)
 	}
 	log.Errorf("No implementation file found for %s in the flat or split layouts", typeName)
 	return false

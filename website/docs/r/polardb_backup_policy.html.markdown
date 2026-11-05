@@ -57,9 +57,40 @@ resource "alicloud_polardb_backup_policy" "default" {
   backup_retention_policy_on_cluster_deletion = "NONE"
 }
 ```
+
+### Advanced backup policies
+
+The following example manages a custom advanced data backup rule. Use a separate cluster from a Normal backup policy example: changing `backup_policy_level` from `Normal` to `Advanced` is irreversible. The cluster must support advanced backup policies (`advanced_policy_option` must not be `notSupport`).
+
+For a same-region rule such as this example, the provider fills omitted `src_region` and `dest_region` with its configured region because the API requires both values. For a cross-region rule (`src_type` or `dest_type` is `level2Cross`), set both regions explicitly.
+
+```terraform
+resource "alicloud_polardb_backup_policy" "advanced" {
+  db_cluster_id                               = alicloud_polardb_cluster.default.id
+  backup_policy_level                         = "Advanced"
+  backup_retention_policy_on_cluster_deletion = "NONE"
+
+  advanced_data_policies {
+    retention_type  = "delay"
+    retention_value = "7"
+    filter_type     = "crontab"
+    filter_key      = "dayOfWeek"
+    filter_value    = "1,2,3,4,5,6,7"
+    src_type        = "db"
+    dest_type       = "level1"
+  }
+}
+```
+
+`policy_id` is assigned by the service after creation. To manage an existing custom rule after importing the cluster policy, specify that rule's `policy_id` in the `advanced_data_policies` block. Rules generated automatically by the service are exposed through `auto_created_advanced_data_policies` and are never modified or deleted by this resource.
+
+Optional advanced-rule fields returned by the service retain their current values if removed from Terraform configuration. Removing an attribute is not a way to clear it; the API does not document clearing semantics for omitted fields. To remove a custom rule entirely, remove its `advanced_data_policies` block.
+
+In Advanced mode, the legacy data-backup and log-backup arguments cannot be changed through this resource; configure data backup behavior with `advanced_data_policies` instead. Removing this Terraform resource deletes only its managed custom advanced rules. It does not delete the cluster backup policy or restore the `Normal` level.
+
 ### Removing alicloud_polardb_cluster from your configuration
  
-The alicloud_polardb_backup_policy resource allows you to manage your polardb cluster policy, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the cluster policy. You can resume managing the cluster via the polardb Console.
+The `alicloud_polardb_backup_policy` resource manages a cluster policy, but Terraform cannot destroy the policy itself. Removing a Normal policy resource only removes it from Terraform state. Removing an Advanced policy resource deletes its managed custom advanced rules but leaves the cluster policy, its Advanced level, and service-generated rules in place.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_backup_policy&spm=docs.r.polardb_backup_policy.example&intl_lang=EN_US)
  
@@ -68,6 +99,8 @@ The alicloud_polardb_backup_policy resource allows you to manage your polardb cl
 The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
+* `backup_policy_level` - (Optional, Available since v2.2.0) Backup policy level, `Normal` or `Advanced`. Transitioning from `Normal` to `Advanced` cannot be reversed.
+* `advanced_data_policies` - (Optional, Available since v2.2.0) Custom advanced data backup policy blocks. Available only when `backup_policy_level` is `Advanced`. The provider creates, updates, or deletes these rules to match the configuration; service-generated rules are not managed. See [`advanced_data_policies`](#advanced_data_policies) below.
 * `preferred_backup_period` - (Optional) PolarDB Cluster backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]. Default to ["Tuesday", "Thursday", "Saturday"].
 * `preferred_backup_time` - (Optional) PolarDB Cluster backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
 * `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) Specifies whether to retain backups when you delete a cluster. Valid values are `ALL`, `LATEST`, `NONE`. Default to `NONE`. Value options can refer to the latest docs [ModifyBackupPolicy](https://www.alibabacloud.com/help/en/polardb/latest/modifybackuppolicy)
@@ -91,12 +124,56 @@ The following arguments are supported:
   -> **NOTE:** Note When you create a cluster, the default value of this parameter is 0.
 * `backup_retention_period` - (Optional) Cluster backup retention days, Fixed for 7 days, not modified.
 
+### `advanced_data_policies`
+
+The `advanced_data_policies` block supports:
+
+* `policy_id` - (Optional, Computed) Service-assigned rule ID. Specify it to take over and update an existing custom rule after importing the cluster policy.
+* `retention_type` - (Required) `never` or `delay`.
+* `retention_value` - (Optional, Computed) Retention duration in days; required when `retention_type` is `delay`.
+* `filter_type` - (Required) `crontab` or `event`.
+* `filter_key` - (Optional, Computed) `dayOfWeek`, `dayOfMonth`, `dayOfYear`, or `backupInterval`; required for `crontab`.
+* `filter_value` - (Optional, Computed) Filter expression corresponding to `filter_key`.
+* `src_type` - (Required) `db`, `level1`, `level2`, or `level2Cross`.
+* `src_region` - (Optional, Computed) Source region. Defaults to the provider region for same-region rules; required explicitly for cross-region rules.
+* `dest_type` - (Required) `level1`, `level2`, or `level2Cross`.
+* `dest_region` - (Optional, Computed) Destination region. Defaults to the provider region for same-region rules; required explicitly for cross-region rules.
+* `dump_action` - (Optional, Computed) `copy`.
+* `only_preserve_one_each_day` - (Optional, Computed) Whether to retain only one backup per day. If omitted, the service default is used.
+* `storage_class` - (Optional, Computed) Destination storage class.
+* `auto_created` - (Computed) Whether the service generated the rule.
+* `only_preserve_one_each_hour` - (Computed) Hourly preservation setting supplied by the service.
+* `bak_type` - (Computed) Backup type supplied by the service.
+
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The current backup policy resource ID. It is same as 'db_cluster_id'.
 * `enable_backup_log` - Indicates whether the log backup feature was enabled. Valid values are `0`, `1`. `1` By default, the log backup feature is enabled and cannot be disabled.
+* `advanced_policy_option` - Whether advanced policies are supported or enabled by the cluster.
+* `auto_created_advanced_data_policies` - Service-generated advanced backup rules. Fields have the same names as `advanced_data_policies`, but are read-only.
+
+### `auto_created_advanced_data_policies`
+
+Each service-generated rule exports:
+
+* `policy_id` - Service-assigned rule ID.
+* `retention_type` - Retention period type.
+* `retention_value` - Retention duration in days.
+* `filter_type` - Scheduling type.
+* `filter_key` - Scheduling key.
+* `filter_value` - Scheduling expression.
+* `src_type` - Source type.
+* `src_region` - Source region.
+* `dest_type` - Destination type.
+* `dest_region` - Destination region.
+* `dump_action` - Method for converting level-1 backups to level-2 backups.
+* `only_preserve_one_each_day` - Whether only one backup is retained per day.
+* `storage_class` - Destination storage class.
+* `auto_created` - Whether the service generated the rule.
+* `only_preserve_one_each_hour` - Hourly preservation setting.
+* `bak_type` - Backup type.
 
 ## Import
 

@@ -107,6 +107,17 @@ var (
 	OtsSearchIndexIsTemporarilyUnavailable    = errs.OtsSearchIndexIsTemporarilyUnavailable
 )
 
+// rdsRetryableQueryError is the root copy of the type that moved to
+// alicloud/service/rds with the RDS service. The root package keeps it so the
+// root rdsErrorHasCode below keeps compiling for non-RDS tests (vpc/route)
+// that still reference the root helper. RDS has its own copy in service/rds.
+type rdsRetryableQueryError struct {
+	cause error
+}
+
+func (e *rdsRetryableQueryError) Error() string { return e.cause.Error() }
+func (e *rdsRetryableQueryError) Unwrap() error { return e.cause }
+
 // rdsErrorHasCode matches structured RDS error codes and unwraps query retry metadata.
 func rdsErrorHasCode(err error, codes ...string) bool {
 	for {

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the available zones with the Network Load Balancer (NLB) Instance of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.191.0+.
+-> **NOTE:** Available since v1.191.0.
 
 ## Example Usage
 
@@ -31,12 +31,12 @@ The following arguments are supported:
 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of nlb instance zone IDs.
 * `zones` - A list of nlb Instance zones. Each element contains the following attributes:
-	* `id` - The ID of zone.
-	* `zone_id` - The zone ID.
-	* `local_name` - The local name.
+  * `id` - The ID of zone.
+  * `zone_id` - The zone ID.
+  * `local_name` - The local name.

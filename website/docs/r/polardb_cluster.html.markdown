@@ -26,6 +26,14 @@ Create a PolarDB MySQL cluster
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
@@ -74,6 +82,14 @@ Create a PolarDB PostgreSQL distributed cluster
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "PostgreSQL"
   db_version = "16"
@@ -117,6 +133,14 @@ Note: If there is only the role AliyunRDSSInceEncryptionDefaultRole under the ac
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_account" "current" {
 }
 
@@ -210,12 +234,14 @@ The following arguments are supported:
 * `tde_status` - (Optional, Available since 1.121.3) Specifies whether to enable TDE encryption. Valid values are `Enabled`, `Disabled`. Default to `Disabled`. TDE cannot be disabled after it is enabled. You can enable TDE during cluster creation or update an existing cluster to enable it.
 
   -> **NOTE:** `tde_status` only supports modification from `Disabled` to `Enabled`.
-* `encrypt_new_tables` - (Optional, Available since 1.124.1) turn on table auto encryption. Valid values are `ON`, `OFF`. Only MySQL 8.0 supports. 
+* `encrypt_new_tables` - (Optional, Computed, Type: String, Available since 1.124.1) turn on table auto encryption. Valid values are `ON`, `OFF`. Only MySQL 8.0 supports.
 
   -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
 * `encryption_key` - (Optional, Available since 1.200.0) The ID of the custom key. `encryption_key` cannot be modified after TDE is opened.
 * `role_arn` - (Optional, Available since 1.200.0) The Alibaba Cloud Resource Name (ARN) of the RAM role. A RAM role is a virtual identity that you can create within your Alibaba Cloud account. For more information see [RAM role overview](https://www.alibabacloud.com/help/en/resource-access-management/latest/ram-role-overview).
 * `enable_automatic_rotation` - (Optional, Type: bool, Available since v1.289.0) Specifies whether to enable automatic rotation of the TDE encryption key. Default to `false`. Valid values are `true`, `false`. This parameter takes effect only after TDE is enabled.
+
+  -> **NOTE:** Only PostgreSQL-compatible and Oracle syntax-compatible clusters support automatic key rotation; a custom KMS key (`encryption_key`) must be specified and TDE must be already enabled.
 * `security_group_ids` - (Optional, Available since 1.128.0) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 
   -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.

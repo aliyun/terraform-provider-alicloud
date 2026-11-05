@@ -35,17 +35,19 @@ jobs:
     permissions:
       checks: read
       pull-requests: read
-    runs-on: terraform-ci-policy
-    timeout-minutes: 3
+    # API-only discovery has its own restricted pool, separate from Gate workers.
+    runs-on: terraform-ci-route
+    timeout-minutes: 5
     outputs:
+      classification: ${{ steps.select.outputs.classification }}
       runner: ${{ steps.select.outputs.runner }}
     steps:
       - name: Select runner
         id: select
-        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@b0f628c5d908294282232241905bb7d5ba385e9e
+        uses: aliyun/terraform-provider-alicloud/.github/actions/terraform-ci-select-policy@cc0a874ce1783a88cc1bacfb961e4dd7c909cbb6
   docs-node:
     needs: route
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
@@ -56,6 +58,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -66,9 +69,21 @@ jobs:
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
       - name: Test parallel check runner
+        shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 -m unittest discover -s scripts/ci -p test_document_checks.py
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
+          fi
+          python3 "$helper" document
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
@@ -83,7 +98,7 @@ jobs:
     timeout-minutes: 20
   docs-go:
     needs: route
-    runs-on: ${{ fromJSON(needs.route.outputs.runner) }}
+    runs-on: ${{ needs.route.outputs.classification == 'trusted' && 'terraform-ci-lite' || fromJSON(needs.route.outputs.runner) }}
     permissions:
       contents: read
     steps:
@@ -94,6 +109,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Resolve change range
         id: change-range
         env:
@@ -103,6 +119,41 @@ jobs:
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
           CI_BASE_REF: ${{ github.ref_name }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Prepare writable Go/tool cache
+        # Route A: keep node-local Go/tool caches when the default HOME-owned
+        # directories are writable; redirect only the unwritable ones to a
+        # per-job $RUNNER_TEMP subdir so a polluted /home/runner on the trusted
+        # fleet no longer causes EACCES in setup-go, goimports, the misspell/
+        # terrafmt `go install` or the node-local seed restore. Publishes
+        # TF_DOC_TOOLS_DIR (and GOBIN/PATH) so the docs cache/install/run steps
+        # resolve one variable on every fleet state; runs before setup-go.
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
+        run: |
+          # Older PR checkouts may predate this helper. Keep legacy tool paths
+          # defined, then prefer the PR helper or its exact, validated base SHA.
+          echo "TF_CI_TOOLS_DIR=${TF_CI_TOOLS_DIR:-$HOME/.cache/terraform-ci-tools}" >> "$GITHUB_ENV"
+          echo "TF_DOC_TOOLS_DIR=${TF_DOC_TOOLS_DIR:-$HOME/.cache/terraform-doc-tools}" >> "$GITHUB_ENV"
+          helper=scripts/ci/ensure-writable-go-cache.sh
+          if [[ ! -s "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/ensure-writable-go-cache.sh"
+            if ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper" 2>/dev/null; then
+              git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+              git config --local remote.ci-base.promisor true
+              git config --local remote.ci-base.partialclonefilter blob:none
+              if ! git fetch --no-tags --no-recurse-submodules --filter=blob:none ci-base "$PR_BASE_SHA" ||
+                 ! git show "$PR_BASE_SHA:scripts/ci/ensure-writable-go-cache.sh" > "$helper"; then
+                rm -f "$helper"
+              fi
+            fi
+          fi
+          if [[ -s "$helper" ]]; then
+            bash "$helper"
+          else
+            echo '::notice::Writable-cache helper unavailable; using runner defaults.'
+          fi
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
@@ -114,35 +165,51 @@ jobs:
         id: misspell-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: ~/.cache/terraform-doc-tools/misspell
+          path: ${{ env.TF_DOC_TOOLS_DIR }}/misspell
           key: doc-tool-v1-${{ runner.os }}-${{ runner.arch }}-misspell-v0.3.4-${{ hashFiles('.go-version') }}
       - name: Install misspell
         if: steps.misspell-cache.outputs.cache-hit != 'true'
         env:
           GOBIN: ${{ runner.temp }}/doc-tool-bin
         run: |
-          mkdir -p "$GOBIN" "$HOME/.cache/terraform-doc-tools"
+          mkdir -p "$GOBIN" "$TF_DOC_TOOLS_DIR"
           go install github.com/client9/misspell/cmd/misspell@v0.3.4
-          cp "$GOBIN/misspell" "$HOME/.cache/terraform-doc-tools/misspell"
+          cp "$GOBIN/misspell" "$TF_DOC_TOOLS_DIR/misspell"
       - name: Cache terrafmt binary
         id: terrafmt-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: ~/.cache/terraform-doc-tools/terrafmt
+          path: ${{ env.TF_DOC_TOOLS_DIR }}/terrafmt
           key: doc-tool-v1-${{ runner.os }}-${{ runner.arch }}-terrafmt-v0.5.7-${{ hashFiles('.go-version') }}
       - name: Install terrafmt
         if: steps.terrafmt-cache.outputs.cache-hit != 'true'
         env:
           GOBIN: ${{ runner.temp }}/doc-tool-bin
         run: |
-          mkdir -p "$GOBIN" "$HOME/.cache/terraform-doc-tools"
+          mkdir -p "$GOBIN" "$TF_DOC_TOOLS_DIR"
           go install github.com/katbyte/terrafmt@v0.5.7
-          cp "$GOBIN/terrafmt" "$HOME/.cache/terraform-doc-tools/terrafmt"
+          cp "$GOBIN/terrafmt" "$TF_DOC_TOOLS_DIR/terrafmt"
       - name: Run documentation checks in parallel
         env:
           DOCUMENT_CHECK_FULL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
-        run: python3 scripts/ci/run-document-checks.py --group go
+          TF_DOC_TOOLS_DIR: ${{ env.TF_DOC_TOOLS_DIR }}
+        shell: bash
+        run: |
+          driver=scripts/ci/run-document-checks.py
+          if [[ "$TF_DOC_TOOLS_DIR" != "$HOME/.cache/terraform-doc-tools" ]] &&
+             ! grep -q TF_DOC_TOOLS_DIR "$driver"; then
+            # Older PR drivers hard-code HOME/.cache. Adapt their environment,
+            # retaining the PR's checker logic and all resolved Go cache paths.
+            export GOPATH="$(go env GOPATH)" GOMODCACHE="$(go env GOMODCACHE)"
+            export GOCACHE="$(go env GOCACHE)" GOENV="$(go env GOENV)"
+            compat_home="$(mktemp -d "$RUNNER_TEMP/doc-check-home.XXXXXX")"
+            mkdir -p "$compat_home/.cache"
+            ln -s "$(cd "$TF_DOC_TOOLS_DIR" && pwd)" "$compat_home/.cache/terraform-doc-tools"
+            HOME="$compat_home" python3 "$driver" --group go
+          else
+            python3 "$driver" --group go
+          fi
     name: docs-go
     timeout-minutes: 20

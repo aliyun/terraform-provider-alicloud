@@ -376,7 +376,6 @@ The following attributes are exported:
 * `bgp_config` - Bgp configuration information.
   * `status` - The negotiation status of Bgp.
 * `create_time` - The creation time of the resource
-* `tunnel_bandwidth` - The bandwidth specification of a single VPN tunnel.
 * `health_check_config` - This parameter is supported if you create an vpn attachment in single-tunnel mode.
   * `status` - health check status
 * `status` - The status of the resource

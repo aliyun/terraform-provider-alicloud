@@ -1,0 +1,362 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package paiworkspace
+
+import (
+	"fmt"
+	"log"
+	"net/url"
+	"regexp"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourcePaiWorkspaceExperiment() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudPaiWorkspaceExperimentCreate,
+		Read:   resourceAliCloudPaiWorkspaceExperimentRead,
+		Update: resourceAliCloudPaiWorkspaceExperimentUpdate,
+		Delete: resourceAliCloudPaiWorkspaceExperimentDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"accessibility": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+			},
+			"artifact_uri": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"experiment_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"labels": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"workspace_id": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validators.StringMatch(regexp.MustCompile("^\\d+$"), "WorkspaceId is the workspace id which contains the experiment"),
+			},
+		},
+	}
+}
+
+func ExpandPaiWorkspaceExperimentLabels(v interface{}) []interface{} {
+	labelsMapsArray := make([]interface{}, 0)
+	rawLabels, ok := v.([]interface{})
+	if !ok {
+		return labelsMapsArray
+	}
+	for _, dataLoop := range rawLabels {
+		dataLoopTmp, ok := dataLoop.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		// An omitted Optional key reaches Apply as "" (not nil), and an empty
+		// labels block can yield a nil element; both must be skipped so that no
+		// empty-key label payload is ever sent.
+		key, ok := dataLoopTmp["key"].(string)
+		if !ok || key == "" {
+			continue
+		}
+		dataLoopMap := make(map[string]interface{})
+		dataLoopMap["Key"] = key
+		dataLoopMap["Value"] = dataLoopTmp["value"]
+		labelsMapsArray = append(labelsMapsArray, dataLoopMap)
+	}
+	return labelsMapsArray
+}
+
+func resourceAliCloudPaiWorkspaceExperimentCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := fmt.Sprintf("/api/v1/experiments")
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+
+	request["ArtifactUri"] = d.Get("artifact_uri")
+	request["WorkspaceId"] = d.Get("workspace_id")
+	if v, ok := d.GetOk("accessibility"); ok {
+		request["Accessibility"] = v
+	}
+	request["Name"] = d.Get("experiment_name")
+	if v, ok := d.GetOk("labels"); ok {
+		labelsMapsArray := ExpandPaiWorkspaceExperimentLabels(v)
+		if len(labelsMapsArray) > 0 {
+			request["Labels"] = labelsMapsArray
+		}
+	}
+	body = request
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_pai_workspace_experiment", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["ExperimentId"]))
+
+	return resourceAliCloudPaiWorkspaceExperimentRead(d, meta)
+}
+
+func resourceAliCloudPaiWorkspaceExperimentRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	paiWorkspaceServiceV2 := NewService(client)
+
+	objectRaw, err := paiWorkspaceServiceV2.DescribePaiWorkspaceExperiment(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_pai_workspace_experiment DescribePaiWorkspaceExperiment Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	if objectRaw["Accessibility"] != nil {
+		d.Set("accessibility", objectRaw["Accessibility"])
+	}
+	if objectRaw["ArtifactUri"] != nil {
+		d.Set("artifact_uri", objectRaw["ArtifactUri"])
+	}
+	if objectRaw["GmtCreateTime"] != nil {
+		d.Set("create_time", objectRaw["GmtCreateTime"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("experiment_name", objectRaw["Name"])
+	}
+	if objectRaw["WorkspaceId"] != nil {
+		d.Set("workspace_id", objectRaw["WorkspaceId"])
+	}
+
+	labels1Raw := objectRaw["Labels"]
+	labelsMaps := make([]map[string]interface{}, 0)
+	if labels1Raw != nil {
+		for _, labelsChild1Raw := range labels1Raw.([]interface{}) {
+			labelsMap := make(map[string]interface{})
+			labelsChild1Raw := labelsChild1Raw.(map[string]interface{})
+			labelsMap["key"] = labelsChild1Raw["Key"]
+			labelsMap["value"] = labelsChild1Raw["Value"]
+			labelsMaps = append(labelsMaps, labelsMap)
+		}
+	}
+	if objectRaw["Labels"] != nil {
+		if err := d.Set("labels", labelsMaps); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func resourceAliCloudPaiWorkspaceExperimentUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var body map[string]interface{}
+	update := false
+
+	ExperimentId := d.Id()
+	action := fmt.Sprintf("/api/v1/experiments/%s", ExperimentId)
+	var err error
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["ExperimentId"] = d.Id()
+
+	if d.HasChange("accessibility") {
+		update = true
+	}
+	if v, ok := d.GetOk("accessibility"); ok || d.HasChange("accessibility") {
+		request["Accessibility"] = v
+	}
+	if d.HasChange("experiment_name") {
+		update = true
+	}
+	request["Name"] = d.Get("experiment_name")
+	body = request
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RoaPut("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("labels") {
+		oldEntry, newEntry := d.GetChange("labels")
+		removed := oldEntry
+		added := newEntry
+
+		if len(removed.([]interface{})) > 0 {
+			ExperimentId := d.Id()
+			localData := removed.([]interface{})
+			for _, dataLoop := range localData {
+				dataLoopTmp, ok := dataLoop.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				key, ok := dataLoopTmp["key"].(string)
+				if !ok || key == "" {
+					continue
+				}
+				action := fmt.Sprintf("/api/v1/experiments/%s/labels/%s", ExperimentId, url.PathEscape(key))
+				request = make(map[string]interface{})
+				query = make(map[string]*string)
+				body = make(map[string]interface{})
+				request["ExperimentId"] = d.Id()
+				request["Key"] = key
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
+					if err != nil {
+						if helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		if len(added.([]interface{})) > 0 {
+			ExperimentId := d.Id()
+			action := fmt.Sprintf("/api/v1/experiments/%s/labels", ExperimentId)
+			request = make(map[string]interface{})
+			query = make(map[string]*string)
+			body = make(map[string]interface{})
+			request["ExperimentId"] = d.Id()
+			labelsMapsArray := ExpandPaiWorkspaceExperimentLabels(added)
+			if len(labelsMapsArray) > 0 {
+				request["Labels"] = labelsMapsArray
+				body = request
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RoaPost("AIWorkSpace", "2021-02-04", action, query, nil, body, true)
+					if err != nil {
+						if helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+	}
+
+	return resourceAliCloudPaiWorkspaceExperimentRead(d, meta)
+}
+
+func resourceAliCloudPaiWorkspaceExperimentDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	ExperimentId := d.Id()
+	action := fmt.Sprintf("/api/v1/experiments/%s", ExperimentId)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	var err error
+	request = make(map[string]interface{})
+	request["ExperimentId"] = d.Id()
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RoaDelete("AIWorkSpace", "2021-02-04", action, query, nil, nil, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

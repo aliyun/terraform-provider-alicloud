@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Sso Groups to the user.
 ---
 
-# alicloud\_cloud\_sso\_groups
+# alicloud_cloud_sso_groups
 
 This data source provides the Cloud Sso Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -47,16 +47,16 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `provision_type` - (Optional, ForceNew) The ProvisionType of the Group. Valid values: `Manual`, `Synchronized`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Group names.
 * `groups` - A list of Cloud Sso Groups. Each element contains the following attributes:
-	* `create_time` - The Created Time of the Directory.
-	* `description` - The Description of the Directory.
-	* `directory_id` -  The ID of the Directory.
-	* `group_id` - The Group ID of the group.
-	* `group_name` - The Name of the group.
-	* `id` - The ID of the Group.
-	* `provision_type` - The Provision Type of the Group. Valid values: `Manual`, `Synchronized`.
+  * `create_time` - The Created Time of the Directory.
+  * `description` - The Description of the Directory.
+  * `directory_id` -  The ID of the Directory.
+  * `group_id` - The Group ID of the group.
+  * `group_name` - The Name of the group.
+  * `id` - The ID of the Group.
+  * `provision_type` - The Provision Type of the Group. Valid values: `Manual`, `Synchronized`.

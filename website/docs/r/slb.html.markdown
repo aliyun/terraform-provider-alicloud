@@ -9,8 +9,6 @@ description: |-
 
 # alicloud_slb
 
--> **NOTE:** Deprecated since v1.123.1.
-
 -> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://www.terraform.io/docs/providers/alicloud/r/slb_load_balancer) from version 1.123.1.
 
 Provides an Application Load Balancer resource.
@@ -72,10 +70,9 @@ The following arguments are supported:
 must contain only alphanumeric characters or hyphens, such as "-","/",".","_", and must not begin or end with a hyphen. If not specified,
 Terraform will autogenerate a name beginning with `tf-lb`.
 * `name` - (Optional, Deprecated from v1.123.1) Field `name` has been deprecated from provider version 1.123.1 New field `load_balancer_name` instead.
-* `internet` - (Removed since v1.124.0) Field `internet` has been removed from provider version 1.124.0. Use `address_type` replaces it.
 * `address_type` - (Optional, ForceNew, Available since v1.55.3) The network type of the SLB instance. Valid values: ["internet", "intranet"]. If load balancer launched in VPC, this value must be "intranet".
-    - internet: After an Internet SLB instance is created, the system allocates a public IP address so that the instance can forward requests from the Internet.
-    - intranet: After an intranet SLB instance is created, the system allocates an intranet IP address so that the instance can only forward intranet requests.
+  - internet: After an Internet SLB instance is created, the system allocates a public IP address so that the instance can forward requests from the Internet.
+  - intranet: After an intranet SLB instance is created, the system allocates an intranet IP address so that the instance can only forward intranet requests.
 * `internet_charge_type` - (Optional, ForceNew) Valid
   values are `PayByBandwidth`, `PayByTraffic`. If this value is "PayByBandwidth", then argument "internet" must be "true". Default is "PayByTraffic". If load balancer launched in VPC, this value must be "PayByTraffic".
   Before version 1.10.1, the valid values are "paybybandwidth" and "paybytraffic".

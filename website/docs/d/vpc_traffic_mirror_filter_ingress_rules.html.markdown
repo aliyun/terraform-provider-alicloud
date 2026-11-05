@@ -7,11 +7,11 @@ description: |-
   Provides a list of Vpc Traffic Mirror Filter Ingress Rules to the user.
 ---
 
-# alicloud\_vpc\_traffic\_mirror\_filter\_ingress\_rules
+# alicloud_vpc_traffic_mirror_filter_ingress_rules
 
 This data source provides the Vpc Traffic Mirror Filter Ingress Rules of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
 
@@ -46,19 +46,19 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`.
 * `traffic_mirror_filter_id` - (Required, ForceNew) The ID of the Traffic Mirror Filter.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `rules` - A list of Vpc Traffic Mirror Filter Egress Rules. Each element contains the following attributes:
-	* `destination_cidr_block` - The destination CIDR block of the inbound traffic.
-	* `destination_port_range` - The destination port range of the inbound traffic.
-	* `id` - The ID of the Traffic Mirror Filter Egress Rule.
-	* `priority` - The priority of the inbound rule. A smaller value indicates a higher priority. The maximum value is `10`, which indicates that you can configure at most 10 inbound rules for a filter.
-	* `rule_action` - The collection policy of the inbound rule. Valid values: `accept` or `drop`. `accept`: collects network traffic. `drop`: does not collect network traffic.
-	* `protocol` - The transport protocol used by inbound traffic that needs to be mirrored. Valid values: `ALL`, `ICMP`, `TCP`, `UDP`.
-	* `source_cidr_block` - The source CIDR block of the inbound traffic.
-	* `source_port_range` - The source port range of the inbound traffic.
-	* `status` - The status of the resource. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`.
-	* `traffic_mirror_filter_id` - The ID of the filter associated with the inbound rule.
-	* `traffic_mirror_filter_rule_id` - The first ID of the resource.
+  * `destination_cidr_block` - The destination CIDR block of the inbound traffic.
+  * `destination_port_range` - The destination port range of the inbound traffic.
+  * `id` - The ID of the Traffic Mirror Filter Egress Rule.
+  * `priority` - The priority of the inbound rule. A smaller value indicates a higher priority. The maximum value is `10`, which indicates that you can configure at most 10 inbound rules for a filter.
+  * `rule_action` - The collection policy of the inbound rule. Valid values: `accept` or `drop`. `accept`: collects network traffic. `drop`: does not collect network traffic.
+  * `protocol` - The transport protocol used by inbound traffic that needs to be mirrored. Valid values: `ALL`, `ICMP`, `TCP`, `UDP`.
+  * `source_cidr_block` - The source CIDR block of the inbound traffic.
+  * `source_port_range` - The source port range of the inbound traffic.
+  * `status` - The status of the resource. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`.
+  * `traffic_mirror_filter_id` - The ID of the filter associated with the inbound rule.
+  * `traffic_mirror_filter_rule_id` - The first ID of the resource.

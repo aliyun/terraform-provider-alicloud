@@ -11,9 +11,11 @@ description: |-
 
 This data source provides Alibaba Cloud regions.
 
+-> **NOTE:** Available since v0.1.0
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_regions" "current_region_ds" {
   current = true
 }
@@ -41,4 +43,5 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of region IDs.
 * `regions` - A list of regions. Each element contains the following attributes:
   * `id` - ID of the region.
+  * `region_id` - ID of the region.
   * `local_name` - Name of the region in the local language.

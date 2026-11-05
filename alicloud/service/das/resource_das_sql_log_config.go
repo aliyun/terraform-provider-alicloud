@@ -1,0 +1,221 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package das
+
+import (
+	"log"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceDasSqlLogConfig() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceDasSqlLogConfigCreate,
+		Read:   resourceDasSqlLogConfigRead,
+		Update: resourceDasSqlLogConfigUpdate,
+		Delete: resourceDasSqlLogConfigDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"cold_retention": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"hot_retention": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"log_filter": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"request_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"retention": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"sql_log_visible_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func resourceDasSqlLogConfigCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	var err error
+	action := "ModifySqlLogConfig"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+
+	instanceId := d.Get("instance_id").(string)
+	request["InstanceId"] = instanceId
+
+	if v, ok := d.GetOkExists("enable"); ok {
+		request["Enable"] = v
+	}
+	if v, ok := d.GetOkExists("request_enable"); ok {
+		request["RequestEnable"] = v
+	}
+	if v, ok := d.GetOkExists("retention"); ok {
+		request["Retention"] = v
+	}
+	if v, ok := d.GetOkExists("hot_retention"); ok {
+		request["HotRetention"] = v
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("DAS", "2020-01-16", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_das_sql_log_config", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(instanceId)
+
+	return resourceDasSqlLogConfigRead(d, meta)
+}
+
+func resourceDasSqlLogConfigRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	dasService := NewService(client)
+
+	objectRaw, err := dasService.DescribeDasSqlLogConfig(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_das_sql_log_config DescribeDasSqlLogConfig Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	dataRawObj, _ := jsonpath.Get("$.Data", objectRaw)
+	dataRaw := make(map[string]interface{})
+	if dataRawObj != nil {
+		dataRaw = dataRawObj.(map[string]interface{})
+	}
+	d.Set("instance_id", d.Id())
+	d.Set("cold_retention", dataRaw["ColdRetention"])
+	d.Set("hot_retention", dataRaw["HotRetention"])
+	d.Set("log_filter", dataRaw["LogFilter"])
+	d.Set("request_enable", dataRaw["RequestEnable"])
+	d.Set("retention", dataRaw["Retention"])
+	d.Set("sql_log_visible_time", dataRaw["SqlLogVisibleTime"])
+	d.Set("version", dataRaw["Version"])
+	d.Set("enable", dataRaw["SqlLogEnable"])
+
+	return nil
+}
+
+func resourceDasSqlLogConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	action := "ModifySqlLogConfig"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+
+	if d.HasChange("enable") {
+		update = true
+	}
+	if d.HasChange("request_enable") {
+		update = true
+	}
+	if d.HasChange("retention") {
+		update = true
+	}
+	if d.HasChange("hot_retention") {
+		update = true
+	}
+
+	if update {
+		if v, ok := d.GetOkExists("enable"); ok {
+			request["Enable"] = v
+		}
+		if v, ok := d.GetOkExists("request_enable"); ok {
+			request["RequestEnable"] = v
+		}
+		if v, ok := d.GetOkExists("retention"); ok {
+			request["Retention"] = v
+		}
+		if v, ok := d.GetOkExists("hot_retention"); ok {
+			request["HotRetention"] = v
+		}
+
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("DAS", "2020-01-16", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceDasSqlLogConfigRead(d, meta)
+}
+
+func resourceDasSqlLogConfigDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Sql Log Config. Terraform will remove this resource from the state file, however resources may remain.")
+	return nil
+}

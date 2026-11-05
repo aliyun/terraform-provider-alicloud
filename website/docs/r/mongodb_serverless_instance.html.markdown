@@ -15,9 +15,7 @@ For information about MongoDB Serverless Instance and how to use it, see [What i
 
 -> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
 
--> **NOTE:** Deprecated since v1.214.0.
-
--> **DEPRECATED:**  This resource has been deprecated from version `1.214.0`.
+-> **DEPRECATED:** This resource has been deprecated from v1.214.0.
 
 ## Example Usage
 
@@ -71,8 +69,8 @@ resource "alicloud_mongodb_serverless_instance" "example" {
 The following arguments are supported:
 
 * `account_password` - (Required, Sensitive) The password of the database logon account.
-    * The password length is `8` to `32` bits.
-    * The password consists of at least any three of uppercase letters, lowercase letters, numbers, and special characters. The special character is `!#$%^&*()_+-=`. The MongoDB Serverless instance provides a default database login account. This account cannot be modified. You can only set or modify the password for this account.
+  * The password length is `8` to `32` bits.
+  * The password consists of at least any three of uppercase letters, lowercase letters, numbers, and special characters. The special character is `!#$%^&*()_+-=`. The MongoDB Serverless instance provides a default database login account. This account cannot be modified. You can only set or modify the password for this account.
 * `auto_renew` - (Optional) Set whether the instance is automatically renewed.
 * `capacity_unit` - (Required) The I/O throughput consumed by the instance. Valid values: `100` to `8000`.
 * `db_instance_description` - (Optional) The db instance description.
@@ -84,14 +82,14 @@ The following arguments are supported:
 * `period` - (Optional) The purchase duration of the instance, in months. Valid values: `1` to `9`, `12`, `24`, `36`, `60`.
 * `period_price_type` - (Optional) The period price type. Valid values: `Day`, `Month`.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `security_ip_groups` - (Optional) An array that consists of the information of IP whitelists.
+* `security_ip_groups` - (Optional) An array that consists of the information of IP whitelists. See [`security_ip_groups`](#security_ip_groups) below.
 * `storage_engine` - (Optional) The storage engine used by the instance. Valid values: `WiredTiger`.
 * `vswitch_id` - (Required, ForceNew) The of the vswitch.
 * `zone_id` - (Required, ForceNew) The ID of the zone. Use this parameter to specify the zone created by the instance.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC network.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-#### Block security_ip_groups
+### `security_ip_groups`
 
 The security_ip_groups supports the following:
 

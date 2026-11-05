@@ -359,6 +359,9 @@ In addition to [generic `provider` arguments](https://developer.hashicorp.com/te
 * `credentials_uri` - (Optional, Available since v1.141.0) The URI of sidecar credentials service.
   Can also be set with the `ALIBABA_CLOUD_CREDENTIALS_URI` environment variable since v1.228.0.
   Environment variable `ALICLOUD_CREDENTIALS_URI` has been deprecated since v1.228.0.
+  The provider requests this URI again before the returned STS token expires, so a rotating sidecar
+  keeps a long-running apply authenticated. The refresh relies on the response carrying an RFC3339
+  `Expiration` field; without it the credentials are read once at provider configuration.
 
 * `endpoints` - (Optional) An [`endpoints`](#endpoints) block to support custom endpoints.
 
@@ -374,9 +377,9 @@ The length should not more than 1024(Before 1.283.0, it should not more than 128
 
 * `protocol` - (Optional, Available since v1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`.
 
-* `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000.
+* `client_read_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000. The value must be non-negative.
 
-* `client_connect_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000.
+* `client_connect_timeout` - (Optional, Available since v1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000. The value must be non-negative.
 
 * `max_retry_timeout` - (Optional, Available since v1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
