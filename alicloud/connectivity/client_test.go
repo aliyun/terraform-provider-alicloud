@@ -10,7 +10,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	ossgateway "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
@@ -224,7 +223,7 @@ func TestUnitCommonWithEcsClient_Proxy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+			ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 			assert.NoError(t, err)
 
 			if tc.expectedHTTP != "" {
@@ -278,7 +277,7 @@ func TestUnitCommonWithVpcClient_Proxy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+			vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 			assert.NoError(t, err)
 
 			if tc.expectedHTTP != "" {
@@ -332,7 +331,7 @@ func TestUnitCommonWithRamClient_Proxy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(0), client.config.getAuthCredential(true))
+			ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 			assert.NoError(t, err)
 
 			if tc.expectedHTTP != "" {

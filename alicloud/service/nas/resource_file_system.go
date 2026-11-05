@@ -15,6 +15,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -29,11 +30,42 @@ func resourceAliCloudNasFileSystem() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_upgrade_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"capacity_used_ratio": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validators.IntBetween(1, 99),
+						},
+						"enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"step": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"time": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"capacity": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -334,6 +366,12 @@ func resourceAliCloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
+	// After the file system status reaches Running, description and
+	// resource_group_id are written asynchronously by the NAS server. Wait
+	// briefly before the first Read so these fields are persisted and
+	// correctly read back instead of appearing empty.
+	time.Sleep(20 * time.Second)
+
 	return resourceAliCloudNasFileSystemUpdate(d, meta)
 }
 
@@ -367,6 +405,39 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("zone_id", objectRaw["ZoneId"])
 
+	autoUpgradeConfigMaps := make([]map[string]interface{}, 0)
+	if autoUpgradeConfigRaw, ok := objectRaw["AutoUpgradeConfig"].(map[string]interface{}); ok && len(autoUpgradeConfigRaw) > 0 {
+		autoUpgradeConfigMap := make(map[string]interface{})
+		if v, ok := autoUpgradeConfigRaw["enabled"]; ok {
+			autoUpgradeConfigMap["enabled"] = v
+		}
+		if v, ok := autoUpgradeConfigRaw["capacityUsedRatio"]; ok {
+			capacityUsedRatio, err := convert.FormatInt(v)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			autoUpgradeConfigMap["capacity_used_ratio"] = capacityUsedRatio
+		}
+		if v, ok := autoUpgradeConfigRaw["step"]; ok {
+			step, err := convert.FormatInt(v)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			autoUpgradeConfigMap["step"] = step
+		}
+		if v, ok := autoUpgradeConfigRaw["time"]; ok {
+			upgradeTime, err := convert.FormatInt(v)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			autoUpgradeConfigMap["time"] = upgradeTime
+		}
+		autoUpgradeConfigMaps = append(autoUpgradeConfigMaps, autoUpgradeConfigMap)
+	}
+	if err := d.Set("auto_upgrade_config", autoUpgradeConfigMaps); err != nil {
+		return errs.WrapError(err)
+	}
+
 	optionsMaps := make([]map[string]interface{}, 0)
 	optionsMap := make(map[string]interface{})
 	optionsRaw := make(map[string]interface{})
@@ -382,7 +453,9 @@ func resourceAliCloudNasFileSystemRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 	redundancyVSwitchIdRaw, _ := jsonpath.Get("$.RedundancyVSwitchIds.RedundancyVSwitchId", objectRaw)
-	d.Set("redundancy_vswitch_ids", redundancyVSwitchIdRaw)
+	if err := d.Set("redundancy_vswitch_ids", redundancyVSwitchIdRaw); err != nil {
+		return errs.WrapError(err)
+	}
 
 	// Agentic file systems are standard-type file systems without the general-purpose
 	// NAS recycle bin and ACL features: skip those cross-contract reads and keep the
@@ -738,6 +811,53 @@ func resourceAliCloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
+	}
+
+	if d.HasChange("auto_upgrade_config") {
+		// auto_upgrade_config and its sub-attributes are Optional+Computed: the
+		// state echo of a value that is no longer in the configuration is
+		// indistinguishable from an explicitly configured value through
+		// GetOkExists. Read the raw configuration instead so only attributes the
+		// user actually configured are sent to ModifyFileSystem; omitted ones are
+		// left to the server (computed) instead of being re-sent from state.
+		autoUpgradeConfig := make(map[string]interface{})
+		rawConfig := d.GetRawConfig()
+		if !rawConfig.IsNull() {
+			rawAutoUpgradeConfig := rawConfig.GetAttr("auto_upgrade_config")
+			if !rawAutoUpgradeConfig.IsNull() && rawAutoUpgradeConfig.IsKnown() && rawAutoUpgradeConfig.LengthInt() > 0 {
+				autoUpgradeConfigRaw := rawAutoUpgradeConfig.Index(cty.NumberIntVal(0))
+				if !autoUpgradeConfigRaw.IsNull() && autoUpgradeConfigRaw.IsKnown() {
+					if v := autoUpgradeConfigRaw.GetAttr("enabled"); !v.IsNull() && v.IsKnown() {
+						autoUpgradeConfig["enabled"] = v.True()
+					}
+					if v := autoUpgradeConfigRaw.GetAttr("capacity_used_ratio"); !v.IsNull() && v.IsKnown() {
+						capacityUsedRatio, _ := v.AsBigFloat().Int64()
+						autoUpgradeConfig["capacityUsedRatio"] = int(capacityUsedRatio)
+					}
+					if v := autoUpgradeConfigRaw.GetAttr("step"); !v.IsNull() && v.IsKnown() {
+						step, _ := v.AsBigFloat().Int64()
+						autoUpgradeConfig["step"] = int(step)
+					}
+					if v := autoUpgradeConfigRaw.GetAttr("time"); !v.IsNull() && v.IsKnown() {
+						upgradeTime, _ := v.AsBigFloat().Int64()
+						autoUpgradeConfig["time"] = int(upgradeTime)
+					}
+				}
+			}
+		}
+		// A removed block has no explicitly configured attributes; do not send a
+		// stale object and do not issue an empty ModifyFileSystem request.
+		if len(autoUpgradeConfig) > 0 {
+			if fileSystemType := d.Get("file_system_type").(string); fileSystemType != "cpfsse" {
+				return fmt.Errorf("auto_upgrade_config only supports cpfsse file system type, but got %q", fileSystemType)
+			}
+			update = true
+			autoUpgradeConfigJson, err := json.Marshal(autoUpgradeConfig)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			request["AutoUpgradeConfig"] = string(autoUpgradeConfigJson)
+		}
 	}
 
 	if update {
