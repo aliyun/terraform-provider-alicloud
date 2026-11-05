@@ -266,22 +266,31 @@ func checkAutoProvisioningGroupsNameFilter(resourceId, allResourceId string) res
 }
 
 // checkAutoProvisioningGroupsLaterPage proves the read starts at the configured
-// page and measures completeness against the readable suffix of the total: page
-// 2 returns the rows the server did not return on page 1, and together the two
-// pages cover the complete result exactly once. It does not assume the server
-// returns the groups in ID order.
+// page and measures completeness against the readable suffix of the total. A
+// read with page_size = 1 still follows every page, so page 1 returns the whole
+// result while page 2 returns exactly the rows the server did not return first.
+// It does not assume the server returns the groups in ID order.
 func checkAutoProvisioningGroupsLaterPage(allResourceId, pageOneId, pageTwoId string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		total, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
 		if err != nil {
 			return err
 		}
-		reported, err := autoProvisioningGroupsStateCount(state, pageTwoId, "total_count")
+		for _, pageId := range []string{pageOneId, pageTwoId} {
+			reported, err := autoProvisioningGroupsStateCount(state, pageId, "total_count")
+			if err != nil {
+				return err
+			}
+			if reported != total {
+				return fmt.Errorf("%s reports total_count %d, want %d", pageId, reported, total)
+			}
+		}
+		firstRows, err := autoProvisioningGroupsStateCount(state, pageOneId, "groups.#")
 		if err != nil {
 			return err
 		}
-		if reported != total {
-			return fmt.Errorf("the second page reports total_count %d, want %d", reported, total)
+		if firstRows != total {
+			return fmt.Errorf("the read from page 1 returned %d rows with page_size = 1, want the complete result of %d rows", firstRows, total)
 		}
 		rows, err := autoProvisioningGroupsStateCount(state, pageTwoId, "groups.#")
 		if err != nil {
@@ -293,50 +302,37 @@ func checkAutoProvisioningGroupsLaterPage(allResourceId, pageOneId, pageTwoId st
 			}
 			return nil
 		}
-		firstRows, err := autoProvisioningGroupsStateCount(state, pageOneId, "groups.#")
-		if err != nil {
-			return err
-		}
-		if firstRows != 1 {
-			return fmt.Errorf("page 1 read %d rows with page_size = 1, want 1", firstRows)
-		}
-		if total == 1 {
-			if rows != 0 {
-				return fmt.Errorf("page 2 of %d group must be empty, got %d rows", total, rows)
-			}
-			return nil
-		}
 		if rows != total-1 {
-			return fmt.Errorf("page 2 read %d rows, want the %d rows that follow the first page", rows, total-1)
+			return fmt.Errorf("the read from page 2 returned %d rows, want the %d rows that follow the first page", rows, total-1)
 		}
 
-		covered := map[string]struct{}{}
-		firstId, err := autoProvisioningGroupsStateAttribute(state, pageOneId, "ids.0")
-		if err != nil {
-			return err
-		}
-		covered[firstId] = struct{}{}
-		for index := 0; index < rows; index++ {
-			id, err := autoProvisioningGroupsStateAttribute(state, pageTwoId, fmt.Sprintf("ids.%d", index))
-			if err != nil {
-				return err
-			}
-			if id == firstId {
-				return fmt.Errorf("page 2 returned %q, which page 1 already returned", id)
-			}
-			covered[id] = struct{}{}
-		}
-		if len(covered) != total {
-			return fmt.Errorf("pages 1 and 2 cover %d distinct groups, want %d", len(covered), total)
-		}
+		allIds := make(map[string]struct{}, total)
 		for index := 0; index < total; index++ {
 			id, err := autoProvisioningGroupsStateAttribute(state, allResourceId, fmt.Sprintf("ids.%d", index))
 			if err != nil {
 				return err
 			}
-			if _, ok := covered[id]; !ok {
-				return fmt.Errorf("the complete read returned %q but pages 1 and 2 did not", id)
+			allIds[id] = struct{}{}
+		}
+		secondIds := make(map[string]struct{}, rows)
+		for index := 0; index < rows; index++ {
+			id, err := autoProvisioningGroupsStateAttribute(state, pageTwoId, fmt.Sprintf("ids.%d", index))
+			if err != nil {
+				return err
 			}
+			if _, ok := allIds[id]; !ok {
+				return fmt.Errorf("page 2 returned %q, which is not in the complete result", id)
+			}
+			secondIds[id] = struct{}{}
+		}
+		missing := make([]string, 0, 1)
+		for id := range allIds {
+			if _, ok := secondIds[id]; !ok {
+				missing = append(missing, id)
+			}
+		}
+		if len(missing) != 1 {
+			return fmt.Errorf("page 2 differs from the complete result by %d groups, want exactly the one row read on page 1: %v", len(missing), missing)
 		}
 		return nil
 	}
