@@ -231,16 +231,20 @@ func listenerAclBusinessCode(err error) string {
 }
 
 // listenerAclListenerGone reports whether err proves that the addressed SLB load
-// balancer or listener no longer exists. Only an answer that names one of those
-// two entities may prove it: a bare HTTP status (a gateway 404, an undecodable
-// body), a response without a business code, and a code that names another
-// entity (a route, a policy group, an unrelated resource) do not show that this
-// resource's target is gone. Treating such an answer as gone would drop live
-// state on Read or report a successful destroy.
+// balancer or listener no longer exists. Only a decoded SLB business answer may
+// prove it: a bare HTTP status (a gateway 404, an undecodable body) or a response
+// without a business code does not show that this resource's target is gone, and
+// treating such an answer as gone would drop live state on Read or report a
+// successful destroy.
 //
-// The two Describe actions address only the load balancer and the listener, so
-// the accepted codes are the SLB not-found codes whose entity part names one of
-// them (for example InvalidLoadBalancerId.NotFound or InvalidListenerPort.NotFound).
+// The two Describe actions of this resource address exactly one load balancer and
+// one listener port, so an entity not-found answer is scoped to those two
+// entities. SLB answers it in one of two documented shapes: a business code whose
+// entity part names the load balancer or the listener (for example
+// InvalidLoadBalancerId.NotFound), or the generic "The specified resource does
+// not exist." message returned for a listener port that no longer exists. The
+// second shape is accepted only with a non-empty business code, because the same
+// message without one would be indistinguishable from a route level page.
 func listenerAclListenerGone(err error) bool {
 	sdkErr := listenerAclSdkError(err)
 	if sdkErr == nil {
@@ -253,13 +257,14 @@ func listenerAclListenerGone(err error) bool {
 	if listenerAclMissingEntityCode(code) {
 		return true
 	}
-	// Some SLB deployments answer with a generic message; it is accepted only when
-	// the same message names the load balancer or the listener explicitly.
 	message := strings.ToLower(strings.TrimSpace(tea.StringValue(sdkErr.Message)))
+	if strings.Contains(message, "the specified resource does not exist") {
+		return true
+	}
 	if !strings.Contains(message, "loadbalancer") && !strings.Contains(message, "load balancer") && !strings.Contains(message, "listener") {
 		return false
 	}
-	return strings.Contains(message, "does not exist") || strings.Contains(message, "not found") || strings.Contains(message, "notfound")
+	return strings.Contains(message, "does not exist") || strings.Contains(message, "not found")
 }
 
 // listenerAclMissingEntityCode reports whether a business code is a not-found

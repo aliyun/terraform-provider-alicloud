@@ -2216,6 +2216,20 @@ func TestUnitListenerAclAttachmentProtocolGoneClassification(t *testing.T) {
 			gone: true,
 		},
 		{
+			name: "missing listener proven by the documented slb message",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InvalidParameter"), Message: tea.String("code: 400, The specified resource does not exist."), Data: tea.String("{}")}
+			},
+			gone: true,
+		},
+		{
+			name: "the documented message without a business code",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(400), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
+			},
+			readError: true,
+		},
+		{
 			name: "missing listener proven by the listener port code",
 			derive: func() (map[string]interface{}, error) {
 				return nil, &tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InvalidListenerPort.NotFound"), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
