@@ -1488,10 +1488,10 @@ func (s *RdsService) DescribeDBSecurityIpsWithTimeout(instanceId string, timeout
 	}
 	ipArrays, ok := items["DBInstanceIPArray"].([]interface{})
 	if !ok {
-		if _, exists := items["DBInstanceIPArray"]; !exists {
-			return []interface{}{}, nil
-		}
-		return nil, WrapErrorf(fmt.Errorf("describe response has an invalid DBInstanceIPArray value"), DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+		// The default group always exists, so a response without the array is
+		// incomplete. Treating it as an empty list would let a removal report
+		// success without a complete read-back.
+		return nil, WrapErrorf(fmt.Errorf("describe response has an invalid or missing DBInstanceIPArray value"), DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
 	return ipArrays, nil
 }
@@ -3318,49 +3318,60 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 
 func (s *RdsService) DescribeAllWhitelistTemplate(name string) (object map[string]interface{}, err error) {
 	action := "DescribeAllWhitelistTemplate"
-	request := map[string]interface{}{
-		"RegionId":          s.client.RegionId,
-		"MaxRecordsPerPage": 1000,
-		"PageNumbers":       1,
-	}
 	client := s.client
-	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
-	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	// MaxRecordsPerPage only accepts 10, 30 or 50, so walk the pages until
+	// HasNext is false instead of assuming every template fits on one page.
+	const pageSize = 50
+	for page := 1; page <= 100; page++ {
+		request := map[string]interface{}{
+			"RegionId":          s.client.RegionId,
+			"MaxRecordsPerPage": pageSize,
+			"PageNumbers":       page,
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, response, request)
-	object = make(map[string]interface{})
-	v, err := jsonpath.Get("$.Data.Templates", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Templates", response)
-	}
-	if templatesList, ok := v.([]interface{}); ok {
-		for _, item := range templatesList {
-			if itemMap, ok := item.(map[string]interface{}); ok {
-				templateName, ok := itemMap["TemplateName"].(string)
-				if !ok {
-					continue
-				}
-
-				if templateName == name {
-					object["UserId"] = itemMap["UserId"]
-					object["TemplateName"] = itemMap["TemplateName"]
-					object["Id"] = itemMap["Id"]
-					object["Ips"] = itemMap["Ips"]
-					object["TemplateId"] = itemMap["TemplateId"]
-					return object, nil
-				}
-			} else {
-				log.Printf("[WARN] Unexpected template item type: %T", item)
+		response, respErr := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+		if respErr != nil {
+			if IsExpectedErrors(respErr, []string{}) {
+				return nil, WrapErrorf(respErr, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
+			return nil, WrapErrorf(respErr, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
 		}
-	} else {
-		log.Printf("[WARN] Templates is not an array: %T", v)
+		addDebug(action, response, request)
+		object = make(map[string]interface{})
+		v, pathErr := jsonpath.Get("$.Data.Templates", response)
+		if pathErr != nil {
+			return object, WrapErrorf(pathErr, FailedGetAttributeMsg, action, "$.Data.Templates", response)
+		}
+		if templatesList, ok := v.([]interface{}); ok {
+			for _, item := range templatesList {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					templateName, ok := itemMap["TemplateName"].(string)
+					if !ok {
+						continue
+					}
+					if templateName == name {
+						object["UserId"] = itemMap["UserId"]
+						object["TemplateName"] = itemMap["TemplateName"]
+						object["Id"] = itemMap["Id"]
+						object["Ips"] = itemMap["Ips"]
+						object["TemplateId"] = itemMap["TemplateId"]
+						return object, nil
+					}
+				} else {
+					log.Printf("[WARN] Unexpected template item type: %T", item)
+				}
+			}
+		} else {
+			log.Printf("[WARN] Templates is not an array: %T", v)
+		}
+		hasNext := false
+		if next, nextErr := jsonpath.Get("$.Data.HasNext", response); nextErr == nil {
+			hasNext, _ = next.(bool)
+		}
+		if !hasNext {
+			break
+		}
 	}
-	return nil, WrapErrorf(NotFoundErr("TemplateName", "test02"), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(NotFoundErr("TemplateName", name), NotFoundMsg, ProviderERROR)
 }
 
 func (s *RdsService) DescribeWhitelistTemplate(name string) (object map[string]interface{}, err error) {

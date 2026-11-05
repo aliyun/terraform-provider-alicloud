@@ -5471,6 +5471,24 @@ func TestAccAliCloudDBInstance_ipArrays(t *testing.T) {
 				}),
 				ExpectError: regexp.MustCompile(`already exists on the instance but is not managed by this resource`),
 			},
+			{
+				// A refused apply restores the previous block set, so re-applying
+				// the previous configuration succeeds and the unmanaged group is
+				// left untouched.
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.0.0.1"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "finalgrp", "security_ips": []string{"10.10.30.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "finalgrp", "10.10.30.0/24"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "external", "10.0.0.6"),
+				),
+			},
 		},
 	})
 }
@@ -5586,6 +5604,25 @@ func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
 					},
 				}),
 				ExpectError: regexp.MustCompile(`co-managing the same group is unsupported|DuplicatedWithTemplate`),
+			},
+			{
+				// A refused apply restores the previous block set; the direct
+				// group and the template association stay intact.
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": "office", "security_ips": []string{"10.10.10.0/24", "10.10.11.0/24"}},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_ip_arrays.#": "1",
+						"template_id_list.#":      "1",
+					}),
+					testAccCheckDBInstanceIpArrayExists(resourceId, "office", "10.10.10.0/24,10.10.11.0/24"),
+					testAccCheckDBInstanceIpArrayExists(resourceId, templateGroupName, "10.20.0.0/24"),
+					testAccCheckDBInstanceIpArrayAttribute(resourceId, templateGroupName, "template"),
+				),
 			},
 		},
 	})

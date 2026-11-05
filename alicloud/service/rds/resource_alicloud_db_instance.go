@@ -2962,10 +2962,12 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 
 	timeout, err := remainingUpdateTime()
 	if err != nil {
+		restoreDBInstanceIpArraysState(d, oldSet)
 		return WrapError(err)
 	}
 	apiIpArrays, err := loadDBInstanceIpArraysWithinBudget(&rdsService, d.Id(), timeout)
 	if err != nil {
+		restoreDBInstanceIpArraysState(d, oldSet)
 		return WrapError(err)
 	}
 
@@ -3001,6 +3003,7 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 	managedNames = append(managedNames, names...)
 	managedNames = append(managedNames, removed...)
 	if name, conflict := findDBInstanceIpArrayTemplateConflict(managedNames, templateDBInstanceIpArrayGroupNames(apiIpArrays)); conflict {
+		restoreDBInstanceIpArraysState(d, oldSet)
 		return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is provided by an attached whitelist template; co-managing the same group is unsupported", name))
 	}
 
@@ -3013,6 +3016,7 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 			continue
 		}
 		if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == DBInstanceIpArrayAttributeHidden {
+			restoreDBInstanceIpArraysState(d, oldSet)
 			return WrapError(fmt.Errorf("db_instance_ip_arrays cannot manage group %q: it is a hidden system group used by DMS, DTS or DAS", name))
 		}
 	}
@@ -3021,6 +3025,7 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 	// again with the value resolved during apply before the first write.
 	for _, name := range names {
 		if isProtectedDBInstanceIpArrayName(name, legacyGroupName) {
+			restoreDBInstanceIpArraysState(d, oldSet)
 			return WrapError(fmt.Errorf("db_instance_ip_arrays group %q is reserved: manage the default group with security_ips and db_instance_ip_array_name", name))
 		}
 	}
@@ -3037,6 +3042,7 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 			continue
 		}
 		if attribute, _ := existing["DBInstanceIPArrayAttribute"].(string); attribute == "" {
+			restoreDBInstanceIpArraysState(d, oldSet)
 			return WrapError(fmt.Errorf("db_instance_ip_arrays group %q already exists on the instance but is not managed by this resource; refusing to overwrite it", name))
 		}
 	}
@@ -3084,6 +3090,18 @@ func modifyDBInstanceIpArrays(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(err)
 	}
 	return nil
+}
+
+// restoreDBInstanceIpArraysState puts the previous block set back before a
+// refused update returns. The SDK keeps the planned values in the state it
+// returns alongside an apply error, so without this a refused plan would make
+// the next apply believe it manages groups that were never written.
+func restoreDBInstanceIpArraysState(d *schema.ResourceData, oldSet *schema.Set) {
+	if oldSet == nil {
+		_ = d.Set("db_instance_ip_arrays", []interface{}{})
+		return
+	}
+	_ = d.Set("db_instance_ip_arrays", oldSet.List())
 }
 
 // securityIpsGroupReader is the minimal read surface the update entry needs.
