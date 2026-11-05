@@ -598,7 +598,8 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 					}),
 				),
 			},
-			// Reorder the members only; the post-apply plan must converge.
+			// Reorder one TypeList at a time so each reorder apply changes only
+			// that list; the post-apply plan must converge.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"target_tracking_policies": []map[string]interface{}{
@@ -621,6 +622,15 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 							"metric_type":   "ProvisionedConcurrencyUtilization",
 						},
 					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_tracking_policies.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"scheduled_actions": []map[string]interface{}{
 						{
 							"name":                "s2",
@@ -640,8 +650,7 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"target_tracking_policies.#": "2",
-						"scheduled_actions.#":        "2",
+						"scheduled_actions.#": "2",
 					}),
 				),
 			},
