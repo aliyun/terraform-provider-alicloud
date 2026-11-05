@@ -492,7 +492,6 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	removed := cmsSubscriptionRemovedPaths(plan, state)
 	object, err := r.waitCmsSubscriptionUpdate(ctx, id, state.Workspace, request, removed)
 	if err != nil {
 		resp.Diagnostics.AddError(
