@@ -1,5 +1,9 @@
 ## 2.3.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_polardb_aidb_cluster_dataset` — manages a dataset of a PolarDB AI cluster.
+
 ## 2.2.0 (November 5, 2026)
 
 NOTES:

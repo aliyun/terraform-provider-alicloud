@@ -207,6 +207,10 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_polardb_zonal_account",
 				Factory:  ResourceZonalAccount,
 			},
+			{
+				TypeName: "alicloud_polardb_aidb_cluster_dataset",
+				Factory:  ResourceAIDBClusterDataset,
+			},
 		},
 	}
 }
