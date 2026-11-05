@@ -378,7 +378,7 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrder(t *testing.T) {
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sfcv3provisionorder%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7182)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
