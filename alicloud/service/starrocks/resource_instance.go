@@ -847,7 +847,12 @@ func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupI
 		if time.Until(waitUntil) <= time.Second {
 			return false, lastErr
 		}
-		time.Sleep(5 * time.Second)
+		// Never sleep past the convergence window or the shared update deadline.
+		sleep := 5 * time.Second
+		if remaining := time.Until(waitUntil); remaining < sleep {
+			sleep = remaining
+		}
+		time.Sleep(sleep)
 	}
 }
 
