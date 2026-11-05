@@ -161,8 +161,8 @@ func resourceEndpointCreate(d *schema.ResourceData, meta interface{}) error {
 			return polarDBClient.CreateDBClusterEndpoint(request)
 		})
 		if err != nil {
-			errs.OperationDeniedDBStatus = append(errs.OperationDeniedDBStatus, "ClusterEndpoint.StatusNotValid")
-			if errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
+			if errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) ||
+				errs.IsExpectedErrors(err, []string{"ClusterEndpoint.StatusNotValid"}) {
 				return retry.RetryableError(err)
 			}
 
