@@ -836,10 +836,7 @@ func (g *otsUnitGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/v2/openapi/getinstance":
 		payload, err := json.Marshal(map[string]interface{}{
-			"_headers": map[string]interface{}{},
-			"body": map[string]interface{}{
-				"InstanceName": r.URL.Query().Get("InstanceName"),
-			},
+			"InstanceName": r.URL.Query().Get("InstanceName"),
 		})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -887,6 +884,16 @@ func (g *otsUnitGateway) last(path string) []byte {
 		}
 	}
 	return nil
+}
+
+func (g *otsUnitGateway) paths() []string {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	paths := make([]string, 0, len(g.calls))
+	for _, call := range g.calls {
+		paths = append(paths, call.path)
+	}
+	return paths
 }
 
 func writeOtsUnitProto(w http.ResponseWriter, message proto.Message) {
@@ -956,7 +963,8 @@ func newOtsUnitClient(t *testing.T, server *httptest.Server) *connectivity.Aliyu
 		t.Fatalf("create unit credential: %s", err)
 	}
 	endpoints := &sync.Map{}
-	endpoints.Store("tablestore", server.URL)
+	// The ROA client appends the path to this value directly, so it must stay a bare host.
+	endpoints.Store("tablestore", server.Listener.Addr().String())
 	config := &connectivity.Config{
 		Region:               connectivity.Hangzhou,
 		RegionId:             "cn-hangzhou",
@@ -1022,7 +1030,7 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 
 		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, otsUnitRaw(otsUnitStreamConfig(true, 24)))
 		if err := ots.ResourceOtsTable().Create(d, newOtsUnitClient(t, server)); err != nil {
-			t.Fatalf("Create with stream: %s", err)
+			t.Fatalf("Create with stream: %s (requests: %v)", err, gateway.paths())
 		}
 
 		payload := new(otsprotocol.CreateTableRequest)
@@ -1055,7 +1063,7 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 
 		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, otsUnitRaw(nil))
 		if err := ots.ResourceOtsTable().Create(d, newOtsUnitClient(t, server)); err != nil {
-			t.Fatalf("Create without stream: %s", err)
+			t.Fatalf("Create without stream: %s (requests: %v)", err, gateway.paths())
 		}
 
 		payload := new(otsprotocol.CreateTableRequest)
@@ -1074,7 +1082,7 @@ func TestUnitAliCloudOtsTableStreamCreate(t *testing.T) {
 
 		d := schema.TestResourceDataRaw(t, ots.ResourceOtsTable().Schema, otsUnitRaw(otsUnitStreamConfig(false, 0)))
 		if err := ots.ResourceOtsTable().Create(d, newOtsUnitClient(t, server)); err != nil {
-			t.Fatalf("Create with disabled stream: %s", err)
+			t.Fatalf("Create with disabled stream: %s (requests: %v)", err, gateway.paths())
 		}
 
 		payload := new(otsprotocol.CreateTableRequest)
@@ -1091,7 +1099,7 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 	unitResource := ots.ResourceOtsTable()
 	schemaMap := schema.InternalMap(unitResource.Schema)
 
-	update := func(t *testing.T, server *httptest.Server, oldStream, newSpec []interface{}) *schema.ResourceData {
+	update := func(t *testing.T, gateway *otsUnitGateway, server *httptest.Server, oldStream, newSpec []interface{}) *schema.ResourceData {
 		t.Helper()
 		oldData := schema.TestResourceDataRaw(t, unitResource.Schema, otsUnitRaw(oldStream))
 		oldData.SetId(otsUnitResourceId)
@@ -1107,7 +1115,7 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		}
 		d.SetId(otsUnitResourceId)
 		if err := unitResource.Update(d, newOtsUnitClient(t, server)); err != nil {
-			t.Fatalf("Update: %s", err)
+			t.Fatalf("Update: %s (requests: %v)", err, gateway.paths())
 		}
 		return d
 	}
@@ -1117,7 +1125,7 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := update(t, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
+		d := update(t, gateway, server, otsUnitStreamConfig(true, 24), otsUnitStreamConfig(true, 168))
 
 		payload := new(otsprotocol.UpdateTableRequest)
 		if err := proto.Unmarshal(gateway.last("/UpdateTable"), payload); err != nil {
@@ -1147,7 +1155,7 @@ func TestUnitAliCloudOtsTableStreamUpdate(t *testing.T) {
 		server := httptest.NewServer(gateway)
 		defer server.Close()
 
-		d := update(t, server, otsUnitStreamConfig(true, 12), nil)
+		d := update(t, gateway, server, otsUnitStreamConfig(true, 12), nil)
 
 		payload := new(otsprotocol.UpdateTableRequest)
 		if err := proto.Unmarshal(gateway.last("/UpdateTable"), payload); err != nil {
