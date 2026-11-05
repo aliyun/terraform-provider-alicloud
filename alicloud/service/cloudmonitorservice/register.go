@@ -6,11 +6,18 @@ import (
 
 // ServicePackage returns the registration declaration of the CloudMonitorService
 // (Cms) service. It ports the 53 previously root-registered types verbatim,
-// preserving the original SDK v2 factories and the single Framework data source
-// (alicloud_cms_metric_list). The Name is the API product code "Cms".
+// preserving the original SDK v2 factories, the Framework data source
+// (alicloud_cms_metric_list) and the Framework resource
+// (alicloud_cms_subscription). The Name is the API product code "Cms".
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Cms",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_cms_subscription",
+				Factory:  NewSubscriptionResource,
+			},
+		},
 		SDKResources: []conns.SDKResource{
 			{
 				TypeName: "alicloud_cloud_monitor_service_metric_alarm_rule",

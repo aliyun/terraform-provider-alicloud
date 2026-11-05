@@ -1,0 +1,110 @@
+package cloudmonitorservice
+
+import (
+	"context"
+	stderrors "errors"
+	"fmt"
+
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+)
+
+// errSubscriptionNotFound marks the contract-level Cms ResourceNotFound. The
+// resource only clears state for this signal; a bare 404 without the documented
+// code, or a null payload, stays an error.
+var errSubscriptionNotFound = stderrors.New("the specified Cms subscription is not found")
+
+func subscriptionNotFound(err error) bool {
+	return stderrors.Is(err, errSubscriptionNotFound)
+}
+
+// IsSubscriptionNotFound reports whether err is the contract-level absence
+// signal returned by DescribeSubscription.
+func IsSubscriptionNotFound(err error) bool {
+	return subscriptionNotFound(err)
+}
+
+func subscriptionIsResourceNotFound(err error) bool {
+	switch typed := err.(type) {
+	case *tea.SDKError:
+		return tea.StringValue(typed.Code) == "ResourceNotFound"
+	case *errs.ProviderError:
+		return typed.ErrorCode() == "ResourceNotFound"
+	case *errs.ComplexError:
+		return subscriptionIsResourceNotFound(typed.Cause)
+	}
+	return false
+}
+
+// DescribeSubscription fetches one Cms 2024-03-30 event subscription. The
+// workspace query parameter is optional on the API; it is forwarded when the
+// caller has it so that workspace-scoped subscriptions resolve consistently.
+// The caller's context carries the operation deadline shared by the request,
+// its retries and the polling loops: the SDK automatic retry is disabled so the
+// only request of one attempt leaves this loop, which checks the context before
+// every attempt and every backoff. Each request also hands the remaining
+// deadline to the HTTP transport, so a slow response is aborted at the
+// deadline; an early cancellation stops new attempts but cannot abort a request
+// already on the wire.
+func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace string) (object map[string]interface{}, err error) {
+	client := s.client
+	action := fmt.Sprintf("/subscriptions/%s", id)
+	query := make(map[string]*string)
+	if workspace != "" {
+		query["workspace"] = helper.StringPointer(workspace)
+	}
+
+	var response map[string]interface{}
+	wait := subscriptionBackoff(ctx)
+	for {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
+		response, err = client.RoaWithContext(ctx, "GET", "Cms", "2024-03-30", action, query, nil, nil, false)
+		if err == nil {
+			break
+		}
+		if subscriptionIsResourceNotFound(err) {
+			logs.AddDebug(action, response, query)
+			return nil, errSubscriptionNotFound
+		}
+		if !subscriptionRetryable(err) {
+			logs.AddDebug(action, response, query)
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		if !wait() {
+			return nil, ctx.Err()
+		}
+	}
+	logs.AddDebug(action, response, query)
+
+	rawSubscription, exists := response["subscription"]
+	if !exists {
+		return nil, errs.WrapErrorf(
+			fmt.Errorf("the response does not contain $.subscription"),
+			errs.FailedGetAttributeMsg, id, "$.subscription", response,
+		)
+	}
+	subscription, ok := rawSubscription.(map[string]interface{})
+	if !ok {
+		// The documented success response always carries the subscription object.
+		// A null or non-object payload is off-contract and must not clear state.
+		return nil, errs.WrapErrorf(
+			fmt.Errorf("unexpected $.subscription payload type %T", rawSubscription),
+			errs.FailedGetAttributeMsg, id, "$.subscription", response,
+		)
+	}
+	// subscriptionName is required and is the only member that proves the
+	// payload is a usable resource. An empty object, or one without a name,
+	// must not be flattened into state where the required argument would be
+	// written as empty while the identity is backfilled from the request.
+	if name, _ := subscription["subscriptionName"].(string); name == "" {
+		return nil, errs.WrapErrorf(
+			fmt.Errorf("the response does not contain a usable $.subscription.subscriptionName"),
+			errs.FailedGetAttributeMsg, id, "$.subscription.subscriptionName", response,
+		)
+	}
+	return subscription, nil
+}

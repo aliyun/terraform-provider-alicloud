@@ -2843,6 +2843,99 @@ func (client *AliyunClient) RoaPatchWithApiName(apiProductCode string, apiVersio
 }
 
 func (client *AliyunClient) roaRequest(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return client.roaRequestWithRuntime(method, apiProductCode, apiVersion, apiName, pathName, query, headers, body, runtime)
+}
+
+// RoaWithContext invokes one ROA request bounded by the caller's context
+// deadline. The shared client cannot attach a context to a request, so the
+// remaining operation budget is handed to the SDK runtime as the HTTP timeouts:
+// the actual transport aborts a response that does not arrive within one second
+// of the deadline instead of letting the request outlive the operation.
+// parameters:
+//
+//	ctx - operation context; its deadline bounds the request
+//	method - HTTP method
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	pathName - Request path name
+//	query - API parameters in query
+//	headers - API parameters in headers
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RoaWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, autoRetry bool) (map[string]interface{}, error) {
+	runtime, err := roaContextRuntime(ctx, client.teaRoaSdkConfig, autoRetry)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
+		return nil, err
+	}
+	if runtime == nil {
+		runtime = &util.RuntimeOptions{}
+		runtime.SetAutoretry(autoRetry)
+	}
+	return client.roaRequestWithRuntime(method, apiProductCode, apiVersion, "", pathName, query, headers, body, runtime)
+}
+
+// roaContextRuntime returns the runtime that bounds one request by ctx, or nil
+// when ctx carries no deadline and the SDK defaults apply.
+func roaContextRuntime(ctx context.Context, config roa.Config, autoRetry bool) (*util.RuntimeOptions, error) {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return nil, nil
+	}
+	connect, read, err := roaContextTimeouts(deadline, config)
+	if err != nil {
+		return nil, err
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	runtime.SetConnectTimeout(connect)
+	runtime.SetReadTimeout(read)
+	return runtime, nil
+}
+
+// roaContextTimeouts splits the budget of one deadline-bounded request into the
+// connect and read timeouts the SDK adds up for the HTTP client timeout.
+func roaContextTimeouts(deadline time.Time, config roa.Config) (int, int, error) {
+	timeout, err := roaContextTimeout(deadline, config)
+	if err != nil {
+		return 0, 0, err
+	}
+	connect := tea.IntValue(config.ConnectTimeout)
+	if connect < 0 {
+		connect = 0
+	}
+	if connect > timeout {
+		connect = timeout
+	}
+	return connect, timeout - connect, nil
+}
+
+// roaContextTimeout returns the whole-request HTTP timeout, in milliseconds,
+// for a request that has to finish before deadline. The SDK sets the HTTP client
+// timeout to connect+read and keys its pooled client by those two values, so a
+// per-call millisecond budget would allocate a client, and a connection pool,
+// for nearly every request. Rounding the budget up to whole seconds bounds the
+// number of distinct pooled clients while still aborting the response within a
+// second of the deadline. The budget never exceeds the configured connect and
+// read timeouts together, which is what the client applied before the operation
+// deadline was propagated to the transport.
+func roaContextTimeout(deadline time.Time, config roa.Config) (int, error) {
+	remaining := time.Until(deadline)
+	if remaining <= 0 {
+		return 0, context.DeadlineExceeded
+	}
+	timeout := int64(remaining+time.Second-1) / int64(time.Second) * 1000
+	if configured := int64(tea.IntValue(config.ConnectTimeout)) + int64(tea.IntValue(config.ReadTimeout)); configured > 0 && configured < timeout {
+		timeout = configured
+	}
+	return int(timeout), nil
+}
+
+func (client *AliyunClient) roaRequestWithRuntime(method string, apiProductCode string, apiVersion string, apiName string, pathName string, query map[string]*string, headers map[string]*string, body interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
@@ -2865,8 +2958,6 @@ func (client *AliyunClient) roaRequest(method string, apiProductCode string, api
 		return nil, err
 	}
 	var response map[string]interface{}
-	runtime := &util.RuntimeOptions{}
-	runtime.SetAutoretry(autoRetry)
 	if apiName != "" {
 		response, err = conn.DoRequestWithAction(tea.String(apiName), tea.String(apiVersion), nil, tea.String(method), tea.String("AK"), tea.String(pathName), query, headers, body, runtime)
 	} else {
