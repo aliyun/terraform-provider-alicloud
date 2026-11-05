@@ -57,7 +57,6 @@ The following attributes are exported:
 * `region_statuses` - The status of the resource group in all regions.
   * `region_id` - The status of the region.
   * `status` - The status of the resource group.
-* `create_date` - (Removed since v1.114.0) The time when the resource group was created. **NOTE:** Field `create_date` has been removed from provider version 1.114.0.
 
 ## Timeouts
 

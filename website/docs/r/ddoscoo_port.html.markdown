@@ -70,7 +70,7 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The ID of the Anti-DDoS Pro or Anti-DDoS Premium instance to which the port forwarding rule belongs.
 
--> **NOTE:**  You can call the [DescribeInstanceIds](https://www.alibabacloud.com/help/en/doc-detail/157459.html) operation to query the IDs of all instances.
+  -> **NOTE:**  You can call the [DescribeInstanceIds](https://www.alibabacloud.com/help/en/doc-detail/157459.html) operation to query the IDs of all instances.
 
 * `real_servers` - (Required, List) List of source IP addresses
 

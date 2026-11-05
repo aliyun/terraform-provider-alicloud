@@ -89,11 +89,12 @@ The following arguments are supported:
   - true: Yes  
   - false (default): No.
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
-* `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Edition type:  
-  - x-pack: Creates a commercial edition instance, or a kernel-enhanced edition instance without Indexing Service or OpenStore enabled.  
-  - IS: Creates a kernel-enhanced edition instance with Indexing Service or OpenStore enabled.  
+* `instance_category` - (Optional, ForceNew, Computed, Available since v1.267.0) Edition type:
+  - x-pack: Creates a commercial edition instance, or a kernel-enhanced edition instance without Indexing Service or OpenStore enabled.
+  - IS: Creates a kernel-enhanced edition instance with Indexing Service or OpenStore enabled.
+* `index_node_configuration` - (Optional, Computed, Set, Available since v1.295.0) Configuration of index nodes for the Elasticsearch cluster. Search (query) and index nodes are supported only on Elasticsearch `9.99` instances and cannot coexist with data nodes, cold nodes, or coordinator nodes; a `9.99` instance is composed of these node roles and they are set at creation. **Note: The `spec` parameter is immutable after resource creation.** See [`index_node_configuration`](#index_node_configuration) below.
 * `kibana_configuration` - (Optional, Computed, Set, Available since v1.267.0) The configuration of Elasticsearch Kibana nodes. See [`kibana_configuration`](#kibana_configuration) below.
 * `kibana_private_security_group_id` - (Optional) List of security groups.
 * `kibana_private_whitelist` - (Optional, Computed, List, Available since v1.87.0) List of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.  
@@ -103,14 +104,18 @@ The following arguments are supported:
   - upgrade (default): Upgrade configuration
   - downgrade: Downgrade configuration.
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `password` - (Optional) The access password for the instance. It must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@#$%^&*()_+-=).  
+* `password_wo` - (Optional, Available since v2.2.0) The write-only password of the account. It is only sent to the server when the resource is created or the `password_wo_version` changes and is never stored in the state or plan.
+* `password_wo_version` - (Optional, Available since v2.2.0) The version of the write-only password. The write-only password is re-sent to the server only when this argument changes, so it must be changed whenever `password_wo` changes.
 * `payment_type` - (Optional, Computed, Available since v1.267.0) The billing method of the instance. Supported values:
   - `PayAsYouGo`: Pay-as-you-go
   - `Subscription`: Subscription
 * `private_whitelist` - (Optional, Computed, List) The list of IP addresses in the whitelist. This parameter is available when whiteIpGroup is empty and modifies the default group's whitelist.
-* `protocol` - (Optional, Computed, Available since v1.101.0) The access protocol. Supported protocols: HTTP and HTTPS.  
+* `protocol` - (Optional, Computed, Available since v1.101.0) The access protocol. Supported protocols: HTTP and HTTPS.
+
+  -> **NOTE:** For instances of version 7.10 and earlier (region-dependent for 7.10), setting `protocol` to `HTTPS` requires dedicated coordinating nodes. Without them, the creation fails with the `HttpsNeedClientNode` error, and coordinating nodes purchased on these versions cannot be disabled or removed afterwards. Set `client_node_configuration` (or the deprecated `client_node_spec` and `client_node_amount`) together with `protocol` on affected versions. Instances of version 7.16 and later do not require coordinating nodes for `HTTPS`. For more information, see [FAQ about Alibaba Cloud Elasticsearch clusters](https://www.alibabacloud.com/help/en/es/support/faq-about-alibaba-cloud-elasticsearch-clusters).
 * `public_whitelist` - (Optional, Computed, List) The IP address whitelist. This parameter is available when whiteIpGroup is empty and is used to modify the default group's whitelist.
 * `renew_status` - (Optional, Computed) The renewal status. Valid values:
   - AutoRenewal: Auto-renewal.
@@ -120,9 +125,10 @@ The following arguments are supported:
   - M: Month.  
   - Y: Year.  
 
--> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.  
+  -> **NOTE:**  This parameter is required when RenewalStatus is set to AutoRenewal.
 
-* `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs.
+* `resource_group_id` - (Optional, Computed, Available since v1.86.0) The ID of the resource group to which the instance belongs. Updating this field moves the instance to the target resource group via ResourceManager MoveResources.
+* `search_node_configuration` - (Optional, Computed, Set, Available since v1.295.0) Configuration of search (query) nodes for the Elasticsearch cluster. Search (query) and index nodes are supported only on Elasticsearch `9.99` instances and cannot coexist with data nodes, cold nodes, or coordinator nodes; a `9.99` instance is composed of these node roles and they are set at creation. **Note: The `spec` parameter is immutable after resource creation.** See [`search_node_configuration`](#search_node_configuration) below.
 * `setting_config` - (Optional, Computed, Map, Available since v1.125.0) YML configuration file settings for the instance.
 * `tags` - (Optional, Computed, Map, Available since v1.73.0) Instance tag group.
 * `update_strategy` - (Optional, Available since v1.267.0) Elasticsearch update strategy (for example, index updates, cluster upgrades, or service deployments). Valid values:
@@ -130,7 +136,7 @@ The following arguments are supported:
   - normal: In-place update, which applies changes directly in the current environment (for example, upgrades or scaling) without requiring additional resources.
   - intelligent: Intelligent update, where the system automatically analyzes the update type and environment status to dynamically select the optimal strategy (either blue-green or in-place).
 
--> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
+  -> **NOTE:** This parameter only takes effect when other resource properties are also modified. Changing this parameter alone will not trigger a resource update.
 
 * `version` - (Required, ForceNew) The instance version. Valid values:
   - 8.5.1_with_X-Pack
@@ -142,7 +148,7 @@ The following arguments are supported:
   - 5.6_with_X-Pack
   - 5.5.3_with_X-Pack
 
--> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://help.aliyun.com/document_detail/254099.html) operation to view the actual supported versions.
+  -> **NOTE:**  The versions listed above might not include all versions supported by Elasticsearch instances. You can call the [GetRegionConfiguration](https://help.aliyun.com/document_detail/254099.html) operation to view the actual supported versions.
 
 * `warm_node_configuration` - (Optional, Computed, Set, Available since v1.267.0) Cold data node configuration for the Elasticsearch cluster. See [`warm_node_configuration`](#warm_node_configuration) below.
 * `zone_count` - (Optional, ForceNew, Computed, Int) The number of zones for the instance. Valid values: 1, 2, and 3. Default value: 1.  
@@ -191,6 +197,15 @@ The data_node_configuration supports the following:
 * `performance_level` - (Optional, Computed, Available since v1.267.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
 * `spec` - (Required, Available since v1.267.0) Node specification. For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
+### `index_node_configuration`
+
+The index_node_configuration supports the following:
+* `amount` - (Optional, Computed, Int, Available since v1.295.0) Number of index nodes.
+* `disk` - (Optional, Computed, Int, Available since v1.295.0) Storage capacity per node, in GB.
+* `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
+* `performance_level` - (Optional, Computed, Available since v1.295.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
+* `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
 ### `kibana_configuration`
 
 The kibana_configuration supports the following:
@@ -205,6 +220,15 @@ The master_configuration supports the following:
 * `disk` - (Optional, ForceNew, Int, Available since v1.267.0) Node storage capacity, in GB.
 * `disk_type` - (Optional, ForceNew, Available since v1.267.0) Node storage type. Only cloud_ssd (SSD cloud disk) is supported.
 * `spec` - (Optional, Available since v1.267.0) Node specification. For specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
+
+### `search_node_configuration`
+
+The search_node_configuration supports the following:
+* `amount` - (Optional, Computed, Int, Available since v1.295.0) Number of search (query) nodes.
+* `disk` - (Optional, Computed, Int, Available since v1.295.0) Storage capacity per node, in GB.
+* `disk_type` - (Optional, ForceNew, Computed, Available since v1.295.0) Storage type of the node. ESSD (`cloud_essd`) is supported. Changing this forces recreation.
+* `performance_level` - (Optional, Computed, Available since v1.295.0) Performance level of ESSD cloud disks. This parameter is required when diskType is set to cloud_essd. Supported values: PL1, PL2, PL3.
+* `spec` - (Required, Available since v1.295.0) Node specification. **Note: The parameter is immutable after resource creation.** For more information about specifications, see [Product Specifications](https://help.aliyun.com/document_detail/271718.html).
 
 ### `warm_node_configuration`
 

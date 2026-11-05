@@ -78,9 +78,10 @@ resource "alicloud_privatelink_vpc_endpoint" "example" {
 }
 
 resource "alicloud_privatelink_vpc_endpoint_connection" "example" {
-  endpoint_id = alicloud_privatelink_vpc_endpoint.example.id
-  service_id  = alicloud_privatelink_vpc_endpoint.example.service_id
-  bandwidth   = "1024"
+  endpoint_id          = alicloud_privatelink_vpc_endpoint.example.id
+  service_id           = alicloud_privatelink_vpc_endpoint.example.service_id
+  bandwidth            = "1024"
+  traffic_control_mode = "BandwidthLimit"
 }
 ```
 
@@ -92,6 +93,7 @@ The following arguments are supported:
 * `bandwidth` - (Optional, Computed, Int) The bandwidth of the endpoint connection. Valid values: 1024 to 10240. Unit: Mbit/s.
 
   Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
+* `traffic_control_mode` - (Optional, Computed, String) The traffic control mode of the endpoint connection. Valid values: `Scalability` and `BandwidthLimit`. When the value is `BandwidthLimit`, the `bandwidth` parameter takes effect and specifies the bandwidth upper limit. When the value is `Scalability`, the bandwidth is auto-elastic and the `bandwidth` parameter is ignored.
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
   - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
@@ -102,7 +104,8 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<service_id>:<endpoint_id>`.
-* `status` - The state of the endpoint connection. 
+* `status` - The state of the endpoint connection.
+* `endpoint_owner_id` - The owner ID of the endpoint.
 
 ## Timeouts
 

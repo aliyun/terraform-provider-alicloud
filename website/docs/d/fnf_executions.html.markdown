@@ -7,11 +7,11 @@ description: |-
   Provides a list of FnF Executions to the user.
 ---
 
-# alicloud\_fnf\_executions
+# alicloud_fnf_executions
 
 This data source provides the FnF Executions of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0.
 
 ## Example Usage
 
@@ -38,17 +38,17 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `Running`, `Stopped`, `Succeeded`, `Failed`, `TimedOut`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Execution names.
 * `executions` - A list of Fn F Executions. Each element contains the following attributes:
-	* `execution_name` - The name of the execution.
-	* `flow_name` - The name of the flow.
-	* `id` - The ID of the Execution. The value formats as `<flow_name>:<execution_name>`.
-	* `input` - The Input information for this execution.
-	* `output` - The output of the execution.
-	* `started_time` - The started time of the execution.
-	* `status` - The status of the resource.
-	* `stopped_time` - The stopped time of the execution.
+  * `execution_name` - The name of the execution.
+  * `flow_name` - The name of the flow.
+  * `id` - The ID of the Execution. The value formats as `<flow_name>:<execution_name>`.
+  * `input` - The Input information for this execution.
+  * `output` - The output of the execution.
+  * `started_time` - The started time of the execution.
+  * `status` - The status of the resource.
+  * `stopped_time` - The stopped time of the execution.

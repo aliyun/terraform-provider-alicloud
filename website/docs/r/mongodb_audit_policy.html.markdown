@@ -90,7 +90,8 @@ The following arguments are supported:
   - `update`: The update operation.
   - `delete`: deletes the operation.
   - `command`: Protocol command. For example, the aggregate aggregation method.
--> **NOTE:** `filter` only supports ApsaraDB for MongoDB replica set instances with `storage_type` of `local_ssd`.
+
+  -> **NOTE:** `filter` only supports ApsaraDB for MongoDB replica set instances with `storage_type` of `local_ssd`.
 
 ## Attributes Reference
 

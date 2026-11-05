@@ -31,12 +31,12 @@ variable "name" {
 }
 
 resource "alicloud_resource_manager_resource_group" "default3iXhoa" {
-  display_name        = "testname03"
+  display_name        = "example03"
   resource_group_name = var.name
 }
 
 resource "alicloud_resource_manager_resource_group" "defaultdNz2qk" {
-  display_name        = "testname04"
+  display_name        = "example04"
   resource_group_name = "${var.name}1"
 }
 
@@ -75,23 +75,24 @@ The following arguments are supported:
 * `dry_run` - (Optional) Whether to PreCheck only this request. Value:
   - **true**: The check request is sent without creating traffic Image filter conditions. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
   - **false** (default): Sends a normal request, returns a 2xx HTTP status code after passing the check, and directly creates a filter condition.
-* `egress_rules` - (Optional, ForceNew, Computed, Available since v1.206.0+) Information about the outbound rule. See the following `Block EgressRules`.
-* `ingress_rules` - (Optional, ForceNew, Computed, Available since v1.206.0+) Inward direction rule information. See the following `Block IngressRules`.
+* `egress_rules` - (Optional, ForceNew, Computed, Available since v1.206.0+) Information about the outbound rule. See [`egress_rules`](#egress_rules) below.
+* `ingress_rules` - (Optional, ForceNew, Computed, Available since v1.206.0+) Inward direction rule information. See [`ingress_rules`](#ingress_rules) below.
 * `resource_group_id` - (Optional, Computed, Available since v1.206.0+) The ID of the resource group to which the VPC belongs.
 * `tags` - (Optional, Map, Available since v1.206.0+) The tags of this resource.
 * `traffic_mirror_filter_description` - (Optional) The description of the TrafficMirrorFilter.
 * `traffic_mirror_filter_name` - (Optional) The name of the TrafficMirrorFilter.
 
 
-#### Block EgressRules
+### `egress_rules`
 
-The EgressRules supports the following:
+The egress_rules supports the following:
 * `action` - (Required, ForceNew) Collection strategy for outbound rules. Value:
   - accept: collects network traffic.
   - drop: No network traffic is collected.
 * `destination_cidr_block` - (Optional, ForceNew) DestinationCidrBlock.
 * `destination_port_range` - (Optional, ForceNew) The destination port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 * `priority` - (Optional, ForceNew) Priority.
 * `protocol` - (Required, ForceNew) The type of protocol used by the outbound network traffic to be mirrored. Value:
   - ALL: ALL agreements.
@@ -100,17 +101,20 @@ The EgressRules supports the following:
   - UDP: User Datagram Protocol.
 * `source_cidr_block` - (Optional, ForceNew) The source address of the outbound rule network traffic.
 * `source_port_range` - (Optional, ForceNew) The source port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 
-#### Block IngressRules
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+* `traffic_mirror_filter_rule_status` - (Computed) The status of the traffic mirror filter rule.
 
-The IngressRules supports the following:
+### `ingress_rules`
+
+The ingress_rules supports the following:
 * `action` - (Required, ForceNew) Collection strategy for outbound rules. Value:
   - accept: collects network traffic.
   - drop: No network traffic is collected.
 * `destination_cidr_block` - (Optional, ForceNew) The destination address of the outbound rule network traffic.
 * `destination_port_range` - (Optional, ForceNew) The destination port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
 * `priority` - (Optional, ForceNew) The priority of the outbound rule. The smaller the number, the higher the priority. The maximum value of N is 10, that is, a maximum of 10 Outbound rules can be configured for a filter condition.
 * `protocol` - (Required, ForceNew) The type of protocol used by the outbound network traffic to be mirrored. Value:
   - ALL: ALL agreements.
@@ -119,7 +123,9 @@ The IngressRules supports the following:
   - UDP: User Datagram Protocol.
 * `source_cidr_block` - (Optional, ForceNew) The source address of the outbound rule network traffic.
 * `source_port_range` - (Optional, ForceNew) The source port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
--> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+  -> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+* `traffic_mirror_filter_rule_status` - (Computed) The status of the traffic mirror filter rule.
 
 
 ## Attributes Reference

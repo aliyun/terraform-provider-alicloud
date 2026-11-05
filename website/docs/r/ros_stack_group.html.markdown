@@ -58,7 +58,7 @@ This parameter is required only if the PermissionModel is SERVICE_MANAGED. See [
 * `template_id` - (Optional, Available since v1.257.0) The ID of the template.
 * `template_url` - (Optional) The location of the file that contains the template body. The URL must point to the template (1 to 524,288 bytes) located in the HTTP Web server (HTTP or HTTPS) or Alibaba Cloud OSS bucket. The URL of the OSS bucket, such as oss:// ros/template/demo or oss:// ros/template/demo? RegionId = cn-hangzhou. If the OSS region is not specified, the RegionId of the interface is the same by default.
 
--> **NOTE:** You must and can specify only one of the parameters of TemplateBody, TemplateURL, or TemplateId.
+  -> **NOTE:** You must and can specify only one of the parameters of TemplateBody, TemplateURL, or TemplateId.
 
 * `template_version` - (Optional) The version of the template.
 
@@ -72,12 +72,7 @@ The auto_deployment supports the following:
   - `true`: Keep the resource stack.
   - `false`: delete the resource stack.
 
--> **NOTE:** When Enabled is true, `retain_stacks_on_account_removal` is required.
-
-* `account_ids` - (Removed since v1.257.0). Field 'account_ids' has been deprecated from provider version 1.257.0.
-* `region_ids` - (Removed since v1.257.0). Field 'region_ids' has been deprecated from provider version 1.257.0.
-* `operation_description` - (Removed since v1.257.0). Field 'operation_description' has been deprecated from provider version 1.257.0. You should use resource alicloud_ros_stack_instance's field 'operation_description'.
-* `operation_preferences` - (Removed since v1.257.0). Field 'operation_preferences' has been deprecated from provider version 1.257.0. You should use resource alicloud_ros_stack_instance's field 'operation_preferences'.
+  -> **NOTE:** When Enabled is true, `retain_stacks_on_account_removal` is required.
 
 ### `parameters`
 

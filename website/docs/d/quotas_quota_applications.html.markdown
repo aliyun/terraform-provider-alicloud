@@ -44,43 +44,49 @@ data "alicloud_quotas_quota_applications" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `dimensions` - (Optional) The quota dimensions.
+* `dimensions` - (Optional) The quota dimensions. See [`dimensions`](#dimensions) below.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional, ForceNew, Computed)  A list of Application Info IDs.
+* `ids` - (Optional, Computed) A list of Application Info IDs.
+* `key_word` - (Optional) The key word.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `product_code` - (Required, ForceNew) The product code.
-* `quota_action_code` - (Optional, ForceNew) The ID of quota action.
-* `quota_category` - (Optional, ForceNew) The quota category. Valid values: `CommonQuota`, `FlowControl`, `WhiteListLabel`.
-* `status` - (Optional, ForceNew) The status of the quota application. Valid Values: `Agree`, `Disagree` and `Process`.
+* `product_code` - (Required) The product code.
+* `quota_action_code` - (Optional) The ID of quota action.
+* `quota_category` - (Optional) The quota category. Valid values: `CommonQuota`, `FlowControl`, `WhiteListLabel`.
+* `status` - (Optional) The status of the quota application. Valid Values: `Agree`, `Disagree` and `Process`.
 
-#### Block dimensions
+### `dimensions`
 
-The dimensions supports the following: 
+The dimensions supports the following:
+* `key` - (Optional) The key of dimensions.
+* `value` - (Optional) The value of dimensions.
 
-* `key` - (Optional, ForceNew) The key of dimensions.
-* `value` - (Optional, ForceNew) The value of dimensions.
-
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-
 * `applications` - A list of Quotas Quota Applications. Each element contains the following attributes:
-  * `application_id` - The first ID of the resource.
-  * `approve_value` - The approve value.
-  * `audit_reason` - The audit reason.
-  * `desire_value` - The desire value of the quota application.
-  * `dimensions` - The quota dimensions.
-    * `key` - The key of dimensions.
-    * `value` - The value of dimensions.
-  * `effective_time` - The effective time.
-  * `expire_time` - The expire time.
-  * `id` - The ID of the Application Info.
-  * `notice_type` - The notice type.
-  * `product_code` - The product code.
-  * `quota_action_code` - The ID of quota action..
-  * `quota_description` - The description of the quota.
-  * `quota_name` - The name of the quota.
-  * `quota_unit` - The quota unit.
-  * `reason` - The reason of the quota application.
-  * `status` - The status of the quota application.
+
+### `applications`
+
+The applications supports the following attributes:
+* `application_id` - The first ID of the resource.
+* `approve_value` - The approve value.
+* `audit_reason` - The audit reason.
+* `desire_value` - The desire value of the quota application.
+* `dimensions` - The quota dimensions. See [`dimensions`](#applicationsdimensions) below.
+* `effective_time` - The effective time.
+* `expire_time` - The expire time.
+* `id` - The ID of the Application Info.
+* `notice_type` - The notice type.
+* `product_code` - The product code.
+* `quota_action_code` - The ID of quota action.
+* `quota_description` - The description of the quota.
+* `quota_name` - The name of the quota.
+* `quota_unit` - The quota unit.
+* `reason` - The reason of the quota application.
+* `status` - The status of the quota application.
+
+### `applications.dimensions`
+
+The dimensions supports the following:
+* `key` - The key of dimensions.
+* `value` - The value of dimensions.

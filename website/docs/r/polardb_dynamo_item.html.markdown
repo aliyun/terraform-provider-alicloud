@@ -139,7 +139,7 @@ The following arguments are supported:
 * `range_key` - (Optional, ForceNew) The sort key (range key) attribute name of the item. Required if the table has a range key.
 * `item` - (Required) JSON representation of the item attributes in DynamoDB attribute value format, e.g. `{"pk": {"S": "value"}, "count": {"N": "42"}}`. The item must contain the `hash_key` attribute (and the `range_key` attribute if set). Supported type descriptors: `S`, `N`, `B`, `BOOL`, `NULL`, `L`, `M`, `SS`, `NS`, `BS`.
 
--> **NOTE:** Changing the key attribute values inside `item` results in a new item being written; the resource ID will be recomputed accordingly.
+  -> **NOTE:** Changing the key attribute values inside `item` results in a new item being written; the resource ID will be recomputed accordingly.
 
 ## Attributes Reference
 

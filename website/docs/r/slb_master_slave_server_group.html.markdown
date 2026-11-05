@@ -161,8 +161,7 @@ The servers mapping supports the following:
 * `port` - (Required) The port used by the backend server. Valid value range: [1-65535].
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. Default to 100.
 * `type` - (Optional, Available in 1.51.0+) Type of the backend server. Valid value ecs, eni. Default to eni.
-* `server_type` - (Optional) The server type of the backend server. Valid value Master, Slave.
-* `is_backup` - (Removed from v1.63.0) Determine if the server is executing. Valid value 0, 1. 
+* `server_type` - (Optional) The server type of the backend server. Valid value Master, Slave. 
 
 ## Attributes Reference
 

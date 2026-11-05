@@ -115,44 +115,44 @@ The following arguments are supported:
   - Consists of lowercase letters, numbers, or underscores (_).
   - 4~16 characters in length.
 
--> **NOTE:** - apsaradb for MongoDB does not support using keywords as accounts.
+  -> **NOTE:** - apsaradb for MongoDB does not support using keywords as accounts.
   - The permissions of the account are fixed to read-only permissions.
   - When applying for a direct connection address of a Shard node for the first time, you need to set an account and password.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `account_password` - (Optional) Account password, value description:
   - Consists of at least three of uppercase letters, lowercase letters, numbers, and special characters.
   - Oh-! @#$%^& *()_+-= is a special character.
   - Length is 8~32 characters.
 
--> **NOTE:**  apsaradb for MongoDB does not support resetting the account and password of the Shard node.
+  -> **NOTE:**  apsaradb for MongoDB does not support resetting the account and password of the Shard node.
 
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `auto_pay` - (Optional) Whether to pay automatically. Value description:
   - `true` (default): Pay automatically, please ensure that the account has sufficient balance.
   - `false`: paid manually.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `business_info` - (Optional) Additional parameters, business information.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `db_instance_id` - (Required, ForceNew) The ID of the sharded cluster instance.
 * `effective_time` - (Optional) Effective time of configuration change. Value description:
   - `Immediately` (default): takes effect Immediately.
   - `MaintainTime`: takes effect during the O & M period of the instance.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `from_app` - (Optional) Request Source, value description:
   - `OpenApi`: The request source is OpenApi.
   - `mongo_buy`: The request source is the console.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `node_class` - (Required) The specifications of the Shard node or Mongos node. For more information, see [Instance Specifications](~~ 57141 ~~).
 * `node_storage` - (Optional, Int) The disk space of the Node. Unit: GB.
@@ -168,7 +168,7 @@ Value range: `10` to `2000`, with a step size of 10GB.
   - `UPGRADE`: UPGRADE.
   - `DOWNGRADE`: downgrading.
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `readonly_replicas` - (Optional, Computed, Int) The number of read-only nodes in the Shard.
 
@@ -180,11 +180,11 @@ Value range: `0` to `5` (integer). Default value: **0 * *.
   - `true`: Apply for the direct connection address of the Shard node.
   - `false`:(default) Do not apply for the direct connection address of the Shard node.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `switch_time` - (Optional) The execution time of the change configuration, in the format of  yyyy-MM-dd T  HH:mm:ss Z(UTC time).
 
--> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 
 ## Attributes Reference

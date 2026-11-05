@@ -7,13 +7,15 @@ description: |-
     Provides a list of server load balancer acls (access control lists) to the user.
 ---
 
-# alicloud\_slb_acls
+# alicloud_slb_acls
 
 This data source provides the acls in the region.
 
+-> **NOTE:** Available since v1.21.0.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_slb_acls" "sample_ds" {
 }
 
@@ -38,25 +40,27 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of SLB acls IDs.
 * `names` - A list of SLB acls names.
-* `acls` - A list of SLB  acls. Each element contains the following attributes:
+* `acls` - A list of SLB acls. Each element contains the following attributes:
   * `id` - Acl ID.
   * `name` - Acl name.
-  * `entry_list` - A list of entry (IP addresses or CIDR blocks).  Each entry contains two sub-fields as `Entry Block` follows.
-  * `related_listeners` - A list of listener are attached by the acl.  Each listener contains four sub-fields as `Listener Block` follows.
-  * `tags` - A mapping of tags to assign to the resource.
+  * `ip_version` - The IP version of the access control list.
+  * `entry_list` - A list of entry (IP addresses or CIDR blocks).
+  * `related_listeners` - A list of listeners attached to the acl.
+  * `tags` - (Optional) A mapping of tags to assign to the resource.
   * `resource_group_id` - Resource group ID.
-## Entry Block
+
+### `acls.entry_list`
 
 The entry mapping supports the following:
 
-* `entry`   - An IP addresses or CIDR blocks.
-* `comment` - the comment of the entry.
+* `entry` - An IP address or CIDR block.
+* `comment` - The comment of the entry.
 
-## Listener Block
+### `acls.related_listeners`
 
-The Listener mapping supports the following:
+The listener mapping supports the following:
 
-* `load_balancer_id` - the id of load balancer instance, the listener belongs to.
-* `frontend_port` - the listener port.
-* `protocol`      - the listener protocol (such as tcp/udp/http/https, etc).
-* `acl_type`      - the type of acl (such as white/black).
+* `load_balancer_id` - The id of load balancer instance the listener belongs to.
+* `frontend_port` - The listener port.
+* `protocol` - The listener protocol (such as tcp/udp/http/https, etc).
+* `acl_type` - The type of the acl (such as white/black).

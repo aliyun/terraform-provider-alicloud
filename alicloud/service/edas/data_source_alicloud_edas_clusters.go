@@ -1,0 +1,212 @@
+package edas
+
+import (
+	"regexp"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudEdasClusters() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudEdasClustersRead,
+
+		Schema: map[string]*schema.Schema{
+			"logical_region_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"clusters": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cluster_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cluster_type": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"update_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"cpu": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"cpu_used": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"mem": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"mem_used": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"network_mode": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"node_num": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudEdasClustersRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	edasService := EdasService{client}
+
+	logicalRegionId := d.Get("logical_region_id").(string)
+	request := edas.CreateListClusterRequest()
+	request.LogicalRegionId = logicalRegionId
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, id := range v.([]interface{}) {
+			if id == nil {
+				continue
+			}
+			idsMap[helper.Trim(id.(string))] = helper.Trim(id.(string))
+		}
+	}
+
+	raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
+		return edasClient.ListCluster(request)
+	})
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_edas_clusters", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	logs.AddDebug(request.GetActionName(), raw, request.RoaRequest, request)
+
+	response, _ := raw.(*edas.ListClusterResponse)
+	if response.Code != 200 {
+		return errs.WrapError(errs.Error("%s", response.Message))
+	}
+
+	var filteredClusters []edas.Cluster
+	nameRegex, ok := d.GetOk("name_regex")
+	if (ok && nameRegex.(string) != "") || (len(idsMap) > 0) {
+		var r *regexp.Regexp
+		if nameRegex != "" {
+			r, err = regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return errs.WrapError(err)
+			}
+		}
+		for _, cluster := range response.ClusterList.Cluster {
+			if r != nil && !r.MatchString(cluster.ClusterName) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[cluster.ClusterId]; !ok {
+					continue
+				}
+			}
+			filteredClusters = append(filteredClusters, cluster)
+		}
+	} else {
+		filteredClusters = response.ClusterList.Cluster
+	}
+
+	return edasClusterDescriptionAttributes(d, filteredClusters)
+}
+
+func edasClusterDescriptionAttributes(d *schema.ResourceData, clusters []edas.Cluster) error {
+	var ids []string
+	var names []string
+	var s []map[string]interface{}
+
+	for _, cluster := range clusters {
+		mapping := map[string]interface{}{
+			"cluster_id":   cluster.ClusterId,
+			"cluster_name": cluster.ClusterName,
+			"cluster_type": cluster.ClusterType,
+			"create_time":  cluster.CreateTime,
+			"update_time":  cluster.UpdateTime,
+			"cpu":          cluster.Cpu,
+			"cpu_used":     cluster.CpuUsed,
+			"mem":          cluster.Mem,
+			"mem_used":     cluster.MemUsed,
+			"network_mode": cluster.NetworkMode,
+			"node_num":     cluster.NodeNum,
+			"vpc_id":       cluster.VpcId,
+			"region_id":    cluster.RegionId,
+		}
+		ids = append(ids, cluster.ClusterId)
+		s = append(s, mapping)
+		names = append(names, cluster.ClusterName)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("clusters", s); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

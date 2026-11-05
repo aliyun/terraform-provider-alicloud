@@ -36,7 +36,7 @@ The following arguments are supported:
 * `subscription_type` - (Required, ForceNew) Subscription type. Value:
   * Subscription: Prepaid.
   * PayAsYouGo: postpaid.
-* `id` - (Optional, ForceNew) A list of Price Module IDs.
+* `ids` - (Optional, ForceNew) A list of Price Module IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Property name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
@@ -46,14 +46,18 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of name of Pricing Modules.
 * `modules` - A list of Pricing Module Entries. Each element contains the following attributes:
-    * `code` - Property Code.
-    * `pricing_module_name` - Attribute name.
-    * `unit` - Attribute unit.
-    * `values` - Property.
-        * `name` - The module Code corresponds to the attribute value.
-        * `remark` - Module value description information.
-        * `type` - The attribute value type corresponding to the module Code. Value:
-          * single_float: single value type.
-          * range_float: range value type.
-        * `value` - The module Code corresponds to the attribute value.
+  * `id` - The ID of the pricing module. The value is formulated as `<product_code>:<product_type>:<subscription_type>:<code>`.
+  * `code` - Property Code.
+  * `pricing_module_name` - Attribute name.
+  * `product_code` - The product code.
+  * `product_type` - The product type.
+  * `subscription_type` - The subscription type.
+  * `unit` - Attribute unit.
+  * `values` - Property.
+    * `name` - The module Code corresponds to the attribute value.
+    * `remark` - Module value description information.
+    * `type` - The attribute value type corresponding to the module Code. Value:
+      * single_float: single value type.
+      * range_float: range value type.
+    * `value` - The module Code corresponds to the attribute value.
           > format 1024-1024000 when Type = range_float: 1024 means from 1024 to 1024000, step size 1024.

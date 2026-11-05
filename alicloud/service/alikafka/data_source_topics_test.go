@@ -1,0 +1,144 @@
+package alikafka_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+)
+
+func TestAccAlikafkaTopicsDataSource(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	idsConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"ids":         `["${alicloud_alikafka_topic.default.id}"]`,
+		}),
+		FakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"ids":         `["${alicloud_alikafka_topic.default.id}_fake"]`,
+		}),
+	}
+
+	nameRegexConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"name_regex":  `"${alicloud_alikafka_topic.default.topic}"`,
+		}),
+		FakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"name_regex":  `"${alicloud_alikafka_topic.default.topic}_fake"`,
+		}),
+	}
+
+	topicConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"topic":       `"${alicloud_alikafka_topic.default.topic}"`,
+		}),
+		FakeConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"topic":       `"${alicloud_alikafka_topic.default.topic}_fake"`,
+		}),
+	}
+
+	pagingConf := acctest.DataSourceTestAccConfig{
+		ExistConfig: testAccCheckAlikafkaTopicsDataSourceName(rand, map[string]string{
+			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
+			"topic":       `"${alicloud_alikafka_topic.default.topic}"`,
+			"page_number": `1`,
+		}),
+	}
+
+	var existAlikafkaTopicsDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                  acctest.CHECKSET,
+			"names.#":                acctest.CHECKSET,
+			"total_count":            acctest.CHECKSET,
+			"topics.#":               acctest.CHECKSET,
+			"topics.0.id":            acctest.CHECKSET,
+			"topics.0.topic":         fmt.Sprintf("tf-testacc-alikafkatopic%v", rand),
+			"topics.0.local_topic":   "false",
+			"topics.0.compact_topic": "false",
+			"topics.0.partition_num": "12",
+			"topics.0.remark":        "remark",
+			"topics.0.status":        "0",
+			"topics.0.status_name":   acctest.CHECKSET,
+			"topics.0.instance_id":   acctest.CHECKSET,
+			"topics.0.tags.%":        "2",
+			"topics.0.tags.Created":  "TF",
+			"topics.0.tags.For":      "Test",
+		}
+	}
+	var fakeAlikafkaTopicsDataSourceNameMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"topics.#": "0",
+			"names.#":  "0",
+		}
+	}
+	var AlikafkaTopicsBusesCheckInfo = acctest.DataSourceAttr{
+		ResourceId:   "data.alicloud_alikafka_topics.default",
+		ExistMapFunc: existAlikafkaTopicsDataSourceNameMapFunc,
+		FakeMapFunc:  fakeAlikafkaTopicsDataSourceNameMapFunc,
+	}
+
+	AlikafkaTopicsBusesCheckInfo.DataSourceTestCheck(t, rand, idsConf, nameRegexConf, topicConf, pagingConf)
+}
+func testAccCheckAlikafkaTopicsDataSourceName(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+
+	config := fmt.Sprintf(`
+
+variable "name" {
+  default = "tf-testacc-alikafkatopic%d"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_alikafka_instance" "default" {
+  name = "${var.name}"
+  partition_num = "50"
+  disk_type = "1"
+  disk_size = "500"
+  deploy_type = "5"
+  io_max = "20"
+  vswitch_id = "${data.alicloud_vswitches.default.ids.0}"
+  security_group = alicloud_security_group.default.id
+}
+
+resource "alicloud_alikafka_topic" "default" {
+  instance_id = "${alicloud_alikafka_instance.default.id}"
+  topic = "${var.name}"
+  local_topic = "false"
+  compact_topic = "false"
+  partition_num = "12"
+  remark = "remark"
+  tags = {
+       Created = "TF"
+      For =     "Test"
+  }
+}
+
+data "alicloud_alikafka_topics" "default" {    
+   %s
+}
+
+`, rand, strings.Join(pairs, " \n "))
+	return config
+}

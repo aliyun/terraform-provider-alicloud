@@ -110,20 +110,20 @@ resource "alicloud_star_rocks_node_group" "default" {
 The following arguments are supported:
 * `auto_renew` - (Optional) Whether auto-renewal is enabled.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `cu` - (Optional, Int) Number of CUs. CU (Compute Unit) is the basic unit of service measurement, where 1 CU = 1 vCPU + 4 GiB memory. When SpecType is memory-optimized, 1 CU = 1 vCPU + 8 GiB memory.
 * `description` - (Optional, ForceNew) Description of node group.
 * `disk_number` - (Optional, Int) Number of disks.
 * `duration` - (Optional, Int) Duration of node group.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `fast_mode` - (Optional) Whether to restart in fast restart mode. The default is false.
   - true: Reboots the compute node in fast restart mode. Restart computing nodes in multiple batches, restart in parallel within a batch, and execute serially between batches;
   - false: Restarts the compute node in rolling restart mode.
 
--> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
+  -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
 * `instance_id` - (Optional, ForceNew, Computed) The ID of the instance.
 * `local_storage_instance_type` - (Optional, ForceNew) Node group local SSD instance specification. This value is only relevant when based on ECS instances and SpecType is set to local SSD/large-scale storage.
@@ -141,7 +141,7 @@ This is only applicable when payType is set to PrePaid.
 
 * `promotion_option_no` - (Optional) ID of promotion option.
 
--> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `resident_node_number` - (Optional, Int) Number of nodes.
 * `spec_type` - (Optional) Node group spec types include the following:

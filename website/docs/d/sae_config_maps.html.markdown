@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Sae Config Maps of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
@@ -49,16 +49,16 @@ The following arguments are supported:
 * `namespace_id` - (Required, ForceNew) The NamespaceId of Config Maps. The Id of Namespace.It can contain 2 to 32 characters.The value is in format {RegionId}:{namespace}.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Config Map names.
 * `maps` - A list of Sae Config Maps. Each element contains the following attributes:
-	* `config_map_id` - The first ID of the resource.
-	* `create_time` - The Creation Time of the ConfigMap.
-	* `data` - ConfigMap instance data. The value's format is a `json` string
-	* `description` - The Description of Config Map.
-	* `id` - The ID of the Config Map.
-	* `name` - ConfigMap instance name.
-	* `namespace_id` - The NamespaceId of Config Maps.
+  * `config_map_id` - The first ID of the resource.
+  * `create_time` - The Creation Time of the ConfigMap.
+  * `data` - ConfigMap instance data. The value's format is a `json` string
+  * `description` - The Description of Config Map.
+  * `id` - The ID of the Config Map.
+  * `name` - ConfigMap instance name.
+  * `namespace_id` - The NamespaceId of Config Maps.

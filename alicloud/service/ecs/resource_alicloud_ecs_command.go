@@ -1,0 +1,163 @@
+package ecs
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func resourceEcsCommand() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceEcsCommandCreate,
+		Read:   resourceEcsCommandRead,
+		Delete: resourceEcsCommandDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"command_content": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"enable_parameter": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"timeout": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Default:  60,
+			},
+			"type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"RunBatScript", "RunPowerShellScript", "RunShellScript"}, false),
+			},
+			"working_dir": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceEcsCommandCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateCommand"
+	request := make(map[string]interface{})
+	var err error
+	request["CommandContent"] = d.Get("command_content")
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
+	if v, ok := d.GetOkExists("enable_parameter"); ok {
+		request["EnableParameter"] = v
+	}
+
+	request["Name"] = d.Get("name")
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("timeout"); ok {
+		request["Timeout"] = v
+	}
+
+	request["Type"] = d.Get("type")
+	if v, ok := d.GetOk("working_dir"); ok {
+		request["WorkingDir"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_command", action, AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["CommandId"]))
+
+	return resourceEcsCommandRead(d, meta)
+}
+func resourceEcsCommandRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := Service{client}
+	object, err := ecsService.DescribeEcsCommand(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecs_command ecsService.DescribeEcsCommand Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	d.Set("command_content", object["CommandContent"])
+	d.Set("description", object["Description"])
+	d.Set("enable_parameter", object["EnableParameter"])
+	d.Set("name", object["Name"])
+	d.Set("timeout", object["Timeout"])
+	d.Set("type", object["Type"])
+	d.Set("working_dir", object["WorkingDir"])
+	return nil
+}
+func resourceEcsCommandDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteCommand"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"CommandId": d.Id(),
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidCmdId.NotFound", "InvalidRegionId.NotFound", "Operation.Forbidden"}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}

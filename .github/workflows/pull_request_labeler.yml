@@ -25,6 +25,117 @@ jobs:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           configuration-path: .github/labeler-pull-request-triage.yml
 
+      - name: Apply Service Labels
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pullNumber = context.payload.pull_request?.number;
+            if (!Number.isSafeInteger(pullNumber) || pullNumber <= 0) {
+              throw new Error("Invalid pull request number.");
+            }
+
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              }
+            );
+            const services = new Set();
+            for (const { filename } of changedFiles) {
+              const match = /^alicloud\/service\/([^/]+)\//.exec(filename);
+              if (match) {
+                services.add(match[1]);
+              }
+            }
+            if (services.size === 0) {
+              core.info("No service package files changed.");
+              return;
+            }
+
+            const repoLabels = await github.paginate(
+              github.rest.issues.listLabelsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              }
+            );
+            const labelByName = new Map(
+              repoLabels.map(({ name }) => [name.toLowerCase(), name])
+            );
+            // Service dirs whose product label exists under a different name.
+            const serviceLabelAliases = {
+              alidns: "DNS",
+              apig: "API GW",
+              apigateway: "API GW",
+              bastionhost: "YundunBastionHost",
+              cen: "CBN",
+              cloudfw: "cloudfirewall",
+              cloudapi: "API GW",
+              cloudmonitorservice: "CMS",
+              cloudstoragegateway: "SGW",
+              databasegateway: "DG",
+              dataworks: "DataWorksPublic",
+              ddosbasic: "AntiDDoSPublic",
+              directmail: "DM",
+              eipanycast: "EIP",
+              mongodb: "DDS",
+              privatezone: "PVTZ",
+              quickbi: "QuickBIPublic",
+              rkvstore: "KVStore",
+              schedulerx: "SchedulerX2",
+              smartag: "SAG",
+              sms: "Dysmsapi",
+              sslcertificateservice: "CAS",
+              threatdetection: "SAS",
+              videosurveillancesystem: "VS",
+              vpngateway: "VPN",
+            };
+            const serviceLabels = [];
+            for (const service of services) {
+              const labelName = serviceLabelAliases[service] || service;
+              const label = labelByName.get(labelName.toLowerCase());
+              if (label) {
+                serviceLabels.push(label);
+              } else {
+                core.warning(
+                  `No repository label matches service ${service}; label skipped.`
+                );
+              }
+            }
+            if (serviceLabels.length === 0) {
+              return;
+            }
+
+            const currentLabels = await github.paginate(
+              github.rest.issues.listLabelsOnIssue,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                per_page: 100,
+              }
+            );
+            const labels = new Set(
+              currentLabels.map(({ name }) => name).filter(
+                (name) => typeof name === "string"
+              )
+            );
+            for (const label of serviceLabels) {
+              labels.add(label);
+            }
+
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullNumber,
+              labels: [...labels],
+            });
+            core.info(`Applied service labels: ${serviceLabels.join(", ")}.`);
+
       - name: Apply Pull Request Size Labels
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
@@ -57,6 +168,7 @@ jobs:
               "size/M",
               "size/L",
               "size/XL",
+              "size/XXL",
             ];
             const sizeLabel =
               modifications < 30
@@ -67,7 +179,9 @@ jobs:
                     ? "size/M"
                     : modifications < 1500
                       ? "size/L"
-                      : "size/XL";
+                      : modifications < 5000
+                        ? "size/XL"
+                        : "size/XXL";
 
             const currentLabels = await github.paginate(
               github.rest.issues.listLabelsOnIssue,

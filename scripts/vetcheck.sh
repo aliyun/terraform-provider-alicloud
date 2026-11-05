@@ -6,16 +6,21 @@ set -euo pipefail
 echo "==> Checking for suspicious constructs with go vet..."
 
 # Only check files that were changed relative to the main branch
-base_branch="origin/master"
+base_branch="${CI_CHECK_BASE:-origin/master}"
 
 # HACK: If we seem to be running inside a GitHub Actions pull request check
 # then we'll use the PR's target branch from this variable instead.
-if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+if [[ -z "${CI_CHECK_BASE:-}" && -n "${GITHUB_BASE_REF:-}" ]]; then
   base_branch="origin/$GITHUB_BASE_REF"
 fi
 
+# Explicit bases must exist; otherwise a missing ref could silently skip vet.
+if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+  git rev-parse --verify "${CI_CHECK_BASE}^{commit}" >/dev/null
+fi
+
 # Get changed Go files (compatible with Bash 3)
-target_files=$(git diff --name-only ${base_branch} --diff-filter=MA 2>/dev/null | grep "\.go$" | grep -v "_test\.go" | grep -v ".pb.go" | grep -v ".go-version" || true)
+target_files=$(git diff --name-only "${base_branch}" --diff-filter=MA -- 2>/dev/null | grep "\.go$" | grep -v "_test\.go" | grep -v ".pb.go" | grep -v ".go-version" || true)
 
 if [[ -z "$target_files" ]]; then
   echo "No Go files have changed relative to branch ${base_branch}, so there's nothing to check!"

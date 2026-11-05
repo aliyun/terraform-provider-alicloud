@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Express Connect Virtual Physical Connection available to the user.
 
--> **NOTE:** Available in 1.196.0+
+-> **NOTE:** Available since v1.196.0
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_express_connect_virtual_physical_connections" "default" {
   ids                           = ["${alicloud_express_connect_virtual_physical_connection.default.id}"]
   name_regex                    = alicloud_express_connect_virtual_physical_connection.default.name
@@ -32,20 +32,20 @@ output "alicloud_express_connect_virtual_physical_connection_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `business_status` - (ForceNew,Optional) The commercial status of the physical line. Value:
+* `business_status` - (ForceNew, Optional) The commercial status of the physical line. Value:
   - **Normal**: activated.
   - **Financialized**: Arrears locked.
   - **SecurityLocked**: locked for security reasons.
-* `parent_physical_connection_id` - (ForceNew,Optional) The ID of the instance of the physical connection.
-* `virtual_physical_connection_ids` - (ForceNew,Optional) The ID of the hosted connection. You can specify multiple hosted connection IDs.
-* `virtual_physical_connection_status` - (ForceNew,Optional) The business status of the shared line. Value:
+* `is_confirmed` - (Optional) Whether the virtual physical connection is confirmed.
+* `parent_physical_connection_id` - (ForceNew, Optional) The ID of the instance of the physical connection.
+* `virtual_physical_connection_ids` - (ForceNew, Optional) The ID of the hosted connection. You can specify multiple hosted connection IDs.
+* `virtual_physical_connection_status` - (ForceNew, Optional) The business status of the shared line. Value:
   - **Confirmed**: The shared line has been Confirmed to receive.
   - **UnConfirmed**: The shared line has not been confirmed to be received.
   - **Deleted**: The shared line has been Deleted.
-* `vlan_ids` - (ForceNew,Optional) The VLAN ID of the hosted connection. You can specify multiple VLAN IDs.
-* `vpconn_ali_uid` - (ForceNew,Optional) The ID of the Alibaba Cloud account (primary account) of the owner of the shared line.
+* `vlan_ids` - (ForceNew, Optional) The VLAN ID of the hosted connection. You can specify multiple VLAN IDs.
+* `vpconn_ali_uid` - (ForceNew, Optional) The ID of the Alibaba Cloud account (primary account) of the owner of the shared line.
 * `ids` - (Optional, ForceNew, Computed) A list of Virtual Physical Connection IDs.
-* `virtual_physical_connection_names` - (Optional, ForceNew) The name of the Virtual Physical Connection. You can specify at most 10 names.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Group Metric Rule name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

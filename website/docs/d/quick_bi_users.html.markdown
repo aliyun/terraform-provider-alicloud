@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Quick BI Users of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
 
@@ -35,18 +35,18 @@ The following arguments are supported:
 * `keyword` - (Optional, ForceNew) The keywords of the nicknames or usernames of the members of the organization.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `users` - A list of Quick BI Users. Each element contains the following attributes:
-    * `account_id` - Alibaba Cloud account ID.
-    * `account_name` - An Alibaba Cloud account, Alibaba Cloud name.
-    * `admin_user` - Whether it is the administrator. Valid values: `true` and `false`.
-    * `auth_admin_user` - Whether this is a permissions administrator. Valid values: `true` and `false`.
-    * `email` - The email of the user.
-    * `id` - The ID of the User.
-    * `nick_name` - The nickname of the user.
-    * `phone` - The phone number of the user.
-    * `user_id` - The ID of the User.
-    * `user_type` - The members of the organization of the type of role separately. Valid values: `Analyst`, `Developer` and `Visitor`.
+  * `account_id` - Alibaba Cloud account ID.
+  * `account_name` - An Alibaba Cloud account, Alibaba Cloud name.
+  * `admin_user` - Whether it is the administrator. Valid values: `true` and `false`.
+  * `auth_admin_user` - Whether this is a permissions administrator. Valid values: `true` and `false`.
+  * `email` - The email of the user.
+  * `id` - The ID of the User.
+  * `nick_name` - The nickname of the user.
+  * `phone` - The phone number of the user.
+  * `user_id` - The ID of the User.
+  * `user_type` - The members of the organization of the type of role separately. Valid values: `Analyst`, `Developer` and `Visitor`.

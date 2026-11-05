@@ -12,41 +12,126 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/internal/acctestcredentials"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/aliyun/fc-go-sdk"
+	fc "github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	bsssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/bssopenapi"
+	ecssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/ecs"
+	fcsvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/fc"
+	osssvc "github.com/aliyun/terraform-provider-alicloud/alicloud/service/oss"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var testAccProviders map[string]terraform.ResourceProvider
+// Marked setup copies remain local because importing alicloud/acctest would create an import cycle.
+
+// Migrated to alicloud/acctest.SDKProviders.
+var testAccProviders map[string]*schema.Provider
+
+// Migrated to alicloud/acctest.SDKProviderFactories.
+var testAccProviderFactory map[string]func() (*schema.Provider, error)
+
+// Migrated to alicloud/acctest.Provider.
 var testAccProvider *schema.Provider
-var defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
+
+// Migrated to alicloud/acctest.DefaultRegionToTest.
+var defaultRegionToTest = func() string {
+	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+		return v
+	}
+	// Fallback to cn-beijing when ALICLOUD_REGION is unset so test fixtures
+	// that read defaultRegionToTest at test-function-entry time (before
+	// testAccPreCheck runs) don't produce malformed strings like
+	// "oss--internal.aliyuncs.com" or "...fcv3.<acct>..fc.devsapp.net".
+	return "cn-beijing"
+}()
+
+// Migrated to alicloud/acctest/setup.go (same-named constants).
+const (
+	ProviderNameAlicloudAlt  = "alicloudalt"
+	ProviderNameAlicloudAlt2 = "alicloudalt2"
+	ProviderNameAlicloudAlt3 = "alicloudalt3"
+)
+
+// Migrated to alicloud/acctest.SDKProviderFactoriesAlternate.
+func testAccProviderFactoriesAlternate() map[string]func() (*schema.Provider, error) {
+	altProvider := Provider()
+	return map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+		ProviderNameAlicloudAlt: func() (*schema.Provider, error) {
+			return altProvider, nil
+		},
+	}
+}
+
+// Migrated to alicloud/acctest.SDKProviderFactoriesMultiRegion.
+func testAccProviderFactoriesMultiRegion(n int) map[string]func() (*schema.Provider, error) {
+	factories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+	}
+	altNames := []string{ProviderNameAlicloudAlt, ProviderNameAlicloudAlt2, ProviderNameAlicloudAlt3}
+	for i := 0; i < n-1 && i < len(altNames); i++ {
+		p := Provider()
+		factories[altNames[i]] = func() (*schema.Provider, error) {
+			return p, nil
+		}
+	}
+	return factories
+}
+
+// Migrated to alicloud/acctest.ConfigAlternateRegionProvider.
+func configAlternateRegionProvider(region string) string {
+	return fmt.Sprintf(`
+provider "alicloudalt" {
+  region = "%s"
+}
+`, region)
+}
+
+// Migrated to alicloud/acctest.ConfigNamedRegionalProvider.
+func configNamedRegionalProvider(providerName string, region string) string {
+	return fmt.Sprintf(`
+provider "%s" {
+  region = "%s"
+}
+`, providerName, region)
+}
 
 func init() {
-	testAccProvider = Provider().(*schema.Provider)
-	testAccProviders = map[string]terraform.ResourceProvider{
+	testAccProvider = Provider()
+	testAccProviders = map[string]*schema.Provider{
 		"alicloud": testAccProvider,
 	}
-	setStsCredential()
+
+	testAccProviderFactory = map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
+			return testAccProvider, nil
+		},
+	}
+	// TODO disable setting STS from oss
+	//setStsCredential()
 }
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func TestProvider_impl(t *testing.T) {
-	var _ terraform.ResourceProvider = Provider()
+	var _ *schema.Provider = Provider()
 }
 
 func TestProviderSkipRegionValidation(t *testing.T) {
@@ -69,7 +154,7 @@ func TestProviderSkipRegionValidation(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			os.Setenv("ALICLOUD_SKIP_REGION_VALIDATION", testCase.env)
 
-			d := schema.TestResourceDataRaw(t, Provider().(*schema.Provider).Schema, testCase.raw)
+			d := schema.TestResourceDataRaw(t, Provider().Schema, testCase.raw)
 			if got := d.Get("skip_region_validation").(bool); got != testCase.expected {
 				t.Fatalf("skip_region_validation: expected %v, got %v", testCase.expected, got)
 			}
@@ -132,6 +217,7 @@ func TestProviderFeatures(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheck.
 func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -218,7 +304,7 @@ func testAccPreCheckForCleanUpInstances(t *testing.T, instanceRegion, productCod
 		t.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	bssOpenApiService := BssOpenApiService{client}
+	bssOpenApiService := bsssvc.NewBssOpenApiService(client)
 	accountId, err := client.AccountId()
 	if err != nil {
 		t.Errorf("error getting AliCloud client: %s", err)
@@ -266,21 +352,12 @@ Time: %s
 // currently not all account site type support create PostPaid resources, PayByBandwidth and other limits.
 // The setting of account site type can skip some unsupported cases automatically.
 
+// Migrated to alicloud/acctest.PreCheckWithAccountSiteType.
 func testAccPreCheckWithAccountSiteType(t *testing.T, account AccountSite) {
-	defaultAccount := string(DomesticSite)
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_SITE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	} else if v = strings.TrimSpace(os.Getenv("ALICLOUD_ACCOUNT_TYPE")); v != "" {
-		defaultAccount = v
-	}
-	if defaultAccount != string(account) {
-		t.Skipf("Skipping unsupported account type %s-Site. It only supports %s-Site.", defaultAccount, account)
-		t.Skipped()
-	}
+	acctestcredentials.Select(t, string(account))
 }
 
+// Migrated to alicloud/acctest.PreCheckPrePaidResources.
 func testAccPreCheckPrePaidResources(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ENABLE_CHECKING_PRE_PAID")); v != "true" {
 		t.Skip("Skipping testing PrePaid resources, otherwise setting environment parameter 'ENABLE_CHECKING_PRE_PAID'.")
@@ -288,6 +365,7 @@ func testAccPreCheckPrePaidResources(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.ClassicNetworkResources.
 func testAccClassicNetworkResources(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ENABLE_CLASSIC_NETWORK")); v != "true" {
 		t.Skip("Skipping testing classic resources, otherwise setting environment parameter 'ENABLE_CLASSIC_NETWORK'.")
@@ -299,6 +377,7 @@ func testAccClassicNetworkResources(t *testing.T) {
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
 // If the region is unsupported and has backend region, the backend region will instead
+// Migrated to alicloud/acctest.PreCheckWithRegions.
 func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -314,6 +393,7 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 	defaultRegionToTest = os.Getenv("ALICLOUD_REGION")
 }
 
+// Migrated to alicloud/acctest.CheckoutSupportedRegions.
 func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	region := os.Getenv("ALICLOUD_REGION")
 	find := false
@@ -387,6 +467,7 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 	}
 }
 
+// Migrated to alicloud/acctest.CheckoutAccount.
 func checkoutAccount(t *testing.T, SLAVE bool) {
 	if SLAVE {
 		if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
@@ -411,6 +492,7 @@ func checkoutAccount(t *testing.T, SLAVE bool) {
 // Skip automatically the sweep testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
+// Migrated to alicloud/sweep.SweepPreCheckWithRegions.
 func testSweepPreCheckWithRegions(region string, supported bool, regions []connectivity.Region) bool {
 	find := false
 	for _, r := range regions {
@@ -422,6 +504,7 @@ func testSweepPreCheckWithRegions(region string, supported bool, regions []conne
 	return (find && !supported) || (!find && supported)
 }
 
+// Migrated to alicloud/acctest.CheckAlicloudDataSourceID.
 func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -436,6 +519,7 @@ func testAccCheckAlicloudDataSourceID(n string) resource.TestCheckFunc {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckWithMultipleAccount.
 func testAccPreCheckWithMultipleAccount(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_ACCESS_KEY_2")); v == "" {
 		t.Skipf("Skipping unsupported test with multiple account")
@@ -468,13 +552,6 @@ func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no sag instance id setting")
-		t.Skipped()
-	}
-}
-
 func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1")); v == "" {
 		t.Skip("Skipping the test case with no sag folder id setting")
@@ -496,6 +573,7 @@ func testAccPreCheckWithResourceManagerAccount(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckWithEnvVariable.
 func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
 	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
 		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
@@ -510,13 +588,6 @@ func testAccPreCheckWithSlbInstanceSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("SAG_APP_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no sag app instance id setting")
-		t.Skipped()
-	}
-}
-
 func testAccPreCheckWithExpressConnectUidSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("ALICLOUD_EXPRESS_CONNECT_UID")); v == "" {
 		t.Skipf("Skipping the test case with no express connect uid  id setting")
@@ -524,6 +595,7 @@ func testAccPreCheckWithExpressConnectUidSetting(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckWithTime.
 func testAccPreCheckWithTime(t *testing.T, days []int) {
 	skipped := true
 	for _, d := range days {
@@ -547,6 +619,7 @@ func testAccPreCheckWithAlikafkaAclEnable(t *testing.T) {
 	}
 }
 
+// Migrated to alicloud/acctest.PreCheckEnterpriseAccountEnabled.
 func testAccPreCheckEnterpriseAccountEnabled(t *testing.T) {
 	enable := os.Getenv("ENTERPRISE_ACCOUNT_ENABLED")
 	if enable != "true" {
@@ -721,7 +794,7 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
 	serviceFunc := func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return ecssvc.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -737,9 +810,8 @@ func TestAccAlicloudProviderEcs(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -787,7 +859,7 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 	resourceId := "alicloud_fc_function.default"
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
-		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return fcsvc.NewService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
@@ -797,9 +869,9 @@ func TestAccAlicloudProviderFC(t *testing.T) {
 	})
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
+		PreCheck:          func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -826,7 +898,7 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
 
 	serviceFunc := func() interface{} {
-		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return osssvc.NewOssService(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 
@@ -844,9 +916,8 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 			testAccPreCheck(t)
 		},
 		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -855,88 +926,6 @@ func TestAccAlicloudProviderOss(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"bucket": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudProviderLog(t *testing.T) {
-	var v *sls.LogProject
-	resourceId := "alicloud_log_project.default"
-	ra := resourceAttrInit(resourceId, logProjectMap)
-	serviceFunc := func() interface{} {
-		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%slogproject-%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
-		return providerCommon + resourceLogProjectConfigDependence(name)
-	})
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name,
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudProviderDatahub(t *testing.T) {
-	var v *datahub.GetProjectResult
-
-	resourceId := "alicloud_datahub_project.default"
-	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DatahubService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(100000, 999999)
-	name := fmt.Sprintf("tf_testaccdatahubproject%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, func(name string) string {
-		return providerCommon + resourceDatahubProjectConfigDependence(name)
-	})
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DatahubSupportedRegions)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name,
 					}),
 				),
 			},

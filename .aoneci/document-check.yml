@@ -4,6 +4,7 @@ triggers:
     paths:
       - 'website/docs/**'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
   merge_request:
     types:
       - opened
@@ -11,6 +12,7 @@ triggers:
       - '.github/workflows/document-check.yml'
       - 'website/docs/**'
       - 'alicloud/*.go'
+      - 'alicloud/service/**/*.go'
 
 jobs:
   terrafmt:
@@ -34,6 +36,21 @@ jobs:
         inputs:
           go-version: '1.24.0'
       - run: BASIC_CHECK_AUTO_RANGE=true bash scripts/basic-check.sh
+
+  TestFrameworkGuard:
+    steps:
+      - uses: checkout
+      - name: Reject new SDK v2 helper/resource imports
+        run: |
+          targetBranch='${{git.merge_request.targetBranch ?: ""}}'
+          if [[ "$targetBranch" != "master" ]]; then
+            echo "target branch is ${targetBranch:-<empty>}, skipping the test framework guard"
+            exit 0
+          fi
+          git fetch --no-tags origin master:refs/remotes/origin/master
+          DIFF_BASE="$(git merge-base origin/master HEAD)" \
+          DIFF_HEAD="$(git rev-parse HEAD)" \
+            bash scripts/ci/test-framework-guard.sh
 
   Content:
     steps:

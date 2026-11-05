@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Event Bridge Event Buses of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.129.0+.
+-> **NOTE:** Available since v1.129.0.
 
 ## Example Usage
 
@@ -42,13 +42,13 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Event Bus name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Event Bus names.
 * `buses` - A list of Event Bridge Event Buses. Each element contains the following attributes:
-	* `create_time` - The time of this bus was created.
-	* `description` - The description of event bus.
-	* `event_bus_name` - The name of event bus.
-	* `id` - The ID of the Event Bus. Its value is same as Queue Name.
+  * `create_time` - The time of this bus was created.
+  * `description` - The description of event bus.
+  * `event_bus_name` - The name of event bus.
+  * `id` - The ID of the Event Bus. Its value is same as Queue Name.

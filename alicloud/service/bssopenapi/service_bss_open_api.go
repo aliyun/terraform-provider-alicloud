@@ -1,0 +1,422 @@
+package bssopenapi
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfconvert "github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	tferrs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	tflogs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+)
+
+type BssOpenApiService struct {
+	client *connectivity.AliyunClient
+}
+
+const ModulesSizeLimit = 50
+
+func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	action := "QueryAvailableInstances"
+	request := map[string]interface{}{
+		"ProductCode": productCode,
+		"ProductType": productType,
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = productCodeIntl
+		request["ProductType"] = productTypeIntl
+	}
+	if id != "" {
+		request["InstanceIDs"] = id
+	}
+	if instanceRegion != "" {
+		request["Region"] = instanceRegion
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && tferrs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = productCodeIntl
+				request["ProductType"] = productTypeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		resp, _ := jsonpath.Get("$.Data.InstanceList", response)
+		if len(resp.([]interface{})) < 1 {
+			request["ProductCode"] = productCodeIntl
+			if productTypeIntl != "" {
+				request["ProductType"] = productTypeIntl
+			}
+			endpoint = connectivity.BssOpenAPIEndpointInternational
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, id, action, tferrs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, tferrs.WrapErrorf(tferrs.NotFoundErr(productCode+"Instance", id), tferrs.NotFoundWithResponse, response)
+	} else if id != "" {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
+			return object, tferrs.WrapErrorf(tferrs.NotFoundErr(productCode+"Instance", id), tferrs.NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instanceRegion, productCode, productCodeIntl string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	action := "QueryAvailableInstances"
+	request := map[string]interface{}{
+		"InstanceIDs": id,
+		"ProductCode": productCode,
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = productCodeIntl
+	}
+	// Region is intentionally not set: QueryAvailableInstances is a global billing
+	// API keyed by InstanceIDs. Passing an international region (e.g. na-south-1) for
+	// a domestic-station account makes the domestic BSS return an empty list, which
+	// triggers a blind fallback to the international endpoint and fails with
+	// "account not exists". Omitting Region lets the domestic BSS resolve the instance.
+
+	wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && tferrs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = productCodeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		resp, err := jsonpath.Get("$.Data.InstanceList", response)
+		if err != nil {
+			return retry.NonRetryableError(err)
+		}
+		if !client.IsInternationalAccount() && len(resp.([]interface{})) < 1 {
+			request["ProductCode"] = productCodeIntl
+			endpoint = connectivity.BssOpenAPIEndpointInternational
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, id, action, tferrs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, tferrs.WrapErrorf(tferrs.NotFoundErr(productCode+"Instance", id), tferrs.NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
+			return object, tferrs.WrapErrorf(tferrs.NotFoundErr(productCode+"Instance", id), tferrs.NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	client := s.client
+	action := "QueryAvailableInstances"
+	request := map[string]interface{}{
+		"InstanceIDs": id,
+		"ProductCode": "vipcloudfw",
+		"ProductType": "vipcloudfw",
+	}
+	if client.IsInternationalAccount() {
+		request["ProductCode"] = "cfw"
+		request["ProductType"] = "cfw_pre_intl"
+	}
+
+	wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("BssOpenApi", "2017-12-14", action, nil, request, true)
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, id, action, tferrs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
+	}
+
+	if len(v.([]interface{})) < 1 {
+		return object, tferrs.WrapErrorf(tferrs.NotFoundErr("CloudFirewall", id), tferrs.NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
+			return object, tferrs.WrapErrorf(tferrs.NotFoundErr("CloudFirewall", id), tferrs.NotFoundWithResponse, response)
+		}
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *BssOpenApiService) DescribeCloudFirewallInstanceOrderDetail(orderId string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	action := "GetOrderDetail"
+	request := map[string]interface{}{
+		"OrderId": orderId,
+	}
+
+	wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && tferrs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.DefaultErrorMsg, orderId, action, tferrs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data.OrderList.Order", response)
+	if err != nil {
+		return object, tferrs.WrapErrorf(err, tferrs.FailedGetAttributeMsg, orderId, "$.Data.OrderList.Order", response)
+	}
+
+	if len(v.([]interface{})) < 1 {
+		return object, tferrs.WrapErrorf(tferrs.NotFoundErr("CloudFirewallOrderId", orderId), tferrs.NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["OrderId"]) != orderId {
+			return object, tferrs.WrapErrorf(tferrs.NotFoundErr("CloudFirewallOrderId", orderId), tferrs.NotFoundWithResponse, response)
+		}
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *BssOpenApiService) CloudFirewallInstanceOrderDetailStateRefreshFunc(orderId string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCloudFirewallInstanceOrderDetail(orderId)
+		if err != nil {
+			if tferrs.NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", tferrs.WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["PaymentStatus"].(string) == failState {
+				return object, object["PaymentStatus"].(string), tferrs.WrapError(tferrs.Error(tferrs.FailedToReachTargetStatus, object["PaymentStatus"].(string)))
+			}
+		}
+
+		return object, object["PaymentStatus"].(string), nil
+	}
+}
+
+func (s *BssOpenApiService) QueryAvailableInstanceList(instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) (object []interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	action := "QueryAvailableInstances"
+	request := map[string]interface{}{
+		"ProductCode":      productCode,
+		"ProductType":      productType,
+		"SubscriptionType": "Subscription",
+	}
+	if s.client.IsInternationalAccount() {
+		request = map[string]interface{}{
+			"ProductCode": productCodeIntl,
+			"ProductType": productTypeIntl,
+		}
+	}
+	if instanceRegion != "" {
+		request["Region"] = instanceRegion
+	}
+
+	wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+		if err != nil {
+			if tfhelper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if !client.IsInternationalAccount() && tferrs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = productTypeIntl
+				request["ProductCode"] = productCodeIntl
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	tflogs.AddDebug(action, response, request)
+	if err != nil {
+		return object, tferrs.WrapError(err)
+	}
+	v, err := jsonpath.Get("$.Data.InstanceList", response)
+	if err != nil {
+		return object, tferrs.WrapError(err)
+	}
+	return v.([]interface{}), nil
+}
+
+func (s *BssOpenApiService) GetInstanceTypePrice(productCode, productType, paymentType string, modules []map[string]interface{}) (object []float64, err error) {
+	client := s.client
+	var response map[string]interface{}
+	var endpoint string
+	var priceList []float64
+	action := "GetSubscriptionPrice"
+	request := map[string]interface{}{
+		"OrderType":        "NewOrder",
+		"SubscriptionType": "Subscription",
+		"Region":           client.RegionId,
+		"ProductCode":      productCode,
+		"ProductType":      productType,
+	}
+
+	if paymentType == "Subscription" {
+		request["ServicePeriodQuantity"] = 1
+		request["ServicePeriodUnit"] = "Month"
+		request["Quantity"] = 1
+	}
+
+	if paymentType == "PayAsYouGo" {
+		action = "GetPayAsYouGoPrice"
+		request["SubscriptionType"] = "PayAsYouGo"
+	}
+
+	moduleLength := len(modules)
+
+	for {
+		if len(modules) < ModulesSizeLimit {
+			moduleLength = len(modules)
+
+			request["ModuleList"] = modules
+		} else {
+			tmp := modules[:ModulesSizeLimit]
+			modules = modules[ModulesSizeLimit:]
+			moduleLength = len(tmp)
+
+			request["ModuleList"] = &tmp
+		}
+		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, true, endpoint)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				if !client.IsInternationalAccount() && tferrs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+					endpoint = connectivity.BssOpenAPIEndpointInternational
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		tflogs.AddDebug(action, response, request)
+
+		if err != nil {
+			return object, tferrs.WrapError(err)
+		}
+
+		v, err := jsonpath.Get("$.Data.ModuleDetails.ModuleDetail", response)
+		if err != nil {
+			return object, tferrs.WrapError(err)
+		}
+
+		for _, originalCosts := range v.([]interface{}) {
+			originalCostArg := originalCosts.(map[string]interface{})
+
+			if originalCost, ok := originalCostArg["OriginalCost"]; ok {
+				priceListItem, err := tfconvert.FormatFloat64(originalCost)
+				if err != nil {
+					return nil, err
+				}
+				priceList = append(priceList, priceListItem)
+			}
+		}
+
+		if moduleLength < ModulesSizeLimit {
+			break
+		}
+	}
+
+	return priceList, nil
+}

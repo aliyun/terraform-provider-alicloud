@@ -9,7 +9,7 @@
 #   ./scripts/local-ci-check.sh  # Run directly
 #   ./scripts/local-ci-check.sh --skip-build  # Skip build check
 #   ./scripts/local-ci-check.sh --skip-test   # Skip unit tests
-#   ./scripts/local-ci-check.sh --quick       # Skip build and tests
+#   ./scripts/local-ci-check.sh --quick       # Skip build; run changed-file unit tests
 #
 # Features:
 #   - Auto-installs missing tools (terrafmt, misspell, markdownlint, markdown-link-check)
@@ -22,6 +22,8 @@ set -e
 
 # Parse command line arguments
 SKIP_BUILD=false
+CHANGED_UNIT_TESTS=false
+# CI_UNIT_TESTS_V1: quick always runs the changed-unit stage.
 SKIP_TEST=true  # Default: skip tests locally (CI still runs them)
 SKIP_ERRCHECK=true  # Default: skip errcheck locally (CI still runs it)
 SKIP_MARKDOWN_LINT=true  # Default: skip markdown lint locally (CI still runs it)
@@ -65,6 +67,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --quick)
+      CHANGED_UNIT_TESTS=true
       SKIP_BUILD=true
       SKIP_TEST=true
       SKIP_ERRCHECK=true
@@ -88,8 +91,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --run-markdown-link-check Run markdown link check (default: skipped locally)"
       echo "  --skip-example-test       Skip example tests (default: enabled)"
       echo "  --skip-resource-test      Skip resource integration tests (default: enabled)"
-      echo "  --quick                   Skip build, tests, errcheck, example tests, and resource tests (faster checks)"
+      echo "  --quick                   Run changed-file unit tests; skip build, errcheck, example tests, and resource tests"
       echo "  --strict                  Check ALL docs (like CI), not just changed files"
+      echo "  CI_CHECK_BASE=<commit>    Compare this local Git base to the working tree (environment variable)"
       echo "  -h, --help                Show this help message"
       echo ""
       echo "Note: By default, example tests are ENABLED and will create real resources."
@@ -215,18 +219,26 @@ fi
 # 1. Uncommitted changes (if any)
 # 2. Latest commit changes
 # 3. All changes from master branch
-CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
+# Remote/CI callers can select one explicit baseline for every check. The working
+# tree may include staged, unstaged and intent-to-add files.
+if [ -n "${CI_CHECK_BASE:-}" ]; then
+  git rev-parse --verify "${CI_CHECK_BASE}^{commit}" >/dev/null
+  CHANGED_FILES=$(git diff --name-only "$CI_CHECK_BASE" --)
+else
+  CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null)
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No uncommitted changes, check the latest commit
-  echo -e "${BLUE}Checking latest commit changes...${NC}"
-  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
-fi
+  if [ -z "$CHANGED_FILES" ]; then
+    # No uncommitted changes, check the latest commit
+    echo -e "${BLUE}Checking latest commit changes...${NC}"
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null)
+  fi
 
-if [ -z "$CHANGED_FILES" ]; then
-  # No changes in latest commit, fall back to comparing with master
-  echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
-  CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  if [ -z "$CHANGED_FILES" ]; then
+    # No changes in latest commit, fall back to comparing with master
+    echo -e "${YELLOW}No changes in latest commit. Comparing with master branch...${NC}"
+    CHANGED_FILES=$(git diff --name-only origin/master...HEAD 2>/dev/null || git diff --name-only master...HEAD 2>/dev/null)
+  fi
+
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
@@ -245,6 +257,16 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Checking Required Tools${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo
+
+# Go installs tools into GOBIN, or the first GOPATH entry's bin directory.
+# Minimal runners may not include that directory in PATH. Export it for child
+# checks too, while preserving any tools already selected by the caller.
+GO_TOOL_BIN=$(go env GOBIN)
+if [ -z "$GO_TOOL_BIN" ]; then
+  GO_TOOL_PATH=$(go env GOPATH)
+  GO_TOOL_BIN="${GO_TOOL_PATH%%:*}/bin"
+fi
+export PATH="$PATH:$GO_TOOL_BIN"
 
 # Check for goimports (needed for code quality checks)
 if ! command -v goimports &> /dev/null; then
@@ -299,6 +321,15 @@ if echo "$CHANGED_FILES" | grep -q "\.go$\|website/docs"; then
     || true
 fi
 
+# 1.6 Production Dependency Graph Check
+# Runs unconditionally: the production dependency graph of the root main is a
+# global guarantee (no SDK v2 helper/resource), independent of the diff range.
+# `go list -deps` resolves the import graph without compiling the provider; it
+# loads package metadata, so on local runs it uses the same Go toolchain as vet.
+run_check "Production Dependency Graph Check (no SDK v2 helper/resource)" \
+  "make -C \"$PROJECT_ROOT\" check-production-deps" \
+  || true
+
 # ============================================================================
 # 2. Testing Coverage Rate Check
 # ============================================================================
@@ -318,7 +349,9 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   TEMP_DIFF=$(mktemp)
   
   # Generate diff: prioritize uncommitted changes, then latest commit, then compare with master
-  if git diff --name-only HEAD 2>/dev/null | grep -q .; then
+  if [ -n "${CI_CHECK_BASE:-}" ]; then
+    git diff "$CI_CHECK_BASE" -- > "$TEMP_DIFF"
+  elif git diff --name-only HEAD 2>/dev/null | grep -q .; then
     # There are uncommitted changes
     git diff HEAD > "$TEMP_DIFF"
   else
@@ -327,7 +360,7 @@ if [ -n "$RESOURCE_CHANGES" ]; then
   fi
   
   # If diff is empty, try comparing with master
-  if [ ! -s "$TEMP_DIFF" ]; then
+  if [ -z "${CI_CHECK_BASE:-}" ] && [ ! -s "$TEMP_DIFF" ]; then
     git diff origin/master...HEAD > "$TEMP_DIFF" 2>/dev/null || git diff master...HEAD > "$TEMP_DIFF" 2>/dev/null || true
   fi
   
@@ -548,9 +581,13 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
   # Create a temporary diff file
   TEMP_DIFF=$(mktemp)
   
-  # Always check only the latest commit (not all changes from master)
-  git diff HEAD~1 HEAD > "$TEMP_DIFF"
-  echo -e "${BLUE}  Checking only latest commit${NC}"
+  if [ -n "${CI_CHECK_BASE:-}" ]; then
+    git diff "$CI_CHECK_BASE" -- > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking changes against ${CI_CHECK_BASE}${NC}"
+  else
+    git diff HEAD~1 HEAD > "$TEMP_DIFF"
+    echo -e "${BLUE}  Checking only latest commit${NC}"
+  fi
   
   if [ -s "$TEMP_DIFF" ]; then
     if go run "$SCRIPT_DIR/consistency/consistency_check.go" -fileNames="$TEMP_DIFF"; then
@@ -589,7 +626,21 @@ fi
 # 5. Unit Tests
 # ============================================================================
 
-if [ "$SKIP_TEST" = false ]; then
+if [ "$CHANGED_UNIT_TESTS" = true ]; then
+  # Resolve the same comparison base used by the quality checks. FC always sets
+  # CI_CHECK_BASE explicitly; standalone use retains the existing latest-commit scope.
+  UNIT_BASE="${CI_CHECK_BASE:-}"
+  if [ -z "$UNIT_BASE" ]; then
+    if git diff --name-only HEAD -- | grep -q .; then
+      UNIT_BASE=HEAD
+    else
+      UNIT_BASE=$(git rev-parse --verify 'HEAD^')
+    fi
+  fi
+  run_check "Changed Unit Tests" \
+    "CI_CHECK_BASE=\"$UNIT_BASE\" go run \"$SCRIPT_DIR/ci/changed-unit-tests.go\"" \
+    || true
+elif [ "$SKIP_TEST" = false ]; then
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
   echo -e "${GREEN}  Part 5: Unit Tests${NC}"
   echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
@@ -602,6 +653,31 @@ else
   echo -e "${YELLOW}⚠ Skipping unit tests (--skip-test flag)${NC}"
   echo
 fi
+
+# ============================================================================
+# 5b. Test Binary Initialization Check (cloudauth no-tests)
+# ============================================================================
+#
+# Compiles, links and initializes the standard alicloud/service/cloudauth test
+# binary WITHOUT running any acceptance test (go test -run '^$' -count=1 -v).
+# `-run '^$'` matches no Test* function (no cloud resource is created); the
+# binary still builds, links and runs init()/TestMain. `-count=1` defeats the
+# Go test cache so a cached pass cannot mask a real compile/link/init failure.
+#
+# This is the local-ci-check equivalent of the remote probe_init init probe.
+# It runs UNCONDITIONALLY (including --quick): a compile/link/init failure
+# fails the check and the enclosing quick/CI run. It does NOT replace the
+# production build (`make provider-build`) or a real ACC; the receipt marks
+# INITIALIZATION_ONLY and countsAsAccTest=false. See
+# scripts/ci/initialization-check.sh and scripts/ci/production-build-checks.md.
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Part 5b: Test Binary Initialization Check (cloudauth no-tests)${NC}"
+echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+echo
+
+run_check "Test Binary Initialization Check (cloudauth no-tests)" \
+  "\"$SCRIPT_DIR/ci/initialization-check.sh\"" \
+  || true
 
 # ============================================================================
 # 6. Example Tests (Documentation Examples)
