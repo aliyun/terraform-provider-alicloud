@@ -106,6 +106,7 @@ resource "alicloud_ess_instance_refresh" "default" {
   }
 }
 ```
+
 ### Deleting `alicloud_ess_instance_refresh` or removing it from your configuration
 
 The `alicloud_ess_instance_refresh` resource allows you to manage  `status = "RollbackInProgress"`  instance refresh, but Terraform cannot destroy it.
@@ -128,17 +129,17 @@ The following arguments are supported:
 * `desired_configuration_containers` - (Optional, ForceNew) The list of containers in the instance. See [`desired_configuration_containers`](#desired_configuration_containers) below for details.
 * `skip_matching` - (Optional, ForceNew) Indicates whether to skip instances that match the desired configuration.
 * `status` - (Optional) The current status of the instance refresh task. Possible values:
-    - Pending: The instance refresh task is created and waiting to be scheduled.
-    - InProgress: The instance refresh task is in progress. 
-    - Paused: The instance refresh task is paused. 
-    - CheckpointPause: The task is paused because it has reached a checkpoint (Checkpoint.Percentage).
-    - Failed: The instance refresh task failed.
-    - Successful: The instance refresh task was successful.
-    - Cancelling: The instance refresh task is being canceled. 
-    - RollbackInProgress: The instance refresh task is being rolled back. 
-    - RollbackSuccessful: The instance refresh task was rolled back successfully. Set RollbackSuccessful to rollback the instance refresh task.
-    - RollbackFailed: The rollback of the instance refresh task failed.
-    - Cancelled:  The instance refresh task is canceled. Set Cancelled to cancel the instance refresh task.
+  - Pending: The instance refresh task is created and waiting to be scheduled.
+  - InProgress: The instance refresh task is in progress. Set InProgress to resume the instance refresh task.
+  - Paused: The instance refresh task is paused. Set Paused to suspend the instance refresh task.
+  - CheckpointPause: The task is paused because it has reached a checkpoint (Checkpoint.Percentage).
+  - Failed: The instance refresh task failed.
+  - Successful: The instance refresh task was successful.
+  - Cancelling: The instance refresh task is being canceled.
+  - RollbackInProgress: The instance refresh task is being rolled back.
+  - RollbackSuccessful: The instance refresh task was rolled back successfully. Set RollbackSuccessful to rollback the instance refresh task.
+  - RollbackFailed: The rollback of the instance refresh task failed.
+  - Cancelled: The instance refresh task is canceled. Set Cancelled to cancel the instance refresh task.
 * `checkpoints` - (Optional, ForceNew) The checkpoints for the refresh task. The task automatically pauses for the duration specified by CheckpointPauseTime when the percentage of new instances reaches a specified value. See [`checkpoints`](#checkpoints) below for details.
 * `checkpoint_pause_time` - (Optional, ForceNew) The duration of the pause when the task reaches a checkpoint. Unit: minutes.
 

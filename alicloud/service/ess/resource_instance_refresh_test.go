@@ -261,6 +261,91 @@ func TestAccAliCloudEssInstanceRefresh_container(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssInstanceRefresh_status(t *testing.T) {
+	rand := tfcacctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_instance_refresh.default"
+	acctest.CheckoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	var v map[string]interface{}
+	basicMap := map[string]string{
+		"scaling_group_id": acctest.CHECKSET,
+	}
+	ra := acctest.ResourceAttrInit(resourceId, basicMap)
+	rc := acctest.ResourceCheckInit(resourceId, &v, func() interface{} {
+		return essservice.NewEssService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	})
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssInstanceRefresh-%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, testAccEssInstanceRefreshImage)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckEssInstanceRefreshDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create an in-progress instance refresh with checkpoints so the
+				// task stays active (CheckpointPause) while we drive its status.
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":                     []string{"alicloud_ess_scaling_configuration.default"},
+					"scaling_group_id":               "${alicloud_ess_scaling_group.default.id}",
+					"desired_configuration_image_id": "${data.alicloud_images.default2.images[0].id}",
+					"min_healthy_percentage":         "90",
+					"max_healthy_percentage":         "150",
+					"checkpoint_pause_time":          "1",
+					"skip_matching":                  "false",
+					"checkpoints": []map[string]string{
+						{"percentage": "50"},
+						{"percentage": "70"},
+						{"percentage": "100"},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"id": acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				// Set status to Paused to suspend the in-progress refresh.
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Paused",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Paused",
+					}),
+				),
+			},
+			{
+				// Set status back to InProgress to resume the suspended refresh.
+				Config: testAccConfig(map[string]interface{}{
+					"status": "InProgress",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "InProgress",
+					}),
+				),
+			},
+			{
+				// Cancel the refresh to stop it and leave the cloud clean.
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Cancelled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Cancelled",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckEssInstanceRefreshDestroy(s *terraform.State) error {
 	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
 	essService := essservice.NewEssService(client)
