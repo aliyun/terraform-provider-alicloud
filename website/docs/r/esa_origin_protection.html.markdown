@@ -44,9 +44,9 @@ resource "alicloud_esa_site" "default" {
 
 
 resource "alicloud_esa_origin_protection" "default" {
-  origin_converge    = "on"
+  origin_converge      = "on"
   auto_confirm_ip_list = "off"
-  site_id            = alicloud_esa_site.default.id
+  site_id              = alicloud_esa_site.default.id
 }
 ```
 
