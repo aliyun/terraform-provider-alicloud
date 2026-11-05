@@ -124,7 +124,7 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax/operation-timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Source.
 * `delete` - (Defaults to 5 mins) Used when delete the Source.
 * `update` - (Defaults to 6 mins) Used when update the Source.

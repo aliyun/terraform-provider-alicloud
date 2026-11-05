@@ -111,7 +111,7 @@ The encryption algorithm of the client certificate must match that of the subord
 
 * `common_name` - (Optional, ForceNew) Name of the certificate subject. For a Client Authentication (ClientAuth) certificate, the subject is typically an individual, company, organization, or application. We recommend using the common name of the subject—for example, Zhang San, Alibaba, Alibaba Cloud KMS, or Tmall Genie.  
 * `country_code` - (Optional, ForceNew) Country code of the organization associated with the subordinate CA certificate that issued this certificate.  
-For the meanings of different country codes, see the **International Codes** section in [Manage Company Information](https://www.alibabacloud.com/help/document_detail/198289.html).  
+For the meanings of different country codes, see the **International Codes** section in [Manage Company Information](https://www.alibabacloud.com/help/document_detail/198289.html).
 * `custom_identifier` - (Optional, ForceNew) A user-defined unique identifier.
 * `days` - (Optional, ForceNew, Computed, Int) Validity period of the client certificate, in days.  
 
@@ -120,7 +120,7 @@ The `days`, `before_time`, and `after_time` parameters cannot all be empty. Addi
   - If you do not set the `days` parameter, you must set both `before_time` and `after_time`.  
 
 -> **NOTE:** - If you set `days`, `before_time`, and `after_time` simultaneously, the validity period of the client certificate is determined by the value of `days`.  
-  - The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://www.alibabacloud.com/help/document_detail/465954.html) to check the validity period of the subordinate CA certificate.  
+  - The validity period of the client certificate cannot exceed that of the issuing subordinate CA certificate. You can call [DescribeCACertificate](https://www.alibabacloud.com/help/document_detail/465954.html) to check the validity period of the subordinate CA certificate.
 * `enable_crl` - (Optional, Int) Whether to include the CRL URL. Valid values:
   - `0`: No.
   - `1`: Yes.  
@@ -143,7 +143,7 @@ By default, this value is the same as the city name of the organization associat
 * `organization` - (Optional, ForceNew) Name of the organization associated with the subordinate CA certificate that issued this certificate.  
 * `organization_unit` - (Optional, ForceNew) Department name. Default: Aliyun CDN.
 * `parent_identifier` - (Required, ForceNew) The unique identifier of the subordinate CA certificate that issued this certificate.
-* `resource_group_id` - (Optional, Computed) The resource group ID. You can obtain this ID by calling the [ListResources](https://www.alibabacloud.com/help/document_detail/2716559.html) operation.  
+* `resource_group_id` - (Optional, Computed) The resource group ID. You can obtain this ID by calling the [ListResources](https://www.alibabacloud.com/help/document_detail/2716559.html) operation.
 * `san_type` - (Optional) The Subject Alternative Name (SAN) type supported by the client certificate. Valid values:
   - `1`: Email address.
   - `6`: Uniform Resource Identifier (URI).

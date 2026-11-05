@@ -69,7 +69,7 @@ The following arguments are supported:
 
   -> **NOTE:**  For the valid range of the new priority, see the [API for querying the effective priority range](https://www.alibabacloud.com/help/document_detail/474145.html).
 
-* `vpc_firewall_id` - (Required, ForceNew) The ID of the access control policy group for the VPC border firewall. You can obtain this ID by calling the [DescribeVpcFirewallAclGroupList](https://www.alibabacloud.com/help/document_detail/159760.html) API.  
+* `vpc_firewall_id` - (Required, ForceNew) The ID of the access control policy group for the VPC border firewall. You can obtain this ID by calling the [DescribeVpcFirewallAclGroupList](https://www.alibabacloud.com/help/document_detail/159760.html) API.
 
     Valid values:  
   - When the VPC border firewall protects Cloud Enterprise Network (CEN), the policy group ID is the CEN instance ID.  

@@ -134,7 +134,7 @@ The following arguments are supported:
     - CheckpointPause: The task is paused because it has reached a checkpoint (Checkpoint.Percentage).
     - Failed: The instance refresh task failed.
     - Successful: The instance refresh task was successful.
-    - Canceling: The instance refresh task is being canceled. 
+    - Canceling: The instance refresh task is being canceled.
     - RollbackInProgress: The instance refresh task is being rolled back. 
     - RollbackSuccessful: The instance refresh task was rolled back successfully. Set RollbackSuccessful to rollback the instance refresh task.
     - RollbackFailed: The rollback of the instance refresh task failed.
