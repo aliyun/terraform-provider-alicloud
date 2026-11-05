@@ -333,47 +333,50 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("target_tracking_policies") {
 		update = true
-		if v, ok := d.GetOk("target_tracking_policies"); ok || d.HasChange("target_tracking_policies") {
-			targetTrackingPoliciesMapsArray := make([]interface{}, 0)
-			for _, dataLoop := range v.([]interface{}) {
-				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["endTime"] = dataLoopTmp["end_time"]
-				dataLoopMap["name"] = dataLoopTmp["name"]
-				dataLoopMap["startTime"] = dataLoopTmp["start_time"]
-				dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
-				dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
-				dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
-				dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
-				dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
-				targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
-			}
-			request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
+	}
+	if v, ok := d.GetOk("target_tracking_policies"); ok {
+		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
+			dataLoopMap["name"] = dataLoopTmp["name"]
+			dataLoopMap["startTime"] = dataLoopTmp["start_time"]
+			dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
+			dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
+			dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
+			dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
+			dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
+			targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
 		}
+		request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
+	} else if d.HasChange("target_tracking_policies") {
+		request["targetTrackingPolicies"] = []interface{}{}
 	}
 
 	if d.HasChange("scheduled_actions") {
 		update = true
-		if v, ok := d.GetOk("scheduled_actions"); ok || d.HasChange("scheduled_actions") {
-			scheduledActionsMapsArray := make([]interface{}, 0)
-			for _, dataLoop1 := range v.([]interface{}) {
-				dataLoop1Tmp := dataLoop1.(map[string]interface{})
-				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
-				dataLoop1Map["target"] = dataLoop1Tmp["target"]
-				dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
-				dataLoop1Map["name"] = dataLoop1Tmp["name"]
-				dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
-				dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
-				scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
-			}
-			request["scheduledActions"] = scheduledActionsMapsArray
+	}
+	if v, ok := d.GetOk("scheduled_actions"); ok {
+		scheduledActionsMapsArray := make([]interface{}, 0)
+		for _, dataLoop1 := range v.([]interface{}) {
+			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Map := make(map[string]interface{})
+			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
+			dataLoop1Map["target"] = dataLoop1Tmp["target"]
+			dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
+			dataLoop1Map["name"] = dataLoop1Tmp["name"]
+			dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
+			dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
+			scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
 		}
+		request["scheduledActions"] = scheduledActionsMapsArray
+	} else if d.HasChange("scheduled_actions") {
+		request["scheduledActions"] = []interface{}{}
 	}
 
 	if d.HasChange("target") {
 		update = true
-		request["target"] = d.Get("target")
 	}
 
 	if d.HasChange("always_allocate_cpu") {
@@ -384,9 +387,12 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 
-	// Both fields are Optional+Computed and the PUT API fills omitted values
-	// with the service default, so echo the current state on every update.
+	// PutProvisionConfig replaces the stored provision configuration and
+	// requires target, so every update carries target plus the current
+	// always-allocate values; otherwise a single-field update could drop
+	// them or fall back to the service defaults.
 	if update {
+		request["target"] = d.Get("target")
 		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
