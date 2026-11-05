@@ -38,7 +38,6 @@ func ResourceAccessControlList() *schema.Resource {
 			"access_control_list_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validators.StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_-]+$"), "Access control list name"),
 			},
 			"acl_entrys": {
@@ -151,6 +150,32 @@ func ResourceAccessControlListUpdate(d *schema.ResourceData, meta interface{}) e
 	var response map[string]interface{}
 	var query map[string]interface{}
 	var err error
+	if !d.IsNewResource() && d.HasChange("access_control_list_name") {
+		action := "SetAccessControlListAttribute"
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		query["AclId"] = d.Id()
+		request["AclName"] = d.Get("access_control_list_name")
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
 	if d.HasChange("acl_entrys") {
 		oldEntry, newEntry := d.GetChange("acl_entrys")
 		oldEntrySet := oldEntry.(*schema.Set)
