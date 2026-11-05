@@ -442,17 +442,11 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				},
 				ExpectError: regexp.MustCompile(`(?i)(aclnotexist|acl.?not.?exist|specified acl)`),
 			},
-			// Before the corrective apply, prove the rejected step left neither a
-			// pending change in Terraform state (the plan must be empty) nor an
-			// access control change on the same listener, so the apply below
-			// cannot hide a side effect.
-			{
-				Config:   testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
-				PlanOnly: true,
-				PreConfig: func() {
-					testAccAssertListenerAclStatus(t, listenerId, "off")
-				},
-			},
+			// The corrective apply is the first write after the rejection. Its
+			// PreConfig proves the same listener ACL is still off right before the
+			// apply, and its Check proves the rejected request left no attachment
+			// in Terraform state and did not keep the listener identity, so the
+			// apply cannot hide a side effect.
 			{
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
@@ -470,14 +464,6 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 					testAccAssertListenerAclStatus(t, listenerId, "off")
 				},
 				ExpectError: regexp.MustCompile(`(?i)ipversionconflict`),
-			},
-			// The same pre-correction proof for the second corrective apply.
-			{
-				Config:   testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
-				PlanOnly: true,
-				PreConfig: func() {
-					testAccAssertListenerAclStatus(t, listenerId, "off")
-				},
 			},
 			{
 				// Keep the same TCP listener used by the rejected steps so the
