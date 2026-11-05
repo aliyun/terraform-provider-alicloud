@@ -1182,6 +1182,8 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 					"storage_type":              "cloud_auto",
 					"provisioned_iops":          "2000",
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
+					"backup_time":               "02:00Z-03:00Z",
+					"backup_period":             []string{"Monday", "Tuesday"},
 					"cross_backup_period":       []string{"Monday", "Tuesday"},
 					"cross_backup_type":         "update",
 					"cross_retention_type":      "delay",
@@ -1200,6 +1202,8 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 						"storage_type":                    "cloud_auto",
 						"provisioned_iops":                "2000",
 						"vswitch_id":                      acctest.CHECKSET,
+						"backup_time":                     "02:00Z-03:00Z",
+						"backup_period.#":                 "2",
 						"cross_backup_period.#":           "2",
 						"cross_backup_type":               "update",
 						"cross_retention_type":            "delay",
@@ -1380,6 +1384,25 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 						"dest_region": destRegion,
 					}),
 				),
+			},
+			{
+				// The import after the no-op removal must still rebuild the same managed
+				// state: the retained regions and the deleted policy attributes stay under
+				// the same exemptions as the post-delete import (T03/R7.1).
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_backup_period",
+					"cross_retention_type",
+					"cross_retention_value",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+					"src_region",
+					"dest_region",
+					"enable_cross_log_backup",
+				}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 		},
 	})
