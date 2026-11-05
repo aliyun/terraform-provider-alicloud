@@ -309,7 +309,9 @@ func isUnresolvedListenerAclWrite(parent, writeCtx context.Context, err error) b
 	if isUnknownListenerAclWriteOutcome(err) {
 		return true
 	}
-	return errors.Is(listenerAclErrorCause(err), context.DeadlineExceeded)
+	// A transport level deadline that is not the write budget (a client timeout
+	// derived from the same budget, for example) still leaves the outcome unknown.
+	return listenerAclErrorMatches(err, context.DeadlineExceeded)
 }
 
 // isDefinitiveListenerAclWriteOutcome reports whether the service answered the

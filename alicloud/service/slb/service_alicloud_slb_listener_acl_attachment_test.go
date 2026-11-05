@@ -302,6 +302,11 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 		errs.WrapErrorf(rejection, "calling %s failed", "SetLoadBalancerHTTPListenerAttribute"),
 		errs.DefaultErrorMsg, "lb-123:http:80", "SetLoadBalancerHTTPListenerAttribute", errs.AlibabaCloudSdkGoERROR,
 	)
+	// A transport deadline that is not the write budget keeps the outcome unknown.
+	productionDeadline := errs.WrapErrorf(
+		errs.WrapErrorf(fmt.Errorf("request failed: %w", context.DeadlineExceeded), "calling %s failed", "SetLoadBalancerHTTPListenerAttribute"),
+		errs.DefaultErrorMsg, "lb-123:http:80", "SetLoadBalancerHTTPListenerAttribute", errs.AlibabaCloudSdkGoERROR,
+	)
 
 	cases := []struct {
 		name     string
@@ -314,6 +319,7 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 		{"terminal rejection wins over a passed deadline", alive, pastDeadline(), terminal, false},
 		{"undecodable 4xx rejection wins over an expired write budget", alive, expired(), rejection, false},
 		{"production wrapped rejection wins over an expired write budget", alive, expired(), productionRejection, false},
+		{"production wrapped deadline with a live write budget stays unresolved", alive, context.Background(), productionDeadline, true},
 		{"expired write budget keeps a transport failure unresolved", alive, expired(), transport, true},
 		{"transport failure stays unresolved", alive, context.Background(), transport, true},
 		{"5xx answer stays unresolved", alive, context.Background(), serverFailure, true},
