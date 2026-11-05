@@ -1401,6 +1401,342 @@ var AliCloudGaEndpointGroupMap0 = map[string]string{
 	"status":                    acctest.CHECKSET,
 }
 
+func TestAccAliCloudGaEndpointGroup_healthCheckHost(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ga.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeGaEndpointGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudGaEndpointGroupBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": acctest.DefaultRegionToTest,
+					"name":                  name,
+					"health_check_enabled":  "true",
+					"health_check_protocol": "HTTP",
+					"health_check_path":     "/healthCheck",
+					"health_check_host":     "www.alicloud-provider.cn",
+					"health_check_port":     "60",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
+							"type":     "PublicIp",
+							"weight":   "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":            acctest.CHECKSET,
+						"listener_id":               acctest.CHECKSET,
+						"endpoint_group_region":     acctest.DefaultRegionToTest,
+						"name":                      name,
+						"health_check_enabled":      "true",
+						"health_check_protocol":     "HTTP",
+						"health_check_path":         "/healthCheck",
+						"health_check_host":         "www.alicloud-provider.cn",
+						"health_check_port":         "60",
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_host": "www.example.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_host": "www.example.com",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_accessLogHeaders(t *testing.T) {
+	t.Skip("requires a stable alicloud_ga_access_log read-back: the stock resource plans replacement after the header list update")
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ga.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeGaEndpointGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudGaEndpointGroupBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": acctest.DefaultRegionToTest,
+					"name":                  name,
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
+							"type":     "PublicIp",
+							"weight":   "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":            acctest.CHECKSET,
+						"listener_id":               acctest.CHECKSET,
+						"endpoint_group_region":     acctest.DefaultRegionToTest,
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_log_record_customized_header_list": []string{"X-Forwarded-For"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_record_customized_header_list.#": "1",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "access_log_record_customized_header_list.*", "X-Forwarded-For"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_log_record_customized_header_list": []string{"X-Forwarded-For", "X-Real-IP"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_record_customized_header_list.#": "2",
+					}),
+					resource.TestCheckTypeSetElemAttr(resourceId, "access_log_record_customized_header_list.*", "X-Forwarded-For"),
+					resource.TestCheckTypeSetElemAttr(resourceId, "access_log_record_customized_header_list.*", "X-Real-IP"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_log_record_customized_header_list": acctest.CLEARLIST,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_record_customized_header_list.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_endpointIpVersion(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ga.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeGaEndpointGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudGaEndpointGroupBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": acctest.DefaultRegionToTest,
+					"name":                  name,
+					"endpoint_ip_version":   "IPv4",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
+							"type":     "PublicIp",
+							"weight":   "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":            acctest.CHECKSET,
+						"listener_id":               acctest.CHECKSET,
+						"endpoint_group_region":     acctest.DefaultRegionToTest,
+						"endpoint_ip_version":       "IPv4",
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_ip_version": "ProtocolAffinity",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_ip_version": "ProtocolAffinity",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGaEndpointGroup_probeAndEnable(t *testing.T) {
+	var v map[string]interface{}
+	acctest.CheckoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return ga.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeGaEndpointGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudGaEndpointGroupBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": acctest.DefaultRegionToTest,
+					"name":                  name,
+					"enable":                "true",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
+							"type":           "PublicIp",
+							"weight":         "20",
+							"probe_port":     "80",
+							"probe_protocol": "tcp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":                           acctest.CHECKSET,
+						"listener_id":                              acctest.CHECKSET,
+						"endpoint_group_region":                    acctest.DefaultRegionToTest,
+						"enable":                                   "true",
+						"endpoint_configurations.#":                "1",
+						"endpoint_configurations.0.probe_port":     "80",
+						"endpoint_configurations.0.probe_protocol": "tcp",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "false",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
+							"type":           "PublicIp",
+							"weight":         "20",
+							"probe_port":     "8080",
+							"probe_protocol": "icmp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable":                                   "false",
+						"endpoint_configurations.0.probe_port":     "8080",
+						"endpoint_configurations.0.probe_protocol": "icmp",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+		},
+	})
+}
+
 func AliCloudGaEndpointGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -1477,6 +1813,55 @@ func AliCloudGaEndpointGroupBasicDependence0(name string) string {
   		}
 	}
 `, name)
+}
+
+func AliCloudGaEndpointGroupBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_log_project" "default" {
+	name = lower(var.name)
+}
+
+resource "alicloud_log_store" "default" {
+	project = alicloud_log_project.default.name
+	name    = lower(var.name)
+}
+
+resource "alicloud_ga_accelerator" "default" {
+	bandwidth_billing_type = "CDT"
+	payment_type           = "PayAsYouGo"
+}
+
+resource "alicloud_ga_listener" "default" {
+	accelerator_id  = alicloud_ga_accelerator.default.id
+	client_affinity = "SOURCE_IP"
+	protocol        = "HTTP"
+	name            = var.name
+	port_ranges {
+		from_port = "60"
+		to_port   = "60"
+	}
+}
+
+resource "alicloud_eip_address" "default" {
+	count                = 2
+	bandwidth            = "10"
+	internet_charge_type = "PayByBandwidth"
+	address_name         = var.name
+}
+
+resource "alicloud_ga_access_log" "default" {
+	accelerator_id     = alicloud_ga_listener.default.accelerator_id
+	listener_id        = alicloud_ga_listener.default.id
+	endpoint_group_id  = alicloud_ga_endpoint_group.default.id
+	sls_project_name   = alicloud_log_project.default.name
+	sls_log_store_name = alicloud_log_store.default.name
+	sls_region_id      = "%s"
+}
+`, name, acctest.DefaultRegionToTest)
 }
 
 func AliCloudGaEndpointGroupBasicDependence1(name string) string {
