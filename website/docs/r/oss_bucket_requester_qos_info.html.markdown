@@ -56,15 +56,15 @@ resource "alicloud_oss_bucket_requester_qos_info" "default" {
   # The requester is the RAM user the QoS limits apply to.
   qos_requester = alicloud_ram_user.CreateRequester.id
 
-  extranet_download_bandwidth  = 1048576
-  extranet_qps                 = 100
-  extranet_upload_bandwidth    = 1048576
-  intranet_download_bandwidth  = 1048576
-  intranet_qps                 = 100
-  intranet_upload_bandwidth    = 1048576
-  total_download_bandwidth     = 2097152
-  total_qps                    = 200
-  total_upload_bandwidth       = 2097152
+  extranet_download_bandwidth = 1048576
+  extranet_qps                = 100
+  extranet_upload_bandwidth   = 1048576
+  intranet_download_bandwidth = 1048576
+  intranet_qps                = 100
+  intranet_upload_bandwidth   = 1048576
+  total_download_bandwidth    = 2097152
+  total_qps                   = 200
+  total_upload_bandwidth      = 2097152
 }
 ```
 
