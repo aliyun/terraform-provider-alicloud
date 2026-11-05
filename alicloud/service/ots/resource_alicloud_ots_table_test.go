@@ -1045,9 +1045,10 @@ func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableW
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(raw)
 		default:
-			// The OTS REST API describes the instance before creating the table.
+			// The ROA client wraps the response JSON under its own "body" key,
+			// so the instance payload itself must be flat.
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = io.WriteString(w, `{"body":{"InstanceName":"tf-test-instance","Status":"Normal","InstanceType":"Capacity"}}`)
+			_, _ = io.WriteString(w, `{"InstanceName":"tf-test-instance","InstanceStatus":"Normal","InstanceSpecification":"Capacity"}`)
 		}
 	}))
 	t.Cleanup(server.Close)
