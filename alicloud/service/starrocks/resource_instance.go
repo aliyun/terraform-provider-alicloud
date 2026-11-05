@@ -724,15 +724,20 @@ func resourceInstanceModifyBackendNodeGroupStorageSize(d *schema.ResourceData, s
 // entry that matches zero or several groups cannot be resolved safely and must not
 // be guessed.
 func matchBackendNodeGroup(groups []map[string]interface{}, config map[string]interface{}) (string, error) {
-	candidates := make([]string, 0)
-	for _, group := range groups {
-		if backendNodeGroupAttributesMatch(group, config) {
-			candidates = append(candidates, fmt.Sprint(group["NodeGroupId"]))
-		}
+	candidates := backendNodeGroupCandidates(groups, config, true)
+	if len(candidates) == 1 {
+		return candidates[0], nil
 	}
+	if len(candidates) > 1 {
+		return "", fmt.Errorf("multiple backend node groups match the configured attributes (%s), refusing to guess", strings.Join(candidates, ", "))
+	}
+	// The API does not report the zone of every compute group (ECI based groups may
+	// omit or relocate it), so retry without the zone and still require one match.
+	// Groups that stay indistinguishable are reported instead of being guessed.
+	candidates = backendNodeGroupCandidates(groups, config, false)
 	switch len(candidates) {
 	case 0:
-		return "", fmt.Errorf("no backend node group matches the configured cu/zone/spec/disk attributes, cannot determine which group to expand")
+		return "", fmt.Errorf("no backend node group matches the configured cu/spec/disk attributes, cannot determine which group to expand")
 	case 1:
 		return candidates[0], nil
 	default:
@@ -740,12 +745,24 @@ func matchBackendNodeGroup(groups []map[string]interface{}, config map[string]in
 	}
 }
 
-func backendNodeGroupAttributesMatch(group map[string]interface{}, config map[string]interface{}) bool {
+func backendNodeGroupCandidates(groups []map[string]interface{}, config map[string]interface{}, checkZone bool) []string {
+	candidates := make([]string, 0)
+	for _, group := range groups {
+		if backendNodeGroupAttributesMatch(group, config, checkZone) {
+			candidates = append(candidates, fmt.Sprint(group["NodeGroupId"]))
+		}
+	}
+	return candidates
+}
+
+func backendNodeGroupAttributesMatch(group map[string]interface{}, config map[string]interface{}, checkZone bool) bool {
 	stringAttributes := map[string]string{
-		"zone_id":                     "ZoneId",
 		"spec_type":                   "SpecType",
 		"storage_performance_level":   "StoragePerformanceLevel",
 		"local_storage_instance_type": "LocalStorageInstanceType",
+	}
+	if checkZone {
+		stringAttributes["zone_id"] = "ZoneId"
 	}
 	for configKey, remoteKey := range stringAttributes {
 		value, _ := config[configKey].(string)

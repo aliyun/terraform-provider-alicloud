@@ -3,6 +3,7 @@ package starrocks_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -703,8 +704,7 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 	configuredBackendGroups := func(groups []map[string]interface{}) []map[string]interface{} {
 		matches := make([]map[string]interface{}, 0)
 		for _, group := range groups {
-			if fmt.Sprint(group["ZoneId"]) != "cn-hangzhou-i" ||
-				fmt.Sprint(group["SpecType"]) != "standard" ||
+			if fmt.Sprint(group["SpecType"]) != "standard" ||
 				fmt.Sprint(group["Cu"]) != "8" ||
 				fmt.Sprint(group["DiskNumber"]) != "1" ||
 				fmt.Sprint(group["ResidentNodeNumber"]) != "3" ||
@@ -730,9 +730,9 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				}
 				matches := configuredBackendGroups(groups)
 				if len(matches) == 1 {
-					size, _ := matches[0]["StorageSize"].(float64)
+					size, _ := strconv.Atoi(fmt.Sprint(matches[0]["StorageSize"]))
 					nodeGroupId := fmt.Sprint(matches[0]["NodeGroupId"])
-					if int(size) == expected {
+					if size == expected {
 						if backendNodeGroupId != "" && nodeGroupId != backendNodeGroupId {
 							return fmt.Errorf("disk expansion hit node group %s instead of %s", nodeGroupId, backendNodeGroupId)
 						}

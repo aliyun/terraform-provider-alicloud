@@ -50,10 +50,24 @@ func TestUnitMatchBackendNodeGroup(t *testing.T) {
 		}
 	})
 
+	t.Run("matches by the remaining attributes when the zone is not reported", func(t *testing.T) {
+		groups := []map[string]interface{}{
+			unitTestBackendNodeGroup("ng-target", ""),
+		}
+		id, err := matchBackendNodeGroup(groups, config)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if id != "ng-target" {
+			t.Fatalf("expected ng-target, got %q", id)
+		}
+	})
+
 	t.Run("fails when no group matches", func(t *testing.T) {
 		groups := []map[string]interface{}{
-			unitTestBackendNodeGroup("ng-other-zone", "cn-hangzhou-h"),
+			unitTestBackendNodeGroup("ng-other", ""),
 		}
+		groups[0]["Cu"] = float64(16)
 		_, err := matchBackendNodeGroup(groups, config)
 		if err == nil || !strings.Contains(err.Error(), "no backend node group matches") {
 			t.Fatalf("expected a no-match error, got %v", err)
@@ -64,6 +78,20 @@ func TestUnitMatchBackendNodeGroup(t *testing.T) {
 		groups := []map[string]interface{}{
 			unitTestBackendNodeGroup("ng-1", "cn-hangzhou-i"),
 			unitTestBackendNodeGroup("ng-2", "cn-hangzhou-i"),
+		}
+		id, err := matchBackendNodeGroup(groups, config)
+		if err == nil {
+			t.Fatalf("expected an ambiguity error, got id %q", id)
+		}
+		if !strings.Contains(err.Error(), "refusing to guess") {
+			t.Fatalf("expected an ambiguity error, got %v", err)
+		}
+	})
+
+	t.Run("fails when two groups only differ by an unreported zone", func(t *testing.T) {
+		groups := []map[string]interface{}{
+			unitTestBackendNodeGroup("ng-1", ""),
+			unitTestBackendNodeGroup("ng-2", ""),
 		}
 		id, err := matchBackendNodeGroup(groups, config)
 		if err == nil {
@@ -88,18 +116,21 @@ func TestUnitBackendNodeGroupAttributesMatch(t *testing.T) {
 	}
 
 	group := unitTestBackendNodeGroup("ng-target", "cn-hangzhou-i")
-	if !backendNodeGroupAttributesMatch(group, config) {
+	if !backendNodeGroupAttributesMatch(group, config, true) {
 		t.Fatal("expected the group to match the configured attributes")
+	}
+	if !backendNodeGroupAttributesMatch(group, config, false) {
+		t.Fatal("expected the group to match when the zone is not checked")
 	}
 
 	group["Cu"] = float64(16)
-	if backendNodeGroupAttributesMatch(group, config) {
+	if backendNodeGroupAttributesMatch(group, config, true) || backendNodeGroupAttributesMatch(group, config, false) {
 		t.Fatal("expected a different cu to make the group not match")
 	}
 	group["Cu"] = float64(8)
 
 	group["StorageSize"] = float64(400)
-	if !backendNodeGroupAttributesMatch(group, config) {
+	if !backendNodeGroupAttributesMatch(group, config, true) {
 		t.Fatal("expected storage_size to be ignored when matching")
 	}
 }
