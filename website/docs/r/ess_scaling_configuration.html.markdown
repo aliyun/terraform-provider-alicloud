@@ -318,7 +318,7 @@ The privatePoolOptions mapping supports the following:
 * `match_criteria` - (Optional, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
 * `pool_id` - (Optional, String) The ID of the private pool. Required when `match_criteria` is `Target`. Available since v2.3.0.
 
--> **NOTE:** Removing the `private_pool_options` block sends `PrivatePoolOptions.MatchCriteria=None`, which disables the private pool. A configuration imported while the service reports `None` has no `private_pool_options` block.
+  -> **NOTE:** Removing the `private_pool_options` block sends `PrivatePoolOptions.MatchCriteria=None`, which disables the private pool. A configuration imported while the service reports `None` has no `private_pool_options` block.
 
 ### `scheduler_options`
 
@@ -326,7 +326,7 @@ The schedulerOptions mapping supports the following:
 
 * `managed_private_space_id` - (Optional, String) The ID of the managed private space. Available since v2.3.0.
 
--> **NOTE:** `scheduler_options` is applied only when the scaling configuration is created or when the block changes. The ESS API defines no "no scheduler" value, so removing the block keeps the previously applied managed private space and the computed state reports it; the setting cannot be cleared through Terraform.
+  -> **NOTE:** `scheduler_options` is applied only when the scaling configuration is created or when the block changes. The ESS API defines no "no scheduler" value, so removing the block keeps the previously applied managed private space and the computed state reports it; the setting cannot be cleared through Terraform.
 
 ## Attributes Reference
 
