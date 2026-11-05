@@ -1939,7 +1939,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPut("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -1971,7 +1971,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 							err = nil
 							return nil
 						}
-						if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+						if errs.IsExpectedErrors(err, []string{"TheSpecNotEnoughInDetail", "ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InternalServerError", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 							wait()
 							return retry.RetryableError(err)
 						}
@@ -2167,7 +2167,7 @@ func resourceAliCloudElasticsearchInstanceUpdate(d *schema.ResourceData, meta in
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RoaPost("elasticsearch", "2017-06-13", action, query, header, body, true)
 			if err != nil {
-				if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction"}) || helper.NeedRetry(err) {
+				if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceDuplicateScheduledTask", "ServiceUnavailable", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 					wait()
 					return retry.RetryableError(err)
 				}

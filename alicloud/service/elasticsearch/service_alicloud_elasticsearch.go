@@ -741,7 +741,7 @@ func (s *ElasticsearchService) ShrinkElasticsearchNodes(id, nodeType string, cou
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err = client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/actions/shrink", id), query, nil, body, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -778,7 +778,7 @@ func updateDataNodeAmount(d *schema.ResourceData, meta interface{}) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -839,7 +839,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -900,7 +900,7 @@ func updateMasterNode(d *schema.ResourceData, meta interface{}) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -955,7 +955,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RoaPostWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s/admin-pwd", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1027,7 +1027,7 @@ func updateClientNode(d *schema.ResourceData, meta interface{}) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -1085,7 +1085,7 @@ func updateWarmNode(d *schema.ResourceData, meta interface{}) error {
 
 	// retry
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction"}
+	errorCodeList := []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "CpuHeapPercentOnThreshold"}
 	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
 		return elasticsearchClient.UpdateInstance(request)
 	})
@@ -1147,7 +1147,7 @@ func updateKibanaNode(d *schema.ResourceData, meta interface{}) error {
 	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
 		response, err := client.RoaPutWithApiName("elasticsearch", "2017-06-13", action, fmt.Sprintf("/openapi/instances/%s", d.Id()), requestQuery, nil, content, false)
 		if err != nil {
-			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || helper.NeedRetry(err) {
+			if errs.IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask", "CpuHeapPercentOnThreshold"}) || helper.NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
 			}
