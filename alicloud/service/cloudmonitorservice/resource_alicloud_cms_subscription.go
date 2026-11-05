@@ -399,12 +399,12 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 	request := expandSubscriptionRequest(plan)
 	response, err := r.roaCall(ctx, action, request, false, func() (map[string]interface{}, error) {
 		// Every attempt carries the operation deadline into the HTTP transport,
-		// so a response cannot outlive the operation, and its own automatic retry
-		// is disabled: every retry goes through roaCall, which observes the
-		// context before issuing the next attempt. CreateSubscription is not
-		// replayed, because the API has no idempotency token: a request that
-		// already created the subscription would otherwise create a second,
-		// orphaned one.
+		// so a response cannot outlive the operation by more than one second, and
+		// its own automatic retry is disabled: every retry goes through roaCall,
+		// which observes the context before issuing the next attempt.
+		// CreateSubscription is not replayed, because the API has no idempotency
+		// token: a request that already created the subscription would otherwise
+		// create a second, orphaned one.
 		return r.Meta().RoaWithContext(ctx, "POST", "Cms", "2024-03-30", action, subscriptionQuery(plan.Workspace), nil, request, false)
 	})
 	if err != nil {
@@ -659,7 +659,8 @@ func (r *subscriptionResource) ImportState(ctx context.Context, req resource.Imp
 // The caller's context is checked before every attempt and every backoff, so no
 // request is issued after the deadline; each request also carries the remaining
 // operation deadline into the HTTP transport, so a response cannot outlive the
-// operation, and a response that does arrive is returned to the caller.
+// operation by more than one second, and a response that does arrive is returned
+// to the caller.
 // replay reports whether the verb is safe to resend: PUT and DELETE are applied
 // at most once for the same payload, while CreateSubscription has no idempotency
 // token and is therefore sent exactly once, except for a throttling rejection,
