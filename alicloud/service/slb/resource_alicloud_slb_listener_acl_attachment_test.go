@@ -506,7 +506,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 						"alicloud_slb_acl.ipv6",
 					),
 					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
-					testAccCaptureListenerAclBaseline(listenerId, &aclBaseline),
+					testAccCaptureListenerAclBaseline(&listenerId, &aclBaseline),
 				),
 			},
 			{
@@ -553,7 +553,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCheckListenerIdUnchanged(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerAclBaseline(listenerId, &aclBaseline),
+					testAccCheckListenerAclBaseline(&listenerId, &aclBaseline),
 				),
 			},
 		},
@@ -591,21 +591,22 @@ func testAccListenerAclSnapshot(listenerId string) (listenerAclSnapshot, error) 
 
 // testAccCaptureListenerAclBaseline records the complete remote ACL of the
 // listener after it exists, so a later assertion can prove that a rejected write
-// did not change any part of it.
-func testAccCaptureListenerAclBaseline(listenerId string, baseline *listenerAclSnapshot) resource.TestCheckFunc {
+// did not change any part of it. The listener identity is passed by pointer
+// because the check functions are built before the step that captures it runs.
+func testAccCaptureListenerAclBaseline(listenerId *string, baseline *listenerAclSnapshot) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if listenerId == "" {
+		if listenerId == nil || *listenerId == "" {
 			return fmt.Errorf("the listener identity was not captured before the ACL baseline")
 		}
-		snapshot, err := testAccListenerAclSnapshot(listenerId)
+		snapshot, err := testAccListenerAclSnapshot(*listenerId)
 		if err != nil {
 			return err
 		}
 		if snapshot.Status == "" {
-			return fmt.Errorf("listener %s did not report a usable AclStatus for the baseline", listenerId)
+			return fmt.Errorf("listener %s did not report a usable AclStatus for the baseline", *listenerId)
 		}
 		if !snapshot.Complete {
-			return fmt.Errorf("listener %s reported an unreadable ACL member list for the baseline", listenerId)
+			return fmt.Errorf("listener %s reported an unreadable ACL member list for the baseline", *listenerId)
 		}
 		*baseline = snapshot
 		return nil
@@ -615,20 +616,20 @@ func testAccCaptureListenerAclBaseline(listenerId string, baseline *listenerAclS
 // testAccCheckListenerAclBaseline verifies that the listener still reports exactly
 // the captured ACL: same status, same type, same readable policy groups and the
 // same reported/complete shape of the member list.
-func testAccCheckListenerAclBaseline(listenerId string, baseline *listenerAclSnapshot) resource.TestCheckFunc {
+func testAccCheckListenerAclBaseline(listenerId *string, baseline *listenerAclSnapshot) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if listenerId == "" || baseline == nil || baseline.Status == "" {
+		if listenerId == nil || *listenerId == "" || baseline == nil || baseline.Status == "" {
 			return fmt.Errorf("the ACL baseline was not captured before the check")
 		}
-		current, err := testAccListenerAclSnapshot(listenerId)
+		current, err := testAccListenerAclSnapshot(*listenerId)
 		if err != nil {
 			return err
 		}
 		if current.Status == "" || !current.Complete {
-			return fmt.Errorf("listener %s did not report a usable complete ACL: %+v", listenerId, current)
+			return fmt.Errorf("listener %s did not report a usable complete ACL: %+v", *listenerId, current)
 		}
 		if current != *baseline {
-			return fmt.Errorf("listener %s ACL changed: current %+v, baseline %+v", listenerId, current, *baseline)
+			return fmt.Errorf("listener %s ACL changed: current %+v, baseline %+v", *listenerId, current, *baseline)
 		}
 		return nil
 	}
