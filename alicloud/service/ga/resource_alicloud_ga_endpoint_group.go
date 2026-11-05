@@ -3,6 +3,7 @@ package ga
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -65,9 +66,20 @@ func ResourceAliCloudGaEndpointGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validators.StringInSlice([]string{"HTTP1.1", "HTTP2"}, false),
 			},
+			"endpoint_ip_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"IPv4", "IPv6", "ProtocolAffinity"}, false),
+			},
 			"health_check_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"health_check_host": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"health_check_path": {
 				Type:     schema.TypeString,
@@ -102,6 +114,16 @@ func ResourceAliCloudGaEndpointGroup() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"access_log_record_customized_header_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 100,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": tags.TagsSchema(),
 			"endpoint_configurations": {
@@ -145,6 +167,18 @@ func ResourceAliCloudGaEndpointGroup() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"probe_port": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validators.IntBetween(0, 65535),
+						},
+						"probe_protocol": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validators.StringInSlice([]string{"tcp", "icmp"}, false),
 						},
 					},
 				},
@@ -205,12 +239,20 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		request["EndpointProtocolVersion"] = v
 	}
 
+	if v, ok := d.GetOk("endpoint_ip_version"); ok {
+		request["EndpointIpVersion"] = v
+	}
+
 	if v, ok := d.GetOkExists("health_check_enabled"); ok {
 		request["HealthCheckEnabled"] = v
 	}
 
 	if v, ok := d.GetOk("health_check_path"); ok {
 		request["HealthCheckPath"] = v
+	}
+
+	if v, ok := d.GetOk("health_check_host"); ok {
+		request["HealthCheckHost"] = v
 	}
 
 	if v, ok := d.GetOkExists("health_check_port"); ok {
@@ -321,6 +363,14 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
+	if err := resourceAliCloudGaEndpointGroupUpdateProbe(d, client); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := resourceAliCloudGaEndpointGroupUpdateAccessLog(d, client); err != nil {
+		return errs.WrapError(err)
+	}
+
 	return resourceAliCloudGaEndpointGroupUpdate(d, meta)
 }
 
@@ -344,8 +394,10 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("endpoint_group_type", object["EndpointGroupType"])
 	d.Set("endpoint_request_protocol", object["EndpointRequestProtocol"])
 	d.Set("endpoint_protocol_version", object["EndpointProtocolVersion"])
+	d.Set("endpoint_ip_version", object["EndpointIpVersion"])
 	d.Set("health_check_enabled", object["HealthCheckEnabled"])
 	d.Set("health_check_path", object["HealthCheckPath"])
+	d.Set("health_check_host", object["HealthCheckHost"])
 	health_check_portVal, err := convert.FormatInt(object["HealthCheckPort"])
 	if err != nil {
 		return err
@@ -369,6 +421,7 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("traffic_percentage", traffic_percentageVal)
 	d.Set("name", object["Name"])
 	d.Set("description", object["Description"])
+	d.Set("access_log_record_customized_header_list", object["AccessLogRecordCustomizedHeaderList"])
 
 	if endpointConfigurations, ok := object["EndpointConfigurations"]; ok {
 		endpointConfigurationsMaps := make([]map[string]interface{}, 0)
@@ -406,6 +459,18 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 
 			if vSwitchIds, ok := endpointConfigurationsArg["VSwitchIds"]; ok {
 				endpointConfigurationsMap["vswitch_ids"] = vSwitchIds
+			}
+
+			if probePort, ok := endpointConfigurationsArg["ProbePort"]; ok {
+				probePortVal, err := convert.FormatInt(probePort)
+				if err != nil {
+					return err
+				}
+				endpointConfigurationsMap["probe_port"] = probePortVal
+			}
+
+			if probeProtocol, ok := endpointConfigurationsArg["ProbeProtocol"]; ok {
+				endpointConfigurationsMap["probe_protocol"] = probeProtocol
 			}
 
 			endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
@@ -484,6 +549,20 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("endpoint_protocol_version"); ok {
 		request["EndpointProtocolVersion"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("endpoint_ip_version") {
+		update = true
+	}
+	if v, ok := d.GetOk("endpoint_ip_version"); ok {
+		request["EndpointIpVersion"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("health_check_host") {
+		update = true
+	}
+	if v, ok := d.GetOk("health_check_host"); ok {
+		request["HealthCheckHost"] = v
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_enabled") {
@@ -642,6 +721,16 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 
 	}
 
+	if !d.IsNewResource() {
+		if err := resourceAliCloudGaEndpointGroupUpdateProbe(d, client); err != nil {
+			return errs.WrapError(err)
+		}
+
+		if err := resourceAliCloudGaEndpointGroupUpdateAccessLog(d, client); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
 	d.Partial(false)
 
 	return resourceAliCloudGaEndpointGroupRead(d, meta)
@@ -682,6 +771,133 @@ func resourceAliCloudGaEndpointGroupDelete(d *schema.ResourceData, meta interfac
 	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaEndpointGroupStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return nil
+}
+
+func resourceAliCloudGaEndpointGroupUpdateProbe(d *schema.ResourceData, client *connectivity.AliyunClient) error {
+	if !d.HasChange("enable") && !d.HasChange("endpoint_configurations") {
+		return nil
+	}
+
+	enabled := strconv.FormatBool(d.Get("enable").(bool))
+	endpointConfigurations, _ := d.Get("endpoint_configurations").([]interface{})
+	for _, item := range endpointConfigurations {
+		endpointConfiguration, ok := item.(map[string]interface{})
+		if !ok || endpointConfiguration == nil {
+			continue
+		}
+
+		probePort, _ := endpointConfiguration["probe_port"].(int)
+		probeProtocol, _ := endpointConfiguration["probe_protocol"].(string)
+		if !d.HasChange("enable") && probePort == 0 && probeProtocol == "" {
+			continue
+		}
+
+		endpointType, _ := endpointConfiguration["type"].(string)
+		switch endpointType {
+		case "Ip", "Domain", "PublicIp":
+		default:
+			return fmt.Errorf("alicloud_ga_endpoint_group: delay detection is supported only for endpoints of type Ip, Domain or PublicIp, but the endpoint %v uses type %s", endpointConfiguration["endpoint"], endpointType)
+		}
+
+		action := "ConfigEndpointProbe"
+		request := map[string]interface{}{
+			"RegionId":        client.RegionId,
+			"ClientToken":     helper.BuildClientToken(action),
+			"EndpointGroupId": d.Id(),
+			"EndpointType":    endpointConfiguration["type"],
+			"Endpoint":        endpointConfiguration["endpoint"],
+			"Enable":          enabled,
+		}
+		if probePort != 0 {
+			request["ProbePort"] = strconv.Itoa(probePort)
+		}
+		if probeProtocol != "" {
+			request["ProbeProtocol"] = probeProtocol
+		}
+
+		var response map[string]interface{}
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err := retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+			var err error
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
+			if err != nil {
+				if errs.IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) || helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := helper.BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, Service{client}.GaEndpointGroupStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+
+	return nil
+}
+
+func resourceAliCloudGaEndpointGroupUpdateAccessLog(d *schema.ResourceData, client *connectivity.AliyunClient) error {
+	if !d.HasChange("access_log_record_customized_header_list") {
+		return nil
+	}
+
+	headerList := convert.ExpandStringList(d.Get("access_log_record_customized_header_list").(*schema.Set).List())
+	object, err := (Service{client}).DescribeGaEndpointGroup(d.Id())
+	if err != nil {
+		return err
+	}
+
+	slsProjectName, _ := object["SlsProjectName"].(string)
+	slsLogStoreName, _ := object["SlsLogStoreName"].(string)
+	if slsProjectName == "" || slsLogStoreName == "" {
+		if len(headerList) == 0 {
+			return nil
+		}
+		return fmt.Errorf("alicloud_ga_endpoint_group: access_log_record_customized_header_list requires the access log of endpoint group %s to be enabled; attach it with alicloud_ga_access_log first", d.Id())
+	}
+
+	action := "UpdateLogStoreConfig"
+	request := map[string]interface{}{
+		"RegionId":        client.RegionId,
+		"ClientToken":     helper.BuildClientToken(action),
+		"EndpointGroupId": d.Id(),
+		"AcceleratorId":   object["AcceleratorId"],
+		"ListenerId":      object["ListenerId"],
+		"SlsProjectName":  slsProjectName,
+		"SlsLogStoreName": slsLogStoreName,
+		"AccessLogRecordCustomizedHeadersEnabled": len(headerList) > 0,
+		"AccessLogRecordCustomizedHeaderList":     headerList,
+	}
+
+	var response map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
+		var err error
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 	}
 
 	return nil
