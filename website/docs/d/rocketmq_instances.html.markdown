@@ -73,7 +73,7 @@ resource "alicloud_rocketmq_instance" "default" {
   tags = {
     Created = "TF"
   }
-  series_code = "ultimate"
+  series_code       = "ultimate"
   network_info {
     vpc_info {
       vpc_id = alicloud_vpc.default.id

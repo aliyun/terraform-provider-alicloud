@@ -70,7 +70,7 @@ resource "alicloud_rocketmq_instance" "default" {
   sub_series_code   = "cluster_ha"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
-  series_code = "ultimate"
+  series_code       = "ultimate"
   network_info {
     vpc_info {
       vpc_id = alicloud_vpc.default.id
