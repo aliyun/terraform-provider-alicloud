@@ -1290,8 +1290,15 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cross_retention_type":     "never",
-						"cross_log_retention_type": "never",
+						// The service rejects a retention value under a "never" type
+						// ("never retention type do not support retention value"), so the
+						// value configured by an earlier step is no longer part of the
+						// policy and must not be asserted from the inherited check map. The
+						// type readback below is the assertion for this transition.
+						"cross_retention_value":     acctest.REMOVEKEY,
+						"cross_log_retention_value": acctest.REMOVEKEY,
+						"cross_retention_type":      "never",
+						"cross_log_retention_type":  "never",
 					}),
 					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, []string{"Wednesday", "Thursday"}, map[string]string{
 						"CrossRetentionType":    "never",
@@ -1301,13 +1308,18 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				),
 			},
 			{
-				// Import after the retention type change must rebuild the same state; the
-				// retention types are read back from the API, so only the write-only
-				// selector is exempted.
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
+				// The retention types are read back from the API. The retention values are
+				// not part of a "never" policy (the service rejects them for that type), so
+				// they cannot be compared on import; the write-only selector is skipped for
+				// the same structural reason as above.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_retention_value",
+					"cross_log_retention_value",
+				}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 			{
 				// Switching cross-region log backup off used to drop the explicit 0 and
@@ -2276,6 +2288,45 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionValue", "7")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "delay")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionValue", "3")
+	})
+
+	t.Run("never retention types omit the retention values", func(t *testing.T) {
+		// The service rejects a retention value when its type is "never" ("never
+		// retention type do not support retention value"), and the contract only uses the
+		// value for "delay". A value left in state by a delay -> never transition must
+		// therefore not be serialized.
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"cross_backup_period":       []interface{}{"Wednesday"},
+			"cross_backup_type":         "update",
+			"cross_retention_type":      "never",
+			"cross_retention_value":     14,
+			"cross_log_retention_type":  "never",
+			"cross_log_retention_value": 10,
+			"dest_region":               "cn-shanghai",
+			"src_region":                "cn-beijing",
+			"enable_cross_log_backup":   1,
+		})
+		values := map[string]cty.Value{
+			"cross_backup_period":       cty.SetVal([]cty.Value{cty.StringVal("Wednesday")}),
+			"cross_backup_type":         cty.StringVal("update"),
+			"cross_retention_type":      cty.StringVal("never"),
+			"cross_retention_value":     cty.NumberIntVal(14),
+			"cross_log_retention_type":  cty.StringVal("never"),
+			"cross_log_retention_value": cty.NumberIntVal(10),
+			"dest_region":               cty.StringVal("cn-shanghai"),
+			"src_region":                cty.StringVal("cn-beijing"),
+			"enable_cross_log_backup":   cty.NumberIntVal(1),
+		}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"cross_retention_type":      "delay",
+			"cross_retention_value":     "14",
+			"cross_log_retention_type":  "delay",
+			"cross_log_retention_value": "10",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionType", "never")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "never")
+		mongodbBackupPolicyFixtureAssertOmitted(t, request, "CrossRetentionValue", "CrossLogRetentionValue")
 	})
 
 	t.Run("create-time policy reuses the service backup schedule", func(t *testing.T) {

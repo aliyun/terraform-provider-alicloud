@@ -935,6 +935,12 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	// therefore never re-sends a stale cross-region payload.
 	crossBackupType, _ := d.Get("cross_backup_type").(string)
 	crossBackupUpdate := crossBackupType == "update"
+	// The retention values are only meaningful for the "delay" retention type: the
+	// service rejects them for "never" ("never retention type do not support retention
+	// value"). An Optional+Computed value can stay in state after the type changes, so
+	// the type decides whether the value is serialized.
+	crossRetentionType, _ := d.Get("cross_retention_type").(string)
+	crossLogRetentionType, _ := d.Get("cross_log_retention_type").(string)
 	// The delete branch of ModifyBackupPolicy only assembles the region and type fields
 	// of the policy entry, so it must carry both regions and must not receive the
 	// retention/period fields that belong to the update branch.
@@ -961,7 +967,7 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	}
 
 	if !crossBackupDelete && (d.HasChange("cross_retention_value") || crossBackupUpdate) {
-		if v, ok := d.GetOk("cross_retention_value"); ok {
+		if v, ok := d.GetOk("cross_retention_value"); ok && crossRetentionType == "delay" {
 			request["CrossRetentionValue"] = v
 		}
 	}
@@ -973,7 +979,7 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	}
 
 	if !crossBackupDelete && (d.HasChange("cross_log_retention_value") || crossBackupUpdate) {
-		if v, ok := d.GetOk("cross_log_retention_value"); ok {
+		if v, ok := d.GetOk("cross_log_retention_value"); ok && crossLogRetentionType == "delay" {
 			request["CrossLogRetentionValue"] = v
 		}
 	}
