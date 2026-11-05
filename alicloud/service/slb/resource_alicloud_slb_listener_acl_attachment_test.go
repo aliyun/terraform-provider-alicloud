@@ -436,7 +436,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCaptureResourceId("alicloud_slb_load_balancer.default", &loadBalancerId),
 					testAccCaptureResourceId(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerRemoteAcl(testAccListenerAclAttachmentListenerId, "off"),
+					testAccCheckListenerRemoteAcl(listenerAclAttachmentListenerId, "off"),
 				),
 			},
 			{
@@ -483,7 +483,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCheckListenerIdUnchanged(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerRemoteAcl(testAccListenerAclAttachmentListenerId, "off"),
+					testAccCheckListenerRemoteAcl(listenerAclAttachmentListenerId, "off"),
 					testAccCaptureListenerAclIds(&aclIds),
 				),
 			},
