@@ -357,6 +357,13 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 			)
 			return
 		}
+		if err := r.waitCmsSubscriptionEnable(id, plan.Workspace, false); err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Creating %s: waiting for DisableSubscription", cmsSubscriptionTypeName),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+			)
+			return
+		}
 	}
 
 	previous := cmsSubscriptionResourceModel{
@@ -415,6 +422,13 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 			)
 			return
 		}
+		if err := r.waitCmsSubscriptionEnable(id, state.Workspace, plan.Enable.ValueBool()); err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Updating %s: waiting for the subscription enabled state", cmsSubscriptionTypeName),
+				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id, errs.AlibabaCloudSdkGoERROR).Error(),
+			)
+			return
+		}
 	}
 
 	action := fmt.Sprintf("/subscriptions/%s", id)
@@ -451,7 +465,6 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 	updated := cmsSubscriptionState(object, state)
-	updated.Enable = plan.Enable
 	resp.Diagnostics.Append(resp.State.Set(ctx, updated)...)
 }
 
@@ -516,6 +529,26 @@ func (r *cmsSubscriptionResource) setCmsSubscriptionEnable(id string, workspace 
 	})
 	logs.AddDebug(action, response, action)
 	return err
+}
+
+// waitCmsSubscriptionEnable polls GetSubscription until the enabled state
+// reported by the service matches the requested one. The enable and disable
+// operations return before the change is visible on the read path.
+func (r *cmsSubscriptionResource) waitCmsSubscriptionEnable(id string, workspace types.String, enable bool) error {
+	deadline := time.Now().Add(cmsSubscriptionTimeout)
+	for {
+		object, err := NewCmsService(r.Meta()).DescribeCmsSubscription(id, workspace.ValueString())
+		if err != nil {
+			return err
+		}
+		if current, ok := object["enable"].(bool); ok && current == enable {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("subscription %s did not reach enable=%t within %s", id, enable, cmsSubscriptionTimeout)
+		}
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func cmsSubscriptionQuery(workspace types.String) map[string]*string {
