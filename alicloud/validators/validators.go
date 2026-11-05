@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"gopkg.in/yaml.v2"
@@ -405,6 +406,28 @@ func StringLenBetween(min, max int) schema.SchemaValidateFunc {
 				s = append(s, fmt.Sprintf("expected length of %s to be in the range (%d - %d), got %s", k, min, max, v))
 			} else {
 				es = append(es, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %s %s", k, min, max, v, skipResourceSchemaValidationWarning))
+			}
+		}
+		return
+	}
+}
+
+// StringLenBetweenRune returns a SchemaValidateFunc which tests if the provided
+// value is of type string and has a rune (UTF-8 character) count between min and
+// max (inclusive). Use it for limits expressed in characters; StringLenBetween
+// counts bytes instead.
+func StringLenBetweenRune(min, max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		if n := utf8.RuneCountInString(v); n < min || n > max {
+			if SkipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected length of %s to be in the range (%d - %d), got %d characters", k, min, max, n))
+			} else {
+				es = append(es, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %d characters %s", k, min, max, n, skipResourceSchemaValidationWarning))
 			}
 		}
 		return

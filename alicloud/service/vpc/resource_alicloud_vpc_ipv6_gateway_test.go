@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -22,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	testingterraform "github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,6 +53,9 @@ func testSweepVpcIpv6Gateway(region string) error {
 		"tf-example",
 		"tf_example",
 		"terraform-example",
+		// Fixed name required by the digit-leading/dot validation case; kept
+		// here so an interrupted run can still be swept.
+		"1tf.test-gw",
 	}
 	action := "DescribeIpv6Gateways"
 	request := map[string]interface{}{}
@@ -215,6 +220,204 @@ func TestAccAliCloudVpcIpv6Gateway_basic0(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccAliCloudVpcIpv6Gateway_validationBoundary covers the API length
+// contract for ipv6_gateway_name (0-128) and description (0-256): values that
+// the OpenAPI accepts, such as a digit-leading name with a dot and a
+// description with spaces and punctuation, must pass validation, and only the
+// length upper bounds are enforced at plan time.
+func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
+	resourceId := "alicloud_vpc_ipv6_gateway.default"
+	ra := acctest.ResourceAttrInit(resourceId, Ipv6GatewayMapValidation)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeVpcIpv6Gateway")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%svpcipv6gatewayboundary%d", defaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVPCIpv6GatewayBasicDependence0)
+
+	// 128 characters and still reachable by testSweepVpcIpv6Gateway via the
+	// "tf-testAcc" prefix, so an interrupted run leaves nothing behind.
+	name128 := "tf-testAcc" + strings.Repeat("a", 118)
+	description256 := strings.Repeat("b", 256)
+	// The OpenAPI bounds are expressed in characters, so the multibyte cases must
+	// use the same 128/256 character limits rather than byte counts. The CJK name
+	// keeps the sweeper prefix so an interrupted run can still be cleaned up.
+	nameCJK128 := "tf-testAcc" + strings.Repeat("中", 118)
+	descriptionCJK256 := strings.Repeat("中", 256)
+
+	// checkApiReadback asserts what the provider sent against what the VPC API
+	// returns for the resource, independent of the Terraform state, and logs both
+	// sides so the ACC run log carries the request targets and the API response.
+	checkApiReadback := func(expectedName, expectedDescription string) func(*testingterraform.State) error {
+		return func(state *testingterraform.State) error {
+			rs, ok := state.RootModule().Resources[resourceId]
+			if !ok {
+				return fmt.Errorf("resource %s is not in state", resourceId)
+			}
+			client := testAccProvider.Meta().(*connectivity.AliyunClient)
+			request := map[string]interface{}{
+				"RegionId":      client.RegionId,
+				"Ipv6GatewayId": rs.Primary.ID,
+			}
+			response, err := client.RpcPost("Vpc", "2016-04-28", "DescribeIpv6GatewayAttribute", nil, request, true)
+			if err != nil {
+				return fmt.Errorf("DescribeIpv6GatewayAttribute failed: %s", err)
+			}
+			gotName, _ := response["Name"].(string)
+			gotDescription, _ := response["Description"].(string)
+			t.Logf("api readback %s: request name=%q description=%q; API Name=%q Description=%q", rs.Primary.ID, expectedName, expectedDescription, gotName, gotDescription)
+			if gotName != expectedName {
+				return fmt.Errorf("API Name = %q, expected request value %q", gotName, expectedName)
+			}
+			if gotDescription != expectedDescription {
+				return fmt.Errorf("API Description = %q, expected request value %q", gotDescription, expectedDescription)
+			}
+			return nil
+		}
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviderFactory,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"ipv6_gateway_name": "1tf.test-gw",
+					"description":       "tf test, gateway.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":            acctest.CHECKSET,
+						"ipv6_gateway_name": "1tf.test-gw",
+						"description":       "tf test, gateway.",
+					}),
+					checkApiReadback("1tf.test-gw", "tf test, gateway."),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": "1tf.test-gw",
+					"description":       "tf test, gateway.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_gateway_name": "1tf.test-gw",
+						"description":       "tf test, gateway.",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": name128,
+					"description":       description256,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_gateway_name": name128,
+						"description":       description256,
+					}),
+					checkApiReadback(name128, description256),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": nameCJK128,
+					"description":       descriptionCJK256,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_gateway_name": nameCJK128,
+						"description":       descriptionCJK256,
+					}),
+					checkApiReadback(nameCJK128, descriptionCJK256),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": strings.Repeat("中", 129),
+				}),
+				ExpectError: regexp.MustCompile("expected length of ipv6_gateway_name to be in the range \\(0 - 128\\)"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": nameCJK128,
+					"description":       strings.Repeat("中", 257),
+				}),
+				ExpectError: regexp.MustCompile("expected length of description to be in the range \\(0 - 256\\)"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": strings.Repeat("a", 129),
+				}),
+				ExpectError: regexp.MustCompile("expected length of ipv6_gateway_name to be in the range \\(0 - 128\\)"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": name128,
+					"description":       strings.Repeat("b", 257),
+				}),
+				ExpectError: regexp.MustCompile("expected length of description to be in the range \\(0 - 256\\)"),
+			},
+			// End on a valid config: the harness destroys with the last step's
+			// configuration, and an invalid value there would block cleanup.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": "1tf.test-gw",
+					"description":       "tf test, gateway.",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_gateway_name": "1tf.test-gw",
+						"description":       "tf test, gateway.",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+		},
+	})
+}
+
+var Ipv6GatewayMapValidation = map[string]string{
+	"status": acctest.CHECKSET,
 }
 
 var AlicloudVPCIpv6GatewayMap0 = map[string]string{
