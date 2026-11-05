@@ -1374,6 +1374,11 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 				}
 			}
 			if !required {
+				if setCertificateAuthorityAttribute && skipSetCertificateAuthority {
+					if err := clearCertificateAuthority(d); err != nil {
+						return err
+					}
+				}
 				log.Printf("[WARN] Kubeconfig access denied for cluster %s; continuing refresh without optional credentials", d.Id())
 				return nil
 			}
@@ -1410,14 +1415,8 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 
 	if setCertificateAuthorityAttribute {
 		if skipSetCertificateAuthority {
-			if err := d.Set("certificate_authority", []interface{}{
-				map[string]string{
-					"cluster_cert": "",
-					"client_cert":  "",
-					"client_key":   "",
-				},
-			}); err != nil {
-				return errs.WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
+			if err := clearCertificateAuthority(d); err != nil {
+				return err
 			}
 		} else {
 			if err := d.Set("certificate_authority", []interface{}{m}); err != nil {
@@ -1426,6 +1425,21 @@ func setCerts(d *schema.ResourceData, meta interface{}, skipSetCertificateAuthor
 		}
 	}
 
+	return nil
+}
+
+// clearCertificateAuthority preserves the existing list shape while removing
+// credentials from the current state when the user opts out of storing them.
+func clearCertificateAuthority(d *schema.ResourceData) error {
+	if err := d.Set("certificate_authority", []interface{}{
+		map[string]string{
+			"cluster_cert": "",
+			"client_cert":  "",
+			"client_key":   "",
+		},
+	}); err != nil {
+		return errs.WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
+	}
 	return nil
 }
 
