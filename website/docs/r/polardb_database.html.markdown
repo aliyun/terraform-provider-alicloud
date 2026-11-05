@@ -90,7 +90,7 @@ resource "alicloud_polardb_database" "default" {
 
 The following arguments are supported:
 * `account_name` - (Optional) The name of the account that is authorized to access the database. **NOTE:** From version 1.265.0, `account_name` can be modified. However, only PolarDB for PostgreSQL (Compatible with Oracle) and PolarDB for PostgreSQL cluster can be modified.
-* `account_privilege` - (Optional, ForceNew, String, Available since v2.2.0) The privilege that is granted to the account specified by `account_name` on the database. Valid values: `ReadWrite`, `ReadOnly`, `DMLOnly`, `DDLOnly` and `ReadIndex`. Defaults to `ReadWrite`. When the argument is not configured, the value is not set by the provider and the `CreateDatabase` API applies its own default.
+* `account_privilege` - (Optional, ForceNew, String, Available since v2.3.0) The privilege that is granted to the account specified by `account_name` on the database. Valid values: `ReadWrite`, `ReadOnly`, `DMLOnly`, `DDLOnly` and `ReadIndex`. Defaults to `ReadWrite`. When the argument is not configured, the value is not set by the provider and the `CreateDatabase` API applies its own default.
 
   -> **NOTE:** `account_name` must be set when `account_privilege` is configured, because the privilege is only applied to the specified account. The privilege is applied when the database is created, so changing it forces a new database. The privilege that is currently granted to the account is read back from the database list and stored in the state. For PolarDB for PostgreSQL and PolarDB for PostgreSQL (Compatible with Oracle) clusters (the `PostgreSQL` and `Oracle` engines) the privilege value of the database owner is not returned by the API; the configured value is kept instead. For the same reason the value cannot be recovered on import for these engines: keeping `account_privilege` in the configuration after importing such a database plans a replacement of that database. When the database is imported, no account is inferred from the response because the list order is not guaranteed: `account_name` and `account_privilege` stay empty until they are configured explicitly. If the configured account is no longer authorized for the database, including when the database has no authorized account left, `account_privilege` is cleared from the state so the drift is visible; for `PostgreSQL` and `Oracle`, `account_name` is cleared as well because those engines always report the database owner, so the managed owner binding itself has drifted. A missing or malformed account list is not treated as proof of removal and keeps the recorded value.
 * `character_set_name` - (Optional, ForceNew) The character set that is used by the cluster. For more information, see [Character set tables](https://www.alibabacloud.com/help/en/doc-detail/99716.html).
@@ -111,7 +111,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<db_cluster_id>:<db_name>`.
 * `status` - (Available since v1.265.0) The state of the database.
-* `engine` - (String, Available since v2.2.0) The database engine of the cluster, such as MySQL, PostgreSQL, or Oracle.
+* `engine` - (String, Available since v2.3.0) The database engine of the cluster, such as MySQL, PostgreSQL, or Oracle.
 
 ## Timeouts
 

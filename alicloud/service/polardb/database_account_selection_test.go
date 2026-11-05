@@ -267,6 +267,25 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 	}
 }
 
+// TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead covers the
+// create-time read: a create can observe an eventually consistent account list,
+// so the configured identity and privilege must survive until a later refresh
+// can prove the removal.
+func TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, ResourceDatabase().Schema, map[string]interface{}{
+		"account_name":      "alice",
+		"account_privilege": "ReadOnly",
+	})
+	d.MarkNewResource()
+	refreshDatabaseAccountState(d, databaseAccountResponseForEngine("PostgreSQL"))
+	if got := d.Get("account_name"); got != "alice" {
+		t.Fatalf("expected account_name to keep the configured value during create, got %v", got)
+	}
+	if got := d.Get("account_privilege"); got != "ReadOnly" {
+		t.Fatalf("expected account_privilege to keep the configured value during create, got %v", got)
+	}
+}
+
 // TestUnitAliCloudPolarDbDatabase_importKeepsAccountStateEmpty proves that an
 // imported database carries no account identity and therefore no account
 // selection is attempted from the list position.

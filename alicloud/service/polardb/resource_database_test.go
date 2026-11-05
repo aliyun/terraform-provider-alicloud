@@ -948,11 +948,17 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_polardb_cluster" "default" {
-  db_type       = "MySQL"
-  db_version    = "8.0"
-  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
-  pay_type      = "PostPaid"
-  vswitch_id    = alicloud_vswitch.default.id
+  db_type    = "MySQL"
+  db_version = "8.0"
+  # Prefer the x4.medium node class so the fixture orders the mainstream class
+  # even when the capability query lists a class that the order API rejects.
+  db_node_class = try(
+    [for r in data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources : r.db_node_class if r.db_node_class == "polar.mysql.x4.medium"][0],
+    [for r in data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources : r.db_node_class if can(regex("^polar\\.mysql\\.x4\\.", r.db_node_class))][0],
+    data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources[0].db_node_class
+  )
+  pay_type   = "PostPaid"
+  vswitch_id = alicloud_vswitch.default.id
   lifecycle {
     ignore_changes = [encrypt_new_tables]
   }
