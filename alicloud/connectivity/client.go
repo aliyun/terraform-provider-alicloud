@@ -3010,10 +3010,20 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
+	// The same endpoint guard and error sanitization as the context aware path:
+	// a malformed endpoint must fail before the SDK builds and debug logs the
+	// signed request URL, and the sanitized error keeps its original chain.
+	protocol := tea.StringValue(conn.Protocol)
+	if protocol == "" {
+		protocol = "http"
+	}
+	if err := validateRpcEndpointURL(protocol, endpoint); err != nil {
+		return nil, err
+	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
 	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
-	return response, formatError(response, err)
+	return response, sanitizeRpcError(formatError(response, err))
 }
 
 // RoaPost invoking ROA API request with POST method

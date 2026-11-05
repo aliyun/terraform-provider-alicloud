@@ -2,8 +2,10 @@ package connectivity
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -254,5 +256,69 @@ func TestUnitContextRpcMalformedEndpointIsRedacted(t *testing.T) {
 	}
 	if !strings.Contains(message, "invalid") || !strings.Contains(message, "endpoint") {
 		t.Fatalf("the endpoint error lost its classification: %s", message)
+	}
+}
+
+// The generic RpcPost path uses the same guard: a malformed endpoint fails
+// before the SDK builds the signed request URL.
+func TestUnitRpcMalformedEndpointIsRejected(t *testing.T) {
+	clearProxyEnv(t)
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write([]byte(`{"RequestId":"r-1"}`))
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://")+"/%zz")
+	_, err := client.RpcPost("Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{"LoadBalancerId": "lb-unit-test"}, false)
+	if err == nil {
+		t.Fatal("expected the malformed endpoint to fail")
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("no request may be built or sent for a malformed endpoint, got %d", got)
+	}
+	message := err.Error()
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key"} {
+		if strings.Contains(message, secret) {
+			t.Fatalf("the endpoint error exposes %q: %s", secret, message)
+		}
+	}
+}
+
+// A transport failure on the generic RpcPost path carries the signed request
+// URL in the *url.Error; the returned error must keep its chain but not the
+// credentials.
+func TestUnitRpcTransportErrorIsSanitized(t *testing.T) {
+	clearProxyEnv(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hijacker, ok := w.(http.Hijacker)
+		if !ok {
+			t.Errorf("the test server does not support hijacking")
+			return
+		}
+		conn, _, err := hijacker.Hijack()
+		if err != nil {
+			t.Errorf("hijacking the response: %s", err)
+			return
+		}
+		_ = conn.Close()
+	}))
+	defer server.Close()
+
+	client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
+	_, err := client.RpcPost("Slb", "2014-05-15", "DescribeLoadBalancerHTTPListenerAttribute", nil, map[string]interface{}{"LoadBalancerId": "lb-unit-test"}, false)
+	if err == nil {
+		t.Fatal("expected the closed connection to fail the request")
+	}
+	message := err.Error()
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key"} {
+		if strings.Contains(message, secret) {
+			t.Fatalf("the transport error exposes %q: %s", secret, message)
+		}
+	}
+	var urlErr *url.Error
+	if !errors.As(err, &urlErr) {
+		t.Fatalf("the transport error classification was lost: %T %v", err, err)
 	}
 }
