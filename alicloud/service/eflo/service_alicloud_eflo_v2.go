@@ -228,11 +228,20 @@ func (s *EfloServiceV2) DescribeNodeQueryAvailableInstances(d *schema.ResourceDa
 		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
+	instances, _ := v.([]interface{})
+	if len(instances) == 0 {
 		return object, errs.WrapErrorf(errs.NotFoundErr("Node", id), errs.NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	// The billing record decides payment_type, so a record of another instance must never be
+	// stored in state. A response without this node is reported as not found so Read keeps the
+	// value it already has instead of trusting a foreign record.
+	instance, ok := efloNodeBillingRecord(instances, id)
+	if !ok {
+		return object, errs.WrapErrorf(errs.NotFoundErr("Node", id), errs.NotFoundMsg, response)
+	}
+
+	return instance, nil
 }
 
 func (s *EfloServiceV2) DescribeNodeListClusterNodes(d *schema.ResourceData) (object map[string]interface{}, err error) {
