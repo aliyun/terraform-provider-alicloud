@@ -28,10 +28,10 @@ resource "alicloud_api_gateway_group" "default" {
 }
 
 resource "alicloud_api_gateway_domain" "default" {
-  group_id          = alicloud_api_gateway_group.default.id
-  domain_name       = "api.demo.com"
+  group_id           = alicloud_api_gateway_group.default.id
+  domain_name        = "api.demo.com"
   custom_domain_type = "INTERNET"
-  bind_stage_name   = "RELEASE"
+  bind_stage_name    = "RELEASE"
 }
 ```
 
