@@ -8,6 +8,12 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ddoscoo",
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_ddoscoo_udp_reflect",
+				Factory:  NewDdoscooUdpReflectResource,
+			},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
 				TypeName: "alicloud_ddoscoo_domain_resources",

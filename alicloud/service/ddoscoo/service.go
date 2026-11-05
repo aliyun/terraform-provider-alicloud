@@ -367,6 +367,42 @@ func (s *Service) DescribeDdoscooDomainResource(id string) (object map[string]in
 	return object, nil
 }
 
+// DescribeDdoscooUdpReflect reads the UDP reflect attack protection policy of a
+// DdosCoo instance. Unlike the per-rule Describe methods above, the response
+// carries only the UdpSports list (possibly empty), so the whole response is
+// returned and the caller interprets UdpSports; an empty list is a valid
+// "no policy configured" state, not a not-found one.
+func (s *Service) DescribeDdoscooUdpReflect(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeUdpReflect"
+	request := map[string]interface{}{
+		"InstanceId": id,
+		"RegionId":   client.RegionId,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InstanceNotFound", "ddos_coop3301"}) || errs.NotFoundError(err) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("DdosCoo:UdpReflect", id), errs.NotFoundWithResponse, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	object = response
+	return object, nil
+}
+
 func (s *Service) DescribeDdoscooPort(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var response map[string]interface{}
