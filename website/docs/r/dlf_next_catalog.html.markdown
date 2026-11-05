@@ -20,6 +20,14 @@ For information about DLF Next Catalog and how to use it, see [What is DLF Next 
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_dlf_next_catalog" "default" {
   name = "tf-demo-catalog"
   type = "PAIMON"

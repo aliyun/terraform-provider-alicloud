@@ -18,8 +18,21 @@ This data source provides the DLF Next Catalogs of the current Alibaba Cloud use
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+resource "alicloud_dlf_next_catalog" "default" {
+  name = "tf-demo-catalog"
+  type = "PAIMON"
+}
+
 data "alicloud_dlf_next_catalogs" "default" {
-  catalog_name_pattern = "tf-test-*"
+  catalog_name_pattern = alicloud_dlf_next_catalog.default.name
 }
 
 output "first_catalog_name" {
