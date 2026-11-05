@@ -11,10 +11,13 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+var connectionPrefixRegexp = regexp.MustCompile(`^[a-z][a-z0-9-]{4,28}[a-z0-9]$`)
 
 func ResourceAdbConnection() *schema.Resource {
 	return &schema.Resource{
@@ -31,12 +34,22 @@ func ResourceAdbConnection() *schema.Resource {
 				ForceNew: true,
 				Required: true,
 			},
+			"connection_string_prefix": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validation.StringMatch(connectionPrefixRegexp, "The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter."),
+				ConflictsWith: []string{"connection_prefix"},
+			},
 			"connection_prefix": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9\\-]{4,28}[a-z0-9]$`), "The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter."),
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validation.StringMatch(connectionPrefixRegexp, "The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter."),
+				Deprecated:    "Field 'connection_prefix' has been deprecated from provider version 2.3.0. New field 'connection_string_prefix' instead.",
+				ConflictsWith: []string{"connection_string_prefix"},
 			},
 			"port": {
 				Type:     schema.TypeString,
@@ -54,11 +67,29 @@ func ResourceAdbConnection() *schema.Resource {
 	}
 }
 
+// connectionPrefixFromConfig returns the prefix explicitly set in the
+// configuration. Both prefix attributes are Optional+Computed, so d.Get would
+// also return the value computed by Read for the previous object when a
+// replacement is planned, and that value must not be sent as the prefix of the
+// new connection.
+func connectionPrefixFromConfig(d *schema.ResourceData) string {
+	rawConfig := d.GetRawConfig()
+	if rawConfig == cty.NilVal || rawConfig.IsNull() {
+		return ""
+	}
+	for _, key := range []string{"connection_string_prefix", "connection_prefix"} {
+		if v := rawConfig.GetAttr(key); !v.IsNull() && v.IsKnown() {
+			return v.AsString()
+		}
+	}
+	return ""
+}
+
 func ResourceAdbConnectionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	dbClusterId := d.Get("db_cluster_id").(string)
-	prefix := d.Get("connection_prefix").(string)
+	prefix := connectionPrefixFromConfig(d)
 	if prefix == "" {
 		prefix = fmt.Sprintf("%stf", dbClusterId)
 	}
@@ -119,6 +150,7 @@ func ResourceAdbConnectionRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("db_cluster_id", parts[0])
 	d.Set("connection_prefix", parts[1])
+	d.Set("connection_string_prefix", parts[1])
 	d.Set("port", object.Port)
 	d.Set("connection_string", object.ConnectionString)
 	d.Set("ip_address", object.IPAddress)
