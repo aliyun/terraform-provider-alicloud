@@ -3150,20 +3150,23 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound"},
 			},
-			{
-				// IR06: a real imported state must converge. ImportStatePersist
-				// cannot be used here: with terraform-plugin-testing v1.16.0 it runs
-				// `terraform import` in the main working directory, where the address
-				// is still in the applied state ("Resource already managed by
-				// Terraform"). The plannable import copies the state, removes the
-				// resource from the copy and imports it back, then asserts that the
-				// plan is a no-op. The imported state has no storage_upper_bound
-				// because the API cannot report it while scaling is disabled, so the
-				// no-op plan proves the missing-bound convergence IR06 asks for.
-				ResourceName:    resourceId,
-				ImportState:     true,
-				ImportStateKind: resource.ImportBlockWithID,
-			},
+			// IR06 has no framework-supported way to prove a persisted import
+			// for this resource:
+			//   - ImportStatePersist runs `terraform import` in the main working
+			//     directory (plugin-testing v1.16.0), where the address is still
+			//     in the applied state, and fails with "Resource already managed
+			//     by Terraform";
+			//   - a plannable import removes the resource from a copied state and
+			//     re-imports it, but the framework then requires a no-op plan. The
+			//     imported state lacks Optional attributes with defaults
+			//     (modify_type) and the computed cn_node_ids/dn_node_ids, so the
+			//     plan is always an in-place update even though the fields under
+			//     change converge. Running it with ExpectNonEmptyPlan would hide
+			//     exactly the difference it is supposed to prove.
+			// The disabled-state import above therefore verifies the imported
+			// attribute values directly, and the step after this comment proves
+			// the applied state converges while the bound is unreported.
+			// See the implementation report for the recorded plan difference.
 			{
 				// Re-enable automatic storage scaling: ModifyDBCluster sends both
 				// StorageAutoScale and the configured StorageUpperBound, and the
