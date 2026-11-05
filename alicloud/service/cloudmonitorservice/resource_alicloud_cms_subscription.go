@@ -466,9 +466,6 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 	action := fmt.Sprintf("/subscriptions/%s", id)
 	request := expandCmsSubscriptionRequest(plan)
 	removed := cmsSubscriptionRemovedPaths(plan, state)
-	// Send an explicit empty value for every removed member so a service that
-	// merges the body still clears it, and so the waiter below can require it.
-	cmsSubscriptionApplyRemovedValues(request, removed)
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -925,47 +922,6 @@ func cmsSubscriptionRemovedPaths(plan, state cmsSubscriptionResourceModel) [][]s
 		}
 	}
 	return paths
-}
-
-// cmsSubscriptionApplyRemovedValues writes an explicit empty value for each
-// removed member, so clearing works whether the service replaces or merges the
-// update body.
-func cmsSubscriptionApplyRemovedValues(request map[string]interface{}, removed [][]string) {
-	for _, fieldPath := range removed {
-		cmsSubscriptionSetEmptyValue(request, fieldPath)
-	}
-}
-
-func cmsSubscriptionSetEmptyValue(request map[string]interface{}, fieldPath []string) {
-	if len(fieldPath) == 1 {
-		switch fieldPath[0] {
-		case "filterSetting", "pushingSetting", "workspaceFilterSetting", "agentConfig":
-			// Whole blocks are cleared by omitting them from the body.
-			return
-		}
-	}
-	current := request
-	for i, key := range fieldPath {
-		if i == len(fieldPath)-1 {
-			switch key {
-			case "alertActionIds", "restoreActionIds", "workspaceUuids":
-				current[key] = []string{}
-			case "conditions", "routes", "channels":
-				current[key] = []map[string]interface{}{}
-			case "subscribeLegacyEvent":
-				current[key] = false
-			default:
-				current[key] = ""
-			}
-			return
-		}
-		next, ok := current[key].(map[string]interface{})
-		if !ok {
-			next = map[string]interface{}{}
-			current[key] = next
-		}
-		current = next
-	}
 }
 
 func cmsSubscriptionQuery(workspace types.String) map[string]*string {
