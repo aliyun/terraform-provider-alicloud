@@ -142,17 +142,14 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 				},
 			},
 			"ddos_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"ddos_config_list"},
-				Deprecated:    "Field `ddos_id` has been deprecated from provider version 2.3.0. `ddos_config_list` instead.",
+				Type:       schema.TypeString,
+				Computed:   true,
+				Deprecated: "Field `ddos_id` has been deprecated from provider version 2.3.0. Use `ddos_config_list` instead.",
 			},
 			"ddos_region_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"ddos_config_list"},
-				Deprecated:    "Field `ddos_region_id` has been deprecated from provider version 2.3.0. `ddos_config_list` instead.",
+				Type:       schema.TypeString,
+				Computed:   true,
+				Deprecated: "Field `ddos_region_id` has been deprecated from provider version 2.3.0. Use `ddos_config_list` instead.",
 			},
 			"ddos_config_list": {
 				Type:     schema.TypeSet,
@@ -317,11 +314,22 @@ func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	}
 	d.Set("status", object["State"])
 
+	ddosConfigs := flattenGaAcceleratorDdosConfigList(object["DdosConfigList"])
+	d.Set("ddos_config_list", ddosConfigs)
+
 	if v, ok := object["DdosId"]; ok && fmt.Sprint(v) != "" {
 		d.Set("ddos_id", v)
+	} else if len(ddosConfigs) > 0 {
+		d.Set("ddos_id", ddosConfigs[0]["ddos_id"])
+	} else {
+		d.Set("ddos_id", "")
 	}
 
-	d.Set("ddos_config_list", flattenGaAcceleratorDdosConfigList(object["DdosConfigList"]))
+	if len(ddosConfigs) > 0 {
+		d.Set("ddos_region_id", ddosConfigs[0]["ddos_region_id"])
+	} else {
+		d.Set("ddos_region_id", "")
+	}
 
 	describeAcceleratorAutoRenewAttributeObject, err := gaService.DescribeAcceleratorAutoRenewAttribute(d.Id())
 	if err != nil {
@@ -602,19 +610,11 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	}
 
-	if d.HasChange("ddos_config_list") || d.HasChange("ddos_id") || d.HasChange("ddos_region_id") {
+	if d.HasChange("ddos_config_list") {
 		oldDdosConfigList, newDdosConfigList := d.GetChange("ddos_config_list")
-		oldDdosId, newDdosId := d.GetChange("ddos_id")
-		oldDdosRegionId, newDdosRegionId := d.GetChange("ddos_region_id")
 
 		oldDdosConfigs := gaAcceleratorDdosConfigsFromSet(oldDdosConfigList)
-		if len(oldDdosConfigs) == 0 {
-			oldDdosConfigs = gaAcceleratorDdosConfigsFromLegacy(gaAcceleratorDdosString(oldDdosId), gaAcceleratorDdosString(oldDdosRegionId))
-		}
 		newDdosConfigs := gaAcceleratorDdosConfigsFromSet(newDdosConfigList)
-		if len(newDdosConfigs) == 0 {
-			newDdosConfigs = gaAcceleratorDdosConfigsFromLegacy(gaAcceleratorDdosString(newDdosId), gaAcceleratorDdosString(newDdosRegionId))
-		}
 
 		addDdosConfigs, removeDdosConfigs := gaAcceleratorDdosConfigDiff(oldDdosConfigs, newDdosConfigs)
 
@@ -774,20 +774,6 @@ func convertGaAcceleratorPaymentTypeResponse(source interface{}) interface{} {
 	}
 
 	return source
-}
-
-func gaAcceleratorDdosString(v interface{}) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
-}
-
-func gaAcceleratorDdosConfigsFromLegacy(ddosId, ddosRegionId string) []map[string]string {
-	if ddosId == "" || ddosRegionId == "" {
-		return nil
-	}
-	return []map[string]string{{"ddos_id": ddosId, "ddos_region_id": ddosRegionId}}
 }
 
 func gaAcceleratorDdosConfigsFromSet(v interface{}) []map[string]string {

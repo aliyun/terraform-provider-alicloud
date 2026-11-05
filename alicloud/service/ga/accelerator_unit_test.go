@@ -366,9 +366,6 @@ func TestUnitAliCloudGaAcceleratorDdosConfigs(t *testing.T) {
 	assert.Equal(t, "ddos-b", add[0]["ddos_id"])
 	assert.Len(t, remove, 1)
 	assert.Equal(t, "ddos-a", remove[0]["ddos_id"])
-
-	assert.Nil(t, gaAcceleratorDdosConfigsFromLegacy("ddos-a", ""))
-	assert.Len(t, gaAcceleratorDdosConfigsFromLegacy("ddos-a", "cn-hangzhou"), 1)
 }
 
 // lintignore: R001
@@ -486,16 +483,16 @@ func TestUnitAliCloudGaAcceleratorDdosDetachRequest(t *testing.T) {
 		t.Skipf("Skipping the test case with err: %s", err)
 	}
 
-	state := &terraform.InstanceState{ID: "MockId", Attributes: map[string]string{
-		"ddos_id":            "ddoscoo-cn-test",
-		"ddos_region_id":     "cn-hangzhou",
-		"ddos_config_list.#": "0",
-	}}
+	state := &terraform.InstanceState{ID: "MockId"}
 	diff, err := newInstanceDiff("alicloud_ga_accelerator", map[string]interface{}{
-		"ddos_id":        "ddoscoo-cn-test",
-		"ddos_region_id": "cn-hangzhou",
+		"ddos_config_list": []interface{}{
+			map[string]interface{}{
+				"ddos_id":        "ddoscoo-cn-test",
+				"ddos_region_id": "cn-hangzhou",
+			},
+		},
 	}, map[string]interface{}{
-		"ddos_region_id": "",
+		"ddos_config_list": []interface{}{},
 	}, state)
 	assert.Nil(t, err)
 

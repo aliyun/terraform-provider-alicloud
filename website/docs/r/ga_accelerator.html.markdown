@@ -85,8 +85,6 @@ The following arguments are supported:
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
 * `ip_set_config` - (Optional, ForceNew, Available since v1.294.0) The configurations of the acceleration area. See [`ip_set_config`](#ip_set_config) below.
-* `ddos_id` - (Optional, String, Available since v2.3.0, Deprecated since v2.3.0) The ID of the DDoS protection instance that is associated with the GA instance. **NOTE:** This argument mirrors a deprecated API parameter and will be removed in a future release. Use `ddos_config_list` instead. It cannot be used together with `ddos_config_list`.
-* `ddos_region_id` - (Optional, String, Available since v2.3.0, Deprecated since v2.3.0) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. **NOTE:** This argument mirrors a deprecated API parameter and will be removed in a future release. Use `ddos_config_list` instead. It must be specified together with `ddos_id` and cannot be used together with `ddos_config_list`.
 * `ddos_config_list` - (Optional, Set, Available since v2.3.0) The DDoS protection instances that are associated with the GA instance. Removing an element detaches the corresponding instance. See [`ddos_config_list`](#ddos_config_list) below.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
@@ -115,6 +113,8 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Accelerator. Value as `accelerator_id`.
 * `status` - The status of the GA instance.
+* `ddos_id` - (Available since v2.3.0, Deprecated since v2.3.0) The ID of the first DDoS protection instance that is associated with the GA instance. Use `ddos_config_list` to manage the associations.
+* `ddos_region_id` - (Available since v2.3.0, Deprecated since v2.3.0) The region ID of the first DDoS protection instance that is associated with the GA instance. Use `ddos_config_list` to manage the associations.
 
 ## Timeouts
 
