@@ -68,7 +68,7 @@ The following arguments are supported:
 * `desktop_type` - (Required, ForceNew) The desktop type. You can call `alicloud_ecd_desktop_types` to query desktop type.
 * `root_disk_size_gib` - (Required, ForceNew) The root disk size gib.
 * `user_disk_size_gib` - (Required, ForceNew) The size of the data disk. Currently, only one data disk can be set. Unit: GiB.
-  - The size of the data disk that supports the setting corresponds to the specification. For more information, see [Overview of Desktop Specifications](https://help.aliyun.com/document_detail/188609.htm?spm=a2c4g.11186623.0.0.6406297bE0U5DG).
+  - The size of the data disk that supports the setting corresponds to the specification. For more information, see [Overview of Desktop Specifications](https://www.alibabacloud.com/help/document_detail/188609.htm?spm=a2c4g.11186623.0.0.6406297bE0U5DG).
   - The data disk size (user_disk_size_gib) set in the template must be greater than the data disk size (data_disk_size) in the mirror.
 * `root_disk_performance_level` - (Optional, ForceNew) The root disk performance level. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
 * `user_disk_performance_level` - (Optional, ForceNew) The user disk performance level. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.

@@ -300,7 +300,7 @@ The prompts-arguments supports the following:
 
 The terraform_tools supports the following:
 * `async` - (Optional) Specifies whether execution is asynchronous. If enabled, the system immediately proceeds to the next task after initiating a task, without waiting for each resource operation to complete.
-* `code` - (Optional) Terraform Tool code. [Overview of the HCL Language](https://help.aliyun.com/zh/terraform/terraform-configuration-and-hcl-language-overview)
+* `code` - (Optional) Terraform Tool code. [Overview of the HCL Language](https://www.alibabacloud.com/help/zh/terraform/terraform-configuration-and-hcl-language-overview)
 * `description` - (Optional) Description of the Terraform Tool. This description will be used as the description for the MCP tool.
 * `destroy_policy` - (Optional) The cleanup policy applied to temporary resources after task completion, based on the task execution status:
   - NEVER: Do not delete any created resources, regardless of whether the task succeeds or fails.

@@ -7,7 +7,7 @@ description: |-
   Provides a ECS Disk resource.
 ---
 
-# alicloud\_disk
+# alicloud_disk
 
 Provides a ECS disk resource.
 

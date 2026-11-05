@@ -120,10 +120,11 @@ Event Matching Rules-Atomic Objects.
 -> **Note:** Full Name Matching Rule: If this item is filled in, other items cannot be filled in.
 Prefix match and suffix match: either of these two items can be filled in. If both items are filled in, the front and suffix match.
 
-* `match_state` - (Optional, ForceNew)  Match state. valid values: `true`, `false`.
-* `match_name` - (Optional, ForceNew) Full name matching rule.
-* `prefix` - (Optional, ForceNew) Prefix matching rule.
-* `suffix` - (Optional, ForceNew) Suffix matching rule.
+The following attributes are supported:
+- `match_state` - (Optional, ForceNew) Match state. valid values: `true`, `false`.
+- `match_name` - (Optional, ForceNew) Full name matching rule.
+- `prefix` - (Optional, ForceNew) Prefix matching rule.
+- `suffix` - (Optional, ForceNew) Suffix matching rule.
 
 ## Attributes Reference
 

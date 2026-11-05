@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud File Storage (NAS) Lifecycle Policy resource.
 ---
 
-# alicloud\_nas\_lifecycle\_policy
+# alicloud_nas_lifecycle_policy
 
 Provides a File Storage (NAS) Lifecycle Policy resource.
 
 For information about File Storage (NAS) Lifecycle Policy and how to use it, see [What is Lifecycle Policy](https://www.alibabacloud.com/help/en/doc-detail/169362.html).
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 

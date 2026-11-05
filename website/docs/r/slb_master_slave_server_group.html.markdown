@@ -23,7 +23,7 @@ A master slave server group contains two ECS instances. The master slave server 
 
 -> **NOTE:** One VPC load balancer, its master slave server group can only add the same VPC ECS instances.
 
--> **NOTE:** Available since v1.54.0+
+-> **NOTE:** Available since v1.54.0
 
 ## Example Usage
 

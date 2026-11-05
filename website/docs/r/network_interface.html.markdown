@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Elastic Network Interface resource.
 ---
 
-# alicloud\_network\_interface
+# alicloud_network_interface
 
 -> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_network_interface](https://www.terraform.io/docs/providers/alicloud/r/ecs_network_interface) from version 1.123.1.
 

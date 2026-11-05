@@ -11,7 +11,7 @@ description: |-
 
 Provides a Service Mesh Extension Provider resource.
 
-For information about Service Mesh Extension Provider and how to use it, see [What is Extension Provider](https://help.aliyun.com/document_detail/461549.html).
+For information about Service Mesh Extension Provider and how to use it, see [What is Extension Provider](https://www.alibabacloud.com/help/document_detail/461549.html).
 
 -> **NOTE:** Available since v1.191.0.
 

@@ -13,7 +13,7 @@ Provides a CEN child instance grant resource, which allow you to authorize a VPC
 
 For more information about how to use it, see [Attach a network in a different account](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-attachcenchildinstance). 
 
--> **NOTE:** Deprecated since v1.241.0. The resource have been deprecated and new resource type [alicloud_cen_transit_router_grant_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_grant_attachment) is recommended.
+-> **DEPRECATED:** This resource has been deprecated from v1.241.0. The resource have been deprecated and new resource type [alicloud_cen_transit_router_grant_attachment](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_grant_attachment) is recommended.
 
 -> **NOTE:** Available since v1.37.0.
 

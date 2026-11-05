@@ -134,11 +134,11 @@ The following arguments are supported:
     - CheckpointPause: The task is paused because it has reached a checkpoint (Checkpoint.Percentage).
     - Failed: The instance refresh task failed.
     - Successful: The instance refresh task was successful.
-    - Cancelling: The instance refresh task is being canceled. 
+    - Canceling: The instance refresh task is being canceled. 
     - RollbackInProgress: The instance refresh task is being rolled back. 
     - RollbackSuccessful: The instance refresh task was rolled back successfully. Set RollbackSuccessful to rollback the instance refresh task.
     - RollbackFailed: The rollback of the instance refresh task failed.
-    - Cancelled:  The instance refresh task is canceled. Set Cancelled to cancel the instance refresh task.
+    - Canceled:  The instance refresh task is canceled. Set Canceled to cancel the instance refresh task.
 * `checkpoints` - (Optional, ForceNew) The checkpoints for the refresh task. The task automatically pauses for the duration specified by CheckpointPauseTime when the percentage of new instances reaches a specified value. See [`checkpoints`](#checkpoints) below for details.
 * `checkpoint_pause_time` - (Optional, ForceNew) The duration of the pause when the task reaches a checkpoint. Unit: minutes.
 

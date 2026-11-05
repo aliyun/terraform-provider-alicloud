@@ -61,8 +61,8 @@ The following arguments are supported:
 * `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
 * `entry_list` - (Deprecated from v1.162.0) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. See [`entry_list`](#entry_list) below. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
-* `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
-* `resource_group_id` - (Optional, ForceNew, Available in v1.67.0+) Resource group ID.
+* `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.67.0) Resource group ID.
 
 ### `entry_list`
 

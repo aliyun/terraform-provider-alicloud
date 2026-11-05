@@ -11,7 +11,7 @@ description: |-
 
 Create an alias for the master key (CMK).
 
--> **NOTE:** Available since v1.77.0+.
+-> **NOTE:** Available since v1.77.0.
 
 ## Example Usage
 

@@ -125,7 +125,7 @@ The following arguments are supported:
   - PayAsYouGo: Pay-as-you-go, a post-payment model where you pay after usage.
   - Subscription: Subscription-based, a pre-payment model where you pay before usage. 
 
-  For more information, please refer to [Billing Methods](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/overview-2).
+  For more information, please refer to [Billing Methods](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/overview-2).
 * `period` - (Optional, Int) Duration of purchase. This parameter is only valid when the payment type for the instance is Subscription (prepaid).
 
   The values can be as follows:
@@ -139,7 +139,7 @@ The following arguments are supported:
 * `product_info` - (Optional, ForceNew, List) product info See [`product_info`](#product_info) below.
 * `remark` - (Optional) Custom description
 * `resource_group_id` - (Optional) The ID of the resource group
-* `series_code` - (Required, ForceNew) The primary series encoding for the instance. For specific differences between the primary series, please refer to [Product Selection](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-selection).
+* `series_code` - (Required, ForceNew) The primary series encoding for the instance. For specific differences between the primary series, please refer to [Product Selection](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-selection).
 
   The parameter values are as follows:
   - standard: Standard Edition
@@ -147,7 +147,7 @@ The following arguments are supported:
   - professional: Professional Edition
 * `service_code` - (Required, ForceNew) The code of the service code instance. The code of the RocketMQ is rmq.
 * `software` - (Optional, List) Instance software information. See [`software`](#software) below.
-* `sub_series_code` - (Required, ForceNew) The sub-series encoding for the instance. For specific differences between the sub-series, please refer to [Product Selection](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-selection).
+* `sub_series_code` - (Required, ForceNew) The sub-series encoding for the instance. For specific differences between the sub-series, please refer to [Product Selection](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-selection).
 
   The parameter values are as follows:
   - cluster_ha: Cluster High Availability Edition
@@ -182,7 +182,7 @@ The network_info-internet_info supports the following:
   - uninvolved: Not involved. This parameter must be set to the value when public network access is disabled.
 * `internet_spec` - (Required, ForceNew) Whether to enable public network access.  The parameter values are as follows:
   - enable: Enable public network access
-  - disable: Disable public network access   Instances by default support VPC access. If public network access is enabled, Alibaba Cloud Message Queue RocketMQ version will incur charges for public network outbound bandwidth. For specific billing information, please refer to [Public Network Access Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/internet-access-fee).
+  - disable: Disable public network access   Instances by default support VPC access. If public network access is enabled, Alibaba Cloud Message Queue RocketMQ version will incur charges for public network outbound bandwidth. For specific billing information, please refer to [Public Network Access Fees](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/internet-access-fee).
 * `ip_whitelist` - (Optional, List, Deprecated since v1.245.0) Field `ip_whitelist` has been deprecated from provider version 1.245.0. New field `ip_whitelists` instead.
 
 ### `network_info-vpc_info`
@@ -202,8 +202,8 @@ The network_info-vpc_info-vswitches supports the following:
 
 The product_info supports the following:
 * `auto_scaling` - (Optional) is open auto scaling.
-* `message_retention_time` - (Optional, Int) Duration of message retention. Unit: hours.  For the range of values, please refer to [Usage Limits](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/usage-limits)>Resource Quotas>Limitations on Message Retention.  The message storage in AlibabaCloud RocketMQ is fully implemented in a serverless and elastic manner, with charges based on the actual storage space. You can control the storage capacity of messages by adjusting the duration of message retention. For more information, please see [Storage Fees](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/storage-fees).
-* `msg_process_spec` - (Required, ForceNew) Message sending and receiving calculation specifications. For details about the upper limit for sending and receiving messages, see [Instance Specifications](https://help.aliyun.com/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-specifications).
+* `message_retention_time` - (Optional, Int) Duration of message retention. Unit: hours.  For the range of values, please refer to [Usage Limits](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/usage-limits)>Resource Quotas>Limitations on Message Retention.  The message storage in AlibabaCloud RocketMQ is fully implemented in a serverless and elastic manner, with charges based on the actual storage space. You can control the storage capacity of messages by adjusting the duration of message retention. For more information, please see [Storage Fees](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/storage-fees).
+* `msg_process_spec` - (Required, ForceNew) Message sending and receiving calculation specifications. For details about the upper limit for sending and receiving messages, see [Instance Specifications](https://www.alibabacloud.com/help/zh/apsaramq-for-rocketmq/cloud-message-queue-rocketmq-5-x-series/product-overview/instance-specifications).
 * `send_receive_ratio` - (Optional, Float) message send receive ratio.  Value range: [0.05, 0.5].
 * `storage_encryption` - (Optional, ForceNew, Bool, Available since v1.245.0) Specifies whether to enable the encryption at rest feature. Valid values: `true`, `false`.
 * `storage_secret_key` - (Optional, ForceNew, Available since v1.245.0) The key for encryption at rest.

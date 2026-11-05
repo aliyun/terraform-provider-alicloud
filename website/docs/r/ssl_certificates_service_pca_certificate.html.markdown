@@ -69,7 +69,7 @@ The encryption algorithm of the root CA certificate must match the **certificate
 
 * `common_name` - (Required, ForceNew) The common name or short name of the organization. Chinese characters, English letters, and other characters are supported.
 * `country_code` - (Optional, ForceNew) The two-letter uppercase alphabetic code representing the country or region where the organization is located. For example, `CN` represents China and `US` represents the United States.
-For country codes, see the **International Codes** section in [Managing Company Information](https://help.aliyun.com/document_detail/198289.html).
+For country codes, see the **International Codes** section in [Managing Company Information](https://www.alibabacloud.com/help/document_detail/198289.html).
 * `crl_day` - (Optional, ForceNew, Int, Available since v1.269.0) The interval (in days) for updating the Certificate Revocation List (CRL).
 * `enable_crl` - (Optional, Available since v1.269.0) Specifies whether to enable CRL.
 

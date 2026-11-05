@@ -44,7 +44,7 @@ resource "alicloud_market_order" "order" {
 The following arguments are supported:
 
 * `product_code` - (Required, ForceNew) The product_code of market place product.
-* `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`.
+* `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, System default to `PostPaid`.
 * `duration` - (Optional, ForceNew) The number of purchase cycles.
 * `pricing_cycle` - (Required, ForceNew) The purchase cycle of the product, valid values are `Day`, `Month` and `Year`.
 * `package_version` - (Required, ForceNew) The package version of the market product.

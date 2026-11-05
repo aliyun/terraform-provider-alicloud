@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Elastic Cloud Phone (ECP) Key Pair resource.
 ---
 
-# alicloud\_ecp\_key\_pair
+# alicloud_ecp_key_pair
 
 Provides a Elastic Cloud Phone (ECP) Key Pair resource.
 

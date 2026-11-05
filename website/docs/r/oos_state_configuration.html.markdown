@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud OOS State Configuration resource.
 ---
 
-# alicloud\_oos\_state\_configuration
+# alicloud_oos_state_configuration
 
 Provides a OOS State Configuration resource.
 
 For information about OOS State Configuration and how to use it, see [What is State Configuration](https://www.alibabacloud.com/help/en/doc-detail/208728.html).
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 

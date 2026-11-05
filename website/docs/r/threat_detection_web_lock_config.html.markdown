@@ -35,7 +35,7 @@ resource "alicloud_threat_detection_web_lock_config" "default" {
   mode                = "whitelist"
   local_backup_dir    = "/usr/local/aegis/bak"
   dir                 = "/tmp/"
-  defence_mode        = "audit"
+  defense_mode        = "audit"
 }
 ```
 
@@ -44,15 +44,15 @@ resource "alicloud_threat_detection_web_lock_config" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `defence_mode` - (Required,ForceNew) Protection mode. Value:-**block**: Intercept-**audit**: Alarm
-* `dir` - (Required,ForceNew) Specify the protection directory.
-* `exclusive_dir` - (ForceNew,Optional) Specify a directory address that does not require Web tamper protection (I. E. Excluded directories).> The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
-* `exclusive_file` - (ForceNew,Optional) Specify files that do not need to enable tamper protection for web pages (that is, exclude files).> The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
-* `exclusive_file_type` - (ForceNew,Optional) Specify the type of file that does not require Web tamper protection (that is, the type of excluded file). When there are multiple file types, use semicolons (;) separation. Value:-php-jsp-asp-aspx-js-cgi-html-htm-xml-shtml-shtm-jpg-gif-png > The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
-* `inclusive_file_type` - (ForceNew,Optional) Specify the type of file that requires tamper protection. When there are multiple file types, use semicolons (;) separation. Value:-php-jsp-asp-aspx-js-cgi-html-htm-xml-shtml-shtm-jpg-gif-png> The protection Mode **Mode** is set to **whitelist**, you need to configure this parameter.
-* `local_backup_dir` - (Required,ForceNew) The local backup path is used to protect the safe backup of the Directory.
-* `mode` - (Required,ForceNew) Specify the protected directory mode. Value:-**whitelist**: whitelist mode, which protects the added protected directories and file types.-**blacklist**: blacklist mode, which protects all unexcluded subdirectories, file types, and specified files under the added protection directory.
-* `uuid` - (Required,ForceNew) Specify the UUID of the server to which you want to add a protection directory.> You can call the [DescribeCloudCenterInstances](~~ 141932 ~~) interface to obtain the UUID of the server.
+* `defense_mode` - (Required, ForceNew) Protection mode. Value:-**block**: Intercept-**audit**: Alarm
+* `dir` - (Required, ForceNew) Specify the protection directory.
+* `exclusive_dir` - (ForceNew, Optional) Specify a directory address that does not require Web tamper protection (I. E. Excluded directories).> The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
+* `exclusive_file` - (ForceNew, Optional) Specify files that do not need to enable tamper protection for web pages (that is, exclude files).> The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
+* `exclusive_file_type` - (ForceNew, Optional) Specify the type of file that does not require Web tamper protection (that is, the type of excluded file). When there are multiple file types, use semicolons (;) separation. Value:-php-jsp-asp-aspx-js-cgi-html-htm-xml-shtml-shtm-jpg-gif-png > The protection Mode **Mode** is set to **blacklist**, you need to configure this parameter.
+* `inclusive_file_type` - (ForceNew, Optional) Specify the type of file that requires tamper protection. When there are multiple file types, use semicolons (;) separation. Value:-php-jsp-asp-aspx-js-cgi-html-htm-xml-shtml-shtm-jpg-gif-png> The protection Mode **Mode** is set to **whitelist**, you need to configure this parameter.
+* `local_backup_dir` - (Required, ForceNew) The local backup path is used to protect the safe backup of the Directory.
+* `mode` - (Required, ForceNew) Specify the protected directory mode. Value:-**whitelist**: whitelist mode, which protects the added protected directories and file types.-**blacklist**: blacklist mode, which protects all unexcluded subdirectories, file types, and specified files under the added protection directory.
+* `uuid` - (Required, ForceNew) Specify the UUID of the server to which you want to add a protection directory.> You can call the [DescribeCloudCenterInstances](~~ 141932 ~~) interface to obtain the UUID of the server.
 
 
 

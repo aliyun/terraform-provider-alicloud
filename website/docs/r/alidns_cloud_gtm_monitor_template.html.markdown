@@ -77,7 +77,7 @@ The following arguments are supported:
 * `timeout` - (Required) Probe request timeout, in milliseconds. Probe packets that do not return within this duration are treated as timeouts. Valid values: `2000`, `3000`, `5000`, `10000`.
 * `evaluation_count` - (Required, Int) The number of retries after a probe failure. A service is marked abnormal only after this many consecutive failures, preventing transient network fluctuations from triggering false alarms. Valid values: `1`, `2`, `3`.
 * `failure_rate` - (Required, Int) The failure-rate threshold (%) among selected probe nodes. If the percentage of failing nodes exceeds this value, the service address is marked as abnormal. Valid values: `0`, `20`, `50`, `80`, `100`.
-* `isp_city_nodes` - (Required, Set) The set of monitoring nodes that this template will probe from. Use the [ListCloudGtmMonitorNodes](https://help.aliyun.com/document_detail/2797349.html) API to look up available `city_code` / `isp_code` combinations. See [`isp_city_nodes`](#isp_city_nodes) below.
+* `isp_city_nodes` - (Required, Set) The set of monitoring nodes that this template will probe from. Use the [ListCloudGtmMonitorNodes](https://www.alibabacloud.com/help/document_detail/2797349.html) API to look up available `city_code` / `isp_code` combinations. See [`isp_city_nodes`](#isp_city_nodes) below.
 * `extend_info` - (Optional, Computed) A JSON string containing protocol-specific probe configuration. The supported keys depend on `protocol`. See [`extend_info`](#extend_info) below.
 * `remark` - (Optional) The remark of the monitor template. Passing an empty value clears the existing remark.
 

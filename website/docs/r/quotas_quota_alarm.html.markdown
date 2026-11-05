@@ -62,7 +62,7 @@ The following arguments are supported:
 * `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions. See [`quota_dimensions`](#quota_dimensions) below.
 * `threshold` - (Optional) The threshold of Quota Alarm.
 * `threshold_percent` - (Optional) The threshold percent of Quota Alarm.
-* `threshold_type` - (Optional, Computed, Available in v1.206.0+) Quota alarm type. Value:
+* `threshold_type` - (Optional, Computed, Available since v1.206.0) Quota alarm type. Value:
   - used: Quota used alarm.
   - usable: alarm for the remaining available quota.
 * `web_hook` - (Optional) The WebHook of Quota Alarm.

@@ -11,9 +11,9 @@ description: |-
 
 Provides a MHUB Product resource.
 
-For information about MHUB Product and how to use it, see [What is Product](https://help.aliyun.com/product/65109.html).
+For information about MHUB Product and how to use it, see [What is Product](https://www.alibabacloud.com/help/product/65109.html).
 
--> **NOTE:** Available since v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 -> **NOTE:** At present, the resource only supports cn-shanghai region.
 

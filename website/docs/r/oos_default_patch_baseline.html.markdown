@@ -42,7 +42,7 @@ resource "alicloud_oos_default_patch_baseline" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `patch_baseline_name` - (Required,ForceNew) The name of the patch baseline.
+* `patch_baseline_name` - (Required, ForceNew) The name of the patch baseline.
 
 ## Attributes Reference
 

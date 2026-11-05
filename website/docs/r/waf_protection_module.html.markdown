@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Web Application Firewall(WAF) Protection Module resource.
 ---
 
-# alicloud\_waf\_protection\_module
+# alicloud_waf_protection_module
 
 Provides a Web Application Firewall(WAF) Protection Module resource.
 
 For information about Web Application Firewall(WAF) Protection Module and how to use it, see [What is Protection Module](https://www.alibabacloud.com/help/en/doc-detail/160775.htm).
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
 

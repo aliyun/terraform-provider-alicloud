@@ -76,7 +76,7 @@ disable: Disabled
 
 * `contact_id_list` - (Optional, Set) The list of contact IDs. At least one contact ID is required, otherwise the certificate application cannot be submitted for this instance.
 * `country_code` - (Optional, Computed) The code of the country or region where the certificate organization is located. For example, CN indicates China and US indicates the United States. This field is required when a Certificate Signing Request (CSR) is generated for a DV certificate. The default value is CN.
-* `csr` - (Optional, Computed) The CSR content. You can generate a CSR by using OpenSSL or Keytool. For more information, see [How to create a CSR file](https://help.aliyun.com/document_detail/42218.html).
+* `csr` - (Optional, Computed) The CSR content. You can generate a CSR by using OpenSSL or Keytool. For more information, see [How to create a CSR file](https://www.alibabacloud.com/help/document_detail/42218.html).
 * `domain` - (Optional, Computed) The domain names to be bound to the certificate. Specific requirements are as follows:
   - You can specify a single domain name or a wildcard domain name (such as `*.aliyundoc.com`).
   - You can specify multiple domain names. Separate multiple domain names with commas (,). Whether free domain names are provided is determined based on the first domain name.

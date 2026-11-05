@@ -56,7 +56,7 @@ Terraform cannot destroy resource `alicloud_cloud_firewall_vpc_firewall_control_
 
 The following arguments are supported:
 * `acl_uuid` - (Optional, ForceNew, Computed) The unique identifier ID of the access control policy.  
-  When modifying an access control policy, you must provide its unique identifier ID. You can obtain this ID by calling the [DescribeVpcFirewallControlPolicy](https://help.aliyun.com/document_detail/159758.html) API.
+  When modifying an access control policy, you must provide its unique identifier ID. You can obtain this ID by calling the [DescribeVpcFirewallControlPolicy](https://www.alibabacloud.com/help/document_detail/159758.html) API.
 * `lang` - (Optional) The language type used for requests and responses.  
 
   Valid values:  
@@ -67,9 +67,9 @@ The following arguments are supported:
 
 * `order` - (Required) The new priority of the access control policy after modification.  
 
-  -> **NOTE:**  For the valid range of the new priority, see the [API for querying the effective priority range](https://help.aliyun.com/document_detail/474145.html).
+  -> **NOTE:**  For the valid range of the new priority, see the [API for querying the effective priority range](https://www.alibabacloud.com/help/document_detail/474145.html).
 
-* `vpc_firewall_id` - (Required, ForceNew) The ID of the access control policy group for the VPC border firewall. You can obtain this ID by calling the [DescribeVpcFirewallAclGroupList](https://help.aliyun.com/document_detail/159760.html) API.  
+* `vpc_firewall_id` - (Required, ForceNew) The ID of the access control policy group for the VPC border firewall. You can obtain this ID by calling the [DescribeVpcFirewallAclGroupList](https://www.alibabacloud.com/help/document_detail/159760.html) API.  
 
     Valid values:  
   - When the VPC border firewall protects Cloud Enterprise Network (CEN), the policy group ID is the CEN instance ID.  

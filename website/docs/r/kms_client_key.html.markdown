@@ -52,7 +52,7 @@ The following arguments are supported:
 * `aap_name` - (Required, ForceNew) ClientKey's parent Application Access Point name.
 * `not_after` - (Optional, ForceNew) The ClientKey expiration time. Example: "2027-08-10 T08:03:30Z".
 * `not_before` - (Optional, ForceNew) The valid start time of the ClientKey. Example: "2022-08-10 T08:03:30Z".
-* `password` - (Required, ForceNew) To enhance security, set a password for the downloaded Client Key,When an application accesses KMS, you must use the ClientKey content and this password to initialize the SDK client.
+* `password` - (Required, ForceNew) To enhance security, set a password for the downloaded Client Key, When an application accesses KMS, you must use the ClientKey content and this password to initialize the SDK client.
 * `private_key_data_file` - (Optional, ForceNew) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
 
 ## Attributes Reference

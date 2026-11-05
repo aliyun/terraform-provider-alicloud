@@ -77,8 +77,8 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The Zone to launch the HBase instance. If vswitch_id is not empty, this zone_id can be "" or consistent.
 * `engine` - (Optional, ForceNew) Valid values are "hbase/hbaseue/bds". The following types are supported after v1.73.0: `hbaseue` and `bds`. Single hbase instance need to set engine=hbase, core_instance_quantity=1.
 * `engine_version` - (Required, ForceNew) HBase major version. hbase:1.1/2.0, hbaseue:2.0, bds:1.0, unsupport other engine temporarily. Value options can refer to the latest docs [CreateInstance](https://www.alibabacloud.com/help/en/data-lake-analytics/latest/createinstance).
-* `master_instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/53532.html), or you can call describeInstanceType api.
-* `core_instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/53532.html), or you can call describeInstanceType api.
+* `master_instance_type` - (Required) Instance specification. See [Instance specifications](https://www.alibabacloud.com/help/document_detail/53532.html), or you can call describeInstanceType api.
+* `core_instance_type` - (Required) Instance specification. See [Instance specifications](https://www.alibabacloud.com/help/document_detail/53532.html), or you can call describeInstanceType api.
 * `core_instance_quantity`- (Optional) Default=2, [1-200]. If core_instance_quantity > 1, this is cluster's instance. If core_instance_quantity = 1, this is a single instance.
 * `core_disk_type`- (Optional, ForceNew) Valid values are `cloud_ssd`, `cloud_essd_pl1`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`，``, local_disk size is fixed. When engine=bds, no need to set disk type(or empty string).
 * `core_disk_size` - (Optional) User-defined HBase instance one core node's storage. Valid when engine=hbase/hbaseue. Bds engine no need core_disk_size, space.Unit: GB. Value range:
@@ -99,7 +99,7 @@ The following arguments are supported:
 * `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account. Size [0-128].
 * `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
 * `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
-* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
+* `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
 * `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
 * `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.

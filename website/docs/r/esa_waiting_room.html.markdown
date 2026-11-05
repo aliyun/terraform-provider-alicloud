@@ -107,7 +107,7 @@ The following arguments are supported:
   - `202`
   - `429`
 * `session_duration` - (Required) Session duration in minutes.
-* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the [ListSites](https://help.aliyun.com/document_detail/2850189.html) interface.
+* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/document_detail/2850189.html) interface.
 * `status` - (Required) Waiting room enabled status. Value:
   - 'on': Enable waiting room
   - 'off': Disabled waiting room
@@ -128,7 +128,7 @@ The host_name_and_path supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>`.
-* `waiting_room_id` - The waiting room ID, which can be obtained by calling the [ListWaitingRooms](https://help.aliyun.com/document_detail/2850279.html) API.
+* `waiting_room_id` - The waiting room ID, which can be obtained by calling the [ListWaitingRooms](https://www.alibabacloud.com/help/document_detail/2850279.html) API.
 
 ## Timeouts
 

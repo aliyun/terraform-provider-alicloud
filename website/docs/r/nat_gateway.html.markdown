@@ -107,7 +107,7 @@ resource "alicloud_nat_gateway" "default" {
 The following arguments are supported:
 
 * `vpc_id` - (Required, ForceNew) The VPC ID.
-* `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Effective when `internet_charge_type` is `PayBySpec` and `network_type` is `internet`. Details refer to [Nat Gateway Specification](https://help.aliyun.com/document_detail/203500.html).
+* `specification` - (Optional) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Effective when `internet_charge_type` is `PayBySpec` and `network_type` is `internet`. Details refer to [Nat Gateway Specification](https://www.alibabacloud.com/help/document_detail/203500.html).
 * `nat_gateway_name` - (Optional, Available since v1.121.0) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
 * `dry_run` - (Optional) Specifies whether to only precheck this request. Default value: `false`.

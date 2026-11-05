@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Image Pipeline resource.
 ---
 
-# alicloud\_ecs\_image\_pipeline
+# alicloud_ecs_image_pipeline
 
 Provides a ECS Image Pipeline resource.
 
 For information about ECS Image Pipeline and how to use it, see [What is Image Pipeline](https://www.alibabacloud.com/help/en/doc-detail/200427.html).
 
--> **NOTE:** Available in v1.163.0+.
+-> **NOTE:** Available since v1.163.0.
 
 ## Example Usage
 

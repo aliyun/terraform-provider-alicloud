@@ -7,13 +7,13 @@ description: |-
   Provides a Web Application Firewall Certificate resource.
 ---
 
-# alicloud\_waf\_certificate
+# alicloud_waf_certificate
 
 Provides a WAF Certificate resource.
 
 For information about WAF Certificate and how to use it, see [What is Certificate](https://www.alibabacloud.com/help/doc-detail/28517.htm).
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 

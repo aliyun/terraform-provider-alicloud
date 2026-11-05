@@ -101,13 +101,13 @@ The following arguments are supported:
 
 * `cache_mode` - (Optional, ForceNew) The Block volume set mode to cache mode. Valid values: `Cache`, `WriteThrough`.
 * `chap_enabled` - (Optional) Whether to enable iSCSI access of CHAP authentication, which currently supports both CHAP inbound authentication.  Default value: `false`.
-* `chap_in_password` - (Optional) The password for inbound authentication when the block volume enables iSCSI access to CHAP authentication. **NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid.
-* `chap_in_user` - (Optional) The Inbound CHAP user. The `chap_in_user` must be 1 to 32 characters in length, and can contain letters and digits. **NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid. 
+* `chap_in_password` - (Optional) The password for inbound authentication when the block volume enables iSCSI access to CHAP authentication. **NOTE:** When the `chap_enabled` is  `true` is, The `chap_in_password` is valid.
+* `chap_in_user` - (Optional) The Inbound CHAP user. The `chap_in_user` must be 1 to 32 characters in length, and can contain letters and digits. **NOTE:** When the `chap_enabled` is  `true` is, The `chap_in_password` is valid. 
 * `chunk_size` - (Optional, ForceNew) The Block volume storage allocation unit.  Valid values: `8192`, `16384`, `32768`, `65536`, `131072`. Default value: `32768`. Unit: `Byte`.
 * `gateway_block_volume_name` - (Required, ForceNew) The Block volume name. The name must be 1 to 32 characters in length, and can contain lower case letters and digits.
 * `gateway_id` - (Required, ForceNew) The Gateway ID.
 * `is_source_deletion` - (Optional) Whether to delete the source data. Default value `true`. **NOTE:** When `is_source_deletion` is `true`, the data in the OSS Bucket on the cloud is also deleted when deleting the block gateway volume. Please operate with caution.
-* `local_path` - (Optional, ForceNew) The Cache disk to local path. **NOTE:**  When the `cache_mode` is  `Cache` is,The `chap_in_password` is valid.
+* `local_path` - (Optional, ForceNew) The Cache disk to local path. **NOTE:**  When the `cache_mode` is  `Cache` is, The `chap_in_password` is valid.
 * `oss_bucket_name` - (Required, ForceNew) The name of the OSS Bucket. 
 * `oss_bucket_ssl` - (Optional, ForceNew) Whether to enable SSL access your OSS Buckets. Default value: `true`.
 * `oss_endpoint` - (Required, ForceNew) The endpoint of the OSS Bucket.

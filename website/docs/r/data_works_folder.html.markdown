@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Data Works Folder resource.
 ---
 
-# alicloud\_data\_works\_folder
+# alicloud_data_works_folder
 
 Provides a Data Works Folder resource.
 
@@ -39,8 +39,8 @@ resource "alicloud_data_works_folder" "example" {
 The following arguments are supported:
 
 * `folder_path` - (Required) Folder Path. The folder path composed with for part: `Business Flow/{Business Flow Name}/[folderDi|folderMaxCompute|folderGeneral|folderJdbc|folderUserDefined]/{Directory Name}`. The first segment of path must be `Business Flow`, and sencond segment of path must be a Business Flow Name within the project. The third part of path must be one of those keywords:`folderDi|folderMaxCompute|folderGeneral|folderJdbc|folderUserDefined`. Then the finial part of folder path can be specified in yourself.
-* `project_id` - (Optional, ForceNew, Available in v1.131.0+) The ID of the project.
-* `project_identifier` - (Optional, Available in v1.131.0+) The project identifier.
+* `project_id` - (Optional, ForceNew, Available since v1.131.0) The ID of the project.
+* `project_identifier` - (Optional, Available since v1.131.0) The project identifier.
 
 ## Attributes Reference
 

@@ -50,7 +50,7 @@ resource "alicloud_alidns_record" "defaultnHqm5p" {
   line        = "default"
   rr          = "_dnsauth"
   type        = "TXT"
-  domain_name = "tftestacc.com"
+  domain_name = "tfexampleacc.com"
   priority    = "1"
   value       = alicloud_oss_bucket_cname_token.defaultZaWJfG.token
   ttl         = "600"

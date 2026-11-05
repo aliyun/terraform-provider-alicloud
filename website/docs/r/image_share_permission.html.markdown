@@ -7,7 +7,7 @@ description: |-
   Provides an ECS image share permission resource.
 ---
 
-# alicloud\_image\_share\_permission
+# alicloud_image_share_permission
 
 Manage image sharing permissions. You can share your custom image to other Alibaba Cloud users. The user can use the shared custom image to create ECS instances or replace the system disk of the instance.
 
@@ -17,7 +17,7 @@ Manage image sharing permissions. You can share your custom image to other Aliba
 
 -> **NOTE:** After creating an ECS instance using a shared image, once the custom image owner releases the image sharing relationship or deletes the custom image, the instance cannot initialize the system disk.
 
--> **NOTE:** Available in 1.68.0+.
+-> **NOTE:** Available since v1.68.0.
 
 ## Example Usage
 
@@ -97,7 +97,7 @@ The following arguments are supported:
 * `account_id` - (Required, ForceNew) Alibaba Cloud Account ID. It is used to share images.
    
    
-## Attributes Reference0
+## Attributes Reference
  
  The following attributes are exported:
  

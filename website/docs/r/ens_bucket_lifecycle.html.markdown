@@ -6,7 +6,7 @@ description: |-
   Provides a Alicloud ENS Bucket Lifecycle resource.
 ---
 
-# alicloud\_ens\_bucket\_lifecycle
+# alicloud_ens_bucket_lifecycle
 
 Provides a ENS Bucket Lifecycle resource.
 

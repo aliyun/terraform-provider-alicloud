@@ -7,7 +7,7 @@ description: |-
   Provides a DNS domain resource.
 ---
 
-# alicloud\_dns\_domain
+# alicloud_dns_domain
 
 Provides a DNS domain resource.
 
@@ -15,7 +15,7 @@ Provides a DNS domain resource.
 
 -> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
 
--> **NOTE:** Available in v1.81.0+.
+-> **NOTE:** Available since v1.81.0.
 
 ## Example Usage
 
@@ -53,7 +53,9 @@ The following attributes are exported:
 
 * `id` - This ID of this resource. The value is set to `domain_name`.
 * `domain_id` - The domain ID.
-* `dns_server` - A list of the dns server name.
+* `dns_servers` - A list of the dns server name.
+* `group_name` - The name of the domain group.
+* `puny_code` - The puny code of the domain.
 
 ## Import
 

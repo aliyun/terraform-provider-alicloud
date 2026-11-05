@@ -85,7 +85,6 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 }
 
 resource "alicloud_ack_one_cluster" "default" {
-  depends_on = [alicloud_cs_managed_kubernetes.default]
   network {
     vpc_id    = alicloud_vpc.default.id
     vswitches = [alicloud_vswitch.default.id]

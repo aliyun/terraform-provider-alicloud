@@ -357,7 +357,7 @@ The following arguments are supported:
 
 ### `severity_configurations`
 
-* `severity` - (Required) Severity for new alert, including 2,4,6,8,10 for Report,Low,Medium,High,Critical.
+* `severity` - (Required) Severity for new alert, including 2,4,6,8,10 for Report, Low, Medium, High, Critical.
 * `eval_condition` - (Required) Severity when this condition is met. The map supports `condition` (condition for each row) and `count_condition` (count's condition for the rows met condition above) keys.
 
 ### `join_configurations`
@@ -375,7 +375,7 @@ The following arguments are supported:
 
 ### `schedule`
 
-* `type` - (Required) including FixedRate,Hourly,Daily,Weekly,Cron.
+* `type` - (Required) including FixedRate, Hourly, Daily, Weekly, Cron.
 * `interval` - (Optional) Execution interval. 60 seconds minimum, such as 60s, 1h. used when type is FixedRate.
 * `cron_expression` - (Optional) Cron expression when type is Cron.
 * `day_of_week` - (Optional) Day of week when type is Weekly, including 0,1,2,3,4,5,6, 0 for Sunday, 1 for Monday

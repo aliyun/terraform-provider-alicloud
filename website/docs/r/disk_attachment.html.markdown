@@ -7,7 +7,7 @@ description: |-
   Provides a ECS Disk Attachment resource.
 ---
 
-# alicloud\_disk\_attachment
+# alicloud_disk_attachment
 
 -> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk_attachment](https://www.terraform.io/docs/providers/alicloud/r/ecs_disk_attachment) from version 1.122.0.
 

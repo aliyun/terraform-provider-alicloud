@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Command resource.
 ---
 
-# alicloud\_ecs\_command
+# alicloud_ecs_command
 
 Provides a ECS Command resource.
 
 For information about ECS Command and how to use it, see [What is Command](https://www.alibabacloud.com/help/en/doc-detail/64844.htm).
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_command" "example" {
-  name            = "tf-testAcc"
+  name            = "tf-exampleAcc"
   command_content = "bHMK"
   description     = "For Terraform Test"
   type            = "RunShellScript"

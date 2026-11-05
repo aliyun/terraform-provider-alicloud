@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Event Bridge Service Linked Role resource.
 ---
 
-# alicloud\_event\_bridge\_slr
+# alicloud_event_bridge_slr
 
 Provides a Event Bridge Service Linked Role resource.
 

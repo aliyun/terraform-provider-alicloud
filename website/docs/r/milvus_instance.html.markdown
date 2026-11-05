@@ -123,7 +123,7 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `payment_type` - (Required, ForceNew) Payment Type ,Enumeration value:
+* `payment_type` - (Required, ForceNew) Payment Type , Enumeration value:
   - PayAsYouGo: Pay by volume
   - Subscription: Package year package month
 * `promotion_no` - (Optional, ForceNew, Available since v1.294.0) The promotion code used to create the instance.

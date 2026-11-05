@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Tag Meta Tag resource.
 ---
 
-# alicloud\_tag\_meta\_tag
+# alicloud_tag_meta_tag
 
 Provides a Tag Meta Tag resource.
 

@@ -7,7 +7,7 @@ description: |-
   Deprecated alias of alicloud_image_copy. Copies a custom image from one region to another.
 ---
 
-# alicloud\_copy_image
+# alicloud_copy_image
 
 -> **DEPRECATED:** `alicloud_copy_image` is a deprecated alias of [alicloud_image_copy](https://www.terraform.io/docs/providers/alicloud/r/image_copy). Use `alicloud_image_copy` instead. The two resources share the same schema and backend `CopyImage` API; this page is retained only for backward compatibility and will be removed in a future release.
 

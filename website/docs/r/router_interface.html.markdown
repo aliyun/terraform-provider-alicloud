@@ -7,7 +7,7 @@ description: |-
   Provides a VPC router interface resource to connect two VPCs.
 ---
 
-# alicloud\_router\_interface
+# alicloud_router_interface
 
 Provides a VPC router interface resource aim to build a connection between two VPCs.
 

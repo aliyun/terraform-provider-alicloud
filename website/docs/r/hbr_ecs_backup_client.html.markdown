@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Hybrid Backup Recovery (HBR) Ecs Backup Client resource.
 ---
 
-# alicloud\_hbr\_ecs\_backup\_client
+# alicloud_hbr_ecs_backup_client
 
 Provides a Hybrid Backup Recovery (HBR) Ecs Backup Client resource.
 
 For information about Hybrid Backup Recovery (HBR) Ecs Backup Client and how to use it, see [What is Ecs Backup Client](https://www.alibabacloud.com/help/doc-detail/186570.htm).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 

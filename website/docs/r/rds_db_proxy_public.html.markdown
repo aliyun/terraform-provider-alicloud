@@ -116,7 +116,7 @@ The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) Instance ID.
 * `db_proxy_endpoint_id` - (Required, ForceNew)Database proxy connection address ID.
 * `connection_string_prefix` - (Required)The prefix for the new database proxy connection address can be customized.
-* `db_proxy_connection_string_net_type` - (Required, ForceNew)The network type of the new database proxy connection address,This resource defaults to Public.
+* `db_proxy_connection_string_net_type` - (Required, ForceNew)The network type of the new database proxy connection address, This resource defaults to Public.
 * `db_proxy_new_connect_string_port` - (Not required, Optional)The port for the new database proxy connection address is 3306 by default for MySQL and 5432 by default for PostgreSQL, which can be customized.
 
 ## Attributes Reference

@@ -149,7 +149,7 @@ The following arguments are supported:
 * `constant_parameters` - (Optional, List) constant_parameters defines the constant parameters of the api. See [`constant_parameters`](#constant_parameters) below.
 * `system_parameters` - (Optional, List) system_parameters defines the system parameters of the api. See [`system_parameters`](#system_parameters) below.
 * `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid values: `RELEASE`, `PRE`, `TEST`, or any custom stage name created via `alicloud_api_gateway_stage_model`.
-* `force_nonce_check` - (Optional, Type: bool, Available in v1.140+) Whether to prevent API replay attack. Default value: `false`.
+* `force_nonce_check` - (Optional, Type: bool, Available since v1.140) Whether to prevent API replay attack. Default value: `false`.
 * `backend_id` - (Optional, Available since v1.279.0) The ID of the API Gateway Backend. When specified, the API references an existing backend created by `alicloud_api_gateway_backend`.
 * `backend_enabled` - (Optional, Available since v1.279.0) Specifies whether to enable the backend service. When set to `true`, the `backend_id` will be sent to the API.
 
@@ -157,7 +157,7 @@ The following arguments are supported:
 
 The request_config mapping supports the following:
 
-* `protocol` - (Required) The protocol of api which supports values of 'HTTP','HTTPS' or 'HTTP,HTTPS'.
+* `protocol` - (Required) The protocol of api which supports values of 'HTTP','HTTPS' or 'HTTP, HTTPS'.
 * `method` - (Required) The method of the api, including 'GET','POST','PUT' etc.
 * `path` - (Required) The request path of the api.
 * `mode` - (Required) The mode of the parameters between request parameters and service parameters, which support the values of 'MAPPING' and 'PASSTHROUGH'.
@@ -193,15 +193,15 @@ The http_vpc_service_config mapping supports the following:
 The fc_service_config mapping supports the following:
 
 * `function_version` - (Optional) The function compute version of function compute service. Supports values of `2.0`, `3.0`. Default value: `2.0`.
-* `function_type` - (Optional, Available in v1.219.0) The type of function compute service. Supports values of `FCEvent`,`HttpTrigger`. Default value: `FCEvent`.
+* `function_type` - (Optional, Available since v1.219.0) The type of function compute service. Supports values of `FCEvent`,`HttpTrigger`. Default value: `FCEvent`.
 * `region` - (Required) The region that the function compute service belongs to.
 * `function_name` - (Optional) The function name of function compute service. Required if `function_type` is `FCEvent`.
 * `service_name` - (Optional) The service name of function compute service. Required if `function_type` is `FCEvent` and `function_version` is `2.0`.
-* `qualifier` - (Optional, Available in v1.219.0) The qualifier of function name of compute service.
-* `function_base_url` - (Optional, Available in v1.219.0) The base url of function compute service. Required if `function_type` is `HttpTrigger`.
-* `path` - (Optional, Available in v1.219.0) The path of function compute service. Required if `function_type` is `HttpTrigger`.
-* `method` - (Optional, Available in v1.219.0) The http method of function compute service. Required if `function_type` is `HttpTrigger`.
-* `only_business_path` - (Optional, Available in v1.219.0) Whether to filter path in `function_base_url`. Optional if `function_type` is `HttpTrigger`.
+* `qualifier` - (Optional, Available since v1.219.0) The qualifier of function name of compute service.
+* `function_base_url` - (Optional, Available since v1.219.0) The base url of function compute service. Required if `function_type` is `HttpTrigger`.
+* `path` - (Optional, Available since v1.219.0) The path of function compute service. Required if `function_type` is `HttpTrigger`.
+* `method` - (Optional, Available since v1.219.0) The http method of function compute service. Required if `function_type` is `HttpTrigger`.
+* `only_business_path` - (Optional, Available since v1.219.0) Whether to filter path in `function_base_url`. Optional if `function_type` is `HttpTrigger`.
 * `arn_role` - (Required) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `timeout` - (Required) Backend service time-out time; unit: millisecond.
 * `content_type_category` - (Optional, Computed, Available since v1.281.0) The strategy for setting the Content-Type header when calling an HTTP backend service. Valid values:

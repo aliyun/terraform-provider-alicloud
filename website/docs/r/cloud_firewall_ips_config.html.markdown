@@ -42,9 +42,6 @@ resource "alicloud_cloud_firewall_instance" "default" {
 
 resource "alicloud_cloud_firewall_ips_config" "default" {
   lang = "zh"
-  depends_on = [
-    "alicloud_cloud_firewall_instance.default"
-  ]
   max_sdl     = "1000"
   basic_rules = "1"
   run_mode    = "1"

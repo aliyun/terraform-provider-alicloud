@@ -211,8 +211,8 @@ Valid values: `1` to `5`. Default value: `1`.
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
-* `instance_name` - (Optional, Computed, Available since v1.279.0) The name must be 2 to 128 characters in length, start with a letter or Chinese character, and can contain letters, Chinese characters, digits, periods (.), underscores (_), colons (:), or hyphens (-). By default, the instance name is the same as the InstanceId. When creating multiple RdsCustom instances, you can specify sequential instance names in batches by using square brackets ([]) and commas (,). For more information, see [Create an RDS Custom instance](https://help.aliyun.com/zh/rds/apsaradb-rds-for-mysql/create-an-rds-custom-instance?spm=a2c4g.11186623.0.0.36ef7288jg7aZD#00481f9ba381u).
-* `instance_type` - (Required) The target instance type for configuration changes. For the list of instance types supported by RDS Custom instances, see [RDS Custom Instance Types](https://help.aliyun.com/document_detail/2844823.html).
+* `instance_name` - (Optional, Computed, Available since v1.279.0) The name must be 2 to 128 characters in length, start with a letter or Chinese character, and can contain letters, Chinese characters, digits, periods (.), underscores (_), colons (:), or hyphens (-). By default, the instance name is the same as the InstanceId. When creating multiple RdsCustom instances, you can specify sequential instance names in batches by using square brackets ([]) and commas (,). For more information, see [Create an RDS Custom instance](https://www.alibabacloud.com/help/zh/rds/apsaradb-rds-for-mysql/create-an-rds-custom-instance?spm=a2c4g.11186623.0.0.36ef7288jg7aZD#00481f9ba381u).
+* `instance_type` - (Required) The target instance type for configuration changes. For the list of instance types supported by RDS Custom instances, see [RDS Custom Instance Types](https://www.alibabacloud.com/help/document_detail/2844823.html).
 * `internet_charge_type` - (Optional) Reserved parameter. Not supported currently.
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
@@ -250,7 +250,7 @@ Valid values: 0 to 1024. Default value: 0.
 
   -> **NOTE:** This parameter is immutable. Changing it after creation has no effect.
 
-* `security_group_ids` - (Optional, ForceNew, List) The ID of the security group to which the instance belongs. Instances in the same security group can access each other. The maximum number of instances that a security group can contain depends on the security group type. For more information, see the "Security groups" section in [Limits](https://help.aliyun.com/document_detail/25412.html).
+* `security_group_ids` - (Optional, ForceNew, List) The ID of the security group to which the instance belongs. Instances in the same security group can access each other. The maximum number of instances that a security group can contain depends on the security group type. For more information, see the "Security groups" section in [Limits](https://www.alibabacloud.com/help/document_detail/25412.html).
 
   -> **NOTE:**  The SecurityGroupId determines the network type of the instance. For example, if the specified security group uses the Virtual Private Cloud (VPC) network type, the instance is of the VPC type and you must also specify the VSwitchId parameter.
 
@@ -298,7 +298,7 @@ The data_disk supports the following:
   - `cloud_ssd`: SSD cloud disk.
   - `cloud_essd` (default): ESSD cloud disk.
   - `cloud_auto`: High-performance cloud disk.
-* `performance_level` - (Optional, ForceNew) The performance level for an ESSD cloud disk. For information about performance differences among ESSD cloud disks, see [ESSD cloud disks](https://help.aliyun.com/document_detail/2859916.html). Valid values:
+* `performance_level` - (Optional, ForceNew) The performance level for an ESSD cloud disk. For information about performance differences among ESSD cloud disks, see [ESSD cloud disks](https://www.alibabacloud.com/help/document_detail/2859916.html). Valid values:
   - `PL0`
   - `PL1` (default)
   - `PL2`

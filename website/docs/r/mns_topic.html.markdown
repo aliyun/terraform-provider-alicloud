@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Topic resource.
 ---
 
-# alicloud\_mns\_topic
+# alicloud_mns_topic
 
 Provides a MNS topic resource.
 

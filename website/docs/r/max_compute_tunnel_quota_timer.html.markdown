@@ -16,7 +16,6 @@ For information about Max Compute Tunnel Quota Timer and how to use it, see [Wha
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.260.0`.
 
--> **NOTE:** Deprecated since v1.260.0.
 
 ## Example Usage
 

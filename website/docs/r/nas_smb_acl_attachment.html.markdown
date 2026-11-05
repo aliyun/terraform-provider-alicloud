@@ -7,12 +7,12 @@ description: |-
   Provides a Alicloud Nas Smb Acl resource.
 ---
 
-# alicloud\_nas_smb_acl
+# alicloud_nas_smb_acl_attachment
 
 Provides a Nas Smb Acl resource.
 
 Alibaba Cloud SMB protocol file storage service supports user authentication based on AD domain system and permission access control at the file system level. Connecting and accessing the SMB file system as a domain user can implement the requirements for access control at the file and directory level in the SMB protocol file system. The current Alibaba Cloud SMB protocol file storage service does not support multi-user file and directory-level permission access control, and only provides file system-level authentication and access based on the whitelist mechanism that supports cloud accounts and source IP permission groups control.
--> **NOTE:** Available in 1.186.0+.
+-> **NOTE:** Available since v1.186.0.
 
 ## Example Usage
 

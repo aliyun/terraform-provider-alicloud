@@ -68,7 +68,7 @@ The following arguments are supported:
 * `alicloud_certificate_name` - (Optional, ForceNew) the name of the certificate specified by `alicloud_certificate_id`.but it is not supported on the international site of alibaba cloud now.
 * `alicloud_certificate_region_id` - (Optional, ForceNew, Available in 1.69.0+) the region of the certificate specified by `alicloud_certificate_id`. but it is not supported on the international site of alibaba cloud now.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.58.0+) The Id of resource group which the slb server certificate belongs.
-* `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.66.0) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

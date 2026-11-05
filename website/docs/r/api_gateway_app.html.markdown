@@ -43,7 +43,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the app. 
 * `description` - (Optional) The description of the app. Defaults to null.
-* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.55.3) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

@@ -55,7 +55,6 @@ resource "alicloud_log_store" "default" {
 }
 
 resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_log_store.default]
 
   create_duration = "10m"
 }
@@ -78,7 +77,6 @@ resource "alicloud_fcv3_function" "function" {
     log_begin_rule          = "None"
   }
 
-  depends_on = [time_sleep.wait_10_minutes]
 }
 
 resource "alicloud_fcv3_provision_config" "default" {

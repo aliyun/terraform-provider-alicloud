@@ -49,7 +49,7 @@ The following attributes are exported:
 * `db_type` - Database type.
 * `env_type` - Environment type, return value is as follows:-product: production environment-dev: development environment-pre: Advance Environment-test: test environment-sit:SIT environment-uat:UAT environment-pet: Pressure measurement environment-stag:STAG environment
 * `logic` - Whether it is a logical Library, the return value is true.
-* `logic_database_id` - The ID of the logical Library.
+* `logic_database_id` - (Optional) The ID of the logical Library.
 * `owner_id_list` - The user ID list of the logical library Owner.
 * `owner_name_list` - The nickname list of the logical library Owner.
 * `schema_name` - Logical Library name.

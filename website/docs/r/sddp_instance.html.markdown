@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Data Security Center Instance resource.
 ---
 
-# alicloud\_sddp\_instance
+# alicloud_sddp_instance
 
 Provides a Data Security Center Instance resource.
 
-For information about Data Security Center Instance and how to use it, see [What is Instance](https://help.aliyun.com/product/88674.html).
+For information about Data Security Center Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/product/88674.html).
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 -> **NOTE:** The Data Security Center Instance is not support in the international site.
 

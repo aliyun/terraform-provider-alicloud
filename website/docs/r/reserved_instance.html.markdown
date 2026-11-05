@@ -7,7 +7,7 @@ description: |-
   Provides an ECS Reserved Instance resource.
 ---
 
-# alicloud\_reserved\_instance
+# alicloud_reserved_instance
 
 Provides an Reserved Instance resource.
 
@@ -67,7 +67,7 @@ The following arguments are supported:
 * `auto_renew_period` - (Optional, Computed, Available since v1.194.0) The auto-renewal term of the reserved instance. This parameter takes effect only when AutoRenew is set to true. Valid values: 1, 12, 36, and 60. Default value when `period_unit` is set to Month: 1 Default value when `period_unit` is set to Year: 12
 * `tags` - (Optional, Available since v1.194.0) A mapping of tags to assign to the resource.
 
-### Removing alicloud_reserved_instance from your configuration
+**Removing alicloud_reserved_instance from your configuration**
  
 The alicloud_reserved_instance resource allows you to manage your ReservedInstance, but Terraform cannot destroy it. Removing this resource from your configuration will remove it from your statefile and management, but will not destroy the ReservedInstance.
  

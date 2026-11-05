@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud DNS Instance resource.
 ---
 
-# alicloud\_dns\_instance
+# alicloud_dns_instance
 
 Create an DNS Instance resource.
 
 -> **DEPRECATED:** This resource has been renamed to [alicloud_alidns_instance](https://www.terraform.io/docs/providers/alicloud/r/alidns_instance) from version 1.95.0.
 
--> **NOTE:** Available in v1.80.0+.
+-> **NOTE:** Available since v1.80.0.
 
 ## Example Usage
 
@@ -39,6 +39,7 @@ The following arguments are supported:
 
 * `dns_security` - (Required, ForceNew) DNS security level. Valid values: `no`, `basic`, `advanced`.
 * `domain_numbers` - (Required, ForceNew) Number of domain names bound.
+* `payment_type` - (Optional, ForceNew) The payment type of the DNS instance. Valid value: `Subscription`.
 * `period` - (Optional, ForceNew) Creating a pre-paid instance, it must be set, the unit is month, please enter an integer multiple of 12 for annually paid products.
 * `renew_period` - (Optional, ForceNew) Automatic renewal period, the unit is month. When setting RenewalStatus to AutoRenewal, it must be set.
 * `renewal_status` - (Optional, ForceNew) Automatic renewal status. Valid values: `AutoRenewal`, `ManualRenewal`, default to `ManualRenewal`.

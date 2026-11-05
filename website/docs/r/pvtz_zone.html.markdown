@@ -48,7 +48,7 @@ The following arguments are supported:
 * `dns_group` - (Optional) The built-in authoritative location zone of the Private Zone. Valid values: `NORMAL_ZONE` (normal zone) and `FAST_ZONE` (fast zone). If not specified, the system uses the account default (accounts opened after April 30, 2025 default to `FAST_ZONE`). Updating this field switches the zone from `NORMAL_ZONE` to `FAST_ZONE`; the reverse direction (`FAST_ZONE` -> `NORMAL_ZONE`) is not supported by the API.
 * `user_client_ip` - (Optional, Available in 1.69.0+) The IP address of the client.
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
-* `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.86.0) The Id of resource group which the Private Zone belongs.
 * `sync_status` - (Optional, Available in 1.146.0+) The status of the host synchronization task. Valid values:  `ON`,`OFF`. **NOTE:** You can update the `sync_status` to enable/disable the host synchronization task.
 * `user_info` - (Optional, Available in 1.146.0+) The user information of the host synchronization task. See [`user_info`](#user_info) below.
 * `tags` - (Optional, Map) The tags of the Private Zone.

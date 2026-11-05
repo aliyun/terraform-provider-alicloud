@@ -65,7 +65,7 @@ The following arguments are supported:
 * `protocol` - (Optional, Computed) The protocol types supported by the domain. Required for a `Dedicated` domain; must be omitted for a `Serverless` domain.
   - HTTP: Supports HTTP only.
   - HTTPS: Supports HTTPS only.
-* `resource_group_id` - (Optional, Computed) Resource group ID (https://help.aliyun.com/document_detail/151181.html).
+* `resource_group_id` - (Optional, Computed) Resource group ID (https://www.alibabacloud.com/help/document_detail/151181.html).
 * `tls_cipher_suites_config` - (Optional, Computed, Set) TLS cipher suites configuration. See [`tls_cipher_suites_config`](#tls_cipher_suites_config) below.
 * `tls_max` - (Optional) The maximum version of the TLS protocol supported, up to TLS 1.3.
 * `tls_min` - (Optional) Minimum TLS protocol version. TLS 1.0 is the minimum supported version.

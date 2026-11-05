@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Quick BI User resource.
 ---
 
-# alicloud\_quick\_bi\_user
+# alicloud_quick_bi_user
 
 Provides a Quick BI User resource.
 
 For information about Quick BI User and how to use it, see [What is User](https://www.alibabacloud.com/help/doc-detail/33813.htm).
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
 

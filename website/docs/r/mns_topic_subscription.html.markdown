@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Topic Subscription resource.
 ---
 
-# alicloud\_mns\_topic\_subscription
+# alicloud_mns_topic_subscription
 
 Provides a MNS topic subscription resource.
 

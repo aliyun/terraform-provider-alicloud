@@ -51,7 +51,7 @@ The following arguments are supported:
 * `expiration_ttl` - (Optional, Int) The time when the key-value pair expires, which cannot be earlier than the current time. The value is a timestamp in seconds. If you specify both Expiration and ExpirationTtl, only ExpirationTtl takes effect.
 * `isbase` - (Optional) The relative expiration time. Unit: seconds. If you specify both Expiration and ExpirationTtl, only ExpirationTtl takes effect.
 * `key` - (Required, ForceNew) kv
-* `namespace` - (Required, ForceNew) The name specified when calling [CreatevNamespace](https://help.aliyun.com/document_detail/2850317.html).
+* `namespace` - (Required, ForceNew) The name specified when calling [CreatevNamespace](https://www.alibabacloud.com/help/document_detail/2850317.html).
 * `url` - (Optional) The key name. The name can be up to 512 characters in length and cannot contain spaces or backslashes (\\).
 * `value` - (Optional) The content of the key. If the content has more than 256 characters in length, the system displays the first 100 and the last 100 characters, and omits the middle part.
 

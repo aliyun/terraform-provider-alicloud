@@ -266,7 +266,7 @@ The following arguments are supported:
 * `certificate_id` - (Optional, Computed, Available since v1.290.0) The ID of an SSL certificate managed by SSL Certificates Service (CAS). When set, the provider resolves the certificate and private key from the referenced SSL certificate and binds them as the HTTPS certificate for the custom domain, so that a certificate managed in SSL Certificates Service can be referenced without pasting the PEM material. It conflicts with `cert_config.0.certificate` and `cert_config.0.private_key`. The resolved private key is never persisted to state.
 * `cors_config` - (Optional, Set, Available since v1.270.0) Cross-Origin Resource Sharing (CORS) configuration, used to control which origins can access resources under the custom domain. See [`cors_config`](#cors_config) below.
 * `custom_domain_name` - (Optional, ForceNew, Computed) The name of the resource
-* `protocol` - (Optional) The protocol type supported by the domain name. HTTP: only HTTP protocol is supported. HTTPS: only HTTPS is supported. HTTP,HTTPS: Supports HTTP and HTTPS protocols.
+* `protocol` - (Optional) The protocol type supported by the domain name. HTTP: only HTTP protocol is supported. HTTPS: only HTTPS is supported. HTTP, HTTPS: Supports HTTP and HTTPS protocols.
 * `route_config` - (Optional, Set) Route matching rule configuration See [`route_config`](#route_config) below.
 * `tls_config` - (Optional, Computed, Set) TLS configuration information See [`tls_config`](#tls_config) below.
 * `waf_config` - (Optional, Set) Web application firewall configuration information See [`waf_config`](#waf_config) below.

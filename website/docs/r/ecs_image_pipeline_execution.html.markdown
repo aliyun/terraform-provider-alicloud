@@ -80,7 +80,7 @@ Terraform cannot destroy resource `alicloud_ecs_image_pipeline_execution`. Terra
 The following arguments are supported:
 * `image_pipeline_id` - (Required, ForceNew) The ID of the image template.
 * `status` - (Optional, Computed) The status of the image build task. Valid values:
-  - CANCELLED: canceled. The build process has been canceled.
+  - CANCELED: canceled. The build process has been canceled.
 
 ## Attributes Reference
 

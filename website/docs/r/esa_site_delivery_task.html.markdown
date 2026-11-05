@@ -113,7 +113,7 @@ The following arguments are supported:
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.
 
-* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the [ListSites](https://help.aliyun.com/document_detail/2850189.html) interface.
+* `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/document_detail/2850189.html) interface.
 * `sls_delivery` - (Optional, List) SLS delivery configuration. See [`sls_delivery`](#sls_delivery) below.
 
   -> **NOTE:** The parameter is immutable after resource creation. It only applies during resource creation and has no effect when modified post-creation.

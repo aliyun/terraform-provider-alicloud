@@ -85,7 +85,7 @@ The following attributes are exported:
 * `join_time` - The time when the member joined the resource directory
 * `modify_time` - The modification time of the invitation
 * `resource_directory_id` - Resource directory ID
-* `status` - Member joining status.  CreateSuccess,CreateVerifying,CreateFailed,CreateExpired,CreateCancelled,PromoteVerifying,PromoteFailed,PromoteExpired,PromoteCancelled,PromoteSuccess,InviteSuccess,Removed
+* `status` - Member joining status.  CreateSuccess, CreateVerifying, CreateFailed, CreateExpired, CreateCanceled, PromoteVerifying, PromoteFailed, PromoteExpired, PromoteCanceled, PromoteSuccess, InviteSuccess, Removed
 
 ## Timeouts
 

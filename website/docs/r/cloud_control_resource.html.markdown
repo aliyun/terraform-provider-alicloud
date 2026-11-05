@@ -55,8 +55,8 @@ resource "alicloud_cloud_control_resource" "default" {
 
 The following arguments are supported:
 * `desire_attributes` - (Optional, JsonString) Resource attributes specified when a user creates or updates a resource.
-* `product` - (Required, ForceNew) The product Code represents the product to be operated. Currently supported products and resources can be queried at the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
-* `resource_code` - (Required, ForceNew) Resource Code, if there is a parent resource, split with `::`, such as VPC::VSwitch. The supported resource Code can be obtained from the following link: [supported-services-and-resource-types](https://help.aliyun.com/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
+* `product` - (Required, ForceNew) The product Code represents the product to be operated. Currently supported products and resources can be queried at the following link: [supported-services-and-resource-types](https://www.alibabacloud.com/help/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
+* `resource_code` - (Required, ForceNew) Resource Code, if there is a parent resource, split with `::`, such as VPC::VSwitch. The supported resource Code can be obtained from the following link: [supported-services-and-resource-types](https://www.alibabacloud.com/help/zh/cloud-control-api/product-overview/supported-services-and-resource-types).
 * `resource_id` (Optional, ForceNew) - If there is a parent resource, you need to enter the id of the parent resource, for example, in the VPC::VSwtich resource, you need to enter the id of the VPC: vpc-dexadfe3r4ad. If there are more than one level of parent resources, you need to use `:` to split.
 
 ## Attributes Reference

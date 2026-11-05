@@ -82,7 +82,7 @@ The following arguments are supported:
   - off: close.
 * `rule_name` - (Required) Rule name, optional, used to query by waiting room bypass rule name.
 * `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the ListSites API.
-* `waiting_room_id` - (Required, ForceNew) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
+* `waiting_room_id` - (Required, ForceNew) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://www.alibabacloud.com/help/document_detail/2850279.html) interface.
 
 ## Attributes Reference
 

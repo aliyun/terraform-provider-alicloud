@@ -11,7 +11,7 @@ description: |-
 
 Provides a PolarDB cluster backup policy resource and used to configure cluster backup policy.
 
--> **NOTE:** Available since v1.66.0+. Each PolarDB cluster has a backup policy.
+-> **NOTE:** Available since v1.66.0. Each PolarDB cluster has a backup policy.
 
 ## Example Usage
 

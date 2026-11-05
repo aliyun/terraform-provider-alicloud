@@ -26,7 +26,7 @@ data "alicloud_tsdb_zones" "example" {}
 
 resource "alicloud_vpc" "example" {
   cidr_block = "192.168.0.0/16"
-  name       = "tf-testaccTsdbInstance"
+  name       = "tf-exampleaccTsdbInstance"
 }
 
 resource "alicloud_vswitch" "example" {

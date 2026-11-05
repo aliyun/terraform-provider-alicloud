@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud key pair resource.
 ---
 
-# alicloud\_key\_pair
+# alicloud_key_pair
 
 -> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_key_pair](https://www.terraform.io/docs/providers/alicloud/r/ecs_key_pair) from version 1.121.0.
 

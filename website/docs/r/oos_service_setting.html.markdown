@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud OOS Service Setting resource.
 ---
 
-# alicloud\_oos\_service\_setting
+# alicloud_oos_service_setting
 
 Provides a OOS Service Setting resource.
 
 For information about OOS Service Setting and how to use it, see [What is Service Setting](https://www.alibabacloud.com/help/en/doc-detail/268700.html).
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testaccoossetting"
+  default = "tf-exampleaccoossetting"
 }
 
 resource "alicloud_oss_bucket" "default" {

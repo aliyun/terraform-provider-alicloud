@@ -13,7 +13,6 @@ Provides a DAS Switch Das Pro resource.
 
 For information about DAS Switch Das Pro and how to use it, see [What is Switch Das Pro](https://www.alibabacloud.com/help/en/database-autonomy-service/latest/enabledaspro).
 
--> **NOTE:** Deprecated since v1.249.0.
 
 -> **DEPRECATED:**  This resource has been deprecated from version `1.249.0`.
 

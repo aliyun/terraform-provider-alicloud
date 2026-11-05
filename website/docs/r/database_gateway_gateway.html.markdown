@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Database Gateway Gateway resource.
 ---
 
-# alicloud\_database\_gateway\_gateway
+# alicloud_database_gateway_gateway
 
 Provides a Database Gateway Gateway resource.
 
 For information about Database Gateway Gateway and how to use it, see [What is Gateway](https://www.alibabacloud.com/help/doc-detail/123415.htm).
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 

@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud MNS Queue resource.
 ---
 
-# alicloud\_mns\_queue
+# alicloud_mns_queue
 
 Provides a MNS queue resource.
 

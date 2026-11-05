@@ -7,7 +7,7 @@ description: |-
   Provides a resource to create a oss bucket.
 ---
 
-# alicloud\_oss\_bucket
+# alicloud_oss_bucket
 
 Provides a resource to create a oss bucket and set its attribution.
 

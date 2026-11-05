@@ -63,7 +63,7 @@ The following arguments are supported:
   - `liveVideo`: Playback domain.  
   - `liveEdge`: Edge ingest domain.
 * `region` - (Required, ForceNew) Region to which the domain belongs.
-* `resource_group_id` - (Optional, Computed) Resource group ID. For more information about resource groups, see [What is a resource group?](https://help.aliyun.com/document_detail/2381067.html).
+* `resource_group_id` - (Optional, Computed) Resource group ID. For more information about resource groups, see [What is a resource group?](https://www.alibabacloud.com/help/document_detail/2381067.html).
 * `scope` - (Optional, Computed) Acceleration region. This parameter takes effect only for international users and China site users with L3 or higher privileges. Valid values:  
   - `domestic` (default): Mainland China.  
   - `overseas`: Acceleration in regions outside mainland China, including Hong Kong, Macao, and Taiwan.  

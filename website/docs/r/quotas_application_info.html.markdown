@@ -63,7 +63,7 @@ The following arguments are supported:
 * `desire_value` - (Required, ForceNew) The desire value of the quota application.
 * `dimensions` - (Optional, ForceNew) QuotaDimensions. See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional, ForceNew) The effective time of the quota application.
-* `env_language` - (Optional, ForceNew, Available in v1.206.0+) The language of the quota alert notification. Value:
+* `env_language` - (Optional, ForceNew, Available since v1.206.0) The language of the quota alert notification. Value:
   - zh (default): Chinese.
   - en: English.
 * `expire_time` - (Optional, ForceNew) The expired time of the quota application.

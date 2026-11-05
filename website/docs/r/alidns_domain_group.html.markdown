@@ -35,7 +35,7 @@ resource "alicloud_alidns_domain_group" "default" {
 The following arguments are supported:
 
 * `group_name` - (Optional, Deprecated from v1.97.0+) The Name of the domain group. The `group_name` has been deprecated from provider version 1.97.0. Please use `domain_group_name` instead.
-* `domain_group_name` - (Optional, Available in v1.97.0+) The Name of the domain group. The `domain_group_name` is required when the value of the `group_name`  is Empty.
+* `domain_group_name` - (Optional, Available since v1.97.0) The Name of the domain group. The `domain_group_name` is required when the value of the `group_name`  is Empty.
 * `lang` - (Optional) User language. 
 
 ## Attributes Reference

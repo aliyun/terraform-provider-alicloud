@@ -97,7 +97,7 @@ The following arguments are supported:
   - unicom
   - telecom
 * `data_disk` - (Optional, ForceNew, Set, Available since v1.208.0) Data disk specifications See [`data_disk`](#data_disk) below.
-* `ens_region_id` - (Optional, ForceNew, Available since v1.208.0) The node ID. When ScheduleAreaLevel is Region, EnsRegionId is required. When ScheduleAreaLevel is Big,Middle,Small, EnsRegionId is invalid.
+* `ens_region_id` - (Optional, ForceNew, Available since v1.208.0) The node ID. When ScheduleAreaLevel is Region, EnsRegionId is required. When ScheduleAreaLevel is Big, Middle, Small, EnsRegionId is invalid.
 * `force_stop` - (Optional) Whether to force the identity when operating the instance. Optional values:
   - true: Force
   - false (default): non-mandatory

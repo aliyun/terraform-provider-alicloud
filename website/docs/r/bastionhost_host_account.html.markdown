@@ -88,7 +88,7 @@ The following arguments are supported:
 * `pass_phrase` - (Optional, Sensitive) The passphrase of the private key for the host account. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`.
 * `password` - (Optional, Sensitive) The password of the host account.
 * `private_key` - (Optional, Sensitive) The private key of the host account. The value is a Base64-encoded string. **NOTE:** It is valid when the attribute `protocol_name` is `SSH`
-* `protocol_name` - (Required, ForceNew) The protocol used by the host account. Valid values: SSH,RDP
+* `protocol_name` - (Required, ForceNew) The protocol used by the host account. Valid values: SSH, RDP
 
 ## Attributes Reference
 

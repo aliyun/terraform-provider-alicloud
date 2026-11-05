@@ -121,7 +121,7 @@ resource "alicloud_fc_custom_domain" "default" {
 The following arguments are supported:
 
 * `domain_name` - (Required, ForceNew) The custom domain name. For example, "example.com".
-* `protocol` - (Required) The protocol, `HTTP` or `HTTP,HTTPS`.
+* `protocol` - (Required) The protocol, `HTTP` or `HTTP, HTTPS`.
 * `route_config` - (Optional) The configuration of domain route, mapping the path and Function Compute function.See [`route_config`](#route_config) below.
 * `cert_config` - (Optional) The configuration of HTTPS certificate.See [`cert_config`](#cert_config) below.
 

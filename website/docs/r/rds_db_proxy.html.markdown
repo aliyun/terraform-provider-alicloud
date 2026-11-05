@@ -108,7 +108,7 @@ The following arguments are supported:
 * `db_proxy_instance_type` - (Optional, Available since v1.230.0) The database proxy type. Valid values:
   - common: universal proxy.
   - exclusive: Exclusive proxy (default).
-* `effective_time` - (Optional)When modifying the number of proxy instances,The time when you want to apply the new database proxy settings.Valid values:
+* `effective_time` - (Optional)When modifying the number of proxy instances, The time when you want to apply the new database proxy settings.Valid values:
   - Immediate: ApsaraDB RDS immediately applies the new settings.
   - MaintainTime: ApsaraDB RDS applies the new settings during the maintenance window that you specified. For more information, see Modify the maintenance window.
   - SpecificTime: ApsaraDB RDS applies the new settings at a specified point in time.

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud SLB Tls Cipher Policy resource.
 ---
 
-# alicloud\_slb\_tls\_cipher\_policy
+# alicloud_slb_tls_cipher_policy
 
 Provides a SLB Tls Cipher Policy resource.
 
 For information about SLB Tls Cipher Policy and how to use it, see [What is Tls Cipher Policy](https://www.alibabacloud.com/help/doc-detail/196714.htm).
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 

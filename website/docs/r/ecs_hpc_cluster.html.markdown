@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Hpc Cluster resource.
 ---
 
-# alicloud\_ecs\_hpc\_cluster
+# alicloud_ecs_hpc_cluster
 
 Provides a ECS Hpc Cluster resource.
 
 For information about ECS Hpc Cluster and how to use it, see [What is Hpc Cluster](https://www.alibabacloud.com/help/en/doc-detail/109138.htm).
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_hpc_cluster" "example" {
-  name        = "tf-testAcc"
+  name        = "tf-exampleAcc"
   description = "For Terraform Test"
 }
 

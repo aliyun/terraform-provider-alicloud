@@ -129,7 +129,7 @@ The following arguments are supported:
   - `off`: Disable waiting room events
 * `total_active_users` - (Required) Total number of active users.
 * `waiting_room_event_name` - (Required) Event name, custom event description.
-* `waiting_room_id` - (Optional, ForceNew, Computed) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://help.aliyun.com/document_detail/2850279.html) interface.
+* `waiting_room_id` - (Optional, ForceNew, Computed) Waiting room ID, used to identify a specific waiting room. It can be obtained by calling the [listwaitingroom](https://www.alibabacloud.com/help/document_detail/2850279.html) interface.
 * `waiting_room_type` - (Required) Waiting room type. The following types are supported:
   - `default`: the default type.
   - `custom`: custom type.
@@ -138,7 +138,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<waiting_room_id>:<waiting_room_event_id>`.
-* `waiting_room_event_id` - The waiting room event ID, which can be obtained by calling the [ListWaitingRoomEvents](https://help.aliyun.com/document_detail/2850279.html) operation.
+* `waiting_room_event_id` - The waiting room event ID, which can be obtained by calling the [ListWaitingRoomEvents](https://www.alibabacloud.com/help/document_detail/2850279.html) operation.
 
 ## Timeouts
 

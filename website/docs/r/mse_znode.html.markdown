@@ -11,7 +11,7 @@ description: |-
 
 Provides a Microservice Engine (MSE) Znode resource.
 
-For information about Microservice Engine (MSE) Znode and how to use it, see [What is Znode](https://help.aliyun.com/document_detail/393622.html).
+For information about Microservice Engine (MSE) Znode and how to use it, see [What is Znode](https://www.alibabacloud.com/help/document_detail/393622.html).
 
 -> **NOTE:** Available since v1.162.0.
 

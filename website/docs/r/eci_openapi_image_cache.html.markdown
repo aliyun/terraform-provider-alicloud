@@ -89,7 +89,7 @@ The following arguments are supported:
 * `images` - (Required, ForceNew) The images to be cached. The image name must be versioned.
 * `security_group_id` - (Required, ForceNew) The ID of the security group. You do not need to specify the same security group as the container group.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch. You do not need to specify the same VSwitch as the container group.
-* `eip_instance_id` - (Optional, ForceNew) The instance ID of the Elastic IP Address (EIP). If you want to pull images from the Internet, you must specify an EIP to make sure that the container group can access the Internet. You can also configure the network address translation (NAT) gateway. We recommend that you configure the NAT gateway for the Internet access. Refer to [Public Network Access Method](https://help.aliyun.com/document_detail/99146.html)
+* `eip_instance_id` - (Optional, ForceNew) The instance ID of the Elastic IP Address (EIP). If you want to pull images from the Internet, you must specify an EIP to make sure that the container group can access the Internet. You can also configure the network address translation (NAT) gateway. We recommend that you configure the NAT gateway for the Internet access. Refer to [Public Network Access Method](https://www.alibabacloud.com/help/document_detail/99146.html)
 * `image_cache_size` - (Optional, ForceNew) The size of the image cache. Default to `20`. Unit: GiB.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `retention_days` - (Optional, ForceNew) The retention days of the image cache. Once the image cache expires, it will be cleared. By default, the image cache never expires. Note: The image cache that fails to be created is retained for only one day.

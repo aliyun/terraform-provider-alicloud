@@ -11,7 +11,7 @@ description: |-
 
 Provides a Chatbot Publish Task resource.
 
-For information about Chatbot Publish Task and how to use it, see [What is Publish Task](https://help.aliyun.com/document_detail/433996.html).
+For information about Chatbot Publish Task and how to use it, see [What is Publish Task](https://www.alibabacloud.com/help/document_detail/433996.html).
 
 -> **NOTE:** Available since v1.203.0.
 

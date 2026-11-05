@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testacc-example"
+  default = "tf-exampleacc-example"
 }
 
 resource "alicloud_vpc" "defaultVpc" {
@@ -36,12 +36,12 @@ resource "alicloud_vpc" "defaultVpc" {
 }
 
 resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-testacc-ipv6gateway503"
+  display_name        = "tf-exampleacc-ipv6gateway503"
   resource_group_name = "${var.name}1"
 }
 
 resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-testacc-ipv6gateway311"
+  display_name        = "tf-exampleacc-ipv6gateway311"
   resource_group_name = "${var.name}2"
 }
 

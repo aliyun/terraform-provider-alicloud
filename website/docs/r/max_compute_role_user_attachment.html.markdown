@@ -36,15 +36,15 @@ provider "alicloud" {
 }
 
 variable "aliyun_user" {
-  default = "ALIYUN$openapiautomation@test.aliyunid.com"
+  default = "ALIYUN$openapiautomation@example.aliyunid.com"
 }
 
 variable "ram_user" {
-  default = "RAM$openapiautomation@test.aliyunid.com:tf-example"
+  default = "RAM$openapiautomation@example.aliyunid.com:tf-example"
 }
 
 variable "ram_role" {
-  default = "RAM$openapiautomation@test.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
+  default = "RAM$openapiautomation@example.aliyunid.com:role/terraform-no-ak-assumerole-no-deleting"
 }
 
 variable "role_name" {

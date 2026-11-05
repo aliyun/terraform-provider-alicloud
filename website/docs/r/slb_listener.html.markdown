@@ -103,12 +103,12 @@ resource "alicloud_slb_acl_entry_attachment" "second" {
 
 The following arguments are supported:
 
-* `HTTP Listener` - See [`HTTP Listener`](#HTTP Listener) below.
-* `HTTPS Listener` -  See [`HTTPS Listener`](#HTTPS Listener) below.
-* `TCP Listener` -  See [`TCP Listener`](#TCP Listener) below.
-* `UDP Listener` -  See [`UDP Listener`](#UDP Listener) below.
+* `http_listener` - See [`http_listener`](#http_listener) below.
+* `https_listener` -  See [`https_listener`](#https_listener) below.
+* `tcp_listener` -  See [`tcp_listener`](#tcp_listener) below.
+* `udp_listener` -  See [`udp_listener`](#udp_listener) below.
 
-### HTTP Listener
+### `http_listener`
 
 The HTTP Listener supports the following:
 
@@ -153,7 +153,7 @@ The HTTP Listener supports the following:
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
 * `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
-### HTTPS Listener
+### `https_listener`
 
 The HTTPS Listener supports the following:
 
@@ -201,7 +201,7 @@ The HTTPS Listener supports the following:
 * `ssl_certificate_id` - (Deprecated since v1.59.0) The ID of the server certificate. **NOTE:** Field `ssl_certificate_id` has been deprecated from provider version 1.59.0. New field `server_certificate_id` instead.
 * `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
-### TCP Listener
+### `tcp_listener`
 
 The TCP Listener supports the following:
 
@@ -242,7 +242,7 @@ The TCP Listener supports the following:
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
 * `acl_id` - (Deprecated since v1.249.0) The ID of the network ACL that is associated with the listener. **NOTE:** Field `acl_id` has been deprecated from provider version 1.249.0. New field `acl_ids` instead.
 
-### UDP Listener
+### `udp_listener`
 
 The UDP Listener supports the following:
 

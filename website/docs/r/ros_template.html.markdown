@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ROS Template resource.
 ---
 
-# alicloud\_ros\_template
+# alicloud_ros_template
 
 Provides a ROS Template resource.
 
 For information about ROS Template and how to use it, see [What is Template](https://www.alibabacloud.com/help/en/doc-detail/141851.htm).
 
--> **NOTE:** Available in v1.108.0+.
+-> **NOTE:** Available since v1.108.0.
 
 ## Example Usage
 

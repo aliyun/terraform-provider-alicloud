@@ -105,7 +105,7 @@ resource "alicloud_ddoscoo_web_cc_rule" "default" {
 The following arguments are supported:
 * `domain` - (Required, ForceNew) The domain name of the website service.  
 
-  -> **NOTE:**  The domain name must already have website service forwarding rules configured. You can call [DescribeDomains](https://help.aliyun.com/document_detail/91724.html) to query all domain names.
+  -> **NOTE:**  The domain name must already have website service forwarding rules configured. You can call [DescribeDomains](https://www.alibabacloud.com/help/document_detail/91724.html) to query all domain names.
 
 * `name` - (Required, ForceNew) Rule name.
 * `rule_detail` - (Required, Set) Rule details.   See [`rule_detail`](#rule_detail) below.

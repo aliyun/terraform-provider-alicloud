@@ -69,7 +69,7 @@ The following arguments are supported:
   ~> **NOTE:** This parameter only applies during resource creation, update. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 ---
-### `alarm_config` 
+### `alarm_config`
 
 The alarm_config supports the following:
 * `alarm_hour` - (Optional) The time of the day when the alarm is triggered. The range is `0 ~ 24`.

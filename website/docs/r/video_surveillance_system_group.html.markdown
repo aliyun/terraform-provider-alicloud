@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Video Surveillance System Group resource.
 ---
 
-# alicloud\_video\_surveillance\_system\_group
+# alicloud_video_surveillance_system_group
 
 Provides a Video Surveillance System Group resource.
 
-For information about Video Surveillance System Group and how to use it, see [What is Group](https://help.aliyun.com/product/108765.html).
+For information about Video Surveillance System Group and how to use it, see [What is Group](https://www.alibabacloud.com/help/product/108765.html).
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
@@ -43,8 +43,8 @@ The following arguments are supported:
 * `group_name` - (Required) The Group Name.
 * `in_protocol` - (Required) The use of the access protocol support gb28181, Real Time Messaging Protocol (rtmp). Valid values: `gb28181`, `rtmp`.
 * `out_protocol` - (Required) The playback protocol used by the space, multiple values are separated by commas (,). Valid values: `flv`,`hls`, `rtmp`.
-* `play_domain` - (Required,ForceNew) The domain name of plan streaming used by the group.
-* `push_domain` - (Required,ForceNew) The domain name of push streaming used by the group.
+* `play_domain` - (Required, ForceNew) The domain name of plan streaming used by the group.
+* `push_domain` - (Required, ForceNew) The domain name of push streaming used by the group.
 * `callback` - (Optional) The space within the device status update of the callback, need to start with http:// or https:// at the beginning.
 * `enabled` - (Optional) Whether to open Group.
 * `description` - (Optional) The description of Group.

@@ -7,11 +7,11 @@ description: |-
   Provides a PolarDB account privilege resource.
 ---
 
-# alicloud\_polardb\_account\_privilege
+# alicloud_polardb_account_privilege
 
 Provides a PolarDB account privilege resource and used to grant several database some access privilege. A database can be granted by multiple account.
 
--> **NOTE:** Available in v1.67.0+.
+-> **NOTE:** Available since v1.67.0.
 
 ## Example Usage
 

@@ -147,7 +147,7 @@ You can resume managing the subscription bastionhost instance via the AlibabaClo
 
 The following arguments are supported:
 
-* `license_code` - (Required)  The package type of Cloud Bastionhost instance. You can query more supported types through the [DescribePricingModule](https://help.aliyun.com/document_detail/96469.html).
+* `license_code` - (Required)  The package type of Cloud Bastionhost instance. You can query more supported types through the [DescribePricingModule](https://www.alibabacloud.com/help/document_detail/96469.html).
 * `plan_code` - (Required, ForceNew, Available since 1.193.0) The plan code of Cloud Bastionhost instance. Valid values:
   - `cloudbastion`: Basic Edition.
   - `cloudbastion_ha`: HA Edition.

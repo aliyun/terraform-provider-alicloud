@@ -255,7 +255,7 @@ The instancePatternInfo mapping supports the following:
 * `maximum_gpu_amount` - (Optional, Available since v1.263.0) The maximum number of GPUs per instance. The value must be a positive integer.
 * `minimum_initial_credit` - (Optional, Available since v1.263.0) The initial vCPU credits per t5 or t6 burstable instance.
 * `physical_processor_models` - (Optional, Available since v1.263.0) Processor model N of the ECS instances. Valid values of N: 1 to 10.
-* `cpu_architectures` - (Optional, Available since v1.263.0) CPU architecture N of the instance types. Valid values: x86,Arm.
+* `cpu_architectures` - (Optional, Available since v1.263.0) CPU architecture N of the instance types. Valid values: x86, Arm.
 * `gpu_specs` - (Optional, Available since v1.263.0) The GPU model.
 * `instance_categories` - (Optional, Available since v1.263.0) Category N of the instances type. Valid values: General-purpose, Compute-optimized, Memory-optimized, Big data, Local SSDs, Enhanced, Shared, Compute-optimized with GPU, Visual Compute-optimized, Heterogeneous Service, Compute-optimized with FPGA, Compute-optimized with NPU, ECS Bare Metal, High Performance Compute.
 * `instance_type_families` - (Optional, Available since v1.263.0) Instance family N that is queried. Valid values of N: 1 to 10.

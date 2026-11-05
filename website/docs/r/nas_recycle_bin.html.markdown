@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud File Storage (NAS) Recycle Bin resource.
 ---
 
-# alicloud\_nas\_recycle\_bin
+# alicloud_nas_recycle_bin
 
 Provides a File Storage (NAS) Recycle Bin resource.
 
 For information about File Storage (NAS) Recycle Bin and how to use it, see [What is Recycle Bin](https://www.alibabacloud.com/help/en/doc-detail/264185.html).
 
--> **NOTE:** Available in v1.155.0+.
+-> **NOTE:** Available since v1.155.0.
 
 ## Example Usage
 

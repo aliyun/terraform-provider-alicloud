@@ -7,7 +7,7 @@ description: |-
   Provides a ECS EIP resource.
 ---
 
-# alicloud\_eip
+# alicloud_eip
 
 Provides an elastic IP resource.
 

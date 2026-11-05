@@ -90,7 +90,7 @@ The following arguments are supported:
 
 * `transit_router_route_table_id` - (Required, ForceNew) The ID of the transit router route table.
 * `transit_router_route_entry_destination_cidr_block` - (Required, ForceNew) The CIDR of the transit router route entry.
-* `transit_router_route_entry_next_hop_type` - (Required, ForceNew) The Type of the transit router route entry next hop,Valid values `Attachment` and `BlackHole`.
+* `transit_router_route_entry_next_hop_type` - (Required, ForceNew) The Type of the transit router route entry next hop, Valid values `Attachment` and `BlackHole`.
 * `transit_router_route_entry_name` - (Optional) The name of the transit router route entry.
 * `transit_router_route_entry_description` - (Optional) The description of the transit router route entry.
 * `transit_router_route_entry_next_hop_id` - (Optional, ForceNew) The ID of the transit router route entry next hop.

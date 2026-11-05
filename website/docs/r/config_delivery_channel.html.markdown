@@ -29,7 +29,7 @@ provider "alicloud" {
 }
 
 resource "alicloud_mns_topic" "example" {
-  name = "test-topic"
+  name = "example-topic"
 }
 
 # Example for create a MNS delivery channel

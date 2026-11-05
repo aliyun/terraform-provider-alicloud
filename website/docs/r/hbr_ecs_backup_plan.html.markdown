@@ -15,7 +15,6 @@ For information about HBR Ecs Backup Plan and how to use it, see [What is Ecs Ba
 
 -> **NOTE:** Available since v1.132.0.
 
--> **NOTE:** Deprecated since v1.249.0.
 
 -> **DEPRECATED:** This resource has been deprecated from version `1.249.0`. Please use new resource [alicloud_hbr_policy](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy) and [alicloud_hbr_policy_binding](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/hbr_policy_binding).
 

@@ -103,7 +103,7 @@ resource "alicloud_realtime_compute_job" "default" {
   deployment_id       = alicloud_realtime_compute_deployment.create_Deployment9.deployment_id
   resource_queue_name = "default-queue"
   status {
-    current_job_status = "CANCELLED"
+    current_job_status = "CANCELED"
   }
 
   resource_id = alicloud_realtime_compute_vvp_instance.default.resource_id

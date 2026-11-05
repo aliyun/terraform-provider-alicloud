@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud ONS Instance resource.
 ---
 
-# alicloud\_ons\_instance
+# alicloud_ons_instance
 
 Provides an ONS instance resource.
 
@@ -15,7 +15,7 @@ For more information about how to use it, see [RocketMQ Instance Management API]
 
 -> **NOTE:** The number of instances in the same region cannot exceed 8. At present, the resource does not support region "mq-internet-access" and "ap-southeast-5". 
 
--> **NOTE:** Available in 1.51.0+
+-> **NOTE:** Available since v1.51.0
 
 ## Example Usage
 
@@ -51,9 +51,9 @@ The following arguments are supported:
 
 
 * `name` - (Optional, Deprecated from v1.97.0+) Replaced by `instance_name` after version 1.97.0.
-* `instance_name` - (Optional, Available in v1.97.0+) Two instances on a single account in the same region cannot have the same name. The length must be 3 to 64 characters. Chinese characters, English letters digits and hyphen are allowed.
+* `instance_name` - (Optional, Available since v1.97.0) Two instances on a single account in the same region cannot have the same name. The length must be 3 to 64 characters. Chinese characters, English letters digits and hyphen are allowed.
 * `remark` - (Optional) This attribute is a concise description of instance. The length cannot exceed 128.
-* `tags` - (Optional, Available in v1.97.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.97.0) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 

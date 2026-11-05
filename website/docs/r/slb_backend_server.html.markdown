@@ -11,7 +11,7 @@ description: |-
 
 Add a group of backend servers (ECS or ENI instance) to the Server Load Balancer or remove them from it.
 
--> **NOTE:** Available since v1.53.0+
+-> **NOTE:** Available since v1.53.0
 
 ## Example Usage
 

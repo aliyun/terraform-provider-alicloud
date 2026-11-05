@@ -7,7 +7,7 @@ description: |-
   Provides a DNS Record resource.
 ---
 
-# alicloud\_dns\_record
+# alicloud_dns_record
 
 Provides a DNS Record resource.
 
@@ -54,7 +54,7 @@ The following attributes are exported:
 * `priority` - The record priority.
 * `routing` - The record resolution line.
 * `status` - The record status. `Enable` or `Disable`.
-* `Locked` - The record locked state. `true` or `false`.
+* `locked` - The record locked state. `true` or `false`.
 
 ## Import
 

@@ -55,12 +55,12 @@ The following attributes are exported:
 * `id` - The `key` of the proxy access resource.
 * `access_id` - The authorized account of the security agent.
 * `access_secret` - Secure access agent authorization password.
-* `gmt_create` - The authorization time of the security access agent permission.
+* `create_time` - The authorization time of the security access agent permission.
 * `instance_id` - The ID of the instance.
 * `origin_info` - The source information of the security access agent permission is enabled, and the return value is as follows:
   * **Owner Authorization**: The UID of the owner in parentheses.
   * **Work Order Authorization**: The ticket number in parentheses is the number of the user to apply for permission.
-* `proxy_access_id` - Security Protection authorization ID. After the target user is authorized by the security protection agent, the system automatically generates a security protection authorization ID, which is globally unique.
+* `proxy_access_id` - (Optional) Security Protection authorization ID. After the target user is authorized by the security protection agent, the system automatically generates a security protection authorization ID, which is globally unique.
 * `user_name` - User nickname.
 * `user_uid` - User UID.
 

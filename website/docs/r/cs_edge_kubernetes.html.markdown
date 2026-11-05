@@ -168,7 +168,7 @@ Network params
 * `service_cidr` - (Optional) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
-* `load_balancer_spec` - (Optional, Available since v1.185.0) The cluster api server load balance instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `load_balancer_spec` - (Optional, Available since v1.185.0) The cluster api server load balance instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://www.alibabacloud.com/help/document_detail/85931.html).
 ->NOTE: If you want to use `Flannel` as CNI network plugin, You need to specific the `pod_cidr` field and addons with `flannel`.
 
 Worker params
@@ -177,7 +177,7 @@ Worker params
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `worker_number` - (Required) The cloud worker node number of the edge kubernetes cluster. Default to 1. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_vswitch_ids` - (Required) The vswitches used by workers.
-* `worker_instance_charge_type` - (Optional) Worker payment type, its valid value is `PostPaid`. Defaults to `PostPaid`. More charge details in [ACK@edge charge](https://help.aliyun.com/document_detail/178718.html).
+* `worker_instance_charge_type` - (Optional) Worker payment type, its valid value is `PostPaid`. Defaults to `PostPaid`. More charge details in [ACK@edge charge](https://www.alibabacloud.com/help/document_detail/178718.html).
 * `worker_instance_types` - (Required) The instance types of worker node, you can set multiple types to avoid NoStock of a certain type.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_efficiency`, `cloud_ssd` and `cloud_essd` and . Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
@@ -205,7 +205,7 @@ Removed params
 
 The addons supports the following:
 
-* `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
+* `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://www.alibabacloud.com/help/document_detail/171524.html).
 * `config` - (Optional) The ACK add-on configurations. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `version` - (Optional) It specifies the version of the component.
 * `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.

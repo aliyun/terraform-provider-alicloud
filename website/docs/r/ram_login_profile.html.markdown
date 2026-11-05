@@ -50,7 +50,7 @@ The following arguments are supported:
 * `mfa_bind_required` - (Optional, Computed) Specifies whether to forcefully enable multi-factor authentication (MFA) for the RAM user. Valid values:
   - true: forcefully enables MFA for the RAM user. The RAM user must bind an MFA device upon the next logon.
   - false (default): does not forcefully enable MFA for the RAM user.
-* `password` - (Required, Sensitive) The password must meet the Password strength requirements. For more information about password strength setting requirements, see [GetPasswordPolicy](https://help.aliyun.com/document_detail/2337691.html).
+* `password` - (Required, Sensitive) The password must meet the Password strength requirements. For more information about password strength setting requirements, see [GetPasswordPolicy](https://www.alibabacloud.com/help/document_detail/2337691.html).
 * `password_reset_required` - (Optional) Whether the user must reset the password at the next logon. Value:
   - true
   - false (default)

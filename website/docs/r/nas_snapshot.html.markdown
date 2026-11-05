@@ -29,7 +29,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "testacc"
+  default = "exampleacc"
 }
 
 data "alicloud_nas_zones" "default" {
