@@ -141,7 +141,7 @@ The following arguments are supported:
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). 
 * `internet_max_bandwidth_out` - (Optional, Available since v1.214.0) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,1024].
 * `credit_specification` - (Optional, Available since v1.98.0) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
-* `system_disk_category` - (Optional) Category of the system disk. Valid values: `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto` and `cloud`. `cloud` is only used by some non-I/O-optimized instances. Default to `cloud_efficiency`.
+* `system_disk_category` - (Optional) Category of the system disk. Valid values: `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_xc1` and `cloud`. `cloud` is only used by some non-I/O-optimized instances. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) Size of system disk, in GiB. Valid values: Basic disk: 20 to 500, ESSD: The valid values depend on the performance level (PL) of the system disk (PL0 ESSD: 1 to 2048, PL1 ESSD: 20 to 2048, PL2 ESSD: 461 to 2048, PL3 ESSD: 1261 to 2048) , ESSD AutoPL disk: 1 to 2048, Other disk categories: 20 to 2048. The value of this parameter must be at least 1 and greater than or equal to the image size. Default value: 40 or the size of the image, whichever is larger.
 * `system_disk_name` - (Optional, Available since v1.92.0) The name of the system disk. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `system_disk_description` - (Optional, Available since v1.92.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
@@ -193,8 +193,8 @@ The following arguments are supported:
   - `None`: Does not use a resource pool policy.
 * `spot_interruption_behavior` - (Optional, String) The interruption mode of the preemptible instance when inventory is insufficient. Valid value: `Terminate`. Available since v2.3.0.
 * `load_balancer_weight` - (Optional, Int) The weight of the backend server. Valid values: 1 to 100. Defaults to `50`. Available since v2.3.0.
-* `memory` - (Optional, Int) The memory size of the ECS instance, in GiB. Must be used together with `cpu`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. Available since v2.3.0.
-* `cpu` - (Optional, Int) The number of vCPUs of the ECS instance. Must be used together with `memory`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. Available since v2.3.0.
+* `memory` - (Optional, Int) The memory size of the ECS instance, in GiB. Must be used together with `cpu`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. CPU+Memory instance selection requires the referenced scaling group to be a cost-optimized scaling group. Available since v2.3.0.
+* `cpu` - (Optional, Int) The number of vCPUs of the ECS instance. Must be used together with `memory`, and cannot be set together with `instance_type`, `instance_types` or `instance_type_override`. CPU+Memory instance selection requires the referenced scaling group to be a cost-optimized scaling group. Available since v2.3.0.
 * `image_family` - (Optional, String) The name of the image family to which the image belongs. Cannot be set together with `image_id`. Available since v2.3.0.
 * `tenancy` - (Optional, String) Whether the ECS instance is hosted on a dedicated host. Valid values: `default`, `host`. Available since v2.3.0.
 * `affinity` - (Optional, String) Whether to keep the instance on the same dedicated host when the instance is restarted. Valid values: `default`, `host`. Available since v2.3.0.
@@ -230,7 +230,7 @@ The datadisk mapping supports the following:
 * `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
 * `provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an Elastic Block Storage (EBS) device can process per second.
 * `device` - (Optional, Deprecated, Available since v1.92.0) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
-* `category` - (Optional, String) Category of data disk. Valid values: `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto` and `cloud`. Cannot be set together with `categories` for the same disk.
+* `category` - (Optional, String) Category of data disk. Valid values: `all`, `cloud`, `cloud_auto`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_regional_disk_auto`, `ephemeral_ssd` and `local_disk`. `all` and `local_disk` are legacy values kept for compatibility. Cannot be set together with `categories` for the same disk.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
 * `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
 * `encrypted` - (Optional, Available since v1.92.0) Specifies whether data disk N is to be encrypted. Valid values of N: 1 to 16. Valid values: `true`: encrypted, `false`: not encrypted. Default value: `false`.
@@ -239,7 +239,7 @@ The datadisk mapping supports the following:
 * `description` - (Optional, Available since v1.92.0) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available since v1.92.0) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available since v1.124.3) The performance level of the ESSD used as data disk.
-* `categories` - (Optional, List) The list of data disk categories. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto` and `cloud_regional_disk_auto`. Up to 4 categories are supported and the system selects one in sequence based on inventory. Cannot be set together with `category` for the same disk. Available since v2.3.0.
+* `categories` - (Optional, List) The list of data disk categories. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_regional_disk_auto` and `ephemeral_ssd`. Up to 4 categories are supported and the system selects one in sequence based on inventory. Cannot be set together with `category` for the same disk. Available since v2.3.0.
 * `bursting_enabled` - (Optional, Bool) Whether to enable the bursting mode for the data disk. Supported only when the disk `category` is `cloud_auto`. Available since v2.3.0.
 
 ### `network_interfaces`

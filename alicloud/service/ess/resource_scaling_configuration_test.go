@@ -1980,7 +1980,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 // collection-order: bypass instance_pattern_info.excluded_instance_types -- pre-existing attribute outside this change
 // collection-order: bypass instance_pattern_info.architectures -- pre-existing attribute outside this change
 
-func essRawResponseCheck(t *testing.T, resourceId string, check func(map[string]interface{}) error) resource.TestCheckFunc {
+func rawResponseCheck(t *testing.T, resourceId string, check func(map[string]interface{}) error) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceId]
 		if !ok {
@@ -1997,7 +1997,7 @@ func essRawResponseCheck(t *testing.T, resourceId string, check func(map[string]
 	}
 }
 
-func essStringList(v interface{}) []string {
+func stringList(v interface{}) []string {
 	raw, ok := v.([]interface{})
 	if !ok {
 		return nil
@@ -2009,13 +2009,13 @@ func essStringList(v interface{}) []string {
 	return out
 }
 
-func essScalingConfigurationSystemDiskCategoriesCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
-	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+func systemDiskCategoriesRemoteCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
 		m, ok := response["SystemDiskCategories"].(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("Describe response has no SystemDiskCategories: %v", response["SystemDiskCategories"])
 		}
-		got := essStringList(m["SystemDiskCategory"])
+		got := stringList(m["SystemDiskCategory"])
 		if strings.Join(got, ",") != strings.Join(expected, ",") {
 			return fmt.Errorf("remote SystemDiskCategories = %v, expected %v", got, expected)
 		}
@@ -2023,8 +2023,8 @@ func essScalingConfigurationSystemDiskCategoriesCheck(t *testing.T, resourceId s
 	})
 }
 
-func essScalingConfigurationDataDiskCategoriesCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
-	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+func dataDiskCategoriesRemoteCheck(t *testing.T, resourceId string, expected []string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
 		dds, ok := response["DataDisks"].(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("Describe response has no DataDisks: %v", response["DataDisks"])
@@ -2038,7 +2038,7 @@ func essScalingConfigurationDataDiskCategoriesCheck(t *testing.T, resourceId str
 		if !ok {
 			return fmt.Errorf("remote DataDisk has no Categories: %v", disk["Categories"])
 		}
-		got := essStringList(cm["Category"])
+		got := stringList(cm["Category"])
 		if strings.Join(got, ",") != strings.Join(expected, ",") {
 			return fmt.Errorf("remote DataDisk Categories = %v, expected %v", got, expected)
 		}
@@ -2046,8 +2046,8 @@ func essScalingConfigurationDataDiskCategoriesCheck(t *testing.T, resourceId str
 	})
 }
 
-func essScalingConfigurationBurstingCheck(t *testing.T, resourceId string, systemDisk, dataDisk bool) resource.TestCheckFunc {
-	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+func burstingRemoteCheck(t *testing.T, resourceId string, systemDisk, dataDisk bool) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
 		if !strings.EqualFold(fmt.Sprint(response["SystemDisk.BurstingEnabled"]), fmt.Sprint(systemDisk)) {
 			return fmt.Errorf("remote SystemDisk.BurstingEnabled = %v, expected %v", response["SystemDisk.BurstingEnabled"], systemDisk)
 		}
@@ -2104,7 +2104,7 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud_essd"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud"),
-					essScalingConfigurationSystemDiskCategoriesCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
 				),
 			},
 			{
@@ -2115,7 +2115,7 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud_essd"),
-					essScalingConfigurationSystemDiskCategoriesCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
 				),
 			},
 			{
@@ -2175,7 +2175,7 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.0", "cloud_essd"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud"),
-					essScalingConfigurationDataDiskCategoriesCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
 				),
 			},
 			{
@@ -2192,7 +2192,7 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.0", "cloud"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.1", "cloud_essd"),
-					essScalingConfigurationDataDiskCategoriesCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
 				),
 			},
 			{
@@ -2257,7 +2257,7 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "tenancy", "default"),
 					resource.TestCheckResourceAttr(resourceId, "affinity", "default"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.bursting_enabled", "true"),
-					essScalingConfigurationBurstingCheck(t, resourceId, true, true),
+					burstingRemoteCheck(t, resourceId, true, true),
 				),
 			},
 			{
@@ -2281,7 +2281,7 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_bursting_enabled", "false"),
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.bursting_enabled", "false"),
-					essScalingConfigurationBurstingCheck(t, resourceId, false, false),
+					burstingRemoteCheck(t, resourceId, false, false),
 				),
 			},
 			{
@@ -2388,8 +2388,8 @@ func TestAccAliCloudEssScalingConfiguration_ConstraintValidation(t *testing.T) {
 	})
 }
 
-func essScalingConfigurationNoPrivatePoolCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
-	return essRawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
+func noPrivatePoolRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
+	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
 		if v := fmt.Sprint(response["PrivatePoolOptions.MatchCriteria"]); v != "" && v != "<nil>" {
 			return fmt.Errorf("remote PrivatePoolOptions.MatchCriteria = %q, expected empty", v)
 		}
@@ -2427,7 +2427,7 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					essScalingConfigurationNoPrivatePoolCheck(t, resourceId),
+					noPrivatePoolRemoteCheck(t, resourceId),
 				),
 			},
 			{
@@ -2443,7 +2443,7 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 					"private_pool_options": acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					essScalingConfigurationNoPrivatePoolCheck(t, resourceId),
+					noPrivatePoolRemoteCheck(t, resourceId),
 				),
 			},
 			{
@@ -2550,10 +2550,11 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesImport(t *testin
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_configuration_name": fmt.Sprintf("%s-updated", name),
+					"system_disk_categories": []interface{}{"cloud", "cloud_essd"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.#", "2"),
+					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
 				),
 			},
 			{
@@ -2608,10 +2609,17 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesImport(t *testing.
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_configuration_name": fmt.Sprintf("%s-updated", name),
+					"data_disk": []map[string]interface{}{
+						{
+							"size":                 "20",
+							"delete_with_instance": "true",
+							"categories":           []interface{}{"cloud", "cloud_essd"},
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "data_disk.0.categories.#", "2"),
+					dataDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
 				),
 			},
 			{
@@ -5014,6 +5022,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_id": acctest.REMOVEKEY,
 					"network_interfaces": []map[string]interface{}{
@@ -5031,6 +5045,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 						"network_interfaces.#": "1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id"},
 			},
 
 			{
@@ -6049,6 +6069,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 				}),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "image_name"},
+			},
+			{
 				// The same rejection has to happen when an existing
 				// configuration is updated, not only on creation.
 				Config: testAccConfig(map[string]interface{}{
@@ -6070,6 +6096,12 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaceIPv6Negative(t *test
 					}),
 					essScalingConfigurationNetworkInterfaceIPv6Check(t, resourceId, "1", "1"),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "image_name"},
 			},
 		},
 	})
