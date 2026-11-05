@@ -45,7 +45,7 @@ func TestUnitSweeperExamplePrefixes(t *testing.T) {
 		"terraform-exampleSlbListenerAcl",
 		"terraform-exampleSlbListenerAclAck",
 		"terraform-exampleSlbListenerAcl-acl",
-		"TF-EXAMPLESLBLISTENERACL",
+		"TERRAFORM-EXAMPLESLBLISTENERACL",
 		"tf-testAccSomething",
 		"tf_testAccSomething",
 	}
