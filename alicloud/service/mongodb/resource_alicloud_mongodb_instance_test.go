@@ -40,16 +40,36 @@ func init() {
 	})
 }
 
+// mongodbInstanceSweeperPrefixes are the test-name prefixes the sweeper owns. The
+// resource documentation example uses a fixed name that does not carry a prefix, so it
+// is matched separately and exactly: matching it as a prefix would also delete
+// unrelated user instances whose name only starts with the same text.
+var mongodbInstanceSweeperPrefixes = []string{
+	"tf-testAcc",
+	"tf_testAcc",
+}
+
+const mongodbInstanceSweeperDocumentedName = "terraform-example"
+
+// mongodbInstanceSweeperMatches reports whether the sweeper owns the instance with this
+// description. It must recognize both the test names and the documentation example name
+// so a failed run is still cleanable, and it must leave every other instance alone.
+func mongodbInstanceSweeperMatches(description string) bool {
+	description = strings.ToLower(strings.TrimSpace(description))
+	for _, prefix := range mongodbInstanceSweeperPrefixes {
+		if strings.HasPrefix(description, strings.ToLower(prefix)) {
+			return true
+		}
+	}
+	return description == mongodbInstanceSweeperDocumentedName
+}
+
 func testSweepMongoDBInstances(region string) error {
 	rawClient, err := sweep.SharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 	action := "DescribeDBInstances"
 	request := map[string]interface{}{}
 	request["RegionId"] = client.RegionId
@@ -88,10 +108,8 @@ func testSweepMongoDBInstances(region string) error {
 
 			skip := true
 			if !sweep.SweepAll() {
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
-						skip = false
-					}
+				if mongodbInstanceSweeperMatches(fmt.Sprint(item["DBInstanceDescription"])) {
+					skip = false
 				}
 				if skip {
 					log.Printf("[INFO] Skipping Mongodb Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
@@ -517,6 +535,26 @@ func TestAccAliCloudMongoDBInstance_securityIpGroups(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_ip_groups.#": "0",
+					}),
+				),
+			},
+			{
+				// The shared Create/Update backup-policy builder changed in this branch, so
+				// the pre-existing Parameters path also needs same-head execution evidence
+				// (ACC-SCOPE-DIFFERENCE). Read refreshes this set from DescribeParameters'
+				// ParameterName/ParameterValue, so a non-zero count proves both the modify
+				// and the read-back path ran at this commit.
+				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
 					}),
 				),
 			},
@@ -1455,6 +1493,29 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 			{
+				// The contract enables high-frequency backup for Flash snapshots with any
+				// positive interval, not only for 15. Changing the interval to 60 while both
+				// high-frequency values stay unchanged must still resend them in the full
+				// policy request instead of leaving the retained values to the service
+				// default (QA-N6).
+				Config: testAccConfig(map[string]interface{}{
+					"backup_interval": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_interval":                 "60",
+						"high_frequency_backup_retention": "7",
+						"preserve_one_each_hour":          "true",
+					}),
+					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, nil, map[string]string{
+						"HighFrequencyBackupRetention": "7",
+						"PreserveOneEachHour":          "true",
+						"BackupInterval":               "60",
+						"SnapshotBackupType":           "Flash",
+					}),
+				),
+			},
+			{
 				// A second high-frequency combination: the default one-day retention and
 				// the hourly sparse switch turned off. The API readback proves both
 				// transitions reach the service instead of being replayed from state
@@ -1648,7 +1709,7 @@ func testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId string, expectEn
 //
 // The high-frequency backup attributes are not part of these configs: their
 // behavior is covered by TestAccAliCloudMongoDBInstance_crossBackup, which
-// switches the instance to Flash snapshots with a minute-level interval and
+// switches the instance to Flash snapshots with a positive interval and
 // reads the values back from ModifyBackupPolicy/DescribeBackupPolicy.
 func TestAccAliCloudMongoDBInstance_validation(t *testing.T) {
 	resourceId := "alicloud_mongodb_instance.default"
@@ -2165,25 +2226,25 @@ func mongodbBackupPolicyFixtureAssertSent(t *testing.T, request map[string]strin
 
 func mongodbBackupPolicyFixtureCrossConfig(t *testing.T, enableCrossLogBackup int) (map[string]interface{}, map[string]cty.Value) {
 	t.Helper()
+	// Both retention types are "never", so the configuration legitimately omits both
+	// retention values: the builder never sends a value for a "never" type (QA-N5).
 	raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
-		"cross_backup_period":       []interface{}{"Monday"},
-		"cross_backup_type":         "update",
-		"cross_retention_type":      "never",
-		"cross_log_retention_type":  "never",
-		"cross_log_retention_value": 7,
-		"dest_region":               "cn-shanghai",
-		"src_region":                "cn-beijing",
-		"enable_cross_log_backup":   enableCrossLogBackup,
+		"cross_backup_period":      []interface{}{"Monday"},
+		"cross_backup_type":        "update",
+		"cross_retention_type":     "never",
+		"cross_log_retention_type": "never",
+		"dest_region":              "cn-shanghai",
+		"src_region":               "cn-beijing",
+		"enable_cross_log_backup":  enableCrossLogBackup,
 	})
 	values := map[string]cty.Value{
-		"cross_backup_period":       cty.SetVal([]cty.Value{cty.StringVal("Monday")}),
-		"cross_backup_type":         cty.StringVal("update"),
-		"cross_retention_type":      cty.StringVal("never"),
-		"cross_log_retention_type":  cty.StringVal("never"),
-		"cross_log_retention_value": cty.NumberIntVal(7),
-		"dest_region":               cty.StringVal("cn-shanghai"),
-		"src_region":                cty.StringVal("cn-beijing"),
-		"enable_cross_log_backup":   cty.NumberIntVal(int64(enableCrossLogBackup)),
+		"cross_backup_period":      cty.SetVal([]cty.Value{cty.StringVal("Monday")}),
+		"cross_backup_type":        cty.StringVal("update"),
+		"cross_retention_type":     cty.StringVal("never"),
+		"cross_log_retention_type": cty.StringVal("never"),
+		"dest_region":              cty.StringVal("cn-shanghai"),
+		"src_region":               cty.StringVal("cn-beijing"),
+		"enable_cross_log_backup":  cty.NumberIntVal(int64(enableCrossLogBackup)),
 	}
 	return raw, values
 }
@@ -2246,6 +2307,49 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
 		mongodbBackupPolicyFixtureAssertSent(t, request, "HighFrequencyBackupRetention", "7")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "PreserveOneEachHour", "false")
+	})
+
+	t.Run("flash non-minute interval replays high frequency attributes", func(t *testing.T) {
+		// The contract enables high-frequency backup for Flash snapshots with any
+		// positive BackupInterval; 60 is a contract-valid interval and must replay the
+		// retained values exactly like 15 does (QA-N6).
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{"backup_retention_period": 35})
+		values := map[string]cty.Value{"backup_retention_period": cty.NumberIntVal(35)}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"snapshot_backup_type":            "Flash",
+			"backup_interval":                 "60",
+			"high_frequency_backup_retention": "7",
+			"preserve_one_each_hour":          "true",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "HighFrequencyBackupRetention", "7")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "PreserveOneEachHour", "true")
+	})
+
+	t.Run("interval change replays the unchanged high frequency attributes", func(t *testing.T) {
+		// Changing the interval from 15 to 60 while the high-frequency values stay in
+		// the configuration changes neither of those attributes, so only the applicable
+		// predicate can keep them in the full policy request (QA-N6).
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"backup_interval":                 "60",
+			"high_frequency_backup_retention": 7,
+			"preserve_one_each_hour":          true,
+		})
+		values := map[string]cty.Value{
+			"backup_interval":                 cty.StringVal("60"),
+			"high_frequency_backup_retention": cty.NumberIntVal(7),
+			"preserve_one_each_hour":          cty.True,
+		}
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"snapshot_backup_type":            "Flash",
+			"backup_interval":                 "15",
+			"high_frequency_backup_retention": "7",
+			"preserve_one_each_hour":          "true",
+		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "BackupInterval", "60")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "HighFrequencyBackupRetention", "7")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "PreserveOneEachHour", "true")
 	})
 
 	t.Run("complete update mode is serialized", func(t *testing.T) {
@@ -2327,6 +2431,20 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 			"cross_log_retention_type":  "delay",
 			"cross_log_retention_value": "10",
 		})
+		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionType", "never")
+		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "never")
+		mongodbBackupPolicyFixtureAssertOmitted(t, request, "CrossRetentionValue", "CrossLogRetentionValue")
+	})
+
+	t.Run("fresh never accepts missing retention values and omits them", func(t *testing.T) {
+		// A brand-new configuration with both retention types set to "never" does not
+		// provide a retention value at all. The values are never serialized for "never",
+		// so requiring one locally forces the user to configure a value the provider
+		// then drops. Reaching ModifyBackupPolicy proves the local validation accepted
+		// the configuration; the wire assertions prove both values stay out (QA-N5).
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		state := mongodbBackupPolicyFixtureState(map[string]string{"cross_backup_type": "update"})
 		request := mongodbBackupPolicyFixtureRunUpdate(t, state, raw, values)
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossRetentionType", "never")
 		mongodbBackupPolicyFixtureAssertSent(t, request, "CrossLogRetentionType", "never")
@@ -2654,6 +2772,22 @@ func TestUnitAliCloudMongoDBInstanceCrossBackupValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("log delay retention without a value is rejected", func(t *testing.T) {
+		// The log retention value keeps its own delay-only requirement; the
+		// never-without-value test above proves that requirement does not leak into
+		// "never" (QA-N5).
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		raw["cross_log_retention_type"] = "delay"
+		values["cross_log_retention_type"] = cty.StringVal("delay")
+		errText, requests := mongodbBackupPolicyFixtureRunUpdateError(t, mongodbBackupPolicyFixtureState(nil), raw, values)
+		if !strings.Contains(errText, "cross_log_retention_value") {
+			t.Fatalf("the error must name the missing cross_log_retention_value, got %s", errText)
+		}
+		if len(requests) != 0 {
+			t.Fatalf("an incomplete combination must not reach the API, got %d requests", len(requests))
+		}
+	})
+
 	t.Run("delay retention without a value is rejected", func(t *testing.T) {
 		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
 		raw["cross_retention_type"] = "delay"
@@ -2666,4 +2800,30 @@ func TestUnitAliCloudMongoDBInstanceCrossBackupValidation(t *testing.T) {
 			t.Fatalf("an incomplete combination must not reach the API, got %d requests", len(requests))
 		}
 	})
+}
+
+// TestUnitMongoDBInstanceSweeperMatches locks the instance names the sweeper owns. The
+// documentation example uses a fixed name, so a failed example run must stay cleanable;
+// a user instance that only resembles that name must not be deleted (QA-N7).
+func TestUnitMongoDBInstanceSweeperMatches(t *testing.T) {
+	cases := []struct {
+		description string
+		want        bool
+	}{
+		{"tf-testAccMongoDBInstanceClassicConfig1234", true},
+		{"tf_testAccMongoDBInstanceCrossBackup", true},
+		{"Tf-TestAccMongoDBInstance", true},
+		{"terraform-example", true},
+		{" Terraform-Example ", true},
+		{"terraform-example-prod", false},
+		{"my-terraform-example", false},
+		{"tf-other-name", false},
+		{"mydb", false},
+		{"", false},
+	}
+	for _, c := range cases {
+		if got := mongodbInstanceSweeperMatches(c.description); got != c.want {
+			t.Fatalf("mongodbInstanceSweeperMatches(%q) = %v, want %v", c.description, got, c.want)
+		}
+	}
 }

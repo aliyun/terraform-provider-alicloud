@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -718,11 +719,17 @@ func (s *MongoDBService) DescribeMongoDBShardingTDEInfo(id string) (object map[s
 	return object, nil
 }
 
-// isMinuteLevelBackupInterval reports whether the snapshot backup interval supports
-// high-frequency backups; the API only accepts high_frequency_backup_retention and
-// preserve_one_each_hour for the 15 and 30 minute intervals.
-func isMinuteLevelBackupInterval(interval string) bool {
-	return interval == "15" || interval == "30"
+// highFrequencyBackupApplicable reports whether the current snapshot configuration
+// accepts the high-frequency backup attributes. The contract enables high-frequency
+// backup for Flash snapshots with any positive BackupInterval, not only for a specific
+// pair of intervals; Standard snapshots report -1. The interval is a schema string, so
+// an absent, negative or non-numeric value is not applicable either.
+func highFrequencyBackupApplicable(backupType, interval string) bool {
+	if backupType != "Flash" {
+		return false
+	}
+	minutes, err := strconv.Atoi(interval)
+	return err == nil && minutes > 0
 }
 
 // crossBackupDeleteSelected reports whether this update has to issue the delete shape
@@ -824,9 +831,6 @@ func validateMongoDBCrossBackupPolicy(d *schema.ResourceData) error {
 	}
 	if v, ok := d.GetOk("cross_log_retention_type"); !ok || fmt.Sprint(v) == "" {
 		missing = append(missing, "cross_log_retention_type")
-	}
-	if _, ok := d.GetOk("cross_log_retention_value"); !ok {
-		missing = append(missing, "cross_log_retention_value")
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("cross_backup_type is set to \"update\", so the geo-redundant backup attributes %s must be configured", strings.Join(missing, ", "))
@@ -947,7 +951,7 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	crossBackupDelete := crossBackupDeleteSelected(d)
 	snapshotBackupType, _ := d.Get("snapshot_backup_type").(string)
 	backupInterval, _ := d.Get("backup_interval").(string)
-	highFrequencyBackupApplicable := snapshotBackupType == "Flash" && isMinuteLevelBackupInterval(backupInterval)
+	highFrequencyApplicable := highFrequencyBackupApplicable(snapshotBackupType, backupInterval)
 
 	if !crossBackupDelete && (d.HasChange("cross_backup_period") || crossBackupUpdate) {
 		if v, ok := d.GetOk("cross_backup_period"); ok {
@@ -994,13 +998,13 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["EnableCrossLogBackup"] = v
 	}
 
-	if d.HasChange("high_frequency_backup_retention") || highFrequencyBackupApplicable {
+	if d.HasChange("high_frequency_backup_retention") || highFrequencyApplicable {
 		if v, ok := d.GetOk("high_frequency_backup_retention"); ok {
 			request["HighFrequencyBackupRetention"] = v
 		}
 	}
 
-	if v, ok := d.Get("preserve_one_each_hour").(bool); ok && (d.HasChange("preserve_one_each_hour") || highFrequencyBackupApplicable) {
+	if v, ok := d.Get("preserve_one_each_hour").(bool); ok && (d.HasChange("preserve_one_each_hour") || highFrequencyApplicable) {
 		request["PreserveOneEachHour"] = v
 	}
 
