@@ -698,11 +698,11 @@ func resourceServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 				objectDataLocalMap["HealthyThreshold"] = healthyThreshold1
 			}
 			healthCheckReq1, _ := jsonpath.Get("$[0].health_check_req", v)
-			if healthCheckReq1 != nil && (d.HasChange("health_check_config.0.health_check_req") || healthCheckReq1 != "") {
+			if healthCheckReq1 != nil && healthCheckReq1 != "" && (d.HasChange("health_check_config.0.health_check_req") || healthCheckReq1 != "") {
 				objectDataLocalMap["HealthCheckReq"] = healthCheckReq1
 			}
 			healthCheckExp1, _ := jsonpath.Get("$[0].health_check_exp", v)
-			if healthCheckExp1 != nil && (d.HasChange("health_check_config.0.health_check_exp") || healthCheckExp1 != "") {
+			if healthCheckExp1 != nil && healthCheckExp1 != "" && (d.HasChange("health_check_config.0.health_check_exp") || healthCheckExp1 != "") {
 				objectDataLocalMap["HealthCheckExp"] = healthCheckExp1
 			}
 
