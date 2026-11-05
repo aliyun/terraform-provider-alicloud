@@ -286,6 +286,7 @@ func TestAccAliCloudGaAccelerator_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"renewal_status": "AutoRenewal",
+						"auto_renew":     "true",
 					}),
 				),
 			},
