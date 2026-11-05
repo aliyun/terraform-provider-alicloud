@@ -247,13 +247,53 @@ resource "alicloud_cms_subscription" "default" {
 `, testAccCmsSubscriptionDependence(name))
 }
 
-func testAccCmsSubscriptionConfigComplete(name string) string {
+func testAccCmsSubscriptionCompleteDependence(name string) string {
 	return fmt.Sprintf(`%s
 resource "alicloud_cms_event_notify_policy" "default" {
-  workspace = alicloud_cms_workspace.default.workspace_name
-  name      = var.name
+  workspace   = alicloud_cms_workspace.default.workspace_name
+  name        = var.name
+  description = "Event notification policy managed by Terraform"
+
+  response_plan {
+    repeat_notify_setting {
+      end_incident_state = "resolved"
+      repeat_interval    = "30"
+    }
+    auto_recover_seconds = "600"
+  }
+
+  notify_strategy {
+    description                  = "Notify strategy for subscription test"
+    ignore_restored_notification = false
+
+    grouping_setting {
+      grouping_keys = ["severity"]
+      period_min    = "5"
+      times         = "1"
+      silence_sec   = "300"
+    }
+
+    routes {
+      effect_time_range {
+        time_zone            = "Asia/Shanghai"
+        start_time_in_minute = "0"
+        end_time_in_minute   = "1439"
+        day_in_week          = ["1", "2", "3", "4", "5"]
+      }
+
+      channels {
+        receivers            = ["tf-test-group"]
+        channel_type         = "DING"
+        enabled_sub_channels = []
+      }
+    }
+  }
+}
+`, testAccCmsSubscriptionDependence(name))
 }
 
+func testAccCmsSubscriptionConfigComplete(name string) string {
+	return fmt.Sprintf(`%s
 resource "alicloud_cms_subscription" "default" {
   subscription_name      = var.name
   workspace              = alicloud_cms_workspace.default.workspace_name
@@ -278,16 +318,11 @@ resource "alicloud_cms_subscription" "default" {
     }
   }
 }
-`, testAccCmsSubscriptionDependence(name))
+`, testAccCmsSubscriptionCompleteDependence(name))
 }
 
 func testAccCmsSubscriptionConfigCompleteUpdated(name string) string {
 	return fmt.Sprintf(`%s
-resource "alicloud_cms_event_notify_policy" "default" {
-  workspace = alicloud_cms_workspace.default.workspace_name
-  name      = var.name
-}
-
 resource "alicloud_cms_subscription" "default" {
   subscription_name      = var.name
   workspace              = alicloud_cms_workspace.default.workspace_name
@@ -312,16 +347,11 @@ resource "alicloud_cms_subscription" "default" {
     }
   }
 }
-`, testAccCmsSubscriptionDependence(name))
+`, testAccCmsSubscriptionCompleteDependence(name))
 }
 
 func testAccCmsSubscriptionConfigCompleteRelation(name string) string {
 	return fmt.Sprintf(`%s
-resource "alicloud_cms_event_notify_policy" "default" {
-  workspace = alicloud_cms_workspace.default.workspace_name
-  name      = var.name
-}
-
 resource "alicloud_cms_subscription" "default" {
   subscription_name      = var.name
   workspace              = alicloud_cms_workspace.default.workspace_name
@@ -346,5 +376,5 @@ resource "alicloud_cms_subscription" "default" {
     }
   }
 }
-`, testAccCmsSubscriptionDependence(name))
+`, testAccCmsSubscriptionCompleteDependence(name))
 }

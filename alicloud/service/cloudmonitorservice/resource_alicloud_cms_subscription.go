@@ -683,8 +683,20 @@ func cmsSubscriptionValueVisible(actual, want interface{}) bool {
 		if len(actualItems) != len(wantValue) {
 			return false
 		}
-		for i := range wantValue {
-			if !cmsSubscriptionValueVisible(actualItems[i], wantValue[i]) {
+		used := make([]bool, len(actualItems))
+		for _, wantItem := range wantValue {
+			matched := false
+			for i, actualItem := range actualItems {
+				if used[i] {
+					continue
+				}
+				if cmsSubscriptionValueVisible(actualItem, wantItem) {
+					used[i] = true
+					matched = true
+					break
+				}
+			}
+			if !matched {
 				return false
 			}
 		}
@@ -694,8 +706,20 @@ func cmsSubscriptionValueVisible(actual, want interface{}) bool {
 		if len(actualItems) != len(wantValue) {
 			return false
 		}
-		for i := range wantValue {
-			if got, ok := actualItems[i].(string); !ok || got != wantValue[i] {
+		used := make([]bool, len(actualItems))
+		for _, wantItem := range wantValue {
+			matched := false
+			for i, actualItem := range actualItems {
+				if used[i] {
+					continue
+				}
+				if got, ok := actualItem.(string); ok && got == wantItem {
+					used[i] = true
+					matched = true
+					break
+				}
+			}
+			if !matched {
 				return false
 			}
 		}
@@ -705,9 +729,20 @@ func cmsSubscriptionValueVisible(actual, want interface{}) bool {
 		if len(actualItems) != len(wantValue) {
 			return false
 		}
-		for i := range wantValue {
-			got, ok := cmsSubscriptionJSONInt64(actualItems[i])
-			if !ok || got != wantValue[i] {
+		used := make([]bool, len(actualItems))
+		for _, wantItem := range wantValue {
+			matched := false
+			for i, actualItem := range actualItems {
+				if used[i] {
+					continue
+				}
+				if got, ok := cmsSubscriptionJSONInt64(actualItem); ok && got == wantItem {
+					used[i] = true
+					matched = true
+					break
+				}
+			}
+			if !matched {
 				return false
 			}
 		}
@@ -1085,7 +1120,7 @@ func cmsSubscriptionState(object map[string]interface{}, previous cmsSubscriptio
 		NotifyStrategyId:       cmsSubscriptionStringStateValue(object["notifyStrategyId"], previous.NotifyStrategyId),
 		Workspace:              cmsSubscriptionJSONStringValue(object["workspace"]),
 		Enable:                 cmsSubscriptionJSONBoolValue(object["enable"]),
-		SubscribeLegacyEvent:   cmsSubscriptionBoolStateValue(object["subscribeLegacyEvent"], previous.SubscribeLegacyEvent),
+		SubscribeLegacyEvent:   cmsSubscriptionBoolStateValue(object["subscribeLegacyEvent"]),
 		FilterSetting:          flattenCmsSubscriptionFilterSetting(object["filterSetting"], previous.FilterSetting),
 		PushingSetting:         flattenCmsSubscriptionPushingSetting(object["pushingSetting"], previous.PushingSetting),
 		WorkspaceFilterSetting: flattenCmsSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"], previous.WorkspaceFilterSetting),
@@ -1134,10 +1169,39 @@ func flattenCmsSubscriptionFilterSetting(raw interface{}, previous []cmsSubscrip
 			})
 		}
 		block.Conditions = conditions
+		if len(previousConditions) == len(conditions) && cmsSubscriptionConditionsSameSet(previousConditions, conditions) {
+			// Keep the configured order when the service returns the same set in a
+			// different order, so the ordered list does not produce a permadiff.
+			block.Conditions = previousConditions
+		}
 	} else {
 		block.Conditions = previousConditions
 	}
 	return []cmsSubscriptionFilterSettingModel{block}
+}
+
+func cmsSubscriptionConditionsSameSet(left, right []cmsSubscriptionConditionModel) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	used := make([]bool, len(right))
+	for _, want := range left {
+		matched := false
+		for i, got := range right {
+			if used[i] {
+				continue
+			}
+			if want.Field.Equal(got.Field) && want.Op.Equal(got.Op) && want.Value.Equal(got.Value) {
+				used[i] = true
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
 }
 
 func cmsSubscriptionPreviousFilterString(previous []cmsSubscriptionFilterSettingModel, attribute string) types.String {
@@ -1341,15 +1405,13 @@ func cmsSubscriptionJSONBoolValue(v interface{}) types.Bool {
 	return types.BoolNull()
 }
 
-func cmsSubscriptionBoolStateValue(v interface{}, previous types.Bool) types.Bool {
+func cmsSubscriptionBoolStateValue(v interface{}) types.Bool {
 	if b, ok := v.(bool); ok {
 		return types.BoolValue(b)
 	}
-	if previous.IsNull() {
-		return types.BoolNull()
-	}
 	// The contract states that null and false both mean "not subscribed", so an
-	// unset response resolves the planned unknown to the service default.
+	// omitted response materializes the service default instead of a null that
+	// would differ between apply and import.
 	return types.BoolValue(false)
 }
 

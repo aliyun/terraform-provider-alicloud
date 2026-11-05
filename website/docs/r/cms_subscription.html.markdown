@@ -46,16 +46,10 @@ resource "alicloud_cms_workspace" "default" {
   sls_project    = alicloud_log_project.default.project_name
 }
 
-resource "alicloud_cms_event_notify_policy" "default" {
-  workspace = alicloud_cms_workspace.default.workspace_name
-  name      = var.name
-}
-
 resource "alicloud_cms_subscription" "default" {
-  subscription_name  = var.name
-  workspace          = alicloud_cms_workspace.default.workspace_name
-  notify_strategy_id = alicloud_cms_event_notify_policy.default.uuid
-  description        = "Event subscription managed by Terraform"
+  subscription_name = var.name
+  workspace         = alicloud_cms_workspace.default.workspace_name
+  description       = "Event subscription managed by Terraform"
 
   filter_setting {
     relation = "AND"
