@@ -48,6 +48,14 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceProject,
 			},
 		},
+		// Framework resources live alongside the SDKv2 ones; they are served by
+		// the same mixed provider through conns.Resource.
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_dataworks_resource_file",
+				Factory:  NewDataWorksResourceFileResource,
+			},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
 				TypeName: "alicloud_data_works_folders",
