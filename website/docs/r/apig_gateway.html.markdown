@@ -137,7 +137,7 @@ The log_config supports the following:
 
 The log_config-sls supports the following:
 * `enable` - (Optional, Bool) Whether to enable Simple Log Service (SLS) logging for the gateway. It is sent when the gateway is created and can be updated in place on the existing gateway.
-* `project_name` - (Optional, String, Available since v2.1.0) The name of an existing SLS project that stores the request and response logs of the gateway, such as the project created by `alicloud_log_project`. The project must be in the same region as the gateway. Changing it updates the gateway log feature in place; removing it clears the project.
+* `project_name` - (Optional, String, Available since v2.3.0) The name of an existing SLS project that stores the request and response logs of the gateway, such as the project created by `alicloud_log_project`. The project must be in the same region as the gateway. Changing it updates the gateway log feature in place; removing it clears the project.
 
 ### `network_access_config`
 
