@@ -287,3 +287,157 @@ func TestUnitHelperTest(t *testing.T) {
 		}
 	})
 }
+
+// TestUnitDataSourceSelection covers data-source selection through SelectScope
+// with DataSourceScope: flat and split data-source implementations, tests and
+// registrations all select the registered data source, and the resource and
+// data-source scopes never steal each other's files (a data_source_ file is
+// invisible to ResourceScope and a resource_ file is invisible to
+// DataSourceScope). The TestUnit prefix makes ci-check-quick's
+// changed-unit-tests stage execute these regressions.
+func TestUnitDataSourceSelection(t *testing.T) {
+	missing := func(string) ([]byte, error) { return nil, fmt.Errorf("missing") }
+
+	// Flat data source: alicloud/data_source_alicloud_example.go.
+	flatSrc := []byte(`package alicloud; func dataSourceExample() {}`)
+	flatPath := "alicloud/data_source_alicloud_example.go"
+	flatOld := map[string]string{"alicloud_example": "dataSourceExample"}
+	flatAfter := map[string]string{"alicloud_example": "dataSourceExample"}
+	flatSources := map[string][]byte{flatPath: flatSrc}
+	flatWant := map[string]string{"alicloud_example": "alicloud/data_source_alicloud_example_test.go"}
+
+	// Split data source: alicloud/service/cloudauth/data_source_face_configs.go.
+	splitImpl := []byte(`package cloudauth; func DataSourceCloudauthFaceConfigs() {}`)
+	splitPath := "alicloud/service/cloudauth/data_source_face_configs.go"
+	splitTest := "alicloud/service/cloudauth/data_source_face_configs_test.go"
+	splitOld := map[string]string{"alicloud_cloudauth_face_configs": "dataSourceAlicloudCloudauthFaceConfigs"}
+	splitAfter := map[string]string{"alicloud_cloudauth_face_configs": "cloudauth.DataSourceCloudauthFaceConfigs"}
+	splitSources := map[string][]byte{splitPath: splitImpl}
+	splitWant := map[string]string{"alicloud_cloudauth_face_configs": splitTest}
+
+	cases := []struct {
+		name    string
+		paths   []string
+		before  map[string]string
+		after   map[string]string
+		sources map[string][]byte
+		want    map[string]string
+	}{
+		{"flat implementation", []string{flatPath}, flatOld, flatAfter, flatSources, flatWant},
+		{"flat test file", []string{"alicloud/data_source_alicloud_example_test.go"}, flatOld, flatAfter, flatSources, flatWant},
+		{"flat registration", []string{"alicloud/provider.go"}, map[string]string{}, flatAfter, flatSources, flatWant},
+		{"split implementation", []string{splitPath}, splitOld, splitAfter, splitSources, splitWant},
+		{"split test file", []string{splitTest}, splitOld, splitAfter, splitSources, splitWant},
+		{"split registration", []string{"alicloud/service/cloudauth/register.go"}, map[string]string{}, splitAfter, splitSources, splitWant},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := SelectScope(tc.paths, tc.before, tc.after, tc.sources, missing, DataSourceScope)
+			if err != nil || !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("got %v, %v; want %v", got, err, tc.want)
+			}
+		})
+	}
+	// Cross-scope isolation: a data source's Select never matches a resource_
+	// file and a resource's Select never matches a data_source_ file. Each
+	// scope's after registry here carries a matching constructor, so a leak
+	// would surface as a selected entry; the correct scope filter selects none.
+	t.Run("resource scope skips data source files", func(t *testing.T) {
+		got, err := SelectScope([]string{splitPath}, splitOld, splitAfter, splitSources, missing, ResourceScope)
+		if err != nil || len(got) != 0 {
+			t.Fatalf("resource scope selected a data source file: %v, %v", got, err)
+		}
+	})
+	t.Run("data source scope skips resource files", func(t *testing.T) {
+		resImpl := []byte(`package cloudauth; func ResourceFaceConfig() {}`)
+		resPath := "alicloud/service/cloudauth/resource_face_config.go"
+		resOld := map[string]string{"alicloud_cloudauth_face_config": "resourceAlicloudCloudauthFaceConfig"}
+		resAfter := map[string]string{"alicloud_cloudauth_face_config": "cloudauth.ResourceFaceConfig"}
+		resSources := map[string][]byte{resPath: resImpl}
+		got, err := SelectScope([]string{resPath}, resOld, resAfter, resSources, missing, DataSourceScope)
+		if err != nil || len(got) != 0 {
+			t.Fatalf("data source scope selected a resource file: %v, %v", got, err)
+		}
+	})
+}
+
+// TestUnitDataSourcesRegistry covers DataSourcesRegistry and
+// DataSourcesRegistryUnion: the DataSourcesMap literal is parsed the same way
+// ResourcesMap is, the split SDKDataSources fold in under a product qualifier,
+// resources and framework registrations never leak into the data-source
+// registry, duplicates fail, and a resource and data source sharing a type name
+// each resolve in their own registry. The TestUnit prefix makes ci-check-quick's
+// changed-unit-tests stage execute these regressions.
+func TestUnitDataSourcesRegistry(t *testing.T) {
+	got, err := DataSourcesRegistry([]byte(`package alicloud;var p = Provider{DataSourcesMap:map[string]*Resource{"alicloud_example":dataSourceExample()}}`))
+	if err != nil || got["alicloud_example"] != "dataSourceExample" {
+		t.Fatalf("DataSourcesRegistry: %v, %v", got, err)
+	}
+	for _, src := range []string{
+		`package alicloud;var p = Provider{DataSourcesMap: dynamic()}`,
+		`package alicloud;var p = Provider{DataSourcesMap:map[string]*Resource{"alicloud_example":dynamic(name)}}`,
+		`package alicloud;var p = Provider{}`,
+		`package alicloud;var p = Provider{DataSourcesMap: map[string]*Resource{}, DataSourcesMap: map[string]*Resource{}}`,
+	} {
+		if _, err := DataSourcesRegistry([]byte(src)); err == nil {
+			t.Fatalf("invalid data-source registration passed: %s", src)
+		}
+	}
+	providerSrc := []byte(`package alicloud;var p = Provider{DataSourcesMap:map[string]*Resource{"alicloud_example":dataSourceExample()}}`)
+	register := []byte(`package cloudauth
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{
+		Name: "Cloudauth",
+		SDKResources: []conns.SDKResource{
+			{TypeName: "alicloud_cloudauth_face_config", Factory: ResourceFaceConfig},
+		},
+		SDKDataSources: []conns.SDKResource{
+			{TypeName: "alicloud_cloudauth_face_configs", Factory: DataSourceCloudauthFaceConfigs},
+		},
+		Resources: []conns.FrameworkResource{
+			{TypeName: "alicloud_cloudauth_framework", Factory: NewFramework},
+		},
+	}
+}`)
+	got, err = DataSourcesRegistryUnion(providerSrc, map[string][]byte{"alicloud/service/cloudauth/register.go": register})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["alicloud_example"] != "dataSourceExample" {
+		t.Fatal("flat data-source entry lost:", got)
+	}
+	if got["alicloud_cloudauth_face_configs"] != "cloudauth.DataSourceCloudauthFaceConfigs" {
+		t.Fatal("SDK data-source registration missing:", got)
+	}
+	if _, ok := got["alicloud_cloudauth_face_config"]; ok {
+		t.Fatal("resource leaked into the data-source registry:", got)
+	}
+	if _, ok := got["alicloud_cloudauth_framework"]; ok {
+		t.Fatal("framework resource leaked into the data-source registry:", got)
+	}
+	dup := []byte(`package cloudauth
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{SDKDataSources: []conns.SDKResource{{TypeName: "alicloud_example", Factory: dataSourceExample}}}
+}`)
+	if _, err := DataSourcesRegistryUnion(providerSrc, map[string][]byte{"alicloud/service/cloudauth/register.go": dup}); err == nil {
+		t.Fatal("duplicate data-source declaration passed")
+	}
+	// A resource and data source sharing a type name stay in separate
+	// registries: DataSourcesRegistryUnion resolves the data source and
+	// RegistryUnion resolves the resource, with no cross-contamination.
+	shared := []byte(`package shared
+func ServicePackage() conns.ServicePackage {
+	return conns.ServicePackage{
+		SDKResources: []conns.SDKResource{{TypeName: "alicloud_shared", Factory: ResourceShared}},
+		SDKDataSources: []conns.SDKResource{{TypeName: "alicloud_shared", Factory: DataSourceShared}},
+	}
+}`)
+	dsGot, err := DataSourcesRegistryUnion([]byte(`package alicloud;var p = Provider{DataSourcesMap:map[string]*Resource{}}`), map[string][]byte{"alicloud/service/shared/register.go": shared})
+	if err != nil || dsGot["alicloud_shared"] != "shared.DataSourceShared" {
+		t.Fatalf("same-named data source not resolved: %v, %v", dsGot, err)
+	}
+	resGot, err := RegistryUnion([]byte(`package alicloud;var p = Provider{ResourcesMap:map[string]*Resource{}}`), map[string][]byte{"alicloud/service/shared/register.go": shared})
+	if err != nil || resGot["alicloud_shared"] != "shared.ResourceShared" {
+		t.Fatalf("same-named resource not resolved: %v, %v", resGot, err)
+	}
+}

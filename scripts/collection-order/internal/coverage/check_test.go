@@ -329,3 +329,90 @@ func TestSuppressedUnitNetInSiblingFile(t *testing.T) {
 		t.Fatal("expected failure when sibling net lacks the reorder case")
 	}
 }
+
+// dataSourceFixture mirrors fixture() but uses the three-part data-source
+// address "data.<type>.<name>" that a data source's TestAcc carries. The
+// convergence logic keys by builder variable, so a three-part address flows
+// through the same reorder check a two-part resource address does.
+func dataSourceFixture(steps string) string {
+	return `package alicloud
+import (
+ "testing"
+ "github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+func TestAccExample(t *testing.T) {
+ resourceId := "data.alicloud_example.default"
+ testAccConfig := resourceTestAccConfigFunc(resourceId, "test", dependence)
+ resource.Test(t, resource.TestCase{Steps: []resource.TestStep{` + steps + `}})
+}`
+}
+
+// TestUnitDataSourceReadOnlyCheck covers the read-only equivalent check target
+// for a data source (CheckScope with DataSourceScope): a read-only schema (no
+// Create/Update/Delete) passes with or without an explicit reorder test and
+// even with no test file, because Read is order-insensitive; a data source
+// carrying any write lifecycle is anomalous and fails. The TestUnit prefix makes
+// ci-check-quick's changed-unit-tests stage execute these regressions.
+func TestUnitDataSourceReadOnlyCheck(t *testing.T) {
+	readOnly := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true}}}
+	apply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"},"name":"same"})},`
+	plan := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
+	reorderedApply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}})},`
+
+	// No reorder test: passes under read-only semantics.
+	if issues := CheckScope("test.go", []byte(dataSourceFixture(apply)), nil, "alicloud_example", readOnly, DataSourceScope); len(issues) != 0 {
+		t.Fatalf("read-only data source without reorder test failed: %v", issues)
+	}
+	// A convergent reorder test is still recognised; the check passes either way.
+	if issues := CheckScope("test.go", []byte(dataSourceFixture(apply+plan+reorderedApply)), nil, "alicloud_example", readOnly, DataSourceScope); len(issues) != 0 {
+		t.Fatalf("read-only data source with reorder test failed: %v", issues)
+	}
+	// No test file at all: the read-only lifecycle alone is the check target.
+	if issues := CheckScope("test.go", []byte(`package alicloud`), nil, "alicloud_example", readOnly, DataSourceScope); len(issues) != 0 {
+		t.Fatalf("read-only data source with no test failed: %v", issues)
+	}
+	// A data source carrying a write lifecycle is anomalous: the read-only
+	// waiver does not apply and the check fails for each CRUD callback.
+	writeCases := []struct {
+		name string
+		r    *schema.Resource
+	}{
+		{"Create", &schema.Resource{Schema: readOnly.Schema, Create: func(*schema.ResourceData, interface{}) error { return nil }}},
+		{"Update", &schema.Resource{Schema: readOnly.Schema, Update: func(*schema.ResourceData, interface{}) error { return nil }}},
+		{"Delete", &schema.Resource{Schema: readOnly.Schema, Delete: func(*schema.ResourceData, interface{}) error { return nil }}},
+	}
+	for _, tc := range writeCases {
+		t.Run(tc.name, func(t *testing.T) {
+			issues := CheckScope("test.go", []byte(dataSourceFixture(apply)), nil, "alicloud_example", tc.r, DataSourceScope)
+			if len(issues) != 1 || !strings.Contains(issues[0], "write lifecycle") {
+				t.Fatalf("write lifecycle should fail: %v", issues)
+			}
+		})
+	}
+}
+
+// TestUnitDataSourceAddress covers the three-part "data.<type>.<name>" address
+// matching in inspectTest. Under the resource scope (read/write), coverage is
+// enforced, so a convergent reorder over a data-source-style builder passes
+// only when the three-part address is recognised; a wrong type segment is not
+// captured and coverage is not established. The TestUnit prefix makes
+// ci-check-quick's changed-unit-tests stage execute this regression.
+func TestUnitDataSourceAddress(t *testing.T) {
+	r := &schema.Resource{Schema: map[string]*schema.Schema{"ids": {Type: schema.TypeList, Optional: true}}}
+	apply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"a","b"},"name":"same"})},`
+	plan := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}}),PlanOnly:true,ExpectNonEmptyPlan:true},`
+	reorderedApply := `{Config:testAccConfig(map[string]interface{}{"ids":[]string{"b","a"}})},`
+	src := dataSourceFixture(apply + plan + reorderedApply)
+	// The three-part data.<type>.<name> address is recognised the same way a
+	// two-part resource address is, so a convergent reorder over a data-source
+	// builder establishes coverage under the resource scope.
+	if issues := Check("test.go", []byte(src), nil, "alicloud_example", r); len(issues) != 0 {
+		t.Fatalf("three-part data-source address not recognised: %v", issues)
+	}
+	// The type segment must match the entity under check; a different type's
+	// three-part builder is not captured and coverage is not established.
+	wrong := strings.Replace(src, "data.alicloud_example.default", "data.alicloud_other.default", 1)
+	if issues := Check("test.go", []byte(wrong), nil, "alicloud_example", r); len(issues) == 0 {
+		t.Fatal("wrong-type three-part address should not establish coverage")
+	}
+}

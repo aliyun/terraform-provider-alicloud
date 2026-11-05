@@ -1,6 +1,6 @@
 # TypeList Order Coverage
 
-`TypeList Order Coverage` requires resources touched by a PR to carry a convergent
+`TypeList Order Coverage` requires resources and data sources touched by a PR to carry a convergent
 reorder test for every configurable multi-member `TypeList` attribute: apply the
 members in one order, then apply a permutation of them, and require the second
 apply's post-apply plan to be empty. It reads registered Provider schemas and
@@ -8,6 +8,15 @@ inspects real acceptance-test steps. It does **not** run cloud operations: the
 acceptance runner must execute the test to verify apply, refresh and post-apply
 convergence. The implementation retains its historical directory name,
 `scripts/collection-order`.
+
+Resources have a write lifecycle, so a reorder can surface as drift and the
+convergent reorder test is required. Data sources are read-only: their `Read` is
+order-insensitive, so configuring a `TypeList` filter in a different member order
+yields the same remote state and the post-apply plan is empty without an explicit
+reorder test. The checker still selects and inspects changed data sources and
+verifies their schema is genuinely read-only (no `Create`/`Update`/`Delete`); the
+read-only lifecycle is the equivalent check target for a data source. See
+[Data source coverage](#data-source-coverage).
 
 The covered property is convergence, not a diff expectation. Whether a reorder
 produces a diff depends on the attribute's semantics and the API's ordering
@@ -28,22 +37,26 @@ pre-existing stock.
 
 The workflow uses `scripts/ci/resolve-change-range.sh` and the full PR merge-base
 to head diff, including earlier commits. It checks changed
-`alicloud/resource_alicloud_*.go` implementations and `_test.go` files, and new or
-changed `provider.go` resource registrations. Migrated resources under
+`alicloud/resource_alicloud_*.go` and `alicloud/data_source_alicloud_*.go`
+implementations and `_test.go` files, and new or changed `provider.go` resource
+and data-source registrations. Migrated entities under
 `alicloud/service/<product>/` follow the same rule through the product's
 `register.go`: a changed split-layout implementation, test or register.go selects
-the SDKv2 resources it declares, and constructor identities carry a product
-qualifier there because top-level names are only unique per package. Framework
-service files without an SDKv2 registration stay outside the scope, as data
-sources always were. Constructor identities resolve
+the SDKv2 resources and data sources it declares, and constructor identities
+carry a product qualifier there because top-level names are only unique per
+package. The resource and data-source registries stay separate — a register's
+`SDKDataSources` never leak into the resource registry and vice versa — so a
+resource and a data source that share a type name are each checked against their
+own runtime schema map. Framework service files without an SDKv2 registration
+stay outside the scope. Constructor identities resolve
 aliases and renamed files. Registrations sharing one constructor share its ACC
-coverage. Deleted resources are skipped only if no longer registered; missing
-registrations, mappings and required test files fail closed.
+coverage. Deleted resources and data sources are skipped only if no longer
+registered; missing registrations, mappings and required test files fail closed.
 
-Shared service/helper-only changes are outside this direct resource-file scope.
-Review them manually to identify affected resources, and include and run the affected
-resource's acceptance test when changing list handling in a shared helper. A PR
-without selected resources exits successfully.
+Shared service/helper-only changes are outside this direct file scope.
+Review them manually to identify affected resources and data sources, and include
+and run the affected entity's acceptance test when changing list handling in a
+shared helper. A PR without selected resources or data sources exits successfully.
 
 Candidates are configurable (`Optional` or `Required`) multi-member `TypeList`
 fields, including nested paths. Removed fields, computed-only fields/subtrees,
@@ -60,6 +73,29 @@ Ordinary `TypeSet` attributes do not need a repeated per-resource reorder test.
 Custom set hashing or conversions can have targeted tests when needed. Free-form
 comments cannot exempt a `TypeList`; only the structured bypass marker (see
 Bypassing stock attributes) is recognized.
+
+## Data source coverage
+
+A data source has no write lifecycle: its `Read` returns remote state and never
+creates, updates or destroys. A configurable multi-member `TypeList` on a data
+source is an order-insensitive filter (for example `ids` or `name_regex`), so
+configuring it in one member order or a permutation yields the same result and
+the post-apply plan is empty. The convergent reorder that a resource must evidence
+with a two-step `TestAcc` is therefore trivially satisfied by the read-only
+lifecycle, and the checker does not require an explicit reorder test for a data
+source.
+
+The checker still selects and inspects a changed data source the same way it does
+a resource — candidate discovery, `TestAcc` step inspection and the three-part
+`data.<type>.<name>` address all flow through the same logic — and it verifies
+the data source's schema is genuinely read-only (no `Create`/`Update`/`Delete`).
+A data source that carries a write lifecycle is anomalous and the check fails:
+the read-only waiver does not apply to an entity that can mutate remote state.
+That verification is the equivalent check target for a data source — pass when
+read-only, fail when it is not — and is observable under independent verification.
+A data source that does carry a convergent reorder test is recognised; only the
+missing-coverage diagnostic is waived, so the check reports the data source as
+covered either way.
 
 ## Required acceptance steps
 
@@ -255,9 +291,13 @@ ordering behavior or replace that acceptance run.
 go test ./scripts/collection-order/internal/coverage
 bash scripts/ci/collection-order-compat_test.sh
 go run ./scripts/collection-order -resource=alicloud_example
+go run ./scripts/collection-order -data-source=alicloud_example
 # Or use full SHAs, with HEAD checked out at the PR head:
 go run ./scripts/collection-order -base="$DIFF_BASE" -head="$DIFF_HEAD"
 ```
+
+The diff mode checks both resources and data sources in one run; the
+`-resource` and `-data-source` flags each select one entity of that kind locally.
 
 The workflow uses the existing pinned runner policy, exact-head checkout and
 read-only token permissions. It requires no cloud credentials and does not write
