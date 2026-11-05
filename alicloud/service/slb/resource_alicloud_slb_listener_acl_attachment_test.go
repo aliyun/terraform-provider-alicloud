@@ -191,6 +191,9 @@ func TestAccAliCloudSLBListenerAclAttachment_externalDelete(t *testing.T) {
 					testAccCheckSlbListenerAclAttachmentAttrs("alicloud_slb_acl.first", "white"),
 					testAccDeleteSlbListenerExternally(t, listenerAclAttachmentListenerId),
 				),
+				// The listener was deleted outside Terraform, so the next plan
+				// is expected to recreate the listener and the binding.
+				ExpectNonEmptyPlan: true,
 			},
 			{
 				Config: testAccSlbListenerAclAttachmentConfigTcp(name),

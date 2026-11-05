@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -14,6 +15,53 @@ import (
 	cs "github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+// slbSweeperPrefixes is the single prefix set shared by the SLB resource
+// sweepers. tf-exampleSlbListenerAclAttachment is the scoped prefix used by the
+// alicloud_slb_listener_acl_attachment documentation examples, so an
+// interrupted example run stays inside the existing cleanup entry.
+func slbSweeperPrefixes() []string {
+	return []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf-exampleSlbListenerAclAttachment",
+	}
+}
+
+func slbSweeperMatches(name string) bool {
+	for _, prefix := range slbSweeperPrefixes() {
+		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestUnitSlbSweeperExamplePrefixes(t *testing.T) {
+	matched := []string{
+		"tf-exampleSlbListenerAclAttachment",
+		"tf-exampleSlbListenerAclAttachment-acl",
+		"TF-EXAMPLESLBLISTENERACLATTACHMENT",
+		"tf-testAccSomething",
+		"tf_testAccSomething",
+	}
+	for _, name := range matched {
+		if !slbSweeperMatches(name) {
+			t.Fatalf("%q should be swept", name)
+		}
+	}
+	notMatched := []string{
+		"terraform-example",
+		"tf-exampleOther",
+		"my-resource",
+		"",
+	}
+	for _, name := range notMatched {
+		if slbSweeperMatches(name) {
+			t.Fatalf("%q must not be swept", name)
+		}
+	}
+}
 
 // The slb load-balancer sweeper depends on cross-product cleanup helpers that
 // in the flat layout live on the root alicloud package's VpcService, CsService

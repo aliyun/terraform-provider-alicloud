@@ -37,7 +37,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-testAccSlbListenerAclAttachment"
+  default = "tf-exampleSlbListenerAclAttachment"
 }
 
 resource "alicloud_slb_load_balancer" "default" {
@@ -102,7 +102,7 @@ variable "load_balancer_id" {
 variable "acl_name" {
   description = "The name of the policy group to bind."
   type        = string
-  default     = "tf-testAccSlbListenerAclAttachment"
+  default     = "tf-exampleSlbListenerAclAttachment"
 }
 
 data "alicloud_slb_listeners" "apiserver" {

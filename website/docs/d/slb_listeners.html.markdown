@@ -25,7 +25,7 @@ terraform {
 }
 
 resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = "tf-testAccSlbListenerTcp"
+  load_balancer_name = "tf-exampleSlbListenerTcp"
 }
 resource "alicloud_slb_listener" "tcp" {
   load_balancer_id          = alicloud_slb_load_balancer.default.id

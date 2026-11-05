@@ -3,7 +3,6 @@ package slb_test
 import (
 	"fmt"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
@@ -32,11 +31,6 @@ func testSweepSlbAcl(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 
 	action := "DescribeAccessControlLists"
 	request := map[string]interface{}{}
@@ -74,10 +68,8 @@ func testSweepSlbAcl(region string) error {
 
 			name := fmt.Sprint(item["AclName"])
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-				}
+			if !slbSweeperMatches(name) {
+				skip = true
 			}
 			if skip {
 				log.Printf("[INFO] Skipping : %s", name)
