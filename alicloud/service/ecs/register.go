@@ -12,6 +12,7 @@ func ServicePackage() conns.ServicePackage {
 		Name: "Ecs",
 		Resources: []conns.Resource{
 			{TypeName: "alicloud_ecs_snapshot_lock", Factory: NewSnapshotLockResource},
+			{TypeName: "alicloud_ecs_vsc", Factory: NewEcsVscResource},
 		},
 		SDKResources: []conns.SDKResource{
 			{TypeName: "alicloud_auto_provisioning_group", Factory: resourceAutoProvisioningGroup},
