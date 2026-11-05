@@ -211,7 +211,6 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of AnalyticDB for PostgreSQL.
-* `status` - The status of the instance. When the instance is paused, the value is `STOPPED`.
 * `connection_string` - (Available since v1.196.0) The connection string of the instance.
 * `port` - (Available since v1.196.0) The connection port of the instance.
 

@@ -117,6 +117,36 @@ jobs:
           else
             echo '::notice::Writable-cache helper unavailable; using runner defaults.'
           fi
+      - name: Set up Go before cache restoration
+        if: steps.scope.outputs.needed == 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Restore node-local Go cache
+        id: local-go-cache
+        if: ${{ needs.route.outputs.classification == 'trusted' && steps.scope.outputs.needed == 'true' }}
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Older PR heads may lack the helper. Use their exact base fixture.
+          helper=scripts/ci/restore-local-go-cache.py
+          if [[ ! -f "$helper" && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            helper="$RUNNER_TEMP/restore-local-go-cache.py"
+            if ! git show "$PR_BASE_SHA:scripts/ci/restore-local-go-cache.py" > "$helper"; then
+              rm -f "$helper"
+            fi
+          fi
+          # The administrator helper is read-only and still validates checkout hashes.
+          if [[ ! -s "$helper" && -f /opt/terraform-ci-cache/restore.py ]]; then
+            helper=/opt/terraform-ci-cache/restore.py
+          fi
+          if [[ -s "$helper" ]]; then
+            python3 "$helper"
+          else
+            echo 'hit=false' >> "$GITHUB_OUTPUT"
+          fi
       - name: errcheck
         if: steps.scope.outputs.needed == 'true'
         uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
@@ -146,12 +176,6 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
           filter: blob:none
-      - name: Test change range and lint scoping
-        shell: bash
-        run: |
-          scripts/ci/resolve-change-range_test.sh
-          scripts/ci/run-tflint_test.sh
-          scripts/ci/initialization-check_test.sh
       - name: Resolve change range
         id: change-range
         shell: bash
@@ -161,6 +185,22 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: ${{ github.event.pull_request.base.repo.clone_url }}
         run: scripts/ci/resolve-change-range.sh >> "$GITHUB_OUTPUT"
+      - name: Test change range and lint scoping
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DIFF_BASE: ${{ steps.change-range.outputs.diff_base }}
+          DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
+        run: |
+          # Resolve change range first: its exact base and merge base are validated.
+          helper=scripts/ci/run-ci-fixtures.py
+          if [[ ! -s "$helper" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == pull_request && "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            helper="$RUNNER_TEMP/run-ci-fixtures.py"
+            git show "$PR_BASE_SHA:scripts/ci/run-ci-fixtures.py" > "$helper"
+          fi
+          python3 "$helper" lint
       - name: Prepare writable Go/tool cache
         # Route A: keep caches when HOME-owned defaults are writable; redirect
         # only the unwritable ones to a per-job $RUNNER_TEMP subdir so a polluted

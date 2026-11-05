@@ -28,6 +28,9 @@ import (
 const (
 	checkJobTypeName = "alicloud_dts_check_job"
 
+	checkJobProduct    = "Dts"
+	checkJobAPIVersion = "2020-01-01"
+
 	// terraform-plugin-framework has no user-configurable resource timeouts, so
 	// the envelopes the SDKv2 implementation derived from d.Timeout are fixed
 	// here: 20 minutes for create (purchase, configure and the first status
@@ -54,7 +57,7 @@ type checkJobResource struct {
 }
 
 func (r *checkJobResource) describe(id string) (map[string]interface{}, error) {
-	return NewService(r.Client()).DescribeCheckJob(id)
+	return NewService(r.Meta()).DescribeCheckJob(id)
 }
 
 type checkJobResourceModel struct {
@@ -320,7 +323,7 @@ func (r *checkJobResource) Create(ctx context.Context, req resource.CreateReques
 	// purchased: assembling it parses the user supplied reserve JSON, and a
 	// local failure there must abort the create before CreateDtsInstance buys
 	// an instance that Terraform would have no way to read or delete.
-	configureRequest, err := buildCheckJobConfigureRequest(plan, r.Client().RegionId)
+	configureRequest, err := buildCheckJobConfigureRequest(plan, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: building ConfigureDtsJob request", checkJobTypeName),
@@ -332,9 +335,9 @@ func (r *checkJobResource) Create(ctx context.Context, req resource.CreateReques
 	instanceRequest := map[string]interface{}{
 		"Type":              "CHECK",
 		"PayType":           "PostPaid",
-		"RegionId":          r.Client().RegionId,
-		"SourceRegion":      r.Client().RegionId,
-		"DestinationRegion": r.Client().RegionId,
+		"RegionId":          r.Meta().RegionId,
+		"SourceRegion":      r.Meta().RegionId,
+		"DestinationRegion": r.Meta().RegionId,
 		"InstanceClass":     "small",
 	}
 	if v := plan.SourceEndpointRegion.ValueString(); !plan.SourceEndpointRegion.IsNull() && !plan.SourceEndpointRegion.IsUnknown() && v != "" {
@@ -409,7 +412,7 @@ func (r *checkJobResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	stateConf := helper.BuildStateConf([]string{}, []string{"NotStarted", "NotConfigured", "Prechecking", "PreCheckPass", "Migrating", "Finished"}, checkJobCreateTimeout, 5*time.Second, NewService(r.Client()).CheckJobStateRefreshFunc(dtsJobId, []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
+	stateConf := helper.BuildStateConf([]string{}, []string{"NotStarted", "NotConfigured", "Prechecking", "PreCheckPass", "Migrating", "Finished"}, checkJobCreateTimeout, 5*time.Second, NewService(r.Meta()).CheckJobStateRefreshFunc(dtsJobId, []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for the job to be configured", checkJobTypeName),
@@ -521,7 +524,7 @@ func (r *checkJobResource) Update(ctx context.Context, req resource.UpdateReques
 		request := map[string]interface{}{
 			"DtsJobId":   jobId,
 			"DtsJobName": plan.DtsJobName.ValueString(),
-			"RegionId":   r.Client().RegionId,
+			"RegionId":   r.Meta().RegionId,
 		}
 		response, err := r.post("ModifyDtsJobName", request, checkJobUpdateTimeout)
 		if err != nil {
@@ -617,7 +620,7 @@ func (r *checkJobResource) updatePassword(jobId, endpoint string, plan checkJobR
 	request := map[string]interface{}{
 		"DtsJobId": jobId,
 		"Endpoint": endpoint,
-		"RegionId": r.Client().RegionId,
+		"RegionId": r.Meta().RegionId,
 	}
 	if endpoint == "src" {
 		if v, ok := checkJobStringValue(plan.SourceEndpointPassword); ok {
@@ -652,7 +655,7 @@ func (r *checkJobResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 
 	request := map[string]interface{}{
-		"RegionId": r.Client().RegionId,
+		"RegionId": r.Meta().RegionId,
 	}
 	if v := state.DtsInstanceId.ValueString(); v != "" {
 		request["DtsInstanceId"] = v
@@ -668,7 +671,7 @@ func (r *checkJobResource) Delete(ctx context.Context, req resource.DeleteReques
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(checkJobDeleteTimeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Dts", "2020-01-01", "DeleteDtsJob", nil, request, false)
+		response, err = r.Meta().RpcPost(checkJobProduct, checkJobAPIVersion, "DeleteDtsJob", nil, request, false)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
 				return nil
@@ -699,13 +702,13 @@ func (r *checkJobResource) ImportState(ctx context.Context, req resource.ImportS
 func (r *checkJobResource) deleteByInstanceId(dtsInstanceId string, timeout time.Duration) error {
 	request := map[string]interface{}{
 		"DtsInstanceId": dtsInstanceId,
-		"RegionId":      r.Client().RegionId,
+		"RegionId":      r.Meta().RegionId,
 	}
 	var response map[string]interface{}
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(timeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Dts", "2020-01-01", "DeleteDtsJob", nil, request, false)
+		response, err = r.Meta().RpcPost(checkJobProduct, checkJobAPIVersion, "DeleteDtsJob", nil, request, false)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"Forbidden.InstanceNotFound", "InvalidJobId"}) {
 				return nil
@@ -750,7 +753,7 @@ func (r *checkJobResource) statusFlow(jobId, target string, timeout time.Duratio
 	case "Migrating":
 		request := map[string]interface{}{
 			"DtsJobId": jobId,
-			"RegionId": r.Client().RegionId,
+			"RegionId": r.Meta().RegionId,
 		}
 		response, err := r.post("StartDtsJob", request, timeout)
 		if err != nil {
@@ -763,14 +766,14 @@ func (r *checkJobResource) statusFlow(jobId, target string, timeout time.Duratio
 		// one: returning while the job is still Prechecking/PreCheckPass
 		// leaves a server-driven status in the refreshed state that the
 		// post-apply plan reports as drift.
-		stateConf := helper.BuildStateConf([]string{}, []string{"Migrating", "Finished"}, timeout, 60*time.Second, NewService(r.Client()).CheckJobStateRefreshFunc(jobId, []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Migrating", "Finished"}, timeout, 60*time.Second, NewService(r.Meta()).CheckJobStateRefreshFunc(jobId, []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, jobId)
 		}
 	case "Suspending":
 		request := map[string]interface{}{
 			"DtsJobId": jobId,
-			"RegionId": r.Client().RegionId,
+			"RegionId": r.Meta().RegionId,
 		}
 		response, err := r.post("SuspendDtsJob", request, timeout)
 		if err != nil {
@@ -779,7 +782,7 @@ func (r *checkJobResource) statusFlow(jobId, target string, timeout time.Duratio
 		if fmt.Sprint(response["Success"]) == "false" {
 			return fmt.Errorf("SuspendDtsJob failed, response: %v", response)
 		}
-		stateConf := helper.BuildStateConf([]string{}, []string{"Suspending"}, timeout, 5*time.Second, NewService(r.Client()).CheckJobStateRefreshFunc(jobId, []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
+		stateConf := helper.BuildStateConf([]string{}, []string{"Suspending"}, timeout, 5*time.Second, NewService(r.Meta()).CheckJobStateRefreshFunc(jobId, []string{"PrecheckFailed", "InitializeFailed", "Failed", "MigrationFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, jobId)
 		}
@@ -794,7 +797,7 @@ func (r *checkJobResource) post(action string, request map[string]interface{}, t
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(timeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Dts", "2020-01-01", action, nil, request, false)
+		response, err = r.Meta().RpcPost(checkJobProduct, checkJobAPIVersion, action, nil, request, false)
 		if err != nil {
 			if (len(expectedErrors) > 0 && errs.IsExpectedErrors(err, expectedErrors)) || helper.NeedRetry(err) {
 				wait()

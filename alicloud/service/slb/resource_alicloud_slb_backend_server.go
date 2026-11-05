@@ -1,0 +1,340 @@
+package slb
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceBackendServer() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceBackendServersCreate,
+		Read:   resourceBackendServersRead,
+		Update: resourceBackendServersUpdate,
+		Delete: resourceBackendServersDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
+		Schema: map[string]*schema.Schema{
+			"load_balancer_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+
+			"backend_servers": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"server_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"weight": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: validation.IntBetween(0, 100),
+						},
+						"type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      string(ECS),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs", "eci"}, false),
+						},
+						"server_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+		},
+	}
+}
+
+func resourceBackendServersCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	request := slb.CreateAddBackendServersRequest()
+	request.RegionId = client.RegionId
+	request.LoadBalancerId = d.Get("load_balancer_id").(string)
+	if v, ok := d.GetOk("backend_servers"); ok {
+		request.BackendServers = expandBackendServersInfoToString(v.(*schema.Set).List())
+	}
+	var response *slb.AddBackendServersResponse
+	err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.AddBackendServers(request)
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"ServiceIsConfiguring"}) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*slb.AddBackendServersResponse)
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_slb_backend_servers", request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(response.LoadBalancerId)
+
+	return resourceBackendServersRead(d, meta)
+}
+
+func resourceBackendServersRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := NewService(client)
+	resource_id := d.Id()
+	object, err := slbService.DescribeSlb(resource_id)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("load_balancer_id", object.LoadBalancerId)
+
+	servers := make([]map[string]interface{}, 0)
+
+	for _, server := range object.BackendServers.BackendServer {
+		s := map[string]interface{}{
+			"server_id": server.ServerId,
+			"weight":    server.Weight,
+			"type":      server.Type,
+			"server_ip": server.ServerIp,
+		}
+		servers = append(servers, s)
+	}
+
+	if err := d.Set("backend_servers", servers); err != nil {
+		return errs.WrapError(err)
+	}
+
+	return nil
+}
+
+func resourceBackendServersUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	d.Partial(true)
+	step := 20
+	var removeSet, addSet, updateSet *schema.Set
+
+	if d.HasChange("backend_servers") {
+		o, n := d.GetChange("backend_servers")
+		os := o.(*schema.Set)
+		ns := n.(*schema.Set)
+		remove := os.Difference(ns).List()
+		add := ns.Difference(os).List()
+
+		oldIds := getIdSetFromServers(remove)
+		newIds := getIdSetFromServers(add)
+		updateSet = oldIds.Intersection(newIds)
+		addSet = newIds.Difference(oldIds)
+		removeSet = oldIds.Difference(newIds)
+
+		if removeSet.Len() > 0 {
+			rmservers := make([]interface{}, 0)
+			for _, rmserver := range remove {
+				rms := rmserver.(map[string]interface{})
+				if removeSet.Contains(rms["server_id"]) {
+					rmsm := map[string]interface{}{
+						"server_id": rms["server_id"],
+						"weight":    rms["weight"],
+						"type":      rms["type"],
+					}
+					rmservers = append(rmservers, rmsm)
+				}
+			}
+			request := slb.CreateRemoveBackendServersRequest()
+			request.RegionId = client.RegionId
+			request.LoadBalancerId = d.Id()
+
+			segs := len(rmservers)/step + 1
+			for i := 0; i < segs; i++ {
+				start := i * step
+				end := (i + 1) * step
+				if end >= len(rmservers) {
+					end = len(rmservers)
+				}
+				request.BackendServers = expandBackendServersInfoToString(rmservers[start:end])
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.RemoveBackendServers(request)
+				})
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+				}
+				logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			}
+
+		}
+
+		if addSet.Len() > 0 {
+			addservers := make([]interface{}, 0)
+			for _, addserver := range add {
+				adds := addserver.(map[string]interface{})
+				if addSet.Contains(adds["server_id"]) {
+					addsm := map[string]interface{}{
+						"server_id": adds["server_id"],
+						"weight":    adds["weight"],
+						"type":      adds["type"],
+					}
+					if v, ok := adds["server_ip"]; ok && fmt.Sprint(v) != "" {
+						addsm["server_ip"] = v
+					}
+					addservers = append(addservers, addsm)
+				}
+			}
+			request := slb.CreateAddBackendServersRequest()
+			request.RegionId = client.RegionId
+			request.LoadBalancerId = d.Id()
+
+			segs := len(addservers)/step + 1
+			for i := 0; i < segs; i++ {
+				start := i * step
+				end := (i + 1) * step
+				if end >= len(addservers) {
+					end = len(addservers)
+				}
+				request.BackendServers = expandBackendServersInfoToString(addservers[start:end])
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.AddBackendServers(request)
+				})
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+				}
+				logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			}
+		}
+
+		servers := make([]interface{}, 0)
+		for _, server := range d.Get("backend_servers").(*schema.Set).List() {
+			s := server.(map[string]interface{})
+			if updateSet.Contains(s["server_id"]) {
+				sm := map[string]interface{}{
+					"server_id": s["server_id"],
+					"weight":    s["weight"],
+					"type":      s["type"],
+				}
+
+				if v, ok := s["server_ip"]; ok && fmt.Sprint(v) != "" {
+					sm["server_ip"] = v
+				}
+				servers = append(servers, sm)
+			}
+		}
+
+		if len(servers) > 0 {
+
+			segs := len(servers)/step + 1
+			for i := 0; i < segs; i++ {
+				start := i * step
+				end := (i + 1) * step
+				if end >= len(servers) {
+					end = len(servers)
+				}
+				request := slb.CreateSetBackendServersRequest()
+				request.RegionId = client.RegionId
+				request.LoadBalancerId = d.Id()
+				request.BackendServers = expandBackendServersInfoToString(servers[start:end])
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.SetBackendServers(request)
+				})
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+				}
+				logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			}
+		}
+	}
+	d.Partial(false)
+
+	return resourceBackendServersRead(d, meta)
+}
+
+func resourceBackendServersDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	instanceSet := d.Get("backend_servers").(*schema.Set)
+	step := 20
+	if len(instanceSet.List()) > 0 {
+
+		slbService := NewService(client)
+		if d.Get("delete_protection_validation").(bool) {
+			lbInstance, err := slbService.DescribeSlb(d.Id())
+			if err != nil {
+				if errs.NotFoundError(err) {
+					return nil
+				}
+				return errs.WrapError(err)
+			}
+			if lbInstance.DeleteProtection == "on" {
+				return errs.WrapError(fmt.Errorf("Current backend servers' SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the resource.", d.Id()))
+			}
+		}
+
+		servers := make([]interface{}, 0)
+		for _, rmserver := range instanceSet.List() {
+			rms := rmserver.(map[string]interface{})
+			rmsm := map[string]interface{}{
+				"server_id": rms["server_id"],
+				"weight":    rms["weight"],
+				"type":      rms["type"],
+			}
+			servers = append(servers, rmsm)
+		}
+
+		request := slb.CreateRemoveBackendServersRequest()
+		request.RegionId = client.RegionId
+		request.LoadBalancerId = d.Id()
+
+		segs := len(servers)/step + 1
+		for i := 0; i < segs; i++ {
+			start := i * step
+			end := (i + 1) * step
+			if end >= len(servers) {
+				end = len(servers)
+			}
+
+			request.BackendServers = expandBackendServersWithTypeToString(servers[start:end])
+			err := retry.Retry(5*time.Minute, func() *retry.RetryError {
+				raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+					return slbClient.RemoveBackendServers(request)
+				})
+				if err != nil {
+					if errs.IsExpectedErrors(err, []string{"RspoolVipExist", "ObtainIpFail", "ServiceIsStopping"}) {
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				logs.AddDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
+			})
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), request.GetActionName(), errs.AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+
+	return nil
+}

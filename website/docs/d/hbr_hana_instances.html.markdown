@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Hbr Hana Instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.178.0+.
+-> **NOTE:** Available since v1.178.0.
 
 ## Example Usage
 
@@ -40,22 +40,22 @@ The following arguments are supported:
   - `INVALID_HANA_NODE`: The instance is invalid. 
   - `INITIALIZE_FAILED`: The client fails to be installed on the instance.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Hbr Hana Instance names.
 * `instances` - A list of Hbr Hana Instances. Each element contains the following attributes:
-	* `alert_setting` - The alert settings. Valid value: `INHERITED`, which indicates that the backup client sends alert notifications in the same way as the backup vault.
-	* `hana_instance_id` - The ID of the SAP HANA instance.
-	* `hana_name` - The name of the SAP HANA instance.
-	* `host` - The private or internal IP address of the host where the primary node of the SAP HANA instance resides.
-	* `id` - The ID of the Hana Instance. The value formats as `<vault_id>:<hana_instance_id>`.
-	* `instance_number` - The instance number of the SAP HANA system.
-	* `resource_group_id` - The ID of the resource group.
-	* `status` - The status of the SAP HANA instance.
-	* `status_message` - The status information.
-	* `use_ssl` - Indicates whether the SAP HANA instance is connected over Secure Sockets Layer (SSL).
-	* `user_name` - The username of the SYSTEMDB database.
-	* `validate_certificate` - Indicates whether the SSL certificate of the SAP HANA instance is verified.
-	* `vault_id` - The ID of the backup vault.
+  * `alert_setting` - The alert settings. Valid value: `INHERITED`, which indicates that the backup client sends alert notifications in the same way as the backup vault.
+  * `hana_instance_id` - The ID of the SAP HANA instance.
+  * `hana_name` - The name of the SAP HANA instance.
+  * `host` - The private or internal IP address of the host where the primary node of the SAP HANA instance resides.
+  * `id` - The ID of the Hana Instance. The value formats as `<vault_id>:<hana_instance_id>`.
+  * `instance_number` - The instance number of the SAP HANA system.
+  * `resource_group_id` - The ID of the resource group.
+  * `status` - The status of the SAP HANA instance.
+  * `status_message` - The status information.
+  * `use_ssl` - Indicates whether the SAP HANA instance is connected over Secure Sockets Layer (SSL).
+  * `user_name` - The username of the SYSTEMDB database.
+  * `validate_certificate` - Indicates whether the SSL certificate of the SAP HANA instance is verified.
+  * `vault_id` - The ID of the backup vault.

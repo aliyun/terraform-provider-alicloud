@@ -1,0 +1,299 @@
+package vpc_test
+
+// This file mirrors aliases.go for the EXTERNAL test package vpc_test. The
+// unexported var/const aliases in aliases.go belong to package vpc and are
+// invisible to vpc_test, so the same declarations are duplicated here pointing
+// at the same leaf packages (errs/logs/helper/convert/tags/validators). This
+// keeps every unqualified alias reference in the migrated test files resolving
+// exactly as it did inside package vpc. Leaf packages do not import the
+// alicloud root, so this introduces no import cycle.
+
+// Compatibility aliases re-exporting the root leaf-package helpers that the
+// migrated VPC files referenced unqualified while still in the root alicloud
+// package. The product package must not import root alicloud, so these names
+// point directly at the leaf packages (errs/logs/helper/convert/tags/validators).
+import (
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+)
+
+type Catcher = helper.Catcher
+type ComplexError = errs.ComplexError
+type ErrorSource = errs.ErrorSource
+type Invoker = helper.Invoker
+type MyMap = helper.MyMap
+type Protocol = helper.Protocol
+type ProviderError = errs.ProviderError
+type TagResourceType = tags.TagResourceType
+type Tag = tags.Tag
+
+var (
+	addDebug                                  = logs.AddDebug
+	AlibabaCloudSdkGoERROR                    = errs.AlibabaCloudSdkGoERROR
+	AliMnsERROR                               = errs.AliMnsERROR
+	AliyunDatahubSdkGo                        = errs.AliyunDatahubSdkGo
+	AliyunGoClientFailure                     = errs.AliyunGoClientFailure
+	AliyunLogGoSdkERROR                       = errs.AliyunLogGoSdkERROR
+	AliyunOssGoSdk                            = errs.AliyunOssGoSdk
+	AliyunTablestoreGoSdk                     = errs.AliyunTablestoreGoSdk
+	All                                       = helper.All
+	BoolPointer                               = helper.BoolPointer
+	buildClientToken                          = helper.BuildClientToken
+	BuildStateConf                            = helper.BuildStateConf
+	bytesToTB                                 = helper.BytesToTB
+	Case2Camel                                = helper.Case2Camel
+	checkWaitForReady                         = helper.CheckWaitForReady
+	ClientErrorCatcher                        = helper.ClientErrorCatcher
+	compareArrayJsonTemplateAreEquivalent     = helper.CompareArrayJsonTemplateAreEquivalent
+	compareJsonHasSubset                      = helper.CompareJsonHasSubset
+	compareJsonTemplateAreEquivalent          = helper.CompareJsonTemplateAreEquivalent
+	compareMapWithIgnoreEquivalent            = helper.CompareMapWithIgnoreEquivalent
+	compareYamlTemplateAreEquivalent          = helper.CompareYamlTemplateAreEquivalent
+	compressIPv6OrCIDR                        = helper.CompressIPv6OrCIDR
+	computePeriodByUnit                       = helper.ComputePeriodByUnit
+	convertArrayObjectToJsonString            = convert.ConvertArrayObjectToJsonString
+	convertArrayToString                      = convert.ConvertArrayToString
+	convertBoolToString                       = convert.ConvertBoolToString
+	convertChargeTypeToPaymentType            = convert.ConvertChargeTypeToPaymentType
+	convertFloat64ToString                    = convert.ConvertFloat64ToString
+	ConvertIntegerToInt                       = helper.ConvertIntegerToInt
+	convertInterfaceToJsonString              = convert.ConvertInterfaceToJsonString
+	convertIntergerToString                   = convert.ConvertIntergerToString
+	convertJsonStringToList                   = convert.ConvertJsonStringToList
+	convertJsonStringToMap                    = convert.ConvertJsonStringToMap
+	convertJsonStringToObject                 = convert.ConvertJsonStringToObject
+	convertJsonStringToStringList             = convert.ConvertJsonStringToStringList
+	convertListMapToJsonString                = convert.ConvertListMapToJsonString
+	convertListStringToListInterface          = convert.ConvertListStringToListInterface
+	convertListToCommaSeparate                = convert.ConvertListToCommaSeparate
+	convertListToJsonString                   = convert.ConvertListToJsonString
+	ConvertLowercaseTags                      = tags.ConvertLowercaseTags
+	convertMapFloat64ToJsonString             = convert.ConvertMapFloat64ToJsonString
+	convertMaptoJsonString                    = convert.ConvertMaptoJsonString
+	convertMapToJsonStringIgnoreError         = convert.ConvertMapToJsonStringIgnoreError
+	convertObjectToJsonString                 = convert.ConvertObjectToJsonString
+	convertPaymentTypeToChargeType            = convert.ConvertPaymentTypeToChargeType
+	convertStringToBool                       = convert.ConvertStringToBool
+	ConvertTagsForKms                         = tags.ConvertTagsForKms
+	ConvertTags                               = tags.ConvertTags
+	convertToInterfaceArray                   = convert.ConvertToInterfaceArray
+	convertToJsonWithoutEscapeHTML            = convert.ConvertToJsonWithoutEscapeHTML
+	convertYamlToObject                       = convert.ConvertYamlToObject
+	DataDefaultErrorMsg                       = errs.DataDefaultErrorMsg
+	dataResourceIdHash                        = helper.DataResourceIdHash
+	DBInstanceTDEErrors                       = errs.DBInstanceTDEErrors
+	DBReadInstanceNotReadyStatus              = errs.DBReadInstanceNotReadyStatus
+	debugOn                                   = logs.DebugOn
+	decodeFromBase64String                    = convert.DecodeFromBase64String
+	DefaultDebugMsg                           = logs.DefaultDebugMsg
+	DefaultErrorMsg                           = errs.DefaultErrorMsg
+	DefaultTimeoutMsg                         = errs.DefaultTimeoutMsg
+	DeleteTimeoutMsg                          = errs.DeleteTimeoutMsg
+	DenverdinoAliyungo                        = errs.DenverdinoAliyungo
+	diffTags                                  = tags.DiffTags
+	DiskInvalidOperation                      = errs.DiskInvalidOperation
+	DiskNotSupportOnlineChangeErrors          = errs.DiskNotSupportOnlineChangeErrors
+	EcsNotFound                               = errs.EcsNotFound
+	encodeToBase64String                      = convert.EncodeToBase64String
+	Error                                     = errs.Error
+	EscapeColons                              = helper.EscapeColons
+	expandArrayToMap                          = convert.ExpandArrayToMap
+	expandIntList                             = convert.ExpandIntList
+	expandSingletonToList                     = convert.ExpandSingletonToList
+	expandStringList                          = convert.ExpandStringList
+	expandTagsToMap                           = tags.ExpandTagsToMap
+	expandTagsToMapWithTags                   = tags.ExpandTagsToMapWithTags
+	FailedGetAttributeMsg                     = errs.FailedGetAttributeMsg
+	FailedToReachTargetAttribute              = errs.FailedToReachTargetAttribute
+	FailedToReachTargetStatus                 = errs.FailedToReachTargetStatus
+	FailedToReachTargetStatusWithError        = errs.FailedToReachTargetStatusWithError
+	FailedToReachTargetStatusWithRequestId    = errs.FailedToReachTargetStatusWithRequestId
+	FailedToReachTargetStatusWithResponse     = errs.FailedToReachTargetStatusWithResponse
+	FcGoSdk                                   = errs.FcGoSdk
+	filterEmptyStrings                        = convert.FilterEmptyStrings
+	FirstLower                                = helper.FirstLower
+	FloatAtLeast                              = validators.FloatAtLeast
+	FloatAtMost                               = validators.FloatAtMost
+	FloatBetween                              = validators.FloatBetween
+	ForbiddenInstance                         = errs.ForbiddenInstance
+	formatBool                                = convert.FormatBool
+	formatFloat64                             = convert.FormatFloat64
+	formatInt                                 = convert.FormatInt
+	GetCreateFailedMessage                    = errs.GetCreateFailedMessage
+	GetDaysBetween2Date                       = helper.GetDaysBetween2Date
+	GetFunc                                   = helper.GetFunc
+	getNextpageNumber                         = helper.GetNextpageNumber
+	GetNotFoundErrorFromString                = errs.GetNotFoundErrorFromString
+	GetNotFoundMessage                        = errs.GetNotFoundMessage
+	getOneStringOrAllStringSlice              = helper.GetOneStringOrAllStringSlice
+	getPagination                             = helper.GetPagination
+	GetTimeErrorFromString                    = errs.GetTimeErrorFromString
+	GetTimeoutMessage                         = errs.GetTimeoutMessage
+	GetUserHomeDir                            = helper.GetUserHomeDir
+	getWriteOnlyValue                         = helper.GetWriteOnlyValue
+	Gre                                       = helper.Gre
+	Http                                      = helper.Http
+	Https                                     = helper.Https
+	Icmp                                      = helper.Icmp
+	IdMsg                                     = errs.IdMsg
+	ignoredTags                               = tags.IgnoredTags
+	InArray                                   = helper.InArray
+	incrementalWait                           = helper.IncrementalWait
+	InstanceNotFound                          = errs.InstanceNotFound
+	Int32Pointer                              = helper.Int32Pointer
+	Int64Pointer                              = helper.Int64Pointer
+	IntAtLeast                                = validators.IntAtLeast
+	IntAtMost                                 = validators.IntAtMost
+	IntBetween                                = validators.IntBetween
+	Interface2Bool                            = convert.Interface2Bool
+	Interface2String                          = convert.Interface2String
+	Interface2StrSlice                        = convert.Interface2StrSlice
+	IntInSlice                                = validators.IntInSlice
+	IntMin                                    = helper.IntMin
+	InvalidAttributeValue                     = errs.InvalidAttributeValue
+	IsEmpty                                   = helper.IsEmpty
+	IsExpectedErrorCodes                      = errs.IsExpectedErrorCodes
+	IsExpectedErrors                          = errs.IsExpectedErrors
+	IsNil                                     = helper.IsNil
+	isPagingRequest                           = helper.IsPagingRequest
+	isProtocolValid                           = helper.IsProtocolValid
+	IsSlicesValuesEqual                       = helper.IsSlicesValuesEqual
+	IsSubCollection                           = helper.IsSubCollection
+	jsonXmlParam                              = helper.JsonXmlParam
+	loadFileContent                           = helper.LoadFileContent
+	LogClientTimeout                          = errs.LogClientTimeout
+	mapMerge                                  = helper.MapMerge
+	mapSort                                   = helper.MapSort
+	MD5                                       = helper.MD5
+	MergeMaps                                 = helper.MergeMaps
+	MessageInstanceNotFound                   = errs.MessageInstanceNotFound
+	NasNotFound                               = errs.NasNotFound
+	NeedRetry                                 = helper.NeedRetry
+	NetworkInterfaceInvalidOperations         = errs.NetworkInterfaceInvalidOperations
+	NewInvoker                                = helper.NewInvoker
+	NewProviderError                          = errs.NewProviderError
+	NoCodeRegexRetry                          = errs.NoCodeRegexRetry
+	normalizeJsonString                       = validators.NormalizeJsonString
+	NormalizeMap                              = convert.NormalizeMap
+	normalizeValue                            = convert.NormalizeValue
+	normalizeYamlString                       = validators.NormalizeYamlString
+	NotFoundArticle                           = errs.NotFoundArticle
+	NotFoundErr                               = errs.NotFoundErr
+	NotFoundError                             = errs.NotFoundError
+	NotFound                                  = errs.NotFound
+	NotFoundMsg                               = errs.NotFoundMsg
+	NotFoundWithError                         = errs.NotFoundWithError
+	NotFoundWithResponse                      = errs.NotFoundWithResponse
+	OperationDeniedDBStatus                   = errs.OperationDeniedDBStatus
+	OtsSearchIndexIsTemporarilyUnavailable    = errs.OtsSearchIndexIsTemporarilyUnavailable
+	OtsSecondaryIndexIsTemporarilyUnavailable = errs.OtsSecondaryIndexIsTemporarilyUnavailable
+	OtsTableIsTemporarilyUnavailable          = errs.OtsTableIsTemporarilyUnavailable
+	OtsTunnelIsTemporarilyUnavailable         = errs.OtsTunnelIsTemporarilyUnavailable
+	PageNumSmall                              = helper.PageNumSmall
+	PageSizeLarge                             = helper.PageSizeLarge
+	PageSizeMedium                            = helper.PageSizeMedium
+	PageSizeSmall                             = helper.PageSizeSmall
+	PageSizeXLarge                            = helper.PageSizeXLarge
+	ParseResourceId                           = helper.ParseResourceId
+	ParseResourceIdN                          = helper.ParseResourceIdN
+	ParseResourceIds                          = helper.ParseResourceIds
+	ParseResourceIdWithEscaped                = helper.ParseResourceIdWithEscaped
+	parsingTags                               = tags.ParsingTags
+	parsingTemplateTags                       = tags.ParsingTemplateTags
+	ProviderERROR                             = errs.ProviderERROR
+	RamInstanceNotFound                       = errs.RamInstanceNotFound
+	randIntRange                              = helper.RandIntRange
+	RequestIdMsg                              = errs.RequestIdMsg
+	RequiredWhenMsg                           = errs.RequiredWhenMsg
+	ResourceNotfound                          = errs.ResourceNotfound
+	ResponseCodeMsg                           = errs.ResponseCodeMsg
+	roaParam                                  = helper.RoaParam
+	rpcParam                                  = helper.RpcParam
+	ServerSideEncryptionAes256                = helper.ServerSideEncryptionAes256
+	ServerSideEncryptionKMS                   = helper.ServerSideEncryptionKMS
+	ServerSideEncryptionSM4                   = helper.ServerSideEncryptionSM4
+	ServiceBusyCatcher                        = helper.ServiceBusyCatcher
+	ServiceUnavailable                        = errs.ServiceUnavailable
+	setPagingRequest                          = helper.SetPagingRequest
+	setTags                                   = tags.SetTags
+	skipResourceSchemaValidation              = validators.SkipResourceSchemaValidation
+	SlbIsBusy                                 = errs.SlbIsBusy
+	SnapshotInvalidOperations                 = errs.SnapshotInvalidOperations
+	splitMultiZoneId                          = helper.SplitMultiZoneId
+	SplitSlice                                = helper.SplitSlice
+	Str2InterfaceSlice                        = convert.Str2InterfaceSlice
+	StringDoesNotContainAny                   = validators.StringDoesNotContainAny
+	StringDoesNotMatch                        = validators.StringDoesNotMatch
+	String                                    = helper.String
+	StringInSlice                             = validators.StringInSlice
+	StringLenAtLeast                          = validators.StringLenAtLeast
+	StringLenBetween                          = validators.StringLenBetween
+	StringMatch                               = validators.StringMatch
+	StringPointer                             = helper.StringPointer
+	SweepDefaultErrorMsg                      = errs.SweepDefaultErrorMsg
+	tagIgnored                                = tags.TagIgnored
+	TagResourceAcl                            = tags.TagResourceAcl
+	TagResourceApp                            = tags.TagResourceApp
+	TagResourceCdn                            = tags.TagResourceCdn
+	TagResourceCertificate                    = tags.TagResourceCertificate
+	TagResourceCluster                        = tags.TagResourceCluster
+	TagResourceDisk                           = tags.TagResourceDisk
+	TagResourceImage                          = tags.TagResourceImage
+	TagResourceInstance                       = tags.TagResourceInstance
+	TagResourceSecurityGroup                  = tags.TagResourceSecurityGroup
+	TagResourceTopic                          = tags.TagResourceTopic
+	tagsFromMap                               = tags.TagsFromMap
+	tagsMapEqual                              = tags.TagsMapEqual
+	tagsSchemaComputed                        = tags.TagsSchemaComputed
+	tagsSchemaComputedWithElements            = tags.TagsSchemaComputedWithElements
+	tagsSchemaForceNew                        = tags.TagsSchemaForceNew
+	tagsSchemaForceNewWithElements            = tags.TagsSchemaForceNewWithElements
+	tagsSchema                                = tags.TagsSchema
+	tagsSchemaWithElements                    = tags.TagsSchemaWithElements
+	tagsSchemaWithIgnore                      = tags.TagsSchemaWithIgnore
+	tagsToMap                                 = tags.TagsToMap
+	Tcp                                       = helper.Tcp
+	terraformToAPI                            = helper.TerraformToAPI
+	ThrottlingCatcher                         = helper.ThrottlingCatcher
+	Throttling                                = errs.Throttling
+	ThrottlingUser                            = errs.ThrottlingUser
+	Trim                                      = helper.Trim
+	Udp                                       = helper.Udp
+	Unique                                    = helper.Unique
+	updateTags                                = tags.UpdateTags
+	UpperLowerCaseDiffSuppressFunc            = validators.UpperLowerCaseDiffSuppressFunc
+	userDataHashSum                           = helper.UserDataHashSum
+	validateAllowedSplitStringValue           = validators.ValidateAllowedSplitStringValue
+	validateCIDRNetworkAddress                = validators.ValidateCIDRNetworkAddress
+	validateNormalName                        = validators.ValidateNormalName
+	ValidateNullableBool                      = validators.ValidateNullableBool
+	ValidateNullableIntBetween                = validators.ValidateNullableIntBetween
+	ValidateRFC3339TimeString                 = validators.ValidateRFC3339TimeString
+	validateStringConvertInt64                = validators.ValidateStringConvertInt64
+	validateSwitchCIDRNetworkAddress          = validators.ValidateSwitchCIDRNetworkAddress
+	validateVpnCIDRNetworkAddress             = validators.ValidateVpnCIDRNetworkAddress
+	validateYamlString                        = validators.ValidateYamlString
+	ValidProtocols                            = helper.ValidProtocols
+	WaitTimeoutMsg                            = errs.WaitTimeoutMsg
+	WrapComplexError                          = errs.WrapComplexError
+	WrapError                                 = errs.WrapError
+	WrapErrorf                                = errs.WrapErrorf
+	writeToFile                               = helper.WriteToFile
+	xmlJsonParam                              = helper.XmlJsonParam
+	xmlParam                                  = helper.XmlParam
+)
+
+// Interval constants are re-exported as const aliases (mirroring root common.go)
+// because the migrated VPC service files use them in untyped-constant
+// expressions such as `DefaultIntervalShort * time.Second`; a var alias would
+// make them typed int and break that multiplication.
+const (
+	DefaultIntervalLong   = helper.DefaultIntervalLong
+	DefaultIntervalMedium = helper.DefaultIntervalMedium
+	DefaultIntervalMini   = helper.DefaultIntervalMini
+	DefaultIntervalShort  = helper.DefaultIntervalShort
+)

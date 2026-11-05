@@ -112,3 +112,28 @@ runner container. It has no DinD sidecar, Docker socket, or Docker startup wait.
 Current trusted workflows do not use container jobs or Docker actions; introducing
 such a workflow requires an explicitly suitable runner pool. Removing DinD also
 avoids copying 595 MiB of action runtime dependencies into every new runner.
+
+## Lightweight checks and faster restore
+
+Trusted TestFrameworkGuard, BreakingChange, Formatter, BuildInputs and document
+checks use the isolated `terraform-ci-lite` scale set (500m CPU / 2 GiB requested,
+2 CPU / 4 GiB limited). Compile and ProductionBuild retain the larger trusted
+pool. The existing Basic Policy classification selects lite only for trusted
+inputs; external PRs retain the validated hosted runner selection. Both pools
+use private volumes, the same sandbox and service account, and no Docker.
+Provision the lite pool and its private cache-service read access before merging
+this routing change. Runner resource and topology settings are Helm operations.
+
+Errcheck restores the exact-input node-local Go seed after explicit Go setup,
+only for a trusted PR whose package scope needs errcheck. The reviewdog version,
+package selection, diff boundary and findings remain unchanged. There is no
+PR-controlled cache publication or change to the linter's result filtering.
+
+Cache restore logs report archive bytes, transfer/checksum time and extraction
+time separately. A local hit confirms seed identity and a verified private copy;
+it does not mean every compiled package is reused. Compare these phases on the
+same task and runner resources before choosing further restore changes.
+The extractor pins each resolved destination root once per archive, avoiding
+one redundant root resolution per member. It still resolves every target against
+that fixed root and rejects links, path traversal and pre-existing destination
+symlinks that would escape it.

@@ -611,6 +611,21 @@ func StringLenAtLeast(min int) schema.SchemaValidateFunc {
 	}
 }
 
+// ValidateDBConnectionPort validates the port of a database connection.
+// Shared by gpdb and rds connection resources.
+func ValidateDBConnectionPort(v interface{}, k string) (ws []string, errors []error) {
+	if value := v.(string); value != "" {
+		port, err := strconv.Atoi(value)
+		if err != nil {
+			errors = append(errors, err)
+		}
+		if port < 1000 || port > 5999 {
+			errors = append(errors, fmt.Errorf("%q cannot be less than 3001 and larger than 3999.", k))
+		}
+	}
+	return
+}
+
 // UpperLowerCaseDiffSuppressFunc suppresses differences that only differ in
 // letter case, so enum values such as MySQL/mysql do not produce a diff.
 func UpperLowerCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

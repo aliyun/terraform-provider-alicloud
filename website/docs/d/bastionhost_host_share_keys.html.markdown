@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Bastionhost Host Share Keys of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.165.0+.
+-> **NOTE:** Available since v1.165.0.
 
 ## Example Usage
 
@@ -45,14 +45,14 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Host Share Key name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Host Share Key names.
 * `keys` - A list of Bastionhost Host Share Keys. Each element contains the following attributes:
-	* `host_share_key_id` - The first ID of the resource.
-	* `host_share_key_name` - The name of the host shared key.
-	* `id` - The ID of the Host Share Key.
-	* `instance_id` - The ID of the Bastion instance.
-	* `private_key_finger_print` - The fingerprint of the private key.
+  * `host_share_key_id` - The first ID of the resource.
+  * `host_share_key_name` - The name of the host shared key.
+  * `id` - The ID of the Host Share Key.
+  * `instance_id` - The ID of the Bastion instance.
+  * `private_key_finger_print` - The fingerprint of the private key.

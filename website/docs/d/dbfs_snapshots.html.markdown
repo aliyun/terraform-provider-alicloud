@@ -9,11 +9,11 @@ description: |-
 
 # alicloud\_dbfs\_snapshots
 
-~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://help.aliyun.com/en/dbfs/).
+~> **NOTE:** This data source has been deprecated since v1.279.0 and will be removed in the future. See: [DBFS](https://www.alibabacloud.com/help/en/dbfs/).
 
 This data source provides the Dbfs Snapshots of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.156.0+.
+-> **NOTE:** Available since v1.156.0.
 
 ## Example Usage
 
@@ -51,23 +51,23 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the snapshot. Valid values: `accomplished`, `failed`, `progressing`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Snapshot names.
 * `snapshots` - A list of Dbfs Snapshots. Each element contains the following attributes:
-	* `category` - The type of the Snapshot.
-	* `create_time` - The creation time of the snapshot.
-	* `description` - The description of the snapshot.
-	* `id` - The ID of the Snapshot.
-	* `last_modified_time` - The last modification time of the snapshot.
-	* `progress` - The progress of the snapshot.
-	* `remain_time` - The remaining completion time of the snapshot being created, in seconds.
-	* `retention_days` - The retention days of the snapshot.
-	* `snapshot_id` - The ID of the snapshot.
-	* `snapshot_name` - The name of the snapshot.
-	* `snapshot_type` - The creation of the snapshot.
-	* `instance_id` - The ID of the database file system.
-	* `source_fs_size` - Source database file system capacity.
-	* `status` - The status of the snapshot. Possible values: `progressing`, `accomplished`, `failed`.
+  * `category` - The type of the Snapshot.
+  * `create_time` - The creation time of the snapshot.
+  * `description` - The description of the snapshot.
+  * `id` - The ID of the Snapshot.
+  * `last_modified_time` - The last modification time of the snapshot.
+  * `progress` - The progress of the snapshot.
+  * `remain_time` - The remaining completion time of the snapshot being created, in seconds.
+  * `retention_days` - The retention days of the snapshot.
+  * `snapshot_id` - The ID of the snapshot.
+  * `snapshot_name` - The name of the snapshot.
+  * `snapshot_type` - The creation of the snapshot.
+  * `instance_id` - The ID of the database file system.
+  * `source_fs_size` - Source database file system capacity.
+  * `status` - The status of the snapshot. Possible values: `progressing`, `accomplished`, `failed`.

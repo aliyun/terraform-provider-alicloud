@@ -27,7 +27,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testAccServiceCatalogProvisionedProduct"
+  default = "tf-accServiceCatalogProvisionedProduct"
 }
 
 resource "alicloud_service_catalog_provisioned_product" "default" {
@@ -51,17 +51,18 @@ resource "alicloud_service_catalog_provisioned_product" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `parameters` - (Optional) Template parameters entered by the user.The maximum value of N is 200.See the following `Block Parameters`.
-* `portfolio_id` - (Optional) Product mix ID.> When there is a default Startup option, there is no need to fill in the portfolio. When there is no default Startup option, you must fill in the portfolio. 
+* `parameters` - (Optional) Template parameters entered by the user.The maximum value of N is 200.See [`parameters`](#parameters) below.
+* `portfolio_id` - (Optional) Product mix ID.> When there is a default Startup option, there is no need to fill in the portfolio. When there is no default Startup option, you must fill in the portfolio.
 * `product_id` - (Required) Product ID.
 * `product_version_id` - (Required) Product version ID.
-* `provisioned_product_name` - (Required,ForceNew) The name of the instance.The length is 1~128 characters.
-* `stack_region_id` - (Required,ForceNew) The ID of the region to which the resource stack of the Alibaba Cloud resource orchestration service (ROS) belongs.
+* `provisioned_product_id` - (Optional) The ID of the instance.
+* `provisioned_product_name` - (Required, ForceNew) The name of the instance.The length is 1~128 characters.
+* `stack_region_id` - (Required, ForceNew) The ID of the region to which the resource stack of the Alibaba Cloud resource orchestration service (ROS) belongs.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-#### Block Parameters
+### `parameters`
 
-The Parameters support the following:
+The parameters support the following:
 * `parameter_key` - (Optional) The name of the parameter defined in the template.
 * `parameter_value` - (Optional) The Template parameter value entered by the user.
 
@@ -75,15 +76,14 @@ The following attributes are exported:
 * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task
 * `last_task_id` - The ID of the last task
 * `outputs` - The output value of the template.
-    * `description` - Description of the output value defined in the template.
-    * `output_key` - The name of the output value defined in the template.
-    * `output_value` - The content of the output value defined in the template.
+  * `description` - Description of the output value defined in the template.
+  * `output_key` - The name of the output value defined in the template.
+  * `output_value` - The content of the output value defined in the template.
 * `owner_principal_id` - The RAM entity ID of the owner
 * `owner_principal_type` - The RAM entity type of the owner
 * `product_name` - The name of the product
 * `product_version_name` - The name of the product version
 * `provisioned_product_arn` - The ARN of the product instance
-* `provisioned_product_id` - The ID of the instance.
 * `provisioned_product_type` - Instance type.The value is RosStack, which indicates the stack of Alibaba Cloud resource orchestration service (ROS).
 * `stack_id` - The ID of the ROS stack
 * `status` - Instance status

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd Network Packages to the user.
 ---
 
-# alicloud\_ecd\_network\_packages
+# alicloud_ecd_network_packages
 
 This data source provides the Ecd Network Packages of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -47,18 +47,18 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `packages` - A list of Ecd Network Packages. Each element contains the following attributes:
-	* `bandwidth` - The bandwidth of package.
-	* `create_time` - The creation time of network package.
-	* `expired_time` - The expired time of package.
-	* `id` - The ID of the Network Package.
-	* `internet_charge_type` - The internet charge type  of  package.
-	* `network_package_id` - The ID of network package.
-	* `office_site_id` - The ID of office site.
-	* `office_site_name` - The name of office site.
-	* `status` - The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
-	* `eip_addresses` - The public IP address list of the network packet.
+  * `bandwidth` - The bandwidth of package.
+  * `create_time` - The creation time of network package.
+  * `expired_time` - The expired time of package.
+  * `id` - The ID of the Network Package.
+  * `internet_charge_type` - The internet charge type  of  package.
+  * `network_package_id` - The ID of network package.
+  * `office_site_id` - The ID of office site.
+  * `office_site_name` - The name of office site.
+  * `status` - The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
+  * `eip_addresses` - The public IP address list of the network packet.

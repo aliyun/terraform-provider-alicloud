@@ -177,8 +177,8 @@ The following attributes are exported:
 
   Default value: Available. You can specify multiple values for this parameter. Separate the values with commas (,).
 * `usable` - Indicates whether the image is available. Valid values:
-  * `true`: The image is available and can be used to create ECS instances.
-  * `false`: The image is unavailable and cannot be used to create ECS instances.
+  * true: The image is available and can be used to create ECS instances.
+  * false: The image is unavailable and cannot be used to create ECS instances.
 
 
 ## Timeouts

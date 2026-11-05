@@ -1,0 +1,268 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+package esa
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	errs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	helper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	logs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudEsaCustomResponseCodeRule() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudEsaCustomResponseCodeRuleCreate,
+		Read:   resourceAliCloudEsaCustomResponseCodeRuleRead,
+		Update: resourceAliCloudEsaCustomResponseCodeRuleUpdate,
+		Delete: resourceAliCloudEsaCustomResponseCodeRuleDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"config_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"page_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"return_code": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"rule": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"rule_enable": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"rule_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"sequence": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"site_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"site_version": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudEsaCustomResponseCodeRuleCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateCustomResponseCodeRule"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("site_id"); ok {
+		request["SiteId"] = v
+	}
+
+	if v, ok := d.GetOkExists("sequence"); ok {
+		request["Sequence"] = v
+	}
+	if v, ok := d.GetOkExists("site_version"); ok {
+		request["SiteVersion"] = v
+	}
+	request["ReturnCode"] = d.Get("return_code")
+	if v, ok := d.GetOk("rule_enable"); ok {
+		request["RuleEnable"] = v
+	}
+	request["PageId"] = d.Get("page_id")
+	if v, ok := d.GetOk("rule_name"); ok {
+		request["RuleName"] = v
+	}
+	if v, ok := d.GetOk("rule"); ok {
+		request["Rule"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 0*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_esa_custom_response_code_rule", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprintf("%v:%v", request["SiteId"], response["ConfigId"]))
+
+	return resourceAliCloudEsaCustomResponseCodeRuleRead(d, meta)
+}
+
+func resourceAliCloudEsaCustomResponseCodeRuleRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	esaServiceV2 := EsaServiceV2{client}
+
+	objectRaw, err := esaServiceV2.DescribeEsaCustomResponseCodeRule(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_esa_custom_response_code_rule DescribeEsaCustomResponseCodeRule Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("page_id", objectRaw["PageId"])
+	d.Set("return_code", objectRaw["ReturnCode"])
+	d.Set("rule", objectRaw["Rule"])
+	d.Set("rule_enable", objectRaw["RuleEnable"])
+	d.Set("rule_name", objectRaw["RuleName"])
+	d.Set("sequence", objectRaw["Sequence"])
+	d.Set("site_version", objectRaw["SiteVersion"])
+	d.Set("config_id", fmt.Sprint(objectRaw["ConfigId"]))
+
+	parts := strings.Split(d.Id(), ":")
+	d.Set("site_id", fmt.Sprint(parts[0]))
+
+	return nil
+}
+
+func resourceAliCloudEsaCustomResponseCodeRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "UpdateCustomResponseCodeRule"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ConfigId"] = parts[1]
+	request["SiteId"] = parts[0]
+
+	if d.HasChange("sequence") {
+		update = true
+
+		if v, ok := d.GetOkExists("sequence"); ok {
+			request["Sequence"] = v
+		}
+	}
+
+	if d.HasChange("return_code") {
+		update = true
+	}
+	request["ReturnCode"] = d.Get("return_code")
+	if d.HasChange("rule_enable") {
+		update = true
+	}
+	if v, ok := d.GetOk("rule_enable"); ok {
+		request["RuleEnable"] = v
+	}
+
+	if d.HasChange("page_id") {
+		update = true
+	}
+	request["PageId"] = d.Get("page_id")
+	if d.HasChange("rule_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("rule_name"); ok {
+		request["RuleName"] = v
+	}
+	if d.HasChange("rule") {
+		update = true
+	}
+	if v, ok := d.GetOk("rule"); ok {
+		request["Rule"] = v
+	}
+
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 0*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudEsaCustomResponseCodeRuleRead(d, meta)
+}
+
+func resourceAliCloudEsaCustomResponseCodeRuleDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteCustomResponseCodeRule"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	request["ConfigId"] = parts[1]
+	request["SiteId"] = parts[0]
+
+	wait := helper.IncrementalWait(3*time.Second, 0*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("ESA", "2024-09-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

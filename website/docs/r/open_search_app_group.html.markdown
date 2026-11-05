@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Open Search App Group resource.
 ---
 
-# alicloud\_open\_search\_app\_group
+# alicloud_open_search_app_group
 
 Provides a Open Search App Group resource.
 
 For information about Open Search App Group and how to use it, see [What is App Group](https://www.aliyun.com/product/opensearch).
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
 
@@ -50,33 +50,28 @@ resource "alicloud_open_search_app_group" "default" {
 
 The following arguments are supported:
 
-* `app_group_name` - (Required,ForceNew) Application Group Name.
-* `type` - (Required,ForceNew) Application type. Valid Values: `standard`, `enhanced`.
-* `payment_type` - (Required,ForceNew) The billing method of the resource. Valid values: `Subscription` and `PayAsYouGo`.
-* `quota` - (Required,ForceNew) Quota information.  The details see Block quota.
-* `order` - (Optional,ForceNew) Order cycle information. The details see Block order.
+* `app_group_name` - (Required, ForceNew) Application Group Name.
+* `type` - (Required, ForceNew) Application type. Valid Values: `standard`, `enhanced`.
+* `payment_type` - (Required, ForceNew) The billing method of the resource. Valid values: `Subscription` and `PayAsYouGo`.
+* `quota` - (Required, ForceNew) Quota information. See [`quota`](#quota) below.
+* `order` - (Optional, ForceNew) Order cycle information. See [`order`](#order) below.
 * `order_type` - (Optional) Order change type. Valid values: `UPGRADE` and `DOWNGRADE`.
 * `charge_way` - (Optional) Billing model. Valid values:`compute_resource` and `qps`.
 * `description` - (Optional) The description of the resource.
 * `current_version` - (Optional) The version of Application Group Name.
 
-#### quota
+### `quota`
+
 The quota supports the following:
 
 * `doc_size` - (Required) Storage Size. Unit: GB.
 * `compute_resource` - (Required) Computing resources. Unit: LCU.
-* `qps` - (Required) Search request. Unit: times/second. 
-* `spec` - (Required) Specification. Valid values: 
-  * `opensearch.share.junior`: Entry-level.
-  * `opensearch.share.common`: Shared universal.
-  * `opensearch.share.compute`: Shared computing.
-  * `opensearch.share.storage`: Shared storage type.
-  * `opensearch.private.common`: Exclusive universal type.
-  * `opensearch.private.compute`: Exclusive computing type.
-  * `opensearch.private.storage`: Exclusive storage type
+* `qps` - (Optional) Search request. Unit: times/second.
+* `spec` - (Required) Specification. Valid values: `opensearch.share.junior` (Entry-level), `opensearch.share.common` (Shared universal), `opensearch.share.compute` (Shared computing), `opensearch.share.storage` (Shared storage type), `opensearch.private.common` (Exclusive universal type), `opensearch.private.compute` (Exclusive computing type), `opensearch.private.storage` (Exclusive storage type).
 
-#### order
-The quota supports the following:
+### `order`
+
+The order supports the following:
 * `duration` - (Optional) Order cycle. The minimum value is not less than 0.
 * `pricing_cycle` - (Optional) Order cycle unit. Valid values: `Year` and `Month`.
 * `auto_renew` - (Optional) Whether to renew automatically. It only takes effect when the parameter payment_type takes the value `Subscription`.

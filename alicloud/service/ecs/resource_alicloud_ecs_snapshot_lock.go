@@ -120,7 +120,7 @@ func (r *snapshotLockResource) Create(ctx context.Context, req resource.CreateRe
 	action := "LockSnapshot"
 	request := map[string]interface{}{
 		"SnapshotId":    plan.SnapshotLockId.ValueString(),
-		"RegionId":      r.Client().RegionId,
+		"RegionId":      r.Meta().RegionId,
 		"ClientToken":   helper.BuildClientToken(action),
 		"CoolOffPeriod": plan.CoolOffPeriod.ValueInt64(),
 		"DryRun":        plan.DryRun.ValueBool(),
@@ -132,7 +132,7 @@ func (r *snapshotLockResource) Create(ctx context.Context, req resource.CreateRe
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(snapshotLockTimeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		response, err = r.Meta().RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -151,7 +151,7 @@ func (r *snapshotLockResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	object, err := NewService(r.Client()).DescribeSnapshotLock(plan.SnapshotLockId.ValueString())
+	object, err := NewService(r.Meta()).DescribeSnapshotLock(plan.SnapshotLockId.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeLockedSnapshots", snapshotLockTypeName),
@@ -171,7 +171,7 @@ func (r *snapshotLockResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	object, err := NewService(r.Client()).DescribeSnapshotLock(state.Id.ValueString())
+	object, err := NewService(r.Meta()).DescribeSnapshotLock(state.Id.ValueString())
 	if err != nil {
 		if errs.NotFoundError(err) {
 			resp.State.RemoveResource(ctx)
@@ -201,7 +201,7 @@ func (r *snapshotLockResource) Update(ctx context.Context, req resource.UpdateRe
 	action := "LockSnapshot"
 	request := map[string]interface{}{
 		"SnapshotId":    state.Id.ValueString(),
-		"RegionId":      r.Client().RegionId,
+		"RegionId":      r.Meta().RegionId,
 		"ClientToken":   helper.BuildClientToken(action),
 		"CoolOffPeriod": plan.CoolOffPeriod.ValueInt64(),
 		"DryRun":        plan.DryRun.ValueBool(),
@@ -224,7 +224,7 @@ func (r *snapshotLockResource) Update(ctx context.Context, req resource.UpdateRe
 		var err error
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(snapshotLockTimeout, func() *retry.RetryError {
-			response, err = r.Client().RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+			response, err = r.Meta().RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 			if err != nil {
 				if helper.NeedRetry(err) {
 					wait()
@@ -244,7 +244,7 @@ func (r *snapshotLockResource) Update(ctx context.Context, req resource.UpdateRe
 		}
 	}
 
-	object, err := NewService(r.Client()).DescribeSnapshotLock(state.Id.ValueString())
+	object, err := NewService(r.Meta()).DescribeSnapshotLock(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeLockedSnapshots", snapshotLockTypeName),
@@ -267,7 +267,7 @@ func (r *snapshotLockResource) Delete(ctx context.Context, req resource.DeleteRe
 	action := "UnlockSnapshot"
 	request := map[string]interface{}{
 		"SnapshotId":  state.Id.ValueString(),
-		"RegionId":    r.Client().RegionId,
+		"RegionId":    r.Meta().RegionId,
 		"ClientToken": helper.BuildClientToken(action),
 		"DryRun":      state.DryRun.ValueBool(),
 	}
@@ -276,7 +276,7 @@ func (r *snapshotLockResource) Delete(ctx context.Context, req resource.DeleteRe
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(snapshotLockTimeout, func() *retry.RetryError {
-		response, err = r.Client().RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		response, err = r.Meta().RpcPost("Ecs", "2014-05-26", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()

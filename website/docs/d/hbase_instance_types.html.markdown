@@ -56,16 +56,16 @@ The following attributes are exported in addition to the arguments listed above:
   * `cpu_size` - Cpu size of the instance type.
   * `mem_size` - Mem size of the instance type.
 * `master_instance_types` - (Available in 1.115.0+) A list of master instance types. Each element contains the following attributes:
-    * `instance_type` - Name of the instance type.
-    * `cpu_size` - Cpu size of the instance type.
-    * `mem_size` - Mem size of the instance type.
+  * `instance_type` - Name of the instance type.
+  * `cpu_size` - Cpu size of the instance type.
+  * `mem_size` - Mem size of the instance type.
 * `core_instance_types` - (Available in 1.115.0+) A list of core instance types. Each element contains the following attributes:
-    * `zone` - Name of zone id.
-    * `engine` - Name of the engine.
-    * `version` - The version of the engine.
-    * `category` - Name of the category, single or cluster.
-    * `storage_type` - Name of the storage type.
-    * `instance_type` - Name of the instance type.
-    * `cpu_size` - Cpu size of the instance type.
-    * `mem_size` - Mem size of the instance type.
-    * `max_core_count` - Max count of the core instance nodes.
+  * `zone` - Name of zone id.
+  * `engine` - Name of the engine.
+  * `version` - The version of the engine.
+  * `category` - Name of the category, single or cluster.
+  * `storage_type` - Name of the storage type.
+  * `instance_type` - Name of the instance type.
+  * `cpu_size` - Cpu size of the instance type.
+  * `mem_size` - Mem size of the instance type.
+  * `max_core_count` - Max count of the core instance nodes.

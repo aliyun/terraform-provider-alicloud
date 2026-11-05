@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Oos Applications of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.145.0+.
+-> **NOTE:** Available since v1.145.0.
 
 ## Example Usage
 
@@ -40,16 +40,16 @@ The following arguments are supported:
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of oss application names.
 * `applications` - A list of Oos Applications. Each element contains the following attributes:
-    * `application_name` - The name of the application.
-    * `create_time` - The Created time of the application.
-    * `update_time` - The Updated time of the application.
-    * `description` - Application group description information.
-    * `id` - The ID of the Application. The value is formate as <application_name>.
-    * `resource_group_id` - The ID of the resource group.
-    * `tags` - The tag of the resource.
+  * `application_name` - The name of the application.
+  * `create_time` - The Created time of the application.
+  * `update_time` - The Updated time of the application.
+  * `description` - Application group description information.
+  * `id` - The ID of the Application. The value is formate as <application_name>.
+  * `resource_group_id` - The ID of the resource group.
+  * `tags` - The tag of the resource.

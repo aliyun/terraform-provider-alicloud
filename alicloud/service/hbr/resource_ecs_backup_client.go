@@ -1,0 +1,333 @@
+package hbr
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceEcsBackupClient() *schema.Resource {
+	return &schema.Resource{
+		Create: ResourceEcsBackupClientCreate,
+		Read:   ResourceEcsBackupClientRead,
+		Update: ResourceEcsBackupClientUpdate,
+		Delete: ResourceEcsBackupClientDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"data_network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"CLASSIC", "PUBLIC", "VPC"}, false),
+			},
+			"data_proxy_setting": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"CUSTOM", "DISABLE", "USE_CONTROL_PROXY"}, false),
+			},
+			"max_cpu_core": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"max_worker": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"proxy_host": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"proxy_password": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"proxy_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"proxy_user": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ACTIVATED", "STOPPED", "INSTALL_FAILED", "REGISTERED", "DEACTIVATED", "INSTALLING", "NOT_INSTALLED", "UPGRADING", "UPGRADE_FAILED", "UNINSTALLING", "UNINSTALL_FAILED", "UNKNOWN"}, false),
+			},
+			"use_https": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+		},
+	}
+}
+
+func ResourceEcsBackupClientCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "InstallBackupClients"
+	request := make(map[string]interface{})
+	var err error
+	request["InstanceIds"] = "[\"" + d.Get("instance_id").(string) + "\"]"
+	wait := helper.IncrementalWait(30*time.Second, 10*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"CloudAssistNotRunningOnInstance"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_hbr_ecs_backup_client", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	hbrService := HbrService{client}
+	taskId := fmt.Sprint(response["TaskId"])
+	taskConf := helper.BuildStateConf([]string{}, []string{"ACTIVATED"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, hbrService.HbrTaskRefreshFunc(taskId, []string{"INSTALL_FAILED", "DEACTIVATED", "UNKNOWN"}))
+	if _, err := taskConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	taskResult, err := hbrService.DescribeHbrTask(taskId)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+	d.SetId(fmt.Sprint(taskResult["ClientId"]))
+	return ResourceEcsBackupClientUpdate(d, meta)
+}
+func ResourceEcsBackupClientRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	hbrService := HbrService{client}
+	object, err := hbrService.DescribeHbrEcsBackupClient(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_hbr_ecs_backup_client hbrService.DescribeHbrEcsBackupClient Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	d.Set("instance_id", object["InstanceId"])
+	d.Set("status", object["Status"])
+	if object["Settings"] != nil {
+		d.Set("use_https", object["Settings"].(map[string]interface{})["UseHttps"])
+		d.Set("data_network_type", object["Settings"].(map[string]interface{})["DataNetworkType"])
+		d.Set("data_proxy_setting", object["Settings"].(map[string]interface{})["DataProxySetting"])
+		d.Set("max_cpu_core", object["Settings"].(map[string]interface{})["MaxCpuCore"])
+		d.Set("max_worker", object["Settings"].(map[string]interface{})["MaxWorker"])
+		d.Set("proxy_host", object["Settings"].(map[string]interface{})["ProxyHost"])
+		d.Set("proxy_password", object["Settings"].(map[string]interface{})["ProxyPassword"])
+		d.Set("proxy_user", object["Settings"].(map[string]interface{})["ProxyUser"])
+		settings, err := convert.FormatInt(object["Settings"].(map[string]interface{})["ProxyPort"])
+		if err != nil {
+			return err
+		}
+		d.Set("proxy_port", fmt.Sprint(settings))
+	}
+	return nil
+}
+func ResourceEcsBackupClientUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	var err error
+	update := false
+	request := map[string]interface{}{
+		"ClientId": d.Id(),
+	}
+	if d.HasChange("use_https") || d.IsNewResource() {
+		update = true
+		if v, ok := d.GetOkExists("use_https"); ok {
+			request["UseHttps"] = v
+		}
+	}
+	if d.HasChange("data_network_type") {
+		update = true
+		if v, ok := d.GetOk("data_network_type"); ok {
+			request["DataNetworkType"] = v
+		}
+	}
+	if d.HasChange("data_proxy_setting") {
+		update = true
+		if v, ok := d.GetOk("data_proxy_setting"); ok {
+			request["DataProxySetting"] = v
+		}
+	}
+	if d.HasChange("max_cpu_core") {
+		update = true
+		if v, ok := d.GetOk("max_cpu_core"); ok {
+			request["MaxCpuCore"] = v
+		}
+	}
+	if d.HasChange("max_worker") {
+		update = true
+		if v, ok := d.GetOk("max_worker"); ok {
+			request["MaxWorker"] = v
+		}
+	}
+	if d.HasChange("proxy_host") {
+		update = true
+		if v, ok := d.GetOk("proxy_host"); ok {
+			request["ProxyHost"] = v
+		}
+	}
+	if d.HasChange("proxy_password") {
+		update = true
+		if v, ok := d.GetOk("proxy_password"); ok {
+			request["ProxyPassword"] = v
+		}
+	}
+	if d.HasChange("proxy_port") {
+		update = true
+		if v, ok := d.GetOk("proxy_port"); ok {
+			request["ProxyPort"] = v
+		}
+	}
+	if d.HasChange("proxy_user") {
+		update = true
+		if v, ok := d.GetOk("proxy_user"); ok {
+			request["ProxyUser"] = v
+		}
+	}
+	if update {
+		action := "UpdateClientSettings"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChange("status") {
+		client := meta.(*connectivity.AliyunClient)
+		hbrService := HbrService{client}
+		object, err := hbrService.DescribeHbrEcsBackupClient(d.Id())
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		target := d.Get("status").(string)
+		if object["Status"].(string) != target {
+			if target == "ACTIVATED" {
+				err = ResourceEcsBackupClientCreate(d, meta)
+			} else if target == "STOPPED" {
+				err = resourceEcsBackupClientUninstall(d, meta)
+			} else {
+				return errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, object["Status"].(string)))
+			}
+			if err != nil {
+				return errs.WrapError(err)
+			}
+		}
+	}
+
+	return ResourceEcsBackupClientRead(d, meta)
+}
+func resourceEcsBackupClientUninstall(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "UninstallBackupClients"
+	var response map[string]interface{}
+	var err error
+	request := map[string]interface{}{
+		"ClientIds": "[\"" + d.Id() + "\"]",
+	}
+
+	request["InstanceIds"] = "[\"" + d.Get("instance_id").(string) + "\"]"
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	hbrService := HbrService{client}
+	taskConf := helper.BuildStateConf([]string{}, []string{"NOT_INSTALLED"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, hbrService.HbrTaskRefreshFunc(fmt.Sprint(response["TaskId"]), []string{"UNINSTALL_FAILED", "UNKNOWN"}))
+	if _, err := taskConf.WaitForState(); err != nil {
+		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return nil
+}
+func ResourceEcsBackupClientDelete(d *schema.ResourceData, meta interface{}) error {
+	err := resourceEcsBackupClientUninstall(d, meta)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteBackupClient"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"ClientId": d.Id(),
+	}
+
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("hbr", "2017-09-08", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
