@@ -2,8 +2,10 @@ package connectivity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -3109,6 +3111,47 @@ func applyLogClientSignVersion(c *sls.Client, signVersion *sync.Map, apiProductC
 	c.AuthVersion = sls.AuthVersionType(s)
 }
 
+// responseStatusCode reads the StatusCode member of an error-shaped response
+// body without assuming the shape the SDK handed back. The legacy transport
+// produced an *int, while the context bound transport decodes JSON numbers as
+// json.Number, and a service may also answer with a plain number or a numeric
+// string. An unchecked pointer assertion would panic the provider on a 2xx body
+// that carries a numeric status, so every shape is converted and anything
+// unreadable keeps the fallback status.
+func responseStatusCode(value interface{}, fallback int) int {
+	switch v := value.(type) {
+	case nil:
+		return fallback
+	case *int:
+		if v == nil {
+			return fallback
+		}
+		return *v
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	case float64:
+		if v != math.Trunc(v) || v < math.MinInt32 || v > math.MaxInt32 {
+			return fallback
+		}
+		return int(v)
+	case json.Number:
+		if n, err := v.Int64(); err == nil && n >= math.MinInt32 && n <= math.MaxInt32 {
+			return int(n)
+		}
+		return fallback
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return n
+		}
+		return fallback
+	}
+	return fallback
+}
+
 func formatError(response map[string]interface{}, err error) error {
 	if err != nil {
 		return err
@@ -3146,7 +3189,7 @@ func formatError(response map[string]interface{}, err error) error {
 	if ok1 || ok2 {
 		statusCode := 200
 		if v, ok := response["StatusCode"]; ok {
-			statusCode = tea.IntValue(v.(*int))
+			statusCode = responseStatusCode(v, statusCode)
 		}
 		return tea.NewSDKError(map[string]interface{}{
 			"statusCode": statusCode,

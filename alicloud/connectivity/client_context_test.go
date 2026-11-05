@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -208,6 +210,37 @@ func TestUnitDoWithContextKeepsALegitimateEmptyList(t *testing.T) {
 	instances, ok := response["Instances"].(map[string]interface{})
 	require.True(t, ok, "the nested object must survive the body check")
 	assert.Empty(t, instances["Instance"])
+}
+
+// A 2xx error-shaped body may carry a numeric StatusCode in any shape the
+// transports produce: the legacy path used *int while the context bound path
+// decodes JSON numbers as json.Number. Reading it must never panic and must keep
+// the status the service reported.
+func TestUnitFormatErrorReadsNumericStatusCode(t *testing.T) {
+	cases := []struct {
+		name  string
+		value interface{}
+		want  int
+	}{
+		{"json number", json.Number("500"), 500},
+		{"float", float64(503), 503},
+		{"numeric string", "429", 429},
+		{"pointer", tea.Int(502), 502},
+		{"nil value", nil, 200},
+		{"fractional", 1.5, 200},
+		{"unreadable", "oops", 200},
+		{"negative", -1, -1},
+	}
+	for _, testCase := range cases {
+		err := formatError(map[string]interface{}{
+			"Code":       "InvalidSomething",
+			"Message":    "denied",
+			"StatusCode": testCase.value,
+		}, nil)
+		var sdkErr *tea.SDKError
+		require.ErrorAs(t, err, &sdkErr, testCase.name)
+		assert.Equal(t, testCase.want, tea.IntValue(sdkErr.StatusCode), testCase.name)
+	}
 }
 
 // The body check must not replace an SDK error: a failed call keeps its own
