@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -636,16 +637,73 @@ func (config *Config) loadEndpointFromLocal() error {
 	}
 	return nil
 }
+
+// endpointPostRegex matches the legacy "^Post ["]*https://.*" error message
+// shape produced by the location SDK when the HTTP request fails at the
+// transport layer. Kept as a package-level var to avoid recompiling per call.
+var endpointPostRegex = regexp.MustCompile("^Post [\"]*https://.*")
+
+// isEndpointRetryableError reports whether an error returned by DescribeEndpoints
+// should be retried. It covers the location SDK's own TimeoutErrorCode, the legacy
+// "^Post https://" message shape, and standard transport-level errors so that
+// transient dial tcp / i/o timeout / context deadline exceeded failures are
+// retried instead of failing immediately.
+func isEndpointRetryableError(err error) bool {
+	if isTransportLevelError(err) {
+		return true
+	}
+	if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
+		return true
+	}
+	if msg := err.Error(); msg != "" && endpointPostRegex.MatchString(msg) {
+		return true
+	}
+	return false
+}
+
+// endpointRetryMaxCount returns the configured maximum number of endpoint-fetch
+// retries. It reads ALIBABA_CLOUD_ENDPOINT_RETRY_COUNT and falls back to 3,
+// clamping to [1, 10] so an invalid value cannot disable retries or loop
+// excessively.
+func endpointRetryMaxCount() int {
+	n, err := strconv.Atoi(os.Getenv("ALIBABA_CLOUD_ENDPOINT_RETRY_COUNT"))
+	if err != nil || n < 1 {
+		return 3
+	}
+	if n > 10 {
+		return 10
+	}
+	return n
+}
+
+// endpointRetryFirstInterval returns the configured base interval before the
+// first endpoint-fetch retry. It reads ALIBABA_CLOUD_ENDPOINT_RETRY_INTERVAL
+// (seconds) and falls back to 3s, clamping to [0, 60]s so an invalid value
+// cannot stall the provider or disable backoff unexpectedly.
+func endpointRetryFirstInterval() time.Duration {
+	s, err := strconv.Atoi(os.Getenv("ALIBABA_CLOUD_ENDPOINT_RETRY_INTERVAL"))
+	if err != nil || s < 0 {
+		return 3 * time.Second
+	}
+	if s > 60 {
+		s = 60
+	}
+	return time.Duration(s) * time.Second
+}
+
+// incrementalWaitDuration returns the wait time before the retryCount-th retry.
+// The first retry waits firstDuration; each subsequent retry adds
+// increaseDuration so the backoff actually accumulates across retries.
+func incrementalWaitDuration(retryCount int, firstDuration, increaseDuration time.Duration) time.Duration {
+	if retryCount <= 1 {
+		return firstDuration
+	}
+	return firstDuration + time.Duration(retryCount-1)*increaseDuration
+}
 func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration) func() {
 	retryCount := 1
 	return func() {
-		var waitTime time.Duration
-		if retryCount == 1 {
-			waitTime = firstDuration
-		} else if retryCount > 1 {
-			waitTime += increaseDuration
-		}
-		time.Sleep(waitTime)
+		time.Sleep(incrementalWaitDuration(retryCount, firstDuration, increaseDuration))
 		retryCount++
 	}
 }
@@ -675,21 +733,25 @@ func (client *AliyunClient) describeEndpointForService(productCode string) (stri
 	locationClient.SourceIp = client.config.SourceIp
 	locationClient.SecureTransport = client.config.SecureTransport
 	defer locationClient.Shutdown()
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait := incrementalWait(endpointRetryFirstInterval(), 5*time.Second)
+	maxRetryCount := endpointRetryMaxCount()
+	retryCount := 0
 	var endpointResult string
-	err = retry.Retry(2*time.Minute, func() *retry.RetryError {
+	err = retry.Retry(client.GetRetryTimeout(2*time.Minute), func() *retry.RetryError {
 		endpointsResponse, err := locationClient.DescribeEndpoints(args)
 		if err != nil {
-			if e, ok := err.(*errors.ClientError); ok && e.ErrorCode() == errors.TimeoutErrorCode {
-				wait()
-				args.Domain = "location-readonly.aliyuncs.com"
-				return retry.RetryableError(err)
-			}
-			re := regexp.MustCompile("^Post [\"]*https://.*")
-			if err.Error() != "" && re.MatchString(err.Error()) {
-				wait()
-				args.Domain = "location-readonly.aliyuncs.com"
-				return retry.RetryableError(err)
+			// Retry transient transport-level errors (dial tcp / i/o timeout /
+			// context deadline exceeded) as well as the location SDK's own
+			// timeout and legacy "^Post https://" errors, up to the configured
+			// retry count. The overall attempt budget is still bounded by the
+			// retry timeout (max_retry_timeout, default 2m).
+			if isEndpointRetryableError(err) {
+				if retryCount < maxRetryCount {
+					wait()
+					retryCount++
+					args.Domain = "location-readonly.aliyuncs.com"
+					return retry.RetryableError(err)
+				}
 			}
 			return retry.NonRetryableError(err)
 		}
