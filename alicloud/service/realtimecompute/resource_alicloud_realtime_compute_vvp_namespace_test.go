@@ -2310,17 +2310,6 @@ func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *t
 	}
 }
 
-func testAccRealtimeComputeVvpCaptureResourceId(resourceName string, target *string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("cannot find %s in state", resourceName)
-		}
-		*target = rs.Primary.ID
-		return nil
-	}
-}
-
 // vvpNamespaceCreateRecoveryTestServer answers CreateNamespace with a 5xx that does not prove the
 // request was rejected, while DescribeNamespaces lists the namespace afterwards. Existence after the
 // failure must not be adopted: the product has no request correlation, so the provider cannot prove

@@ -163,38 +163,6 @@ func ChangedUpdateMappings(bindings []Mapping, desired, prior map[string]interfa
 	return selected
 }
 
-// Int converts a mapped response value to a types.Int64.
-func Int(m map[string]interface{}, key string) types.Int64 {
-	cur := interface{}(m)
-	for _, seg := range strings.Split(key, ".") {
-		mm, ok := cur.(map[string]interface{})
-		if !ok {
-			return types.Int64Null()
-		}
-		cur, ok = mm[seg]
-		if !ok {
-			return types.Int64Null()
-		}
-	}
-	switch v := cur.(type) {
-	case float64:
-		return types.Int64Value(int64(v))
-	case int:
-		return types.Int64Value(int64(v))
-	case int64:
-		return types.Int64Value(v)
-	case json.Number:
-		if n, err := v.Int64(); err == nil {
-			return types.Int64Value(n)
-		}
-	case string:
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-			return types.Int64Value(n)
-		}
-	}
-	return types.Int64Null()
-}
-
 // PlannedChanged reports whether a planned value differs from the prior state.
 func PlannedChanged(plan, state attr.Value) bool {
 	if plan == nil || plan.IsUnknown() {

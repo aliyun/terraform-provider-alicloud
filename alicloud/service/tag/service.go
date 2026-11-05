@@ -643,7 +643,7 @@ func fwBool(m map[string]interface{}, key string) types.Bool {
 // simple string-list fields (e.g. Lindorm ip_white_list) whose fwValueMethod is empty.
 // Emitted under fwReqList (any assignable array, incl. request-only responseKey=”)
 // rather than fwStateList so request-only arrays get the helper without dragging in
-// the response-side state helpers (fwStr/fwBool/fwadapt.Int/ToTypeList) that Go would flag unused.
+// the response-side state helpers (fwStr/fwBool/ToTypeList) that Go would flag unused.
 func fwListToJSONString(l interface {
 	IsNull() bool
 	Elements() []attr.Value
