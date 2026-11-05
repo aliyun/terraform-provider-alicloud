@@ -8,10 +8,9 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
-	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestUnitAIDBClusterDatasetSchema(t *testing.T) {
@@ -56,7 +55,7 @@ func TestUnitAIDBClusterDatasetImportState(t *testing.T) {
 }
 
 func TestAccAliCloudPolarDBAIDBClusterDataset_basic0(t *testing.T) {
-	rand := sdkacctest.RandIntRange(1000, 9999)
+	rand := tfacctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testaccPolardbAIDBDataset%d", rand)
 	resourceId := "alicloud_polardb_aidb_cluster_dataset.default"
 
@@ -64,8 +63,8 @@ func TestAccAliCloudPolarDBAIDBClusterDataset_basic0(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		Providers:    map[string]*schema.Provider{"alicloud": acctest.Provider},
-		CheckDestroy: testAccCheckPolarDBAIDBClusterDatasetDestroy,
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckPolarDBAIDBClusterDatasetDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccPolarDBAIDBClusterDatasetConfig(name),
