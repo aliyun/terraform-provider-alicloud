@@ -142,6 +142,13 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
+				// CreateSubscription accepts the binding, but UpdateSubscription
+				// rejects a request that adds or changes it (HTTP 400
+				// InvalidParameterValue), so the change is applied by creating a
+				// replacement subscription with the requested binding.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace": schema.StringAttribute{
 				Required: true,

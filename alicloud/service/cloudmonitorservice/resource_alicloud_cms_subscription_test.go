@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -160,7 +161,7 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 	resourceId := "alicloud_cms_subscription.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-cmssubscription-full-%d", rand)
-	var boundId string
+	var boundId, reboundId string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -168,13 +169,13 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 		CheckDestroy:             testAccCheckCmsSubscriptionDependenciesDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCmsSubscriptionConfigCompleteUnbound(name),
+				Config: testAccCmsSubscriptionConfigComplete(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCmsSubscriptionCaptureId(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription"),
 					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
 					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "true"),
-					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
+					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.expression", "1 and 2"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
@@ -184,22 +185,6 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.field", "labels.severity"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.op", "IN"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.1.value", "P1,P2"),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
-				ImportStateVerify: true,
-			},
-			{
-				// Binding the notification strategy is an in-place update: the
-				// subscription must keep the identity captured while it was unbound.
-				Config: testAccCmsSubscriptionConfigComplete(name),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCmsSubscriptionCheckIdUnchanged(resourceId, &boundId),
-					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
-					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
 				),
 			},
 			{
@@ -244,11 +229,29 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				// The service rejects adding or changing the bound notification
+				// strategy in place, so the argument is ForceNew and the change is
+				// applied by creating a replacement subscription.
+				Config: testAccCmsSubscriptionConfigCompleteRebound(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionCheckIdChanged(resourceId, &boundId),
+					testAccCmsSubscriptionCaptureId(resourceId, &reboundId),
+					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.second", "uuid"),
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
 				// Moving the subscription to another workspace replaces it: the
 				// replacement must return a different identity.
 				Config: testAccCmsSubscriptionConfigCompleteOtherWorkspace(name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCmsSubscriptionCheckIdChanged(resourceId, &boundId),
+					testAccCmsSubscriptionCheckIdChanged(resourceId, &reboundId),
 					resource.TestCheckResourceAttr(resourceId, "workspace", strings.ToLower(name)+"-second"),
 					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
@@ -620,14 +623,14 @@ resource "alicloud_cms_workspace" "second" {
 `, testAccCmsSubscriptionCompleteDependence(name), baseName)
 }
 
-func testAccCmsSubscriptionConfigCompleteUnbound(name string) string {
+func testAccCmsSubscriptionConfigCompleteRebound(name string) string {
 	return fmt.Sprintf(`%s
 resource "alicloud_cms_subscription" "default" {
-  subscription_name      = var.name
+  subscription_name      = "${var.name}-updated"
   workspace              = alicloud_cms_workspace.default.workspace_name
-  description            = "complete subscription"
+  notify_strategy_id     = alicloud_cms_event_notify_policy.second.uuid
+  description            = "complete subscription updated"
   enable                 = true
-  subscribe_legacy_event = true
 
   filter_setting {
     expression = "1 and 2"
@@ -641,11 +644,11 @@ resource "alicloud_cms_subscription" "default" {
     conditions {
       field = "labels.severity"
       op    = "IN"
-      value = "P1,P2"
+      value = "P1"
     }
   }
 }
-`, testAccCmsSubscriptionCompleteDependence(name))
+`, testAccCmsSubscriptionSecondPolicyDependence(name))
 }
 
 func testAccCmsSubscriptionConfigCompleteOtherWorkspace(name string) string {
@@ -673,6 +676,54 @@ resource "alicloud_cms_subscription" "default" {
   }
 }
 `, testAccCmsSubscriptionSecondWorkspaceDependence(name))
+}
+
+// testAccCmsSubscriptionSecondPolicyDependence keeps the first policy and adds
+// a second one in the same workspace, so a binding change can be expressed
+// without any external fixture.
+func testAccCmsSubscriptionSecondPolicyDependence(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_event_notify_policy" "second" {
+  workspace   = alicloud_cms_workspace.default.workspace_name
+  name        = "${var.name}-second"
+  description = "Second event notification policy managed by Terraform"
+
+  response_plan {
+    repeat_notify_setting {
+      end_incident_state = "resolved"
+      repeat_interval    = "30"
+    }
+    auto_recover_seconds = "600"
+  }
+
+  notify_strategy {
+    description                  = "Second notify strategy for subscription test"
+    ignore_restored_notification = false
+
+    grouping_setting {
+      grouping_keys = ["severity"]
+      period_min    = "5"
+      times         = "1"
+      silence_sec   = "300"
+    }
+
+    routes {
+      effect_time_range {
+        time_zone            = "Asia/Shanghai"
+        start_time_in_minute = "0"
+        end_time_in_minute   = "1439"
+        day_in_week          = ["1", "2", "3", "4", "5"]
+      }
+
+      channels {
+        receivers            = ["tf-test-group"]
+        channel_type         = "DING"
+        enabled_sub_channels = []
+      }
+    }
+  }
+}
+`, testAccCmsSubscriptionCompleteDependence(name))
 }
 
 func testAccCmsSubscriptionConfigComplete(name string) string {
@@ -2481,6 +2532,52 @@ func TestUnitCmsSubscriptionEmptyOptionalListRejected(t *testing.T) {
 				t.Fatal("an omitted list must be accepted")
 			}
 		})
+	}
+}
+
+// TestUnitCmsSubscriptionNotifyStrategyIdRequiresReplace proves a changed
+// notification-strategy binding plans a replacement: the service rejects the
+// change in place, so a same-identity update cannot carry it.
+func TestUnitCmsSubscriptionNotifyStrategyIdRequiresReplace(t *testing.T) {
+	r := cloudmonitorservice.NewSubscriptionResource()
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	attribute, ok := resourceSchema.Attributes["notify_strategy_id"].(fwschema.StringAttribute)
+	if !ok {
+		t.Fatalf("notify_strategy_id is %T, want a string attribute", resourceSchema.Attributes["notify_strategy_id"])
+	}
+	if len(attribute.PlanModifiers) == 0 {
+		t.Fatal("notify_strategy_id carries no plan modifier")
+	}
+	stateValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                 "sub-1",
+		"subscription_name":  "name",
+		"workspace":          "ws-1",
+		"notify_strategy_id": "old-strategy",
+	})
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                 "sub-1",
+		"subscription_name":  "name",
+		"workspace":          "ws-1",
+		"notify_strategy_id": "new-strategy",
+	})
+	req := planmodifier.StringRequest{
+		Config:      tfsdk.Config{Schema: resourceSchema, Raw: planValue},
+		ConfigValue: types.StringValue("new-strategy"),
+		Plan:        tfsdk.Plan{Schema: resourceSchema, Raw: planValue},
+		PlanValue:   types.StringValue("new-strategy"),
+		State:       tfsdk.State{Schema: resourceSchema, Raw: stateValue},
+		StateValue:  types.StringValue("old-strategy"),
+		Path:        path.Root("notify_strategy_id"),
+	}
+	resp := &planmodifier.StringResponse{PlanValue: types.StringValue("new-strategy")}
+	for _, modifier := range attribute.PlanModifiers {
+		modifier.PlanModifyString(context.Background(), req, resp)
+	}
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("plan modifier returned diagnostics: %v", resp.Diagnostics)
+	}
+	if !resp.RequiresReplace {
+		t.Fatal("changing notify_strategy_id must require replacement")
 	}
 }
 
