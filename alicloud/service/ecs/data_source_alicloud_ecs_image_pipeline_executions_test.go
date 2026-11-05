@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -26,7 +25,6 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			acctest.PreCheck(t)
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
