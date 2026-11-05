@@ -97,7 +97,6 @@ func ResourceIpControlCreate(d *schema.ResourceData, meta interface{}) error {
 	action := "CreateIpControl"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
 
@@ -111,7 +110,7 @@ func ResourceIpControlCreate(d *schema.ResourceData, meta interface{}) error {
 	runtime.SetAutoretry(true)
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
-		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -192,11 +191,9 @@ func ResourceIpControlUpdate(d *schema.ResourceData, meta interface{}) error {
 		action := "ModifyIpControl"
 		var request map[string]interface{}
 		var response map[string]interface{}
-		var query map[string]interface{}
 		var err error
 		request = make(map[string]interface{})
-		query = make(map[string]interface{})
-		query["IpControlId"] = d.Id()
+		request["IpControlId"] = d.Id()
 		request["IpControlName"] = d.Get("ip_control_name")
 		request["Description"] = d.Get("description")
 
@@ -204,7 +201,7 @@ func ResourceIpControlUpdate(d *schema.ResourceData, meta interface{}) error {
 		runtime.SetAutoretry(true)
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+			response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 			if err != nil {
 				if helper.NeedRetry(err) {
 					wait()
@@ -257,18 +254,16 @@ func resourceIpControlUpdatePolicyItems(d *schema.ResourceData, meta interface{}
 			action := "RemoveIpControlPolicyItem"
 			var request map[string]interface{}
 			var response map[string]interface{}
-			var query map[string]interface{}
 			var err error
 			request = make(map[string]interface{})
-			query = make(map[string]interface{})
-			query["IpControlId"] = d.Id()
+			request["IpControlId"] = d.Id()
 			request["PolicyItemIds"] = strings.Join(policyItemIds, ";")
 
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 				if err != nil {
 					if helper.NeedRetry(err) {
 						wait()
@@ -291,11 +286,9 @@ func resourceIpControlUpdatePolicyItems(d *schema.ResourceData, meta interface{}
 			m := data.(map[string]interface{})
 			var request map[string]interface{}
 			var response map[string]interface{}
-			var query map[string]interface{}
 			var err error
 			request = make(map[string]interface{})
-			query = make(map[string]interface{})
-			query["IpControlId"] = d.Id()
+			request["IpControlId"] = d.Id()
 			request["CidrIp"] = m["cidr_ip"]
 			if v := fmt.Sprint(m["app_id"]); v != "" && v != "<nil>" {
 				request["AppId"] = v
@@ -305,7 +298,7 @@ func resourceIpControlUpdatePolicyItems(d *schema.ResourceData, meta interface{}
 			runtime.SetAutoretry(true)
 			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+				response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 				if err != nil {
 					if helper.NeedRetry(err) {
 						wait()
@@ -330,16 +323,15 @@ func ResourceIpControlDelete(d *schema.ResourceData, meta interface{}) error {
 	action := "DeleteIpControl"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	query := make(map[string]interface{})
 	var err error
 	request = make(map[string]interface{})
-	query["IpControlId"] = d.Id()
+	request["IpControlId"] = d.Id()
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
-		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -369,17 +361,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayIpControl(id string) (object map
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "DescribeIpControls"
 	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["IpControlId"] = id
-	query["PageNumber"] = 1
-	query["PageSize"] = 10
+	request["IpControlId"] = id
+	request["PageNumber"] = 1
+	request["PageSize"] = 10
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -416,17 +406,15 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayIpControlPolicyItems(id string) 
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "DescribeIpControlPolicyItems"
 	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["IpControlId"] = id
-	query["PageNumber"] = 1
-	query["PageSize"] = 100
+	request["IpControlId"] = id
+	request["PageNumber"] = 1
+	request["PageSize"] = 100
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
