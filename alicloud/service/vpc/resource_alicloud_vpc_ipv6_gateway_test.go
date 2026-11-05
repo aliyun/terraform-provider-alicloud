@@ -228,6 +228,11 @@ func TestAccAliCloudVpcIpv6Gateway_basic0(t *testing.T) {
 // description with spaces and punctuation, must pass validation, and only the
 // length upper bounds are enforced at plan time.
 func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
+	// The provider emits API request/response debug output only when DEBUG
+	// contains "terraform"; enable it for this test so the ACC log carries the
+	// actual Create/Modify payloads and responses.
+	t.Setenv("DEBUG", "terraform")
+
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
