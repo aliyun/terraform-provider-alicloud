@@ -22,11 +22,48 @@ readonly MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.ma
 # after its opening backtick. Only the top level `status` argument definition in
 # the Argument Reference section is read: an appendix, an example, a fenced block
 # or another argument that happens to repeat the phrase does not grant an
-# exemption.
+# exemption. Every legal fenced code block is skipped, not only a backtick fence
+# at column zero: a tilde fence, or a backtick or tilde fence indented by up to
+# three spaces, hides its content just as well.
 misspell_enum_positions_from() {
   awk '
-    /^```/ { in_fence = !in_fence; next }
-    in_fence { next }
+    # Fence opener or closer length: a run of backticks or tildes at the start of
+    # the (indent-stripped) line. Any other first character returns 0.
+    function fence_run(text,   ch, n, i) {
+      ch = substr(text, 1, 1)
+      if (ch != "`" && ch != "~") return 0
+      n = 0
+      for (i = 1; i <= length(text); i++) {
+        if (substr(text, i, 1) == ch) n++
+        else break
+      }
+      return n
+    }
+    {
+      line = $0
+      indent = 0
+      while (indent < 4 && substr(line, indent + 1, 1) == " ") indent++
+      body = substr(line, indent + 1)
+      run = (indent < 4) ? fence_run(body) : 0
+      if (in_fence) {
+        # A closing fence repeats the opening character at least as many times
+        # and carries nothing but whitespace after it.
+        if (run >= fence_len && substr(body, 1, 1) == fence_char && substr(body, run + 1) ~ /^[ \t]*$/) {
+          in_fence = 0
+        }
+        next
+      }
+      if (run >= 3) {
+        info = substr(body, run + 1)
+        # A backtick fence may not carry a backtick in its info string.
+        if (!(substr(body, 1, 1) == "`" && index(info, "`") > 0)) {
+          in_fence = 1
+          fence_char = substr(body, 1, 1)
+          fence_len = run
+          next
+        }
+      }
+    }
     /^## / { in_arguments = ($0 ~ /^## Argument Reference[ \t]*$/); next }
     !in_arguments { next }
     /^\* `status` - / && /Valid values:/ {

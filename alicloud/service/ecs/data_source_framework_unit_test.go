@@ -278,15 +278,15 @@ func TestUnitFwValidateQueryEnvelope(t *testing.T) {
 
 func TestUnitFwCollectTokenPagesFollowsTokens(t *testing.T) {
 	var visited []string
-	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
 		visited = append(visited, token)
 		switch token {
 		case "":
-			return []map[string]interface{}{{"ExecutionId": "exec-1"}}, "token-1", nil
+			return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-1"}}, nextToken: "token-1"}, nil
 		case "token-1":
-			return []map[string]interface{}{{"ExecutionId": "exec-2"}}, "", nil
+			return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-2"}}}, nil
 		default:
-			return nil, "", fmt.Errorf("unexpected token %q", token)
+			return fwTokenPage{}, fmt.Errorf("unexpected token %q", token)
 		}
 	})
 
@@ -299,9 +299,9 @@ func TestUnitFwCollectTokenPagesFollowsTokens(t *testing.T) {
 
 func TestUnitFwCollectTokenPagesRejectsRepeatedToken(t *testing.T) {
 	calls := 0
-	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
 		calls++
-		return []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, "same-token", nil
+		return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, nextToken: "same-token"}, nil
 	})
 
 	assert.Error(t, err)
@@ -315,9 +315,9 @@ func TestUnitFwCollectTokenPagesRejectsRepeatedToken(t *testing.T) {
 // time before it notices the repeat.
 func TestUnitFwCollectTokenPagesRejectsAnEchoedStartTokenWithoutRefetching(t *testing.T) {
 	visited := make([]string, 0)
-	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
 		visited = append(visited, token)
-		return []map[string]interface{}{{"ExecutionId": "exec-1"}}, token, nil
+		return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-1"}}, nextToken: token}, nil
 	})
 
 	assert.Error(t, err)
@@ -326,12 +326,12 @@ func TestUnitFwCollectTokenPagesRejectsAnEchoedStartTokenWithoutRefetching(t *te
 	assert.Equal(t, []string{"start-token"}, visited, "the echoed start token must be requested exactly once")
 
 	// A different first continuation token is still followed normally.
-	_, _, err = fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	_, _, err = fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
 		switch token {
 		case "start-token":
-			return []map[string]interface{}{{"ExecutionId": "exec-1"}}, "next-token", nil
+			return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-1"}}, nextToken: "next-token"}, nil
 		default:
-			return []map[string]interface{}{{"ExecutionId": "exec-2"}}, "", nil
+			return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-2"}}}, nil
 		}
 	})
 	assert.NoError(t, err)
@@ -339,9 +339,9 @@ func TestUnitFwCollectTokenPagesRejectsAnEchoedStartTokenWithoutRefetching(t *te
 
 func TestUnitFwCollectTokenPagesFailsWhenBudgetExhausted(t *testing.T) {
 	calls := 0
-	objects, _, err := fwCollectTokenPages(context.Background(), 2, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	objects, _, err := fwCollectTokenPages(context.Background(), 2, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
 		calls++
-		return []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, fmt.Sprintf("token-%d", calls), nil
+		return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, nextToken: fmt.Sprintf("token-%d", calls)}, nil
 	})
 
 	assert.Error(t, err)
@@ -354,14 +354,86 @@ func TestUnitFwCollectTokenPagesStopsOnCancelledContext(t *testing.T) {
 	cancel()
 
 	calls := 0
-	objects, _, err := fwCollectTokenPages(ctx, 10, "", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	objects, _, err := fwCollectTokenPages(ctx, 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
 		calls++
-		return nil, "", nil
+		return fwTokenPage{}, nil
 	})
 
 	assert.Error(t, err)
 	assert.Nil(t, objects)
 	assert.Zero(t, calls, "a cancelled read must not issue another request")
+}
+
+// The server total is part of the success envelope, so a page that omits its
+// records while the total still expects rows is not a legitimate empty result.
+func TestUnitFwCollectTokenPagesRejectsAPositiveTotalWithoutRecords(t *testing.T) {
+	calls := 0
+	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
+		calls++
+		return fwTokenPage{total: 3, totalKnown: true}, nil
+	})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "TotalCount")
+	assert.Nil(t, objects, "an inconsistent page must not be returned as an empty result")
+	assert.Empty(t, lastToken)
+	assert.Equal(t, 1, calls)
+}
+
+// An explicit TotalCount of zero is the documented empty result and must stay a
+// successful read.
+func TestUnitFwCollectTokenPagesKeepsAnExplicitZeroTotal(t *testing.T) {
+	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
+		return fwTokenPage{total: 0, totalKnown: true}, nil
+	})
+
+	assert.NoError(t, err)
+	assert.Empty(t, objects)
+	assert.Empty(t, lastToken)
+}
+
+// A total that changes between pages, or fewer rows than the total when the
+// listing ends, is an inconsistent response instead of a complete result.
+func TestUnitFwCollectTokenPagesRejectsAnInconsistentTotal(t *testing.T) {
+	calls := 0
+	_, _, err := fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
+		calls++
+		if calls == 1 {
+			return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-1"}}, nextToken: "token-1", total: 2, totalKnown: true}, nil
+		}
+		return fwTokenPage{total: 5, totalKnown: true}, nil
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "inconsistent")
+
+	// Same total, but the listing ends with fewer rows than it reports.
+	_, _, err = fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
+		return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-1"}}, total: 2, totalKnown: true}, nil
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "incomplete")
+
+	// More rows than the total is equally inconsistent.
+	_, _, err = fwCollectTokenPages(context.Background(), 10, "", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
+		return fwTokenPage{
+			items:      []map[string]interface{}{{"ExecutionId": "exec-1"}, {"ExecutionId": "exec-2"}},
+			total:      1,
+			totalKnown: true,
+		}, nil
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "inconsistent")
+}
+
+// A read that starts from a configured token has already skipped the rows
+// before that cursor, so only the upper bound of the total can be checked.
+func TestUnitFwCollectTokenPagesAllowsAShortResultFromAStartToken(t *testing.T) {
+	objects, _, err := fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) (fwTokenPage, error) {
+		return fwTokenPage{items: []map[string]interface{}{{"ExecutionId": "exec-1"}}, total: 10, totalKnown: true}, nil
+	})
+
+	assert.NoError(t, err, "a mid-list cursor cannot see the rows before it")
+	assert.Len(t, objects, 1)
 }
 
 func TestUnitEcsImagePipelineExecutionsStatusValidator(t *testing.T) {

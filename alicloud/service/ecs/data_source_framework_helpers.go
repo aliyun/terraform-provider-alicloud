@@ -802,30 +802,57 @@ func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSi
 	return objects, totalCount, nil
 }
 
+// fwTokenPage is one page of a token paginated query. totalKnown distinguishes
+// an explicit TotalCount of 0 from a response that does not report the total.
+type fwTokenPage struct {
+	items      []map[string]interface{}
+	nextToken  string
+	total      int64
+	totalKnown bool
+}
+
 // fwCollectTokenPages follows a continuation token until the server returns
 // none. Every record must carry a unique, non-empty identity, so partially
 // overlapping pages are rejected as well. A repeated token or a token for the
 // whole page budget means the cursor never terminates; the accumulated rows are
 // discarded instead of being returned as a partial result.
 //
+// The server total is part of the success envelope, so it is checked as well: a
+// page that omits the records while the total still expects rows, a total that
+// changes between pages, and more rows than the total are all inconsistent
+// responses and are rejected instead of being read as an empty or complete
+// result. A read that starts from a configured token cannot see the rows before
+// that cursor, so completeness is only asserted when the read started at the
+// beginning of the result.
+//
 // The configured start token is already in use before the first request, so it
 // is recorded up front: a server that echoes it back would otherwise make the
 // loop send the very same request a second time before noticing the repeat.
-func fwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action, identityKey string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
+func fwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action, identityKey string, fetch func(token string) (fwTokenPage, error)) ([]map[string]interface{}, string, error) {
 	objects := make([]map[string]interface{}, 0)
 	seenTokens := map[string]struct{}{}
 	if initialToken != "" {
 		seenTokens[initialToken] = struct{}{}
 	}
 	seenRecords := map[string]struct{}{}
+	totalCount := int64(0)
+	totalKnown := false
 	token := initialToken
 	for page := 0; page < maxPages; page++ {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, "", fmt.Errorf("%s read stopped before page %d was requested: %v; the result was not returned because it would be incomplete", action, page+1, ctxErr)
 		}
-		pageItems, nextToken, err := fetch(token)
+		result, err := fetch(token)
 		if err != nil {
 			return nil, "", err
+		}
+		pageItems, nextToken := result.items, result.nextToken
+		if result.totalKnown {
+			if totalKnown && result.total != totalCount {
+				return nil, "", fmt.Errorf("%s reported TotalCount %d for the page at token %q after %d for an earlier page; the result was not returned because the server total is inconsistent", action, result.total, token, totalCount)
+			}
+			totalCount = result.total
+			totalKnown = true
 		}
 		for _, item := range pageItems {
 			identity, err := fwRecordIdentity(item, identityKey, action)
@@ -838,7 +865,13 @@ func fwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action
 			seenRecords[identity] = struct{}{}
 		}
 		objects = append(objects, pageItems...)
+		if totalKnown && int64(len(objects)) > totalCount {
+			return nil, "", fmt.Errorf("%s returned %d rows while TotalCount reports %d; the result was not returned because the response is inconsistent", action, len(objects), totalCount)
+		}
 		if nextToken == "" {
+			if totalKnown && initialToken == "" && int64(len(objects)) != totalCount {
+				return nil, "", fmt.Errorf("%s returned %d rows while TotalCount reports %d and the server returned no continuation token; the result was not returned because it would be incomplete", action, len(objects), totalCount)
+			}
 			return objects, "", nil
 		}
 		if _, duplicate := seenTokens[nextToken]; duplicate {

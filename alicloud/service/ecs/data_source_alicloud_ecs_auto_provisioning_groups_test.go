@@ -265,16 +265,22 @@ data "alicloud_ecs_auto_provisioning_groups" "type_candidate" {
 }
 
 // checkAutoProvisioningGroupsTypesPartition proves the type filter narrows the
-// result without depending on the account holding more than one type: every row
-// of each type-filtered read carries the requested type, no group appears under
-// two types, the reads together cover the unfiltered result, and their row
-// counts add up to it. A server that ignores `types` returns the full result for
-// each of the three reads, which fails the overlap and the sum assertions.
+// result without depending on the account holding more than one type: the
+// unfiltered read must return at least one group in the same step, every row of
+// each type-filtered read carries the requested type, no group appears under two
+// types, the reads together cover the unfiltered result, and their row counts
+// add up to it. The non-empty baseline is asserted here because four empty reads
+// would otherwise satisfy every partition assertion. A server that ignores
+// `types` returns the full result for each of the three reads, which fails the
+// overlap and the sum assertions.
 func checkAutoProvisioningGroupsTypesPartition(allResourceId string, typeResources map[string]string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		allCount, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
 		if err != nil {
 			return err
+		}
+		if allCount < 1 {
+			return fmt.Errorf("%s returned no auto provisioning group, so the type partition has no baseline to compare against", allResourceId)
 		}
 		allIds := make(map[string]struct{}, allCount)
 		for index := 0; index < allCount; index++ {

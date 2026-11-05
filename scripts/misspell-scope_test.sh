@@ -208,7 +208,28 @@ awk -v heading="$argument_reference_line" -v line="$duplicate_line" '
 ' "$enum_doc" > "$fence_fixture"
 fence_line_number=$(( argument_reference_line + 2 ))
 
-for fixture in "paragraph:$paragraph_fixture:$paragraph_line_number" "appendix:$appendix_fixture:$appendix_line_number" "fence:$fence_fixture:$fence_line_number"; do
+# Tilde fences and fences indented by up to three spaces are legal fenced code
+# blocks as well. A status definition inside them is an example, not the
+# argument definition, so it must stay reported.
+legal_fence_fixture() {
+  local target="$1" opener="$2" closer="$3"
+  mkdir -p "$(dirname "$target")"
+  awk -v heading="$argument_reference_line" -v opener="$opener" -v closer="$closer" -v line="$duplicate_line" '
+    { print }
+    NR == heading { print opener; print line; print closer }
+  ' "$enum_doc" > "$target"
+}
+
+tilde_fence_fixture="$tmpdir/tilde-fence/ecs_image_pipeline_executions.html.markdown"
+legal_fence_fixture "$tilde_fence_fixture" '~~~hcl' '~~~'
+
+indented_fence_fixture="$tmpdir/indented-fence/ecs_image_pipeline_executions.html.markdown"
+legal_fence_fixture "$indented_fence_fixture" '   ```hcl' '   ```'
+
+indented_tilde_fence_fixture="$tmpdir/indented-tilde-fence/ecs_image_pipeline_executions.html.markdown"
+legal_fence_fixture "$indented_tilde_fence_fixture" '   ~~~' '   ~~~'
+
+for fixture in "paragraph:$paragraph_fixture:$paragraph_line_number" "appendix:$appendix_fixture:$appendix_line_number" "fence:$fence_fixture:$fence_line_number" "tilde_fence:$tilde_fence_fixture:$fence_line_number" "indented_fence:$indented_fence_fixture:$fence_line_number" "indented_tilde_fence:$indented_tilde_fence_fixture:$fence_line_number"; do
   fixture_name="${fixture%%:*}"
   fixture_rest="${fixture#*:}"
   fixture_doc="${fixture_rest%%:*}"

@@ -370,7 +370,7 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 	if v, ok := request["NextToken"].(string); ok {
 		initialToken = v
 	}
-	return fwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+	return fwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, "ExecutionId", func(token string) (fwTokenPage, error) {
 		if token == "" {
 			delete(request, "NextToken")
 		} else {
@@ -378,20 +378,27 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 		}
 		response, err := fwRpcPost(ctx, client, imagePipelineExecutionsTypeName, imagePipelineExecutionsAction, request)
 		if err != nil {
-			return nil, "", err
+			return fwTokenPage{}, err
 		}
 		if err := fwValidateQueryEnvelope(response, "ImagePipelineExecution", "TotalCount", imagePipelineExecutionsAction); err != nil {
-			return nil, "", err
+			return fwTokenPage{}, err
 		}
 		items, err := fwDecodeRecordList(response, "ImagePipelineExecution", "ImagePipelineExecutionSet", imagePipelineExecutionsAction)
 		if err != nil {
-			return nil, "", err
+			return fwTokenPage{}, err
 		}
 		nextToken, err := fwDecodeToken(response, "NextToken", imagePipelineExecutionsAction)
 		if err != nil {
-			return nil, "", err
+			return fwTokenPage{}, err
 		}
-		return items, nextToken, nil
+		// The documented empty result still reports TotalCount, so the count is
+		// what separates a legitimate empty page from a page that dropped its
+		// records: the collector rejects a total that no record accounts for.
+		totalCount, totalKnown, err := fwDecodeCount(response, "TotalCount", imagePipelineExecutionsAction)
+		if err != nil {
+			return fwTokenPage{}, err
+		}
+		return fwTokenPage{items: items, nextToken: nextToken, total: totalCount, totalKnown: totalKnown}, nil
 	})
 }
 

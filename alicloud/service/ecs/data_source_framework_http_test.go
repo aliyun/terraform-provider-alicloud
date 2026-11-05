@@ -334,11 +334,11 @@ func TestUnitEcsReservedInstancesReadRejectsZoneScopeWithoutZone(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{
+	response, _ := ecsReadReservedInstances(t, ctx, client, map[string]string{
 		"scope": "Zone",
 	})
 	assert.True(t, response.Diagnostics.HasError(), "scope = Zone without zone_id must be rejected")
-	assert.Nil(t, state)
+	assert.True(t, response.State.Raw.IsNull(), "a rejected configuration must not write state")
 	assert.Zero(t, calls, "the rejected configuration must not reach the API")
 }
 
@@ -359,11 +359,11 @@ func TestUnitEcsReservedInstancesReadRejectsANonEnvelopeBody(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{
+	response, _ := ecsReadReservedInstances(t, ctx, client, map[string]string{
 		"zone_id": "cn-hangzhou-k",
 	})
 	assert.True(t, response.Diagnostics.HasError(), "a non-envelope 2xx document must not be written as an empty result")
-	assert.Nil(t, state, "no state may be written when the response is not the query envelope")
+	assert.True(t, response.State.Raw.IsNull(), "no state may be written when the response is not the query envelope")
 	for _, err := range response.Diagnostics.Errors() {
 		assert.Contains(t, fmt.Sprintf("%s %s", err.Summary(), err.Detail()), "success envelope")
 	}
@@ -420,11 +420,11 @@ func TestUnitEcsReservedInstancesReadRejectsAnEmptyBody(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{
+	response, _ := ecsReadReservedInstances(t, ctx, client, map[string]string{
 		"zone_id": "cn-hangzhou-k",
 	})
 	assert.True(t, response.Diagnostics.HasError(), "an empty 2xx body must not be written as an empty result")
-	assert.Nil(t, state)
+	assert.True(t, response.State.Raw.IsNull(), "no state may be written for an empty body")
 	for _, err := range response.Diagnostics.Errors() {
 		assert.Contains(t, fmt.Sprintf("%s %s", err.Summary(), err.Detail()), "without a JSON object body")
 	}
@@ -537,6 +537,39 @@ func TestUnitEcsDataSourceReadsKeepTheEmptyEnvelope(t *testing.T) {
 	}
 }
 
+// A 2xx envelope that reports a positive TotalCount but carries neither the
+// records nor a continuation token does not describe an empty result: the read
+// must fail instead of writing zero rows over the state.
+func TestUnitEcsDataSourceReadsRejectAPositiveTotalWithoutRecords(t *testing.T) {
+	for _, readCase := range ecsDataSourceReads() {
+		t.Run(readCase.name, func(t *testing.T) {
+			server := newEcsStaticServer(t, http.StatusOK, `{"RequestId":"mock","TotalCount":3}`)
+			client, _ := newEcsLoopbackClient(t, server.URL)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			response, _, _ := readCase.read(t, ctx, client)
+			require.True(t, response.Diagnostics.HasError(), "a positive TotalCount without records is not an empty result")
+			assert.True(t, response.State.Raw.IsNull(), "no state may be written for an inconsistent page")
+			assert.Contains(t, ecsDiagnosticsText(response), "TotalCount")
+		})
+	}
+}
+
+// A page that carries fewer records than its TotalCount and then ends the
+// listing is incomplete, and the read must not write the partial result.
+func TestUnitEcsImagePipelineExecutionsReadRejectsAnIncompleteTotal(t *testing.T) {
+	server := newEcsStaticServer(t, http.StatusOK, `{"RequestId":"mock","TotalCount":2,"ImagePipelineExecution":{"ImagePipelineExecutionSet":[{"ExecutionId":"exec-1","Status":"SUCCESS"}]}}`)
+	client, _ := newEcsLoopbackClient(t, server.URL)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	response, _ := ecsReadImagePipelineExecutions(t, ctx, client, map[string]string{"image_pipeline_id": "pipeline-1"})
+	require.True(t, response.Diagnostics.HasError(), "a partial page must not be written as the complete result")
+	assert.True(t, response.State.Raw.IsNull(), "no state may be written for an incomplete result")
+	assert.Contains(t, ecsDiagnosticsText(response), "TotalCount")
+}
+
 // A failed call keeps its SDK code and message through all three read paths;
 // the failure is never treated as an empty envelope.
 func TestUnitEcsDataSourceReadsKeepTheSDKError(t *testing.T) {
@@ -574,9 +607,13 @@ func TestUnitEcsReadKeepsANumericErrorStatus(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{"zone_id": "cn-hangzhou-k"})
+			response, _ := ecsReadReservedInstances(t, ctx, client, map[string]string{"zone_id": "cn-hangzhou-k"})
 			require.True(t, response.Diagnostics.HasError(), "a 2xx error body must fail the read instead of panicking")
-			assert.Nil(t, state, "no state may be written for an error body")
+			// The helper returns a nil model whenever the read reported a
+			// diagnostic, so a nil model cannot prove the read left the state
+			// untouched. The raw state is checked instead: a read that wrote a
+			// result and then failed would still be caught here.
+			assert.True(t, response.State.Raw.IsNull(), "no state may be written for an error body")
 			text := ecsDiagnosticsText(response)
 			assert.Contains(t, text, "InternalError", "the error code must be preserved")
 			assert.Contains(t, text, "upstream", "the error message must be preserved")
