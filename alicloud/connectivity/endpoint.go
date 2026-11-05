@@ -462,6 +462,7 @@ var regularProductEndpoint = map[string]string{
 	"cs":                   "cs.%s.aliyuncs.com",
 	"waf_openapi":          "wafopenapi.cn-hangzhou.aliyuncs.com",
 	"dfs":                  "dfs.%s.aliyuncs.com",
+	"dlfnext":              "dlfnext.%s.aliyuncs.com",
 	"amqp":                 "amqp-open.%s.aliyuncs.com",
 	"amqp_open":            "amqp-open.%s.aliyuncs.com",
 	"cbn":                  "cbn.aliyuncs.com",
