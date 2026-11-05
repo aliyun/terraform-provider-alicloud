@@ -1042,9 +1042,20 @@ func (p *listenerAclAttachmentTestProvider) DataSources(ctx context.Context) []f
 
 func newListenerAclAttachmentServer(t *testing.T) tfprotov5.ProviderServer {
 	t.Helper()
-	return providerserver.NewProtocol5(&listenerAclAttachmentTestProvider{
+	server := providerserver.NewProtocol5(&listenerAclAttachmentTestProvider{
 		client: &connectivity.AliyunClient{RegionId: "cn-beijing"},
 	})()
+	providerType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{}}
+	config, err := tfprotov5.NewDynamicValue(providerType, tftypes.NewValue(providerType, map[string]tftypes.Value{}))
+	if err != nil {
+		t.Fatalf("encoding the provider config: %s", err)
+	}
+	resp, err := server.ConfigureProvider(context.Background(), &tfprotov5.ConfigureProviderRequest{Config: &config})
+	if err != nil {
+		t.Fatalf("ConfigureProvider: %s", err)
+	}
+	listenerAclTestRequireNoError(t, "ConfigureProvider", resp.Diagnostics)
+	return server
 }
 
 // listenerAclRpcStub replaces the SLB transport for one test.
