@@ -1,7 +1,9 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
+// Package alicloud. This file was originally generated and is now maintained by hand.
+// See the file history for its generation provenance.
 package polardb
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -11,7 +13,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/blues/jsonata-go"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -22,6 +24,24 @@ func ResourceDatabase() *schema.Resource {
 		Read:   resourceDatabaseRead,
 		Update: resourceDatabaseUpdate,
 		Delete: resourceDatabaseDelete,
+		CustomizeDiff: func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			// CreateDatabase applies AccountPrivilege only when AccountName is set.
+			// Reject the silently ineffective combination at plan time instead of
+			// accepting it. Unknown values are left to apply-time evaluation.
+			raw := d.GetRawConfig()
+			if raw == cty.NilVal || raw.IsNull() || !raw.IsKnown() {
+				return nil
+			}
+			privilege := raw.GetAttr("account_privilege")
+			accountName := raw.GetAttr("account_name")
+			if privilege.IsNull() || !privilege.IsKnown() || privilege.AsString() == "" {
+				return nil
+			}
+			if accountName.IsNull() || (accountName.IsKnown() && accountName.AsString() == "") {
+				return fmt.Errorf("\"account_privilege\" requires \"account_name\" to be set: CreateDatabase only applies AccountPrivilege together with AccountName")
+			}
+			return nil
+		},
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,6 +55,12 @@ func ResourceDatabase() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"account_privilege": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"character_set_name": {
 				Type:     schema.TypeString,
@@ -65,6 +91,10 @@ func ResourceDatabase() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"engine": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -76,6 +106,16 @@ func ResourceDatabase() *schema.Resource {
 func resourceDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+
+	// CustomizeDiff rejects the known combinations; an account_name that is
+	// unknown at plan time can still resolve to an empty string at apply time.
+	// CreateDatabase silently ignores AccountPrivilege without AccountName, so
+	// repeat the check before the request is sent.
+	if privilege, ok := d.GetOk("account_privilege"); ok && strings.TrimSpace(fmt.Sprint(privilege)) != "" {
+		if accountName, hasAccountName := d.GetOk("account_name"); !hasAccountName || strings.TrimSpace(fmt.Sprint(accountName)) == "" {
+			return fmt.Errorf("\"account_privilege\" requires \"account_name\": CreateDatabase only applies AccountPrivilege together with AccountName")
+		}
+	}
 
 	action := "CreateDatabase"
 	var request map[string]interface{}
@@ -92,6 +132,9 @@ func resourceDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("account_name"); ok {
 		request["AccountName"] = v
+	}
+	if v, ok := d.GetOk("account_privilege"); ok {
+		request["AccountPrivilege"] = v
 	}
 	if v, ok := d.GetOk("db_description"); ok {
 		request["DBDescription"] = v
@@ -165,17 +208,142 @@ func resourceDatabaseRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("character_set_name", objectRaw["CharacterSetName"])
 	d.Set("db_description", objectRaw["DBDescription"])
+	d.Set("engine", objectRaw["Engine"])
 	d.Set("status", objectRaw["DBStatus"])
 	d.Set("db_name", objectRaw["DBName"])
 
-	e := jsonata.MustCompile("$.Accounts.Account[0].AccountName")
-	evaluation, _ := e.Eval(objectRaw)
-	d.Set("account_name", evaluation)
+	refreshDatabaseAccountState(d, objectRaw)
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_cluster_id", parts[0])
 
 	return nil
+}
+
+// refreshDatabaseAccountState applies the configured account's identity and
+// privilege to the state from a DescribeDatabases database object.
+//
+// DescribeDatabases returns one entry per authorized account and does not
+// guarantee their order, so the account is matched by name. Reading the first
+// entry could bind another account's privilege to the ForceNew
+// account_privilege and trigger a spurious database replacement.
+//
+// An empty account_name (for example after an import) carries no identity, so
+// no account is inferred from list position: importing a database cannot tell
+// which account the configuration manages.
+func refreshDatabaseAccountState(d *schema.ResourceData, objectRaw map[string]interface{}) {
+	configuredAccountName := strings.TrimSpace(fmt.Sprint(d.Get("account_name")))
+	if configuredAccountName == "" || configuredAccountName == "<nil>" {
+		return
+	}
+
+	accounts, authoritative := databaseAccounts(objectRaw)
+	if !authoritative {
+		// A missing or malformed account block cannot prove that the configured
+		// account lost its grant, so keep the recorded state instead of clearing it
+		// on a transient response.
+		return
+	}
+
+	account, found := selectDatabaseAccount(accounts, configuredAccountName)
+	if !found {
+		if d.IsNewResource() {
+			// A create-time read can observe an eventually consistent empty list.
+			// Keep the configured value here; the next refresh still exposes a
+			// genuine removal.
+			return
+		}
+		// The account list is authoritative and no longer contains the configured
+		// account. This includes a legal empty list after the last grant is
+		// revoked. Clearing the privilege surfaces the ForceNew drift; clearing
+		// account_name exposes the lost binding for configurations that only manage
+		// the account, where the privilege field is empty and cannot signal drift.
+		// On PostgreSQL/Oracle the following update re-grants the owner, and on the
+		// other engines it is rejected with an explicit error before any write.
+		d.Set("account_privilege", "")
+		d.Set("account_name", "")
+		return
+	}
+
+	d.Set("account_name", account["AccountName"])
+	// Some engines (for example the PostgreSQL owner account) do not report an
+	// explicit privilege in DescribeDatabases. In that case keep the configured
+	// value instead of overwriting the state with an empty string.
+	if privilege := strings.TrimSpace(fmt.Sprint(account["AccountPrivilege"])); privilege != "" && privilege != "<nil>" {
+		d.Set("account_privilege", privilege)
+	}
+}
+
+// databaseOwnerEngine reports whether the database engine binds the database to
+// a single owner account, in which case DescribeDatabases reports the owner and
+// an authoritative response without the configured account proves that the
+// managed owner binding is gone.
+func databaseOwnerEngine(objectRaw map[string]interface{}) bool {
+	engine := strings.TrimSpace(fmt.Sprint(objectRaw["Engine"]))
+	return engine == "PostgreSQL" || engine == "Oracle"
+}
+
+// validateAccountNameChange rejects an account_name change on an engine whose
+// update cannot re-grant the account: only PostgreSQL and Oracle send
+// GrantAccountPrivilege, so on the other engines the change would be accepted
+// without any request and the read would echo the new value. Accepting the
+// change would also let the read bind the target account's privilege to the
+// ForceNew account_privilege after the plan, which is inconsistent with the
+// planned value. A response that does not report the engine cannot prove the
+// change is supported and is rejected as well.
+func validateAccountNameChange(objectRaw map[string]interface{}) error {
+	if databaseOwnerEngine(objectRaw) {
+		return nil
+	}
+	engine := strings.TrimSpace(fmt.Sprint(objectRaw["Engine"]))
+	if engine == "" || engine == "<nil>" {
+		return fmt.Errorf("\"account_name\" cannot be changed: the database engine is not reported by DescribeDatabases, so the provider cannot confirm that the update re-grants the account")
+	}
+	return fmt.Errorf("\"account_name\" can only be changed for PolarDB for PostgreSQL or PolarDB for PostgreSQL (Compatible with Oracle) databases: the %s engine does not re-grant the account on update", engine)
+}
+
+// selectDatabaseAccount returns the account entry whose AccountName equals
+// accountName, together with a found flag. An empty name has no identity to
+// match and never falls back to the first entry.
+func selectDatabaseAccount(accounts []map[string]interface{}, accountName string) (map[string]interface{}, bool) {
+	if accountName == "" {
+		return nil, false
+	}
+	for _, record := range accounts {
+		if fmt.Sprint(record["AccountName"]) == accountName {
+			return record, true
+		}
+	}
+	return nil, false
+}
+
+// databaseAccounts returns the Accounts.Account entries of a DescribeDatabases
+// database object. The boolean reports whether the response is authoritative:
+// the Accounts block exists and the Account entry is either absent (an empty
+// container) or a list of objects. A missing or malformed block cannot prove
+// that a grant was removed.
+func databaseAccounts(objectRaw map[string]interface{}) ([]map[string]interface{}, bool) {
+	accounts, ok := objectRaw["Accounts"].(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	rawAccounts, exists := accounts["Account"]
+	if !exists || rawAccounts == nil {
+		return nil, true
+	}
+	accountList, ok := rawAccounts.([]interface{})
+	if !ok {
+		return nil, false
+	}
+	records := make([]map[string]interface{}, 0, len(accountList))
+	for _, item := range accountList {
+		record, ok := item.(map[string]interface{})
+		if !ok {
+			return nil, false
+		}
+		records = append(records, record)
+	}
+	return records, true
 }
 
 func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -187,7 +355,20 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
 	polarDbServiceV2 := PolarDbServiceV2{client}
-	objectRaw, _ := polarDbServiceV2.DescribePolarDbDatabase(d.Id())
+	objectRaw, describeErr := polarDbServiceV2.DescribePolarDbDatabase(d.Id())
+
+	// Only PostgreSQL and Oracle re-grant the account through
+	// GrantAccountPrivilege. On the other engines this update sends no request and
+	// the read would echo the new value, so reject the change before the first
+	// write instead of reporting a no-op success.
+	if d.HasChange("account_name") {
+		if describeErr != nil {
+			return errs.WrapError(describeErr)
+		}
+		if err := validateAccountNameChange(objectRaw); err != nil {
+			return err
+		}
+	}
 
 	var err error
 	parts := strings.Split(d.Id(), ":")
@@ -220,13 +401,10 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	update = false
-	objectRaw, _ = polarDbServiceV2.DescribePolarDbDatabase(d.Id())
-	enableGrantAccountPrivilege1 := false
-	checkValue00 := objectRaw["Engine"]
-
-	if helper.InArray(fmt.Sprint(checkValue00), []string{"PostgreSQL", "Oracle"}) {
-		enableGrantAccountPrivilege1 = true
-	}
+	// The engine does not change during the update, and a failed first describe
+	// already aborts when account_name changes; reuse that response instead of a
+	// second describe whose discarded error could silently skip the grant.
+	enableGrantAccountPrivilege1 := databaseOwnerEngine(objectRaw)
 	parts = strings.Split(d.Id(), ":")
 	action = "GrantAccountPrivilege"
 	request = make(map[string]interface{})
@@ -238,8 +416,15 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		update = true
 	}
 	request["AccountName"] = d.Get("account_name")
+	// The CloudSpec update mapping pins AccountPrivilege to the DBOwner constant
+	// (requestConstValue), so GrantAccountPrivilege keeps the shipped owner-grant
+	// semantics; user-configured account_privilege is create-only (ForceNew).
 	request["AccountPrivilege"] = "DBOwner"
 	if update && enableGrantAccountPrivilege1 {
+		// The grant retry and the post-grant wait share one Update deadline:
+		// otherwise the wait would start a second full TimeoutUpdate after the
+		// grant already consumed part of the budget.
+		grantDeadline := time.Now().Add(d.Timeout(schema.TimeoutUpdate))
 		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
@@ -256,10 +441,66 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
+		// GrantAccountPrivilege is asynchronous. Reading immediately can observe the
+		// previous account list, or the account before its grant is empowered, and
+		// the read would then clear the managed account state for a change that is
+		// still in flight.
+		if err := waitDatabaseAccountEmpowered(polarDbServiceV2.DescribePolarDbDatabase, d.Id(), fmt.Sprint(request["AccountName"]), remainingUntil(grantDeadline)); err != nil {
+			return errs.WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	d.Partial(false)
 	return resourceDatabaseRead(d, meta)
+}
+
+// waitDatabaseAccountEmpowered polls DescribeDatabases until the granted account
+// is listed with PrivilegeStatus=Empowered, so the read that follows an update
+// observes a completed grant instead of a pending one. A missing account list,
+// an absent account and a non-terminal PrivilegeStatus are retried within the
+// remaining update budget; other errors are returned immediately.
+func waitDatabaseAccountEmpowered(describe func(string) (map[string]interface{}, error), id, accountName string, timeout time.Duration) error {
+	accountName = strings.TrimSpace(accountName)
+	if accountName == "" {
+		return nil
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	return retry.RetryContext(context.Background(), timeout, func() *retry.RetryError {
+		objectRaw, err := describe(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		accounts, authoritative := databaseAccounts(objectRaw)
+		if !authoritative {
+			wait()
+			return retry.RetryableError(fmt.Errorf("the account list of database %s is missing or malformed", id))
+		}
+		record, found := selectDatabaseAccount(accounts, accountName)
+		if !found {
+			wait()
+			return retry.RetryableError(fmt.Errorf("account %q is not listed for database %s yet", accountName, id))
+		}
+		switch status := strings.TrimSpace(fmt.Sprint(record["PrivilegeStatus"])); status {
+		case "Empowered":
+			return nil
+		default:
+			wait()
+			return retry.RetryableError(fmt.Errorf("account %q has PrivilegeStatus %q on database %s, waiting for Empowered", accountName, status, id))
+		}
+	})
+}
+
+// remainingUntil returns the time left before deadline and never a negative
+// duration, so a stage that starts after the deadline gets no fresh budget.
+func remainingUntil(deadline time.Time) time.Duration {
+	if remaining := time.Until(deadline); remaining > 0 {
+		return remaining
+	}
+	return 0
 }
 
 func resourceDatabaseDelete(d *schema.ResourceData, meta interface{}) error {

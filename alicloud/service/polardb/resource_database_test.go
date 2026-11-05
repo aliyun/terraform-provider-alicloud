@@ -2,13 +2,17 @@ package polardb_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	polardb "github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // Test PolarDb Database. >>> Resource test cases, automatically generated.
@@ -56,10 +60,17 @@ func TestAccAliCloudPolarDbDatabase_basic11854(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype"},
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly instead
+				// of ignoring the create-only account_privilege from the comparison.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
 			},
 		},
 	})
@@ -105,10 +116,17 @@ func TestAccAliCloudPolarDbDatabase_basic11854_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype"},
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":            name,
+					"db_description":     name,
+					"character_set_name": "utf8mb4",
+					"engine":             "MySQL",
+				}),
 			},
 		},
 	})
@@ -125,15 +143,23 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PostPaid"
+  category   = "Normal"
 }
 
-data "alicloud_polardb_zones" "default" {}
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testAcc-polardb-db-basic-${var.name}"
+  cidr_block = "172.19.0.0/16"
+}
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.19.0.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  vswitch_name = "tf-testAcc-polardb-db-basic-${var.name}"
 }
 
 resource "alicloud_polardb_cluster" "default" {
@@ -141,7 +167,10 @@ resource "alicloud_polardb_cluster" "default" {
   db_version    = "8.0"
   db_node_class = "polar.mysql.x4.medium"
   pay_type      = "PostPaid"
-  vswitch_id    = data.alicloud_vswitches.default.ids.0
+  vswitch_id    = alicloud_vswitch.default.id
+  lifecycle {
+    ignore_changes = [encrypt_new_tables]
+  }
 }
 
 resource "alicloud_polardb_account" "default" {
@@ -193,15 +222,22 @@ func TestAccAliCloudPolarDbDatabase_basic9535(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_name": CHECKSET,
+						"account_name": name + "update",
 					}),
+					checkDatabaseAccountName(resourceId, name+"update"),
+					checkDatabaseAccountEmpowered(resourceId, name+"update"),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype"},
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "PostgreSQL",
+				}),
 			},
 		},
 	})
@@ -248,10 +284,17 @@ func TestAccAliCloudPolarDbDatabase_basic9535_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype"},
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":            name,
+					"db_description":     name,
+					"character_set_name": "ISO_8859_5",
+					"engine":             "PostgreSQL",
+				}),
 			},
 		},
 	})
@@ -307,3 +350,923 @@ resource "alicloud_polardb_account" "update" {
 }
 
 // Test PolarDb Database. <<< Resource test cases, automatically generated.
+
+// PolarDB database and account names allow only lower-case letters, digits and
+// underscores, and account names are limited to 2-16 characters. The standard
+// tf-testAcc prefix therefore cannot be used literally: new cases use the
+// compatible lower-case form tf_testacc and keep derived account names short.
+const databaseTestResourceId = "alicloud_polardb_database.default"
+
+func databaseTestPreCheck(t *testing.T) {
+	acctest.PreCheck(t)
+}
+
+func databaseTestServiceFunc() func() interface{} {
+	return func() interface{} {
+		return polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+}
+
+// databaseAccountRecord returns the Accounts.Account entry of the given
+// account from a DescribeDatabases response. The account is matched by name
+// only: the API does not guarantee list order, so a first-entry fallback could
+// observe another account's records.
+func databaseAccountRecord(object map[string]interface{}, accountName string) map[string]interface{} {
+	if accountName == "" {
+		return nil
+	}
+	accounts, _ := object["Accounts"].(map[string]interface{})
+	accountList, _ := accounts["Account"].([]interface{})
+	for _, item := range accountList {
+		record, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(record["AccountName"]) == accountName {
+			return record
+		}
+	}
+	return nil
+}
+
+// checkDatabaseAccountPrivilege verifies through DescribeDatabases that the
+// privilege reported for the expected account equals the expected value. The
+// account is matched by name rather than by list position.
+func checkDatabaseAccountPrivilege(resourceId, accountName, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		record := databaseAccountRecord(object, accountName)
+		if record == nil {
+			return fmt.Errorf("account %q not returned by DescribeDatabases for %s; Accounts=%v", accountName, rs.Primary.ID, object["Accounts"])
+		}
+		if got := fmt.Sprint(record["AccountPrivilege"]); got != expected {
+			return fmt.Errorf("expected account privilege %q for account %q, got %q for %s; Accounts=%v", expected, accountName, got, rs.Primary.ID, object["Accounts"])
+		}
+		return nil
+	}
+}
+
+// checkDatabaseAccountName verifies through DescribeDatabases that the database
+// is bound to the expected account.
+func checkDatabaseAccountName(resourceId, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		record := databaseAccountRecord(object, expected)
+		if record == nil {
+			return fmt.Errorf("account %q not returned by DescribeDatabases for %s; Accounts=%v", expected, rs.Primary.ID, object["Accounts"])
+		}
+		if got := fmt.Sprint(record["AccountName"]); got != expected {
+			return fmt.Errorf("expected account name %q, got %q for %s; Accounts=%v", expected, got, rs.Primary.ID, object["Accounts"])
+		}
+		return nil
+	}
+}
+
+// checkDatabaseDescription verifies through DescribeDatabases that the database
+// description is the expected value. It proves that a rejected update did not
+// reach the ModifyDBDescription call.
+func checkDatabaseDescription(resourceId, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		if got := fmt.Sprint(object["DBDescription"]); got != expected {
+			return fmt.Errorf("expected database description %q, got %q for %s", expected, got, rs.Primary.ID)
+		}
+		return nil
+	}
+}
+
+// checkImportedDatabaseState asserts the fields an import can recover plus the
+// account fields it cannot: importing a database has no account identity, so
+// account_name and account_privilege must stay empty in the imported state.
+func checkImportedDatabaseState(expected map[string]string) resource.ImportStateCheckFunc {
+	return func(states []*terraform.InstanceState) error {
+		if len(states) != 1 {
+			return fmt.Errorf("expected 1 imported state, got %d", len(states))
+		}
+		attributes := states[0].Attributes
+		if attributes["db_cluster_id"] == "" {
+			return fmt.Errorf("expected imported db_cluster_id to be set")
+		}
+		for key, want := range expected {
+			if got := attributes[key]; got != want {
+				return fmt.Errorf("expected imported %s %q, got %q", key, want, got)
+			}
+		}
+		for _, key := range []string{"account_name", "account_privilege"} {
+			if got := attributes[key]; got != "" {
+				return fmt.Errorf("expected imported %s to stay empty, got %q", key, got)
+			}
+		}
+		return nil
+	}
+}
+
+// checkNoDatabaseAccountGrant verifies through DescribeDatabases that the
+// account is not authorized for the database.
+func checkNoDatabaseAccountGrant(resourceId, accountName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		if record := databaseAccountRecord(object, accountName); record != nil {
+			return fmt.Errorf("expected account %q not to be authorized for %s, got %v", accountName, rs.Primary.ID, record)
+		}
+		return nil
+	}
+}
+
+// checkDatabaseAccountEmpowered verifies that DescribeDatabases reports the
+// database account as Empowered. PostgreSQL/Oracle do not return an
+// AccountPrivilege value for the database owner (the owner holds implicit
+// privileges), so the grant status is the observable API fact there.
+func checkDatabaseAccountEmpowered(resourceId, accountName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		record := databaseAccountRecord(object, accountName)
+		if record == nil {
+			return fmt.Errorf("account %q not returned by DescribeDatabases for %s; Accounts=%v", accountName, rs.Primary.ID, object["Accounts"])
+		}
+		if got := fmt.Sprint(record["PrivilegeStatus"]); got != "Empowered" {
+			return fmt.Errorf("expected privilege status Empowered for account %q, got %q for %s; Accounts=%v", accountName, got, rs.Primary.ID, object["Accounts"])
+		}
+		return nil
+	}
+}
+
+func databaseCheck(resourceId string, checkMap map[string]string) acctest.ResourceAttrMapUpdate {
+	rac := acctest.ResourceAttrCheckInit(
+		acctest.ResourceCheckInitWithDescribeMethod(resourceId, new(map[string]interface{}), databaseTestServiceFunc(), "DescribePolarDbDatabase"),
+		acctest.ResourceAttrInit(resourceId, checkMap),
+	)
+	return rac.ResourceAttrMapUpdateSet()
+}
+
+func databaseDestroyCheck(resourceId string, checkMap map[string]string) resource.TestCheckFunc {
+	rac := acctest.ResourceAttrCheckInit(
+		acctest.ResourceCheckInitWithDescribeMethod(resourceId, new(map[string]interface{}), databaseTestServiceFunc(), "DescribePolarDbDatabase"),
+		acctest.ResourceAttrInit(resourceId, checkMap),
+	)
+	return rac.CheckResourceDestroy()
+}
+
+// grantDatabaseAccountPrivilege grants a privilege to an additional account of
+// the database managed by the test, so a refresh observes a multi-account
+// DescribeDatabases response.
+func grantDatabaseAccountPrivilege(resourceId, accountName, privilege string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		request := map[string]interface{}{
+			"DBClusterId":      rs.Primary.Attributes["db_cluster_id"],
+			"DBName":           rs.Primary.Attributes["db_name"],
+			"AccountName":      accountName,
+			"AccountPrivilege": privilege,
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		_, err := client.RpcPost("polardb", "2017-08-01", "GrantAccountPrivilege", map[string]interface{}{}, request, true)
+		return err
+	}
+}
+
+// revokeDatabaseAccountPrivilege removes the configured account's privilege so
+// the next refresh can prove the drift is surfaced instead of keeping a stale
+// privilege bound to another account.
+func revokeDatabaseAccountPrivilege(resourceId, accountName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		request := map[string]interface{}{
+			"DBClusterId": rs.Primary.Attributes["db_cluster_id"],
+			"DBName":      rs.Primary.Attributes["db_name"],
+			"AccountName": accountName,
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		_, err := client.RpcPost("polardb", "2017-08-01", "RevokeAccountPrivilege", map[string]interface{}{}, request, true)
+		return err
+	}
+}
+
+// waitDatabaseAccountPrivilege polls DescribeDatabases until the account reports
+// the expected privilege (the grant/revoke APIs are asynchronous).
+func waitDatabaseAccountPrivilege(resourceId, accountName, expected string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		deadline := time.Now().Add(3 * time.Minute)
+		last := "<unread>"
+		for {
+			object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+			if err == nil {
+				if record := databaseAccountRecord(object, accountName); record != nil {
+					last = fmt.Sprint(record["AccountPrivilege"])
+					if last == expected {
+						return nil
+					}
+				} else {
+					last = "<absent>"
+				}
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("timed out waiting for account %q privilege %q, last %q for %s", accountName, expected, last, rs.Primary.ID)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+// waitDatabaseAccountAbsent polls DescribeDatabases until the account is no
+// longer authorized for the database (the revoke API is asynchronous).
+func waitDatabaseAccountAbsent(resourceId, accountName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		deadline := time.Now().Add(3 * time.Minute)
+		last := "<unread>"
+		for {
+			object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+			if err == nil {
+				record := databaseAccountRecord(object, accountName)
+				if record == nil {
+					return nil
+				}
+				last = fmt.Sprint(record["AccountPrivilege"])
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("timed out waiting for account %q to be revoked, last privilege %q for %s", accountName, last, rs.Primary.ID)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+// TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL covers account_privilege
+// on a MySQL cluster: the value is sent by CreateDatabase, verified against
+// DescribeDatabases, and read back into state / import. The extra steps cover
+// the multi-account responses that must not bind another account's privilege to
+// the ForceNew attribute, and the drift signalled when the configured account's
+// grant disappears.
+func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
+	resourceId := databaseTestResourceId
+	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, databaseMySQLDependence)
+	privilegeConfig := map[string]interface{}{
+		"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
+		"db_name":           name,
+		"account_name":      "${alicloud_polardb_account.default.account_name}",
+		"account_privilege": "ReadOnly",
+		"db_description":    name,
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { databaseTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             databaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(privilegeConfig),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":     CHECKSET,
+						"db_name":           name,
+						"account_name":      CHECKSET,
+						"account_privilege": "ReadOnly",
+						"db_description":    name,
+						"engine":            "MySQL",
+					}),
+					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+				),
+			},
+			{
+				// The first successful create is followed by an import: the database
+				// fields are recovered and the account fields stay empty because an
+				// import carries no account identity.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
+			},
+			{
+				// Baseline refresh: the single authorized account is read back.
+				RefreshState: true,
+				Check: testAccCheck(map[string]string{
+					"account_name":      name,
+					"account_privilege": "ReadOnly",
+				}),
+			},
+			{
+				// Revoke the only grant. DescribeDatabases then returns a legal
+				// empty Accounts.Account list, which the post-apply plan must
+				// surface as drift instead of keeping the stale privilege.
+				Config:             testAccConfig(privilegeConfig),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					revokeDatabaseAccountPrivilege(resourceId, name),
+					waitDatabaseAccountAbsent(resourceId, name),
+				),
+			},
+			{
+				// The authoritative empty list clears the stale identity and privilege
+				// in state, so the drift is visible even for a configuration that only
+				// manages the account.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: testAccCheck(map[string]string{
+					"account_name":      "",
+					"account_privilege": "",
+				}),
+			},
+			{
+				// Applying the configuration after the drift replaces the database
+				// (account_privilege is ForceNew), which restores the managed binding.
+				Config: testAccConfig(privilegeConfig),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+				),
+			},
+			{
+				// The replacement recreated the database, so the imported state must
+				// recover the database identity again while the account fields, which
+				// an import cannot know, stay empty.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
+			},
+			{
+				// The MySQL engine cannot re-grant an account on update, so changing
+				// account_name to an account that is not authorized for this database
+				// must fail explicitly instead of reporting a no-op success. The
+				// description change proves the guard runs before the first write: if
+				// it ran later, ModifyDBDescription would have been sent.
+				Config: testAccConfig(map[string]interface{}{
+					"account_name":   "${alicloud_polardb_account.second.account_name}",
+					"db_description": name + "rejected",
+				}),
+				ExpectError: regexp.MustCompile(`"account_name" can only be changed`),
+				// The step fails during apply, so this check never runs; it keeps the
+				// step shape required by the coverage parser.
+				Check: func(_ *terraform.State) error { return nil },
+			},
+			{
+				// The rejected update did not reach any write and changed nothing:
+				// the plan is a no-op, the description is untouched in the API and the
+				// database still reports the configured account only.
+				Config: testAccConfig(privilegeConfig),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+					checkDatabaseDescription(resourceId, name),
+					checkDatabaseAccountName(resourceId, name),
+					checkNoDatabaseAccountGrant(resourceId, name+"b"),
+				),
+			},
+			{
+				// Grant a second account ReadWrite on the same database so the
+				// following refresh observes two authorized accounts.
+				Config: testAccConfig(privilegeConfig),
+				Check: resource.ComposeTestCheckFunc(
+					grantDatabaseAccountPrivilege(resourceId, name+"b", "ReadWrite"),
+					waitDatabaseAccountPrivilege(resourceId, name+"b", "ReadWrite"),
+				),
+			},
+			{
+				// With two authorized accounts the configured account must keep its
+				// own ReadOnly privilege regardless of the response order.
+				RefreshState: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+				),
+			},
+			{
+				// Importing a database with several accounts cannot tell which account
+				// the configuration manages, so neither account field is inferred from
+				// the list position; the database fields are still compared explicitly.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
+			},
+			{
+				// Remove the configured account's grant while the second account keeps
+				// its own; the next refresh must surface the drift. The revocation is
+				// performed in the check, so this step intentionally ends with a
+				// non-empty plan.
+				Config:             testAccConfig(privilegeConfig),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					revokeDatabaseAccountPrivilege(resourceId, name),
+					waitDatabaseAccountAbsent(resourceId, name),
+				),
+			},
+			{
+				// The authoritative response without the configured account clears the
+				// managed identity as well as the privilege.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":      "",
+						"account_privilege": "",
+					}),
+				),
+			},
+			{
+				// Apply the configuration again so the next scenario starts from a
+				// managed binding; the ForceNew privilege replaces the database.
+				Config: testAccConfig(privilegeConfig),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+				),
+			},
+			{
+				// This replacement starts the legacy scenario, so the imported state
+				// must again expose the database identity with empty account fields.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
+			},
+			{
+				// Legacy configuration that only manages account_name: dropping the
+				// privilege key is a no-op for the database, and the check revokes the
+				// grant so the next refresh must expose the lost binding even though no
+				// privilege was ever configured.
+				Config: testAccConfig(map[string]interface{}{
+					"account_privilege": acctest.REMOVEKEY,
+				}),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					revokeDatabaseAccountPrivilege(resourceId, name),
+					waitDatabaseAccountAbsent(resourceId, name),
+				),
+			},
+			{
+				// The legacy configuration sees the lost binding as an identity drift.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: testAccCheck(map[string]string{
+					"account_name":      "",
+					"account_privilege": "",
+				}),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL covers
+// account_privilege on a PostgreSQL cluster. PostgreSQL does not report an
+// AccountPrivilege value for the database owner, so the API fact asserted here
+// is the grant status while the state keeps the configured value. The import
+// proves the value is unrecoverable, and a plan-only step proves that keeping it
+// in the configuration plans a replacement.
+func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
+	resourceId := databaseTestResourceId
+	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, databasePostgreSQLDependence)
+	privilegeConfig := map[string]interface{}{
+		"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
+		"db_name":           name,
+		"account_name":      "${alicloud_polardb_account.default.account_name}",
+		"account_privilege": "ReadOnly",
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { databaseTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             databaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(privilegeConfig),
+				Check: resource.ComposeTestCheckFunc(
+					checkDatabaseAccountEmpowered(resourceId, name),
+					testAccCheck(map[string]string{
+						"db_cluster_id":     CHECKSET,
+						"db_name":           name,
+						"account_name":      CHECKSET,
+						"account_privilege": "ReadOnly",
+					}),
+				),
+			},
+			{
+				// The API does not return AccountPrivilege for the PostgreSQL owner,
+				// so an import cannot recover the account fields; the database fields
+				// are compared explicitly. This command import uses its own isolated
+				// working directory and does not persist state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "PostgreSQL",
+				}),
+			},
+			{
+				// A plannable import builds an isolated plan from the imported state,
+				// so it can prove that keeping account_privilege in the configuration
+				// replaces this database (ForceNew) without applying the replacement.
+				ResourceName:       resourceId,
+				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithID,
+				ExpectNonEmptyPlan: true,
+				ImportPlanChecks: resource.ImportPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+			},
+		},
+	})
+}
+
+// TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege covers the
+// Oracle-compatible engine: the cluster node class and zone are resolved from the
+// node-class capability query for Oracle 14, and the test verifies database
+// creation without collate/ctype (default "C"), the account_privilege grant and
+// the account_name update served by GrantAccountPrivilege.
+func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
+	resourceId := databaseTestResourceId
+	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, databaseOracleDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { databaseTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             databaseDestroyCheck(resourceId, AliCloudPolarDbDatabaseMap11854),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
+					"db_name":           name,
+					"account_name":      "${alicloud_polardb_account.default.account_name}",
+					"account_privilege": "ReadOnly",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					checkDatabaseAccountEmpowered(resourceId, name),
+					testAccCheck(map[string]string{
+						"db_cluster_id":     CHECKSET,
+						"db_name":           name,
+						"account_name":      CHECKSET,
+						"account_privilege": "ReadOnly",
+					}),
+				),
+			},
+			{
+				// The first successful create is followed by an import: the database
+				// fields are recovered and the owner account fields stay empty.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "Oracle",
+				}),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_name": "${alicloud_polardb_account.update.account_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name": name + "u",
+					}),
+					checkDatabaseAccountName(resourceId, name+"u"),
+					checkDatabaseAccountEmpowered(resourceId, name+"u"),
+				),
+			},
+			{
+				// Oracle does not report the owner privilege, so an import cannot
+				// recover the account fields; the database fields are compared here.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "Oracle",
+				}),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudPolarDbDatabase_accountPrivilegeRequiresAccountName verifies
+// that configuring account_privilege without account_name is rejected during
+// plan: CreateDatabase only applies AccountPrivilege together with AccountName,
+// so accepting the combination would silently ignore it.
+func TestAccAliCloudPolarDbDatabase_accountPrivilegeRequiresAccountName(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { databaseTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+resource "alicloud_polardb_database" "default" {
+  db_cluster_id     = "pc-plan-check-only"
+  db_name           = "tf_testacc_privilege_without_account"
+  account_privilege = "ReadOnly"
+}
+`,
+				ExpectError: regexp.MustCompile(`"account_privilege" requires "account_name"`),
+				// The step fails during plan, so no resource state exists; the no-op
+				// check keeps the step shape consistent for the coverage parser.
+				Check: func(_ *terraform.State) error { return nil },
+			},
+		},
+	})
+}
+
+// TestAccAliCloudPolarDbDatabase_accountPrivilegeUnknownAccountName covers the
+// apply-time guard: an account_name expression that is unknown at plan time can
+// resolve to an empty string when Create runs. CreateDatabase only applies
+// AccountPrivilege together with AccountName, so the request must be rejected
+// before it is sent. The VPC id keeps the value unknown during plan and empty
+// during apply without creating a PolarDB cluster.
+func TestAccAliCloudPolarDbDatabase_accountPrivilegeUnknownAccountName(t *testing.T) {
+	rand := tfacctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	config := fmt.Sprintf(`
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testAcc-polardb-db-guard-%[1]d"
+  cidr_block = "172.19.0.0/16"
+}
+
+resource "alicloud_polardb_database" "default" {
+  db_cluster_id     = "pc-unknown-account-guard"
+  db_name           = "%[2]s"
+  account_name      = substr(alicloud_vpc.default.id, 0, 0)
+  account_privilege = "ReadOnly"
+}
+`, rand, name)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { databaseTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				// The account_name expression is unknown at plan time, so the plan
+				// must succeed without the CustomizeDiff rejection.
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Check:              func(_ *terraform.State) error { return nil },
+			},
+			{
+				// The value resolves to an empty string at apply time. The rejection
+				// happens before CreateDatabase is sent, either in the apply-time
+				// CustomizeDiff or in the create guard.
+				Config:      config,
+				ExpectError: regexp.MustCompile(`"account_privilege" requires "account_name"`),
+				// The failed step creates no database state; the no-op check keeps
+				// the step shape for the coverage parser.
+				Check: func(_ *terraform.State) error { return nil },
+			},
+		},
+	})
+}
+
+// databaseMySQLDependence creates a self-contained MySQL cluster
+// (VPC, vswitch, cluster and account) so the case does not depend on
+// pre-existing account fixtures.
+func databaseMySQLDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PostPaid"
+  category   = "Normal"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testAcc-polardb-db-${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  vswitch_name = "tf-testAcc-polardb-db-${var.name}"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  # Prefer the x4.medium node class so the fixture orders the mainstream class
+  # even when the capability query lists a class that the order API rejects.
+  db_node_class = try(
+    [for r in data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources : r.db_node_class if r.db_node_class == "polar.mysql.x4.medium"][0],
+    [for r in data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources : r.db_node_class if can(regex("^polar\\.mysql\\.x4\\.", r.db_node_class))][0],
+    data.alicloud_polardb_node_classes.default.classes[0].supported_engines[0].available_resources[0].db_node_class
+  )
+  pay_type   = "PostPaid"
+  vswitch_id = alicloud_vswitch.default.id
+  lifecycle {
+    ignore_changes = [encrypt_new_tables]
+  }
+}
+
+resource "alicloud_polardb_account" "default" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = var.name
+  account_password = "Example1234"
+}
+
+resource "alicloud_polardb_account" "second" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = "${var.name}b"
+  account_password = "Example1234"
+}
+`, name)
+}
+
+// databasePostgreSQLDependence creates a self-contained
+// PostgreSQL cluster plus two accounts (the second one is used by the
+// account_name update step).
+func databasePostgreSQLDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "PostgreSQL"
+  db_version = "14"
+  pay_type   = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testAcc-polardb-db-pg-${var.name}"
+  cidr_block = "172.17.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.17.0.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  vswitch_name = "tf-testAcc-polardb-db-pg-${var.name}"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_version    = "14"
+  pay_type      = "PostPaid"
+  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+  db_type       = "PostgreSQL"
+  vswitch_id    = alicloud_vswitch.default.id
+  lifecycle {
+    ignore_changes = [encrypt_new_tables]
+  }
+}
+
+resource "alicloud_polardb_account" "default" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = var.name
+  account_password = "Example1234"
+}
+
+resource "alicloud_polardb_account" "update" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = "${var.name}u"
+  account_password = "Example1234"
+}
+`, name)
+}
+
+// databaseOracleDependence creates a self-contained
+// Oracle-compatible cluster. The node class and zone are resolved from the
+// node-class capability query for the Oracle 14 engine instead of being
+// hardcoded, so the fixture adapts to the capabilities of the account/region.
+func databaseOracleDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "Oracle"
+  db_version = "14"
+  pay_type   = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "tf-testAcc-polardb-db-oracle-${var.name}"
+  cidr_block = "172.18.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.18.0.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.default.classes.0.zone_id
+  vswitch_name = "tf-testAcc-polardb-db-oracle-${var.name}"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+  db_type            = "Oracle"
+  db_version         = "14"
+  db_node_class      = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+  db_node_count      = "2"
+  pay_type           = "PostPaid"
+  vswitch_id         = alicloud_vswitch.default.id
+  encrypt_new_tables = "OFF"
+  lifecycle {
+    ignore_changes = [encrypt_new_tables]
+  }
+}
+
+resource "alicloud_polardb_account" "default" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = var.name
+  account_password = "Example1234"
+}
+
+resource "alicloud_polardb_account" "update" {
+  db_cluster_id    = alicloud_polardb_cluster.default.id
+  account_name     = "${var.name}u"
+  account_password = "Example1234"
+}
+`, name)
+}
