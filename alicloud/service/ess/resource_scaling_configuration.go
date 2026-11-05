@@ -1786,8 +1786,14 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		update = true
 	}
 	if d.HasChange("private_pool_options") {
-		if v, ok := d.GetOk("private_pool_options"); ok {
+		if v, ok := d.GetOk("private_pool_options"); ok && len(v.([]interface{})) > 0 {
 			buildPrivatePoolOptionsRequest(request, v.([]interface{}))
+		} else {
+			// ModifyScalingConfiguration keeps the previously applied private pool
+			// settings when the parameter is omitted. MatchCriteria=None is the
+			// documented "do not use a private pool" value, so a removed block must
+			// send it explicitly instead of silently preserving the remote value.
+			request["PrivatePoolOptions.MatchCriteria"] = "None"
 		}
 		update = true
 	}
@@ -1795,6 +1801,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		if v, ok := d.GetOk("scheduler_options"); ok {
 			buildSchedulerOptionsRequest(request, v.([]interface{}))
 		}
+		// SchedulerOptions has no documented "no scheduler" value: the parameter is
+		// an object that only carries ManagedPrivateSpaceId. Omitting it keeps the
+		// previously applied value, and the Optional+Computed schema reflects that
+		// retained value without a perpetual diff.
 		update = true
 	}
 
@@ -2304,11 +2314,16 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	// nested PrivatePoolOptions object.
 	privatePoolMatchCriteria, _ := response["PrivatePoolOptions.MatchCriteria"].(string)
 	privatePoolId, _ := response["PrivatePoolOptions.Id"].(string)
-	if privatePoolMatchCriteria != "" || privatePoolId != "" {
+	// MatchCriteria=None is the service representation of "no private pool", so it
+	// must leave the block unset instead of surfacing a one-item block that the
+	// configuration cannot express.
+	if privatePoolId != "" || (privatePoolMatchCriteria != "" && !strings.EqualFold(privatePoolMatchCriteria, "None")) {
 		d.Set("private_pool_options", []map[string]interface{}{{
 			"match_criteria": privatePoolMatchCriteria,
 			"pool_id":        privatePoolId,
 		}})
+	} else {
+		d.Set("private_pool_options", []map[string]interface{}{})
 	}
 	if v := response["SchedulerOptions"]; v != nil {
 		m := v.(map[string]interface{})
@@ -2331,10 +2346,11 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	}
 
 	// instance_type and security_group_id are Optional+Computed: ESS resolves the
-	// instance type and always reports a primary security group, and the Read RPC
-	// carries no configuration that could tell an import from a refresh. The read
-	// path therefore backfills both from the response, and the computed flag keeps
-	// plural-only and override configurations free of perpetual drift.
+	// instance type, and reports the primary security group only when the
+	// configuration sets one at the top level. A network_interfaces-only
+	// configuration can omit the top-level value, in which case the groups are
+	// reported per interface only. Both fields are backfilled only from a
+	// non-empty response value so an ENI-only refresh does not invent one.
 	if v := response["SecurityGroupId"]; v != nil && fmt.Sprint(v) != "" {
 		d.Set("security_group_id", v)
 	}
