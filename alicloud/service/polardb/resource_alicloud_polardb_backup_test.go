@@ -272,7 +272,10 @@ func TestAccAliCloudPolarDBBackup_releasedCluster(t *testing.T) {
 					// have been observed 10-25 minutes after the release), so wait for the exact
 					// backup set to appear instead of refreshing during the population lag and
 					// silently exercising only the "source did not answer" branch.
-					testAccWaitPolarDBDetachedBackupVisible(t, dbClusterID, backupID, 30*time.Minute)
+					// The captured identity is the composite DBClusterId:BackupId, while the
+					// detached list reports the bare BackupId.
+					_, waitBackupID := testAccSplitPolarDBBackupID(backupID)
+					testAccWaitPolarDBDetachedBackupVisible(t, dbClusterID, waitBackupID, 30*time.Minute)
 				},
 				RefreshState:       true,
 				ExpectNonEmptyPlan: true,
