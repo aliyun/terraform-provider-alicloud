@@ -100,6 +100,12 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  DataSourceCSClusterCredential,
 			},
 		},
+		DataSources: []conns.DataSource{
+			{
+				TypeName: kubernetesNodesDataSourceTypeName,
+				Factory:  NewKubernetesNodesDataSource,
+			},
+		},
 		EphemeralResources: []conns.EphemeralResource{
 			{
 				TypeName: "alicloud_cs_cluster_credential",
