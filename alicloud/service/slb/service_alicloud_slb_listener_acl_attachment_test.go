@@ -10,6 +10,7 @@ import (
 
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -476,10 +477,70 @@ func TestUnitListenerAclAttachmentReadLifecycle(t *testing.T) {
 				return map[string]interface{}{"AclStatus": "on", "AclType": "white", "AclId": "acl-a,acl-b"}, nil
 			},
 		}
-		if _, _, err := readListenerAclAttachment(context.Background(), api, state); err == nil {
+		_, _, err := readListenerAclAttachment(context.Background(), api, state)
+		if err == nil {
 			t.Fatal("expected an ambiguity error")
 		}
+		if !strings.Contains(err.Error(), "multiple access control policy groups") {
+			t.Fatalf("the ambiguity diagnostic must keep the wording the import step asserts, got %q", err.Error())
+		}
 	})
+}
+
+// The busy codes and the terminal codes come from the shared SLB contract; the
+// table keeps the retry classification auditable when the shared list changes.
+func TestUnitListenerAclAttachmentErrorClassification(t *testing.T) {
+	for _, code := range listenerTransientErrors {
+		err := &tea.SDKError{Code: tea.String(code), Message: tea.String(""), Data: tea.String("{}")}
+		if !isTransientListenerError(err) {
+			t.Fatalf("%s should be retryable", code)
+		}
+	}
+
+	terminal := []string{
+		"AclListenerOverLimit",
+		"QuotaLimitExceeds.AclAttachedToListener",
+		"QuotaLimitExceeds.AclListenerOverLimit",
+		"IpVersionConflict",
+		"AclNotExist",
+		"InvalidParameter",
+	}
+	for _, code := range terminal {
+		err := &tea.SDKError{Code: tea.String(code), Message: tea.String(""), Data: tea.String("{}")}
+		if isTransientListenerError(err) {
+			t.Fatalf("%s must not be retried", code)
+		}
+	}
+
+	notFound := listenerAclTestNotFoundError()
+	if isTransientListenerError(notFound) {
+		t.Fatal("a missing listener must not be retried")
+	}
+	if !errs.NotFoundError(notFound) {
+		t.Fatal("a 404 response must stay recognizable as not found")
+	}
+}
+
+// The not-found conversion has to survive the shared retry wrapper: read must
+// clear the state and delete must succeed when the listener is already gone.
+func TestUnitListenerAclAttachmentTransportNotFound(t *testing.T) {
+	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
+	requestCapture(t, func(action string, request map[string]interface{}) (map[string]interface{}, error) {
+		return nil, listenerAclTestNotFoundError()
+	})
+	api := newListenerAclAttachmentApi(client)
+	state := listenerAclAttachmentResourceModel{
+		Id:         types.StringValue("lb-123:http:80"),
+		ListenerId: types.StringValue("lb-123:http:80"),
+		AclId:      types.StringValue("acl-1"),
+		AclType:    types.StringValue("white"),
+	}
+	if _, found, err := readListenerAclAttachment(context.Background(), api, state); err != nil || found {
+		t.Fatalf("read must report a missing listener without an error: found=%v err=%v", found, err)
+	}
+	if err := deleteListenerAclAttachment(context.Background(), api, "lb-123:http:80"); err != nil {
+		t.Fatalf("delete must tolerate a missing listener: %s", err)
+	}
 }
 
 // requestCapture replaces the transport entry for the duration of one test.

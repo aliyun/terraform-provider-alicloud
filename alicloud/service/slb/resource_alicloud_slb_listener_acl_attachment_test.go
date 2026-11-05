@@ -252,6 +252,10 @@ func TestAccAliCloudSLBListenerAclAttachment_https(t *testing.T) {
 				),
 			},
 			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.acl.0"),
+			{
+				Config:   testAccListenerAclAttachmentConfigHttps(name),
+				PlanOnly: true,
+			},
 		},
 	})
 }
@@ -320,6 +324,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckListenerAclAttachmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccListenerAclAttachmentConfigMissingListener(name),

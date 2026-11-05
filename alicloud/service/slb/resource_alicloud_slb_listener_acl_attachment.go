@@ -317,7 +317,10 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	}
 	if targetAclId != "" {
 		if err := validateSingleListenerAclId(targetAclId); err != nil {
-			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf("invalid acl_id in state for listener %s: %v", listenerId, err)
+			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+				"invalid acl_id in state for listener %s: %v; the state holds a combined ACL value that this resource cannot manage, remove the resource from state and import it again with <load_balancer_id>:<protocol>:<listener_port>[:<acl_id>]",
+				listenerId, err,
+			)
 		}
 	}
 
@@ -348,7 +351,7 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 			targetAclId = aclIds[0]
 		default:
 			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
-				"listener %s is bound to several access control policy groups (%s); import with the four segment ID <load_balancer_id>:<protocol>:<listener_port>:<acl_id> to select the managed group",
+				"listener %s has multiple access control policy groups (%s); import with the four segment ID <load_balancer_id>:<protocol>:<listener_port>:<acl_id> to select the managed group",
 				listenerId, strings.Join(aclIds, ", "),
 			)
 		}

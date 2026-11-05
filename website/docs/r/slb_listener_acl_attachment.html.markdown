@@ -23,7 +23,7 @@ For information about Classic Load Balancer (SLB) and how to use it, see [What i
 
 -> **NOTE:** Deleting this resource only disables access control (`AclStatus=off`) and never deletes or rebuilds the listener. SLB has no dedicated de-association API, so the server may keep the previous `AclId` after the binding is removed.
 
--> **NOTE:** When the listener is bound to several policy groups, use the four segment import form `<load_balancer_id>:<protocol>:<listener_port>:<acl_id>` to select the managed group; importing with only the listener ID then fails with a diagnostic instead of guessing one.
+-> **NOTE:** When the listener is bound to several policy groups, use the four segment import form `<load_balancer_id>:<protocol>:<listener_port>:<acl_id>` to select the managed group; importing with only the listener ID then fails with a diagnostic instead of guessing one. Deleting this resource still disables access control for the whole listener, not only for the imported policy group.
 
 ## Example Usage
 
