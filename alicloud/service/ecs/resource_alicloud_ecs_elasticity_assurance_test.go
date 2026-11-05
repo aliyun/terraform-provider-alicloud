@@ -279,7 +279,9 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_amount":                     "1",
+					// The capacity is scaled down together with the schedule change below, so the update
+					// path proves that InstanceAmount and other attributes are sent in separate requests.
+					"instance_amount":                     "2",
 					"zone_ids":                            []string{"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"},
 					"instance_type":                       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"private_pool_options_name":           name,
@@ -308,7 +310,7 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_amount":                     "1",
+						"instance_amount":                     "2",
 						"zone_ids.#":                          "1",
 						"instance_type.#":                     "1",
 						"private_pool_options_name":           name,
@@ -376,6 +378,7 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 				// assertion proves the assurance is updated instead of replaced. PlanOnly steps skip the
 				// pre-apply hook, so the action is asserted on the non-refresh plan.
 				Config: testAccConfig(map[string]interface{}{
+					"instance_amount": "1",
 					"recurrence_rules": []map[string]interface{}{
 						{
 							"recurrence_type":  "Weekly",
@@ -401,8 +404,10 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 			},
 			{
 				// The permitted update converges after apply, keeps the assurance and only replaces the
-				// schedule.
+				// schedule. The capacity is scaled down in the same apply, which the service only allows
+				// in a separate request from the schedule.
 				Config: testAccConfig(map[string]interface{}{
+					"instance_amount": "1",
 					"recurrence_rules": []map[string]interface{}{
 						{
 							"recurrence_type":  "Weekly",
@@ -425,6 +430,7 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"instance_amount":    "1",
 						"recurrence_rules.#": "2",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "recurrence_rules.*", map[string]string{

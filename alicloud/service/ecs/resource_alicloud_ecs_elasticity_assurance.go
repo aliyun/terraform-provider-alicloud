@@ -276,9 +276,6 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Ecs", "2014-05-26", action, query, request, true)
 		if err != nil {
-			if isElasticityAssurancePeriodTooShortError(err) {
-				return retry.NonRetryableError(err)
-			}
 			if NeedRetry(err) {
 				wait()
 				return retry.RetryableError(err)
@@ -290,6 +287,9 @@ func resourceAliCloudEcsElasticityAssuranceCreate(d *schema.ResourceData, meta i
 	addDebug(action, response, request)
 
 	if err != nil {
+		if isElasticityAssurancePeriodTooShortError(err) {
+			return WrapError(fmt.Errorf("cannot create alicloud_ecs_elasticity_assurance: the service rejects the time-division schedule as too short (InvalidOperation.ElasticityAssuranceActiveTimeTooShort); when period_unit is Day the documented minimum period is 7 days and the configured period is %v: %w", d.Get("period"), err))
+		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_elasticity_assurance", action, AlibabaCloudSdkGoERROR)
 	}
 
