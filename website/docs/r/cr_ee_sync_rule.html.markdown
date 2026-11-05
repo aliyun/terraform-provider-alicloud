@@ -132,13 +132,13 @@ The following arguments are supported:
 * `target_region_id` - (Required) The region ID of the destination instance.
 * `target_repo_name` - (Optional) The image repository name of the destination instance.
 * `target_user_id` - (Optional, Available since v1.240.0) The UID of the account to which the target instance belongs.
-* `link_id` - (Optional, Available since v1.248.0) The custom sync link ID of the synchronization rule.
-* `namespace_name_filter` - (Optional, Available since v1.248.0) The namespace name filter of the synchronization rule.
-* `priority` - (Optional, Available since v1.248.0) The priority of the synchronization rule. Valid values: `1` to `5`. Default value: `3`.
-* `repo_name_filter` - (Optional, Available since v1.248.0) The repository name filter of the synchronization rule.
+* `link_id` - (Optional, Available since v1.295.0) The custom sync link ID of the synchronization rule.
+* `namespace_name_filter` - (Optional, Available since v1.295.0) The namespace name filter of the synchronization rule.
+* `priority` - (Optional, Available since v1.295.0) The priority of the synchronization rule. Valid values: `1` to `5`. Default value: `3`.
+* `repo_name_filter` - (Optional, Available since v1.295.0) The repository name filter of the synchronization rule.
 * `name` - (Optional, ForceNew, Deprecated since v1.240.0) Field `name` has been deprecated from provider version 1.240.0. New field `sync_rule_name` instead.
 
--> **NOTE:** `link_id`, `namespace_name_filter`, `priority` and `repo_name_filter` are also refreshed from the server after creation; `cross_user` is exported only (see below).
+  -> **NOTE:** `link_id`, `namespace_name_filter`, `priority` and `repo_name_filter` are also refreshed from the server after creation; `cross_user` is exported only (see below).
 
 ## Attributes Reference
 
@@ -149,7 +149,7 @@ The following attributes are exported:
 * `sync_direction` - The synchronization direction.
 * `create_time` - (Available since v1.240.0) The time when the synchronization rule was created.
 * `region_id` - (Available since v1.240.0) The region ID of the source instance.
-* `cross_user` - (Available since v1.248.0) Whether the synchronization rule is cross-account.
+* `cross_user` - (Available since v1.295.0) Whether the synchronization rule is cross-account.
 * `rule_id` - (Deprecated since v1.240.0) Field `rule_id` has been deprecated from provider version 1.240.0. New field `repo_sync_rule_id` instead.
 
 ## Timeouts
@@ -158,7 +158,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Repo Sync Rule.
-* `update` - (Defaults to 5 mins, Available since v1.248.0) Used when update the Repo Sync Rule.
+* `update` - (Defaults to 5 mins, Available since v1.295.0) Used when update the Repo Sync Rule.
 * `delete` - (Defaults to 5 mins) Used when delete the Repo Sync Rule.
 
 ## Import
