@@ -410,6 +410,25 @@ func checkDatabaseAccountName(resourceId, expected string) resource.TestCheckFun
 	}
 }
 
+// checkNoDatabaseAccountGrant verifies through DescribeDatabases that the
+// account is not authorized for the database.
+func checkNoDatabaseAccountGrant(resourceId, accountName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("can't find resource by id: %s", resourceId)
+		}
+		object, err := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient)).DescribePolarDbDatabase(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		if record := polarDBDatabaseAccountRecord(object, accountName); record != nil {
+			return fmt.Errorf("expected account %q not to be authorized for %s, got %v", accountName, rs.Primary.ID, record)
+		}
+		return nil
+	}
+}
+
 // checkDatabaseAccountEmpowered verifies that DescribeDatabases reports the
 // database account as Empowered. PostgreSQL/Oracle do not return an
 // AccountPrivilege value for the database owner (the owner holds implicit
@@ -651,6 +670,35 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 					"account_name":      name,
 					"account_privilege": "ReadOnly",
 				}),
+			},
+			{
+				// The MySQL engine cannot re-grant an account on update, so changing
+				// account_name to an account that is not authorized for this database
+				// must fail explicitly instead of reporting a no-op success.
+				Config: testAccConfig(map[string]interface{}{
+					"account_name": "${alicloud_polardb_account.second.account_name}",
+				}),
+				ExpectError: regexp.MustCompile(`"account_name" can only be changed`),
+				Check:       func(_ *terraform.State) error { return nil },
+			},
+			{
+				// The rejected update neither changed the state nor granted the other
+				// account: the plan is a no-op and the database still reports the
+				// configured account only.
+				Config: testAccConfig(privilegeConfig),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_name":      name,
+						"account_privilege": "ReadOnly",
+					}),
+					checkDatabaseAccountName(resourceId, name),
+					checkNoDatabaseAccountGrant(resourceId, name+"b"),
+				),
 			},
 			{
 				// Grant a second account ReadWrite on the same database so the

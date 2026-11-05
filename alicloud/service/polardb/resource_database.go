@@ -289,6 +289,23 @@ func databaseOwnerEngine(objectRaw map[string]interface{}) bool {
 	return engine == "PostgreSQL" || engine == "Oracle"
 }
 
+// validateAccountNameEngine rejects an account_name change on an engine whose
+// update cannot re-grant the account: only PostgreSQL and Oracle send
+// GrantAccountPrivilege, so on the other engines the change would be accepted
+// without any request and the read would echo the new value. A response that
+// does not report the engine cannot prove the change is supported, so it is
+// rejected as well.
+func validateAccountNameEngine(objectRaw map[string]interface{}) error {
+	if databaseOwnerEngine(objectRaw) {
+		return nil
+	}
+	engine := strings.TrimSpace(fmt.Sprint(objectRaw["Engine"]))
+	if engine == "" || engine == "<nil>" {
+		return fmt.Errorf("\"account_name\" cannot be changed: the database engine is not reported by DescribeDatabases, so the provider cannot confirm that the update re-grants the account")
+	}
+	return fmt.Errorf("\"account_name\" can only be changed for PolarDB for PostgreSQL or PolarDB for PostgreSQL (Compatible with Oracle) databases: the %s engine does not re-grant the account on update", engine)
+}
+
 // selectDatabaseAccount returns the account entry whose AccountName equals
 // accountName, together with a found flag. An empty name has no identity to
 // match and never falls back to the first entry.
@@ -342,7 +359,20 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
 
 	polarDbServiceV2 := PolarDbServiceV2{client}
-	objectRaw, _ := polarDbServiceV2.DescribePolarDbDatabase(d.Id())
+	objectRaw, describeErr := polarDbServiceV2.DescribePolarDbDatabase(d.Id())
+
+	// Only PostgreSQL and Oracle re-grant the account through
+	// GrantAccountPrivilege. On the other engines this update sends no request and
+	// the read would echo the new value, so reject the change before the first
+	// write instead of reporting a no-op success.
+	if d.HasChange("account_name") {
+		if describeErr != nil {
+			return errs.WrapError(describeErr)
+		}
+		if err := validateAccountNameEngine(objectRaw); err != nil {
+			return err
+		}
+	}
 
 	var err error
 	parts := strings.Split(d.Id(), ":")

@@ -286,6 +286,49 @@ func TestUnitAliCloudPolarDbDatabase_createKeepsAccountStateDuringRead(t *testin
 	}
 }
 
+// TestUnitAliCloudPolarDbDatabase_accountNameEngine covers the guard that
+// rejects an account_name change on engines whose update does not re-grant the
+// account. Accepting it would send no request and the read would echo the new
+// value, reporting a successful change that never happened.
+func TestUnitAliCloudPolarDbDatabase_accountNameEngine(t *testing.T) {
+	tests := []struct {
+		name     string
+		response map[string]interface{}
+		wantErr  string
+	}{
+		{name: "postgresql is supported", response: map[string]interface{}{"Engine": "PostgreSQL"}},
+		{name: "oracle is supported", response: map[string]interface{}{"Engine": "Oracle"}},
+		{
+			name:     "mysql is rejected",
+			response: map[string]interface{}{"Engine": "MySQL"},
+			wantErr:  `"account_name" can only be changed`,
+		},
+		{
+			name:     "missing engine is rejected",
+			response: map[string]interface{}{},
+			wantErr:  `the database engine is not reported`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateAccountNameEngine(test.response)
+			if test.wantErr == "" {
+				if err != nil {
+					t.Fatalf("expected the engine to be accepted, got %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected an error containing %q, got nil", test.wantErr)
+			}
+			if !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("expected an error containing %q, got %v", test.wantErr, err)
+			}
+		})
+	}
+}
+
 // TestUnitAliCloudPolarDbDatabase_importKeepsAccountStateEmpty proves that an
 // imported database carries no account identity and therefore no account
 // selection is attempted from the list position.
