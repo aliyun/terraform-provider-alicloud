@@ -342,7 +342,7 @@ func resourceAliyunEssInstanceRefreshUpdate(d *schema.ResourceData, meta interfa
 	}
 	update := false
 	var status string
-	if d.HasChange("status") && (d.Get("status").(string) == "Cancelled" || d.Get("status").(string) == "RollbackSuccessful") {
+	if d.HasChange("status") && (d.Get("status").(string) == "Cancelled" || d.Get("status").(string) == "RollbackSuccessful" || d.Get("status").(string) == "Paused" || d.Get("status").(string) == "InProgress") {
 		status = d.Get("status").(string)
 		update = true
 	}
@@ -361,7 +361,7 @@ func resourceAliyunEssInstanceRefreshUpdate(d *schema.ResourceData, meta interfa
 				err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 					object, errQuery := essService.DescribeEssInstanceRefresh(d.Id())
 					if errQuery != nil {
-						return retry.NonRetryableError(err)
+						return retry.NonRetryableError(errQuery)
 					}
 					if object["Status"].(string) == "Cancelling" {
 						cancellingErr := errors.New(d.Id() + " is " + object["Status"].(string) + ",Please wait it")
@@ -378,7 +378,7 @@ func resourceAliyunEssInstanceRefreshUpdate(d *schema.ResourceData, meta interfa
 				err = retry.Retry(10*time.Minute, func() *retry.RetryError {
 					object, errQuery := essService.DescribeEssInstanceRefresh(d.Id())
 					if errQuery != nil {
-						return retry.NonRetryableError(err)
+						return retry.NonRetryableError(errQuery)
 					}
 					if object["Status"].(string) == "RollbackInProgress" {
 						rollbackInProgressErr := errors.New(d.Id() + " is " + object["Status"].(string) + ",Please wait it")
@@ -390,6 +390,46 @@ func resourceAliyunEssInstanceRefreshUpdate(d *schema.ResourceData, meta interfa
 						return retry.NonRetryableError(rollbackInProgressErr)
 					}
 					return nil
+				})
+			}
+		case "Paused":
+			{
+				action = "SuspendInstanceRefresh"
+				raw, operatorErr = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
+				err = retry.Retry(10*time.Minute, func() *retry.RetryError {
+					object, errQuery := essService.DescribeEssInstanceRefresh(d.Id())
+					if errQuery != nil {
+						return retry.NonRetryableError(errQuery)
+					}
+					if object["Status"].(string) == "Paused" {
+						return nil
+					}
+					if object["Status"].(string) == "Failed" {
+						return retry.NonRetryableError(errors.New(d.Id() + " is Failed"))
+					}
+					suspendErr := errors.New(d.Id() + " is " + object["Status"].(string) + ",Please wait it")
+					wait()
+					return retry.RetryableError(suspendErr)
+				})
+			}
+		case "InProgress":
+			{
+				action = "ResumeInstanceRefresh"
+				raw, operatorErr = client.RpcPost("Ess", "2014-08-28", action, nil, request, true)
+				err = retry.Retry(10*time.Minute, func() *retry.RetryError {
+					object, errQuery := essService.DescribeEssInstanceRefresh(d.Id())
+					if errQuery != nil {
+						return retry.NonRetryableError(errQuery)
+					}
+					if object["Status"].(string) == "InProgress" {
+						return nil
+					}
+					if object["Status"].(string) == "Failed" {
+						return retry.NonRetryableError(errors.New(d.Id() + " is Failed"))
+					}
+					resumeErr := errors.New(d.Id() + " is " + object["Status"].(string) + ",Please wait it")
+					wait()
+					return retry.RetryableError(resumeErr)
 				})
 			}
 		}
