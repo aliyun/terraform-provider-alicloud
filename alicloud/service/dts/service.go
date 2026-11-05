@@ -334,6 +334,36 @@ func (s *Service) CheckJobStateRefreshFunc(id string, failStates []string) retry
 	}
 }
 
+// Detail lookups accept instance IDs too; mutations require the exact job identity.
+// Never adopt the current job under a stable instance ID implicitly.
+func validateJobIdentity(id string, object map[string]interface{}) error {
+	jobId, ok := object["DtsJobId"].(string)
+	if !ok || jobId == "" {
+		return fmt.Errorf("cannot verify DTS job %q: DescribeDtsJobDetail returned no DtsJobId; state identity has not been changed", id)
+	}
+	if id != jobId {
+		return fmt.Errorf("DTS job ID %q does not match DtsJobId %q returned by DescribeDtsJobDetail; use the canonical DtsJobId, not DtsInstanceID. State identity has not been changed; verify the intended job and explicitly re-import it", id, jobId)
+	}
+	return nil
+}
+
+func importJob(d *schema.ResourceData, describe func(string) (map[string]interface{}, error)) ([]*schema.ResourceData, error) {
+	object, err := describe(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil, fmt.Errorf("cannot import non-existent DTS job %q: %s", d.Id(), err)
+		}
+		return nil, errs.WrapError(err)
+	}
+	if object["Status"] == "Finished" {
+		return nil, fmt.Errorf("cannot import non-existent DTS job %q: job is Finished", d.Id())
+	}
+	if err := validateJobIdentity(d.Id(), object); err != nil {
+		return nil, err
+	}
+	return []*schema.ResourceData{d}, nil
+}
+
 // setEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
 // parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
 // Reserve is the only place the connection mode can be sent. Values already present under those

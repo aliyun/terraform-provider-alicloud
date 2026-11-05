@@ -48,6 +48,8 @@ func testSweepDBInstances(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		// The data source documentation example names its instance "terraform-example".
+		"terraform-example",
 	}
 
 	action := "DescribeDBInstances"

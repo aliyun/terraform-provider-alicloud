@@ -4849,3 +4849,179 @@ resource "alicloud_vswitch" "defaultAislbL" {
 
 `, name, name, name)
 }
+
+func TestAccAliCloudElasticsearchInstance_searchIndexNode(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudElasticsearchInstanceMapSearchIndexNode)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return essvc.NewElasticsearchServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeElasticsearchInstance")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tfes%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudElasticsearchInstanceBasicDependenceSearchIndex99)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":        "1",
+					"description":       "search-index-node",
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbK.id}",
+					"version":           "9.99",
+					"password":          "Admain@123",
+					"instance_category": "x-pack",
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.sn1ne.large",
+							"disk":   "0",
+						},
+					},
+					"search_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "3",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "200",
+							"performance_level": "PL1",
+						},
+					},
+					"index_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "3",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "200",
+							"performance_level": "PL1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_count":                                    "1",
+						"description":                                   "search-index-node",
+						"payment_type":                                  "PayAsYouGo",
+						"version":                                       "9.99.0_with_X-Pack",
+						"instance_category":                             "x-pack",
+						"kibana_configuration.0.amount":                 "1",
+						"kibana_configuration.0.spec":                   "elasticsearch.sn1ne.large",
+						"kibana_configuration.0.disk":                   "0",
+						"search_node_configuration.0.spec":              "elasticsearch.turbo2.cae.large",
+						"search_node_configuration.0.amount":            "3",
+						"search_node_configuration.0.disk_type":         "cloud_essd",
+						"search_node_configuration.0.disk":              "200",
+						"search_node_configuration.0.performance_level": "PL1",
+						"index_node_configuration.0.spec":               "elasticsearch.turbo2.cae.large",
+						"index_node_configuration.0.amount":             "3",
+						"index_node_configuration.0.disk_type":          "cloud_essd",
+						"index_node_configuration.0.disk":               "200",
+						"index_node_configuration.0.performance_level":  "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_count":        "1",
+					"description":       "search-index-node",
+					"payment_type":      "PayAsYouGo",
+					"vswitch_id":        "${alicloud_vswitch.defaultAislbK.id}",
+					"version":           "9.99",
+					"password":          "Admain@123",
+					"instance_category": "x-pack",
+					"kibana_configuration": []map[string]interface{}{
+						{
+							"amount": "1",
+							"spec":   "elasticsearch.sn1ne.large",
+							"disk":   "0",
+						},
+					},
+					"search_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "4",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "1024",
+							"performance_level": "PL2",
+						},
+					},
+					"index_node_configuration": []map[string]interface{}{
+						{
+							"amount":            "4",
+							"disk_type":         "cloud_essd",
+							"spec":              "elasticsearch.turbo2.cae.large",
+							"disk":              "1024",
+							"performance_level": "PL2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_configuration.0.amount":                 "1",
+						"kibana_configuration.0.spec":                   "elasticsearch.sn1ne.large",
+						"kibana_configuration.0.disk":                   "0",
+						"search_node_configuration.0.spec":              "elasticsearch.turbo2.cae.large",
+						"search_node_configuration.0.amount":            "4",
+						"search_node_configuration.0.disk_type":         "cloud_essd",
+						"search_node_configuration.0.disk":              "1024",
+						"search_node_configuration.0.performance_level": "PL2",
+						"index_node_configuration.0.spec":               "elasticsearch.turbo2.cae.large",
+						"index_node_configuration.0.amount":             "4",
+						"index_node_configuration.0.disk_type":          "cloud_essd",
+						"index_node_configuration.0.disk":               "1024",
+						"index_node_configuration.0.performance_level":  "PL2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "order_action_type", "password", "update_strategy", "kibana_whitelist"},
+			},
+		},
+	})
+}
+
+var AlicloudElasticsearchInstanceMapSearchIndexNode = map[string]string{
+	"status":        acctest.CHECKSET,
+	"kibana_domain": acctest.CHECKSET,
+	"domain":        acctest.CHECKSET,
+	"kibana_port":   acctest.CHECKSET,
+	"create_time":   acctest.CHECKSET,
+	"public_port":   acctest.CHECKSET,
+}
+
+func AlicloudElasticsearchInstanceBasicDependenceSearchIndex99(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultLPXHTQ" {
+  description = "es-instance-case"
+  vpc_name    = "es-instance-case"
+  dry_run     = false
+  cidr_block  = "10.0.10.0/24"
+  is_default  = false
+}
+
+resource "alicloud_vswitch" "defaultAislbK" {
+  vpc_id       = alicloud_vpc.defaultLPXHTQ.id
+  zone_id      = "cn-hangzhou-k"
+  description  = "tf-case"
+  cidr_block   = "10.0.10.0/24"
+  vswitch_name = "es-instanc-case"
+}
+
+
+`, name)
+}

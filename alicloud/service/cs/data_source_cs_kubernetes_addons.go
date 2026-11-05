@@ -117,7 +117,7 @@ func dataCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	if err != nil {
-		return errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceCSKubernetesAddon, "describeAddonsMeta", err)
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "describeAddonsMeta", err)
 	}
 	result := fetchAddonsMetadata(filterAddons)
 
@@ -141,7 +141,7 @@ func describeAvailableAddons(d *schema.ResourceData, meta interface{}) (map[stri
 
 	availableAddons, err := csClient.DescribeCsKubernetesAllAvailableAddons(clusterId)
 	if err != nil {
-		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceCSKubernetesAddon, "DescribeCsKubernetesAllAvailableAddons", err)
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAllAvailableAddons", err)
 	}
 
 	return availableAddons, nil

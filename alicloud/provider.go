@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/credentials-go/credentials/providers"
@@ -130,16 +131,18 @@ func Provider() *schema.Provider {
 				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
 			"client_read_timeout": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 60000),
-				Description: descriptions["client_read_timeout"],
+				Type:         schema.TypeInt,
+				Optional:     true,
+				DefaultFunc:  schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 60000),
+				ValidateFunc: validation.IntAtLeast(0),
+				Description:  descriptions["client_read_timeout"],
 			},
 			"client_connect_timeout": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 60000),
-				Description: descriptions["client_connect_timeout"],
+				Type:         schema.TypeInt,
+				Optional:     true,
+				DefaultFunc:  schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 60000),
+				ValidateFunc: validation.IntAtLeast(0),
+				Description:  descriptions["client_connect_timeout"],
 			},
 			"source_ip": {
 				Type:        schema.TypeString,
@@ -312,6 +315,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		accessKey, secretKey, securityToken = *creds.AccessKeyId, *creds.AccessKeySecret, *creds.SecurityToken
 	}
 
+	var credentialsURI, credentialsURIExpiration string
 	if accessKey == "" || secretKey == "" {
 		if v, ok := cfgString(d, "credentials_uri"); ok {
 			credentialsURIResp, err := getClientByCredentialsURI(v)
@@ -321,6 +325,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 			accessKey = credentialsURIResp.AccessKeyId
 			secretKey = credentialsURIResp.AccessKeySecret
 			securityToken = credentialsURIResp.SecurityToken
+			credentialsURI = v
+			credentialsURIExpiration = credentialsURIResp.Expiration
 		}
 	}
 
@@ -343,6 +349,9 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		TerraformVersion:     p.TerraformVersion,
 	}
 	config.Features = expandFeatures(d.Get("features").([]interface{}))
+	if credential == nil && credentialsURI != "" {
+		credential = newCredentialsURICredential(credentialsURI, credentialsURIExpiration, config.ClientReadTimeout, config.ClientConnectTimeout)
+	}
 	if credential != nil {
 		config.Credential = credential
 	}
@@ -2563,6 +2572,37 @@ func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, 
 	}
 
 	return &response, nil
+}
+
+// newCredentialsURICredential returns a credential that re-reads the sidecar credentials URI
+// before the cached STS token expires, so that the token used by the provider can outlive a
+// single acquire. The credentials-go URI provider requires a RFC3339 "Expiration" field, so a
+// sidecar that does not return one keeps the legacy one-shot snapshot (nil is returned and the
+// caller falls back to a static credential).
+func newCredentialsURICredential(credentialsURI, expiration string, readTimeoutMs, connectTimeoutMs int) credentials.Credential {
+	if _, err := time.Parse("2006-01-02T15:04:05Z", expiration); err != nil {
+		log.Printf("[WARN] credentials_uri %s does not return a parsable Expiration (%q), falling back to a static credential", credentialsURI, expiration)
+		return nil
+	}
+
+	credentialConfig := new(credentials.Config).
+		SetType("credentials_uri").
+		SetURLCredential(credentialsURI)
+	// credentials-go forwards both values to providers.HttpOptions, which is millisecond based
+	// like the provider schema, so they are passed through without conversion.
+	if readTimeoutMs > 0 {
+		credentialConfig.SetTimeout(readTimeoutMs)
+	}
+	if connectTimeoutMs > 0 {
+		credentialConfig.SetConnectTimeout(connectTimeoutMs)
+	}
+	provider, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		log.Printf("[WARN] failed to build a refreshable credential from credentials_uri %s: %v, falling back to a static credential", credentialsURI, err)
+		return nil
+	}
+
+	return provider
 }
 
 func getModuleAddr() string {

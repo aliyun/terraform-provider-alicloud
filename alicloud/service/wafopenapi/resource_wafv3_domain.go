@@ -174,6 +174,30 @@ func ResourceWafv3Domain() *schema.Resource {
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+						"backend_ports": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"backend_port": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: validators.IntBetween(1, 65535),
+									},
+									"protocol": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validators.StringInSlice([]string{"http", "https"}, false),
+									},
+									"listen_port": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: validators.IntBetween(1, 65535),
+									},
+								},
+							},
+						},
 						"read_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
@@ -381,6 +405,10 @@ func resourceWafv3DomainCreate(d *schema.ResourceData, meta interface{}) error {
 			localMaps = append(localMaps, dataLoopMap)
 		}
 		redirect["RequestHeaders"] = localMaps
+
+		if backendPortsMaps := expandWafv3DomainRedirectBackendPorts(d); len(backendPortsMaps) > 0 {
+			redirect["BackendPorts"] = backendPortsMaps
+		}
 
 		sniHost1, _ := jsonpath.Get("$[0].sni_host", v)
 		if sniHost1 != nil && sniHost1 != "" {
@@ -592,6 +620,8 @@ func resourceWafv3DomainRead(d *schema.ResourceData, meta interface{}) error {
 		redirectMap["write_timeout"] = redirectRaw["WriteTimeout"]
 		redirectMap["xff_proto"] = redirectRaw["XffProto"]
 
+		redirectMap["backend_ports"] = flattenWafv3DomainRedirectBackendPorts(redirectRaw["BackendPorts"])
+
 		backendListRaw := make([]interface{}, 0)
 		if redirectRaw["BackendList"] != nil {
 			backendListRaw = convert.ConvertToInterfaceArray(redirectRaw["BackendList"])
@@ -762,6 +792,10 @@ func resourceWafv3DomainUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		redirect["RequestHeaders"] = localMaps
 
+		if backendPortsMaps := expandWafv3DomainRedirectBackendPorts(d); len(backendPortsMaps) > 0 {
+			redirect["BackendPorts"] = backendPortsMaps
+		}
+
 		sniHost1, _ := jsonpath.Get("$[0].sni_host", v)
 		if sniHost1 != nil && (d.HasChange("redirect.0.sni_host") || sniHost1 != "") {
 			redirect["SniHost"] = sniHost1
@@ -924,4 +958,43 @@ func resourceWafv3DomainDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return nil
+}
+
+// expandWafv3DomainRedirectBackendPorts converts the redirect.backend_ports set
+// into the Redirect.BackendPorts list expected by CreateDomain and ModifyDomain.
+func expandWafv3DomainRedirectBackendPorts(d *schema.ResourceData) []interface{} {
+	backendPortsMaps := make([]interface{}, 0)
+	for _, backendPortsLoop := range convert.ConvertToInterfaceArray(d.Get("redirect.0.backend_ports")) {
+		backendPortsTmp := make(map[string]interface{})
+		if backendPortsLoop != nil {
+			backendPortsTmp = backendPortsLoop.(map[string]interface{})
+		}
+		backendPortsMap := make(map[string]interface{})
+		backendPortsMap["BackendPort"] = backendPortsTmp["backend_port"]
+		backendPortsMap["ListenPort"] = backendPortsTmp["listen_port"]
+		backendPortsMap["Protocol"] = backendPortsTmp["protocol"]
+		backendPortsMaps = append(backendPortsMaps, backendPortsMap)
+	}
+	return backendPortsMaps
+}
+
+// flattenWafv3DomainRedirectBackendPorts converts DescribeDomainDetail's
+// Redirect.BackendPorts into the redirect.backend_ports state shape.
+func flattenWafv3DomainRedirectBackendPorts(raw interface{}) []map[string]interface{} {
+	backendPortsMaps := make([]map[string]interface{}, 0)
+	if raw == nil {
+		return backendPortsMaps
+	}
+	for _, backendPortsChildRaw := range convert.ConvertToInterfaceArray(raw) {
+		backendPortsChild, ok := backendPortsChildRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		backendPortsMap := make(map[string]interface{})
+		backendPortsMap["backend_port"] = backendPortsChild["BackendPort"]
+		backendPortsMap["listen_port"] = backendPortsChild["ListenPort"]
+		backendPortsMap["protocol"] = backendPortsChild["Protocol"]
+		backendPortsMaps = append(backendPortsMaps, backendPortsMap)
+	}
+	return backendPortsMaps
 }

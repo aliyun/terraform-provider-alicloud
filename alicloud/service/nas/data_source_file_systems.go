@@ -64,6 +64,30 @@ func dataSourceAlicloudFileSystems() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"auto_upgrade_config": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"capacity_used_ratio": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"step": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"time": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+								},
+							},
+						},
 						"region_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -192,19 +216,53 @@ func dataSourceAlicloudFileSystemsRead(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return err
 		}
+		autoUpgradeConfig := make([]map[string]interface{}, 0)
+		if autoUpgradeConfigRaw, ok := object["AutoUpgradeConfig"].(map[string]interface{}); ok && len(autoUpgradeConfigRaw) > 0 {
+			autoUpgradeConfigMap := make(map[string]interface{})
+			if v, ok := autoUpgradeConfigRaw["enabled"]; ok {
+				enabled, err := convert.FormatBool(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["enabled"] = enabled
+			}
+			if v, ok := autoUpgradeConfigRaw["capacityUsedRatio"]; ok {
+				capacityUsedRatio, err := convert.FormatInt(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["capacity_used_ratio"] = capacityUsedRatio
+			}
+			if v, ok := autoUpgradeConfigRaw["step"]; ok {
+				step, err := convert.FormatInt(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["step"] = step
+			}
+			if v, ok := autoUpgradeConfigRaw["time"]; ok {
+				upgradeTime, err := convert.FormatInt(v)
+				if err != nil {
+					return err
+				}
+				autoUpgradeConfigMap["time"] = upgradeTime
+			}
+			autoUpgradeConfig = append(autoUpgradeConfig, autoUpgradeConfigMap)
+		}
 		mapping := map[string]interface{}{
-			"id":               fmt.Sprint(object["FileSystemId"]),
-			"region_id":        object["RegionId"],
-			"create_time":      object["CreateTime"],
-			"description":      object["Description"],
-			"protocol_type":    object["ProtocolType"],
-			"storage_type":     object["StorageType"],
-			"metered_size":     metered_sizeVal,
-			"encrypt_type":     object["EncryptType"],
-			"file_system_type": object["FileSystemType"],
-			"capacity":         object["Capacity"],
-			"kms_key_id":       object["KMSKeyId"],
-			"zone_id":          object["ZoneId"],
+			"id":                  fmt.Sprint(object["FileSystemId"]),
+			"auto_upgrade_config": autoUpgradeConfig,
+			"region_id":           object["RegionId"],
+			"create_time":         object["CreateTime"],
+			"description":         object["Description"],
+			"protocol_type":       object["ProtocolType"],
+			"storage_type":        object["StorageType"],
+			"metered_size":        metered_sizeVal,
+			"encrypt_type":        object["EncryptType"],
+			"file_system_type":    object["FileSystemType"],
+			"capacity":            object["Capacity"],
+			"kms_key_id":          object["KMSKeyId"],
+			"zone_id":             object["ZoneId"],
 		}
 		ids = append(ids, fmt.Sprint(object["FileSystemId"]))
 		descriptions = append(descriptions, object["Description"])
