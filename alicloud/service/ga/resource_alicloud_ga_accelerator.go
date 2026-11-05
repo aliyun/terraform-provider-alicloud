@@ -376,9 +376,14 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		"AcceleratorId": d.Id(),
 	}
 
+	autoRenewChanged := !d.IsNewResource() && d.HasChange("auto_renew")
+	if !autoRenewChanged {
+		if v, ok := d.GetOk("renewal_status"); ok {
+			request["RenewalStatus"] = v
+		}
+	}
 	if d.HasChange("renewal_status") {
 		update = true
-		request["RenewalStatus"] = d.Get("renewal_status")
 	}
 
 	if d.HasChange("auto_renew_duration") {
@@ -388,9 +393,17 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		request["AutoRenewDuration"] = v
 	}
 
-	if !d.IsNewResource() && d.HasChange("auto_renew") {
+	if autoRenewChanged {
 		update = true
 		request["AutoRenew"] = d.Get("auto_renew")
+	}
+
+	if update {
+		if _, ok := request["RenewalStatus"]; !ok {
+			if _, ok := request["AutoRenew"]; !ok {
+				request["AutoRenew"] = d.Get("auto_renew")
+			}
+		}
 	}
 
 	if update {
