@@ -112,11 +112,6 @@ func (s *Service) InstanceStateRefreshFunc(id string, field string, failStates [
 }
 
 // DescribeInstance >>> Encapsulated.
-// SetResourceTags <<< Encapsulated tag function for StarRocks.
-func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-	return s.SetResourceTagsWithDeadline(d, resourceType, time.Now().Add(d.Timeout(schema.TimeoutUpdate)))
-}
-
 // SetResourceTagsWithDeadline applies the tag changes within the caller's budget, so a
 // tag update cannot extend the update timeout that already covers other work.
 func (s *Service) SetResourceTagsWithDeadline(d *schema.ResourceData, resourceType string, deadline time.Time) error {

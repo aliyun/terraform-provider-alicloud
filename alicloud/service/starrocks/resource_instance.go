@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -756,6 +757,19 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 	// request without looking at the remote disk.
 	response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
 	logs.AddDebug(action, response, request)
+	if err != nil && backendNodeGroupResizeRejected(err) {
+		// A rejection (throttling or another 4xx) means the service did not execute the
+		// change, so sending it again is safe while the remaining budget allows it.
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		for err != nil && backendNodeGroupResizeRejected(err) {
+			if _, budgetErr := remainingUpdateDuration(deadline); budgetErr != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+			wait()
+			response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
+			logs.AddDebug(action, response, request)
+		}
+	}
 	if err != nil {
 		if !helper.NeedRetry(err) {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
@@ -783,6 +797,19 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 	return nil
 }
 
+// backendNodeGroupResizeRejected reports whether the service refused the resize before
+// executing it, which makes an immediate repeat safe. Throttling and other 4xx answers
+// are rejections; 5xx and transport errors may have executed the change and must not be
+// repeated blindly.
+var backendNodeGroupResizeRejectedRegex = regexp.MustCompile(`(?i)throttling|^code: 4[0-9]{2}`)
+
+func backendNodeGroupResizeRejected(err error) bool {
+	if err == nil {
+		return false
+	}
+	return backendNodeGroupResizeRejectedRegex.MatchString(err.Error())
+}
+
 // backendNodeGroupResizeConvergenceWindow bounds how long a lost resize response waits
 // for the remote disk size to converge before the result is reported as unknown.
 var backendNodeGroupResizeConvergenceWindow = 30 * time.Second
@@ -796,8 +823,8 @@ func BackendNodeGroupResizeConvergenceWindowForTest(window time.Duration) time.D
 }
 
 // backendNodeGroupStorageSizeReached waits briefly for the remote group to report at
-// least the requested size. It is consulted before a retry so a lost response does
-// not turn into a second billable resize, while a genuinely failed call still retries.
+// least the requested size, so a lost resize response can be resolved without sending
+// the billable change again.
 // The wait is bounded by the shared update deadline and by a short convergence window.
 func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupId string, target int, deadline time.Time) (bool, error) {
 	waitUntil := time.Now().Add(backendNodeGroupResizeConvergenceWindow)

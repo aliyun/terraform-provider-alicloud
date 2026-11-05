@@ -1109,8 +1109,12 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			h.modifyResponses = h.modifyResponses[1:]
 		}
 		if status != http.StatusOK {
+			message := "code: 500, injected failure"
+			if status == http.StatusTooManyRequests {
+				message = "code: 429, Throttling.RequestLimit"
+			}
 			w.WriteHeader(status)
-			writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": "code: 500, injected failure", "RequestId": "rid"})
+			writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": message, "RequestId": "rid"})
 			return
 		}
 		writeTestJSON(w, map[string]interface{}{"Success": true})
@@ -1552,5 +1556,104 @@ func TestUnitBackendNodeGroupSlowDiscoveryExhaustsBudget(t *testing.T) {
 	}
 	if handler.countAction("/webapi/cluster/update_name") != 0 || handler.modifyCalls != 0 {
 		t.Fatalf("no write may run after the shared budget is exhausted: %#v", handler.actions)
+	}
+}
+
+func TestUnitDescribeNodeGroupsEndsWithoutMatchWritesNothing(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 150)
+	for i := 0; i < 150; i++ {
+		filler := testBackendGroup(fmt.Sprintf("ng-filler-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	handler := &starRocksNodeGroupsHandler{t: t, groups: groups, total: len(groups), instanceStatus: "RUNNING"}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0)
+	if err == nil || !strings.Contains(err.Error(), "no backend node group matches") {
+		t.Fatalf("expected a no-match error after paging, got %v", err)
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("no resize may be sent when no group matches, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitDescribeNodeGroupsPageErrorPropagates(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 150)
+	for i := 0; i < 150; i++ {
+		groups = append(groups, testBackendGroup(fmt.Sprintf("ng-filler-%03d", i), "cn-hangzhou-h"))
+	}
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: groups, total: len(groups),
+		pageErrors: map[int]int{2: http.StatusInternalServerError},
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	if _, err := starrocks.NewService(client).DescribeNodeGroupsByComponentType("c-fixture", "CN", time.Now().Add(2*time.Second)); err == nil {
+		t.Fatal("expected the second page failure to be returned")
+	}
+}
+
+func TestUnitDescribeNodeGroupsPageLimit(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{t: t, alwaysFullPage: true}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	_, err := starrocks.NewService(client).DescribeNodeGroupsByComponentType("c-fixture", "CN", time.Now().Add(20*time.Second))
+	if err == nil || !strings.Contains(err.Error(), "more than 100 pages") {
+		t.Fatalf("expected the page limit to stop an endless listing, got %v", err)
+	}
+}
+
+func TestUnitDescribeNodeGroupsKeepsPagingOnFullPages(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 105)
+	for i := 0; i < 95; i++ {
+		filler := testBackendGroup(fmt.Sprintf("ng-live-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	for i := 0; i < 5; i++ {
+		deleted := testBackendGroup(fmt.Sprintf("ng-deleted-%03d", i), "cn-hangzhou-h")
+		deleted["Cu"] = float64(4)
+		deleted["Status"] = "DELETED"
+		groups = append(groups, deleted)
+	}
+	for i := 0; i < 4; i++ {
+		filler := testBackendGroup(fmt.Sprintf("ng-live-late-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	groups = append(groups, testBackendGroup("ng-target-late", "cn-hangzhou-i"))
+
+	// Total counts only the live groups: a full first page must still keep paging, as the
+	// deleted rows it contains would otherwise end the listing too early.
+	handler := &starRocksNodeGroupsHandler{t: t, groups: groups, total: 100}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	listed, err := starrocks.NewService(client).DescribeBackendNodeGroups("c-fixture", time.Now().Add(10*time.Second))
+	if err != nil {
+		t.Fatalf("list node groups: %s", err)
+	}
+	for _, group := range listed {
+		if fmt.Sprint(group["Status"]) == "DELETED" {
+			t.Fatalf("deleted groups must not be returned, got %v", group["NodeGroupId"])
+		}
+		if fmt.Sprint(group["NodeGroupId"]) == "ng-target-late" {
+			return
+		}
+	}
+	t.Fatal("the group that only exists after a full first page was not returned")
+}
+
+func TestUnitBackendNodeGroupThrottledResizeIsRetried(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
+		total: 1, instanceStatus: "RUNNING",
+		modifyResponses: []int{http.StatusTooManyRequests, http.StatusOK},
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	if err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0); err != nil {
+		t.Fatalf("apply: %s", err)
+	}
+	if handler.modifyCalls != 2 {
+		t.Fatalf("a throttled resize must be retried once, got %d calls", handler.modifyCalls)
+	}
+	if size := fmt.Sprint(handler.groups[0]["StorageSize"]); size != "300" {
+		t.Fatalf("expected the remote group to reach 300 GiB, got %s", size)
 	}
 }
