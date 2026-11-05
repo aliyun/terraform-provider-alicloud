@@ -1805,6 +1805,26 @@ func TestUnitListenerAclAttachmentProtocolImportForms(t *testing.T) {
 		}
 	})
 
+	// A gateway may serialise an unreported field as an explicit JSON null. That
+	// is the same shape as an absent key: it must not turn a readable member list
+	// into a malformed one.
+	t.Run("explicit null members behave as absent", func(t *testing.T) {
+		state, diagnostics := importAndRead(t, func() (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"ListenerPort": 80,
+				"AclStatus":    "on",
+				"AclType":      "white",
+				"AclId":        "acl-9",
+				"AclIds":       nil,
+			}, nil
+		}, "lb-123:http:80")
+		listenerAclTestRequireNoError(t, "ReadResource (null members)", diagnostics)
+		attrs := listenerAclTestAttrs(t, state)
+		if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-9" {
+			t.Fatalf("acl_id = %q, want acl-9", got)
+		}
+	})
+
 	// The import ID is the public entry point, so each malformed form must be
 	// rejected locally instead of reaching Describe with a truncated identity.
 	t.Run("invalid import IDs are rejected", func(t *testing.T) {

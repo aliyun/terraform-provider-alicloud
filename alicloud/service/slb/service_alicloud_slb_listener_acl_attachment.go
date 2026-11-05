@@ -363,7 +363,10 @@ func listenerAclIds(object map[string]interface{}) ([]string, bool) {
 		seen[id] = struct{}{}
 		ids = append(ids, id)
 	}
-	if value, ok := object["AclId"]; ok {
+	// An explicit JSON null means the field was not reported, which is the same
+	// shape as an absent key; only a present but unusable value makes the list
+	// incomplete.
+	if value, ok := object["AclId"]; ok && value != nil {
 		if raw, ok := value.(string); ok {
 			for _, id := range strings.Split(raw, ",") {
 				appendID(id)
@@ -372,7 +375,7 @@ func listenerAclIds(object map[string]interface{}) ([]string, bool) {
 			complete = false
 		}
 	}
-	if value, ok := object["AclIds"]; ok {
+	if value, ok := object["AclIds"]; ok && value != nil {
 		container, ok := value.(map[string]interface{})
 		if !ok {
 			complete = false
