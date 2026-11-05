@@ -293,8 +293,12 @@ func (r *realtimeComputePackageResource) Update(ctx context.Context, req resourc
 	}
 
 	if update {
-		header := map[string]*string{}
-		query := map[string]*string{
+		// Per the ACube operation mapping, RegionId is passed in the request
+		// header (requestIn: header) on every package lifecycle API, including
+		// UpdatePackage; keep it consistent with Create/Read/Delete rather than
+		// placing it in the query string.
+		query := map[string]*string{}
+		header := map[string]*string{
 			"RegionId": helper.StringPointer(r.Meta().RegionId),
 		}
 		var response map[string]interface{}

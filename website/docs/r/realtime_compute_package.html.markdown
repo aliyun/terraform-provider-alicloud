@@ -92,7 +92,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the resource, the composite key `<project_name>:<package_name>`.
+* `id` - (Computed, String) The ID of the resource, the composite key `<project_name>:<package_name>`.
 * `create_time` - (Computed, Int) The creation time of the package.
 * `creator` - (Computed, String) The creator of the package.
 * `modify_time` - (Computed, Int) The latest modification time of the package.
