@@ -1,8 +1,10 @@
 package polardb
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -229,19 +231,20 @@ func TestUnitAliCloudPolarDbDatabase_refreshAccountState(t *testing.T) {
 			wantPrivilege:   "",
 		},
 		{
-			// MySQL authorizes several accounts, so a remaining entry does not
-			// identify the managed binding and must not replace the configured name.
-			name:            "mysql keeps the account name when the managed grant disappears",
+			// The response is authoritative and no longer contains the managed
+			// account: clearing the name exposes the lost binding even when the
+			// privilege field was never configured (the legacy configuration).
+			name:            "mysql clears the account name when the managed grant disappears",
 			config:          map[string]interface{}{"account_name": "alice"},
 			response:        databaseAccountResponseForEngine("MySQL", accountB),
-			wantAccountName: "alice",
+			wantAccountName: "",
 			wantPrivilege:   "",
 		},
 		{
-			name:            "non-owner engine keeps the account name on an empty list",
+			name:            "non-owner engine clears the account name on an empty list",
 			config:          map[string]interface{}{"account_name": "alice"},
 			response:        databaseAccountResponseForEngine("MySQL"),
-			wantAccountName: "alice",
+			wantAccountName: "",
 			wantPrivilege:   "",
 		},
 	}
@@ -371,4 +374,69 @@ func TestUnitAliCloudPolarDbDatabase_createRequiresAccountName(t *testing.T) {
 	if d.Id() != "" {
 		t.Fatalf("expected no resource id after the rejected create, got %q", d.Id())
 	}
+}
+
+// TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered covers the post-grant
+// wait: it must only return once the account is listed with
+// PrivilegeStatus=Empowered, keep waiting while the status is transitional or
+// the account list is not yet visible, and surface other errors immediately.
+func TestUnitAliCloudPolarDbDatabase_waitAccountEmpowered(t *testing.T) {
+	empowered := func(status string) map[string]interface{} {
+		return databaseAccountResponseForEngine("PostgreSQL", map[string]interface{}{
+			"AccountName":     "alice",
+			"PrivilegeStatus": status,
+		})
+	}
+
+	t.Run("waits through a missing list and Empowering", func(t *testing.T) {
+		responses := []map[string]interface{}{
+			databaseAccountResponseForEngine("PostgreSQL"),
+			empowered("Empowering"),
+			empowered("Empowered"),
+		}
+		calls := 0
+		describe := func(string) (map[string]interface{}, error) {
+			if calls >= len(responses) {
+				return empowered("Empowered"), nil
+			}
+			response := responses[calls]
+			calls++
+			return response, nil
+		}
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 60*time.Second); err != nil {
+			t.Fatalf("expected the wait to finish once the account is empowered, got %v", err)
+		}
+		if calls != len(responses) {
+			t.Fatalf("expected %d describe calls, got %d", len(responses), calls)
+		}
+	})
+
+	t.Run("times out while the account stays Empowering", func(t *testing.T) {
+		describe := func(string) (map[string]interface{}, error) {
+			return empowered("Empowering"), nil
+		}
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 100*time.Millisecond); err == nil {
+			t.Fatal("expected a timeout while the account stays Empowering")
+		}
+	})
+
+	t.Run("propagates other errors", func(t *testing.T) {
+		describe := func(string) (map[string]interface{}, error) {
+			return nil, fmt.Errorf("unexpected describe failure")
+		}
+		err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", 5*time.Second)
+		if err == nil || !strings.Contains(err.Error(), "unexpected describe failure") {
+			t.Fatalf("expected the describe error to propagate, got %v", err)
+		}
+	})
+
+	t.Run("empty account name is a no-op", func(t *testing.T) {
+		describe := func(string) (map[string]interface{}, error) {
+			t.Fatal("must not describe the database for an empty account name")
+			return nil, nil
+		}
+		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "  ", time.Second); err != nil {
+			t.Fatalf("expected no wait for an empty account name, got %v", err)
+		}
+	})
 }

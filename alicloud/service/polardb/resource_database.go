@@ -255,19 +255,13 @@ func refreshDatabaseAccountState(d *schema.ResourceData, objectRaw map[string]in
 		}
 		// The account list is authoritative and no longer contains the configured
 		// account. This includes a legal empty list after the last grant is
-		// revoked: clearing the privilege surfaces the ForceNew drift instead of
-		// keeping a stale value.
+		// revoked. Clearing the privilege surfaces the ForceNew drift; clearing
+		// account_name exposes the lost binding for configurations that only manage
+		// the account, where the privilege field is empty and cannot signal drift.
+		// On PostgreSQL/Oracle the following update re-grants the owner, and on the
+		// other engines it is rejected with an explicit error before any write.
 		d.Set("account_privilege", "")
-		// PostgreSQL and Oracle bind a database to one owner account, which
-		// DescribeDatabases always reports. When a trustworthy response lacks the
-		// configured account, the managed owner binding itself drifted: clearing
-		// account_name makes that visible so Update's DBOwner branch restores the
-		// configured owner. Other engines authorize several accounts, so the
-		// remaining entries say nothing about the managed binding and clearing the
-		// name there would plan an update that cannot converge.
-		if databaseOwnerEngine(objectRaw) {
-			d.Set("account_name", "")
-		}
+		d.Set("account_name", "")
 		return
 	}
 
@@ -447,9 +441,10 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		// GrantAccountPrivilege is asynchronous. Reading immediately can observe the
-		// previous account list, and the read would then clear the managed account
-		// state for a change that is still in flight.
-		if err := waitDatabaseAccountVisible(polarDbServiceV2, d.Id(), fmt.Sprint(request["AccountName"]), d.Timeout(schema.TimeoutUpdate)); err != nil {
+		// previous account list, or the account before its grant is empowered, and
+		// the read would then clear the managed account state for a change that is
+		// still in flight.
+		if err := waitDatabaseAccountEmpowered(polarDbServiceV2.DescribePolarDbDatabase, d.Id(), fmt.Sprint(request["AccountName"]), d.Timeout(schema.TimeoutUpdate)); err != nil {
 			return errs.WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
@@ -458,17 +453,19 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	return resourceDatabaseRead(d, meta)
 }
 
-// waitDatabaseAccountVisible polls DescribeDatabases until the account is listed
-// for the database, so the read that follows an update observes the granted
-// account instead of the previous list.
-func waitDatabaseAccountVisible(service PolarDbServiceV2, id, accountName string, timeout time.Duration) error {
+// waitDatabaseAccountEmpowered polls DescribeDatabases until the granted account
+// is listed with PrivilegeStatus=Empowered, so the read that follows an update
+// observes a completed grant instead of a pending one. A missing account list,
+// an absent account and a non-terminal PrivilegeStatus are retried within the
+// update budget; other errors are returned immediately.
+func waitDatabaseAccountEmpowered(describe func(string) (map[string]interface{}, error), id, accountName string, timeout time.Duration) error {
 	accountName = strings.TrimSpace(accountName)
 	if accountName == "" {
 		return nil
 	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	return retry.Retry(timeout, func() *retry.RetryError {
-		objectRaw, err := service.DescribePolarDbDatabase(id)
+		objectRaw, err := describe(id)
 		if err != nil {
 			if errs.NotFoundError(err) {
 				wait()
@@ -476,13 +473,23 @@ func waitDatabaseAccountVisible(service PolarDbServiceV2, id, accountName string
 			}
 			return retry.NonRetryableError(err)
 		}
-		if accounts, authoritative := databaseAccounts(objectRaw); authoritative {
-			if _, found := selectDatabaseAccount(accounts, accountName); found {
-				return nil
-			}
+		accounts, authoritative := databaseAccounts(objectRaw)
+		if !authoritative {
+			wait()
+			return retry.RetryableError(fmt.Errorf("the account list of database %s is missing or malformed", id))
 		}
-		wait()
-		return retry.RetryableError(fmt.Errorf("account %q is not listed for database %s yet", accountName, id))
+		record, found := selectDatabaseAccount(accounts, accountName)
+		if !found {
+			wait()
+			return retry.RetryableError(fmt.Errorf("account %q is not listed for database %s yet", accountName, id))
+		}
+		switch status := strings.TrimSpace(fmt.Sprint(record["PrivilegeStatus"])); status {
+		case "Empowered":
+			return nil
+		default:
+			wait()
+			return retry.RetryableError(fmt.Errorf("account %q has PrivilegeStatus %q on database %s, waiting for Empowered", accountName, status, id))
+		}
 	})
 }
 

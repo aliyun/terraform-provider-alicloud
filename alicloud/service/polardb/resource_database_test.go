@@ -659,19 +659,6 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 		"account_privilege": "ReadOnly",
 		"db_description":    name,
 	}
-	// Removing account_privilege lets a step re-grant the account without asking
-	// Terraform to reconcile the cleared state against the configured value.
-	// The shared config builder merges each step into the previous attributes, so
-	// the key must be dropped explicitly; omitting it would keep
-	// account_privilege="ReadOnly" in the rendered configuration and the restore
-	// step would plan a database replacement.
-	privilegeConfigWithoutPrivilege := map[string]interface{}{
-		"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
-		"db_name":           name,
-		"account_name":      "${alicloud_polardb_account.default.account_name}",
-		"account_privilege": acctest.REMOVEKEY,
-		"db_description":    name,
-	}
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { polarDBDatabaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
@@ -690,6 +677,19 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 					}),
 					checkDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 				),
+			},
+			{
+				// The first successful create is followed by an import: the database
+				// fields are recovered and the account fields stay empty because an
+				// import carries no account identity.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
 			},
 			{
 				// Baseline refresh: the single authorized account is read back.
@@ -711,32 +711,28 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				),
 			},
 			{
-				// The legal empty list clears the stale privilege in state.
+				// The authoritative empty list clears the stale identity and privilege
+				// in state, so the drift is visible even for a configuration that only
+				// manages the account.
 				RefreshState:       true,
 				ExpectNonEmptyPlan: true,
 				Check: testAccCheck(map[string]string{
-					"account_name":      name,
+					"account_name":      "",
 					"account_privilege": "",
 				}),
 			},
 			{
-				// Restore the grant without configuring the privilege. The step must
-				// be a no-op for the database itself: if the removal did not reach the
-				// generated configuration, the ForceNew attribute would plan a
-				// replacement and this check would fail before the grant runs.
-				Config: testAccConfig(privilegeConfigWithoutPrivilege),
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
-					},
-				},
+				// The grant is restored outside Terraform: the refresh still sees the
+				// cleared identity, and the check re-grants the privilege.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
 					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
 				),
 			},
 			{
-				// A refresh reads the restored privilege back into state.
+				// A refresh reads the restored binding and privilege back into state.
 				RefreshState: true,
 				Check: testAccCheck(map[string]string{
 					"account_name":      name,
@@ -801,23 +797,15 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 			{
 				// Importing a database with several accounts cannot tell which account
 				// the configuration manages, so neither account field is inferred from
-				// the list position.
+				// the list position; the database fields are still compared explicitly.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty for a multi-account database, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected imported account_privilege to stay empty for a multi-account database, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
 			},
 			{
 				// Remove the configured account's grant while the second account keeps
@@ -832,14 +820,76 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 				),
 			},
 			{
+				// The authoritative response without the configured account clears the
+				// managed identity as well as the privilege.
 				RefreshState:       true,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_name":      name,
+						"account_name":      "",
 						"account_privilege": "",
 					}),
 				),
+			},
+			{
+				// Restore the grant before the legacy scenario starts.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+				),
+			},
+			{
+				RefreshState: true,
+				Check: testAccCheck(map[string]string{
+					"account_name":      name,
+					"account_privilege": "ReadOnly",
+				}),
+			},
+			{
+				// Legacy configuration that only manages account_name: dropping the
+				// privilege key is a no-op for the database, and the check revokes the
+				// grant so the next refresh must expose the lost binding even though no
+				// privilege was ever configured.
+				Config: testAccConfig(map[string]interface{}{
+					"account_privilege": acctest.REMOVEKEY,
+				}),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionNoop),
+					},
+				},
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					revokeDatabaseAccountPrivilege(resourceId, name),
+					waitDatabaseAccountAbsent(resourceId, name),
+				),
+			},
+			{
+				// The legacy configuration sees the lost binding as an identity drift.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: testAccCheck(map[string]string{
+					"account_name":      "",
+					"account_privilege": "",
+				}),
+			},
+			{
+				// Restoring the grant makes the binding visible again.
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					grantDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+					waitDatabaseAccountPrivilege(resourceId, name, "ReadOnly"),
+				),
+			},
+			{
+				RefreshState: true,
+				Check: testAccCheck(map[string]string{
+					"account_name":      name,
+					"account_privilege": "ReadOnly",
+				}),
 			},
 		},
 	})
@@ -881,26 +931,31 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
 				),
 			},
 			{
-				// The API does not return AccountPrivilege for the PostgreSQL
-				// owner, so an import cannot recover the configured value. The
-				// imported state is persisted so the next step plans against it.
+				// The API does not return AccountPrivilege for the PostgreSQL owner,
+				// so an import cannot recover the account fields; the database fields
+				// are compared explicitly. This command import uses its own isolated
+				// working directory and does not persist state.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "PostgreSQL",
+				}),
+			},
+			{
+				// A plannable import starts from a state without the managed resource,
+				// so persisting it gives the next step a real imported state to plan
+				// the replacement against.
 				ResourceName:       resourceId,
 				ImportState:        true,
+				ImportStateKind:    resource.ImportBlockWithID,
 				ImportStateVerify:  false,
 				ImportStatePersist: true,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty because the import has no account identity, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected account_privilege to be unrecoverable after import, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "PostgreSQL",
+				}),
 			},
 			{
 				// Keeping account_privilege in the configuration after the import
@@ -969,23 +1024,14 @@ func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
 			},
 			{
 				// Oracle does not report the owner privilege, so an import cannot
-				// recover the account fields; the imported state keeps them empty.
+				// recover the account fields; the database fields are compared here.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected account_privilege to be unrecoverable after import, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "Oracle",
+				}),
 			},
 		},
 	})
