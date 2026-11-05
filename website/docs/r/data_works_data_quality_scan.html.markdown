@@ -19,6 +19,14 @@ For information about Data Works Data Quality Scan and how to use it, see [What 
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform_example"
 }
@@ -72,61 +80,61 @@ JSON
 
 The following arguments are supported:
 
-* `name` - (Required) The name of the data quality scan.
-* `project_id` - (Required, ForceNew) The ID of the DataWorks project to which the scan belongs.
-* `spec` - (Required) The scan specification, a JSON document describing the datasets to scan and the rules to evaluate. See the [DataQualityScan API](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createdataqualityscan) for the schema of datasets and rules.
-* `description` - (Optional) A description of the scan.
-* `owner` - (Optional) The owner of the scan.
-* `parameters` - (Optional) A list of key/value parameters for the scan. See [`parameters`](#parameters) below.
-* `trigger` - (Optional) The scan trigger configuration. See [`trigger`](#trigger) below.
-* `compute_resource` - (Optional) The compute resource used to run the scan. See [`compute_resource`](#compute_resource) below.
-* `runtime_resource` - (Optional) The runtime resource used to run the scan. See [`runtime_resource`](#runtime_resource) below.
-* `hooks` - (Optional) A list of hooks invoked when the scan produces results. See [`hooks`](#hooks) below.
+* `name` - (Required, String) The name of the data quality scan.
+* `project_id` - (Required, ForceNew, String) The ID of the DataWorks project to which the scan belongs.
+* `spec` - (Required, String) The scan specification, a JSON document describing the datasets to scan and the rules to evaluate. See the [DataQualityScan API](https://www.alibabacloud.com/help/en/dataworks/developer-reference/api-dataworks-public-2024-05-18-createdataqualityscan) for the schema of datasets and rules.
+* `description` - (Optional, String) A description of the scan.
+* `owner` - (Optional, String) The owner of the scan.
+* `parameters` - (Optional, Set) A set of key/value parameters for the scan. The order of `parameters` blocks is not significant. See [`parameters`](#parameters) below.
+* `trigger` - (Optional, Object) The scan trigger configuration. See [`trigger`](#trigger) below.
+* `compute_resource` - (Optional, Object) The compute resource used to run the scan. See [`compute_resource`](#compute_resource) below.
+* `runtime_resource` - (Optional, Object) The runtime resource used to run the scan. See [`runtime_resource`](#runtime_resource) below.
+* `hooks` - (Optional, Set) A set of hooks invoked when the scan produces results. The order of `hooks` blocks is not significant. See [`hooks`](#hooks) below.
 
 ### `parameters`
 
 The `parameters` block supports:
 
-* `name` - (Required) The parameter name.
-* `value` - (Required) The parameter value.
+* `name` - (Required, String) The parameter name.
+* `value` - (Required, String) The parameter value.
 
 ### `trigger`
 
 The `trigger` block supports:
 
-* `type` - (Required) The trigger type, e.g. `BySchedule`.
-* `task_ids` - (Optional) The list of task IDs the scan is associated with.
+* `type` - (Required, String) The trigger type. Valid values: `ByManual` (default, manual trigger), `BySchedule` (triggered by a scheduled task instance). When set to `BySchedule`, `task_ids` must also be configured.
+* `task_ids` - (Optional, List) The list of scheduling task IDs the scan is associated with. Required when `type` is `BySchedule`.
 
 ### `compute_resource`
 
 The `compute_resource` block supports:
 
-* `name` - (Optional) The compute resource name.
-* `env_type` - (Optional) The environment type, e.g. `Prod` or `Dev`.
-* `runtime` - (Optional) The compute runtime configuration. See [`runtime`](#runtime) below.
+* `name` - (Optional, String) The compute resource name.
+* `env_type` - (Optional, String) The environment type. Valid values: `Prod` (production environment), `Dev` (development environment).
+* `runtime` - (Optional, Object) The compute runtime configuration. See [`runtime`](#runtime) below.
 
 #### `runtime`
 
 The `runtime` block (under `compute_resource`) supports:
 
-* `engine` - (Optional) The compute engine, e.g. `Hive` or `Spark`.
-* `hive_conf` - (Optional, Map, ForceNew) Hive configuration key/value pairs.
-* `spark_conf` - (Optional, Map, ForceNew) Spark configuration key/value pairs.
+* `engine` - (Optional, String) The compute engine. Only EMR compute engines support setting this. Valid values: `Hive` (Hive SQL), `Spark` (Spark SQL), `Kyuubi`.
+* `hive_conf` - (Optional, Map) Hive configuration key/value pairs. Currently only `mapreduce.job.queuename` is supported to set the queue.
+* `spark_conf` - (Optional, Map) Spark configuration key/value pairs. Currently only `spark.yarn.queue` is supported to set the queue.
 
 ### `runtime_resource`
 
 The `runtime_resource` block supports:
 
-* `id` - (Optional) The runtime resource ID.
-* `cu` - (Optional) The compute units allocated to the runtime resource.
-* `image` - (Optional) The image used by the runtime resource.
+* `id` - (Optional, String) The runtime resource ID.
+* `cu` - (Optional, Float) The compute units allocated to the runtime resource.
+* `image` - (Optional, String) The image used by the runtime resource.
 
 ### `hooks`
 
 The `hooks` block supports:
 
-* `condition` - (Required) The condition expression that triggers the hook.
-* `type` - (Required) The hook type, e.g. `BlockTaskInstance`.
+* `condition` - (Required, String) The condition expression that triggers the hook.
+* `type` - (Required, String) The hook type, e.g. `BlockTaskInstance`.
 
 ## Attributes Reference
 

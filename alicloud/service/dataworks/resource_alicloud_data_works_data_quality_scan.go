@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -132,7 +131,11 @@ func (r *dataQualityScanResource) Schema(ctx context.Context, req resource.Schem
 			"owner": schema.StringAttribute{
 				Optional: true,
 			},
-			"parameters": schema.ListNestedAttribute{
+			// parameters is a set of key/value pairs: order carries no semantic
+			// meaning and the API does not guarantee a stable echo order, so a
+			// SetNestedAttribute (R4.19 ladder top: TypeSet) avoids permadiff
+			// regardless of the order GetDataQualityScan returns.
+			"parameters": schema.SetNestedAttribute{
 				Optional: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -172,19 +175,17 @@ func (r *dataQualityScanResource) Schema(ctx context.Context, req resource.Schem
 							"engine": schema.StringAttribute{
 								Optional: true,
 							},
+							// hive_conf/spark_conf are part of ComputeResource,
+							// which the API treats as updatable (Update resends
+							// the full object). No ForceNew: changes apply
+							// in-place, consistent with engine in the same block.
 							"hive_conf": schema.MapAttribute{
 								ElementType: types.StringType,
 								Optional:    true,
-								PlanModifiers: []planmodifier.Map{
-									mapplanmodifier.RequiresReplace(),
-								},
 							},
 							"spark_conf": schema.MapAttribute{
 								ElementType: types.StringType,
 								Optional:    true,
-								PlanModifiers: []planmodifier.Map{
-									mapplanmodifier.RequiresReplace(),
-								},
 							},
 						},
 					},
@@ -204,7 +205,10 @@ func (r *dataQualityScanResource) Schema(ctx context.Context, req resource.Schem
 					},
 				},
 			},
-			"hooks": schema.ListNestedAttribute{
+			// hooks is a set of independent rule entries: order carries no
+			// semantic meaning, so SetNestedAttribute (R4.19) avoids permadiff
+			// from any reordering in the GetDataQualityScan echo.
+			"hooks": schema.SetNestedAttribute{
 				Optional: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{

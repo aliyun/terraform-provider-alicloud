@@ -25,6 +25,7 @@ func TestAccAliCloudDataWorksDataQualityScan_basic(t *testing.T) {
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf_testacc_dqs_%d", rand)
 	updatedDescription := "Updated description for the data quality scan."
+	updatedOwner := fmt.Sprintf("owner_%d", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -34,7 +35,7 @@ func TestAccAliCloudDataWorksDataQualityScan_basic(t *testing.T) {
 		CheckDestroy:             testAccCheckDataWorksDataQualityScanDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataWorksDataQualityScanBasicConfig(name, "Daily quality scan of ods tables.", true),
+				Config: testAccDataWorksDataQualityScanBasicConfig(name, "Daily quality scan of ods tables.", "", true),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(dataQualityScanResourceId, "id"),
 					resource.TestCheckResourceAttr(dataQualityScanResourceId, "name", name),
@@ -49,10 +50,26 @@ func TestAccAliCloudDataWorksDataQualityScan_basic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDataWorksDataQualityScanBasicConfig(name, updatedDescription, false),
+				// Clear every optional block (parameters, trigger, hooks)
+				// and assert the clear sticks, not just parameters.
+				Config: testAccDataWorksDataQualityScanBasicConfig(name, updatedDescription, "", false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataQualityScanResourceId, "description", updatedDescription),
 					resource.TestCheckResourceAttr(dataQualityScanResourceId, "parameters.#", "0"),
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "trigger.#", "0"),
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "hooks.#", "0"),
+				),
+			},
+			{
+				// Re-add the owner field in-place (no ForceNew on owner) and
+				// keep the cleared blocks to exercise the scalar update path.
+				Config: testAccDataWorksDataQualityScanBasicConfig(name, updatedDescription, updatedOwner, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "description", updatedDescription),
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "owner", updatedOwner),
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "parameters.#", "0"),
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "trigger.#", "0"),
+					resource.TestCheckResourceAttr(dataQualityScanResourceId, "hooks.#", "0"),
 				),
 			},
 			{
@@ -82,7 +99,7 @@ func testAccCheckDataWorksDataQualityScanDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccDataWorksDataQualityScanBasicConfig(name, description string, withOptional bool) string {
+func testAccDataWorksDataQualityScanBasicConfig(name, description, owner string, withOptional bool) string {
 	optional := ""
 	if withOptional {
 		optional = `
@@ -104,6 +121,9 @@ func testAccDataWorksDataQualityScanBasicConfig(name, description string, withOp
 		optional = fmt.Sprintf(`
   description = "%s"
 `, description)
+		if owner != "" {
+			optional += fmt.Sprintf("  owner       = \"%s\"\n", owner)
+		}
 	}
 	return fmt.Sprintf(`
 variable "name" {
