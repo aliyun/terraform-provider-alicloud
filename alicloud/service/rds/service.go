@@ -1941,6 +1941,39 @@ func (s *RdsService) RdsDBInstanceStateRefreshFuncWithinDeadline(id string, fail
 	}
 }
 
+// dbInstanceDeletePollInterval spaces the instance reads of the delete wait.
+// Tests lower it together with the timeout to keep the loop short.
+var dbInstanceDeletePollInterval = 10 * time.Second
+
+type dbInstanceExistenceReader interface {
+	DescribeDBInstanceWithTimeout(id string, timeout time.Duration) (map[string]interface{}, error)
+}
+
+// waitForDBInstanceDeleted waits until the instance lookup confirms absence.
+// DeleteDBInstance stops reporting task entries once the instance is released,
+// so an empty DescribeTasks list cannot prove completion; only an explicit
+// NotFound from the instance lookup can. Reads spend the remaining delete
+// budget, and any other error keeps its original handling instead of being
+// read as absence.
+func waitForDBInstanceDeleted(reader dbInstanceExistenceReader, id string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		budget, ok := remainingLifecycleBudget(deadline)
+		if !ok {
+			return WrapError(Error("timeout while waiting for DB instance %s to be deleted", id))
+		}
+		if _, err := reader.DescribeDBInstanceWithTimeout(id, budget); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if !rdsWaitBefore(deadline, dbInstanceDeletePollInterval) {
+			return WrapError(Error("timeout while waiting for DB instance %s to be deleted", id))
+		}
+	}
+}
+
 func (s *RdsService) RdsDBInstanceNodeIdRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		describeDBInstanceHAConfigObject, err := s.DescribeDBInstanceHAConfig(id)

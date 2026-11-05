@@ -438,3 +438,82 @@ func TestUnitAliCloudDBInstanceTemplateGroupConflict(t *testing.T) {
 	assert.False(t, conflict)
 	assert.Empty(t, name)
 }
+
+type fakeDBInstanceReadResult struct {
+	object map[string]interface{}
+	err    error
+}
+
+type fakeDBInstanceExistenceReader struct {
+	responses []fakeDBInstanceReadResult
+	calls     int
+	budgets   []time.Duration
+}
+
+func (f *fakeDBInstanceExistenceReader) DescribeDBInstanceWithTimeout(id string, timeout time.Duration) (map[string]interface{}, error) {
+	f.budgets = append(f.budgets, timeout)
+	index := f.calls
+	f.calls++
+	if index < len(f.responses) {
+		return f.responses[index].object, f.responses[index].err
+	}
+	return nil, dbInstanceNotFoundError(id)
+}
+
+func dbInstanceNotFoundError(id string) error {
+	return WrapErrorf(sdkerrors.NewServerError(404, `{"Code":"InvalidDBInstanceName.NotFound","Message":"instance not found"}`, ""), NotFoundMsg, id, "request-id")
+}
+
+// fastDeleteWait shrinks the delete poll interval so the wait loop does not
+// spend the production interval in real time.
+func fastDeleteWait(t *testing.T) {
+	t.Helper()
+	oldInterval := dbInstanceDeletePollInterval
+	dbInstanceDeletePollInterval = time.Millisecond
+	t.Cleanup(func() { dbInstanceDeletePollInterval = oldInterval })
+}
+
+func TestUnitAliCloudDBInstanceDeleteWaitSucceedsOnNotFound(t *testing.T) {
+	fastDeleteWait(t)
+	reader := &fakeDBInstanceExistenceReader{responses: []fakeDBInstanceReadResult{{err: dbInstanceNotFoundError("rm-test")}}}
+	err := waitForDBInstanceDeleted(reader, "rm-test", time.Minute)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, reader.calls, "an absent instance must end the wait on the first read")
+}
+
+// The instance can outlive DeleteDBInstance, and a released instance reports an
+// empty task list, so the wait must keep reading the instance itself until the
+// lookup confirms it is gone.
+func TestUnitAliCloudDBInstanceDeleteWaitPollsWhileInstanceExists(t *testing.T) {
+	fastDeleteWait(t)
+	reader := &fakeDBInstanceExistenceReader{responses: []fakeDBInstanceReadResult{
+		{object: map[string]interface{}{"DBInstanceStatus": "Deleting"}},
+		{object: map[string]interface{}{"DBInstanceStatus": "Deleting"}},
+		{err: dbInstanceNotFoundError("rm-test")},
+	}}
+	err := waitForDBInstanceDeleted(reader, "rm-test", time.Minute)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, reader.calls)
+	for i := 1; i < len(reader.budgets); i++ {
+		assert.LessOrEqual(t, reader.budgets[i], reader.budgets[i-1], "the budget must never be rebuilt between reads")
+	}
+}
+
+func TestUnitAliCloudDBInstanceDeleteWaitErrorPropagates(t *testing.T) {
+	fastDeleteWait(t)
+	reader := &fakeDBInstanceExistenceReader{responses: []fakeDBInstanceReadResult{
+		{err: sdkerrors.NewServerError(403, `{"Code":"Forbidden.RAM","Message":"permission denied"}`, "")},
+	}}
+	err := waitForDBInstanceDeleted(reader, "rm-test", time.Minute)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "permission denied")
+	assert.Equal(t, 1, reader.calls, "an authorization error must not be retried into absence")
+}
+
+func TestUnitAliCloudDBInstanceDeleteWaitBudgetExhausted(t *testing.T) {
+	reader := &fakeDBInstanceExistenceReader{}
+	err := waitForDBInstanceDeleted(reader, "rm-test", 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "timeout while waiting")
+	assert.Equal(t, 0, reader.calls, "an exhausted budget must abort before any read")
+}

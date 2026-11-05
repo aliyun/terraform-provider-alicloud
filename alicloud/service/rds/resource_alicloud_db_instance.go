@@ -2636,8 +2636,10 @@ func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"Processing", "Pending", "NoStart", "Failed", "Default"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, rdsService.RdsTaskStateRefreshFunc(d.Id(), "DeleteDBInstance"))
-	if _, err = stateConf.WaitForState(); err != nil {
+	// DeleteDBInstance stops producing task entries once the instance is
+	// released, so wait for the instance itself to be gone instead of polling
+	// DescribeTasks, whose empty list would otherwise read as still pending.
+	if err := waitForDBInstanceDeleted(&rdsService, d.Id(), d.Timeout(schema.TimeoutDelete)); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
