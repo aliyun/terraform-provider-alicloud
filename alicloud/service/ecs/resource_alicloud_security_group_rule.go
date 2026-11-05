@@ -3,6 +3,7 @@ package ecs
 import (
 	"fmt"
 	"log"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+// validateSecurityGroupRuleCidrIp rejects values that a single
+// alicloud_security_group_rule cannot represent. ECS stores one CIDR per
+// security group rule, so a comma- or space-separated list would create a
+// rule that Read can never match, which only surfaces as a 10 minute
+// "The specified Security Group Rule is not found" retry after creation.
+func validateSecurityGroupRuleCidrIp(v interface{}, k string) ([]string, []error) {
+	value, ok := v.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("%q must be a string", k)}
+	}
+	if value == "" {
+		return nil, nil
+	}
+	// IPv6 (including IPv4-mapped forms) belongs to ipv6_cidr_ip.
+	if strings.Contains(value, ":") {
+		return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, for example \"10.0.0.0/8\"; IPv6 addresses are not supported, use ipv6_cidr_ip instead, got %q", k, value)}
+	}
+	if ip, _, err := net.ParseCIDR(value); err == nil && ip.To4() != nil {
+		return nil, nil
+	}
+	if ip := net.ParseIP(value); ip != nil && ip.To4() != nil {
+		return nil, nil
+	}
+	return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, for example \"10.0.0.0/8\"; multiple CIDRs are not supported in one alicloud_security_group_rule, define one resource per CIDR, got %q", k, value)}
+}
 
 func resourceAliyunSecurityGroupRule() *schema.Resource {
 	return &schema.Resource{
@@ -62,6 +89,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				AtLeastOneOf: []string{"cidr_ip", "ipv6_cidr_ip", "source_security_group_id", "prefix_list_id"},
+				ValidateFunc: validateSecurityGroupRuleCidrIp,
 			},
 			"ipv6_cidr_ip": {
 				Type:          schema.TypeString,

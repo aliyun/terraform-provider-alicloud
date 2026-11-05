@@ -18,6 +18,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -1245,5 +1246,80 @@ func TestUnitECSSecurityGroupRuleInvalidImportID(t *testing.T) {
 	d.SetId("sg-12345678:ingress:tcp:80/80:internet:0.0.0.0/0")
 	if v := parseSecurityRuleId(d, nil, 6); v != "" {
 		t.Fatalf("expected empty policy for a six-part ID, got %q", v)
+	}
+}
+
+func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
+	validate := resourceAliyunSecurityGroupRule().Schema["cidr_ip"].ValidateFunc
+	if validate == nil {
+		t.Fatal("cidr_ip must declare a ValidateFunc")
+	}
+
+	cases := []struct {
+		value   string
+		valid   bool
+		wantErr string
+	}{
+		{"192.168.0.0/16", true, ""},
+		{"10.159.6.18/12", true, ""},
+		{"10.159.6.18", true, ""},
+		{"0.0.0.0/0", true, ""},
+		{"", true, ""},
+		{"192.168.0.0/16,10.0.0.0/8", false, "multiple CIDRs are not supported"},
+		{"192.168.0.0/16 10.0.0.0/8", false, "multiple CIDRs are not supported"},
+		{"::/0", false, "use ipv6_cidr_ip"},
+		{"2001:db8::1", false, "use ipv6_cidr_ip"},
+		{"::ffff:10.0.0.1", false, "use ipv6_cidr_ip"},
+		{"10.0.0.0/33", false, "must be a single IPv4 address or CIDR block"},
+		{"not-a-cidr", false, "must be a single IPv4 address or CIDR block"},
+	}
+	for _, tc := range cases {
+		_, errs := validate(tc.value, "cidr_ip")
+		if tc.valid {
+			if len(errs) > 0 {
+				t.Fatalf("expected %q to be accepted, got %v", tc.value, errs)
+			}
+			continue
+		}
+		if len(errs) != 1 {
+			t.Fatalf("expected %q to be rejected with one error, got %v", tc.value, errs)
+		}
+		if !strings.Contains(errs[0].Error(), `"cidr_ip"`) || !strings.Contains(errs[0].Error(), tc.wantErr) {
+			t.Fatalf("unexpected error for %q: %v", tc.value, errs)
+		}
+	}
+}
+
+func TestUnitECSSecurityGroupRuleRejectsMultiCidrAtPlan(t *testing.T) {
+	r := resourceAliyunSecurityGroupRule()
+	cfg := map[string]interface{}{
+		"security_group_id": "sg-bp11r3e0h88zlzt7n9y7",
+		"type":              "ingress",
+		"ip_protocol":       "tcp",
+		"port_range":        "22/22",
+		"cidr_ip":           "192.168.0.0/16,10.0.0.0/8",
+	}
+
+	// Configuration validation runs before any AuthorizeSecurityGroup(Egress)
+	// call, so the multi-CIDR value must be rejected here instead of failing
+	// 10 minutes later with "The specified Security Group Rule is not found".
+	diags := r.Validate(sdkterraform.NewResourceConfigRaw(cfg))
+	if !diags.HasError() {
+		t.Fatalf("expected configuration validation to reject multiple CIDRs, got %v", diags)
+	}
+	rejected := false
+	for _, d := range diags {
+		if strings.Contains(d.Summary, "multiple CIDRs are not supported") {
+			rejected = true
+		}
+	}
+	if !rejected {
+		t.Fatalf("expected an actionable multi-CIDR error, got %v", diags)
+	}
+
+	// A single IPv4 address stays valid at plan time.
+	cfg["cidr_ip"] = "10.159.6.18"
+	if diags := r.Validate(sdkterraform.NewResourceConfigRaw(cfg)); diags.HasError() {
+		t.Fatalf("expected a single IPv4 address to pass configuration validation, got %v", diags)
 	}
 }
