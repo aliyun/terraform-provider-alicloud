@@ -944,10 +944,10 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 `, name)
 }
 
-// Case ServerGroup Test_health_check_req_exp 86531726
-// Covers the HealthCheckConfig.HealthCheckReq/HealthCheckExp property-completeness gap:
-// health check request/expect strings must round-trip across Create/Update/Import.
-func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
+// Case ServerGroup Test_health_check_req_exp
+// Covers HealthCheckConfig.HealthCheckReq/HealthCheckExp: the values must
+// round-trip across create, update, removal and import.
+func TestAccAliCloudGwlbServerGroup_healthCheckReqExp(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_server_group.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMapReqExp)
@@ -957,8 +957,8 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccGwlb86531726%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependence8500)
+	name := fmt.Sprintf("tf-testAccGwlbReqExp%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependenceReqExp)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
@@ -975,7 +975,7 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 					"server_group_name": name,
 					"health_check_config": []map[string]interface{}{
 						{
-							"health_check_protocol":        "UDP",
+							"health_check_protocol":        "TCP",
 							"health_check_enabled":         "true",
 							"health_check_connect_port":    "1",
 							"health_check_connect_timeout": "5",
@@ -999,7 +999,7 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 						"server_group_type": "Ip",
 						"vpc_id":            acctest.CHECKSET,
 						"server_group_name": name,
-						"health_check_config.0.health_check_protocol": "UDP",
+						"health_check_config.0.health_check_protocol": "TCP",
 						"health_check_config.0.health_check_req":      "tfreqlcreate",
 						"health_check_config.0.health_check_exp":      "tfexpcreate",
 					}),
@@ -1015,7 +1015,7 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_config": []map[string]interface{}{
 						{
-							"health_check_protocol":        "UDP",
+							"health_check_protocol":        "TCP",
 							"health_check_enabled":         "true",
 							"health_check_connect_port":    "1",
 							"health_check_connect_timeout": "5",
@@ -1029,7 +1029,7 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_config.0.health_check_protocol": "UDP",
+						"health_check_config.0.health_check_protocol": "TCP",
 						"health_check_config.0.health_check_req":      "tfreqlupdate",
 						"health_check_config.0.health_check_exp":      "tfexpupdate",
 					}),
@@ -1045,7 +1045,7 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_config": []map[string]interface{}{
 						{
-							"health_check_protocol":        "UDP",
+							"health_check_protocol":        "TCP",
 							"health_check_enabled":         "true",
 							"health_check_connect_port":    "1",
 							"health_check_connect_timeout": "5",
@@ -1057,7 +1057,7 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_config.0.health_check_protocol": "UDP",
+						"health_check_config.0.health_check_protocol": "TCP",
 						"health_check_config.0.health_check_req":      "",
 						"health_check_config.0.health_check_exp":      "",
 					}),
@@ -1076,6 +1076,27 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp86531726(t *testing.T) {
 var AlicloudGwlbServerGroupMapReqExp = map[string]string{
 	"status":      acctest.CHECKSET,
 	"create_time": acctest.CHECKSET,
+}
+
+func AlicloudGwlbServerGroupBasicDependenceReqExp(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-wulanchabu"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultEaxcvb" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = "tf-testAccGwlbVpc"
+}
+
+
+`, name)
 }
 
 // Test Gwlb ServerGroup. <<< Resource test cases, automatically generated.

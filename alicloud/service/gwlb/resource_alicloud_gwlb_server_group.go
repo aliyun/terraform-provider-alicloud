@@ -129,7 +129,7 @@ func ResourceServerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validators.StringInSlice([]string{"TCP", "HTTP", "UDP"}, false),
+							ValidateFunc: validators.StringInSlice([]string{"TCP", "HTTP"}, false),
 						},
 						"health_check_domain": {
 							Type:     schema.TypeString,

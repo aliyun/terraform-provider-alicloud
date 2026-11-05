@@ -230,9 +230,8 @@ The health_check_config supports the following:
 
   - `TCP`: TCP health checks send TCP SYN packets to a backend server to check whether the port of the backend server is reachable.
   - `HTTP`: HTTP health checks simulate a process that uses a web browser to access resources by sending HEAD or GET requests to an instance. These requests are used to check whether the instance is healthy.
-  - `UDP`: UDP health checks send UDP packets to a backend server to check whether the port of the backend server is reachable.
-* `health_check_req` - (Optional, String, Available since v2.3.0) The request string sent to a backend server during a health check. The value must be 1 to 512 characters in length and can contain only letters and digits. This parameter takes effect only if you set `health_check_protocol` to `UDP`.
-* `health_check_exp` - (Optional, String, Available since v2.3.0) The expected response string that the backend server must return during a health check. The value must be 1 to 512 characters in length and can contain only letters and digits. This parameter takes effect only if you set `health_check_protocol` to `UDP`.
+* `health_check_req` - (Optional, String, Available since v2.3.0) The request string sent to a backend server during a health check. The value must be 1 to 512 characters in length and can contain only letters and digits.
+* `health_check_exp` - (Optional, String, Available since v2.3.0) The expected response string that the backend server must return during a health check. The value must be 1 to 512 characters in length and can contain only letters and digits.
 * `healthy_threshold` - (Optional, Computed, Int, Available since v1.236.0) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. In this case, the health status changes from `fail` to `success`.
 
   Valid values: `2` to `10`.
