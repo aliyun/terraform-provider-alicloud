@@ -758,7 +758,10 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	logErr := retry.Retry(budget, func() *retry.RetryError {
-		response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
+		// The SDK level auto retry is disabled for this billable change: it would resend
+		// the request without looking at the remote disk, while the retry below re-reads
+		// the node group first and skips the write when the response was merely lost.
+		response, err = service.client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, false)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				// The resize may already be applied even though the response was lost.
