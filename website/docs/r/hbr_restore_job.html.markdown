@@ -93,6 +93,34 @@ resource "alicloud_hbr_restore_job" "ecsJob" {
 }
 ```
 
+### Full Machine Recovery (UDM_ECS_ROLLBACK)
+
+The following example performs an ECS full-machine original recovery. It retrieves the latest UDM snapshot (including `snapshot_hash`) from the [`alicloud_hbr_udm_snapshots`](/docs/providers/alicloud/d/hbr_udm_snapshots.html) data source, then creates a restore job with `source_type = UDM_ECS` and `restore_type = UDM_ECS_ROLLBACK`. The `udm_detail` argument is a JSON string that specifies the source instance and recovery options.
+
+```terraform
+data "alicloud_hbr_ecs_backup_plans" "default" {
+  name_regex = "plan-tf-used-dont-delete"
+}
+
+data "alicloud_hbr_udm_snapshots" "default" {
+  source_type = "UDM_ECS"
+  instance_id = data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
+  start_time  = "1642057551"
+  end_time    = "1750927687"
+}
+
+resource "alicloud_hbr_restore_job" "udmEcsRollback" {
+  vault_id      = data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
+  source_type   = "UDM_ECS"
+  restore_type  = "UDM_ECS_ROLLBACK"
+  snapshot_id   = data.alicloud_hbr_udm_snapshots.default.snapshots.0.udm_snapshot_id
+  snapshot_hash = data.alicloud_hbr_udm_snapshots.default.snapshots.0.snapshot_hash
+  udm_detail    = <<EOF
+    {"sourceInstanceId":"i-08qv5q4c4j****","forceRestore":false,"bootAfterRestore":false}
+  EOF
+}
+```
+
 -> **NOTE:** This resource can only be created, cannot be modified or deleted. Therefore, any modification of the resource attribute will not affect exist resource.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_hbr_restore_job&spm=docs.r.hbr_restore_job.example&intl_lang=EN_US)
@@ -119,7 +147,7 @@ The following arguments are supported:
 * `target_client_id` - (Optional, ForceNew) The target client ID.
 * `target_data_source_id` - (Optional, ForceNew) The target data source ID.
 * `target_time` - (Optional, ForceNew, Available since v1.164.0) The time when data is restored to the Table store instance. This value is a UNIX timestamp. Unit: seconds. **WARNING:** Required while source_type equals `OTS_TABLE`. **Note:** The time when data is restored to the Tablestore instance. It should be 0 if restores data at the End time of the snapshot.
-* `udm_detail` - (Optional, ForceNew, Available since v1.164.0) The full machine backup details.
+* `udm_detail` - (Optional, ForceNew, Available since v1.164.0) The full machine backup details. It is a JSON string whose structure depends on `restore_type` (the full-machine `restore_type` values are `UDM_ECS`, `UDM_ECS_ROLLBACK`, `UDM_ECS_DISK` and `UDM_ECS_DISK_ROLLBACK`). For `UDM_ECS_ROLLBACK` (full-machine original recovery), use `{"sourceInstanceId":"i-xxx","forceRestore":false,"bootAfterRestore":false}`, where `sourceInstanceId` is the ID of the source ECS instance to recover, `forceRestore` whether to force the recovery and overwrite the existing instance, and `bootAfterRestore` whether to start the ECS instance after the recovery. See the "Full Machine Recovery" example below.
 * `target_instance_name` - (Optional, ForceNew, Available since v1.164.0) The name of the Table store instance to which you want to restore data.**WARNING:** Required while source_type equals `OTS_TABLE`.
 * `target_table_name` - (Optional, ForceNew, Available since v1.164.0) The name of the table that stores the restored data. **WARNING:** Required while source_type equals `OTS_TABLE`.
 * `ots_detail` - (Optional, Computed, Available since v1.186.0) The details about the Tablestore instance. See [`ots_detail`](#ots_detail) below.
