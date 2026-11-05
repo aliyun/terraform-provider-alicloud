@@ -181,8 +181,10 @@ resource "alicloud_polardb_db_node" "default" {
 %[2]s
   timeouts {
     create = "30m"
-    update = "30m"
-    delete = "30m"
+    update = "60m"
+    # Enabling SCC keeps the cluster busy after the last step, and DeleteDBNodes
+    # answers OperationDenied.DBClusterStatus until that work finishes.
+    delete = "60m"
   }
 }
 `, r, nodeArgs)
