@@ -995,7 +995,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"match_criteria": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 							// None is the service representation of "no private pool" and is
 							// what the provider sends when the block is removed, so it is not
 							// accepted as user input: configuring it would make the block

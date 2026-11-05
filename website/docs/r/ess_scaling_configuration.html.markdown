@@ -317,7 +317,7 @@ The resourcePoolOptionsPrivatePoolTags mapping supports the following:
 
 The privatePoolOptions mapping supports the following:
 
-* `match_criteria` - (Required, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
+* `match_criteria` - (Optional, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Set it whenever the block is configured. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
 * `pool_id` - (Optional, String) The ID of the private pool. Required when `match_criteria` is `Target`. Available since v2.3.0.
 
   -> **NOTE:** Removing the `private_pool_options` block sends `PrivatePoolOptions.MatchCriteria=None`, which disables the private pool. A configuration imported while the service reports `None` has no `private_pool_options` block.

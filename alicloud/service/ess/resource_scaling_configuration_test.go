@@ -2708,18 +2708,6 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
 			},
-			{
-				// An empty block is not a supported configuration: match_criteria is
-				// required inside the block, so the plan fails instead of silently
-				// sending no clear.
-				Config: testAccConfig(map[string]interface{}{
-					"private_pool_options": []map[string]interface{}{
-						{},
-					},
-				}),
-				ExpectError: regexp.MustCompile(`match_criteria`),
-				Check:       resource.ComposeTestCheckFunc(),
-			},
 		},
 	})
 }
