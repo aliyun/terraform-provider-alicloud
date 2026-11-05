@@ -31,6 +31,10 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_ims_user",
 				Factory:  NewUserResource,
 			},
+			{
+				TypeName: "alicloud_ims_app_secret",
+				Factory:  NewImsAppSecretResource,
+			},
 		},
 	}
 }
