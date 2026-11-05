@@ -7,11 +7,11 @@ description: |-
     Provides a list of alikafka instances available to the user.
 ---
 
-# alicloud\_alikakfa\_instances
+# alicloud\_alikafka\_instances
 
 This data source provides a list of ALIKAFKA Instances in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.59.0+
+-> **NOTE:** Available since v1.59.0.
 
 ## Example Usage
 
@@ -60,6 +60,11 @@ The following arguments are supported:
 * `ids` - (Optional) A list of instance IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by the instance name. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
+
+### `instances`
+
+* `tags` - (Optional) A mapping of tags to assign to the instance.
 
 ## Attributes Reference
 
@@ -67,7 +72,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of instance IDs.
 * `names` - A list of instance names.
-* `instances` - A list of instances. Each element contains the following attributes:
+* `instances` - A list of instances. Each element contains the following attributes. See [`instances`](#instances) for the optional argument block.
   * `id` - ID of the instance.
   * `name` - Name of the instance.
   * `create_time` - The create time of the instance.

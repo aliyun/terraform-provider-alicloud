@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Storage Gateway Express Syncs to the user.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_express\_syncs
+# alicloud_cloud_storage_gateway_express_syncs
 
 This data source provides the Cloud Storage Gateway Express Syncs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.144.0+.
+-> **NOTE:** Available since v1.144.0.
 
 ## Example Usage
 
@@ -39,17 +39,17 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Express Sync name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Express Sync names.
 * `syncs` - A list of Cloud Storage Gateway Express Syncs. Each element contains the following attributes:
-    * `bucket_name` - The name of the OSS Bucket.
-    * `bucket_prefix` - The prefix of the OSS Bucket.
-    * `bucket_region` - The region of the OSS Bucket.
-    * `description` - The description of the Express Sync.
-    * `express_sync_id` - The ID of the Express Sync.
-    * `express_sync_name` - The name of the Express Sync.
-    * `id` - The resource ID in terraform of Express Sync. The value is formate as <express_sync_id>.
-    * `mns_topic` - The name of the message topic (Topic) corresponding to the Express Sync in the Alibaba Cloud Message Service MNS.
+  * `bucket_name` - The name of the OSS Bucket.
+  * `bucket_prefix` - The prefix of the OSS Bucket.
+  * `bucket_region` - The region of the OSS Bucket.
+  * `description` - The description of the Express Sync.
+  * `express_sync_id` - The ID of the Express Sync.
+  * `express_sync_name` - The name of the Express Sync.
+  * `id` - The resource ID in terraform of Express Sync. The value is formate as <express_sync_id>.
+  * `mns_topic` - The name of the message topic (Topic) corresponding to the Express Sync in the Alibaba Cloud Message Service MNS.

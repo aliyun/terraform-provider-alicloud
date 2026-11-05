@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Resource Manager Resource Shares of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.111.0+.
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
@@ -40,14 +40,14 @@ The following arguments are supported:
 * `resource_share_owner` - (Required, ForceNew) The owner of resource share, Valid values: `Self` and `OtherAccounts`.
 * `status` - (Optional, ForceNew) The status of resource share. Valid values: `Active`,`Deleted` and `Deleting`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Resource Share names.
 * `shares` - A list of Resource Manager Resource Shares. Each element contains the following attributes:
-	* `id` - The ID of the Resource Share.
-	* `resource_share_id` - The ID of the resource share.
-	* `resource_share_name` - The name of resource share.
-	* `resource_share_owner` - The owner of resource share.
-	* `status` - The status of resource share.
+  * `id` - The ID of the Resource Share.
+  * `resource_share_id` - The ID of the resource share.
+  * `resource_share_name` - The name of resource share.
+  * `resource_share_owner` - The owner of resource share.
+  * `status` - The status of resource share.

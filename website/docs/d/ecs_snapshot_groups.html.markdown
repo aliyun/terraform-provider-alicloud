@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecs Snapshot Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.160.0+.
+-> **NOTE:** Available since v1.160.0.
 
 ## Example Usage
 
@@ -51,15 +51,15 @@ output "ecs_snapshot_group_id_4" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Snapshot Group IDs.
-* `instance_id` - (Optional, ForceNew) The ID of the instance.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Snapshot Group name.
+* `ids` - (Optional, Computed)  A list of Snapshot Group IDs.
+* `instance_id` - (Optional) The ID of the instance.
+* `name_regex` - (Optional) A regex string to filter results by Snapshot Group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `snapshot_group_name` - (Optional, ForceNew) The name of the snapshot-consistent group.
-* `status` - (Optional, ForceNew) The state of snapshot-consistent group. Valid Values: `accomplished`, `failed` and `progressing`.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the snapshot group.
+* `snapshot_group_name` - (Optional) The name of the snapshot-consistent group.
+* `status` - (Optional) The state of snapshot-consistent group. Valid Values: `accomplished`, `failed` and `progressing`.
+* `tags` - (Optional) A mapping of tags to assign to the snapshot group.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -72,6 +72,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `snapshot_group_id` - The first ID of the resource.
   * `snapshot_group_name` - The name of the snapshot-consistent group.
   * `status` - The status of the resource.
-  * `tags` - List of label key-value pairs.
-    * `tag_key` - The key of the tag.
-    * `tag_value` - The value of the tag.
+  * `tags` - (Optional) List of label key-value pairs.

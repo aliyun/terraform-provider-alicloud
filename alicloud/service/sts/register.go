@@ -7,7 +7,8 @@ import (
 // ServicePackage returns the registration declaration of the STS service.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
-		Name: "Sts",
+		Name:           "Sts",
+		SDKDataSources: []conns.SDKDataSource{{TypeName: "alicloud_caller_identity", Factory: dataSourceAlicloudCallerIdentity}},
 		EphemeralResources: []conns.EphemeralResource{
 			{
 				TypeName: "alicloud_sts_token",

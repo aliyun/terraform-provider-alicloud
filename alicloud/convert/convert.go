@@ -519,3 +519,31 @@ func NormalizeJsonObjectSliceByName(raw interface{}) string {
 		return fmt.Sprintf("%v", raw)
 	}
 }
+
+// ConvertAmqpInstanceRenewalDurationUnitResponse maps the API renewal duration
+// unit code returned by the amqp/rocketmq "ons" instance model to the
+// Terraform-facing value. Shared by the migrated alicloud/service/amqpopen
+// package and the unmigrated root alicloud_amqp_compatible shim so the two
+// no longer carry divergent copies.
+func ConvertAmqpInstanceRenewalDurationUnitResponse(source interface{}) interface{} {
+	switch source {
+	case "M":
+		return "Month"
+	case "Y":
+		return "Year"
+	}
+	return source
+}
+
+// ConvertAmqpInstanceRenewalDurationUnitRequest maps the Terraform-facing
+// renewal duration unit to the API code expected by the amqp/rocketmq "ons"
+// instance model. See ConvertAmqpInstanceRenewalDurationUnitResponse.
+func ConvertAmqpInstanceRenewalDurationUnitRequest(source interface{}) interface{} {
+	switch source {
+	case "Month":
+		return "M"
+	case "Year":
+		return "Y"
+	}
+	return source
+}

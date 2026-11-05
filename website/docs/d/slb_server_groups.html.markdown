@@ -7,13 +7,15 @@ description: |-
     Provides a list of VServer groups related to a server load balancer to the user.
 ---
 
-# alicloud\_slb_server_groups
+# alicloud_slb_server_groups
 
 This data source provides the VServer groups related to a server load balancer.
 
+-> **NOTE:** Available since v1.15.0.
+
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbservergroups"
 }
@@ -24,20 +26,20 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/16"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = var.name
-  vswitch_id = alicloud_vswitch.default.id
+  vswitch_id         = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_server_group" "default" {
@@ -57,7 +59,7 @@ output "first_slb_server_group_id" {
 
 The following arguments are supported:
 
-* `load_balancer_id` - ID of the SLB.
+* `load_balancer_id` - (Required) ID of the SLB.
 * `ids` - (Optional) A list of VServer group IDs to filter results.
 * `name_regex` - (Optional) A regex string to filter results by VServer group name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

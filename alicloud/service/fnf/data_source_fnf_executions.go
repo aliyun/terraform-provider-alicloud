@@ -1,0 +1,217 @@
+package fnf
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceFnFExecutions() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceFnFExecutionsRead,
+		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"flow_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped", "Succeeded", "Failed", "TimedOut"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"executions": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"execution_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"flow_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"input": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"output": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"started_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"stopped_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+		},
+	}
+}
+
+func dataSourceFnFExecutionsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "ListExecutions"
+	request := make(map[string]interface{})
+	request["FlowName"] = d.Get("flow_name")
+	if v, ok := d.GetOk("status"); ok {
+		request["Status"] = v
+	}
+	var objects []map[string]interface{}
+	var executionNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		executionNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcGet("fnf", "2019-03-15", action, request, nil)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_fnf_executions", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Executions", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.Executions", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if executionNameRegex != nil && !executionNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["FlowName"], ":", item["Name"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":             fmt.Sprint(object["FlowName"], ":", object["Name"]),
+			"execution_name": fmt.Sprint(object["Name"]),
+			"flow_name":      object["FlowName"],
+			"input":          object["Input"],
+			"output":         object["Output"],
+			"started_time":   object["StartedTime"],
+			"stopped_time":   object["StoppedTime"],
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			s = append(s, mapping)
+			continue
+		}
+		id := fmt.Sprint(object["FlowName"], ":", object["Name"])
+		fnfService := NewService(client)
+		getResp, err := fnfService.DescribeFnFExecution(id)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		mapping["status"] = getResp["Status"]
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("executions", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

@@ -8,6 +8,7 @@ description: |-
 ---
 
 # alicloud_log_oss_shipper
+
 Log service data delivery management, this service provides the function of delivering data in logstore to oss product storage.
 [Refer to details](https://www.alibabacloud.com/help/en/doc-detail/43724.htm).
 
@@ -77,19 +78,19 @@ The following arguments are supported:
 * `path_format` - (Required) The OSS Bucket directory is dynamically generated according to the creation time of the shipper task, it cannot start with a forward slash `/`, the default value is `%Y/%m/%d/%H/%M`.
 * `format` - (Required) Storage format, only supports three types: `json`, `parquet`, `csv`.
   **According to the different format, please select the following parameters**
-  - format = `json`
-    `json_enable_tag` - (Optional) Whether to deliver the label.
-  - format = `csv`
-    `csv_config_delimiter` - (Optional) Separator configuration in csv configuration format.
-    `csv_config_columns` - (Optional) Field configuration in csv configuration format.
-    `csv_config_nullidentifier` - (Optional) Invalid field content.
-    `csv_config_quote` - (Optional) Escape character under csv configuration.
-    `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file, the default value is `false`.
-    `csv_config_linefeed` - (Optional) lineFeed in csv configuration.
-  - format = `parquet`
-    `parquet_config` - (Optional) Configure to use parquet storage format.
-       `name` - (Required) The name of the key.
-       `type` - (Required) Type of configuration name.
+* `json_enable_tag` - (Optional) Whether to deliver the label.
+* `csv_config_delimiter` - (Optional) Separator configuration in csv configuration format.
+* `csv_config_columns` - (Optional) Field configuration in csv configuration format.
+* `csv_config_nullidentifier` - (Optional) Invalid field content.
+* `csv_config_quote` - (Optional) Escape character under csv configuration.
+* `csv_config_header` - (Optional) Indicates whether to write the field name to the CSV file, the default value is `false`.
+* `csv_config_linefeed` - (Optional) lineFeed in csv configuration.
+* `parquet_config` - (Optional) Configure to use parquet storage format. See [`parquet_config`](#parquet_config) below.
+
+### `parquet_config`
+
+* `name` - (Required) The name of the key.
+* `type` - (Required) Type of configuration name.
 
 
 ## Attributes Reference

@@ -16,6 +16,10 @@ For information about Threat Detection Service Linked Role and how to use it, se
 
 -> **NOTE:** Available since v1.283.0.
 
+-> **NOTE:** This resource refuses to adopt a service linked role that already exists, for example one created by the Security Center console or by another tool. Creation fails with the import command to run instead of taking the existing role into state, so that a later `terraform destroy` never deletes a role that Terraform did not create. When importing a role other than `AliyunServiceRoleForSas`, keep `service_linked_role` in the configuration with that same name; because the argument has a default, omitting it plans a replacement of the imported role.
+
+-> **NOTE:** Upgrading from v1.283.0-v2.1.0: if `service_linked_role` was omitted from the configuration, the state entry stores an id that is not a role name. The first apply after upgrading replaces the resource and fails with an import hint. Run the printed `terraform import` command; if it reports that the resource is already managed by Terraform, run `terraform state rm <ADDRESS>` and then import again.
+
 ## Example Usage
 
 Basic Usage
@@ -40,7 +44,15 @@ resource "alicloud_threat_detection_service_linked_role" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `service_linked_role` - (Optional, ForceNew, Computed, Available since v1.283.0) The name of the service linked role.
+* `service_linked_role` - (Optional, ForceNew, Available since v1.283.0) The name of the service linked role. Defaults to `AliyunServiceRoleForSas`. Valid values:
+  - `AliyunServiceRoleForSas`
+  - `AliyunServiceRoleForSasCspm`
+  - `AliyunServiceRoleForSasAgentless`
+  - `AliyunServiceRoleForOssMfd`
+  - `AliyunServiceRoleForAntiRansomwareMssp`
+  - `AliyunServiceRoleForSasSecllm`
+  - `AliyunServiceRoleForSasAI`
+  - `AliyunLogETLRole`
 
 ## Attributes Reference
 

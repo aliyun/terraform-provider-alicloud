@@ -1,0 +1,196 @@
+package cr
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func resourceAlicloudCrChartRepository() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAlicloudCrChartRepositoryCreate,
+		Read:   resourceAlicloudCrChartRepositoryRead,
+		Update: resourceAlicloudCrChartRepositoryUpdate,
+		Delete: resourceAlicloudCrChartRepositoryDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"repo_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"repo_namespace_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"repo_type": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PRIVATE", "PUBLIC"}, false),
+			},
+			"summary": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
+
+func resourceAlicloudCrChartRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateChartRepository"
+	request := make(map[string]interface{})
+	var err error
+	request["InstanceId"] = d.Get("instance_id")
+	request["RepoName"] = d.Get("repo_name")
+	request["RepoNamespaceName"] = d.Get("repo_namespace_name")
+	if v, ok := d.GetOk("repo_type"); ok {
+		request["RepoType"] = v
+	}
+	if v, ok := d.GetOk("summary"); ok {
+		request["Summary"] = v
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_cr_chart_repository", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["RepoNamespaceName"], ":", request["RepoName"]))
+
+	return resourceAlicloudCrChartRepositoryRead(d, meta)
+}
+func resourceAlicloudCrChartRepositoryRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	crService := CrService{client}
+	object, err := crService.DescribeCrChartRepository(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cr_chart_repository crService.DescribeCrChartRepository Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	d.Set("repo_name", parts[2])
+	d.Set("repo_namespace_name", parts[1])
+	d.Set("instance_id", parts[0])
+	d.Set("repo_type", object["RepoType"])
+	d.Set("summary", object["Summary"])
+	return nil
+}
+func resourceAlicloudCrChartRepositoryUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var err error
+	var response map[string]interface{}
+	parts, err := helper.ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	update := false
+	request := map[string]interface{}{
+		"RepoName":          parts[2],
+		"RepoNamespaceName": parts[1],
+		"InstanceId":        parts[0],
+	}
+
+	if d.HasChange("repo_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("repo_type"); ok {
+		request["RepoType"] = v
+	}
+	if d.HasChange("summary") {
+		update = true
+		if v, ok := d.GetOk("summary"); ok {
+			request["Summary"] = v
+		}
+	}
+	if update {
+		action := "UpdateChartRepository"
+		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	return resourceAlicloudCrChartRepositoryRead(d, meta)
+}
+func resourceAlicloudCrChartRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	action := "DeleteChartRepository"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"RepoName":          parts[2],
+		"RepoNamespaceName": parts[1],
+		"InstanceId":        parts[0],
+	}
+
+	request["InstanceId"] = d.Get("instance_id")
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcPost("cr", "2018-12-01", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}

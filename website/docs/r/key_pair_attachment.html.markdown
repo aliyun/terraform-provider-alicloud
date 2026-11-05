@@ -92,11 +92,9 @@ resource "alicloud_key_pair_attachment" "attachment" {
 
 The following arguments are supported:
 
-* `key_name` - (Required, ForceNew) The name of key pair used to bind.
+* `key_pair_name` - (Optional, ForceNew) The name of key pair used to bind.
+* `key_name` - (Optional, ForceNew, Deprecated) The name of key pair used to bind.
 * `instance_ids` - (Required, ForceNew) The list of ECS instance's IDs.
-* `force` - (ForceNew) Set it to true and it will reboot instances which attached with the key pair to make key pair affect immediately.
+* `force` - (Optional, ForceNew) Set it to true and it will reboot instances which attached with the key pair to make key pair affect immediately.
 
 ## Attributes Reference
-
-* `key_name` - The name of the key pair.
-* `instance_ids` The list of ECS instance's IDs.

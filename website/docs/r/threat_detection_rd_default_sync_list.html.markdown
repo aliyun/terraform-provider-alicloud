@@ -60,7 +60,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource id. It is the id of the Alibaba Cloud account that owns the synchronization list.
-* `folder_ids` - The current list of synchronized resource directory folder ids.
 
 ## Timeouts
 

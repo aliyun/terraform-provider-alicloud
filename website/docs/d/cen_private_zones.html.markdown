@@ -7,19 +7,19 @@ description: |-
     Provides a list of CEN(Cloud Enterprise Network) Private Zones owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_private\_zones
+# alicloud_cen_private_zones
 
 This data source provides CEN Private Zones available to the user.
 
--> **NOTE:** Available in v1.88.0+.
+-> **NOTE:** Available since v1.88.0+.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_private_zones" "this" {
-  cen_id         = "cen-o40h17ll9w********"
-  ids            = ["cn-hangzhou"]
-  status         = "Active"
+  cen_id = "cen-o40h17ll9w********"
+  ids    = ["cn-hangzhou"]
+  status = "Active"
 }
 
 output "first_cen_private_zones_id" {
@@ -34,7 +34,7 @@ The following arguments are supported:
 * `cen_id` - (Required) The ID of the CEN instance.
 * `ids` - (Optional) A list of CEN private zone IDs. Each element format as `<cen_id>:<access_region_id>`. 
   **NOTE:** Before 1.162.0, each element same as `access_region_id`.
-* `host_region_id ` - (Optional) The service region is the target region of the PrivateZone service accessed through CEN.
+* `host_region_id` - (Optional) The service region is the target region of the PrivateZone service accessed through CEN.
 * `status` - (Optional) The status of the PrivateZone service, including `Creating`, `Active` and `Deleting`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Click House DBCluster of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
@@ -49,51 +49,60 @@ The following arguments are supported:
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`,.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `clusters` - A list of Click House DBClusters. Each element contains the following attributes:
-    * `ali_uid` - Alibaba Cloud account Id.
-    * `bid` - The ID of the business process flow.
-    * `category` - Instance family values include: Basic: Basic edition; HighAvailability: high availability edition.
-      * `commodity_code` - The Commodity Code of the DBCluster.
-    * `connection_string` - Connection string.
-    * `create_time` - The creation time of the resource.
-    * `db_cluster_description` - The DBCluster description.
-    * `id` - The DBCluster id.
-    * `db_cluster_network_type` - The DBCluster network type.
-    * `db_cluster_type` - The DBCluster type.
-    * `db_node_class` - The node class of the DBCluster. 
-    * `db_node_count` - The node count of the DBCluster.
-    * `db_node_storage` - The node storage of the DBCluster.
-    * `encryption_key` - Key management service KMS key ID.
-    * `encryption_type` - Currently only supports ECS disk encryption, with a value of CloudDisk, not encrypted when empty.
-    * `engine` - The Engine of the DBCluster.
-    * `engine_version` - The engine version of the DBCluster.
-    * `expire_time` - The expiration time of the DBCluster.
-    * `id` - The ID of the DBCluster.
-    * `is_expired` - If the instance has expired.
-    * `lock_mode` - The lock mode of the DBCluster.
-    * `lock_reason` - Lock reason of the DBCluster.
-    * `maintain_time` - Examples of the maintenance window, in the format of hh:mmZ-hh:mm Z.
-    * `payment_type` - The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
-    * `port` - Connection port.
-    * `public_connection_string` - A public IP address for the connection.
-    * `public_port` - Public network port.
-    * `scale_out_status` - Scale state.
-        * `progress` - Process.
-        * `ratio` - Efficiency.
-    * `storage_type` - Storage type of DBCluster. Valid values: `cloud_essd`, `cloud_efficiency`, `cloud_essd_pl2`, `cloud_essd_pl3`.
-    * `support_backup` - Support fallback scheme.
-    * `support_https_port` - The system supports http port number.
-    * `support_mysql_port` - Supports Mysql, and those of the ports.
-    * `vpc_cloud_instance_id` - Virtual Private Cloud (VPC cloud instance ID.
-    * `vpc_id` - The VPC ID of the DBCluster.
-    * `vswitch_id` - The vswitch id of the DBCluster.
-    * `zone_id` - The zone ID of the DBCluster.
-    * `control_version` - The control version of the DBCluster.
-    * `status` - The status of the DBCluster. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.
-    * `db_cluster_access_white_list` - The db cluster access white list.
-        * `db_cluster_ip_array_name` - Whitelist group name.
-        * `security_ip_list` - The IP address list under the whitelist group.
+
+### `clusters`
+
+* `ali_uid` - Alibaba Cloud account Id.
+* `bid` - The ID of the business process flow.
+* `category` - Instance family values include: Basic: Basic edition; HighAvailability: high availability edition.
+* `commodity_code` - The Commodity Code of the DBCluster.
+* `connection_string` - Connection string.
+* `create_time` - The creation time of the resource.
+* `db_cluster_description` - The DBCluster description.
+* `id` - The DBCluster id.
+* `db_cluster_network_type` - The DBCluster network type.
+* `db_cluster_type` - The DBCluster type.
+* `db_node_class` - The node class of the DBCluster.
+* `db_node_count` - The node count of the DBCluster.
+* `db_node_storage` - The node storage of the DBCluster.
+* `encryption_key` - Key management service KMS key ID.
+* `encryption_type` - Currently only supports ECS disk encryption, with a value of CloudDisk, not encrypted when empty.
+* `engine` - The Engine of the DBCluster.
+* `engine_version` - The engine version of the DBCluster.
+* `expire_time` - The expiration time of the DBCluster.
+* `db_cluster_id` - The ID of the DBCluster.
+* `is_expired` - If the instance has expired.
+* `lock_mode` - The lock mode of the DBCluster.
+* `lock_reason` - Lock reason of the DBCluster.
+* `maintain_time` - Examples of the maintenance window, in the format of hh:mmZ-hh:mm Z.
+* `payment_type` - The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
+* `port` - Connection port.
+* `public_connection_string` - A public IP address for the connection.
+* `public_port` - Public network port.
+* `scale_out_status` - Scale state.
+* `storage_type` - Storage type of DBCluster. Valid values: `cloud_essd`, `cloud_efficiency`, `cloud_essd_pl2`, `cloud_essd_pl3`.
+* `support_backup` - Support fallback scheme.
+* `support_https_port` - The system supports http port number.
+* `support_mysql_port` - Supports Mysql, and those of the ports.
+* `vpc_cloud_instance_id` - Virtual Private Cloud (VPC cloud instance ID.
+* `vpc_id` - The VPC ID of the DBCluster.
+* `vswitch_id` - The vswitch id of the DBCluster.
+* `zone_id` - The zone ID of the DBCluster.
+* `control_version` - The control version of the DBCluster.
+* `status` - The status of the DBCluster. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.
+* `db_cluster_access_white_list` - The db cluster access white list.
+
+### `clusters.scale_out_status`
+
+* `progress` - Process.
+* `ratio` - Efficiency.
+
+### `clusters.db_cluster_access_white_list`
+
+* `db_cluster_ip_array_name` - Whitelist group name.
+* `security_ip_list` - The IP address list under the whitelist group.

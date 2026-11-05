@@ -11,12 +11,12 @@ description: |-
 
 Provides a Cassandra cluster resource supports replica set clusters only. The Cassandra provides stable, reliable, and automatic scalable database services. 
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/product/49055.htm).
+You can see detail product introduction in the [Cassandra product documentation](https://www.alibabacloud.com/help/product/49055.htm).
 
 -> **NOTE:** Available since v1.88.0.
 
 -> **NOTE:**  The following regions support create Vpc network Cassandra cluster.
-The official website mark more regions. Or you can call [DescribeRegions](https://help.aliyun.com/document_detail/157540.html).
+The official website mark more regions. Or you can call [DescribeRegions](https://www.alibabacloud.com/help/en/doc-detail/157540.html).
 
 -> **NOTE:**  Create Cassandra cluster or change cluster type and storage would cost 30 minutes. Please make full preparation.
 
@@ -52,20 +52,24 @@ This is a example for class netType cluster. You can find more detail with the e
 
 The following arguments are supported:
 
-* `cluster_name` - (Required) Cassandra cluster name. Length must be 2~128 characters long. Only Chinese characters, English letters, numbers, period `.`, underline `_`, or dash `-` are permitted. 
-* `data_center_name` - (Required) Cassandra dataCenter-1 name. Length must be 2~128 characters long. Only Chinese characters, English letters, numbers, period `.`, underline `_`, or dash `-` are permitted. 
+* `cluster_name` - (Optional) Cassandra cluster name. Length must be 2~128 characters long. Only Chinese characters, English letters, numbers, period `.`, underline `_`, or dash `-` are permitted.
+* `data_center_name` - (Optional) Cassandra dataCenter-1 name. Length must be 2~128 characters long. Only Chinese characters, English letters, numbers, period `.`, underline `_`, or dash `-` are permitted.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the Cassandra cluster. If vswitch_id is not empty, this zone_id can be "" or consistent.
 * `major_version` - (Required, ForceNew) Cassandra major version. Now only support version `3.11`.
 * `instance_type` - (Required) Instance specification. See [Instance specifications](https://help.aliyun.com/document_detail/157445.html). Or you can call describeInstanceType api.
-* `node_count`- (Optional) The node count of Cassandra dataCenter-1 default to 2. 
-* `disk_type`-  (Required) The disk type of Cassandra dataCenter-1. Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`, local_disk size is fixed.
-* `disk_size` -  (Optional) User-defined Cassandra dataCenter-1 one node's storage space.Unit: GB. Value range:
+* `node_count` - (Required) The node count of Cassandra dataCenter-1 default to 2.
+* `disk_type` - (Optional, ForceNew) The disk type of Cassandra dataCenter-1. Valid values are `cloud_ssd`, `cloud_efficiency`, `local_hdd_pro`, `local_ssd_pro`, local_disk size is fixed.
+* `disk_size` - (Optional) User-defined Cassandra dataCenter-1 one node's storage space.Unit: GB. Value range:
   - Custom storage space; value range: [160, 2000].
-  - 80-GB increments. 
-* `pay_type` - (Optional, ForceNew) The pay type of Cassandra dataCenter-1. Valid values are `Subscription`, `PayAsYouGo`,System default to `PayAsYouGo`.
+  - 80-GB increments.
+* `pay_type` - (Required, ForceNew) The pay type of Cassandra dataCenter-1. Valid values are `Subscription`, `PayAsYouGo`,System default to `PayAsYouGo`.
 * `auto_renew` - (Optional, ForceNew) Auto renew of dataCenter-1,`true` or `false`. System default to `false`, valid when pay_type = PrePaid.
 * `auto_renew_period` - (Optional, ForceNew) Period of dataCenter-1 auto renew, if auto renew is `true`, one of `1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 60`, valid when pay_type = Subscription. Unit: month.
-* `vswitch_id` - (Optional, ForceNew) The vswitch_id of dataCenter-1, can not empty.
+* `vswitch_id` - (Required, ForceNew) The vswitch_id of dataCenter-1, can not empty.
+* `password` - (Optional) The password of the cluster account.
+* `period` - (Optional) The purchase period of the cluster. Valid when pay_type = Subscription.
+* `period_unit` - (Optional, ForceNew) The unit of the purchase period. Valid values are `Month`, `Year`. Valid when pay_type = Subscription.
+* `enable_public` - (Optional) Whether to enable public access. System default to `false`.
 * `maintain_start_time` - (Optional) The start time of the operation and maintenance time period of the cluster, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional) The end time of the operation and maintenance time period of the cluster, in the format of HH:mmZ (UTC time).
 * `tags` - (Optional) A mapping of tags to assign to the resource.
@@ -79,6 +83,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the Cassandra.
+* `status` - The status of the Cassandra cluster.
+* `public_points` - The public access points of the Cassandra cluster.
 
 ## Timeouts
 

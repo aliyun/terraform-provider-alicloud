@@ -11,7 +11,7 @@ description: |-
 
 This data source can query the public IP of the specified Tair (Redis OSS-Compatible) And Memcache (KVStore).
  
--> **NOTE:** Available in v1.101.0+.
+-> **NOTE:** Available since v1.101.0.
 
 ## Example Usage
 
@@ -40,6 +40,8 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `ids` -  A list of Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance ids.
 * `connections` - Public network details of the specified resource. contains the following attributes:
+  * `id` - The ID of the instance.
+  * `instance_id` - The ID of the instance.
   * `connection_string` - The connection string of the instance.
   * `db_instance_net_type` - The network type of the instance.
   * `expired_time` - The expiration time of the classic network address.

@@ -1,0 +1,252 @@
+// Package ehpc. This file is generated automatically. Please do not modify it manually, thank you!
+package ehpc
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func resourceAliCloudEhpcUser() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceAliCloudEhpcUserCreate,
+		Read:   resourceAliCloudEhpcUserRead,
+		Update: resourceAliCloudEhpcUserUpdate,
+		Delete: resourceAliCloudEhpcUserDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
+		Schema: map[string]*schema.Schema{
+			"cluster_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"group": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"key_pair_name": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"user_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"user_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceAliCloudEhpcUserCreate(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "CreateUsers"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	var err error
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("cluster_id"); ok {
+		request["ClusterId"] = v
+	}
+
+	userMaps := make([]map[string]interface{}, 1)
+	userMap := map[string]interface{}{}
+
+	if v, ok := d.GetOk("user_name"); ok {
+		userMap["UserName"] = v
+	}
+
+	if v, ok := d.GetOk("password"); ok {
+		userMap["Password"] = v
+	}
+
+	if v, ok := d.GetOk("group"); ok {
+		userMap["Group"] = v
+	}
+
+	if v, ok := d.GetOk("key_pair_name"); ok {
+		userMap["AuthKey"] = v
+	}
+
+	userMaps = append(userMaps, userMap)
+
+	userJson, err := convert.ConvertListMapToJsonString(userMaps)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	request["User"] = userJson
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+		response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_ehpc_user", action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	userName := fmt.Sprint(userMap["UserName"])
+
+	d.SetId(fmt.Sprintf("%v:%v", request["ClusterId"], userName))
+
+	return resourceAliCloudEhpcUserRead(d, meta)
+}
+
+func resourceAliCloudEhpcUserRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ehpcServiceV2 := EhpcServiceV2{client}
+
+	objectRaw, err := ehpcServiceV2.DescribeEhpcUser(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ehpc_user DescribeEhpcUser Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+
+	d.Set("group", objectRaw["Group"])
+	d.Set("group_id", objectRaw["GroupId"])
+	d.Set("user_id", objectRaw["UserId"])
+	d.Set("user_name", objectRaw["UserName"])
+
+	parts := strings.Split(d.Id(), ":")
+	d.Set("cluster_id", parts[0])
+
+	return nil
+}
+
+func resourceAliCloudEhpcUserUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+
+	var err error
+	parts := strings.Split(d.Id(), ":")
+	action := "UpdateUser"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["UserName"] = parts[1]
+	request["ClusterId"] = parts[0]
+
+	if v, ok := d.GetOk("password"); ok {
+		request["Password"] = v
+	}
+	if d.HasChange("group") {
+		update = true
+	}
+	request["Group"] = d.Get("group")
+	if update {
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			response, err = client.RpcPost("EHPC", "2024-07-30", action, query, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return resourceAliCloudEhpcUserRead(d, meta)
+}
+
+func resourceAliCloudEhpcUserDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteUsers"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var err error
+	request = make(map[string]interface{})
+	request["ClusterId"] = parts[0]
+
+	userMaps := make([]map[string]interface{}, 1)
+	userMap := map[string]interface{}{}
+	userMap["UserName"] = parts[1]
+
+	userMaps = append(userMaps, userMap)
+
+	userJson, err := convert.ConvertListMapToJsonString(userMaps)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	request["User"] = userJson
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+		response, err = client.RpcGet("EHPC", "2024-07-30", action, request, nil)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}

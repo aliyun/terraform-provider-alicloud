@@ -12,16 +12,16 @@ description: |-
 The `alicloud_cassandra_data_centers` data source provides a collection of Cassandra Data Centers available in Alicloud account.
 Filters support regular expression for the cluster name or ids.
 
--> **NOTE:**  Available in 1.88.0+.
+-> **NOTE:** Available since v1.88.0.
 
 -> **DEPRECATED:**  This data source has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cassandra_data_centers" "cassandra" {
-  name_regex        = "tf_testAccCassandra_dc"
-  cluster_id        = "cds-xxxxx"
+  name_regex = "tf_testAccCassandra_dc"
+  cluster_id = "cds-xxxxx"
 }
 ```
 
@@ -51,7 +51,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `lock_mode` - The lock mode of the dataCenter.
   * `node_count` - The node count of dataCenter.
   * `status` - Status of the dataCenter.
-  * `create_time` - The create time of the dataCenter.
+  * `created_time` - The created time of the dataCenter.
   * `expire_time` - The expire time of the dataCenter.
   * `zone_id` - Zone ID the dataCenter belongs to.
   * `vpc_id` - VPC ID the dataCenter belongs to.

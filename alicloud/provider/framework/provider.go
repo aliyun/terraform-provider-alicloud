@@ -68,7 +68,7 @@ func (p *alicloudProvider) Resources(ctx context.Context) []func() resource.Reso
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.Resource { return sp.Resources },
 		func(d conns.Resource) func() resource.Resource {
-			problems = appendUnlessClientCapable(problems, "resource", d.TypeName, "ResourceBase", d.Factory())
+			problems = appendUnlessMetaCapable(problems, "resource", d.TypeName, "ResourceBase", d.Factory())
 			chain := intercept.ChainOf(d.TypeName, d.Interceptors)
 			return func() resource.Resource {
 				return fwadapt.WrapResource(d.TypeName, d.Factory(), chain)
@@ -83,7 +83,7 @@ func (p *alicloudProvider) DataSources(ctx context.Context) []func() datasource.
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.DataSource { return sp.DataSources },
 		func(d conns.DataSource) func() datasource.DataSource {
-			problems = appendUnlessClientCapable(problems, "data source", d.TypeName, "DataSourceBase", d.Factory())
+			problems = appendUnlessMetaCapable(problems, "data source", d.TypeName, "DataSourceBase", d.Factory())
 			chain := intercept.ChainOf(d.TypeName, d.Interceptors)
 			return func() datasource.DataSource {
 				return fwadapt.WrapDataSource(d.TypeName, d.Factory(), chain)
@@ -104,7 +104,7 @@ func (p *alicloudProvider) EphemeralResources(ctx context.Context) []func() ephe
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.EphemeralResource { return sp.EphemeralResources },
 		func(d conns.EphemeralResource) func() ephemeral.EphemeralResource {
-			problems = appendUnlessClientCapable(problems, "ephemeral resource", d.TypeName, "EphemeralResourceBase", d.Factory())
+			problems = appendUnlessMetaCapable(problems, "ephemeral resource", d.TypeName, "EphemeralResourceBase", d.Factory())
 			problems = appendIfInterceptorsDropped(problems, "ephemeral resource", d.TypeName, intercept.ChainOf(d.TypeName, nil))
 			return d.Factory
 		})
@@ -117,7 +117,7 @@ func (p *alicloudProvider) ListResources(ctx context.Context) []func() list.List
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.ListResource { return sp.ListResources },
 		func(d conns.ListResource) func() list.ListResource {
-			problems = appendUnlessClientCapable(problems, "list resource", d.TypeName, "ListResourceBase", d.Factory())
+			problems = appendUnlessMetaCapable(problems, "list resource", d.TypeName, "ListResourceBase", d.Factory())
 			problems = appendIfInterceptorsDropped(problems, "list resource", d.TypeName, intercept.ChainOf(d.TypeName, nil))
 			return d.Factory
 		})
@@ -130,7 +130,7 @@ func (p *alicloudProvider) Actions(ctx context.Context) []func() action.Action {
 	factories := collect(
 		func(sp conns.ServicePackage) []conns.Action { return sp.Actions },
 		func(d conns.Action) func() action.Action {
-			problems = appendUnlessClientCapable(problems, "action", d.TypeName, "ActionBase", d.Factory())
+			problems = appendUnlessMetaCapable(problems, "action", d.TypeName, "ActionBase", d.Factory())
 			problems = appendIfInterceptorsDropped(problems, "action", d.TypeName, intercept.ChainOf(d.TypeName, nil))
 			return d.Factory
 		})
@@ -148,12 +148,12 @@ func collect[D, T any](category func(conns.ServicePackage) []D, constructor func
 	return result
 }
 
-func appendUnlessClientCapable(problems []string, namespace, typeName, base string, instance interface{}) []string {
-	if _, ok := instance.(fwadapt.WithClient); ok {
+func appendUnlessMetaCapable(problems []string, namespace, typeName, base string, instance interface{}) []string {
+	if _, ok := instance.(fwadapt.WithMeta); ok {
 		return problems
 	}
 	return append(problems, fmt.Sprintf(
-		"%s %q: %T does not implement fwadapt.WithClient — embed fwadapt.%s, and return a pointer from the factory",
+		"%s %q: %T does not implement fwadapt.WithMeta — embed fwadapt.%s, and return a pointer from the factory",
 		namespace, typeName, instance, base))
 }
 
