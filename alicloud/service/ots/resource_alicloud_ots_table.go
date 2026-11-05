@@ -26,7 +26,7 @@ func ResourceOtsTable() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		CustomizeDiff: resourceAlicloudOtsTableCustomizeDiff,
+		CustomizeDiff: resourceTableCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
@@ -142,7 +142,7 @@ func ResourceOtsTable() *schema.Resource {
 	}
 }
 
-func resourceAlicloudOtsTableCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+func resourceTableCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	primaryKeys, ok := d.Get("primary_key").([]interface{})
 	if !ok || len(primaryKeys) == 0 {
 		return nil

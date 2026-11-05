@@ -3,14 +3,24 @@
 package ots_test
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
+	"github.com/golang/protobuf/proto"
+	schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -918,4 +928,258 @@ func testAccCheckOtsTableDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+// TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs drives the plan-time
+// CustomizeDiff through Resource.Diff so the four rejection rules are exercised
+// without any cloud call: Diff never reaches Create, and a nil meta would panic
+// if the callback touched the API client.
+func TestUnitOtsTableCustomizeDiffRejectsInvalidConfigs(t *testing.T) {
+	primaryKey := func(name, pkType string, autoIncrement bool) map[string]interface{} {
+		return map[string]interface{}{
+			"name":           name,
+			"type":           pkType,
+			"auto_increment": autoIncrement,
+		}
+	}
+	tableConfig := func(keys []map[string]interface{}, localTxn bool) map[string]interface{} {
+		return map[string]interface{}{
+			"instance_name":    "tf-test-instance",
+			"table_name":       "tf_test_table",
+			"time_to_live":     -1,
+			"max_version":      1,
+			"primary_key":      keys,
+			"enable_local_txn": localTxn,
+		}
+	}
+
+	cases := []struct {
+		name    string
+		config  map[string]interface{}
+		wantErr string
+	}{
+		{
+			name:    "auto_increment primary key must be Integer",
+			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "String", true)}, false),
+			wantErr: `the primary_key with auto_increment set to true must be of type Integer, got "String"`,
+		},
+		{
+			name:    "auto_increment primary key must not be the partition key",
+			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", true), primaryKey("pk2", "Integer", false)}, false),
+			wantErr: "the auto_increment primary key must not be the partition key (the first primary_key)",
+		},
+		{
+			name:    "at most one auto_increment primary key",
+			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true), primaryKey("pk3", "Integer", true)}, false),
+			wantErr: "at most one primary_key can be set to auto_increment, got 2",
+		},
+		{
+			name:    "auto_increment conflicts with local transaction",
+			config:  tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true)}, true),
+			wantErr: "enable_local_txn cannot be set to true when any primary_key has auto_increment set to true",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := ots.ResourceOtsTable()
+			if _, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(tc.config), nil); err == nil {
+				t.Fatalf("expected the configuration to be rejected, got no error")
+			} else if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("unexpected rejection reason: %v, want it to contain %q", err, tc.wantErr)
+			}
+		})
+	}
+
+	t.Run("valid auto_increment configuration is accepted", func(t *testing.T) {
+		r := ots.ResourceOtsTable()
+		config := tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false), primaryKey("pk2", "Integer", true)}, false)
+		if _, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil); err != nil {
+			t.Fatalf("expected the configuration to be accepted, got error: %v", err)
+		}
+	})
+
+	t.Run("valid local transaction configuration is accepted", func(t *testing.T) {
+		r := ots.ResourceOtsTable()
+		config := tableConfig([]map[string]interface{}{primaryKey("pk1", "Integer", false)}, true)
+		if _, err := r.Diff(context.Background(), nil, sdktf.NewResourceConfigRaw(config), nil); err != nil {
+			t.Fatalf("expected the configuration to be accepted, got error: %v", err)
+		}
+	})
+}
+
+type otsTableWireFixture struct {
+	createRequests [][]byte
+	describe       *otsprotocol.DescribeTableResponse
+}
+
+// newOtsTableWireClient points both the OTS REST API and the TableStore
+// protobuf endpoint at a local server, so a full resource Create runs without
+// touching the cloud and every serialized request can be inspected.
+func newOtsTableWireClient(t *testing.T) (*connectivity.AliyunClient, *otsTableWireFixture) {
+	t.Helper()
+	fixture := &otsTableWireFixture{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/v2/openapi/getinstance":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"body":{"InstanceName":"tf-test-instance","Status":"Normal","InstanceType":"Capacity"}}`)
+		case "/CreateTable":
+			raw, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Errorf("read CreateTable request: %v", err)
+			}
+			fixture.createRequests = append(fixture.createRequests, raw)
+			w.WriteHeader(http.StatusOK)
+		case "/DescribeTable":
+			raw, err := proto.Marshal(fixture.describe)
+			if err != nil {
+				t.Errorf("marshal DescribeTable response: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(raw)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	endpoints := &sync.Map{}
+	signVersions := &sync.Map{}
+	endpoints.Store("tablestore", strings.TrimPrefix(server.URL, "http://"))
+	config := &connectivity.Config{
+		RegionId:             "cn-hangzhou",
+		AccessKey:            "test-access-key",
+		SecretKey:            "test-secret-key",
+		Protocol:             "HTTP",
+		AccountType:          "test",
+		Endpoints:            endpoints,
+		SignVersion:          signVersions,
+		OtsEndpoint:          server.URL,
+		SkipRegionValidation: true,
+	}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatalf("build connectivity client: %v", err)
+	}
+	return client, fixture
+}
+
+func otsTableDescribeResponse(secondAutoIncrement bool) *otsprotocol.DescribeTableResponse {
+	timeToLive := int32(-1)
+	maxVersion := int32(1)
+	deviation := int64(86400)
+	allowUpdate := true
+	readCapacity := int32(0)
+	writeCapacity := int32(0)
+	status := otsprotocol.TableStatus_ACTIVE
+	pkType := otsprotocol.PrimaryKeyType_INTEGER
+	second := &otsprotocol.PrimaryKeySchema{Name: proto.String("pk2"), Type: &pkType}
+	if secondAutoIncrement {
+		option := otsprotocol.PrimaryKeyOption_AUTO_INCREMENT
+		second.Option = &option
+	}
+	return &otsprotocol.DescribeTableResponse{
+		TableMeta: &otsprotocol.TableMeta{
+			TableName: proto.String("tf_test_table"),
+			PrimaryKey: []*otsprotocol.PrimaryKeySchema{
+				{Name: proto.String("pk1"), Type: &pkType},
+				second,
+			},
+		},
+		ReservedThroughputDetails: &otsprotocol.ReservedThroughputDetails{
+			CapacityUnit:     &otsprotocol.CapacityUnit{Read: &readCapacity, Write: &writeCapacity},
+			LastIncreaseTime: proto.Int64(0),
+		},
+		TableOptions: &otsprotocol.TableOptions{
+			TimeToLive:                &timeToLive,
+			MaxVersions:               &maxVersion,
+			DeviationCellVersionInSec: &deviation,
+			AllowUpdate:               &allowUpdate,
+		},
+		TableStatus: &status,
+	}
+}
+
+// TestUnitOtsTableCreateAndDescribeWire captures the serialized CreateTable
+// request and the DescribeTable response the Read path maps back, covering the
+// two fields' plan/apply wire semantics without a cloud call.
+func TestUnitOtsTableCreateAndDescribeWire(t *testing.T) {
+	primaryKey := func(name string, autoIncrement bool) map[string]interface{} {
+		return map[string]interface{}{"name": name, "type": "Integer", "auto_increment": autoIncrement}
+	}
+	tableConfig := func(localTxn bool, keys ...map[string]interface{}) map[string]interface{} {
+		return map[string]interface{}{
+			"instance_name":    "tf-test-instance",
+			"table_name":       "tf_test_table",
+			"time_to_live":     -1,
+			"max_version":      1,
+			"primary_key":      keys,
+			"enable_local_txn": localTxn,
+		}
+	}
+
+	t.Run("auto_increment is sent on CreateTable and read back from DescribeTable", func(t *testing.T) {
+		client, fixture := newOtsTableWireClient(t)
+		fixture.describe = otsTableDescribeResponse(true)
+
+		r := ots.ResourceOtsTable()
+		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(false, primaryKey("pk1", false), primaryKey("pk2", true)))
+		if err := r.Create(d, client); err != nil {
+			t.Fatalf("create table: %v", err)
+		}
+		if len(fixture.createRequests) != 1 {
+			t.Fatalf("expected 1 CreateTable request, got %d", len(fixture.createRequests))
+		}
+		request := &otsprotocol.CreateTableRequest{}
+		if err := proto.Unmarshal(fixture.createRequests[0], request); err != nil {
+			t.Fatalf("decode CreateTable request: %v", err)
+		}
+		if len(request.TableMeta.PrimaryKey) != 2 {
+			t.Fatalf("expected 2 primary keys in the request, got %d", len(request.TableMeta.PrimaryKey))
+		}
+		if request.TableMeta.PrimaryKey[0].Option != nil {
+			t.Fatalf("partition key must not carry an option, got %v", *request.TableMeta.PrimaryKey[0].Option)
+		}
+		if request.TableMeta.PrimaryKey[1].Option == nil || *request.TableMeta.PrimaryKey[1].Option != otsprotocol.PrimaryKeyOption_AUTO_INCREMENT {
+			t.Fatalf("second primary key option = %v, want AUTO_INCREMENT", request.TableMeta.PrimaryKey[1].Option)
+		}
+		if request.EnableLocalTxn == nil || *request.EnableLocalTxn {
+			t.Fatalf("EnableLocalTxn = %v, want false", request.EnableLocalTxn)
+		}
+
+		keys := d.Get("primary_key").([]interface{})
+		if len(keys) != 2 {
+			t.Fatalf("expected 2 primary keys in state, got %d", len(keys))
+		}
+		if got := keys[0].(map[string]interface{})["auto_increment"]; got != false {
+			t.Fatalf("pk1 auto_increment = %v, want false", got)
+		}
+		if got := keys[1].(map[string]interface{})["auto_increment"]; got != true {
+			t.Fatalf("pk2 auto_increment = %v, want true", got)
+		}
+	})
+
+	t.Run("enable_local_txn is sent on CreateTable", func(t *testing.T) {
+		client, fixture := newOtsTableWireClient(t)
+		fixture.describe = otsTableDescribeResponse(false)
+
+		r := ots.ResourceOtsTable()
+		d := schema.TestResourceDataRaw(t, r.Schema, tableConfig(true, primaryKey("pk1", false)))
+		if err := r.Create(d, client); err != nil {
+			t.Fatalf("create table: %v", err)
+		}
+		if len(fixture.createRequests) != 1 {
+			t.Fatalf("expected 1 CreateTable request, got %d", len(fixture.createRequests))
+		}
+		request := &otsprotocol.CreateTableRequest{}
+		if err := proto.Unmarshal(fixture.createRequests[0], request); err != nil {
+			t.Fatalf("decode CreateTable request: %v", err)
+		}
+		if request.EnableLocalTxn == nil || !*request.EnableLocalTxn {
+			t.Fatalf("EnableLocalTxn = %v, want true", request.EnableLocalTxn)
+		}
+	})
 }
