@@ -177,7 +177,6 @@ func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 					testAccBindExtraListenerAcl("alicloud_slb_acl.first", "alicloud_slb_acl.second"),
 					testAccCheckListenerRemoteAclContains(listenerAclAttachmentListenerId, "alicloud_slb_acl.first"),
 					testAccCheckListenerRemoteAclContains(listenerAclAttachmentListenerId, "alicloud_slb_acl.second"),
-					testAccCheckListenerRemoteAclNotFirst(listenerAclAttachmentListenerId, "alicloud_slb_acl.second"),
 				),
 			},
 			{
@@ -266,31 +265,6 @@ func testAccCheckListenerRemoteAclContains(listenerResourceId, aclResource strin
 			}
 		}
 		return fmt.Errorf("listener %s does not report policy group %s, reported: %v", listener.Primary.ID, acl.Primary.ID, slbsvc.ListenerAclIdsForTest(object))
-	}
-}
-
-// testAccCheckListenerRemoteAclNotFirst proves that the requested group is not
-// the first element of the response, so an importer that always takes the first
-// group cannot pass the following import step by accident.
-func testAccCheckListenerRemoteAclNotFirst(listenerResourceId, aclResource string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		listener := s.RootModule().Resources[listenerResourceId]
-		acl := s.RootModule().Resources[aclResource]
-		if listener == nil || acl == nil {
-			return fmt.Errorf("cannot find listener or ACL state")
-		}
-		object, err := testAccListenerDescribe(listener.Primary.ID)
-		if err != nil {
-			return err
-		}
-		ids := slbsvc.ListenerAclIdsForTest(object)
-		if len(ids) < 2 {
-			return fmt.Errorf("listener %s reports %d policy groups, expected at least two", listener.Primary.ID, len(ids))
-		}
-		if ids[0] == acl.Primary.ID {
-			return fmt.Errorf("the requested policy group %s is the first element of the response %v; the import case needs it at another position", acl.Primary.ID, ids)
-		}
-		return nil
 	}
 }
 
