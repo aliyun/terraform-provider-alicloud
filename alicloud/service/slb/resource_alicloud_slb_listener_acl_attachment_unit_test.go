@@ -1,9 +1,19 @@
 package slb
 
+// These unit tests live in the package's internal test package on purpose: they
+// cover the unexported ID/action helpers that the public resource entry cannot
+// expose, following the existing acl_unit_test.go / ca_certificate_unit_test.go
+// convention. The public Create/Read/Import/Delete entry points are covered by
+// resource_alicloud_slb_listener_acl_attachment_test.go (package slb_test); the
+// helper tests here do not replace those entry point regressions.
+
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -124,5 +134,55 @@ func TestUnitListenerAclAttachmentPlanState(t *testing.T) {
 	}
 	if model.AclType.ValueString() != "white" || model.AclStatus.ValueString() != "on" {
 		t.Fatalf("unexpected acl values: type=%q status=%q", model.AclType.ValueString(), model.AclStatus.ValueString())
+	}
+}
+
+// Request level fixture for the error classification: listener busy states are
+// retryable, while quota, IP version conflicts and invalid ACLs fail fast after
+// a single call. Constructing the SDK error types keeps this hermetic.
+func TestUnitListenerAclAttachmentErrorClassification(t *testing.T) {
+	retryable := []string{
+		"SystemBusy",
+		"OperationBusy",
+		"ServiceIsStopping",
+		"BackendServer.configuring",
+		"ServiceIsConfiguring",
+		"TLSPolicyConfiguring",
+	}
+	for _, code := range retryable {
+		err := &tea.SDKError{Code: tea.String(code), Data: tea.String("{}")}
+		if !isTransientListenerError(err) {
+			t.Fatalf("%s should be retryable", code)
+		}
+	}
+
+	terminal := []string{
+		"AclListenerOverLimit",
+		"QuotaLimitExceeds.AclAttachedToListener",
+		"QuotaLimitExceeds.AclListenerOverLimit",
+		"IpVersionConflict",
+		"AclNotExist",
+		"InvalidParameter",
+	}
+	for _, code := range terminal {
+		err := &tea.SDKError{Code: tea.String(code), Data: tea.String("{}")}
+		if isTransientListenerError(err) {
+			t.Fatalf("%s must not be retried", code)
+		}
+	}
+}
+
+// Cancelling the lifecycle context stops the wait immediately instead of
+// sleeping for the full backoff.
+func TestUnitListenerAclAttachmentWaitCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	start := time.Now()
+	err := waitListenerAclWithContext(ctx, 30*time.Second)
+	if err == nil {
+		t.Fatal("expected a cancelled context error")
+	}
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("wait did not return promptly after cancellation: %s", elapsed)
 	}
 }

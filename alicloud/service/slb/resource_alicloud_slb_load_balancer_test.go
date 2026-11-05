@@ -84,7 +84,7 @@ func testSweepSLBs(region string) error {
 		id := fmt.Sprint(loadBalancer["LoadBalancerId"])
 		skip := true
 		if !sweep.SweepAll() {
-			if slbSweeperMatches(name) {
+			if sweeperMatches(name) {
 				skip = false
 			}
 			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.

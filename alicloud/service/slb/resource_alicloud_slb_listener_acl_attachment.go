@@ -28,20 +28,20 @@ const listenerAclAttachmentTypeName = "alicloud_slb_listener_acl_attachment"
 
 const (
 	listenerAclAttachmentTimeoutSeconds = 300
-	slbListenerIdPattern                = `^[^:]+:(http|https|tcp|udp):[1-9][0-9]*$`
+	listenerIdPattern                   = `^[^:]+:(http|https|tcp|udp):[1-9][0-9]*$`
 )
 
-// slbListenerTransientErrors are the listener level transient codes that the
+// listenerTransientErrors are the listener level transient codes that the
 // Set*ListenerAttribute actions may return while another configuration change
 // is still being applied. They are retryable; quota, invalid ACL and IP
 // version conflicts are not and must fail fast.
-var slbListenerTransientErrors = []string{
+var listenerTransientErrors = []string{
 	"SystemBusy",
 	"OperationBusy",
 	"ServiceIsStopping",
 	"BackendServer.configuring",
 	"ServiceIsConfiguring",
-	"TLSCipherPolicyConfiguring",
+	"TLSPolicyConfiguring",
 }
 
 var (
@@ -89,7 +89,7 @@ func (r *listenerAclAttachmentResource) Schema(ctx context.Context, req resource
 				},
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(slbListenerIdPattern),
+						regexp.MustCompile(listenerIdPattern),
 						"must be in the format of <load_balancer_id>:<protocol>:<listener_port>, protocol is one of http, https, tcp and udp",
 					),
 				},
@@ -139,7 +139,7 @@ func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource
 		return
 	}
 
-	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
+	object, err := describeListenerWithContext(ctx, r.Meta(), listenerId)
 	if err != nil {
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Created %s but the first read failed", listenerAclAttachmentTypeName),
@@ -172,7 +172,7 @@ func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.R
 		targetAclId = idAclId
 	}
 
-	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
+	object, err := describeListenerWithContext(ctx, r.Meta(), listenerId)
 	if err != nil {
 		if errs.NotFoundError(err) {
 			resp.State.RemoveResource(ctx)
@@ -255,7 +255,7 @@ func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	object, err := NewService(r.Meta()).DescribeSlbListener(listenerId)
+	object, err := describeListenerWithContext(ctx, r.Meta(), listenerId)
 	if err != nil {
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Updated %s but the read failed", listenerAclAttachmentTypeName),
@@ -283,8 +283,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		return
 	}
 
-	service := NewService(r.Meta())
-	if _, err := service.DescribeSlbListener(listenerId); err != nil {
+	if _, err := describeListenerWithContext(ctx, r.Meta(), listenerId); err != nil {
 		if errs.NotFoundError(err) {
 			// The listener is gone, so the ACL binding no longer exists.
 			return
@@ -310,7 +309,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		if err := ctx.Err(); err != nil {
 			return retry.NonRetryableError(err)
 		}
-		object, err := service.DescribeSlbListener(listenerId)
+		object, err := describeListenerWithContext(ctx, r.Meta(), listenerId)
 		if err != nil {
 			if errs.NotFoundError(err) {
 				return nil
@@ -422,6 +421,55 @@ func updateListenerAcl(ctx context.Context, client *connectivity.AliyunClient, l
 	return nil
 }
 
+// describeListenerWithContext reads the protocol specific listener attributes
+// with the CRUD context, so a cancelled apply stops retrying and sleeping
+// instead of inheriting an internal retry loop that ignores cancellation.
+func describeListenerWithContext(ctx context.Context, client *connectivity.AliyunClient, listenerId string) (map[string]interface{}, error) {
+	parts, err := ParseSlbListenerId(listenerId)
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	if len(parts) != 3 {
+		return nil, errs.WrapError(fmt.Errorf("invalid listener ID %s, expected <load_balancer_id>:<protocol>:<listener_port>", listenerId))
+	}
+	action := fmt.Sprintf("DescribeLoadBalancer%sListenerAttribute", strings.ToUpper(parts[1]))
+	request := map[string]interface{}{
+		"RegionId":       client.RegionId,
+		"LoadBalancerId": parts[0],
+		"ListenerPort":   parts[2],
+	}
+
+	var object map[string]interface{}
+	err = retry.RetryContext(ctx, time.Duration(listenerAclAttachmentTimeoutSeconds)*time.Second, func() *retry.RetryError {
+		if err := ctx.Err(); err != nil {
+			return retry.NonRetryableError(err)
+		}
+		response, err := client.RpcPost("Slb", string(connectivity.ApiVersion20140515), action, nil, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"The specified resource does not exist"}) {
+				return retry.NonRetryableError(errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR))
+			}
+			if isTransientListenerError(err) {
+				if err := waitListenerAclWithContext(ctx, 3*time.Second); err != nil {
+					return retry.NonRetryableError(err)
+				}
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		object = response
+		if port, ok := object["ListenerPort"]; ok && strings.TrimSpace(fmt.Sprint(port)) != "" && fmt.Sprint(port) != "0" {
+			return nil
+		}
+		return retry.RetryableError(errs.GetNotFoundErrorFromString(errs.GetNotFoundMessage("Listener", listenerId)))
+	})
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, listenerId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return object, nil
+}
+
 // isTransientListenerError covers both the transport level retries and the
 // listener level busy codes that the Set*ListenerAttribute actions return while
 // another change is still in progress. Quota, invalid ACL and IP version
@@ -430,7 +478,7 @@ func isTransientListenerError(err error) bool {
 	if helper.NeedRetry(err) {
 		return true
 	}
-	return errs.IsExpectedErrors(err, slbListenerTransientErrors)
+	return errs.IsExpectedErrors(err, listenerTransientErrors)
 }
 
 func waitListenerAclWithContext(ctx context.Context, duration time.Duration) error {

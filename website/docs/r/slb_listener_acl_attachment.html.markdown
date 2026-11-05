@@ -19,9 +19,11 @@ For information about Classic Load Balancer (SLB) and how to use it, see [What i
 
 -> **NOTE:** An SLB listener expresses a single set of ACLs. This resource exclusively manages the ACL binding of its listener and overwrites the ACLs already bound to that listener. Do not manage the same listener through both this resource and the `acl_status`/`acl_type`/`acl_id`/`acl_ids` arguments of `alicloud_slb_listener`. When the listener itself is still created by `alicloud_slb_listener`, add `ignore_changes = [acl_status, acl_type, acl_id, acl_ids]` to that listener so that only this resource drives the ACL settings.
 
--> **NOTE:** Enabling access control takes effect immediately and may affect traffic. A white list with no entries denies all requests, while a black list with no entries forwards all requests. Make sure the policy group is configured before binding it.
+-> **NOTE:** Enabling access control takes effect immediately and may affect traffic. A white list or a black list with no entries forwards all requests. Make sure the policy group is configured before binding it.
 
 -> **NOTE:** Deleting this resource only disables access control (`AclStatus=off`) and never deletes or rebuilds the listener. SLB has no dedicated de-association API, so the server may keep the previous `AclId` after the binding is removed.
+
+-> **NOTE:** When the listener is bound to several policy groups, use the four segment import form `<load_balancer_id>:<protocol>:<listener_port>:<acl_id>` to select the managed group; importing with only the listener ID then fails with a diagnostic instead of guessing one.
 
 ## Example Usage
 
@@ -37,7 +39,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-exampleSlbListenerAclAttachment"
+  default = "terraform-exampleSlbListenerAcl"
 }
 
 resource "alicloud_slb_load_balancer" "default" {
@@ -102,7 +104,7 @@ variable "load_balancer_id" {
 variable "acl_name" {
   description = "The name of the policy group to bind."
   type        = string
-  default     = "tf-exampleSlbListenerAclAttachment"
+  default     = "terraform-exampleSlbListenerAclAck"
 }
 
 data "alicloud_slb_listeners" "apiserver" {
@@ -152,5 +154,3 @@ or
 ```shell
 $ terraform import alicloud_slb_listener_acl_attachment.example <load_balancer_id>:<protocol>:<listener_port>:<acl_id>
 ```
-
--> **NOTE:** When the listener is bound to several policy groups, use the four segment form to select the managed group; importing with only the listener ID then fails with a diagnostic instead of guessing one.

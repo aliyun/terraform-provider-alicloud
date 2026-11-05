@@ -16,20 +16,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-// slbSweeperPrefixes is the single prefix set shared by the SLB resource
-// sweepers. tf-exampleSlbListenerAclAttachment is the scoped prefix used by the
-// alicloud_slb_listener_acl_attachment documentation examples, so an
-// interrupted example run stays inside the existing cleanup entry.
-func slbSweeperPrefixes() []string {
+// sweeperPrefixes is the single prefix set shared by the SLB resource sweepers.
+// "terraform-exampleSlbListenerAcl" is the scoped prefix of the
+// alicloud_slb_listener_acl_attachment documentation examples, so an interrupted
+// example run stays inside the existing cleanup entry.
+func sweeperPrefixes() []string {
 	return []string{
 		"tf-testAcc",
 		"tf_testAcc",
-		"tf-exampleSlbListenerAclAttachment",
+		"terraform-exampleSlbListenerAcl",
 	}
 }
 
-func slbSweeperMatches(name string) bool {
-	for _, prefix := range slbSweeperPrefixes() {
+func sweeperMatches(name string) bool {
+	for _, prefix := range sweeperPrefixes() {
 		if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 			return true
 		}
@@ -37,27 +37,32 @@ func slbSweeperMatches(name string) bool {
 	return false
 }
 
-func TestUnitSlbSweeperExamplePrefixes(t *testing.T) {
+// TestUnitSweeperExamplePrefixes verifies the delete/skip decision the ACL and
+// load balancer sweepers apply, including the documented example prefix and
+// the names that must never be swept.
+func TestUnitSweeperExamplePrefixes(t *testing.T) {
 	matched := []string{
-		"tf-exampleSlbListenerAclAttachment",
-		"tf-exampleSlbListenerAclAttachment-acl",
-		"TF-EXAMPLESLBLISTENERACLATTACHMENT",
+		"terraform-exampleSlbListenerAcl",
+		"terraform-exampleSlbListenerAclAck",
+		"terraform-exampleSlbListenerAcl-acl",
+		"TF-EXAMPLESLBLISTENERACL",
 		"tf-testAccSomething",
 		"tf_testAccSomething",
 	}
 	for _, name := range matched {
-		if !slbSweeperMatches(name) {
+		if !sweeperMatches(name) {
 			t.Fatalf("%q should be swept", name)
 		}
 	}
 	notMatched := []string{
 		"terraform-example",
-		"tf-exampleOther",
+		"terraform-exampleOther",
+		"tf-exampleSlbListenerTcp",
 		"my-resource",
 		"",
 	}
 	for _, name := range notMatched {
-		if slbSweeperMatches(name) {
+		if sweeperMatches(name) {
 			t.Fatalf("%q must not be swept", name)
 		}
 	}

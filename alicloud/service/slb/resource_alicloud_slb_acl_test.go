@@ -67,11 +67,7 @@ func testSweepSlbAcl(region string) error {
 			item := v.(map[string]interface{})
 
 			name := fmt.Sprint(item["AclName"])
-			skip := true
-			if !slbSweeperMatches(name) {
-				skip = true
-			}
-			if skip {
+			if !sweeperMatches(name) {
 				log.Printf("[INFO] Skipping : %s", name)
 				continue
 			}
