@@ -64,6 +64,7 @@ type instanceModel struct {
 	CommodityCode   types.String               `tfsdk:"commodity_code"`
 	ServiceCode     types.String               `tfsdk:"service_code"`
 	ResourceGroupId types.String               `tfsdk:"resource_group_id"`
+	UserId          types.String               `tfsdk:"user_id"`
 	Remark          types.String               `tfsdk:"remark"`
 	TopicCount      types.Int64                `tfsdk:"topic_count"`
 	GroupCount      types.Int64                `tfsdk:"group_count"`
@@ -97,6 +98,7 @@ var instanceObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 	"commodity_code":    types.StringType,
 	"service_code":      types.StringType,
 	"resource_group_id": types.StringType,
+	"user_id":           types.StringType,
 	"remark":            types.StringType,
 	"topic_count":       types.Int64Type,
 	"group_count":       types.Int64Type,
@@ -267,37 +269,7 @@ func (d *instancesDataSource) Read(ctx context.Context, req datasource.ReadReque
 	for _, item := range matched {
 		matchedIds = append(matchedIds, rocketmqString(item, "instanceId"))
 		names = append(names, rocketmqString(item, "instanceName"))
-		productInfo := make([]instanceProductInfoModel, 0)
-		if raw, err := jsonpath.Get("$.productInfo", item); err == nil {
-			if info, ok := raw.(map[string]interface{}); ok {
-				productInfo = append(productInfo, instanceProductInfoModel{
-					TraceOn:      rocketmqBool(info, "traceOn"),
-					CapacityType: types.StringValue(rocketmqString(info, "capacityType")),
-				})
-			}
-		}
-		instances = append(instances, instanceModel{
-			InstanceId:      types.StringValue(rocketmqString(item, "instanceId")),
-			InstanceName:    types.StringValue(rocketmqString(item, "instanceName")),
-			Status:          types.StringValue(rocketmqString(item, "status")),
-			RegionId:        types.StringValue(rocketmqString(item, "regionId")),
-			SeriesCode:      types.StringValue(rocketmqString(item, "seriesCode")),
-			SubSeriesCode:   types.StringValue(rocketmqString(item, "subSeriesCode")),
-			PaymentType:     types.StringValue(rocketmqString(item, "paymentType")),
-			CommodityCode:   types.StringValue(rocketmqString(item, "commodityCode")),
-			ServiceCode:     types.StringValue(rocketmqString(item, "serviceCode")),
-			ResourceGroupId: types.StringValue(rocketmqString(item, "resourceGroupId")),
-			Remark:          types.StringValue(rocketmqString(item, "remark")),
-			TopicCount:      rocketmqInt64(item, "topicCount"),
-			GroupCount:      rocketmqInt64(item, "groupCount"),
-			CreateTime:      types.StringValue(rocketmqString(item, "createTime")),
-			UpdateTime:      types.StringValue(rocketmqString(item, "updateTime")),
-			StartTime:       types.StringValue(rocketmqString(item, "startTime")),
-			ExpireTime:      types.StringValue(rocketmqString(item, "expireTime")),
-			ReleaseTime:     types.StringValue(rocketmqString(item, "releaseTime")),
-			Tags:            rocketmqTagsFromAPI(item["tags"]),
-			ProductInfo:     productInfo,
-		})
+		instances = append(instances, instanceFromAPI(item))
 	}
 
 	idsList, diags := types.ListValueFrom(ctx, types.StringType, matchedIds)
@@ -313,6 +285,44 @@ func (d *instancesDataSource) Read(ctx context.Context, req datasource.ReadReque
 	model.Names = namesList
 	model.Instances = instances
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// instanceFromAPI maps one ListInstances item to the exported model. Every
+// exported field is read from the response key of the same name in lowerCamel
+// form; the unit test pins the mapping so a renamed key cannot pass unnoticed.
+func instanceFromAPI(item map[string]interface{}) instanceModel {
+	productInfo := make([]instanceProductInfoModel, 0)
+	if raw, err := jsonpath.Get("$.productInfo", item); err == nil {
+		if info, ok := raw.(map[string]interface{}); ok {
+			productInfo = append(productInfo, instanceProductInfoModel{
+				TraceOn:      rocketmqBool(info, "traceOn"),
+				CapacityType: types.StringValue(rocketmqString(info, "capacityType")),
+			})
+		}
+	}
+	return instanceModel{
+		InstanceId:      types.StringValue(rocketmqString(item, "instanceId")),
+		InstanceName:    types.StringValue(rocketmqString(item, "instanceName")),
+		Status:          types.StringValue(rocketmqString(item, "status")),
+		RegionId:        types.StringValue(rocketmqString(item, "regionId")),
+		SeriesCode:      types.StringValue(rocketmqString(item, "seriesCode")),
+		SubSeriesCode:   types.StringValue(rocketmqString(item, "subSeriesCode")),
+		PaymentType:     types.StringValue(rocketmqString(item, "paymentType")),
+		CommodityCode:   types.StringValue(rocketmqString(item, "commodityCode")),
+		ServiceCode:     types.StringValue(rocketmqString(item, "serviceCode")),
+		ResourceGroupId: types.StringValue(rocketmqString(item, "resourceGroupId")),
+		UserId:          types.StringValue(rocketmqString(item, "userId")),
+		Remark:          types.StringValue(rocketmqString(item, "remark")),
+		TopicCount:      rocketmqInt64(item, "topicCount"),
+		GroupCount:      rocketmqInt64(item, "groupCount"),
+		CreateTime:      types.StringValue(rocketmqString(item, "createTime")),
+		UpdateTime:      types.StringValue(rocketmqString(item, "updateTime")),
+		StartTime:       types.StringValue(rocketmqString(item, "startTime")),
+		ExpireTime:      types.StringValue(rocketmqString(item, "expireTime")),
+		ReleaseTime:     types.StringValue(rocketmqString(item, "releaseTime")),
+		Tags:            rocketmqTagsFromAPI(item["tags"]),
+		ProductInfo:     productInfo,
+	}
 }
 
 // instancesQuery builds the query shared by every page request. Array values use

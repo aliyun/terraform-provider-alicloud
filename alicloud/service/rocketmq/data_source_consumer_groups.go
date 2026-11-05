@@ -57,6 +57,7 @@ type consumerGroupModel struct {
 	CreateTime      types.String `tfsdk:"create_time"`
 	UpdateTime      types.String `tfsdk:"update_time"`
 	MaxReceiveTps   types.Int64  `tfsdk:"max_receive_tps"`
+	MessageModel    types.String `tfsdk:"message_model"`
 }
 
 var consumerGroupObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
@@ -69,6 +70,7 @@ var consumerGroupObjectType = types.ObjectType{AttrTypes: map[string]attr.Type{
 	"create_time":       types.StringType,
 	"update_time":       types.StringType,
 	"max_receive_tps":   types.Int64Type,
+	"message_model":     types.StringType,
 }}
 
 func (d *consumerGroupsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -185,17 +187,7 @@ func (d *consumerGroupsDataSource) Read(ctx context.Context, req datasource.Read
 	groups := make([]consumerGroupModel, 0, len(matched))
 	for _, item := range matched {
 		matchedIds = append(matchedIds, rocketmqString(item, "consumerGroupId"))
-		groups = append(groups, consumerGroupModel{
-			ConsumerGroupId: types.StringValue(rocketmqString(item, "consumerGroupId")),
-			Status:          types.StringValue(rocketmqString(item, "status")),
-			Remark:          types.StringValue(rocketmqString(item, "remark")),
-			InstanceId:      types.StringValue(rocketmqString(item, "instanceId")),
-			RegionId:        types.StringValue(rocketmqString(item, "regionId")),
-			TopicName:       types.StringValue(rocketmqString(item, "topicName")),
-			CreateTime:      types.StringValue(rocketmqString(item, "createTime")),
-			UpdateTime:      types.StringValue(rocketmqString(item, "updateTime")),
-			MaxReceiveTps:   rocketmqInt64(item, "maxReceiveTps"),
-		})
+		groups = append(groups, consumerGroupFromAPI(item))
 	}
 
 	idsList, diags := types.ListValueFrom(ctx, types.StringType, matchedIds)
@@ -209,6 +201,24 @@ func (d *consumerGroupsDataSource) Read(ctx context.Context, req datasource.Read
 	model.Names = idsList
 	model.Groups = groups
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// consumerGroupFromAPI maps one ListConsumerGroups item to the exported model.
+// message_model is returned for lite consumer groups only, so a normal group
+// maps it to an empty string; the unit test pins the response key.
+func consumerGroupFromAPI(item map[string]interface{}) consumerGroupModel {
+	return consumerGroupModel{
+		ConsumerGroupId: types.StringValue(rocketmqString(item, "consumerGroupId")),
+		Status:          types.StringValue(rocketmqString(item, "status")),
+		Remark:          types.StringValue(rocketmqString(item, "remark")),
+		InstanceId:      types.StringValue(rocketmqString(item, "instanceId")),
+		RegionId:        types.StringValue(rocketmqString(item, "regionId")),
+		TopicName:       types.StringValue(rocketmqString(item, "topicName")),
+		CreateTime:      types.StringValue(rocketmqString(item, "createTime")),
+		UpdateTime:      types.StringValue(rocketmqString(item, "updateTime")),
+		MaxReceiveTps:   rocketmqInt64(item, "maxReceiveTps"),
+		MessageModel:    types.StringValue(rocketmqString(item, "messageModel")),
+	}
 }
 
 func consumerGroupsQuery(model *consumerGroupsModel) map[string]*string {

@@ -207,3 +207,97 @@ func TestUnitRocketmqTags(t *testing.T) {
 		t.Fatalf("expected tags sorted by key, got %v", tags)
 	}
 }
+
+func TestUnitRocketmqInstanceMapping(t *testing.T) {
+	item := map[string]interface{}{
+		"instanceId":      "rmq-1",
+		"instanceName":    "name-1",
+		"status":          "RUNNING",
+		"regionId":        "cn-hangzhou",
+		"seriesCode":      "ultimate",
+		"subSeriesCode":   "cluster_ha",
+		"paymentType":     "PayAsYouGo",
+		"commodityCode":   "ons_rmqsub_public_cn",
+		"serviceCode":     "rmq",
+		"resourceGroupId": "rg-1",
+		"userId":          "1234567890",
+		"remark":          "example",
+		"topicCount":      json.Number("3"),
+		"groupCount":      json.Number("2"),
+		"createTime":      "2026-01-01 00:00:00",
+		"updateTime":      "2026-01-02 00:00:00",
+		"startTime":       "2026-01-01 00:00:00",
+		"expireTime":      "2026-02-01 00:00:00",
+		"releaseTime":     "2026-02-02 00:00:00",
+		"tags": []interface{}{
+			map[string]interface{}{"key": "Created", "value": "TF"},
+		},
+		"productInfo": map[string]interface{}{
+			"traceOn":      true,
+			"capacityType": "provisioned",
+		},
+	}
+
+	got := instanceFromAPI(item)
+	checks := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"instance_id", got.InstanceId.ValueString(), "rmq-1"},
+		{"user_id", got.UserId.ValueString(), "1234567890"},
+		{"commodity_code", got.CommodityCode.ValueString(), "ons_rmqsub_public_cn"},
+		{"remark", got.Remark.ValueString(), "example"},
+		{"update_time", got.UpdateTime.ValueString(), "2026-01-02 00:00:00"},
+	}
+	for _, c := range checks {
+		if c.got != c.want {
+			t.Fatalf("%s: expected %q, got %q", c.name, c.want, c.got)
+		}
+	}
+	if got.TopicCount.ValueInt64() != 3 || got.GroupCount.ValueInt64() != 2 {
+		t.Fatalf("expected numeric counts 3/2, got %d/%d", got.TopicCount.ValueInt64(), got.GroupCount.ValueInt64())
+	}
+	if len(got.ProductInfo) != 1 {
+		t.Fatalf("expected one product_info element, got %d", len(got.ProductInfo))
+	}
+	if !got.ProductInfo[0].TraceOn.ValueBool() || got.ProductInfo[0].CapacityType.ValueString() != "provisioned" {
+		t.Fatalf("unexpected product_info mapping: %+v", got.ProductInfo[0])
+	}
+	if len(got.Tags) != 1 || got.Tags[0].Key.ValueString() != "Created" {
+		t.Fatalf("unexpected tags mapping: %+v", got.Tags)
+	}
+}
+
+func TestUnitRocketmqConsumerGroupMapping(t *testing.T) {
+	item := map[string]interface{}{
+		"consumerGroupId": "GID-1",
+		"status":          "RUNNING",
+		"remark":          "example",
+		"instanceId":      "rmq-1",
+		"regionId":        "cn-hangzhou",
+		"topicName":       "lite-topic",
+		"createTime":      "2026-01-01 00:00:00",
+		"updateTime":      "2026-01-02 00:00:00",
+		"maxReceiveTps":   json.Number("1000"),
+		"messageModel":    "LITE_SELECTIVE",
+	}
+
+	got := consumerGroupFromAPI(item)
+	if got.MessageModel.ValueString() != "LITE_SELECTIVE" {
+		t.Fatalf("expected message_model to be mapped from messageModel, got %q", got.MessageModel.ValueString())
+	}
+	if got.TopicName.ValueString() != "lite-topic" {
+		t.Fatalf("expected topic_name to be mapped from topicName, got %q", got.TopicName.ValueString())
+	}
+	if got.MaxReceiveTps.ValueInt64() != 1000 {
+		t.Fatalf("expected max_receive_tps 1000, got %d", got.MaxReceiveTps.ValueInt64())
+	}
+
+	// A consumer group that is not a lite group has no messageModel field; the
+	// attribute stays in the schema with an empty value.
+	normal := consumerGroupFromAPI(map[string]interface{}{"consumerGroupId": "GID-2"})
+	if normal.MessageModel.ValueString() != "" {
+		t.Fatalf("expected an empty message_model for a normal group, got %q", normal.MessageModel.ValueString())
+	}
+}

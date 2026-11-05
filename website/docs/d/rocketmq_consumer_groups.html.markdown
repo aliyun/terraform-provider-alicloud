@@ -117,16 +117,17 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `id` - The ID of the data source, derived from the instance and filters so that it stays stable across refreshes.
+* `id` - (String) The ID of the data source, derived from the instance and filters so that it stays stable across refreshes.
 * `ids` - (List) A list of consumer group IDs that match the configured filters.
 * `names` - (List) A list of consumer group IDs that match the configured filters.
 * `groups` - (List) A list of consumer groups that match the configured filters. Each element contains the following attributes:
-  * `consumer_group_id` - The ID of the consumer group.
-  * `status` - The status of the consumer group. Valid values: `CREATING` and `RUNNING`.
-  * `remark` - The remark of the consumer group.
-  * `instance_id` - The ID of the instance that the consumer group belongs to.
-  * `region_id` - The region ID of the consumer group.
-  * `topic_name` - The name of the lite topic associated with the consumer group.
-  * `create_time` - The time when the consumer group was created.
-  * `update_time` - The time when the consumer group was last updated.
-  * `max_receive_tps` - The maximum receive TPS of the consumer group.
+  * `consumer_group_id` - (String) The ID of the consumer group.
+  * `status` - (String) The status of the consumer group. Valid values: `CREATING` and `RUNNING`.
+  * `remark` - (String) The remark of the consumer group.
+  * `instance_id` - (String) The ID of the instance that the consumer group belongs to.
+  * `region_id` - (String) The region ID of the consumer group.
+  * `topic_name` - (String) The name of the lite topic associated with the consumer group. The value is empty for consumer groups that are not bound to a lite topic.
+  * `create_time` - (String) The time when the consumer group was created.
+  * `update_time` - (String) The time when the consumer group was last updated.
+  * `max_receive_tps` - (Int) The maximum receive TPS of the consumer group.
+  * `message_model` - (String) The consumption model of the consumer group, for example `LITE_SELECTIVE`. The value is empty for consumer groups that are not lite consumer groups.

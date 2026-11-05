@@ -32,20 +32,30 @@ data "alicloud_rocketmq_consumer_groups" "default" {
   ids         = [var.name, "${var.name}-second"]
 }
 `,
-				Check: rocketmqDataSourceChecks(resourceId, map[string]string{
-					"groups.#":                   "2",
-					"groups.0.consumer_group_id": name,
-					"groups.0.status":            acctest.CHECKSET,
-					"groups.0.instance_id":       acctest.CHECKSET,
-					"groups.0.region_id":         acctest.CHECKSET,
-					"groups.0.create_time":       acctest.CHECKSET,
-					"groups.0.max_receive_tps":   "1000",
-					"groups.1.consumer_group_id": name + "-second",
-					"ids.#":                      "2",
-					"names.#":                    "2",
-					"names.0":                    name,
-					"id":                         acctest.CHECKSET,
-				}),
+				Check: resource.ComposeTestCheckFunc(
+					rocketmqDataSourceChecks(resourceId, map[string]string{
+						"groups.#":                   "2",
+						"groups.0.consumer_group_id": name,
+						"groups.0.status":            acctest.CHECKSET,
+						"groups.0.remark":            "example",
+						"groups.0.instance_id":       acctest.CHECKSET,
+						"groups.0.region_id":         acctest.CHECKSET,
+						"groups.0.create_time":       acctest.CHECKSET,
+						"groups.0.update_time":       acctest.CHECKSET,
+						"groups.0.max_receive_tps":   "1000",
+						// ListConsumerGroups returns messageModel only for lite
+						// consumer groups; a standard group maps it to an empty
+						// value while the attribute stays exported. The mapping
+						// itself is asserted by TestUnitRocketmqConsumerGroupMapping.
+						"groups.0.message_model":     "",
+						"groups.1.consumer_group_id": name + "-second",
+						"ids.#":                      "2",
+						"names.#":                    "2",
+						"names.0":                    name,
+						"id":                         acctest.CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "groups.0.instance_id", "alicloud_rocketmq_instance.default", "id"),
+				),
 			},
 			{
 				Config: dependence + `
@@ -109,6 +119,46 @@ data "alicloud_rocketmq_instances" "default" {
 						rocketmqCheckAtLeastInt(2),
 					),
 				),
+			},
+			{
+				// instance_id is Required: a config without it must fail before
+				// any ListConsumerGroups request, with a diagnostic naming the
+				// missing argument.
+				Config: dependence + `
+data "alicloud_rocketmq_consumer_groups" "default" {
+  name_regex = "^${var.name}$"
+}
+`,
+				ExpectError: rocketmqMissingInstanceIdError(),
+			},
+			{
+				// More consumer groups than one page (pageSize=100) so the walk
+				// must read the second page; the filtered result proves the
+				// later page is included and the primary key is not duplicated.
+				Config: dependence + `
+resource "alicloud_rocketmq_consumer_group" "page" {
+  count               = 101
+  instance_id         = alicloud_rocketmq_instance.default.id
+  consumer_group_id   = format("%s-p%03d", var.name, count.index + 1)
+  delivery_order_type = "Concurrently"
+  consume_retry_policy {
+    retry_policy = "DefaultRetryPolicy"
+  }
+}
+
+data "alicloud_rocketmq_consumer_groups" "default" {
+  instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_consumer_group.page]
+  name_regex  = "^${var.name}-p"
+}
+`,
+				Check: rocketmqDataSourceChecks(resourceId, map[string]string{
+					"groups.#":                     "101",
+					"groups.0.consumer_group_id":   fmt.Sprintf("%s-p001", name),
+					"groups.100.consumer_group_id": fmt.Sprintf("%s-p101", name),
+					"names.#":                      "101",
+					"ids.#":                        "101",
+				}),
 			},
 		},
 	})

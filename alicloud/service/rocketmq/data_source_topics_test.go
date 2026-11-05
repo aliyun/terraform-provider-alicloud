@@ -32,22 +32,27 @@ data "alicloud_rocketmq_topics" "default" {
   ids         = [var.name, "${var.name}-second"]
 }
 `,
-				Check: rocketmqDataSourceChecks(resourceId, map[string]string{
-					"topics.#":              "2",
-					"topics.0.topic_name":   name,
-					"topics.0.message_type": "NORMAL",
-					"topics.0.status":       acctest.CHECKSET,
-					"topics.0.instance_id":  acctest.CHECKSET,
-					"topics.0.region_id":    acctest.CHECKSET,
-					"topics.0.create_time":  acctest.CHECKSET,
-					"topics.0.max_send_tps": "1500",
-					"topics.1.topic_name":   name + "-second",
-					"topics.1.message_type": "FIFO",
-					"ids.#":                 "2",
-					"names.#":               "2",
-					"names.0":               name,
-					"id":                    acctest.CHECKSET,
-				}),
+				Check: resource.ComposeTestCheckFunc(
+					rocketmqDataSourceChecks(resourceId, map[string]string{
+						"topics.#":              "2",
+						"topics.0.topic_name":   name,
+						"topics.0.message_type": "NORMAL",
+						"topics.0.status":       acctest.CHECKSET,
+						"topics.0.remark":       "example",
+						"topics.0.instance_id":  acctest.CHECKSET,
+						"topics.0.region_id":    acctest.CHECKSET,
+						"topics.0.create_time":  acctest.CHECKSET,
+						"topics.0.update_time":  acctest.CHECKSET,
+						"topics.0.max_send_tps": "1500",
+						"topics.1.topic_name":   name + "-second",
+						"topics.1.message_type": "FIFO",
+						"ids.#":                 "2",
+						"names.#":               "2",
+						"names.0":               name,
+						"id":                    acctest.CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "topics.0.instance_id", "alicloud_rocketmq_instance.default", "id"),
+				),
 			},
 			{
 				Config: dependence + `
@@ -126,6 +131,43 @@ data "alicloud_rocketmq_instances" "default" {
 						rocketmqCheckAtLeastInt(2),
 					),
 				),
+			},
+			{
+				// instance_id is Required: a config without it must fail before
+				// any ListTopics request, with a diagnostic naming the missing
+				// argument.
+				Config: dependence + `
+data "alicloud_rocketmq_topics" "default" {
+  name_regex = "^${var.name}$"
+}
+`,
+				ExpectError: rocketmqMissingInstanceIdError(),
+			},
+			{
+				// More topics than one page (pageSize=100) so the walk must read
+				// the second page; the filtered result proves the later page is
+				// included and the primary key is not duplicated.
+				Config: dependence + `
+resource "alicloud_rocketmq_topic" "page" {
+  count        = 101
+  instance_id  = alicloud_rocketmq_instance.default.id
+  topic_name   = format("%s-p%03d", var.name, count.index + 1)
+  message_type = "NORMAL"
+}
+
+data "alicloud_rocketmq_topics" "default" {
+  instance_id = alicloud_rocketmq_instance.default.id
+  depends_on  = [alicloud_rocketmq_topic.page]
+  name_regex  = "^${var.name}-p"
+}
+`,
+				Check: rocketmqDataSourceChecks(resourceId, map[string]string{
+					"topics.#":              "101",
+					"topics.0.topic_name":   fmt.Sprintf("%s-p001", name),
+					"topics.100.topic_name": fmt.Sprintf("%s-p101", name),
+					"names.#":               "101",
+					"ids.#":                 "101",
+				}),
 			},
 		},
 	})

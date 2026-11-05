@@ -2,6 +2,7 @@ package rocketmq_test
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -31,29 +32,38 @@ data "alicloud_rocketmq_instances" "default" {
   ids = [alicloud_rocketmq_instance.default.id]
 }
 `,
-				Check: rocketmqDataSourceChecks(resourceId, map[string]string{
-					"instances.#":                   "1",
-					"instances.0.instance_id":       acctest.CHECKSET,
-					"instances.0.instance_name":     name,
-					"instances.0.status":            acctest.CHECKSET,
-					"instances.0.region_id":         acctest.CHECKSET,
-					"instances.0.series_code":       "ultimate",
-					"instances.0.sub_series_code":   "cluster_ha",
-					"instances.0.payment_type":      "PayAsYouGo",
-					"instances.0.service_code":      "rmq",
-					"instances.0.resource_group_id": acctest.CHECKSET,
-					"instances.0.topic_count":       acctest.CHECKSET,
-					"instances.0.group_count":       acctest.CHECKSET,
-					"instances.0.create_time":       acctest.CHECKSET,
-					// The test instance carries an extra tag added by the
-					// account, so only presence is asserted here; the tags
-					// step below exercises the tag filter itself.
-					"instances.0.tags.#": acctest.CHECKSET,
-					"ids.#":              "1",
-					"names.#":            "1",
-					"names.0":            name,
-					"id":                 acctest.CHECKSET,
-				}),
+				Check: resource.ComposeTestCheckFunc(
+					rocketmqDataSourceChecks(resourceId, map[string]string{
+						"instances.#":                         "1",
+						"instances.0.instance_name":           name,
+						"instances.0.status":                  acctest.CHECKSET,
+						"instances.0.region_id":               acctest.CHECKSET,
+						"instances.0.series_code":             "ultimate",
+						"instances.0.sub_series_code":         "cluster_ha",
+						"instances.0.payment_type":            "PayAsYouGo",
+						"instances.0.commodity_code":          acctest.CHECKSET,
+						"instances.0.service_code":            "rmq",
+						"instances.0.resource_group_id":       acctest.CHECKSET,
+						"instances.0.user_id":                 acctest.CHECKSET,
+						"instances.0.remark":                  "example",
+						"instances.0.topic_count":             acctest.CHECKSET,
+						"instances.0.group_count":             acctest.CHECKSET,
+						"instances.0.create_time":             acctest.CHECKSET,
+						"instances.0.update_time":             acctest.CHECKSET,
+						"instances.0.product_info.#":          "1",
+						"instances.0.product_info.0.trace_on": acctest.CHECKSET,
+						// capacity_type is only returned for some series; the key
+						// stays in the schema and is asserted when present.
+						"instances.0.tags.#": acctest.CHECKSET,
+						"ids.#":              "1",
+						"names.#":            "1",
+						"names.0":            name,
+						"id":                 acctest.CHECKSET,
+					}),
+					// The data source ID must be the real instance created for the
+					// test, not an arbitrary non-empty value.
+					resource.TestCheckResourceAttrPair(resourceId, "instances.0.instance_id", "alicloud_rocketmq_instance.default", "id"),
+				),
 			},
 			{
 				Config: dependence + `
@@ -154,6 +164,13 @@ data "alicloud_rocketmq_instances" "default" {
 // from earlier steps after the result set has shrunk.
 func rocketmqDataSourceChecks(resourceId string, checks map[string]string) resource.TestCheckFunc {
 	return acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()(checks)
+}
+
+// rocketmqMissingInstanceIdError matches the plan-time diagnostic produced when
+// instance_id is omitted, so the negative step cannot pass on an unrelated
+// API or credential error.
+func rocketmqMissingInstanceIdError() *regexp.Regexp {
+	return regexp.MustCompile(`(?s)instance_id.*(is required|required argument|Missing required)`)
 }
 
 // rocketmqCheckAtLeastInt parses a numeric state value and requires it to be at

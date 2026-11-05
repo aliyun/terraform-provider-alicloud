@@ -115,17 +115,17 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `id` - The ID of the data source, derived from the instance and filters so that it stays stable across refreshes.
+* `id` - (String) The ID of the data source, derived from the instance and filters so that it stays stable across refreshes.
 * `ids` - (List) A list of names of the topics that match the configured filters.
 * `names` - (List) A list of names of the topics that match the configured filters.
 * `topics` - (List) A list of topics that match the configured filters. Each element contains the following attributes:
-  * `topic_name` - The name of the topic.
-  * `message_type` - The message type of the topic. Valid values: `NORMAL`, `FIFO`, `DELAY` and `TRANSACTION`.
-  * `status` - The status of the topic. Valid values: `CREATING` and `RUNNING`.
-  * `remark` - The remark of the topic.
-  * `instance_id` - The ID of the instance that the topic belongs to.
-  * `region_id` - The region ID of the topic.
-  * `create_time` - The time when the topic was created.
-  * `update_time` - The time when the topic was last updated.
-  * `max_send_tps` - The maximum send TPS of the topic.
-  * `lite_topic_expiration` - The expiration time of the lite topic. Unit: minutes.
+  * `topic_name` - (String) The name of the topic.
+  * `message_type` - (String) The message type of the topic. Valid values: `NORMAL`, `FIFO`, `DELAY` and `TRANSACTION`.
+  * `status` - (String) The status of the topic. Valid values: `CREATING` and `RUNNING`.
+  * `remark` - (String) The remark of the topic.
+  * `instance_id` - (String) The ID of the instance that the topic belongs to.
+  * `region_id` - (String) The region ID of the topic.
+  * `create_time` - (String) The time when the topic was created.
+  * `update_time` - (String) The time when the topic was last updated.
+  * `max_send_tps` - (Int) The maximum send TPS of the topic.
+  * `lite_topic_expiration` - (Int) The expiration time of the lite topic. Unit: minutes.
