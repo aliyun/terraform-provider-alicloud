@@ -783,6 +783,96 @@ func TestAccAliCloudPrivatelinkVpcEndpointService_sameBackendDualZone(t *testing
 	})
 }
 
+func TestAccAliCloudPrivatelinkVpcEndpointService_noTagsRefresh(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return privatelink.NewPrivateLinkServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribePrivateLinkVpcEndpointService")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%splvpcessdualzone%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudPrivatelinkVpcEndpointServiceResourceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
+		},
+		Providers:    acctest.SDKProviders,
+		CheckDestroy: rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Reproduces the cross-zone bug: the SAME backend load balancer is
+				// attached to the endpoint service in two availability zones via two
+				// inline resource blocks with identical resource_id + resource_type
+				// but different zone_id. Before the fix the resource TypeSet hashed
+				// on resource_id + resource_type only, so the two blocks were
+				// deduplicated to one and apply aborted with "Provider produced
+				// inconsistent final plan", blocking cross-region endpoint services
+				// (the server requires ≥2 zones). With zone_id in the hash both
+				// attachments are preserved and sent to CreateVpcEndpointService.
+				Config: testAccConfig(map[string]interface{}{
+					"service_description":    name,
+					"service_resource_type":  "nlb",
+					"auto_accept_connection": "true",
+					"resource": []map[string]interface{}{
+						{
+							"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+							"resource_type": "nlb",
+							"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+						},
+						{
+							"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+							"resource_type": "nlb",
+							"zone_id":       "${data.alicloud_nlb_zones.default.zones.1.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_resource_type": "nlb",
+						"resource.#":            "2",
+					}),
+				),
+			},
+			{
+				RefreshState: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "resource.#", "2"),
+					resource.TestCheckNoResourceAttr(resourceId, "tags.nonexistent"),
+				),
+			},
+			{
+				// A no-op plan must show no changes: the set is stable because
+				// zone_id is part of element identity and Read backfills it per
+				// item, so each refreshed element matches its configured counterpart
+				// and no detach/attach churn is generated.
+				Config: testAccConfig(map[string]interface{}{
+					"service_description":    name,
+					"service_resource_type":  "nlb",
+					"auto_accept_connection": "true",
+					"resource": []map[string]interface{}{
+						{
+							"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+							"resource_type": "nlb",
+							"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+						},
+						{
+							"resource_id":   "${alicloud_nlb_load_balancer.default.id}",
+							"resource_type": "nlb",
+							"zone_id":       "${data.alicloud_nlb_zones.default.zones.1.id}",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccAliCloudPrivatelinkVpcEndpointService_albCrossRegionDualZone(t *testing.T) {
 	resourceId := "alicloud_privatelink_vpc_endpoint_service.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceMap)
