@@ -246,6 +246,8 @@ func TestAccAliCloudEfloNodeGroupAttachment_vpd(t *testing.T) {
 									},
 								},
 							},
+						},
+						{
 							"machine_type_policy": []map[string]interface{}{
 								{
 									"bonds": []map[string]interface{}{
@@ -257,6 +259,8 @@ func TestAccAliCloudEfloNodeGroupAttachment_vpd(t *testing.T) {
 									"machine_type": machineType,
 								},
 							},
+						},
+						{
 							"node_policy": []map[string]interface{}{
 								{
 									"bonds": []map[string]interface{}{
@@ -279,7 +283,7 @@ func TestAccAliCloudEfloNodeGroupAttachment_vpd(t *testing.T) {
 						"node_id":                nodeId,
 						"hostname":               name,
 						"vpd_subnets.#":          "1",
-						"ip_allocation_policy.#": "1",
+						"ip_allocation_policy.#": "3",
 					}),
 				),
 			},

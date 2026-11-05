@@ -115,6 +115,8 @@ resource "alicloud_eflo_node_group_attachment" "default" {
         subnet = var.vpd_subnet_id
       }
     }
+  }
+  ip_allocation_policy {
     machine_type_policy {
       machine_type = var.machine_type
       bonds {
@@ -122,6 +124,8 @@ resource "alicloud_eflo_node_group_attachment" "default" {
         subnet = var.vpd_subnet_id
       }
     }
+  }
+  ip_allocation_policy {
     node_policy {
       node_id = var.node_id
       bonds {
