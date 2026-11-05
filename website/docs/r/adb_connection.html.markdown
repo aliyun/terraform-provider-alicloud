@@ -52,9 +52,15 @@ locals {
 }
 
 resource "alicloud_adb_db_cluster" "cluster" {
-  db_cluster_category = "MixedStorage"
-  mode                = "flexible"
-  compute_resource    = "8Core32GB"
+  db_cluster_version  = "3.0"
+  modify_type         = "PayAsYouGo"
+  switch_mode         = "1"
+  db_cluster_category = "Cluster"
+  db_node_class       = "C8"
+  db_node_count       = "1"
+  db_node_storage     = "100"
+  mode                = "reserver"
+  zone_id             = data.alicloud_adb_zones.default.ids.0
   vswitch_id          = local.vswitch_id
   description         = var.name
 }

@@ -41,7 +41,7 @@ func TestAccAliCloudADBConnectionConfig(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"eu-central-1"})
+			acctest.PreCheckWithRegions(t, false, connectivity.AdbReserverUnSupportRegions)
 		},
 
 		// module name
@@ -117,10 +117,16 @@ func resourceAdbConnectionConfigDependence(name string) string {
 	}
 
 	resource "alicloud_adb_db_cluster" "cluster" {
-	db_cluster_category = "MixedStorage"
-	mode = "flexible"
-	compute_resource = "8Core32GB"
-	vswitch_id              = local.vswitch_id
-	description             = "${var.name}"
+	db_cluster_version  = "3.0"
+	modify_type         = "PayAsYouGo"
+	switch_mode         = "1"
+	db_cluster_category = "Cluster"
+	db_node_class       = "C8"
+	db_node_count       = "1"
+	db_node_storage     = "100"
+	mode                = "reserver"
+	zone_id             = data.alicloud_adb_zones.default.ids.0
+	vswitch_id          = local.vswitch_id
+	description         = "${var.name}"
 	}`, AdbCommonTestCase, name)
 }
