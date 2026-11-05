@@ -199,6 +199,14 @@ func TagsToMap(tags interface{}) map[string]interface{} {
 	return result
 }
 
+const (
+	reservedTagPrefixAliyun = "aliyun"
+	reservedTagPrefixAcs    = "acs:"
+	reservedTagPrefixHTTP   = "http://"
+	reservedTagPrefixHTTPS  = "https://"
+	reservedTagPrefixSae    = "sae.do.not.delete"
+)
+
 // ReservedTagKeyPrefixes lists the key namespaces that belong to Alibaba Cloud
 // rather than to the user. The list is a contract, not a set of patterns: every
 // entry is compared as a literal string prefix, so the dots inside
@@ -210,7 +218,13 @@ func TagsToMap(tags interface{}) map[string]interface{} {
 //     API reserves;
 //   - injected keys, "http://", "https://" and "sae.do.not.delete", which the
 //     service adds itself.
-var ReservedTagKeyPrefixes = []string{"aliyun", "acs:", "http://", "https://", "sae.do.not.delete"}
+var ReservedTagKeyPrefixes = []string{
+	reservedTagPrefixAliyun,
+	reservedTagPrefixAcs,
+	reservedTagPrefixHTTP,
+	reservedTagPrefixHTTPS,
+	reservedTagPrefixSae,
+}
 
 // IsReservedTagKey reports whether a tag key starts with one of the reserved
 // prefixes. It never logs the key or the value: callers use it on every tag of
@@ -450,11 +464,12 @@ func TagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string
 	return true
 }
 
+// IgnoredTags is the historical *TagsToMap filter. It drops the four namespace
+// prefixes only, and it is defined in terms of the shared contract so the
+// package keeps a single list of reserved prefixes.
 func IgnoredTags(tagKey string, tagValue interface{}) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		ok, _ := regexp.MatchString(v, tagKey)
-		if ok {
+	for _, prefix := range []string{reservedTagPrefixAliyun, reservedTagPrefixAcs, reservedTagPrefixHTTP, reservedTagPrefixHTTPS} {
+		if strings.HasPrefix(tagKey, prefix) {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific tag with key: %s and value: %s, ignoring.\n", tagKey, tagValue)
 			return true
 		}

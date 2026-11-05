@@ -533,22 +533,40 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesAcceptsStartPageBeyondTotal(t 
 // rejected before it can overflow the skipped-row arithmetic or wrap after the
 // cast, and the loop never increments past the largest page number.
 func TestUnitFwCollectNumberedPagesValidatesTheInt32PageRange(t *testing.T) {
-	fetch := func(pageNumber int64) (fwNumberedPage, error) {
-		return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": fmt.Sprintf("apg-%d", pageNumber)}}}, nil
-	}
-
+	// Each rejected input must be stopped before any request is issued: the
+	// collector's own page-budget error would still call fetch, so a removed
+	// guard would fail this assertion instead of passing silently.
 	for _, startPage := range []int64{0, -1, math.MaxInt32 + 1} {
-		_, _, err := fwCollectNumberedPages(context.Background(), 10, startPage, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", fetch)
+		calls := 0
+		_, _, err := fwCollectNumberedPages(context.Background(), 10, startPage, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
+			calls++
+			return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": fmt.Sprintf("apg-%d", pageNumber)}}}, nil
+		})
 		assert.Error(t, err, "start page %d must be rejected", startPage)
+		assert.Zero(t, calls, "start page %d must be rejected before any request", startPage)
 	}
-	for _, pageSize := range []int64{0, -1, math.MaxInt32 + 1} {
-		_, _, err := fwCollectNumberedPages(context.Background(), 10, 1, pageSize, autoProvisioningGroupsAction, "AutoProvisioningGroupId", fetch)
+	for _, pageSize := range []int64{0, -1} {
+		calls := 0
+		_, _, err := fwCollectNumberedPages(context.Background(), 10, 1, pageSize, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
+			calls++
+			return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": fmt.Sprintf("apg-%d", pageNumber)}}}, nil
+		})
 		assert.Error(t, err, "page size %d must be rejected", pageSize)
+		assert.Zero(t, calls, "page size %d must be rejected before any request", pageSize)
 	}
+	// A page size beyond the int32 range is rejected too; it is also the case
+	// where the loop would otherwise see a short page and return without error.
+	calls := 0
+	_, _, err := fwCollectNumberedPages(context.Background(), 10, 1, math.MaxInt32+1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
+		calls++
+		return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": "apg-1"}}}, nil
+	})
+	assert.Error(t, err, "page size above the int32 range must be rejected")
+	assert.Zero(t, calls, "the oversized page size must be rejected before any request")
 
 	// The largest accepted start page is sent as-is and never incremented.
 	requested := make([]int64, 0)
-	_, _, err := fwCollectNumberedPages(context.Background(), 10, math.MaxInt32, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
+	_, _, err = fwCollectNumberedPages(context.Background(), 10, math.MaxInt32, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
 		requested = append(requested, pageNumber)
 		return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": "apg-last"}}}, nil
 	})
@@ -947,9 +965,9 @@ func TestUnitEcsAutoProvisioningGroupsLoadRequestToState(t *testing.T) {
 		requests = append(requests, snapshot)
 
 		// The fixture filters like the real endpoint: it returns the rows whose
-		// status the request asks for, and every row when no status is sent. A
-		// dropped provider filter therefore widens the result and fails the
-		// assertions below instead of still matching the row and total counts.
+		// status and IDs the request asks for, and every row when neither is
+		// sent. The assertions below pin the request keys themselves, and the
+		// dedicated status-only test below keeps the filter discriminating.
 		groups := []map[string]interface{}{
 			{"AutoProvisioningGroupId": "apg-a", "AutoProvisioningGroupName": "group-a", "Status": "active"},
 			{"AutoProvisioningGroupId": "apg-b", "AutoProvisioningGroupName": "group-b", "Status": "submitted"},
@@ -970,7 +988,7 @@ func TestUnitEcsAutoProvisioningGroupsLoadRequestToState(t *testing.T) {
 			}
 			wantedIds[id] = struct{}{}
 		}
-		matched := make([]map[string]interface{}, 0, len(groups))
+		matched := make([]interface{}, 0, len(groups))
 		for _, group := range groups {
 			if len(wantedStatuses) > 0 {
 				if _, ok := wantedStatuses[group["Status"].(string)]; !ok {
@@ -1030,7 +1048,7 @@ func TestUnitEcsAutoProvisioningGroupsLoadKeepsOnlyTheFilteredStatus(t *testing.
 			{"AutoProvisioningGroupId": "apg-active", "Status": "active"},
 			{"AutoProvisioningGroupId": "apg-submitted", "Status": "submitted"},
 		}
-		filtered := make([]map[string]interface{}, 0)
+		filtered := make([]interface{}, 0)
 		for _, group := range groups {
 			if group["Status"] == request["AutoProvisioningGroupStatus.1"] {
 				filtered = append(filtered, group)

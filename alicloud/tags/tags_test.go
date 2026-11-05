@@ -250,3 +250,14 @@ func TestUnitTagIgnoredUsesTheReservedContract(t *testing.T) {
 	assert.False(t, TagIgnored("sae-do-not-delete-x", "value"))
 	assert.False(t, TagIgnored("env", "value"))
 }
+
+// IgnoredTags keeps its historical four-prefix subset, expressed with the same
+// literal prefixes as the shared contract.
+func TestUnitIgnoredTagsUsesTheSharedPrefixes(t *testing.T) {
+	assert.True(t, IgnoredTags("aliyun-something", "value"))
+	assert.True(t, IgnoredTags("acs:tag", "value"))
+	assert.True(t, IgnoredTags("http://example.com", "value"))
+	assert.True(t, IgnoredTags("https://example.com", "value"))
+	assert.False(t, IgnoredTags("sae.do.not.delete", "value"), "the historical filter never dropped the SAE key")
+	assert.False(t, IgnoredTags("env", "value"))
+}
