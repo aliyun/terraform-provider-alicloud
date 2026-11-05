@@ -165,7 +165,10 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("target_tracking_policies"); ok {
 		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
 			dataLoopMap["name"] = dataLoopTmp["name"]
@@ -183,7 +186,10 @@ func resourceProvisionConfigCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("scheduled_actions"); ok {
 		scheduledActionsMapsArray := make([]interface{}, 0)
 		for _, dataLoop1 := range v.([]interface{}) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Tmp, ok := dataLoop1.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
 			dataLoop1Map["target"] = dataLoop1Tmp["target"]
@@ -337,7 +343,10 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("target_tracking_policies"); ok {
 		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopTmp, ok := dataLoop.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
 			dataLoopMap["name"] = dataLoopTmp["name"]
@@ -360,7 +369,10 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("scheduled_actions"); ok {
 		scheduledActionsMapsArray := make([]interface{}, 0)
 		for _, dataLoop1 := range v.([]interface{}) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
+			dataLoop1Tmp, ok := dataLoop1.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
 			dataLoop1Map["target"] = dataLoop1Tmp["target"]

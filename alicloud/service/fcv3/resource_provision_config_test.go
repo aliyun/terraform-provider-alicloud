@@ -1,6 +1,7 @@
 package fcv3_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
 	schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -220,11 +222,8 @@ resource "alicloud_fcv3_function" "function" {
 // Every successful configuration step is followed by ImportStateVerify.
 // The full-coverage case basic7182 exercises every optional field but cannot
 // pass on this account: its target_tracking_policies use
-// metric_type=CPUUtilization (CPU autoScaling requires an account-side
-// allowlist), and its dependency creates an alicloud_log_project which hits
-// ProjectQuotaExceed (account at the 300-project SLS quota). This case
-// deliberately omits CPU/GPU autoScaling policies and uses a minimal function
-// dependency without an SLS log_project.
+// metric_type=CPUUtilization and CPU autoScaling requires an account-side
+// allowlist. This case deliberately omits CPU/GPU autoScaling policies.
 func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_provision_config.default"
@@ -564,11 +563,15 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		mu.Lock()
 		requests = append(requests, capturedRequest{method: req.Method, body: body})
 		if req.Method == http.MethodPut {
-			for _, key := range []string{"alwaysAllocateCPU", "alwaysAllocateGPU", "target"} {
-				if value, ok := body[key]; ok {
-					stored[key] = value
-				}
+			// PutProvisionConfig replaces the whole configuration: keys missing
+			// from the request are gone from the response.
+			replaced := map[string]interface{}{
+				"functionArn": "acs:fc:cn-hangzhou:1234567890123456:functions/unit-provision",
 			}
+			for key, value := range body {
+				replaced[key] = value
+			}
+			stored = replaced
 		}
 		response := make(map[string]interface{}, len(stored))
 		for key, value := range stored {
@@ -585,6 +588,7 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 
 	client := provisionConfigUnitTestClient(t, server)
 	r := fcv3.ResourceProvisionConfig()
+	ctx := context.Background()
 
 	lastPut := func() map[string]interface{} {
 		mu.Lock()
@@ -613,17 +617,47 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 			t.Fatalf("request body must omit %q, got %#v", key, value)
 		}
 	}
-	update := func(current map[string]interface{}, changes map[string]interface{}) map[string]interface{} {
+	assertListLength := func(body map[string]interface{}, key string, want int) {
 		t.Helper()
-		data := schema.TestResourceDataRaw(t, r.Schema, current)
-		data.SetId("unit-provision")
-		for key, value := range changes {
-			if err := data.Set(key, value); err != nil {
-				t.Fatalf("set %s: %v", key, err)
-			}
+		values, ok := body[key].([]interface{})
+		if !ok {
+			t.Fatalf("request body %q is not a list: %#v", key, body[key])
 		}
-		if err := r.Update(data, client); err != nil {
-			t.Fatalf("update: %v", err)
+		if len(values) != want {
+			t.Fatalf("request body %q has %d entries, want %d: %#v", key, len(values), want, values)
+		}
+	}
+	priorState := func(attributes map[string]string) *sdktf.InstanceState {
+		merged := map[string]string{
+			"id":            "unit-provision",
+			"function_name": "unit-provision",
+			"target":        "1",
+		}
+		for key, value := range attributes {
+			merged[key] = value
+		}
+		return &sdktf.InstanceState{ID: "unit-provision", Attributes: merged}
+	}
+	applyUpdate := func(prior *sdktf.InstanceState, config map[string]interface{}) map[string]interface{} {
+		t.Helper()
+		resourceConfig := sdktf.NewResourceConfigRaw(config)
+		diff, err := r.Diff(ctx, prior, resourceConfig, nil)
+		if err != nil {
+			t.Fatalf("diff: %v", err)
+		}
+		if diff == nil || diff.Empty() {
+			t.Fatalf("expected a plan for %#v", config)
+		}
+		next, diags := r.Apply(ctx, prior, diff, client)
+		if diags.HasError() {
+			t.Fatalf("apply: %v", diags)
+		}
+		again, err := r.Diff(ctx, next, resourceConfig, nil)
+		if err != nil {
+			t.Fatalf("diff after apply: %v", err)
+		}
+		if again != nil && !again.Empty() {
+			t.Fatalf("configuration did not converge after apply: %#v", again)
 		}
 		return lastPut()
 	}
@@ -641,27 +675,29 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	assertMissing(body, "alwaysAllocateCPU")
 	assertMissing(body, "alwaysAllocateGPU")
 
-	// Boolean-only update: target is unchanged but still present in the body,
-	// and the untouched boolean keeps its configured value.
-	body = update(map[string]interface{}{
+	// Boolean-only update from a real prior state: target is unchanged, so the
+	// old implementation omitted it; it must still be present.
+	body = applyUpdate(priorState(map[string]string{
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	}), map[string]interface{}{
 		"function_name":       "unit-provision",
 		"target":              1,
-		"always_allocate_cpu": true,
-		"always_allocate_gpu": true,
-	}, map[string]interface{}{
 		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
 	})
 	assertValue(body, "target", float64(1))
 	assertValue(body, "alwaysAllocateCPU", false)
 	assertValue(body, "alwaysAllocateGPU", true)
 
 	// Explicit false for both fields must be sent verbatim.
-	body = update(map[string]interface{}{
+	body = applyUpdate(priorState(map[string]string{
+		"always_allocate_cpu": "false",
+		"always_allocate_gpu": "true",
+	}), map[string]interface{}{
 		"function_name":       "unit-provision",
 		"target":              1,
 		"always_allocate_cpu": false,
-		"always_allocate_gpu": true,
-	}, map[string]interface{}{
 		"always_allocate_gpu": false,
 	})
 	assertValue(body, "alwaysAllocateCPU", false)
@@ -669,18 +705,90 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	assertValue(body, "target", float64(1))
 
 	// Switching both back to true must also be sent verbatim.
-	body = update(map[string]interface{}{
+	body = applyUpdate(priorState(map[string]string{
+		"always_allocate_cpu": "false",
+		"always_allocate_gpu": "false",
+	}), map[string]interface{}{
 		"function_name":       "unit-provision",
 		"target":              1,
-		"always_allocate_cpu": false,
-		"always_allocate_gpu": false,
-	}, map[string]interface{}{
 		"always_allocate_cpu": true,
 		"always_allocate_gpu": true,
 	})
 	assertValue(body, "alwaysAllocateCPU", true)
 	assertValue(body, "alwaysAllocateGPU", true)
 	assertValue(body, "target", float64(1))
+
+	listConfig := map[string]interface{}{
+		"target_tracking_policies": []interface{}{map[string]interface{}{
+			"name":          "t1",
+			"start_time":    "2030-10-10T10:10:10Z",
+			"end_time":      "2035-10-10T10:10:10Z",
+			"min_capacity":  0,
+			"max_capacity":  1,
+			"metric_target": float64(1),
+			"metric_type":   "ProvisionedConcurrencyUtilization",
+		}},
+		"scheduled_actions": []interface{}{map[string]interface{}{
+			"name":                "s1",
+			"start_time":          "2030-10-10T10:10:10Z",
+			"end_time":            "2035-10-10T10:10:10Z",
+			"schedule_expression": "cron(0 0 4 * * *)",
+			"target":              0,
+		}},
+	}
+	listState := map[string]string{
+		"target_tracking_policies.#":               "1",
+		"target_tracking_policies.0.name":          "t1",
+		"target_tracking_policies.0.start_time":    "2030-10-10T10:10:10Z",
+		"target_tracking_policies.0.end_time":      "2035-10-10T10:10:10Z",
+		"target_tracking_policies.0.min_capacity":  "0",
+		"target_tracking_policies.0.max_capacity":  "1",
+		"target_tracking_policies.0.metric_target": "1",
+		"target_tracking_policies.0.metric_type":   "ProvisionedConcurrencyUtilization",
+		"scheduled_actions.#":                      "1",
+		"scheduled_actions.0.name":                 "s1",
+		"scheduled_actions.0.start_time":           "2030-10-10T10:10:10Z",
+		"scheduled_actions.0.end_time":             "2035-10-10T10:10:10Z",
+		"scheduled_actions.0.schedule_expression":  "cron(0 0 4 * * *)",
+		"scheduled_actions.0.target":               "0",
+	}
+
+	// A boolean-only update must keep configured lists in the replacement body.
+	listPrior := priorState(map[string]string{
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	})
+	for key, value := range listState {
+		listPrior.Attributes[key] = value
+	}
+	body = applyUpdate(listPrior, map[string]interface{}{
+		"function_name":            "unit-provision",
+		"target":                   1,
+		"always_allocate_cpu":      false,
+		"always_allocate_gpu":      true,
+		"target_tracking_policies": listConfig["target_tracking_policies"],
+		"scheduled_actions":        listConfig["scheduled_actions"],
+	})
+	assertValue(body, "target", float64(1))
+	assertListLength(body, "targetTrackingPolicies", 1)
+	assertListLength(body, "scheduledActions", 1)
+
+	// Removing the lists must send empty arrays so the replacement clears them.
+	removePrior := priorState(map[string]string{
+		"always_allocate_cpu": "false",
+		"always_allocate_gpu": "true",
+	})
+	for key, value := range listState {
+		removePrior.Attributes[key] = value
+	}
+	body = applyUpdate(removePrior, map[string]interface{}{
+		"function_name":       "unit-provision",
+		"target":              1,
+		"always_allocate_cpu": true,
+		"always_allocate_gpu": true,
+	})
+	assertListLength(body, "targetTrackingPolicies", 0)
+	assertListLength(body, "scheduledActions", 0)
 }
 
 func provisionConfigUnitTestClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
