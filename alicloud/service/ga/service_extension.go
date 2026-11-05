@@ -206,7 +206,7 @@ func (r *serviceExtensionResource) Create(ctx context.Context, req resource.Crea
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client := r.Client()
+	client := r.Meta()
 
 	request := map[string]interface{}{
 		"RegionId":    client.RegionId,
@@ -294,7 +294,7 @@ func (r *serviceExtensionResource) Read(ctx context.Context, req resource.ReadRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client := r.Client()
+	client := r.Meta()
 
 	refreshed, diags := readServiceExtensionState(ctx, client, state.Id.ValueString(), state.Tags)
 	resp.Diagnostics.Append(diags...)
@@ -315,7 +315,7 @@ func (r *serviceExtensionResource) Update(ctx context.Context, req resource.Upda
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client := r.Client()
+	client := r.Meta()
 	id := state.Id.ValueString()
 
 	// tags
@@ -412,7 +412,7 @@ func (r *serviceExtensionResource) Delete(ctx context.Context, req resource.Dele
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client := r.Client()
+	client := r.Meta()
 	id := state.Id.ValueString()
 
 	request := map[string]interface{}{

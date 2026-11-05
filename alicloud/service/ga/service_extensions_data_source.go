@@ -210,7 +210,7 @@ func (d *serviceExtensionsDataSource) Read(ctx context.Context, req datasource.R
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client := d.Client()
+	client := d.Meta()
 
 	var nameRegex *regexp.Regexp
 	if !config.NameRegex.IsNull() {
