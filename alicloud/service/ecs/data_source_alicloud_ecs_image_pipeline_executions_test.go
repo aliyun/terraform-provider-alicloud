@@ -16,8 +16,8 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 	name := fmt.Sprintf("tf-testacc%secsimagepipelineexecutionds%d", acctest.DefaultRegionToTest, rand)
 	resourceId := "data.alicloud_ecs_image_pipeline_executions.default"
 	baseConfig := AlicloudEcsImagePipelineExecutionBasicDependence8237(name)
-	executionId := "${alicloud_ecs_image_pipeline_execution.default.id}"
-	pipelineId := "${alicloud_ecs_image_pipeline.pipelineExection-pipeline.id}"
+	executionId := "alicloud_ecs_image_pipeline_execution.default.id"
+	pipelineId := "alicloud_ecs_image_pipeline.pipelineExection-pipeline.id"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -47,8 +47,7 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 				),
 			},
 			{
-				Config: baseConfig + imagePipelineExecutionsDataBlock(fmt.Sprintf("  execution_id = %s\n  ids           = [%s]\n", executionId, executionId)),
-				Check: resource.ComposeTestCheckFunc(
+				Config: baseConfig + imagePipelineExecutionsDataBlock(fmt.Sprintf("  execution_id = %s\n  ids           = [%s]\n", executionId, executionId)), Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "executions.#", "1"),
 					resource.TestCheckResourceAttrPair(resourceId, "ids.0", "alicloud_ecs_image_pipeline_execution.default", "id"),
 				),
