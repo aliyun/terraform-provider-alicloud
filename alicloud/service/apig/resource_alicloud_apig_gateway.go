@@ -2,6 +2,7 @@
 package apig
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -17,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+const apigGatewayLogRequestResponseFeature = "log-request-response"
 
 func ResourceGateway() *schema.Resource {
 	return &schema.Resource{
@@ -161,6 +164,10 @@ func ResourceGateway() *schema.Resource {
 								Schema: map[string]*schema.Schema{
 									"enable": {
 										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"project_name": {
+										Type:     schema.TypeString,
 										Optional: true,
 									},
 								},
@@ -604,6 +611,28 @@ func resourceGatewayRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	// GetGateway does not return logConfig, so the gateway feature is the only source for the SLS settings.
+	featureRaw, featureErr := apigServiceV2.DescribeApigGatewayFeature(d.Id(), apigGatewayLogRequestResponseFeature)
+	if featureErr != nil {
+		return errs.WrapError(featureErr)
+	}
+	if featureRaw != nil {
+		projectName, _ := featureRaw["projectName"].(string)
+		enabled, _ := featureRaw["enable"].(bool)
+		if projectName != "" || enabled {
+			logConfigMaps := make([]map[string]interface{}, 0)
+			slsMaps := make([]map[string]interface{}, 0)
+			slsMaps = append(slsMaps, map[string]interface{}{
+				"enable":       enabled,
+				"project_name": projectName,
+			})
+			logConfigMaps = append(logConfigMaps, map[string]interface{}{"sls": slsMaps})
+			if err := d.Set("log_config", logConfigMaps); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -695,7 +724,72 @@ func resourceGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 			return errs.WrapError(err)
 		}
 	}
+	if d.HasChange("log_config") {
+		_, newLogConfigRaw := d.GetChange("log_config")
+		newProjectName := getApigGatewaySlsProjectName(newLogConfigRaw)
+		// On creation the feature only changes anything when a project is configured; updates always apply the switch.
+		if !d.IsNewResource() || newProjectName != "" {
+			enabled := false
+			if v, ok := d.GetOk("log_config.0.sls.0.enable"); ok {
+				enabled = v.(bool)
+			}
+			apigServiceV2 := NewService(client)
+			featureValue := make(map[string]interface{})
+			if currentRaw, currentErr := apigServiceV2.DescribeApigGatewayFeature(d.Id(), apigGatewayLogRequestResponseFeature); currentErr != nil {
+				return errs.WrapError(currentErr)
+			} else if currentRaw != nil {
+				for key, value := range currentRaw {
+					featureValue[key] = value
+				}
+			}
+			featureValue["gatewayId"] = d.Id()
+			featureValue["enable"] = enabled
+			featureValue["projectName"] = newProjectName
+			if _, ok := featureValue["nginxCompatible"]; !ok {
+				featureValue["nginxCompatible"] = false
+			}
+			featureValueBytes, err := json.Marshal(featureValue)
+			if err != nil {
+				return errs.WrapError(err)
+			}
+			if err := apigServiceV2.UpdateApigGatewayFeature(d.Id(), apigGatewayLogRequestResponseFeature, string(featureValueBytes)); err != nil {
+				return errs.WrapError(err)
+			}
+			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				currentRaw, featureErr := apigServiceV2.DescribeApigGatewayFeature(d.Id(), apigGatewayLogRequestResponseFeature)
+				if featureErr != nil {
+					return retry.NonRetryableError(featureErr)
+				}
+				currentProjectName := ""
+				currentEnabled := false
+				if currentRaw != nil {
+					currentProjectName, _ = currentRaw["projectName"].(string)
+					currentEnabled, _ = currentRaw["enable"].(bool)
+				}
+				if currentProjectName != newProjectName || currentEnabled != enabled {
+					wait()
+					return retry.RetryableError(fmt.Errorf("gateway feature %s has not converged, project_name: %s, enable: %t", apigGatewayLogRequestResponseFeature, currentProjectName, currentEnabled))
+				}
+				return nil
+			})
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), apigGatewayLogRequestResponseFeature, errs.AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
 	return resourceGatewayRead(d, meta)
+}
+
+func getApigGatewaySlsProjectName(logConfigRaw interface{}) string {
+	if helper.IsNil(logConfigRaw) {
+		return ""
+	}
+	projectName, _ := jsonpath.Get("$[0].sls[0].project_name", logConfigRaw)
+	if projectName == nil {
+		return ""
+	}
+	return fmt.Sprint(projectName)
 }
 
 func resourceGatewayDelete(d *schema.ResourceData, meta interface{}) error {

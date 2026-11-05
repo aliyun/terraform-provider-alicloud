@@ -600,3 +600,158 @@ data "alicloud_vswitches" "default" {
 }
 
 // collection-order: bypass zones -- ForceNew TypeList (zones.ForceNew=true at resource_alicloud_apig_gateway.go:291); any member reorder forces replacement, so memberOrder convergence is impossible by schema contract. ACC TestAccAliCloudApigGateway_memberOrder step2 confirmed -/+ destroy and create replacement (zones reorder reassigns the server-coupled primary vswitch whose vswitch_id is also ForceNew, forcing full replacement). Per-property adjudication, not a uniform historical bypass.
+func TestAccAliCloudApigGateway_logConfigSlsProject(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_apig_gateway.default"
+	ra := acctest.ResourceAttrInit(resourceId, AliCloudApigGatewayLogConfigSlsProjectMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return apig.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeApigGateway")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sapigsls%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AliCloudApigGatewayLogConfigSlsProjectDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name": name,
+					"spec":         "apigw.small.x1",
+					"vpc": []map[string]interface{}{
+						{
+							"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
+						},
+					},
+					"network_access_config": []map[string]interface{}{
+						{
+							"type": "Intranet",
+						},
+					},
+					"zone_config": []map[string]interface{}{
+						{
+							"select_option": "Auto",
+						},
+					},
+					"vswitch": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
+						},
+					},
+					"log_config": []map[string]interface{}{
+						{
+							"sls": []map[string]interface{}{
+								{
+									"enable":       "true",
+									"project_name": "${alicloud_log_project.first.project_name}",
+								},
+							},
+						},
+					},
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name":                    name,
+						"spec":                            "apigw.small.x1",
+						"payment_type":                    "PayAsYouGo",
+						"log_config.#":                    "1",
+						"log_config.0.sls.#":              "1",
+						"log_config.0.sls.0.enable":       "true",
+						"log_config.0.sls.0.project_name": name + "-first",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"network_access_config", "zone_config"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config": []map[string]interface{}{
+						{
+							"sls": []map[string]interface{}{
+								{
+									"enable":       "false",
+									"project_name": "${alicloud_log_project.second.project_name}",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.#":                    "1",
+						"log_config.0.sls.#":              "1",
+						"log_config.0.sls.0.enable":       "false",
+						"log_config.0.sls.0.project_name": name + "-second",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"network_access_config", "zone_config"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_config": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.#":                    "0",
+						"log_config.0.sls.#":              acctest.REMOVEKEY,
+						"log_config.0.sls.0.enable":       acctest.REMOVEKEY,
+						"log_config.0.sls.0.project_name": acctest.REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"network_access_config", "zone_config"},
+			},
+		},
+	})
+}
+
+var AliCloudApigGatewayLogConfigSlsProjectMap = map[string]string{
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+}
+
+func AliCloudApigGatewayLogConfigSlsProjectDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_log_project" "first" {
+  project_name = "${var.name}-first"
+  description  = "Created by Terraform"
+}
+
+resource "alicloud_log_project" "second" {
+  project_name = "${var.name}-second"
+  description  = "Created by Terraform"
+}
+`, name)
+}
