@@ -1853,6 +1853,8 @@ func TestUnitListenerAclAttachmentProtocolImportUnconfirmed(t *testing.T) {
 	}{
 		{name: "missing AclStatus", response: map[string]interface{}{"ListenerPort": 80, "AclType": "white", "AclId": "acl-1"}},
 		{name: "wrong AclStatus type", response: map[string]interface{}{"ListenerPort": 80, "AclStatus": 1, "AclType": "white", "AclId": "acl-1"}},
+		{name: "missing AclType", response: map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclId": "acl-1"}},
+		{name: "wrong AclType type", response: map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": 1, "AclId": "acl-1"}},
 		{name: "malformed member", response: map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclIds": map[string]interface{}{"AclId": []interface{}{"acl-1", 42}}}},
 		{name: "non string AclId", response: map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": []interface{}{"acl-1"}}},
 	}
@@ -2519,6 +2521,37 @@ func TestUnitListenerAclAttachmentProtocolDestroyOutcomes(t *testing.T) {
 		}
 		if !value.IsNull() {
 			t.Fatalf("a confirmed unbinding must drop the state, got %s", value)
+		}
+	})
+
+	t.Run("incomplete response during post-write polling keeps the state", func(t *testing.T) {
+		describes := 0
+		stub := &listenerAclRpcStub{
+			describe: func() (map[string]interface{}, error) {
+				describes++
+				if describes == 1 {
+					return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
+				}
+				// The disabling write was acknowledged, but the polls that follow
+				// it cannot confirm the new status.
+				return map[string]interface{}{"ListenerPort": 80}, nil
+			},
+		}
+		stub.install(t)
+		server := newListenerAclAttachmentServer(t)
+		destroyed := destroy(t, server, prior(t))
+		if !listenerAclTestHasError(destroyed.Diagnostics) {
+			t.Fatal("an incomplete response during the post-write polling must fail the destroy")
+		}
+		if stub.sets != 1 {
+			t.Fatalf("expected the disabling write to be issued once, got %d", stub.sets)
+		}
+		value, err := destroyed.NewState.Unmarshal(listenerAclAttachmentTestType)
+		if err != nil {
+			t.Fatalf("decoding the destroyed state: %s", err)
+		}
+		if value.IsNull() {
+			t.Fatal("an unconfirmed unbinding must keep the state")
 		}
 	})
 
