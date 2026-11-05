@@ -8,6 +8,9 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "Ens",
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_ens_vpd", Factory: NewEnsVpdResource},
+		},
 		SDKResources: []conns.SDKResource{
 			{TypeName: "alicloud_ens_bucket_lifecycle", Factory: ResourceEnsBucketLifecycle},
 			{TypeName: "alicloud_ens_disk", Factory: ResourceEnsDisk},
