@@ -1150,8 +1150,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	// SystemDisk.Category is mutually exclusive with SystemDiskCategories in the ESS API.
 	// Send the singular category only when the plural categories is not configured, otherwise
 	// the API rejects the request with InvalidParameter.Conflict. Note system_disk_category
-	// has a schema default, so d.Get is non-empty even when the user only sets categories.
-	if cats, ok := d.GetOk("system_disk_categories"); !ok || len(cats.([]interface{})) == 0 {
+	// has a schema default, so d.Get is non-empty even when the user only sets categories;
+	// the check must use the raw configuration because the plural is also computed.
+	if !rawConfigValueIsSet(d.GetRawConfig(), "system_disk_categories") {
 		if v := d.Get("system_disk_category").(string); v != "" {
 			request["SystemDisk.Category"] = d.Get("system_disk_category")
 		}
@@ -1646,7 +1647,9 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	if d.HasChange("system_disk_category") {
 		// SystemDisk.Category is mutually exclusive with SystemDiskCategories; skip the
 		// singular when the plural is configured so ModifyScalingConfiguration does not conflict.
-		if cats, ok := d.GetOk("system_disk_categories"); !ok || len(cats.([]interface{})) == 0 {
+		// The check must use the raw configuration: the read path mirrors the remote singular
+		// into the computed plural, which must not hide an explicit singular update.
+		if !rawConfigValueIsSet(rawConfig, "system_disk_categories") {
 			request["SystemDisk.Category"] = d.Get("system_disk_category")
 		}
 		update = true
