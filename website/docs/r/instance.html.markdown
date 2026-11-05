@@ -124,9 +124,9 @@ The following arguments are supported:
   
   -> **NOTE:** From version 1.284.0, `network_interface_id` can be set.
 
-* `security_groups` - (Optional) A list of security group ids to associate with.
+* `security_groups` - (Optional, Computed) A list of security group ids to associate with. If it is not specified, the system allocates the default security group of the default VPC.
 
-  -> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
+  -> **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, `security_groups` is optional; when omitted, the system uses the default security group of the default VPC.
 
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. **NOTE:** From version 1.243.0, the default value `ECS-Instance` will be removed.
@@ -155,7 +155,7 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating an instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
 * `vpc_id` - (Optional, Available since v1.227.1) The ID of the VPC.
-* `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect.
+* `vswitch_id` - (Optional, Computed) The virtual switch ID to launch in VPC. If it is not specified, the system allocates the default VSwitch in the default VPC. When it is changed, the instance will reboot to make the change take effect.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`. **NOTE:** From version 1.243.0, the default value `PostPaid` will be removed.
   **NOTE:** Since 1.9.6, it can be changed each other between `PostPaid` and `PrePaid`.
   However, since [some limitation about CPU core count in one month](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/modifyinstancechargetype),
