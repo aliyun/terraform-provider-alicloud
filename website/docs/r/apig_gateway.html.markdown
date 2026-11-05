@@ -16,6 +16,10 @@ For information about APIG Gateway and how to use it, see [What is Gateway](http
 
 -> **NOTE:** Available since v1.240.0.
 
+-> **NOTE:** When `log_config.sls.project_name` is configured or changed, the resource calls the `UpdateGatewayFeature` API to configure the `log-request-response` gateway feature. Every refresh (including import) calls the `ListGatewayFeatures` API to read it back. The account running Terraform must have the `apig:UpdateGatewayFeature` and `apig:ListGatewayFeatures` permissions in addition to the gateway management permissions.
+
+-> **NOTE:** The gateway can already have the `log-request-response` feature configured outside Terraform. In that case the feature value is read back into `log_config`. If your configuration does not include `log_config`, the next apply clears the feature; add a matching `log_config` block before applying to keep it.
+
 ## Example Usage
 
 Basic Usage
@@ -27,6 +31,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -44,6 +56,11 @@ data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
+resource "alicloud_log_project" "default" {
+  project_name = "${var.name}-sls"
+  description  = "Created by Terraform"
+}
+
 resource "alicloud_apig_gateway" "default" {
   network_access_config {
     type = "Intranet"
@@ -51,7 +68,8 @@ resource "alicloud_apig_gateway" "default" {
 
   log_config {
     sls {
-      enable = "false"
+      enable       = "true"
+      project_name = alicloud_log_project.default.project_name
     }
   }
 
@@ -94,7 +112,7 @@ The following arguments are supported:
 * `gateway_type` - (Optional, ForceNew, Computed, Available since v1.260.1) The gateway type. Valid values:
   - API: API Gateway
   - AI: AI Gateway
-* `log_config` - (Optional, Set) The log configuration for the gateway instance. See [`log_config`](#log_config) below. **Note: The parameter is immutable after resource creation.**
+* `log_config` - (Optional, Set) The log configuration for the gateway instance. See [`log_config`](#log_config) below. Changes to `project_name` are applied in place to the gateway log feature.
 * `network_access_config` - (Optional, Set) The network access type of the gateway instance. See [`network_access_config`](#network_access_config) below. **Note: The parameter is immutable after resource creation.**
 
 * `payment_type` - (Required, ForceNew) Payment type. Valid values:
@@ -118,7 +136,8 @@ The log_config supports the following:
 ### `log_config-sls`
 
 The log_config-sls supports the following:
-* `enable` - (Optional) The Simple Log Service configuration for the gateway.
+* `enable` - (Optional, Bool) Whether to enable Simple Log Service (SLS) logging for the gateway. It is sent when the gateway is created and can be updated in place on the existing gateway.
+* `project_name` - (Optional, String, Available since v2.1.0) The name of an existing SLS project that stores the request and response logs of the gateway, such as the project created by `alicloud_log_project`. The project must be in the same region as the gateway. Changing it updates the gateway log feature in place; removing it clears the project.
 
 ### `network_access_config`
 

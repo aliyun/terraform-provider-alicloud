@@ -1249,3 +1249,103 @@ func (s *Service) ApigSecretStateRefreshFuncWithApi(id string, field string, fai
 }
 
 // DescribeApigSecret >>> Encapsulated.
+
+// UpdateApigGatewayFeature <<< Encapsulated update interface for Apig GatewayFeature.
+
+func (s *Service) UpdateApigGatewayFeature(gatewayId string, name string, value string) error {
+	client := s.client
+	action := fmt.Sprintf("/v1/gateways/%s/gateway-features/%s", gatewayId, name)
+	body := map[string]interface{}{"value": value}
+	var response map[string]interface{}
+	var err error
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaPut("APIG", "2024-03-27", action, nil, nil, body, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, body)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, gatewayId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+// DescribeApigGatewayFeature <<< Encapsulated get interface for Apig GatewayFeature.
+
+func (s *Service) DescribeApigGatewayFeature(gatewayId string, name string) (map[string]interface{}, error) {
+	items, err := s.ListApigGatewayFeatures(gatewayId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, itemRaw := range items {
+		item, ok := itemRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		definition, ok := item["definition"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(definition["name"]) != name {
+			continue
+		}
+		valueRaw := item["value"]
+		if valueRaw == nil || fmt.Sprint(valueRaw) == "" {
+			return nil, nil
+		}
+		value := make(map[string]interface{})
+		if err := json.Unmarshal([]byte(fmt.Sprint(valueRaw)), &value); err != nil {
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, gatewayId, fmt.Sprintf("parse gateway feature %s value", name), errs.AlibabaCloudSdkGoERROR)
+		}
+		return value, nil
+	}
+
+	return nil, nil
+}
+
+// ListApigGatewayFeatures <<< Encapsulated list interface for Apig GatewayFeature.
+
+func (s *Service) ListApigGatewayFeatures(gatewayId string) ([]interface{}, error) {
+	client := s.client
+	action := fmt.Sprintf("/v1/gateways/%s/gateway-features", gatewayId)
+	var response map[string]interface{}
+	var err error
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaGet("APIG", "2024-03-27", action, nil, nil, nil)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, nil)
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, gatewayId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	itemsRaw, _ := jsonpath.Get("$.data.items", response)
+	if itemsRaw == nil {
+		return nil, nil
+	}
+	items, ok := itemsRaw.([]interface{})
+	if !ok {
+		return nil, nil
+	}
+
+	return items, nil
+}
