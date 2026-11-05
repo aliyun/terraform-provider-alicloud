@@ -3081,6 +3081,8 @@ data "alicloud_images" "ess" {
 data "alicloud_instance_types" "ess" {
   instance_charge_type = "PostPaid"
   instance_type_family = "ecs.r5"
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  system_disk_category = "cloud_ssd"
 }
 resource "alicloud_vswitch" "ess" {
   vpc_id       = alicloud_vpc.default.id
@@ -5160,6 +5162,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 						},
 						{
 							"instance_type":                  "Secondary",
+							"ipv6_address_count":             "0",
 							"network_interface_traffic_mode": "HighPerformance",
 							"security_group_ids":             []string{"${alicloud_security_group.default1.id}"},
 						},
@@ -5240,7 +5243,7 @@ func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
 					"override":             "true",
 					"instance_type":        acctest.REMOVEKEY,
 					"instance_type_override": []map[string]string{{
-						"instance_type":     "ecs.c6.large",
+						"instance_type":     "ecs.c5.large",
 						"weighted_capacity": "3",
 					}},
 				}),

@@ -2576,13 +2576,8 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			l := map[string]interface{}{
 				"instance_type":                  r["InstanceType"],
 				"network_interface_traffic_mode": r["NetworkInterfaceTrafficMode"],
+				"ipv6_address_count":             values.intValue(r["Ipv6AddressCount"]),
 				"security_group_ids":             &arr1,
-			}
-			// ipv6_address_count is optional and not computed; writing the
-			// server default of 0 here makes an imported state differ from the
-			// state produced by a configuration that omits it.
-			if count := values.intValue(r["Ipv6AddressCount"]); count > 0 {
-				l["ipv6_address_count"] = count
 			}
 			result = append(result, l)
 		}
