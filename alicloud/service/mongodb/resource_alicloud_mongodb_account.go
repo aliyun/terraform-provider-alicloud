@@ -17,6 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// accountRetryableErrors adds the account-operation throttling code to the
+// shared transient list; back-to-back account operations (password reset then
+// description update) can be rejected with OperationDenied.TooFrequent.
+var accountRetryableErrors = append(append([]string{}, errs.OperationDeniedDBStatus...), "OperationDenied.TooFrequent")
+
 func resourceAliCloudMongodbAccount() *schema.Resource {
 	return &schema.Resource{
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
@@ -143,7 +148,7 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, accountRetryableErrors) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -180,7 +185,7 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 			err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 				response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 				if err != nil {
-					if helper.NeedRetry(err) || errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
+					if helper.NeedRetry(err) || errs.IsExpectedErrors(err, accountRetryableErrors) {
 						wait()
 						return retry.RetryableError(err)
 					}
@@ -240,7 +245,7 @@ func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
 		response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 		if err != nil {
-			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
+			if helper.NeedRetry(err) || errs.IsExpectedErrors(err, accountRetryableErrors) {
 				wait()
 				return retry.RetryableError(err)
 			}
@@ -362,7 +367,7 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 		err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, err = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if err != nil {
-				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, errs.OperationDeniedDBStatus) {
+				if helper.NeedRetry(err) || errs.IsExpectedErrors(err, accountRetryableErrors) {
 					wait()
 					return retry.RetryableError(err)
 				}
@@ -405,7 +410,7 @@ func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 		rpcErr = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
 			response, rpcErr = client.RpcPost("Dds", "2015-12-01", action, query, request, true)
 			if rpcErr != nil {
-				if helper.NeedRetry(rpcErr) || errs.IsExpectedErrors(rpcErr, errs.OperationDeniedDBStatus) {
+				if helper.NeedRetry(rpcErr) || errs.IsExpectedErrors(rpcErr, accountRetryableErrors) {
 					wait()
 					return retry.RetryableError(rpcErr)
 				}

@@ -33,7 +33,6 @@ import (
 func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_account.default"
-	acctest.CheckoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudMongoDBAccountMap0)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return mongodb.NewMongodbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
@@ -45,6 +44,7 @@ func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudMongoDBAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
 			acctest.PreCheck(t)
 		},
 		ProviderFactories: acctest.SDKProviderFactories,
@@ -753,7 +753,7 @@ func TestAccAliCloudMongodbAccount_completeShardingAccountRoles(t *testing.T) {
 			},
 			{
 				// A role without its database is rejected at plan time.
-				Config:      testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true, testAccAccountRolesBlock(missingDbNameAccountName, "\n    role = \"read\"", "")),
+				Config:      testAccAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true, testAccAccountRolesBlock(missingDbNameAccountName, "\n    role = \"read\"\n  ", "")),
 				ExpectError: regexp.MustCompile(`every roles block requires a non-empty "db_name"`),
 			},
 		},
