@@ -138,27 +138,37 @@ The endpoint_group_configurations supports the following:
 * `health_check_port` - (Optional, Int) The port that is used for health checks. Valid values: `1` to `65535`.
 * `health_check_protocol` - (Optional) The protocol over which the health check is performed. Valid values: `TCP`, `HTTP`, `HTTPS`.
 * `threshold_count` - (Optional, Int) The number of consecutive failed health checks that must occur before an endpoint is considered unhealthy. Valid values: `2` to `10`.
-* `endpoint_configurations` - (Optional, Set) The endpoints in the endpoint group. The endpoint_configurations supports the following:
-  * `type` - (Required) The type of the endpoint. Valid values: `Domain`, `Ip`, `IpTarget`, `PublicIp`, `ECS`, `SLB`, `ALB`, `NLB`, `ENI`, `OSS`.
-  * `weight` - (Optional, Int) The weight of the endpoint. Valid values: `0` to `255`.
-  * `endpoint` - (Required) The address of the endpoint.
-  * `api_keys` - (Optional, Set) The keys that are used to authenticate the endpoint.
-  * `vpc_id` - (Optional) The ID of the virtual private cloud (VPC) in which the endpoint resides.
-  * `vswitch_ids` - (Optional, Set) The IDs of the vSwitches in which the endpoint resides.
-  * `sub_address` - (Optional) The sub-address of the endpoint.
-  * `enable_proxy_protocol` - (Optional, Bool) Specifies whether to use the proxy protocol to preserve client IP addresses for the endpoint.
-  * `provider` - (Optional) The service provider of the endpoint.
-  * `enable_client_ip_preservation` - (Optional, Bool) Specifies whether to preserve client IP addresses for the endpoint.
+* `endpoint_configurations` - (Optional, Set) The endpoints in the endpoint group. See [`endpoint_configurations`](#endpoint_group_configurations-endpoint_configurations) below.
 * `endpoint_request_protocol` - (Optional) The protocol over which the endpoint group receives requests. Valid values: `HTTP`, `HTTPS`.
 * `endpoint_group_type` - (Optional) The type of the endpoint group. Valid values: `default`, `virtual`.
-* `port_overrides` - (Optional, List) The port mapping between the listener and the endpoint group. The port_overrides supports the following:
-  * `listener_port` - (Optional, Int) The port of the listener.
-  * `endpoint_port` - (Optional, Int) The port of the endpoint.
+* `port_overrides` - (Optional, List) The port mapping between the listener and the endpoint group. See [`port_overrides`](#endpoint_group_configurations-port_overrides) below.
 * `enable_client_ip_preservation_proxy_protocol` - (Optional, Bool) Specifies whether to use the proxy protocol to preserve client IP addresses.
 * `enable_client_ip_preservation_toa` - (Optional, Bool) Specifies whether to use the TOA module to preserve client IP addresses.
 * `endpoint_protocol_version` - (Optional) The backend service protocol of the endpoint group. Valid values: `HTTP1.1`, `HTTP2`.
 * `endpoint_ip_version` - (Optional) The IP version that GA uses to communicate with the endpoint service. Valid values: `IPv4`, `IPv6`, `ProtocolAffinity`.
 * `health_check_host` - (Optional) The host header that is used for health checks.
+
+### `endpoint_group_configurations-endpoint_configurations`
+
+The endpoint_configurations supports the following:
+
+* `type` - (Required) The type of the endpoint. Valid values: `Domain`, `Ip`, `IpTarget`, `PublicIp`, `ECS`, `SLB`, `ALB`, `NLB`, `ENI`, `OSS`.
+* `weight` - (Optional, Int) The weight of the endpoint. Valid values: `0` to `255`.
+* `endpoint` - (Required) The address of the endpoint.
+* `api_keys` - (Optional, Set) The keys that are used to authenticate the endpoint.
+* `vpc_id` - (Optional) The ID of the virtual private cloud (VPC) in which the endpoint resides.
+* `vswitch_ids` - (Optional, Set) The IDs of the vSwitches in which the endpoint resides.
+* `sub_address` - (Optional) The sub-address of the endpoint.
+* `enable_proxy_protocol` - (Optional, Bool) Specifies whether to use the proxy protocol to preserve client IP addresses for the endpoint.
+* `provider` - (Optional) The service provider of the endpoint.
+* `enable_client_ip_preservation` - (Optional, Bool) Specifies whether to preserve client IP addresses for the endpoint.
+
+### `endpoint_group_configurations-port_overrides`
+
+The port_overrides supports the following:
+
+* `listener_port` - (Optional, Int) The port of the listener.
+* `endpoint_port` - (Optional, Int) The port of the endpoint.
 
 ### `custom_routing_endpoint_group_configurations`
 
@@ -167,19 +177,39 @@ The custom_routing_endpoint_group_configurations supports the following:
 * `endpoint_group_region` - (Optional) The ID of the region in which the endpoint group resides.
 * `name` - (Optional) The name of the endpoint group. The name must be 2 to 128 characters in length.
 * `description` - (Optional) The description of the endpoint group. The description can be up to 256 characters in length.
-* `destination_configurations` - (Optional, Set) The traffic destinations of the endpoint group. The destination_configurations supports the following:
-  * `protocols` - (Optional, Set) The protocols of the traffic destination. Valid values: `TCP`, `UDP`.
-  * `from_port` - (Optional, Int) The starting port of the traffic destination.
-  * `to_port` - (Optional, Int) The ending port of the traffic destination.
-* `custom_routing_endpoint_configurations` - (Optional, Set) The endpoints of the custom routing endpoint group. The custom_routing_endpoint_configurations supports the following:
-  * `type` - (Optional) The type of the endpoint. Valid value: `PrivateSubNet`.
-  * `endpoint` - (Optional) The address of the endpoint.
-  * `traffic_to_endpoint_policy` - (Optional) The traffic policy for the endpoint. Valid values: `AllowAll`, `DenyAll`, `AllowCustom`.
-  * `policy_configurations` - (Optional, Set) The traffic policy configurations of the endpoint. The policy_configurations supports the following:
-    * `address` - (Optional) The destination address of the traffic policy.
-    * `custom_routing_port_ranges` - (Optional, Set) The port ranges of the traffic policy. The custom_routing_port_ranges supports the following:
-      * `from_port` - (Optional, Int) The starting port of the port range.
-      * `to_port` - (Optional, Int) The ending port of the port range.
+* `destination_configurations` - (Optional, Set) The traffic destinations of the endpoint group. See [`destination_configurations`](#custom_routing_endpoint_group_configurations-destination_configurations) below.
+* `custom_routing_endpoint_configurations` - (Optional, Set) The endpoints of the custom routing endpoint group. See [`custom_routing_endpoint_configurations`](#custom_routing_endpoint_group_configurations-custom_routing_endpoint_configurations) below.
+
+### `custom_routing_endpoint_group_configurations-destination_configurations`
+
+The destination_configurations supports the following:
+
+* `protocols` - (Optional, Set) The protocols of the traffic destination. Valid values: `TCP`, `UDP`.
+* `from_port` - (Optional, Int) The starting port of the traffic destination.
+* `to_port` - (Optional, Int) The ending port of the traffic destination.
+
+### `custom_routing_endpoint_group_configurations-custom_routing_endpoint_configurations`
+
+The custom_routing_endpoint_configurations supports the following:
+
+* `type` - (Optional) The type of the endpoint. Valid value: `PrivateSubNet`.
+* `endpoint` - (Optional) The address of the endpoint.
+* `traffic_to_endpoint_policy` - (Optional) The traffic policy for the endpoint. Valid values: `AllowAll`, `DenyAll`, `AllowCustom`.
+* `policy_configurations` - (Optional, Set) The traffic policy configurations of the endpoint. See [`policy_configurations`](#custom_routing_endpoint_group_configurations-custom_routing_endpoint_configurations-policy_configurations) below.
+
+### `custom_routing_endpoint_group_configurations-custom_routing_endpoint_configurations-policy_configurations`
+
+The policy_configurations supports the following:
+
+* `address` - (Optional) The destination address of the traffic policy.
+* `custom_routing_port_ranges` - (Optional, Set) The port ranges of the traffic policy. See [`custom_routing_port_ranges`](#custom_routing_endpoint_group_configurations-custom_routing_endpoint_configurations-policy_configurations-custom_routing_port_ranges) below.
+
+### `custom_routing_endpoint_group_configurations-custom_routing_endpoint_configurations-policy_configurations-custom_routing_port_ranges`
+
+The custom_routing_port_ranges supports the following:
+
+* `from_port` - (Optional, Int) The starting port of the port range.
+* `to_port` - (Optional, Int) The ending port of the port range.
 
 ### `certificates`
 
