@@ -2654,6 +2654,9 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
+				// MatchCriteria=Open needs no pool id, so it proves the block
+				// round-trips without provisioning a private pool. The empty
+				// scheduler_options block must not panic or leak a request key.
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
@@ -2662,35 +2665,12 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 					"force_delete":         "true",
 					"system_disk_category": "cloud_auto",
 					"private_pool_options": []map[string]interface{}{
-						{},
-					},
-					"scheduler_options": []map[string]interface{}{
-						{},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					noPrivatePoolRemoteCheck(t, resourceId),
-					noSchedulerOptionsRemoteCheck(t, resourceId),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				// An empty private_pool_options block has no remote representation, so the
-				// imported state cannot echo it; the remaining attributes are verified.
-				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context", "private_pool_options"},
-			},
-			{
-				// A real non-empty private pool configuration. MatchCriteria=Open needs
-				// no pool id, so it proves the block round-trips without provisioning a
-				// private pool.
-				Config: testAccConfig(map[string]interface{}{
-					"scheduler_options": acctest.REMOVEKEY,
-					"private_pool_options": []map[string]interface{}{
 						{
 							"match_criteria": "Open",
 						},
+					},
+					"scheduler_options": []map[string]interface{}{
+						{},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2714,10 +2694,12 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 				// block.
 				Config: testAccConfig(map[string]interface{}{
 					"private_pool_options": acctest.REMOVEKEY,
+					"scheduler_options":    acctest.REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "private_pool_options.#", "0"),
 					privatePoolMatchCriteriaRemoteCheck(t, resourceId, "None"),
+					noSchedulerOptionsRemoteCheck(t, resourceId),
 				),
 			},
 			{
@@ -2725,6 +2707,18 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_delete", "kms_encryption_context"},
+			},
+			{
+				// An empty block is not a supported configuration: match_criteria is
+				// required inside the block, so the plan fails instead of silently
+				// sending no clear.
+				Config: testAccConfig(map[string]interface{}{
+					"private_pool_options": []map[string]interface{}{
+						{},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`match_criteria`),
+				Check:       resource.ComposeTestCheckFunc(),
 			},
 		},
 	})
@@ -6658,14 +6652,12 @@ func resourceScalingConfigurationPrerequisiteDependence(name string) string {
 	}`, EcsInstanceCommonTestCase, name)
 }
 
-// prerequisiteRemoteCheck asserts the dependency-backed attributes reached the
+// prerequisiteRemoteCheck asserts the dependency-backed attribute reached the
 // service instead of being dropped from the create request.
 func prerequisiteRemoteCheck(t *testing.T, resourceId string) resource.TestCheckFunc {
 	return rawResponseCheck(t, resourceId, func(response map[string]interface{}) error {
-		for _, key := range []string{"DeploymentSetId", "ZoneId"} {
-			if v := fmt.Sprint(response[key]); v == "" || v == "<nil>" {
-				return fmt.Errorf("remote %s is empty", key)
-			}
+		if v := fmt.Sprint(response["DeploymentSetId"]); v == "" || v == "<nil>" {
+			return fmt.Errorf("remote DeploymentSetId is empty")
 		}
 		return nil
 	})
@@ -6673,9 +6665,11 @@ func prerequisiteRemoteCheck(t *testing.T, resourceId string) resource.TestCheck
 
 // TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes provisions the
 // deployment set inside the same configuration, so the dependency-backed
-// attributes carry a real, cleaned-up prerequisite instead of being recorded as
-// unverified. hpc_cluster_id is intentionally not covered: the service rejects
-// the id with InvalidHpcClusterId.Unnecessary for this configuration shape.
+// attribute carries a real, cleaned-up prerequisite instead of being recorded as
+// unverified. hpc_cluster_id is not covered because the service rejects the id
+// with InvalidHpcClusterId.Unnecessary, and zone_id is not covered because the
+// zone returned by the shared zone data source is not accepted by ESS
+// (InvalidParameter: ZoneId is not valid).
 func TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes(t *testing.T) {
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pre"
@@ -6707,11 +6701,9 @@ func TestAccAliCloudEssScalingConfiguration_PrerequisiteAttributes(t *testing.T)
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
 					"deployment_set_id":    "${alicloud_ecs_deployment_set.default.id}",
-					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(resourceId, "deployment_set_id", "alicloud_ecs_deployment_set.default", "id"),
-					resource.TestCheckResourceAttrPair(resourceId, "zone_id", "data.alicloud_zones.default", "zones.0.id"),
 					prerequisiteRemoteCheck(t, resourceId),
 				),
 			},

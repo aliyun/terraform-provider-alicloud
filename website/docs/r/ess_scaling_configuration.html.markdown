@@ -231,7 +231,9 @@ The following arguments are supported:
 
 The datadisk mapping supports the following:
 
-* `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
+* `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk.
+
+  -> **NOTE:** `data_disk.*.bursting_enabled` is computed. Removing it from the configuration stops managing the flag and the state keeps the value that the service reports afterwards.
 * `provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an Elastic Block Storage (EBS) device can process per second.
 * `device` - (Optional, Deprecated, Available since v1.92.0) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
 * `category` - (Optional, String) Category of data disk. Valid values: `all`, `cloud`, `cloud_auto`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_regional_disk_auto`, `ephemeral_ssd` and `local_disk`. `all` and `local_disk` are not part of the current API value set; they remain accepted for backward compatibility with configurations written for earlier provider versions. Cannot be set together with `categories` for the same disk.
@@ -315,7 +317,7 @@ The resourcePoolOptionsPrivatePoolTags mapping supports the following:
 
 The privatePoolOptions mapping supports the following:
 
-* `match_criteria` - (Optional, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
+* `match_criteria` - (Required, String) The matching mode of the private pool. Valid values: `Open`, `Target`. Removing the block disables the private pool, which the provider sends as the service-side `None` value. Available since v2.3.0.
 * `pool_id` - (Optional, String) The ID of the private pool. Required when `match_criteria` is `Target`. Available since v2.3.0.
 
   -> **NOTE:** Removing the `private_pool_options` block sends `PrivatePoolOptions.MatchCriteria=None`, which disables the private pool. A configuration imported while the service reports `None` has no `private_pool_options` block.
