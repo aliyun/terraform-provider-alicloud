@@ -122,12 +122,10 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 data "alicloud_instance_types" "default" {
-  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-  image_id             = "${data.alicloud_images.default.images.0.id}"
-  system_disk_category = "cloud_efficiency"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_22.*x64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
