@@ -86,14 +86,16 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 				Default:  true,
 			},
 			"auto_renew": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
+				Type:          schema.TypeBool,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"renewal_status"},
 			},
 			"renewal_status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"auto_renew"},
 				ValidateFunc: validators.StringInSlice([]string{
 					string(RenewAutoRenewal),
 					string(RenewNormal),
@@ -155,6 +157,7 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 			"ddos_config_list": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ddos_id": {
@@ -193,10 +196,7 @@ func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	request["AutoPay"] = d.Get("auto_pay")
 	request["ClientToken"] = helper.BuildClientToken("CreateAccelerator")
 
-	if v, ok := d.GetOkExists("auto_renew"); ok {
-		request["AutoRenew"] = v
-	}
-
+	request["AutoRenew"] = d.Get("auto_renew")
 	if v, ok := d.GetOk("spec"); ok {
 		request["Spec"] = v
 	}
@@ -251,6 +251,8 @@ func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 				} else {
 					return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", "bandwidth is required when access_mode is set to Anycast", errs.AlibabaCloudSdkGoERROR)
 				}
+			} else if _, ok := d.GetOk("bandwidth"); ok {
+				return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", "bandwidth is valid only when access_mode is set to Anycast", errs.AlibabaCloudSdkGoERROR)
 			}
 		}
 	} else if _, ok := d.GetOk("bandwidth"); ok {
@@ -319,13 +321,15 @@ func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 		d.Set("ddos_id", v)
 	}
 
+	d.Set("ddos_config_list", flattenGaAcceleratorDdosConfigList(object["DdosConfigList"]))
+
 	describeAcceleratorAutoRenewAttributeObject, err := gaService.DescribeAcceleratorAutoRenewAttribute(d.Id())
 	if err != nil {
 		return errs.WrapError(err)
 	}
 
 	d.Set("renewal_status", describeAcceleratorAutoRenewAttributeObject["RenewalStatus"])
-	d.Set("auto_renew", fmt.Sprint(describeAcceleratorAutoRenewAttributeObject["RenewalStatus"]) == "AutoRenewal")
+	d.Set("auto_renew", fmt.Sprint(describeAcceleratorAutoRenewAttributeObject["RenewalStatus"]) == string(RenewAutoRenewal))
 
 	if v, ok := describeAcceleratorAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
 		auto_renew_durationVal, err := convert.FormatInt(v)
@@ -366,9 +370,7 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("renewal_status") {
 		update = true
-	}
-	if v, ok := d.GetOk("renewal_status"); ok {
-		request["RenewalStatus"] = v
+		request["RenewalStatus"] = d.Get("renewal_status")
 	}
 
 	if d.HasChange("auto_renew_duration") {
@@ -413,10 +415,6 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		"ClientToken":   helper.BuildClientToken("UpdateAccelerator"),
 		"AcceleratorId": d.Id(),
 		"AutoPay":       d.Get("auto_pay"),
-	}
-
-	if !d.IsNewResource() && d.HasChange("auto_pay") {
-		update = true
 	}
 
 	if !d.IsNewResource() && d.HasChange("spec") {
@@ -618,10 +616,6 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 			newDdosConfigs = gaAcceleratorDdosConfigsFromLegacy(gaAcceleratorDdosString(newDdosId), gaAcceleratorDdosString(newDdosRegionId))
 		}
 
-		if len(newDdosConfigs) == 0 && gaAcceleratorDdosString(newDdosId) != "" {
-			return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", "ddos_region_id is required when ddos_id is set", errs.AlibabaCloudSdkGoERROR)
-		}
-
 		addDdosConfigs, removeDdosConfigs := gaAcceleratorDdosConfigDiff(oldDdosConfigs, newDdosConfigs)
 
 		if len(removeDdosConfigs) > 0 {
@@ -641,6 +635,9 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 			err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *retry.RetryError {
 				response, err = client.RpcPost("Ga", "2019-11-20", action, nil, detachDdosReq, true)
 				if err != nil {
+					if errs.IsExpectedErrors(err, []string{"Accelerator.NotBindingDdos"}) {
+						return nil
+					}
 					if errs.IsExpectedErrors(err, []string{"StateError.Accelerator"}) || helper.NeedRetry(err) {
 						wait()
 						return retry.RetryableError(err)
@@ -804,6 +801,25 @@ func gaAcceleratorDdosConfigsFromSet(v interface{}) []map[string]string {
 		configs = append(configs, map[string]string{
 			"ddos_id":        fmt.Sprint(config["ddos_id"]),
 			"ddos_region_id": fmt.Sprint(config["ddos_region_id"]),
+		})
+	}
+	return configs
+}
+
+func flattenGaAcceleratorDdosConfigList(v interface{}) []map[string]interface{} {
+	items, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	configs := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		config, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		configs = append(configs, map[string]interface{}{
+			"ddos_id":        fmt.Sprint(config["DdosId"]),
+			"ddos_region_id": fmt.Sprint(config["DdosRegionId"]),
 		})
 	}
 	return configs

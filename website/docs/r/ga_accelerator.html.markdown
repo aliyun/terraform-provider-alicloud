@@ -73,8 +73,8 @@ The following arguments are supported:
 * `auto_use_coupon` - (Optional, Bool) Use coupons to pay bills automatically. Default value: `false`. Valid values:
   - `true`: Use.
   - `false`: Not used.
-* `auto_pay` - (Optional, Bool, Available since v2.3.0) Specifies whether to automatically pay the order of the GA instance. Default value: `true`.
-* `auto_renew` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable auto renewal for the GA instance. If you want to configure the detailed renewal policy, use `renewal_status` and `auto_renew_duration` instead. **NOTE:** `renewal_status` takes precedence over `auto_renew` when both are updated in the same request.
+* `auto_pay` - (Optional, Bool, Available since v2.3.0) Specifies whether to automatically pay the order when the GA instance is created or upgraded. Default value: `true`. **NOTE:** This argument is a write-only payment directive; changing it alone does not trigger a remote update. If you set it to `false`, the order is left unpaid and the instance does not reach the `active` state until the order is paid. It is meaningful only when `payment_type` is `Subscription`.
+* `auto_renew` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable auto renewal for the GA instance. **NOTE:** This argument is mutually exclusive with `renewal_status`; use `renewal_status` when you need `AutoRenewal`, `Normal` or `NotRenewal`. It is meaningful only when `payment_type` is `Subscription`.
 * `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
@@ -85,9 +85,9 @@ The following arguments are supported:
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
 * `ip_set_config` - (Optional, ForceNew, Available since v1.294.0) The configurations of the acceleration area. See [`ip_set_config`](#ip_set_config) below.
-* `ddos_id` - (Optional, Available since v2.3.0, Deprecated since v2.3.0) The ID of the DDoS protection instance that is associated with the GA instance. **NOTE:** This parameter is deprecated and will be removed in a future release. Use `ddos_config_list` instead. It is read-only when `ddos_config_list` is configured.
-* `ddos_region_id` - (Optional, Available since v2.3.0, Deprecated since v2.3.0) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. **NOTE:** This parameter is deprecated and will be removed in a future release. Use `ddos_config_list` instead. It must be specified together with `ddos_id`.
-* `ddos_config_list` - (Optional, Available since v2.3.0) The DDoS protection instances that are associated with the GA instance. See [`ddos_config_list`](#ddos_config_list) below.
+* `ddos_id` - (Optional, String, Available since v2.3.0, Deprecated since v2.3.0) The ID of the DDoS protection instance that is associated with the GA instance. **NOTE:** This argument mirrors a deprecated API parameter and will be removed in a future release. Use `ddos_config_list` instead. It cannot be used together with `ddos_config_list`.
+* `ddos_region_id` - (Optional, String, Available since v2.3.0, Deprecated since v2.3.0) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`. **NOTE:** This argument mirrors a deprecated API parameter and will be removed in a future release. Use `ddos_config_list` instead. It must be specified together with `ddos_id` and cannot be used together with `ddos_config_list`.
+* `ddos_config_list` - (Optional, Set, Available since v2.3.0) The DDoS protection instances that are associated with the GA instance. Removing an element detaches the corresponding instance. See [`ddos_config_list`](#ddos_config_list) below.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ### `ip_set_config`
@@ -98,12 +98,16 @@ The ip_set_config supports the following:
   - `UserDefine`: Custom nearby access mode. You can specify acceleration areas and regions based on your business requirements. Global Accelerator provides an independent EIP for each acceleration area.
   - `Anycast`: Automatic nearby access mode. You do not need to configure an acceleration area. Global Accelerator provides an Anycast EIP for multiple regions. Users connect to the nearest access point of the Alibaba Cloud network using the Anycast EIP.
 
+**NOTE:** Changing `access_mode` replaces the GA instance. `bandwidth` is required when `access_mode` is `Anycast` and must not be set when `access_mode` is `UserDefine`.
+
 ### `ddos_config_list`
 
 The ddos_config_list supports the following:
 
 * `ddos_id` - (Required) The ID of the DDoS protection instance.
 * `ddos_region_id` - (Required) The region ID of the DDoS protection instance. Valid values: `cn-hangzhou`, `ap-southeast-1`.
+
+**NOTE:** To detach all DDoS protection instances, set `ddos_config_list` to an empty list explicitly. Omitting the argument keeps the current associations.
 
 ## Attributes Reference
 

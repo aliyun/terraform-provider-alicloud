@@ -1,6 +1,7 @@
 package ga
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -420,4 +421,107 @@ func TestUnitAliCloudGaAcceleratorDdosUpdateRequest(t *testing.T) {
 	updateReq, ok := requests["UpdateAccelerator"]
 	assert.True(t, ok)
 	assert.Equal(t, false, updateReq["AutoPay"])
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorCreateRequest(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	d, _ := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(nil, nil)
+	d.MarkNewResource()
+	assert.Nil(t, d.Set("spec", "1"))
+	assert.Nil(t, d.Set("auto_renew", true))
+
+	requests := make(map[string]map[string]interface{})
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		requests[*action] = query
+		return map[string]interface{}{
+			"AcceleratorId":     "MockId",
+			"Name":              "accelerator_name",
+			"State":             "active",
+			"Spec":              "1",
+			"RenewalStatus":     "AutoRenewal",
+			"AutoRenewDuration": 1,
+		}, nil
+	})
+	err = resourceAliCloudGaAcceleratorCreate(d, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	createReq, ok := requests["CreateAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, true, createReq["AutoRenew"])
+	assert.Equal(t, true, createReq["AutoPay"])
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorUserDefineBandwidthGuard(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	d, _ := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(nil, nil)
+	d.MarkNewResource()
+	assert.Nil(t, d.Set("bandwidth", 200))
+	assert.Nil(t, d.Set("ip_set_config", []interface{}{
+		map[string]interface{}{"access_mode": "UserDefine"},
+	}))
+
+	err = resourceAliCloudGaAcceleratorCreate(d, rawClient)
+	assert.NotNil(t, err)
+	assert.Contains(t, fmt.Sprint(err), "bandwidth is valid only when access_mode is set to Anycast")
+}
+
+// lintignore: R001
+func TestUnitAliCloudGaAcceleratorDdosDetachRequest(t *testing.T) {
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := unitTestSharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+	}
+
+	state := &terraform.InstanceState{ID: "MockId", Attributes: map[string]string{
+		"ddos_id":            "ddoscoo-cn-test",
+		"ddos_region_id":     "cn-hangzhou",
+		"ddos_config_list.#": "0",
+	}}
+	diff, err := newInstanceDiff("alicloud_ga_accelerator", map[string]interface{}{
+		"ddos_id":        "ddoscoo-cn-test",
+		"ddos_region_id": "cn-hangzhou",
+	}, map[string]interface{}{
+		"ddos_region_id": "",
+	}, state)
+	assert.Nil(t, err)
+
+	resourceData, err := schema.InternalMap(unitTestProviderResources()["alicloud_ga_accelerator"].Schema).Data(state, diff)
+	assert.Nil(t, err)
+	resourceData.SetId("MockId")
+
+	requests := make(map[string]map[string]interface{})
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, query map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+		requests[*action] = query
+		return map[string]interface{}{
+			"Name":              "accelerator_name",
+			"State":             "active",
+			"Description":       "description",
+			"Spec":              "1",
+			"DdosId":            "ddoscoo-cn-test",
+			"RenewalStatus":     "Normal",
+			"AutoRenewDuration": 1,
+		}, nil
+	})
+	err = resourceAliCloudGaAcceleratorUpdate(resourceData, rawClient)
+	patches.Reset()
+	assert.Nil(t, err)
+
+	detachReq, ok := requests["DetachDdosFromAccelerator"]
+	assert.True(t, ok)
+	assert.Equal(t, "ddoscoo-cn-test", detachReq["DdosConfigList.1.DdosId"])
+	assert.Equal(t, "cn-hangzhou", detachReq["DdosConfigList.1.DdosRegionId"])
 }
