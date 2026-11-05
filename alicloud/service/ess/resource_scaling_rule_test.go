@@ -655,7 +655,8 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_options(t *testing
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alarm_options.#": "0",
+						"alarm_options.#":        "0",
+						"alarm_options.0.period": acctest.REMOVEKEY,
 					}),
 				),
 			},
