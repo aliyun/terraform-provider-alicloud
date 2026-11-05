@@ -172,7 +172,7 @@ func ResourceAliCloudGaEndpointGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validators.IntBetween(0, 65535),
+							ValidateFunc: validators.IntBetween(1, 65535),
 						},
 						"probe_protocol": {
 							Type:         schema.TypeString,

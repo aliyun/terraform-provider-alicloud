@@ -311,7 +311,7 @@ The following arguments are supported:
 * `endpoint_protocol_version` - (Optional, Available since v1.230.1) The backend service protocol of the endpoint that is associated with the intelligent routing listener. Valid values: `HTTP1.1`, `HTTP2`.
 
   -> **NOTE:** `endpoint_protocol_version` is valid only when `endpoint_request_protocol` is set to `HTTPS`.
-* `endpoint_ip_version` - (Optional, String, Available since v2.1.0) The IP version that is used by Global Accelerator to communicate with the endpoint service. Valid values:
+* `endpoint_ip_version` - (Optional, String, Available since v2.3.0) The IP version that is used by Global Accelerator to communicate with the endpoint service. Valid values:
   - `IPv4`: Global Accelerator uses only IPv4 addresses to communicate with the endpoint service. This is the default value.
   - `IPv6`: Global Accelerator uses only IPv6 addresses to communicate with the endpoint service.
   - `ProtocolAffinity`: Global Accelerator uses the same IP version as the client request to communicate with the endpoint service.
@@ -319,7 +319,7 @@ The following arguments are supported:
   - `true`: Enables the health check feature.
   - `false`: Disables the health check feature.
 * `health_check_path` - (Optional) The path specified as the destination of the targets for health checks.
-* `health_check_host` - (Optional, String, Available since v2.1.0) The domain name that is used for health checks.
+* `health_check_host` - (Optional, String, Available since v2.3.0) The domain name that is used for health checks.
 * `health_check_port` - (Optional, Int) The port that is used for health checks.
 * `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values:
   - `TCP` or `tcp`: TCP protocol.
@@ -332,12 +332,12 @@ The following arguments are supported:
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
 * `name` - (Optional) The name of the endpoint group.
 * `description` - (Optional) The description of the endpoint group.
-* `enable` - (Optional, Bool, Available since v2.1.0) Specifies whether to enable delay detection for the endpoints in the endpoint group. Default value: `false`. The value applies to every endpoint in `endpoint_configurations`.
+* `enable` - (Optional, Bool, Available since v2.3.0) Specifies whether to enable delay detection for the endpoints in the endpoint group. Default value: `false`. The value applies to every endpoint in `endpoint_configurations`.
 
-  -> **NOTE:** Delay detection is supported only for endpoints of type `Ip`, `Domain` or `PublicIp`.
-* `access_log_record_customized_header_list` - (Optional, Set, Available since v2.1.0) The list of request headers that are recorded in the access log. You can specify up to 100 headers.
+  -> **NOTE:** Delay detection is supported only for endpoints of type `Ip`, `Domain` or `PublicIp`. `probe_port` and `probe_protocol` take effect only when `enable` is set to `true`. The API does not return this argument, so it is not refreshed on import and must be set again after import.
+* `access_log_record_customized_header_list` - (Optional, Set, Available since v2.3.0) The list of request headers that are recorded in the access log. You can specify up to 100 headers.
 
-  -> **NOTE:** `access_log_record_customized_header_list` is valid only when the access log of the endpoint group is enabled. Attach the access log with `alicloud_ga_access_log` before you configure the header list.
+  -> **NOTE:** `access_log_record_customized_header_list` is valid only when the access log of the endpoint group is enabled. Attach the access log with `alicloud_ga_access_log` first. Because `alicloud_ga_access_log` depends on the endpoint group, the header list cannot be set by the same apply that creates the endpoint group: configure it in a later update (a create attempt with the header list returns an error).
 * `endpoint_configurations` - (Required, Set) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
 * `port_overrides` - (Optional, Set) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
 
@@ -374,8 +374,8 @@ The endpoint_configurations supports the following:
   - `false`: Client IP addresses are not reserved.
 * `vpc_id` - (Optional, Available since v1.262.0) The ID of the Virtual Private Cloud (VPC). This parameter is required only when the endpoint type is set to IpTarget.
 * `vswitch_ids` - (Optional, List, Available since v1.262.0) A list of vSwitches in the VPC. You can specify a maximum of two vSwitch IDs for an endpoint group of an intelligent routing listener. This parameter is required when the endpoint type is IpTarget. The vSwitch must belong to the VPC specified by the VpcId parameter.
-* `probe_port` - (Optional, Int, Available since v2.1.0) The port that is used for delay detection. Valid values: `0` to `65535`.
-* `probe_protocol` - (Optional, String, Available since v2.1.0) The protocol that is used for delay detection. Valid values: `tcp`, `icmp`.
+* `probe_port` - (Optional, Int, Available since v2.3.0) The port that is used for delay detection. Valid values: `1` to `65535`.
+* `probe_protocol` - (Optional, String, Available since v2.3.0) The protocol that is used for delay detection. Valid values: `tcp`, `icmp`.
 
 ### `port_overrides`
 

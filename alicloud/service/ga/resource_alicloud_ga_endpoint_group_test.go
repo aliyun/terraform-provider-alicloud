@@ -1471,6 +1471,51 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"endpoint_ip_version": "ProtocolAffinity",
+					"health_check_host":   "www.example.com",
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":       "${alicloud_eip_address.default.0.ip_address}",
+							"type":           "PublicIp",
+							"weight":         "20",
+							"probe_port":     "8080",
+							"probe_protocol": "tcp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_ip_version":                      "ProtocolAffinity",
+						"health_check_host":                        "www.example.com",
+						"endpoint_configurations.0.probe_port":     "8080",
+						"endpoint_configurations.0.probe_protocol": "tcp",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"access_log_record_customized_header_list": []string{"X-Forwarded-For"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1479,6 +1524,12 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 					}),
 					resource.TestCheckTypeSetElemAttr(resourceId, "access_log_record_customized_header_list.*", "X-Forwarded-For"),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1493,6 +1544,12 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"access_log_record_customized_header_list": acctest.CLEARLIST,
 				}),
@@ -1501,6 +1558,12 @@ func TestAccAliCloudGaEndpointGroup_probeAndAccessLog(t *testing.T) {
 						"access_log_record_customized_header_list.#": "0",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable"},
 			},
 		},
 	})
