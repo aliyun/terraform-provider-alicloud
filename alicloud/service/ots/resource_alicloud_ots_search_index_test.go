@@ -5,6 +5,7 @@ package ots_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
@@ -13,6 +14,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudOtsSearchIndex_basic(t *testing.T) {
@@ -281,6 +283,398 @@ func resourceOtsSearchIndexTtlConfig(name string) string {
     }
   }
 `, name, string(ots.OtsCapacity), name)
+}
+
+func TestAccAliCloudOtsSearchIndex_complete(t *testing.T) {
+	var v *tablestore.DescribeSearchIndexResponse
+
+	resourceId := "alicloud_ots_search_index.default"
+	ra := acctest.ResourceAttrInit(resourceId, otsSearchIndexBasicMap)
+	serviceFunc := func() interface{} {
+		return ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: resourceOtsSearchIndexCompleteConfig(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(getSearchIndexCheckMap()),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "schema.*", map[string]string{
+						"field_schema.#":                              "7",
+						"field_schema.2.field_type":                   "Vector",
+						"field_schema.2.vector_options.#":             "1",
+						"field_schema.2.vector_options.0.metric_type": "cosine",
+						"field_schema.3.field_type":                   "FuzzyKeyword",
+						"field_schema.4.field_type":                   "Nested",
+						"field_schema.4.sub_field_schemas.#":          "2",
+						"field_schema.5.date_format_list.#":           "2",
+						"field_schema.6.is_virtual_field":             "true",
+						"field_schema.6.source_field_name":            "pk2",
+					}),
+					checkSearchIndexSchemaFields(),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"schema", "time_to_live", "index_name", "table_name", "instance_name"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Vector"
+    }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("requires vector_options"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name       = "col1"
+      field_type       = "Keyword"
+      is_virtual_field = true
+    }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("requires source_field_name"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+    }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("requires sub_field_schemas"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Date"
+    }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("requires date_format_list"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name        = "col1"
+      field_type        = "Keyword"
+      source_field_name = "col2"
+    }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("is_virtual_field is not true"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Unknown"
+    }`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("expected .*field_type to be one of"),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudOtsSearchIndex_unknownValuesAtPlan(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("unknown%d", rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				// field_name and the schema set are unknown during plan, so the
+				// plan-time validation must not substitute zero values and reject
+				// the configuration.
+				Config:             resourceOtsSearchIndexUnknownValueConfig(name),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func resourceOtsSearchIndexUnknownValueConfig(name string) string {
+	return fmt.Sprintf(`
+resource "alicloud_ots_instance" "default" {
+  name          = "tf-%s"
+  description   = "%s"
+  accessed_by   = "Any"
+  instance_type = "%s"
+}
+
+resource "alicloud_ots_search_index" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = "tf_unknown_table"
+  index_name    = "tf_unknown_index"
+  time_to_live  = -1
+
+  schema {
+    field_schema {
+      field_name = alicloud_ots_instance.default.id
+      field_type = "Vector"
+    }
+  }
+}
+`, name, name, string(ots.OtsCapacity))
+}
+
+func resourceOtsSearchIndexCompleteConfig(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+resource "alicloud_ots_instance" "default" {
+  name          = "tf-${var.name}"
+  description   = "${var.name}"
+  accessed_by   = "Any"
+  instance_type = "%s"
+  tags = {
+    Created = "TF"
+    For     = "acceptance test"
+  }
+}
+
+resource "alicloud_ots_table" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = var.name
+  primary_key {
+    name = "pk1"
+    type = "Integer"
+  }
+  primary_key {
+    name = "pk2"
+    type = "String"
+  }
+  defined_column {
+    name = "col1"
+    type = "String"
+  }
+  defined_column {
+    name = "col2"
+    type = "Integer"
+  }
+  defined_column {
+    name = "vector_col"
+    type = "String"
+  }
+  defined_column {
+    name = "fuzzy_col"
+    type = "String"
+  }
+  defined_column {
+    name = "nested_col"
+    type = "String"
+  }
+  defined_column {
+    name = "date_col"
+    type = "String"
+  }
+  time_to_live = -1
+  max_version  = 1
+}
+
+resource "alicloud_ots_search_index" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = alicloud_ots_table.default.table_name
+  index_name    = "%s_search_index"
+  time_to_live  = -1
+
+  schema {
+    field_schema {
+      field_name = "col1"
+      field_type = "Text"
+      analyzer   = "Split"
+      store      = true
+    }
+    field_schema {
+      field_name          = "col2"
+      field_type          = "Long"
+      enable_sort_and_agg = true
+    }
+    field_schema {
+      field_name = "vector_col"
+      field_type = "Vector"
+      vector_options {
+        data_type   = "float32"
+        dimension   = 4
+        metric_type = "cosine"
+      }
+    }
+    field_schema {
+      field_name = "fuzzy_col"
+      field_type = "FuzzyKeyword"
+    }
+    field_schema {
+      field_name = "nested_col"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name          = "nested_long"
+        field_type          = "Long"
+        enable_sort_and_agg = true
+      }
+      sub_field_schemas {
+        field_name = "nested_text"
+        field_type = "Text"
+        analyzer   = "SingleWord"
+      }
+    }
+    field_schema {
+      field_name       = "date_col"
+      field_type       = "Date"
+      date_format_list = ["yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"]
+    }
+    field_schema {
+      field_name        = "virtual_keyword"
+      field_type        = "Keyword"
+      is_virtual_field  = true
+      source_field_name = "pk2"
+    }
+
+    index_setting {
+      routing_fields = ["pk1", "pk2"]
+    }
+  }
+}
+`, name, string(ots.OtsCapacity), name)
+}
+
+func resourceOtsSearchIndexInvalidConfig(fieldSchema string) string {
+	return fmt.Sprintf(`
+resource "alicloud_ots_search_index" "default" {
+  instance_name = "tf-test-invalid"
+  table_name    = "tf_test_invalid"
+  index_name    = "tf_test_invalid_index"
+  time_to_live  = -1
+
+  schema {
+%s
+  }
+}
+`, fieldSchema)
+}
+
+func checkSearchIndexSchemaFields() resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources["alicloud_ots_search_index.default"]
+		if !ok {
+			return fmt.Errorf("can not find alicloud_ots_search_index.default in state")
+		}
+
+		otsService := ots.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+		resp, err := otsService.DescribeOtsSearchIndex(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+		if resp == nil || resp.Schema == nil {
+			return fmt.Errorf("search index schema is empty")
+		}
+
+		fields := make(map[string]*tablestore.FieldSchema)
+		var walk func([]*tablestore.FieldSchema)
+		walk = func(schemas []*tablestore.FieldSchema) {
+			for _, fieldSchema := range schemas {
+				if fieldSchema.FieldName != nil {
+					fields[*fieldSchema.FieldName] = fieldSchema
+				}
+				walk(fieldSchema.FieldSchemas)
+			}
+		}
+		walk(resp.Schema.FieldSchemas)
+
+		expectedFieldTypes := map[string]tablestore.FieldType{
+			"vector_col":      tablestore.FieldType_VECTOR,
+			"fuzzy_col":       tablestore.FieldType_FUZZY_KEYWORD,
+			"nested_col":      tablestore.FieldType_NESTED,
+			"nested_long":     tablestore.FieldType_LONG,
+			"nested_text":     tablestore.FieldType_TEXT,
+			"date_col":        tablestore.FieldType_DATE,
+			"virtual_keyword": tablestore.FieldType_KEYWORD,
+		}
+		for name, expectedFieldType := range expectedFieldTypes {
+			fieldSchema, ok := fields[name]
+			if !ok {
+				return fmt.Errorf("field %s is missing from DescribeSearchIndex response", name)
+			}
+			if fieldSchema.FieldType != expectedFieldType {
+				return fmt.Errorf("field %s type is %s, expected %s", name, fieldSchema.FieldType.String(), expectedFieldType.String())
+			}
+		}
+
+		vectorField := fields["vector_col"]
+		if vectorField.VectorOptions == nil {
+			return fmt.Errorf("vector_col has no vector options in DescribeSearchIndex response")
+		}
+		if vectorField.VectorOptions.Dimension == nil || *vectorField.VectorOptions.Dimension != 4 {
+			return fmt.Errorf("vector_col dimension is not 4")
+		}
+		if vectorField.VectorOptions.VectorDataType == nil || *vectorField.VectorOptions.VectorDataType != tablestore.VectorDataType_FLOAT_32 {
+			return fmt.Errorf("vector_col data type is not float32")
+		}
+		if vectorField.VectorOptions.VectorMetricType == nil || *vectorField.VectorOptions.VectorMetricType != tablestore.VectorMetricType_COSINE {
+			return fmt.Errorf("vector_col metric type is not cosine")
+		}
+
+		virtualField := fields["virtual_keyword"]
+		if virtualField.IsVirtualField == nil || !*virtualField.IsVirtualField {
+			return fmt.Errorf("virtual_keyword is not marked as a virtual field")
+		}
+		if len(virtualField.SourceFieldNames) != 1 || virtualField.SourceFieldNames[0] != "pk2" {
+			return fmt.Errorf("virtual_keyword source field names are %v", virtualField.SourceFieldNames)
+		}
+
+		expectedDateFormats := map[string]struct{}{
+			"yyyy-MM-dd HH:mm:ss": {},
+			"yyyy-MM-dd":          {},
+		}
+		dateFormats := fields["date_col"].DateFormats
+		if len(dateFormats) != len(expectedDateFormats) {
+			return fmt.Errorf("date_col date formats are %v", dateFormats)
+		}
+		for _, dateFormat := range dateFormats {
+			if _, ok := expectedDateFormats[dateFormat]; !ok {
+				return fmt.Errorf("date_col has unexpected date format %s", dateFormat)
+			}
+		}
+
+		return nil
+	}
 }
 
 var otsSearchIndexBasicMap = map[string]string{}

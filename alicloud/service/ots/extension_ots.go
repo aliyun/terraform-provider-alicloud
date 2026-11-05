@@ -175,14 +175,30 @@ const (
 type SearchIndexFieldTypeString string
 
 const (
-	OtsSearchTypeLong     = SearchIndexFieldTypeString("Long")
-	OtsSearchTypeDouble   = SearchIndexFieldTypeString("Double")
-	OtsSearchTypeBoolean  = SearchIndexFieldTypeString("Boolean")
-	OtsSearchTypeKeyword  = SearchIndexFieldTypeString("Keyword")
-	OtsSearchTypeText     = SearchIndexFieldTypeString("Text")
-	OtsSearchTypeDate     = SearchIndexFieldTypeString("Date")
-	OtsSearchTypeGeoPoint = SearchIndexFieldTypeString("GeoPoint")
-	OtsSearchTypeNested   = SearchIndexFieldTypeString("Nested")
+	OtsSearchTypeLong         = SearchIndexFieldTypeString("Long")
+	OtsSearchTypeDouble       = SearchIndexFieldTypeString("Double")
+	OtsSearchTypeBoolean      = SearchIndexFieldTypeString("Boolean")
+	OtsSearchTypeKeyword      = SearchIndexFieldTypeString("Keyword")
+	OtsSearchTypeText         = SearchIndexFieldTypeString("Text")
+	OtsSearchTypeDate         = SearchIndexFieldTypeString("Date")
+	OtsSearchTypeGeoPoint     = SearchIndexFieldTypeString("GeoPoint")
+	OtsSearchTypeNested       = SearchIndexFieldTypeString("Nested")
+	OtsSearchTypeVector       = SearchIndexFieldTypeString("Vector")
+	OtsSearchTypeFuzzyKeyword = SearchIndexFieldTypeString("FuzzyKeyword")
+)
+
+type SearchIndexVectorDataTypeString string
+
+const (
+	OtsSearchVectorDataTypeFloat32 = SearchIndexVectorDataTypeString("float32")
+)
+
+type SearchIndexVectorMetricTypeString string
+
+const (
+	OtsSearchVectorMetricEuclidean  = SearchIndexVectorMetricTypeString("euclidean")
+	OtsSearchVectorMetricCosine     = SearchIndexVectorMetricTypeString("cosine")
+	OtsSearchVectorMetricDotProduct = SearchIndexVectorMetricTypeString("dot_product")
 )
 
 type SearchIndexAnalyzerTypeString string

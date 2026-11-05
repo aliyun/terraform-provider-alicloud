@@ -24,6 +24,14 @@ For information about OTS search index and how to use it, see [Search index over
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -62,6 +70,26 @@ resource "alicloud_ots_table" "default" {
     name = "pk3"
     type = "Binary"
   }
+  defined_column {
+    name = "col1"
+    type = "String"
+  }
+  defined_column {
+    name = "col2"
+    type = "Integer"
+  }
+  defined_column {
+    name = "col3"
+    type = "String"
+  }
+  defined_column {
+    name = "col4"
+    type = "String"
+  }
+  defined_column {
+    name = "col5"
+    type = "String"
+  }
 }
 
 resource "alicloud_ots_search_index" "default" {
@@ -91,6 +119,30 @@ resource "alicloud_ots_search_index" "default" {
       field_name = "pk2"
       field_type = "Text"
     }
+    field_schema {
+      field_name = "col3"
+      field_type = "Vector"
+      vector_options {
+        data_type   = "float32"
+        dimension   = 4
+        metric_type = "cosine"
+      }
+    }
+    field_schema {
+      field_name = "col4"
+      field_type = "FuzzyKeyword"
+    }
+    field_schema {
+      field_name       = "col5"
+      field_type       = "Date"
+      date_format_list = ["yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"]
+    }
+    field_schema {
+      field_name        = "col6"
+      field_type        = "Keyword"
+      is_virtual_field  = true
+      source_field_name = "pk2"
+    }
 
     index_setting {
       routing_fields = ["pk1", "pk2"]
@@ -114,6 +166,68 @@ resource "alicloud_ots_search_index" "default" {
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ots_search_index&spm=docs.r.ots_search_index.example&intl_lang=EN_US)
 
+### Example Usage with Nested Fields
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+resource "alicloud_ots_instance" "default" {
+  name          = "tf-example-${random_integer.default.result}"
+  description   = "tf-example-nested"
+  accessed_by   = "Any"
+  instance_type = "Capacity"
+}
+
+resource "alicloud_ots_table" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = "tf_example_nested"
+  time_to_live  = -1
+  max_version   = 1
+  primary_key {
+    name = "pk1"
+    type = "Integer"
+  }
+  defined_column {
+    name = "nested_col"
+    type = "String"
+  }
+}
+
+resource "alicloud_ots_search_index" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = alicloud_ots_table.default.table_name
+  index_name    = "example_nested_index"
+  time_to_live  = -1
+  schema {
+    field_schema {
+      field_name = "nested_col"
+      field_type = "Nested"
+      sub_field_schemas {
+        field_name          = "nested_long"
+        field_type          = "Long"
+        enable_sort_and_agg = true
+      }
+      sub_field_schemas {
+        field_name = "nested_text"
+        field_type = "Text"
+        analyzer   = "SingleWord"
+      }
+    }
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -135,12 +249,24 @@ The schema supports the following:
 
 The field_schema supports the following:
 * `field_name` - (Required, ForceNew) Specifies the name of the field in the search index. The value is used as a column name. A field in a search index can be a primary key column or an attribute column.
-* `field_type` - (Required, ForceNew) Specifies the type of the field. Valid values: Text, Long, Double, Boolean, Keyword, Date, GeoPoint, Nested.
-* `is_array` - (Optional, ForceNew) Specifies whether the value is an array. Type: Boolean.
+* `field_type` - (Required, ForceNew, String) Specifies the type of the field. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `FuzzyKeyword`, `Date`, `GeoPoint`, `Nested`, `Vector`.
+* `is_array` - (Optional, ForceNew, Bool) Specifies whether the value is an array. This parameter is not required for `Nested` and `Vector` fields because they are arrays by nature.
 * `index` - (Optional, ForceNew) Specifies whether to enable indexing for the column. Type: Boolean.
 * `analyzer` - (Optional, ForceNew) Specifies the type of the analyzer that you want to use. If fieldType is set to Text, you can configure this parameter. Otherwise, the default analyzer type single-word tokenization is used.
-* `enable_sort_and_agg` - (Optional, ForceNew) Specifies whether to enable sorting and aggregation. Type: Boolean. Sorting can be enabled only for fields for which enable_sort_and_agg is set to true.
+* `enable_sort_and_agg` - (Optional, ForceNew, Bool) Specifies whether to enable sorting and aggregation. Sorting can be enabled only for fields for which enable_sort_and_agg is set to true. `Text`, `FuzzyKeyword` and `Nested` fields do not support this parameter, but the sub-fields of a `Nested` field do.
 * `store` - (Optional, ForceNew) Specifies whether to store the value of the field in the search index. Type: Boolean. If you set store to true, you can read the value of the field from the search index without querying the data table. This improves query performance.
+* `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the field. This parameter is required for `Date` fields. Available since v2.3.0.
+* `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the field is a virtual column. Defaults to `false`. When you set this parameter to `true`, `source_field_name` is required. Available since v2.3.0.
+* `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual column maps. This parameter is required for virtual columns, and only one source field is supported. This parameter can be set only when `is_virtual_field` is `true`. Available since v2.3.0.
+* `sub_field_schemas` - (Optional, ForceNew, Set) Specifies the sub-fields of a `Nested` field. This parameter is required for `Nested` fields. Each sub-field supports the same arguments as `field_schema`; up to two levels of sub-fields are supported. Available since v2.3.0.
+* `vector_options` - (Optional, ForceNew, List) Specifies the vector configuration. This parameter is required for `Vector` fields. See [`vector_options`](#schema-field_schema-vector_options) below. Available since v2.3.0.
+
+### `schema-field_schema-vector_options`
+
+The vector_options supports the following:
+* `data_type` - (Required, ForceNew, String) Specifies the vector data type. Valid values: `float32`. Available since v2.3.0.
+* `dimension` - (Required, ForceNew, Int) Specifies the vector dimension. Valid values: 1-4096. Available since v2.3.0.
+* `metric_type` - (Required, ForceNew, String) Specifies the distance metric that is used between vectors. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
 
 ### `schema-index_setting`
 

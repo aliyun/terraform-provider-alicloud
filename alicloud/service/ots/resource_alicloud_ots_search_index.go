@@ -1,6 +1,7 @@
 package ots
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -17,9 +18,10 @@ import (
 
 func ResourceOtsSearchIndex() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunOtsSearchIndexCreate,
-		Read:   resourceAliyunOtsSearchIndexRead,
-		Delete: resourceAliyunOtsSearchIndexDelete,
+		Create:        resourceAliyunOtsSearchIndexCreate,
+		Read:          resourceAliyunOtsSearchIndexRead,
+		Delete:        resourceAliyunOtsSearchIndexDelete,
+		CustomizeDiff: validateSearchIndexSchemaCustomizeDiff,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -64,63 +66,7 @@ func ResourceOtsSearchIndex() *schema.Resource {
 							Type:     schema.TypeList,
 							Required: true,
 							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"field_name": {
-										Type:     schema.TypeString,
-										Required: true,
-										ForceNew: true,
-									},
-									"field_type": {
-										Type:     schema.TypeString,
-										Required: true,
-										ForceNew: true,
-										ValidateFunc: validation.StringInSlice([]string{
-											string(OtsSearchTypeLong),
-											string(OtsSearchTypeDouble),
-											string(OtsSearchTypeBoolean),
-											string(OtsSearchTypeKeyword),
-											string(OtsSearchTypeText),
-											string(OtsSearchTypeDate),
-											string(OtsSearchTypeGeoPoint),
-											string(OtsSearchTypeNested)},
-											false),
-									},
-									"is_array": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										ForceNew: true,
-									},
-									"index": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Default:  true,
-										ForceNew: true,
-									},
-									"analyzer": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-										ValidateFunc: validation.StringInSlice([]string{
-											string(OtsSearchSingleWord),
-											string(OtsSearchSplit),
-											string(OtsSearchMinWord),
-											string(OtsSearchMaxWord),
-											string(OtsSearchFuzzy)},
-											false),
-									},
-									"enable_sort_and_agg": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										ForceNew: true,
-									},
-									"store": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										ForceNew: true,
-									},
-								},
-							},
+							Elem:     otsSearchIndexFieldSchema(maxSearchIndexFieldNestingDepth),
 						},
 
 						"index_setting": {
@@ -214,6 +160,157 @@ func ResourceOtsSearchIndex() *schema.Resource {
 	}
 }
 
+// maxSearchIndexFieldNestingDepth limits how many sub_field_schemas levels the
+// static Terraform schema exposes. Terraform requires a finite schema tree, so
+// arbitrarily deep Nested fields cannot be represented recursively.
+const maxSearchIndexFieldNestingDepth = 2
+
+func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
+	fieldSchema := &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"field_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"field_type": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(OtsSearchTypeLong),
+					string(OtsSearchTypeDouble),
+					string(OtsSearchTypeBoolean),
+					string(OtsSearchTypeKeyword),
+					string(OtsSearchTypeText),
+					string(OtsSearchTypeDate),
+					string(OtsSearchTypeGeoPoint),
+					string(OtsSearchTypeNested),
+					string(OtsSearchTypeVector),
+					string(OtsSearchTypeFuzzyKeyword)},
+					false),
+			},
+			"is_array": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"index": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
+			"analyzer": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(OtsSearchSingleWord),
+					string(OtsSearchSplit),
+					string(OtsSearchMinWord),
+					string(OtsSearchMaxWord),
+					string(OtsSearchFuzzy)},
+					false),
+			},
+			"enable_sort_and_agg": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"store": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"date_format_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"is_virtual_field": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"source_field_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"vector_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"data_type": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(OtsSearchVectorDataTypeFloat32)}, false),
+						},
+						"dimension": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.IntBetween(1, 4096),
+						},
+						"metric_type": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(OtsSearchVectorMetricEuclidean),
+								string(OtsSearchVectorMetricCosine),
+								string(OtsSearchVectorMetricDotProduct)}, false),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if remainingNestingDepth > 0 {
+		fieldSchema.Schema["sub_field_schemas"] = &schema.Schema{
+			Type:     schema.TypeSet,
+			Optional: true,
+			ForceNew: true,
+			Elem:     otsSearchIndexFieldSchema(remainingNestingDepth - 1),
+		}
+	}
+
+	return fieldSchema
+}
+
+func validateSearchIndexSchemaCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	// TypeSet diff readers do not reliably mark unknown nested values as
+	// computed, so gate on the raw configuration instead of NewValueKnown.
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsWhollyKnown() {
+		return nil
+	}
+	raw, ok := d.GetOk("schema")
+	if !ok {
+		return nil
+	}
+	schemaSet, ok := raw.(*schema.Set)
+	if !ok || schemaSet.Len() == 0 {
+		return nil
+	}
+	schemaArg, ok := schemaSet.List()[0].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	_, err := parseFieldSchemas(schemaArg)
+	return err
+}
+
 func parseSearchIndexResourceArgs(d *schema.ResourceData) (*SearchIndexResourceArgs, error) {
 	indexSchema, err := parseSearchIndexSchema(d)
 	if err != nil {
@@ -257,11 +354,21 @@ func parseSearchIndexSchema(d *schema.ResourceData) (*tablestore.IndexSchema, er
 }
 
 func parseFieldSchemas(schemaArg map[string]interface{}) ([]*tablestore.FieldSchema, error) {
+	fieldSchemasArg, ok := schemaArg["field_schema"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("field_schema is required")
+	}
+	return parseFieldSchemaList(fieldSchemasArg)
+}
+
+func parseFieldSchemaList(fieldSchemasArg []interface{}) ([]*tablestore.FieldSchema, error) {
 	var fieldSchemas []*tablestore.FieldSchema
 
-	fieldSchemasArg := schemaArg["field_schema"].([]interface{})
 	for _, fs := range fieldSchemasArg {
-		fsMap := fs.(map[string]interface{})
+		fsMap, ok := fs.(map[string]interface{})
+		if !ok {
+			continue
+		}
 		fieldSchema, err := parseFieldSchema(fsMap)
 		if err != nil {
 			return nil, errs.WrapError(err)
@@ -374,7 +481,103 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 		store := v.(bool)
 		fieldSchema.Store = &store
 	}
+	if v, ok := fsMap["date_format_list"]; ok {
+		if dateFormatSet, ok := v.(*schema.Set); ok && dateFormatSet.Len() > 0 {
+			dateFormats := make([]string, 0, dateFormatSet.Len())
+			for _, dateFormat := range dateFormatSet.List() {
+				dateFormats = append(dateFormats, dateFormat.(string))
+			}
+			fieldSchema.DateFormats = dateFormats
+		}
+	}
+	if v, ok := fsMap["is_virtual_field"]; ok {
+		isVirtualField := v.(bool)
+		fieldSchema.IsVirtualField = &isVirtualField
+	}
+	if v, ok := fsMap["source_field_name"]; ok {
+		if sourceFieldName, ok := v.(string); ok && sourceFieldName != "" {
+			fieldSchema.SourceFieldNames = []string{sourceFieldName}
+		}
+	}
+	if v, ok := fsMap["vector_options"]; ok {
+		if vectorOptionsArg, ok := v.([]interface{}); ok && len(vectorOptionsArg) > 0 && vectorOptionsArg[0] != nil {
+			vectorOptions, err := parseVectorOptions(vectorOptionsArg[0].(map[string]interface{}))
+			if err != nil {
+				return nil, errs.WrapError(err)
+			}
+			fieldSchema.VectorOptions = vectorOptions
+		}
+	}
+	if v, ok := fsMap["sub_field_schemas"]; ok {
+		if subFieldSchemaSet, ok := v.(*schema.Set); ok && subFieldSchemaSet.Len() > 0 {
+			subFieldSchemas, err := parseFieldSchemaList(subFieldSchemaSet.List())
+			if err != nil {
+				return nil, errs.WrapError(err)
+			}
+			fieldSchema.FieldSchemas = subFieldSchemas
+		}
+	}
+
+	if err := validateSearchIndexFieldSchema(fieldSchema); err != nil {
+		return nil, errs.WrapError(err)
+	}
 	return fieldSchema, nil
+}
+
+func parseVectorOptions(vectorOptionsArg map[string]interface{}) (*tablestore.VectorOptions, error) {
+	dataType, err := ConvertSearchIndexVectorDataTypeString(SearchIndexVectorDataTypeString(vectorOptionsArg["data_type"].(string)))
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	metricType, err := ConvertSearchIndexVectorMetricTypeString(SearchIndexVectorMetricTypeString(vectorOptionsArg["metric_type"].(string)))
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	dimension := int32(vectorOptionsArg["dimension"].(int))
+
+	return &tablestore.VectorOptions{
+		VectorDataType:   &dataType,
+		VectorMetricType: &metricType,
+		Dimension:        &dimension,
+	}, nil
+}
+
+func validateSearchIndexFieldSchema(fieldSchema *tablestore.FieldSchema) error {
+	fieldName := ""
+	if fieldSchema.FieldName != nil {
+		fieldName = *fieldSchema.FieldName
+	}
+
+	switch fieldSchema.FieldType {
+	case tablestore.FieldType_NESTED:
+		if len(fieldSchema.FieldSchemas) == 0 {
+			return fmt.Errorf("field %q of type Nested requires sub_field_schemas", fieldName)
+		}
+		if fieldSchema.EnableSortAndAgg != nil && *fieldSchema.EnableSortAndAgg {
+			return fmt.Errorf("field %q of type Nested does not support enable_sort_and_agg", fieldName)
+		}
+	case tablestore.FieldType_TEXT, tablestore.FieldType_FUZZY_KEYWORD:
+		if fieldSchema.EnableSortAndAgg != nil && *fieldSchema.EnableSortAndAgg {
+			return fmt.Errorf("field %q of type %s does not support enable_sort_and_agg", fieldName, fieldSchema.FieldType.String())
+		}
+	case tablestore.FieldType_VECTOR:
+		if fieldSchema.VectorOptions == nil {
+			return fmt.Errorf("field %q of type Vector requires vector_options", fieldName)
+		}
+	case tablestore.FieldType_DATE:
+		if len(fieldSchema.DateFormats) == 0 {
+			return fmt.Errorf("field %q of type Date requires date_format_list", fieldName)
+		}
+	}
+
+	isVirtualField := fieldSchema.IsVirtualField != nil && *fieldSchema.IsVirtualField
+	if isVirtualField && len(fieldSchema.SourceFieldNames) == 0 {
+		return fmt.Errorf("virtual field %q requires source_field_name", fieldName)
+	}
+	if !isVirtualField && len(fieldSchema.SourceFieldNames) > 0 {
+		return fmt.Errorf("field %q sets source_field_name but is_virtual_field is not true", fieldName)
+	}
+	return nil
 }
 
 func parseIndexFieldSort(sorterArg map[string]interface{}) (search.Sorter, error) {
@@ -479,12 +682,6 @@ func (args *SearchIndexResourceArgs) checkArgs(tableResp *tablestore.DescribeTab
 		return errs.WrapError(fmt.Errorf("when creating a search index, the table's MaxVersion must be 1: %v", tableResp.TableOption.MaxVersion))
 	}
 
-	for _, fs := range args.schema.FieldSchemas {
-		if fs.FieldType == tablestore.FieldType_NESTED && *fs.EnableSortAndAgg {
-			return errs.WrapError(fmt.Errorf("search index nested type field do not support enable_sort_and_agg: %s/%s", args.indexName, *fs.FieldName))
-		}
-	}
-
 	if args.schema.IndexSetting != nil {
 		for _, router := range args.schema.IndexSetting.RoutingFields {
 			var routerInPk bool
@@ -502,15 +699,28 @@ func (args *SearchIndexResourceArgs) checkArgs(tableResp *tablestore.DescribeTab
 
 	if args.schema.IndexSort != nil {
 		if len(args.schema.IndexSort.Sorters) > 0 {
-			for _, fs := range args.schema.FieldSchemas {
-				if fs.FieldType == tablestore.FieldType_NESTED {
-					return errs.WrapError(fmt.Errorf("search index with nested field type does not support index_sort: %s/%s", args.indexName, *fs.FieldName))
-				}
+			if fieldName, ok := findNestedSearchIndexField(args.schema.FieldSchemas); ok {
+				return errs.WrapError(fmt.Errorf("search index with nested field type does not support index_sort: %s/%s", args.indexName, fieldName))
 			}
 		}
 	}
 
 	return nil
+}
+
+func findNestedSearchIndexField(fieldSchemas []*tablestore.FieldSchema) (string, bool) {
+	for _, fs := range fieldSchemas {
+		if fs.FieldType == tablestore.FieldType_NESTED {
+			if fs.FieldName != nil {
+				return *fs.FieldName, true
+			}
+			return "", true
+		}
+		if fieldName, ok := findNestedSearchIndexField(fs.FieldSchemas); ok {
+			return fieldName, ok
+		}
+	}
+	return "", false
 }
 
 func resourceAliyunOtsSearchIndexRead(d *schema.ResourceData, meta interface{}) error {
