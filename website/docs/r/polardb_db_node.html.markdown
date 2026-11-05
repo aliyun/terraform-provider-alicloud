@@ -23,6 +23,14 @@ For information about Polardb Db Node and how to use it, see [What is Db Node](h
 Basic Usage
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
