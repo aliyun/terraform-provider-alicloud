@@ -2,8 +2,12 @@ package connectivity
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +16,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -400,4 +405,135 @@ func TestUnitSlsEndpointUserConfigTakesPrecedenceOverCache(t *testing.T) {
 	cached, ok := client.config.Endpoints.Load("sls")
 	assert.True(t, ok)
 	assert.Equal(t, "cached.sls.example.com", cached, "the cached sls entry must be left untouched")
+}
+
+// TestUnitIncrementalWaitDuration verifies the backoff actually accumulates
+// across retries: the first retry waits firstDuration and each subsequent
+// retry adds increaseDuration. This guards against the previous bug where the
+// local waitTime variable was reset to zero on every call so the backoff never
+// grew beyond a single increaseDuration.
+func TestUnitIncrementalWaitDuration(t *testing.T) {
+	first := 3 * time.Second
+	increase := 5 * time.Second
+
+	cases := []struct {
+		retryCount int
+		expected   time.Duration
+	}{
+		{retryCount: 1, expected: 3 * time.Second},
+		{retryCount: 2, expected: 8 * time.Second},
+		{retryCount: 3, expected: 13 * time.Second},
+		{retryCount: 5, expected: 23 * time.Second},
+	}
+	for _, tc := range cases {
+		got := incrementalWaitDuration(tc.retryCount, first, increase)
+		assert.Equal(t, tc.expected, got, "retryCount=%d", tc.retryCount)
+	}
+
+	// Non-positive retryCount is treated as the first retry.
+	assert.Equal(t, first, incrementalWaitDuration(0, first, increase))
+	assert.Equal(t, first, incrementalWaitDuration(-1, first, increase))
+}
+
+// TestUnitIsEndpointRetryableError covers the extended endpoint-fetch retry
+// whitelist: transport-level errors (dial tcp / i/o timeout / context
+// deadline exceeded / connection reset), the location SDK TimeoutErrorCode and
+// the legacy "^Post https://" message shape are all retryable; business errors
+// are not.
+func TestUnitIsEndpointRetryableError(t *testing.T) {
+	cases := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "DialTCP_OpError",
+			err:      &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("dial tcp: i/o timeout")},
+			expected: true,
+		},
+		{
+			name:     "Read_IO_Timeout_OpError",
+			err:      &net.OpError{Op: "read", Net: "tcp", Err: errors.New("i/o timeout")},
+			expected: true,
+		},
+		{
+			name:     "ContextDeadlineExceeded",
+			err:      context.DeadlineExceeded,
+			expected: true,
+		},
+		{
+			name:     "IO_EOF",
+			err:      io.EOF,
+			expected: true,
+		},
+		{
+			name:     "IO_UnexpectedEOF",
+			err:      io.ErrUnexpectedEOF,
+			expected: true,
+		},
+		{
+			name:     "Post_HTTPS_Message",
+			err:      errors.New(`Post "https://location.aliyuncs.com/"`),
+			expected: true,
+		},
+		{
+			name:     "BusinessError",
+			err:      errors.New("InvalidParameter: not retryable"),
+			expected: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, isEndpointRetryableError(tc.err))
+		})
+	}
+}
+
+// TestUnitEndpointRetryMaxCount verifies the retry count env var is read with a
+// sensible default (3) and clamped to [1, 10] so invalid values cannot disable
+// retries or loop excessively.
+func TestUnitEndpointRetryMaxCount(t *testing.T) {
+	cases := []struct {
+		env string
+		exp int
+	}{
+		{"", 3},     // default
+		{"5", 5},    // valid
+		{"0", 3},    // below minimum -> default
+		{"-1", 3},   // negative -> default
+		{"abc", 3},  // non-numeric -> default
+		{"1", 1},    // lower bound
+		{"10", 10},  // upper bound
+		{"100", 10}, // above upper -> clamped
+	}
+	for _, tc := range cases {
+		t.Run("env="+tc.env, func(t *testing.T) {
+			t.Setenv("ALIBABA_CLOUD_ENDPOINT_RETRY_COUNT", tc.env)
+			assert.Equal(t, tc.exp, endpointRetryMaxCount())
+		})
+	}
+}
+
+// TestUnitEndpointRetryFirstInterval verifies the base interval env var
+// (seconds) is read with a 3s default and clamped to [0, 60]s so an invalid
+// value cannot stall the provider or disable backoff unexpectedly.
+func TestUnitEndpointRetryFirstInterval(t *testing.T) {
+	cases := []struct {
+		env string
+		exp time.Duration
+	}{
+		{"", 3 * time.Second},
+		{"10", 10 * time.Second},
+		{"0", 0},
+		{"-1", 3 * time.Second},
+		{"abc", 3 * time.Second},
+		{"60", 60 * time.Second},
+		{"120", 60 * time.Second},
+	}
+	for _, tc := range cases {
+		t.Run("env="+tc.env, func(t *testing.T) {
+			t.Setenv("ALIBABA_CLOUD_ENDPOINT_RETRY_INTERVAL", tc.env)
+			assert.Equal(t, tc.exp, endpointRetryFirstInterval())
+		})
+	}
 }

@@ -1,8 +1,12 @@
 package connectivity
 
 import (
+	"context"
+	stderrors "errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"regexp"
 	"strings"
 	"sync"
@@ -418,7 +422,32 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
 	return
 }
+
+// isTransportLevelError reports whether err is a transport-level network error
+// (dial tcp / i/o timeout / context deadline exceeded / connection reset) that
+// is typically transient and worth retrying. It walks the error chain with
+// errors.As / errors.Is so errors wrapped by the SDK are still detected.
+func isTransportLevelError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var netErr net.Error
+	if stderrors.As(err, &netErr) {
+		return true
+	}
+	if stderrors.Is(err, io.EOF) || stderrors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	return stderrors.Is(err, context.DeadlineExceeded)
+}
+
 func needRetry(err error) bool {
+	// Transport-level errors (dial tcp / i/o timeout / context deadline
+	// exceeded / connection reset) are transient and should be retried.
+	if isTransportLevelError(err) {
+		return true
+	}
+
 	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
 	if postRegex.MatchString(err.Error()) {
 		return true

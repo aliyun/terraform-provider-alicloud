@@ -1,8 +1,11 @@
 package connectivity
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"testing"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -267,6 +270,36 @@ func TestUnitCommonNeedRetry(t *testing.T) {
 			err:         errors.New("Some other error"),
 			expected:    false,
 			description: "Other errors should not be retried",
+		},
+		{
+			name:        "Transport_DialTCP_OpError",
+			err:         &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("dial tcp: i/o timeout")},
+			expected:    true,
+			description: "Transport-level dial tcp errors should be retried",
+		},
+		{
+			name:        "Transport_IO_Timeout_OpError",
+			err:         &net.OpError{Op: "read", Net: "tcp", Err: errors.New("i/o timeout")},
+			expected:    true,
+			description: "Transport-level i/o timeout errors should be retried",
+		},
+		{
+			name:        "Transport_ContextDeadlineExceeded",
+			err:         context.DeadlineExceeded,
+			expected:    true,
+			description: "context deadline exceeded should be retried",
+		},
+		{
+			name:        "Transport_IO_EOF",
+			err:         io.EOF,
+			expected:    true,
+			description: "io.EOF (connection reset) should be retried",
+		},
+		{
+			name:        "Transport_IO_UnexpectedEOF",
+			err:         io.ErrUnexpectedEOF,
+			expected:    true,
+			description: "io.ErrUnexpectedEOF should be retried",
 		},
 	}
 
