@@ -149,6 +149,273 @@ func ResourceAliCloudGaListener() *schema.Resource {
 					},
 				},
 			},
+			"backend_ports": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"from_port": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+						"to_port": {
+							Type:     schema.TypeInt,
+							Required: true,
+						},
+					},
+				},
+			},
+			"endpoint_group_configurations": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"endpoint_group_name": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringLenBetween(2, 128),
+						},
+						"endpoint_group_description": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringLenBetween(0, 256),
+						},
+						"endpoint_group_region": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"traffic_percentage": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validators.IntBetween(0, 100),
+						},
+						"health_check_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"health_check_interval_seconds": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validators.IntBetween(1, 60),
+						},
+						"health_check_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"health_check_port": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validators.IntBetween(1, 65535),
+						},
+						"health_check_protocol": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringInSlice([]string{"TCP", "HTTP", "HTTPS", "tcp", "http", "https"}, false),
+						},
+						"threshold_count": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validators.IntBetween(2, 10),
+						},
+						"endpoint_configurations": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:         schema.TypeString,
+										Required:     true,
+										ValidateFunc: validators.StringInSlice([]string{"Domain", "Ip", "IpTarget", "PublicIp", "ECS", "SLB", "ALB", "NLB", "ENI", "OSS"}, false),
+									},
+									"weight": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: validators.IntBetween(0, 255),
+									},
+									"endpoint": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"api_keys": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"vpc_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"vswitch_ids": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"sub_address": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enable_proxy_protocol": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"provider": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enable_client_ip_preservation": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"endpoint_request_protocol": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+						},
+						"endpoint_group_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringInSlice([]string{"default", "virtual"}, false),
+						},
+						"port_overrides": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"listener_port": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"endpoint_port": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"enable_client_ip_preservation_proxy_protocol": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"enable_client_ip_preservation_toa": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"endpoint_protocol_version": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringInSlice([]string{"HTTP1.1", "HTTP2"}, false),
+						},
+						"endpoint_ip_version": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringInSlice([]string{"IPv4", "IPv6", "ProtocolAffinity"}, false),
+						},
+						"health_check_host": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"custom_routing_endpoint_group_configurations": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"endpoint_group_region": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"name": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringLenBetween(2, 128),
+						},
+						"description": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validators.StringLenBetween(0, 256),
+						},
+						"destination_configurations": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"protocols": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"from_port": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"to_port": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"custom_routing_endpoint_configurations": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validators.StringInSlice([]string{"PrivateSubNet"}, false),
+									},
+									"endpoint": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"traffic_to_endpoint_policy": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validators.StringInSlice([]string{"AllowAll", "DenyAll", "AllowCustom"}, false),
+									},
+									"policy_configurations": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"address": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"custom_routing_port_ranges": {
+													Type:     schema.TypeSet,
+													Optional: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"from_port": {
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+															"to_port": {
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -244,6 +511,18 @@ func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 		request["XForwardedForConfig"] = forwardedForConfigMap
 	}
 
+	if v, ok := d.GetOk("backend_ports"); ok {
+		request["BackendPorts"] = buildGaListenerBackendPorts(v)
+	}
+
+	if v, ok := d.GetOk("endpoint_group_configurations"); ok {
+		request["EndpointGroupConfigurations"] = buildGaListenerEndpointGroupConfigurations(v)
+	}
+
+	if v, ok := d.GetOk("custom_routing_endpoint_group_configurations"); ok {
+		request["CustomRoutingEndpointGroupConfigurations"] = buildGaListenerCustomRoutingEndpointGroupConfigurations(v)
+	}
+
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *retry.RetryError {
 		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
@@ -330,6 +609,22 @@ func resourceAliCloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	}
 	if err := d.Set("port_ranges", portRanges); err != nil {
 		return errs.WrapError(err)
+	}
+
+	if backendPortsList, ok := object["BackendPorts"].([]interface{}); ok {
+		backendPorts := make([]map[string]interface{}, 0)
+		for _, v := range backendPortsList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"from_port": m1["FromPort"],
+					"to_port":   m1["ToPort"],
+				}
+				backendPorts = append(backendPorts, temp1)
+			}
+		}
+		if err := d.Set("backend_ports", backendPorts); err != nil {
+			return errs.WrapError(err)
+		}
 	}
 
 	if forwardedForConfig, ok := object["XForwardedForConfig"]; ok {
@@ -478,6 +773,13 @@ func resourceAliCloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		request["XForwardedForConfig"] = forwardedForConfigMap
 	}
 
+	if d.HasChange("backend_ports") {
+		update = true
+		if v, ok := d.GetOk("backend_ports"); ok {
+			request["BackendPorts"] = buildGaListenerBackendPorts(v)
+		}
+	}
+
 	if update {
 		action := "UpdateListener"
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
@@ -521,6 +823,16 @@ func resourceAliCloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 		"ListenerId":    d.Id(),
 	}
 
+	// Endpoint groups created inline through CreateListener are not managed by
+	// alicloud_ga_endpoint_group, so they must be removed before the listener.
+	// Only do this when this resource actually created them; endpoint groups
+	// managed by separate resources keep the previous failure behavior.
+	if len(d.Get("endpoint_group_configurations").(*schema.Set).List()) > 0 || len(d.Get("custom_routing_endpoint_group_configurations").(*schema.Set).List()) > 0 {
+		if err := deleteGaListenerInlineEndpointGroups(client, gaService, fmt.Sprint(d.Get("accelerator_id")), d.Id()); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
 	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
 	err = retry.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *retry.RetryError {
 		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
@@ -542,6 +854,355 @@ func resourceAliCloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 	stateConf := helper.BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaListenerStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+	}
+
+	return nil
+}
+
+func gaListenerNestedList(v interface{}) []interface{} {
+	switch value := v.(type) {
+	case *schema.Set:
+		return value.List()
+	case []interface{}:
+		return value
+	default:
+		return nil
+	}
+}
+
+func gaListenerStringSlice(v interface{}) []string {
+	items := gaListenerNestedList(v)
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if s, ok := item.(string); ok && s != "" {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// setGaListenerParam omits unset scalar values so that the service keeps its
+// documented defaults instead of receiving explicit zero values.
+func setGaListenerParam(target map[string]interface{}, key string, value interface{}) {
+	switch v := value.(type) {
+	case nil:
+		return
+	case string:
+		if v != "" {
+			target[key] = v
+		}
+	case bool:
+		target[key] = v
+	case int:
+		if v != 0 {
+			target[key] = v
+		}
+	case []string:
+		if len(v) > 0 {
+			target[key] = v
+		}
+	case []map[string]interface{}:
+		if len(v) > 0 {
+			target[key] = v
+		}
+	}
+}
+
+func buildGaListenerBackendPorts(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		result = append(result, map[string]interface{}{
+			"FromPort": m["from_port"],
+			"ToPort":   m["to_port"],
+		})
+	}
+	return result
+}
+
+func buildGaListenerEndpointConfigurations(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		endpoint := map[string]interface{}{
+			"Type":     m["type"],
+			"Weight":   m["weight"],
+			"Endpoint": m["endpoint"],
+		}
+		setGaListenerParam(endpoint, "ApiKeys", gaListenerStringSlice(m["api_keys"]))
+		setGaListenerParam(endpoint, "VpcId", m["vpc_id"])
+		setGaListenerParam(endpoint, "VSwitchIds", gaListenerStringSlice(m["vswitch_ids"]))
+		setGaListenerParam(endpoint, "SubAddress", m["sub_address"])
+		setGaListenerParam(endpoint, "EnableProxyProtocol", m["enable_proxy_protocol"])
+		setGaListenerParam(endpoint, "Provider", m["provider"])
+		setGaListenerParam(endpoint, "EnableClientIPPreservation", m["enable_client_ip_preservation"])
+		result = append(result, endpoint)
+	}
+	return result
+}
+
+func buildGaListenerPortOverrides(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		result = append(result, map[string]interface{}{
+			"ListenerPort": m["listener_port"],
+			"EndpointPort": m["endpoint_port"],
+		})
+	}
+	return result
+}
+
+func buildGaListenerEndpointGroupConfigurations(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		config := map[string]interface{}{}
+		setGaListenerParam(config, "EndpointGroupRegion", m["endpoint_group_region"])
+		setGaListenerParam(config, "EndpointGroupName", m["endpoint_group_name"])
+		setGaListenerParam(config, "EndpointGroupDescription", m["endpoint_group_description"])
+		setGaListenerParam(config, "TrafficPercentage", m["traffic_percentage"])
+		setGaListenerParam(config, "HealthCheckEnabled", m["health_check_enabled"])
+		setGaListenerParam(config, "HealthCheckIntervalSeconds", m["health_check_interval_seconds"])
+		setGaListenerParam(config, "HealthCheckPath", m["health_check_path"])
+		setGaListenerParam(config, "HealthCheckPort", m["health_check_port"])
+		setGaListenerParam(config, "HealthCheckProtocol", m["health_check_protocol"])
+		setGaListenerParam(config, "ThresholdCount", m["threshold_count"])
+		setGaListenerParam(config, "EndpointConfigurations", buildGaListenerEndpointConfigurations(m["endpoint_configurations"]))
+		setGaListenerParam(config, "EndpointRequestProtocol", m["endpoint_request_protocol"])
+		setGaListenerParam(config, "EndpointGroupType", m["endpoint_group_type"])
+		setGaListenerParam(config, "PortOverrides", buildGaListenerPortOverrides(m["port_overrides"]))
+		setGaListenerParam(config, "EnableClientIpPreservationProxyProtocol", m["enable_client_ip_preservation_proxy_protocol"])
+		setGaListenerParam(config, "EnableClientIpPreservationToa", m["enable_client_ip_preservation_toa"])
+		setGaListenerParam(config, "EndpointProtocolVersion", m["endpoint_protocol_version"])
+		setGaListenerParam(config, "EndpointIpVersion", m["endpoint_ip_version"])
+		setGaListenerParam(config, "HealthCheckHost", m["health_check_host"])
+		result = append(result, config)
+	}
+	return result
+}
+
+func buildGaListenerCustomRoutingPortRanges(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		result = append(result, map[string]interface{}{
+			"FromPort": m["from_port"],
+			"ToPort":   m["to_port"],
+		})
+	}
+	return result
+}
+
+func buildGaListenerPolicyConfigurations(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		policy := map[string]interface{}{}
+		setGaListenerParam(policy, "Address", m["address"])
+		setGaListenerParam(policy, "PortRanges", buildGaListenerCustomRoutingPortRanges(m["custom_routing_port_ranges"]))
+		result = append(result, policy)
+	}
+	return result
+}
+
+func buildGaListenerCustomRoutingEndpointConfigurations(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		endpoint := map[string]interface{}{}
+		setGaListenerParam(endpoint, "Type", m["type"])
+		setGaListenerParam(endpoint, "Endpoint", m["endpoint"])
+		setGaListenerParam(endpoint, "TrafficToEndpointPolicy", m["traffic_to_endpoint_policy"])
+		setGaListenerParam(endpoint, "PolicyConfigurations", buildGaListenerPolicyConfigurations(m["policy_configurations"]))
+		result = append(result, endpoint)
+	}
+	return result
+}
+
+func buildGaListenerDestinationConfigurations(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		destination := map[string]interface{}{}
+		setGaListenerParam(destination, "Protocols", gaListenerStringSlice(m["protocols"]))
+		setGaListenerParam(destination, "FromPort", m["from_port"])
+		setGaListenerParam(destination, "ToPort", m["to_port"])
+		result = append(result, destination)
+	}
+	return result
+}
+
+func buildGaListenerCustomRoutingEndpointGroupConfigurations(v interface{}) []map[string]interface{} {
+	items := gaListenerNestedList(v)
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		config := map[string]interface{}{}
+		setGaListenerParam(config, "EndpointGroupRegion", m["endpoint_group_region"])
+		setGaListenerParam(config, "Name", m["name"])
+		setGaListenerParam(config, "Description", m["description"])
+		setGaListenerParam(config, "DestinationConfigurations", buildGaListenerDestinationConfigurations(m["destination_configurations"]))
+		setGaListenerParam(config, "CustomRoutingEndpointConfigurations", buildGaListenerCustomRoutingEndpointConfigurations(m["custom_routing_endpoint_configurations"]))
+		result = append(result, config)
+	}
+	return result
+}
+
+func listGaListenerEndpointGroupIds(client *connectivity.AliyunClient, action, acceleratorId, listenerId string) ([]string, error) {
+	ids := make([]string, 0)
+	request := map[string]interface{}{
+		"RegionId":      client.RegionId,
+		"AcceleratorId": acceleratorId,
+		"ListenerId":    listenerId,
+		"PageSize":      helper.PageSizeLarge,
+		"PageNumber":    1,
+	}
+	for {
+		response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"NotExist.Listener", "NotExist.Accelerator"}) {
+				return ids, nil
+			}
+			return ids, err
+		}
+		items, _ := response["EndpointGroups"].([]interface{})
+		for _, item := range items {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if id := fmt.Sprint(m["EndpointGroupId"]); id != "" && id != "<nil>" {
+				ids = append(ids, id)
+			}
+		}
+		if len(items) < helper.PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return ids, nil
+}
+
+func deleteGaListenerStandardEndpointGroup(client *connectivity.AliyunClient, gaService Service, acceleratorId, endpointGroupId string) error {
+	action := "DeleteEndpointGroup"
+	request := map[string]interface{}{
+		"ClientToken":     helper.BuildClientToken("DeleteEndpointGroup"),
+		"AcceleratorId":   acceleratorId,
+		"EndpointGroupId": endpointGroupId,
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err := retry.Retry(client.GetRetryTimeout(10*time.Minute), func() *retry.RetryError {
+		_, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
+				return nil
+			}
+			if errs.IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, endpointGroupId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{}, 10*time.Minute, 5*time.Second, gaService.GaEndpointGroupStateRefreshFunc(endpointGroupId, []string{}))
+	_, err = stateConf.WaitForState()
+	return err
+}
+
+func deleteGaListenerCustomRoutingEndpointGroup(client *connectivity.AliyunClient, gaService Service, acceleratorId, endpointGroupId string) error {
+	action := "DeleteCustomRoutingEndpointGroups"
+	request := map[string]interface{}{
+		"RegionId":         client.RegionId,
+		"ClientToken":      helper.BuildClientToken("DeleteCustomRoutingEndpointGroups"),
+		"AcceleratorId":    acceleratorId,
+		"EndpointGroupIds": []string{endpointGroupId},
+	}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err := retry.Retry(client.GetRetryTimeout(10*time.Minute), func() *retry.RetryError {
+		_, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
+				return nil
+			}
+			if errs.IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener"}) || helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, endpointGroupId, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{}, 10*time.Minute, 5*time.Second, gaService.GaCustomRoutingEndpointGroupStateRefreshFunc(endpointGroupId, []string{}))
+	_, err = stateConf.WaitForState()
+	return err
+}
+
+// deleteGaListenerInlineEndpointGroups removes the endpoint groups that were
+// created together with the listener. DeleteListener rejects the request with
+// Exist.EndpointGroup while any of them still exist.
+func deleteGaListenerInlineEndpointGroups(client *connectivity.AliyunClient, gaService Service, acceleratorId, listenerId string) error {
+	standardIds, err := listGaListenerEndpointGroupIds(client, "ListEndpointGroups", acceleratorId, listenerId)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	for _, endpointGroupId := range standardIds {
+		if err := deleteGaListenerStandardEndpointGroup(client, gaService, acceleratorId, endpointGroupId); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+
+	customRoutingIds, err := listGaListenerEndpointGroupIds(client, "ListCustomRoutingEndpointGroups", acceleratorId, listenerId)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	for _, endpointGroupId := range customRoutingIds {
+		if err := deleteGaListenerCustomRoutingEndpointGroup(client, gaService, acceleratorId, endpointGroupId); err != nil {
+			return errs.WrapError(err)
+		}
 	}
 
 	return nil

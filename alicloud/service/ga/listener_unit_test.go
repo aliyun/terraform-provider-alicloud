@@ -48,6 +48,12 @@ func TestUnitAliCloudGaListener(t *testing.T) {
 		},
 		"client_affinity": "CreateListenerValue",
 		"protocol":        "CreateListenerValue",
+		"backend_ports": []map[string]interface{}{
+			{
+				"from_port": 80,
+				"to_port":   80,
+			},
+		},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -79,6 +85,12 @@ func TestUnitAliCloudGaListener(t *testing.T) {
 			map[string]interface{}{
 				"FromPort": 60,
 				"ToPort":   70,
+			},
+		},
+		"BackendPorts": []interface{}{
+			map[string]interface{}{
+				"FromPort": 80,
+				"ToPort":   80,
 			},
 		},
 		"State":      "active",
@@ -188,6 +200,12 @@ func TestUnitAliCloudGaListener(t *testing.T) {
 		},
 		"client_affinity": "UpdateListenerValue",
 		"protocol":        "UpdateListenerValue",
+		"backend_ports": []map[string]interface{}{
+			{
+				"from_port": 90,
+				"to_port":   90,
+			},
+		},
 	}
 	diff, err := newInstanceDiff("alicloud_ga_listener", attributes, attributesDiff, dInit.State())
 	if err != nil {
@@ -208,6 +226,12 @@ func TestUnitAliCloudGaListener(t *testing.T) {
 			map[string]interface{}{
 				"FromPort": 70,
 				"ToPort":   80,
+			},
+		},
+		"BackendPorts": []interface{}{
+			map[string]interface{}{
+				"FromPort": 90,
+				"ToPort":   90,
 			},
 		},
 		"Protocol":   "UpdateListenerValue",
@@ -320,4 +344,150 @@ func TestUnitAliCloudGaListener(t *testing.T) {
 		}
 	}
 
+}
+
+func TestUnitGaListenerNestedConfigurationBuilders(t *testing.T) {
+	endpointGroups := buildGaListenerEndpointGroupConfigurations([]interface{}{
+		map[string]interface{}{
+			"endpoint_group_region":                        "cn-hangzhou",
+			"endpoint_group_name":                          "egc-name",
+			"endpoint_group_description":                   "egc-description",
+			"traffic_percentage":                           100,
+			"health_check_enabled":                         true,
+			"health_check_interval_seconds":                5,
+			"health_check_path":                            "/health",
+			"health_check_port":                            80,
+			"health_check_protocol":                        "HTTP",
+			"threshold_count":                              3,
+			"endpoint_request_protocol":                    "HTTPS",
+			"endpoint_group_type":                          "default",
+			"enable_client_ip_preservation_proxy_protocol": true,
+			"enable_client_ip_preservation_toa":            true,
+			"endpoint_protocol_version":                    "HTTP2",
+			"endpoint_ip_version":                          "IPv6",
+			"health_check_host":                            "health.example.com",
+			"endpoint_configurations": []interface{}{
+				map[string]interface{}{
+					"type":                          "PrivateSubNet",
+					"weight":                        20,
+					"endpoint":                      "10.0.0.1",
+					"api_keys":                      []interface{}{"key-1"},
+					"vpc_id":                        "vpc-123",
+					"vswitch_ids":                   []interface{}{"vsw-1", "vsw-2"},
+					"sub_address":                   "192.168.0.1",
+					"enable_proxy_protocol":         true,
+					"provider":                      "custom",
+					"enable_client_ip_preservation": true,
+				},
+			},
+			"port_overrides": []interface{}{
+				map[string]interface{}{
+					"listener_port": 80,
+					"endpoint_port": 8080,
+				},
+			},
+		},
+	})
+	assert.Len(t, endpointGroups, 1)
+	egc := endpointGroups[0]
+	assert.Equal(t, "cn-hangzhou", egc["EndpointGroupRegion"])
+	assert.Equal(t, "egc-name", egc["EndpointGroupName"])
+	assert.Equal(t, "egc-description", egc["EndpointGroupDescription"])
+	assert.Equal(t, 100, egc["TrafficPercentage"])
+	assert.Equal(t, true, egc["HealthCheckEnabled"])
+	assert.Equal(t, 5, egc["HealthCheckIntervalSeconds"])
+	assert.Equal(t, "/health", egc["HealthCheckPath"])
+	assert.Equal(t, 80, egc["HealthCheckPort"])
+	assert.Equal(t, "HTTP", egc["HealthCheckProtocol"])
+	assert.Equal(t, 3, egc["ThresholdCount"])
+	assert.Equal(t, "HTTPS", egc["EndpointRequestProtocol"])
+	assert.Equal(t, "default", egc["EndpointGroupType"])
+	assert.Equal(t, true, egc["EnableClientIpPreservationProxyProtocol"])
+	assert.Equal(t, true, egc["EnableClientIpPreservationToa"])
+	assert.Equal(t, "HTTP2", egc["EndpointProtocolVersion"])
+	assert.Equal(t, "IPv6", egc["EndpointIpVersion"])
+	assert.Equal(t, "health.example.com", egc["HealthCheckHost"])
+
+	endpoints := egc["EndpointConfigurations"].([]map[string]interface{})
+	assert.Len(t, endpoints, 1)
+	assert.Equal(t, "PrivateSubNet", endpoints[0]["Type"])
+	assert.Equal(t, 20, endpoints[0]["Weight"])
+	assert.Equal(t, "10.0.0.1", endpoints[0]["Endpoint"])
+	assert.Equal(t, []string{"key-1"}, endpoints[0]["ApiKeys"])
+	assert.Equal(t, "vpc-123", endpoints[0]["VpcId"])
+	assert.Equal(t, []string{"vsw-1", "vsw-2"}, endpoints[0]["VSwitchIds"])
+	assert.Equal(t, "192.168.0.1", endpoints[0]["SubAddress"])
+	assert.Equal(t, true, endpoints[0]["EnableProxyProtocol"])
+	assert.Equal(t, "custom", endpoints[0]["Provider"])
+	assert.Equal(t, true, endpoints[0]["EnableClientIPPreservation"])
+
+	portOverrides := egc["PortOverrides"].([]map[string]interface{})
+	assert.Len(t, portOverrides, 1)
+	assert.Equal(t, 80, portOverrides[0]["ListenerPort"])
+	assert.Equal(t, 8080, portOverrides[0]["EndpointPort"])
+
+	customRouting := buildGaListenerCustomRoutingEndpointGroupConfigurations([]interface{}{
+		map[string]interface{}{
+			"endpoint_group_region": "cn-hangzhou",
+			"name":                  "cr-name",
+			"description":           "cr-description",
+			"destination_configurations": []interface{}{
+				map[string]interface{}{
+					"protocols": []interface{}{"TCP", "UDP"},
+					"from_port": 10000,
+					"to_port":   10001,
+				},
+			},
+			"custom_routing_endpoint_configurations": []interface{}{
+				map[string]interface{}{
+					"type":                       "PrivateSubNet",
+					"endpoint":                   "10.0.0.0/24",
+					"traffic_to_endpoint_policy": "AllowCustom",
+					"policy_configurations": []interface{}{
+						map[string]interface{}{
+							"address": "10.0.0.1",
+							"custom_routing_port_ranges": []interface{}{
+								map[string]interface{}{
+									"from_port": 10000,
+									"to_port":   10005,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	assert.Len(t, customRouting, 1)
+	cr := customRouting[0]
+	assert.Equal(t, "cn-hangzhou", cr["EndpointGroupRegion"])
+	assert.Equal(t, "cr-name", cr["Name"])
+	assert.Equal(t, "cr-description", cr["Description"])
+
+	destinations := cr["DestinationConfigurations"].([]map[string]interface{})
+	assert.Len(t, destinations, 1)
+	assert.Equal(t, []string{"TCP", "UDP"}, destinations[0]["Protocols"])
+	assert.Equal(t, 10000, destinations[0]["FromPort"])
+	assert.Equal(t, 10001, destinations[0]["ToPort"])
+
+	crEndpoints := cr["CustomRoutingEndpointConfigurations"].([]map[string]interface{})
+	assert.Len(t, crEndpoints, 1)
+	assert.Equal(t, "PrivateSubNet", crEndpoints[0]["Type"])
+	assert.Equal(t, "10.0.0.0/24", crEndpoints[0]["Endpoint"])
+	assert.Equal(t, "AllowCustom", crEndpoints[0]["TrafficToEndpointPolicy"])
+
+	policies := crEndpoints[0]["PolicyConfigurations"].([]map[string]interface{})
+	assert.Len(t, policies, 1)
+	assert.Equal(t, "10.0.0.1", policies[0]["Address"])
+	ranges := policies[0]["PortRanges"].([]map[string]interface{})
+	assert.Len(t, ranges, 1)
+	assert.Equal(t, 10000, ranges[0]["FromPort"])
+	assert.Equal(t, 10005, ranges[0]["ToPort"])
+
+	backendPorts := buildGaListenerBackendPorts([]interface{}{
+		map[string]interface{}{"from_port": 80, "to_port": 80},
+	})
+	assert.Len(t, backendPorts, 1)
+	assert.Equal(t, 80, backendPorts[0]["FromPort"])
+	assert.Equal(t, 80, backendPorts[0]["ToPort"])
 }
