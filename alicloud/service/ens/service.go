@@ -1197,6 +1197,184 @@ func (s *Service) StopEnsLoadBalancerHttpListener(id string) error {
 
 // StartEnsLoadBalancerHttpListener >>> Encapsulated.
 
+// DescribeEnsLoadBalancerHttpsListener <<< Encapsulated get interface for Ens LoadBalancerHttpsListener.
+
+func (s *Service) DescribeEnsLoadBalancerHttpsListener(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return object, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["ListenerPort"], _ = strconv.Atoi(parts[1])
+
+	action := "DescribeLoadBalancerHTTPSListenerAttribute"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"LoadBalancerNotFound", "ListenerNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("LoadBalancerHttpsListener", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	// When the load balancer exists but the HTTPS listener does not, the ENS
+	// Describe API may return a response without an error yet with ListenerPort
+	// absent; treat that as not found so Delete-wait and Read converge.
+	currentStatus := response["ListenerPort"]
+	if currentStatus == nil {
+		return object, errs.WrapErrorf(errs.NotFoundErr("LoadBalancerHttpsListener", id), errs.NotFoundMsg, response)
+	}
+
+	// DescribeLoadBalancerHTTPSListenerAttribute returns Status capitalised
+	// (e.g. "Running"/"Stopped"); normalise to lowercase so it matches the
+	// schema enum (running/stopped) and the StateConf targets used by Read and
+	// the status refresh function.
+	if statusVal, ok := response["Status"].(string); ok {
+		response["Status"] = strings.ToLower(statusVal)
+	}
+
+	return response, nil
+}
+
+func (s *Service) EnsLoadBalancerHttpsListenerStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEnsLoadBalancerHttpsListener(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEnsLoadBalancerHttpsListener >>> Encapsulated.
+
+// StartEnsLoadBalancerHttpsListener <<< Encapsulated start interface for Ens LoadBalancerHttpsListener.
+
+func (s *Service) StartEnsLoadBalancerHttpsListener(id string) error {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["ListenerPort"], _ = strconv.Atoi(parts[1])
+	// Disambiguate the listener protocol so Start/Stop target the HTTPS
+	// listener when the same port also carries another protocol listener.
+	request["ListenerProtocol"] = "https"
+
+	action := "StartLoadBalancerListener"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	var err error
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			// The listener is already running; treat as idempotent success.
+			if errs.IsExpectedErrors(err, []string{"IncorrectListenerStatus"}) {
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func (s *Service) StopEnsLoadBalancerHttpsListener(id string) error {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["ListenerPort"], _ = strconv.Atoi(parts[1])
+	request["ListenerProtocol"] = "https"
+
+	action := "StopLoadBalancerListener"
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	var err error
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			// The listener is already stopped; treat as idempotent success.
+			if errs.IsExpectedErrors(err, []string{"IncorrectListenerStatus"}) {
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+// StartEnsLoadBalancerHttpsListener >>> Encapsulated.
+
 // DescribeEnsNetworkRouteTable <<< Encapsulated get interface for Ens NetworkRouteTable.
 
 func (s *Service) DescribeEnsNetworkRouteTable(id string) (object map[string]interface{}, err error) {
