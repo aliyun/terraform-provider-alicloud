@@ -36,7 +36,7 @@ func TestAccAliCloudGaListener_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id": "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}",
+					"accelerator_id": "${alicloud_ga_accelerator.default.id}",
 					"port_ranges": []map[string]interface{}{
 						{
 							"from_port": "60",
@@ -624,23 +624,9 @@ func AliCloudGaListenerEndpointGroupDependence(name string) string {
 			default = "%s"
 	}
 
-	data "alicloud_ga_accelerators" "default" {
-			status                 = "active"
-			bandwidth_billing_type = "BandwidthPackage"
-	}
-
-	resource "alicloud_ga_bandwidth_package" "default" {
-			bandwidth      = 100
-			type           = "Basic"
-			bandwidth_type = "Basic"
-			payment_type   = "PayAsYouGo"
-			billing_type   = "PayBy95"
-			ratio          = 30
-	}
-
-	resource "alicloud_ga_bandwidth_package_attachment" "default" {
-			accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
-			bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	resource "alicloud_ga_accelerator" "default" {
+			bandwidth_billing_type = "CDT"
+			payment_type           = "PayAsYouGo"
 	}
 
 	resource "alicloud_eip_address" "default" {
@@ -650,7 +636,7 @@ func AliCloudGaListenerEndpointGroupDependence(name string) string {
 	}
 
 	data "alicloud_ga_endpoint_groups" "default" {
-			accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+			accelerator_id = alicloud_ga_accelerator.default.id
 			listener_id    = alicloud_ga_listener.default.id
 	}
 `, name)
@@ -662,27 +648,13 @@ func AliCloudGaListenerCustomRoutingDependence(name string) string {
 			default = "%s"
 	}
 
-	data "alicloud_ga_accelerators" "default" {
-			status                 = "active"
-			bandwidth_billing_type = "BandwidthPackage"
-	}
-
-	resource "alicloud_ga_bandwidth_package" "default" {
-			bandwidth      = 100
-			type           = "Basic"
-			bandwidth_type = "Basic"
-			payment_type   = "PayAsYouGo"
-			billing_type   = "PayBy95"
-			ratio          = 30
-	}
-
-	resource "alicloud_ga_bandwidth_package_attachment" "default" {
-			accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
-			bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	resource "alicloud_ga_accelerator" "default" {
+			bandwidth_billing_type = "CDT"
+			payment_type           = "PayAsYouGo"
 	}
 
 	data "alicloud_ga_custom_routing_endpoint_groups" "default" {
-			accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+			accelerator_id = alicloud_ga_accelerator.default.id
 			listener_id    = alicloud_ga_listener.default.id
 	}
 `, name)
@@ -723,7 +695,7 @@ func TestAccAliCloudGaListener_endpointGroupConfigurations(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id": "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}",
+					"accelerator_id": "${alicloud_ga_accelerator.default.id}",
 					"port_ranges": []map[string]interface{}{
 						{
 							"from_port": "60",
@@ -786,7 +758,7 @@ func TestAccAliCloudGaListener_customRoutingEndpointGroupConfigurations(t *testi
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id": "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}",
+					"accelerator_id": "${alicloud_ga_accelerator.default.id}",
 					"listener_type":  "CustomRouting",
 					"port_ranges": []map[string]interface{}{
 						{
