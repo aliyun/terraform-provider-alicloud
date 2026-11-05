@@ -21,8 +21,8 @@ func TestAccAliCloudApiGatewayDomain_basic(t *testing.T) {
 	if region == "" {
 		region = "cn-beijing"
 	}
-	name := fmt.Sprintf("tf-testacc-domain%d", rand)
-	domain := fmt.Sprintf("tf-testacc-domain%d.example.com", rand)
+	name := fmt.Sprintf("tf-testAcc-domain%d", rand)
+	domain := fmt.Sprintf("tf-testAcc-domain%d.example.com", rand)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

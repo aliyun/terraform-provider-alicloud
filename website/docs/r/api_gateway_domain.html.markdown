@@ -12,7 +12,7 @@ Provides an Api Gateway custom domain resource that binds a custom domain to an 
 
 For information about Api Gateway Domain and how to use it, see [SetDomain](https://www.alibabacloud.com/help/en/api-gateway/latest/api-cloudapi-2016-07-14-setdomain).
 
--> **NOTE:** Available since v1.252.0.
+-> **NOTE:** Available since v2.3.0.
 
 ## Example Usage
 
@@ -41,7 +41,7 @@ The following arguments are supported:
 
 * `group_id` - (Required, ForceNew) The ID of the API group that the custom domain binds to. The API group ID is system-generated and globally unique.
 * `domain_name` - (Required, ForceNew) The custom domain to bind to the API group.
-* `bind_stage_name` - (Optional) The stage the custom domain can access. Valid values: `TEST`, `PRE`, `RELEASE`. When set to an empty string (the default), the domain can access all stages.
+* `bind_stage_name` - (Optional) The stage the custom domain can access. Valid values: `TEST`, `PRE`, `RELEASE`. When not set or set to an empty string, the domain can access all stages.
 * `custom_domain_type` - (Optional) The type of the custom domain. Valid values: `INTERNET` (public) and `INTRANET` (intranet/VPC). Defaults to `INTERNET`.
 * `is_http_redirect_to_https` - (Optional) Whether to redirect HTTP requests to HTTPS.
 * `is_force` - (Optional) Whether to force binding the domain when a conflict exists. When `true`, the domain is force-bound to the current group and unbound from any conflicting group. Use with caution.

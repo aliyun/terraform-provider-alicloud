@@ -227,7 +227,7 @@ func (r *apiGatewayDomainResource) Delete(ctx context.Context, req resource.Dele
 	var response map[string]interface{}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(apiGatewayDomainTimeout, func() *retry.RetryError {
-		response, err = r.Meta().RpcPost("CloudAPI", "2016-07-14", action, request, nil, true)
+		response, err = r.Meta().RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -282,7 +282,7 @@ func (r *apiGatewayDomainResource) bindDomain(plan apiGatewayDomainResourceModel
 	var err error
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(apiGatewayDomainTimeout, func() *retry.RetryError {
-		response, err = r.Meta().RpcPost("CloudAPI", "2016-07-14", action, request, nil, true)
+		response, err = r.Meta().RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()

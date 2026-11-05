@@ -19,9 +19,10 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayDomain(id string) (object map[st
 	if err != nil {
 		return object, err
 	}
-	var request, query map[string]interface{}
 	action := "DescribeDomain"
-	query = map[string]interface{}{
+	// CloudAPI RPC params go in the body slot (5th arg), matching the package
+	// convention shared by every apigateway RpcPost caller.
+	request := map[string]interface{}{
 		"GroupId":    groupId,
 		"DomainName": domainName,
 	}
@@ -29,7 +30,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayDomain(id string) (object map[st
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	var response map[string]interface{}
 	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, query, request, true)
+		response, err = client.RpcPost("CloudAPI", "2016-07-14", action, nil, request, true)
 		if err != nil {
 			if helper.NeedRetry(err) {
 				wait()
@@ -39,7 +40,7 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayDomain(id string) (object map[st
 		}
 		return nil
 	})
-	logs.AddDebug(action, response, query)
+	logs.AddDebug(action, response, request)
 	if err != nil {
 		// CloudAPI returns NotFoundDomain when the domain is not bound to the group;
 		// NotFoundError covers a 404 or a NotFound-bearing message as a fallback.
