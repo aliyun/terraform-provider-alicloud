@@ -663,6 +663,7 @@ resource "alicloud_vswitch" "default106DkE" {
 func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T) {
 	var v map[string]interface{}
 	var instanceId string
+	var backendNodeGroupId string
 	resourceId := "alicloud_star_rocks_instance.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tfaccstarrocks%d", rand)
@@ -695,12 +696,14 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 		if instance.Primary.ID == instanceId {
 			return fmt.Errorf("shrinking storage_size did not replace the instance %s", instanceId)
 		}
+		// The replacement instance has its own node groups.
+		instanceId = instance.Primary.ID
+		backendNodeGroupId = ""
 		return nil
 	}
 	// Read does not backfill node groups, so the state attribute mirrors the
 	// configuration. The remote disk size is resolved through the configured
 	// attributes instead, and the same node group must be the one resized.
-	var backendNodeGroupId string
 	configuredBackendGroups := func(groups []map[string]interface{}) []map[string]interface{} {
 		matches := make([]map[string]interface{}, 0)
 		for _, group := range groups {
@@ -781,8 +784,9 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 			},
 			{
 				// Shrinking is not supported in place, so the plan must replace the
-				// instance and the new instance gets a new id.
-				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 100),
+				// instance and the new instance gets a new id. 200 GiB is the smallest
+				// backend disk size the API accepts, so the shrink target cannot be lower.
+				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 200),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
@@ -790,8 +794,8 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				},
 				Check: resource.ComposeTestCheckFunc(
 					checkInstanceReplaced,
-					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "100"),
-					checkBackendNodeGroupStorageSize(100),
+					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "200"),
+					checkBackendNodeGroupStorageSize(200),
 				),
 			},
 		},
