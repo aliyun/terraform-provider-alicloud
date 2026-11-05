@@ -1,0 +1,209 @@
+package ecs
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	sdkretry "github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+)
+
+const ecsFwRetryTimeout = 5 * time.Minute
+
+// Shared conversions, request helpers and remote-call plumbing for the
+// Framework data sources in this package. They keep response decoding tolerant
+// of the two shapes the ECS RPC returns for the same field (JSON number or
+// decimal string) without panicking on a missing key, and keep the query,
+// pagination and retry behavior identical across the data sources.
+
+func ecsFwString(value interface{}) types.String {
+	if value == nil {
+		return types.StringValue("")
+	}
+	if s, ok := value.(string); ok {
+		return types.StringValue(s)
+	}
+	return types.StringValue(fmt.Sprint(value))
+}
+
+func ecsFwInt64(value interface{}) types.Int64 {
+	switch v := value.(type) {
+	case nil:
+		return types.Int64Value(0)
+	case int:
+		return types.Int64Value(int64(v))
+	case int32:
+		return types.Int64Value(int64(v))
+	case int64:
+		return types.Int64Value(v)
+	case float32:
+		return types.Int64Value(int64(v))
+	case float64:
+		return types.Int64Value(int64(v))
+	case string:
+		trimmed := strings.TrimSpace(v)
+		if n, err := strconv.ParseInt(trimmed, 10, 64); err == nil {
+			return types.Int64Value(n)
+		}
+		if f, err := strconv.ParseFloat(trimmed, 64); err == nil {
+			return types.Int64Value(int64(f))
+		}
+	}
+	return types.Int64Value(0)
+}
+
+func ecsFwBool(value interface{}) types.Bool {
+	switch v := value.(type) {
+	case bool:
+		return types.BoolValue(v)
+	case string:
+		if b, err := strconv.ParseBool(strings.TrimSpace(v)); err == nil {
+			return types.BoolValue(b)
+		}
+	}
+	return types.BoolValue(false)
+}
+
+func ecsFwStringMapValue(values map[string]string) types.Map {
+	elements := make(map[string]attr.Value, len(values))
+	for k, v := range values {
+		elements[k] = types.StringValue(v)
+	}
+	return types.MapValueMust(types.StringType, elements)
+}
+
+// ecsFwTagsValue decodes the `Tags` member of an ECS object. The RPC wraps the
+// entries in a `Tag` list; an absent or differently shaped member is an empty
+// map rather than a failure.
+func ecsFwTagsValue(tags interface{}) types.Map {
+	values := map[string]string{}
+	if tagsMap, ok := tags.(map[string]interface{}); ok {
+		if list, ok := tagsMap["Tag"]; ok {
+			for key, value := range tagsToMap(list) {
+				values[key] = fmt.Sprint(value)
+			}
+		}
+	}
+	return ecsFwStringMapValue(values)
+}
+
+func ecsFwStringListValue(values []string) types.List {
+	elements := make([]attr.Value, 0, len(values))
+	for _, v := range values {
+		elements = append(elements, types.StringValue(v))
+	}
+	return types.ListValueMust(types.StringType, elements)
+}
+
+func ecsFwElementsAsStrings(value types.List) []string {
+	if value.IsNull() || value.IsUnknown() {
+		return nil
+	}
+	out := make([]string, 0, len(value.Elements()))
+	for _, element := range value.Elements() {
+		s, ok := element.(types.String)
+		if !ok {
+			continue
+		}
+		out = append(out, s.ValueString())
+	}
+	return out
+}
+
+func ecsFwSetRequestString(request map[string]interface{}, key string, value types.String) {
+	if value.IsNull() || value.IsUnknown() || value.ValueString() == "" {
+		return
+	}
+	request[key] = value.ValueString()
+}
+
+// ecsFwApplyRepeatList writes a repeat-list filter in the 1-based
+// `Parameter.N` form used by the ECS RPC.
+func ecsFwApplyRepeatList(request map[string]interface{}, parameter string, values []string) {
+	for i, value := range values {
+		request[fmt.Sprintf("%s.%d", parameter, i+1)] = value
+	}
+}
+
+func ecsFwApplyTags(request map[string]interface{}, tags types.Map) {
+	if tags.IsNull() || tags.IsUnknown() {
+		return
+	}
+	count := 0
+	for key, value := range tags.Elements() {
+		stringValue, ok := value.(types.String)
+		if !ok {
+			continue
+		}
+		count++
+		request[fmt.Sprintf("Tag.%d.Key", count)] = key
+		request[fmt.Sprintf("Tag.%d.Value", count)] = stringValue.ValueString()
+	}
+}
+
+// ecsFwRpcPost sends one read-only ECS query with the shared retry policy:
+// transient failures are retried inside the bounded window, everything else
+// fails on the first response.
+func ecsFwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName, action string, request map[string]interface{}) (map[string]interface{}, error) {
+	var response map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err := sdkretry.RetryContext(ctx, ecsFwRetryTimeout, func() *sdkretry.RetryError {
+		result, rpcErr := client.RpcPost("Ecs", "2014-05-26", action, nil, request, true)
+		if rpcErr != nil {
+			if helper.NeedRetry(rpcErr) {
+				wait()
+				return sdkretry.RetryableError(rpcErr)
+			}
+			return sdkretry.NonRetryableError(rpcErr)
+		}
+		response = result
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return nil, errs.WrapErrorf(err, errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+// ecsFwCollectNumberedPages reads numbered pages until a short or empty page,
+// the server total is reached, or the page budget is exhausted. A full page for
+// the whole budget means the endpoint ignored the page parameters, so the
+// result is discarded instead of returned incomplete.
+func ecsFwCollectNumberedPages(maxPages int, startPage, pageSize int64, action string, fetch func(pageNumber int64) ([]map[string]interface{}, int64, error)) ([]map[string]interface{}, int64, error) {
+	objects := make([]map[string]interface{}, 0)
+	totalCount := int64(0)
+	pageNumber := startPage
+	for page := 0; page < maxPages; page++ {
+		pageItems, pageTotal, err := fetch(pageNumber)
+		if err != nil {
+			return nil, 0, err
+		}
+		objects = append(objects, pageItems...)
+		if pageTotal > 0 {
+			totalCount = pageTotal
+		}
+		if len(pageItems) == 0 || int64(len(pageItems)) < pageSize {
+			break
+		}
+		if totalCount > 0 && int64(len(objects)) >= totalCount {
+			break
+		}
+		pageNumber++
+		if page == maxPages-1 {
+			return nil, 0, fmt.Errorf("%s returned a full page for %d consecutive requests (PageSize=%d), so pagination did not terminate; the result was not returned because it would be incomplete", action, maxPages, pageSize)
+		}
+	}
+	if totalCount == 0 && len(objects) > 0 {
+		totalCount = int64(len(objects))
+	}
+	return objects, totalCount, nil
+}

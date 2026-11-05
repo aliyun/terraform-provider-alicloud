@@ -67,7 +67,11 @@ func ServicePackage() conns.ServicePackage {
 			{TypeName: "alicloud_snapshot", Factory: resourceAliCloudEcsSnapshot},
 			{TypeName: "alicloud_snapshot_policy", Factory: resourceAliCloudEcsAutoSnapshotPolicy},
 		},
-		DataSources: []conns.DataSource{},
+		DataSources: []conns.DataSource{
+			{TypeName: "alicloud_ecs_image_pipeline_executions", Factory: NewImagePipelineExecutionsDataSource},
+			{TypeName: "alicloud_ecs_auto_provisioning_groups", Factory: NewAutoProvisioningGroupsDataSource},
+			{TypeName: "alicloud_reserved_instances", Factory: NewReservedInstancesDataSource},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{TypeName: "alicloud_disks", Factory: dataSourceAliCloudEcsDisks},
 			{TypeName: "alicloud_ecs_activations", Factory: dataSourceEcsActivations},

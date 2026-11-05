@@ -1,0 +1,414 @@
+package ecs
+
+import (
+	"context"
+	"fmt"
+	"sort"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+const (
+	autoProvisioningGroupsTypeName   = "alicloud_ecs_auto_provisioning_groups"
+	autoProvisioningGroupsAction     = "DescribeAutoProvisioningGroups"
+	autoProvisioningGroupsPageSize   = 100
+	autoProvisioningGroupsMaxPages   = 1000
+	autoProvisioningGroupsReadBudget = 30 * time.Minute
+)
+
+var autoProvisioningGroupStatuses = []string{
+	"submitted",
+	"active",
+	"deleted",
+	"delete-running",
+	"modifying",
+}
+
+var autoProvisioningGroupTypes = []string{
+	"request",
+	"maintain",
+	"candidate",
+}
+
+var (
+	_ datasource.DataSource              = (*autoProvisioningGroupsDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*autoProvisioningGroupsDataSource)(nil)
+)
+
+func NewAutoProvisioningGroupsDataSource() datasource.DataSource {
+	return &autoProvisioningGroupsDataSource{}
+}
+
+type autoProvisioningGroupsDataSource struct {
+	fwadapt.DataSourceBase
+}
+
+type autoProvisioningGroupsModel struct {
+	Id                        types.String `tfsdk:"id"`
+	Ids                       types.List   `tfsdk:"ids"`
+	AutoProvisioningGroupName types.String `tfsdk:"auto_provisioning_group_name"`
+	ResourceGroupId           types.String `tfsdk:"resource_group_id"`
+	Status                    types.List   `tfsdk:"status"`
+	Types                     types.List   `tfsdk:"types"`
+	Tags                      types.Map    `tfsdk:"tags"`
+	PageNumber                types.Int64  `tfsdk:"page_number"`
+	PageSize                  types.Int64  `tfsdk:"page_size"`
+	TotalCount                types.Int64  `tfsdk:"total_count"`
+	Names                     types.List   `tfsdk:"names"`
+	Groups                    types.List   `tfsdk:"groups"`
+}
+
+var autoProvisioningGroupLaunchTemplateConfigAttrTypes = map[string]attr.Type{
+	"instance_type":     types.StringType,
+	"max_price":         types.StringType,
+	"vswitch_id":        types.StringType,
+	"weighted_capacity": types.StringType,
+	"priority":          types.StringType,
+}
+
+var autoProvisioningGroupTargetCapacitySpecificationAttrTypes = map[string]attr.Type{
+	"default_target_capacity_type":  types.StringType,
+	"total_target_capacity":         types.StringType,
+	"pay_as_you_go_target_capacity": types.StringType,
+	"spot_target_capacity":          types.StringType,
+}
+
+var autoProvisioningGroupSpotOptionsAttrTypes = map[string]attr.Type{
+	"allocation_strategy":            types.StringType,
+	"instance_interruption_behavior": types.StringType,
+	"instance_pools_to_use_count":    types.Int64Type,
+}
+
+var autoProvisioningGroupPayAsYouGoOptionsAttrTypes = map[string]attr.Type{
+	"allocation_strategy": types.StringType,
+}
+
+var autoProvisioningGroupLaunchTemplateConfigObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupLaunchTemplateConfigAttrTypes}
+var autoProvisioningGroupTargetCapacitySpecificationObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupTargetCapacitySpecificationAttrTypes}
+var autoProvisioningGroupSpotOptionsObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupSpotOptionsAttrTypes}
+var autoProvisioningGroupPayAsYouGoOptionsObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupPayAsYouGoOptionsAttrTypes}
+
+var autoProvisioningGroupAttrTypes = map[string]attr.Type{
+	"auto_provisioning_group_id":          types.StringType,
+	"auto_provisioning_group_name":        types.StringType,
+	"auto_provisioning_group_type":        types.StringType,
+	"status":                              types.StringType,
+	"state":                               types.StringType,
+	"region_id":                           types.StringType,
+	"resource_group_id":                   types.StringType,
+	"launch_template_id":                  types.StringType,
+	"launch_template_version":             types.StringType,
+	"valid_from":                          types.StringType,
+	"valid_until":                         types.StringType,
+	"terminate_instances":                 types.BoolType,
+	"terminate_instances_with_expiration": types.BoolType,
+	"excess_capacity_termination_policy":  types.StringType,
+	"max_spot_price":                      types.StringType,
+	"creation_time":                       types.StringType,
+	"tags":                                types.MapType{ElemType: types.StringType},
+	"launch_template_configs":             types.ListType{ElemType: autoProvisioningGroupLaunchTemplateConfigObjectType},
+	"target_capacity_specification":       types.ListType{ElemType: autoProvisioningGroupTargetCapacitySpecificationObjectType},
+	"spot_options":                        types.ListType{ElemType: autoProvisioningGroupSpotOptionsObjectType},
+	"pay_as_you_go_options":               types.ListType{ElemType: autoProvisioningGroupPayAsYouGoOptionsObjectType},
+}
+
+var autoProvisioningGroupObjectType = types.ObjectType{AttrTypes: autoProvisioningGroupAttrTypes}
+
+func (d *autoProvisioningGroupsDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = autoProvisioningGroupsTypeName
+}
+
+func (d *autoProvisioningGroupsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Provides a list of auto provisioning groups in a region.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:    true,
+				Description: "The ID of the data source, derived from the matched auto provisioning group IDs.",
+			},
+			"ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+				Description: "A list of auto provisioning group IDs to filter by. The filter is sent to the server.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(100),
+				},
+			},
+			"auto_provisioning_group_name": schema.StringAttribute{
+				Optional:    true,
+				Description: "The name of the auto provisioning group. The filter is sent to the server.",
+			},
+			"resource_group_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "The ID of the resource group to which the auto provisioning group belongs.",
+			},
+			"status": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "A list of statuses to filter by. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(10),
+					listvalidator.ValueStringsAre(stringvalidator.OneOf(autoProvisioningGroupStatuses...)),
+				},
+			},
+			"types": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "A list of auto provisioning group types to filter by. Valid values: `request`, `maintain` and `candidate`.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(10),
+					listvalidator.ValueStringsAre(stringvalidator.OneOf(autoProvisioningGroupTypes...)),
+				},
+			},
+			"tags": schema.MapAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed.",
+				Validators: []validator.Map{
+					mapvalidator.SizeAtMost(20),
+				},
+			},
+			"page_number": schema.Int64Attribute{
+				Optional:    true,
+				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1.",
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
+			"page_size": schema.Int64Attribute{
+				Optional:    true,
+				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100.",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 100),
+				},
+			},
+			"total_count": schema.Int64Attribute{
+				Computed:    true,
+				Description: "The number of auto provisioning groups that match all configured filters.",
+			},
+			"names": schema.ListAttribute{
+				Computed:    true,
+				ElementType: types.StringType,
+				Description: "A list of auto provisioning group names that match the configured filters.",
+			},
+			"groups": schema.ListAttribute{
+				Computed:    true,
+				ElementType: autoProvisioningGroupObjectType,
+				Description: "A list of auto provisioning groups that match the configured filters.",
+			},
+		},
+	}
+}
+
+func (d *autoProvisioningGroupsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var model autoProvisioningGroupsModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	pageNumber := int64(1)
+	if !model.PageNumber.IsNull() && !model.PageNumber.IsUnknown() {
+		pageNumber = model.PageNumber.ValueInt64()
+	}
+	pageSize := int64(autoProvisioningGroupsPageSize)
+	if !model.PageSize.IsNull() && !model.PageSize.IsUnknown() {
+		pageSize = model.PageSize.ValueInt64()
+	}
+
+	request := map[string]interface{}{
+		"RegionId":   d.Meta().RegionId,
+		"PageNumber": int(pageNumber),
+		"PageSize":   int(pageSize),
+	}
+	ecsFwSetRequestString(request, "AutoProvisioningGroupName", model.AutoProvisioningGroupName)
+	ecsFwSetRequestString(request, "ResourceGroupId", model.ResourceGroupId)
+	ecsFwApplyRepeatList(request, "AutoProvisioningGroupId", ecsFwElementsAsStrings(model.Ids))
+	ecsFwApplyRepeatList(request, "AutoProvisioningGroupStatus", ecsFwElementsAsStrings(model.Status))
+	ecsFwApplyRepeatList(request, "AutoProvisioningGroupTypes", ecsFwElementsAsStrings(model.Types))
+	ecsFwApplyTags(request, model.Tags)
+
+	objects, totalCount, err := d.autoProvisioningGroupsDescribeAll(ctx, request, int64(pageNumber), pageSize)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: calling %s", autoProvisioningGroupsTypeName, autoProvisioningGroupsAction),
+			err.Error(),
+		)
+		return
+	}
+
+	sorted := append([]map[string]interface{}(nil), objects...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return ecsFwString(sorted[i]["AutoProvisioningGroupId"]).ValueString() < ecsFwString(sorted[j]["AutoProvisioningGroupId"]).ValueString()
+	})
+
+	ids := make([]string, 0, len(sorted))
+	names := make([]string, 0, len(sorted))
+	elements := make([]attr.Value, 0, len(sorted))
+	for _, object := range sorted {
+		ids = append(ids, ecsFwString(object["AutoProvisioningGroupId"]).ValueString())
+		names = append(names, ecsFwString(object["AutoProvisioningGroupName"]).ValueString())
+		elements = append(elements, autoProvisioningGroupObject(object))
+	}
+
+	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
+	model.Ids = ecsFwStringListValue(ids)
+	model.Names = ecsFwStringListValue(names)
+	model.TotalCount = types.Int64Value(totalCount)
+	model.Groups = types.ListValueMust(autoProvisioningGroupObjectType, elements)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+func (d *autoProvisioningGroupsDataSource) autoProvisioningGroupsDescribeAll(ctx context.Context, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
+	deadline := time.Now().Add(autoProvisioningGroupsReadBudget)
+	pagesRead := 0
+	return ecsFwCollectNumberedPages(autoProvisioningGroupsMaxPages, startPage, pageSize, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		if time.Now().After(deadline) {
+			return nil, 0, fmt.Errorf("%s read exceeded the %s budget after %d pages; the result was not returned because it would be incomplete", autoProvisioningGroupsAction, autoProvisioningGroupsReadBudget, pagesRead)
+		}
+		pagesRead++
+		request["PageNumber"] = int(pageNumber)
+		request["PageSize"] = int(pageSize)
+		response, err := ecsFwRpcPost(ctx, d.Meta(), autoProvisioningGroupsTypeName, autoProvisioningGroupsAction, request)
+		if err != nil {
+			return nil, 0, err
+		}
+		totalCount := int64(0)
+		if value, ok := response["TotalCount"]; ok {
+			totalCount = ecsFwInt64(value).ValueInt64()
+		}
+		return autoProvisioningGroupsItems(response), totalCount, nil
+	})
+}
+
+func autoProvisioningGroupsItems(response map[string]interface{}) []map[string]interface{} {
+	items := make([]map[string]interface{}, 0)
+	if response == nil {
+		return items
+	}
+	raw, err := jsonpath.Get("$.AutoProvisioningGroups.AutoProvisioningGroup", response)
+	if err != nil {
+		return items
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return items
+	}
+	for _, entry := range list {
+		if item, ok := entry.(map[string]interface{}); ok {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func autoProvisioningGroupObject(object map[string]interface{}) attr.Value {
+	return types.ObjectValueMust(autoProvisioningGroupAttrTypes, map[string]attr.Value{
+		"auto_provisioning_group_id":          ecsFwString(object["AutoProvisioningGroupId"]),
+		"auto_provisioning_group_name":        ecsFwString(object["AutoProvisioningGroupName"]),
+		"auto_provisioning_group_type":        ecsFwString(object["AutoProvisioningGroupType"]),
+		"status":                              ecsFwString(object["Status"]),
+		"state":                               ecsFwString(object["State"]),
+		"region_id":                           ecsFwString(object["RegionId"]),
+		"resource_group_id":                   ecsFwString(object["ResourceGroupId"]),
+		"launch_template_id":                  ecsFwString(object["LaunchTemplateId"]),
+		"launch_template_version":             ecsFwString(object["LaunchTemplateVersion"]),
+		"valid_from":                          ecsFwString(object["ValidFrom"]),
+		"valid_until":                         ecsFwString(object["ValidUntil"]),
+		"terminate_instances":                 ecsFwBool(object["TerminateInstances"]),
+		"terminate_instances_with_expiration": ecsFwBool(object["TerminateInstancesWithExpiration"]),
+		"excess_capacity_termination_policy":  ecsFwString(object["ExcessCapacityTerminationPolicy"]),
+		"max_spot_price":                      ecsFwString(object["MaxSpotPrice"]),
+		"creation_time":                       ecsFwString(object["CreationTime"]),
+		"tags":                                ecsFwTagsValue(object["Tags"]),
+		"launch_template_configs":             autoProvisioningGroupLaunchTemplateConfigs(object["LaunchTemplateConfigs"]),
+		"target_capacity_specification":       autoProvisioningGroupTargetCapacitySpecification(object["TargetCapacitySpecification"]),
+		"spot_options":                        autoProvisioningGroupSpotOptions(object["SpotOptions"]),
+		"pay_as_you_go_options":               autoProvisioningGroupPayAsYouGoOptions(object["PayAsYouGoOptions"]),
+	})
+}
+
+func autoProvisioningGroupLaunchTemplateConfigs(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	configs, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
+	}
+	raw, err := jsonpath.Get("$.LaunchTemplateConfig", configs)
+	if err != nil {
+		return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
+	}
+	for _, entry := range list {
+		item, ok := entry.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		elements = append(elements, types.ObjectValueMust(autoProvisioningGroupLaunchTemplateConfigAttrTypes, map[string]attr.Value{
+			"instance_type":     ecsFwString(item["InstanceType"]),
+			"max_price":         ecsFwString(item["MaxPrice"]),
+			"vswitch_id":        ecsFwString(item["VSwitchId"]),
+			"weighted_capacity": ecsFwString(item["WeightedCapacity"]),
+			"priority":          ecsFwString(item["Priority"]),
+		}))
+	}
+	return types.ListValueMust(autoProvisioningGroupLaunchTemplateConfigObjectType, elements)
+}
+
+func autoProvisioningGroupTargetCapacitySpecification(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	specification, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupTargetCapacitySpecificationObjectType, elements)
+	}
+	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupTargetCapacitySpecificationAttrTypes, map[string]attr.Value{
+		"default_target_capacity_type":  ecsFwString(specification["DefaultTargetCapacityType"]),
+		"total_target_capacity":         ecsFwString(specification["TotalTargetCapacity"]),
+		"pay_as_you_go_target_capacity": ecsFwString(specification["PayAsYouGoTargetCapacity"]),
+		"spot_target_capacity":          ecsFwString(specification["SpotTargetCapacity"]),
+	}))
+	return types.ListValueMust(autoProvisioningGroupTargetCapacitySpecificationObjectType, elements)
+}
+
+func autoProvisioningGroupSpotOptions(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	options, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupSpotOptionsObjectType, elements)
+	}
+	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupSpotOptionsAttrTypes, map[string]attr.Value{
+		"allocation_strategy":            ecsFwString(options["AllocationStrategy"]),
+		"instance_interruption_behavior": ecsFwString(options["InstanceInterruptionBehavior"]),
+		"instance_pools_to_use_count":    ecsFwInt64(options["InstancePoolsToUseCount"]),
+	}))
+	return types.ListValueMust(autoProvisioningGroupSpotOptionsObjectType, elements)
+}
+
+func autoProvisioningGroupPayAsYouGoOptions(value interface{}) types.List {
+	elements := make([]attr.Value, 0)
+	options, ok := value.(map[string]interface{})
+	if !ok {
+		return types.ListValueMust(autoProvisioningGroupPayAsYouGoOptionsObjectType, elements)
+	}
+	elements = append(elements, types.ObjectValueMust(autoProvisioningGroupPayAsYouGoOptionsAttrTypes, map[string]attr.Value{
+		"allocation_strategy": ecsFwString(options["AllocationStrategy"]),
+	}))
+	return types.ListValueMust(autoProvisioningGroupPayAsYouGoOptionsObjectType, elements)
+}
