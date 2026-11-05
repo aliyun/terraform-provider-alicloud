@@ -1456,6 +1456,180 @@ func TestAccAliCloudApigatewayApi_mock(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudApigatewayApi_mockParam(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	ra := acctest.ResourceAttrInit(resourceId, apiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return apigateway.NewCloudApiService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := acctest.ResourceCheckInit(resourceId, &api, serviceFunc)
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourceApigatewayApiConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":              "${alicloud_api_gateway_group.default.name}",
+					"group_id":          "${alicloud_api_gateway_group.default.id}",
+					"description":       "tf_testAcc_api mock param",
+					"auth_type":         "APP",
+					"force_nonce_check": "true",
+					"request_config": []map[string]string{{
+						"protocol": "HTTP",
+						"method":   "GET",
+						"path":     "/test/mock/param",
+						"mode":     "MAPPING",
+					}},
+					"service_type": "MOCK",
+					"mock_service_config": []map[string]string{{
+						"result":    "success",
+						"aone_name": "cloudapi-openapi",
+					}},
+					"request_parameters": []map[string]string{{
+						"name":          "mock_param",
+						"type":          "STRING",
+						"required":      "OPTIONAL",
+						"in":            "QUERY",
+						"in_service":    "QUERY",
+						"name_service":  "mock_svc_param",
+						"description":   "mock_desc",
+						"default_value": "mock_default",
+					}},
+					"constant_parameters": []map[string]string{{
+						"name":        "mock_const",
+						"value":       "mock_value",
+						"in":          "HEAD",
+						"description": "mock_const_desc",
+					}},
+					"system_parameters": []map[string]string{{
+						"name":         "CaClientIp",
+						"name_service": "clientIP",
+						"in":           "HEAD",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                            name,
+						"description":                     "tf_testAcc_api mock param",
+						"auth_type":                       "APP",
+						"force_nonce_check":               "true",
+						"request_config.0.protocol":       "HTTP",
+						"request_config.0.method":         "GET",
+						"request_config.0.path":           "/test/mock/param",
+						"request_config.0.mode":           "MAPPING",
+						"service_type":                    "MOCK",
+						"mock_service_config.0.result":    "success",
+						"mock_service_config.0.aone_name": "cloudapi-openapi",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "request_parameters.#", "1"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.name", "mock_param"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.type", "STRING"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.required", "OPTIONAL"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.in", "QUERY"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.in_service", "QUERY"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.name_service", "mock_svc_param"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.description", "mock_desc"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.default_value", "mock_default"),
+					resource.TestCheckResourceAttr(resourceId, "constant_parameters.#", "1"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.name", "mock_const"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.value", "mock_value"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.in", "HEAD"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.description", "mock_const_desc"),
+					resource.TestCheckResourceAttr(resourceId, "system_parameters.#", "1"),
+					checkRequestParametersAttr(resourceId, "system_parameters.0.name", "CaClientIp"),
+					checkRequestParametersAttr(resourceId, "system_parameters.0.name_service", "clientIP"),
+					checkRequestParametersAttr(resourceId, "system_parameters.0.in", "HEAD"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "tf_testAcc_api mock param update",
+					"auth_type":         "ANONYMOUS",
+					"force_nonce_check": "false",
+					"request_config": []map[string]string{{
+						"protocol":    "HTTP",
+						"method":      "POST",
+						"path":        "/test/mock/param/update",
+						"mode":        "MAPPING",
+						"body_format": "FORM",
+					}},
+					"mock_service_config": []map[string]string{{
+						"result":    "OK",
+						"aone_name": "cloudapi-task",
+					}},
+					"request_parameters": []map[string]string{{
+						"name":          "mock_arg",
+						"type":          "INT",
+						"required":      "REQUIRED",
+						"in":            "HEAD",
+						"in_service":    "HEAD",
+						"name_service":  "mock_svc_arg",
+						"description":   "mock_description",
+						"default_value": "1",
+					}},
+					"constant_parameters": []map[string]string{{
+						"name":        "mock_const_arg",
+						"value":       "new_value",
+						"in":          "QUERY",
+						"description": "mock_const_description",
+					}},
+					"system_parameters": []map[string]string{{
+						"name":         "CaDomain",
+						"name_service": "domain",
+						"in":           "QUERY",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                     "tf_testAcc_api mock param update",
+						"auth_type":                       "ANONYMOUS",
+						"force_nonce_check":               "false",
+						"request_config.0.method":         "POST",
+						"request_config.0.path":           "/test/mock/param/update",
+						"mock_service_config.0.result":    "OK",
+						"mock_service_config.0.aone_name": "cloudapi-task",
+					}),
+					resource.TestCheckResourceAttr(resourceId, "request_parameters.#", "1"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.name", "mock_arg"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.type", "INT"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.required", "REQUIRED"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.in", "HEAD"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.in_service", "HEAD"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.name_service", "mock_svc_arg"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.description", "mock_description"),
+					checkRequestParametersAttr(resourceId, "request_parameters.0.default_value", "1"),
+					resource.TestCheckResourceAttr(resourceId, "constant_parameters.#", "1"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.name", "mock_const_arg"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.value", "new_value"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.in", "QUERY"),
+					checkRequestParametersAttr(resourceId, "constant_parameters.0.description", "mock_const_description"),
+					resource.TestCheckResourceAttr(resourceId, "system_parameters.#", "1"),
+					checkRequestParametersAttr(resourceId, "system_parameters.0.name", "CaDomain"),
+					checkRequestParametersAttr(resourceId, "system_parameters.0.name_service", "domain"),
+					checkRequestParametersAttr(resourceId, "system_parameters.0.in", "QUERY"),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 func checkRequestParametersAttr(resourceID, key, expected string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceID]
@@ -1464,7 +1638,7 @@ func checkRequestParametersAttr(resourceID, key, expected string) resource.TestC
 		}
 
 		for k, v := range rs.Primary.Attributes {
-			if strings.HasPrefix(k, key) && v != expected {
+			if (k == key || strings.HasPrefix(k, key+".")) && v != expected {
 				return fmt.Errorf("%s: Attribute '%s' expected '%s', got '%s'", resourceID, key, expected, v)
 			}
 		}
