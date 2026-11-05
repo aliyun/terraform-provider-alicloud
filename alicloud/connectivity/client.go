@@ -2699,7 +2699,9 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	if readTimeout > 0 {
-		sdkConfig.SetTimeout(int(readTimeout / time.Millisecond))
+		milliseconds := int(readTimeout / time.Millisecond)
+		sdkConfig.SetReadTimeout(milliseconds)
+		sdkConfig.SetConnectTimeout(milliseconds)
 	}
 	credential, err := client.config.Credential.GetCredential()
 	if err != nil || credential == nil {
