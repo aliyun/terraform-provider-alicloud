@@ -346,6 +346,57 @@ func provisionConfigHasScalingPolicy(objectRaw map[string]interface{}) bool {
 	return false
 }
 
+// provisionConfigUpdateTarget returns the value the replacement PUT sends as
+// the configured default. An explicitly configured or changed target,
+// including zero, is honored from the configuration/plan. Otherwise state
+// normally holds the configured default mapped by Read, so it is reused. A
+// zero without a configured value means no default was ever established in
+// state, for example an import whose response omitted defaultTarget while a
+// scaling policy was active; in that case the service is queried for its
+// configured default instead of persisting zero.
+func provisionConfigUpdateTarget(d *schema.ResourceData, client *connectivity.AliyunClient) (interface{}, error) {
+	target := d.Get("target")
+	if d.HasChange("target") || provisionConfigTargetConfigured(d) {
+		return target, nil
+	}
+	if targetValue, ok := target.(int); !ok || targetValue != 0 {
+		return target, nil
+	}
+
+	service := NewService(client)
+	object, err := service.DescribeProvisionConfig(d.Id())
+	if err != nil {
+		return nil, errs.WrapError(err)
+	}
+	switch v := object["defaultTarget"].(type) {
+	case float64:
+		return int(v), nil
+	case int:
+		return v, nil
+	case nil:
+	default:
+		return nil, fmt.Errorf("unexpected defaultTarget type %T for provision config %q", v, d.Id())
+	}
+	if !provisionConfigHasScalingPolicy(object) {
+		return target, nil
+	}
+	return nil, fmt.Errorf("cannot determine the configured default target of provision config %q: the service response omits defaultTarget while a scaling policy is active", d.Id())
+}
+
+// provisionConfigTargetConfigured reports whether the configuration sets
+// target explicitly, so an explicitly configured zero is never replaced by the
+// value reported by the service. The raw configuration is unavailable during
+// import and in some test fixtures; in that case the caller falls back to the
+// state value.
+func provisionConfigTargetConfigured(d *schema.ResourceData) bool {
+	raw := d.GetRawConfig()
+	if raw.IsNull() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute("target") {
+		return false
+	}
+	value := raw.GetAttr("target")
+	return value.IsKnown() && !value.IsNull()
+}
+
 func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
@@ -436,11 +487,14 @@ func resourceProvisionConfigUpdate(d *schema.ResourceData, meta interface{}) err
 	// that default instead of writing zero or the policy-computed runtime
 	// target. An explicitly configured value, including zero, is still sent.
 	if update {
-		target := d.Get("target")
-		request["target"] = target
+		targetValue, targetErr := provisionConfigUpdateTarget(d, client)
+		if targetErr != nil {
+			return targetErr
+		}
+		request["target"] = targetValue
 		// target is deprecated but still required by PutProvisionConfig; send
 		// the same configured default through defaultTarget as well.
-		request["defaultTarget"] = target
+		request["defaultTarget"] = targetValue
 		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
