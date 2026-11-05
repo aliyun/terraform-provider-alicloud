@@ -202,9 +202,10 @@ resource "alicloud_data_works_project" "default" {
 // testAccAliCloudDataWorksParameterMember creates a RAM user and registers it as a workspace
 // member so that it is a valid owner (责任人) for the parameter. It is only included in steps
 // that change owner to the RAM user, and the parameter carries an explicit depends_on so that
-// the member is created before the owner change is applied.
-func testAccAliCloudDataWorksParameterMember(r int) string {
-	return fmt.Sprintf(`
+// the member is created before the owner change is applied. The member's uniqueness comes from
+// the random_integer and var.name declared in the base config, so it takes no parameter.
+func testAccAliCloudDataWorksParameterMember() string {
+	return `
 resource "alicloud_ram_user" "member" {
   name         = "${var.name}-member-${random_integer.default.result}"
   display_name = "${var.name}-member"
@@ -218,7 +219,7 @@ resource "alicloud_data_works_project_member" "member" {
     code = "role_project_deploy"
   }
 }
-`, r)
+`
 }
 
 func testAccAliCloudDataWorksParameterConfig(r int) string {
@@ -244,7 +245,7 @@ resource "alicloud_data_works_parameter" "default" {
 }
 
 func testAccAliCloudDataWorksParameterConfigUpdate(r int) string {
-	return testAccAliCloudDataWorksParameterBase(r) + testAccAliCloudDataWorksParameterMember(r) + fmt.Sprintf(`
+	return testAccAliCloudDataWorksParameterBase(r) + testAccAliCloudDataWorksParameterMember() + fmt.Sprintf(`
 resource "alicloud_data_works_parameter" "default" {
   project_id  = alicloud_data_works_project.default.id
   name        = "workspace.tfacc%[1]d"
@@ -269,7 +270,7 @@ resource "alicloud_data_works_parameter" "default" {
 // testAccAliCloudDataWorksParameterConfigClearDescription drops the description attribute so the
 // empty-string-to-null plan modifier maps the configured null onto the API's empty value.
 func testAccAliCloudDataWorksParameterConfigClearDescription(r int) string {
-	return testAccAliCloudDataWorksParameterBase(r) + testAccAliCloudDataWorksParameterMember(r) + fmt.Sprintf(`
+	return testAccAliCloudDataWorksParameterBase(r) + testAccAliCloudDataWorksParameterMember() + fmt.Sprintf(`
 resource "alicloud_data_works_parameter" "default" {
   project_id = alicloud_data_works_project.default.id
   name       = "workspace.tfacc%[1]d"
