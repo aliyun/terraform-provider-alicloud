@@ -3007,12 +3007,44 @@ func (client *AliyunClient) do(ctx context.Context, apiProductCode string, apiPa
 		}
 		response = normalized
 	}
+	if ctx != nil && err == nil {
+		if bodyErr := requireContextJSONBody(response, apiProductCode); bodyErr != nil {
+			return nil, bodyErr
+		}
+	}
 	if respBody, isExist := response["body"]; isExist && respBody != nil {
 		if v, ok := respBody.(map[string]interface{}); ok {
 			response = v
 		}
 	}
 	return response, formatError(response, err)
+}
+
+// requireContextJSONBody rejects the successful responses of the context-bound
+// path that carry no JSON object. The SDK decodes an empty body and a JSON null
+// body to the same empty map as "{}", so an empty object is the only signal
+// left that no document came back; every ECS RPC response carries at least its
+// RequestId. Collapsing that map to the response would hand the caller a zero
+// result, which silently replaces the state it already holds instead of
+// failing the read. A legitimate empty result keeps its non-empty object
+// ({"Instances": {"Instance": []}}), a failed call keeps its SDK error, and the
+// non-object body types never reach this check.
+func requireContextJSONBody(response map[string]interface{}, apiProductCode string) error {
+	if response == nil {
+		return fmt.Errorf("the %s API returned a successful response without a body", apiProductCode)
+	}
+	rawBody, hasBody := response["body"]
+	if !hasBody {
+		return nil
+	}
+	body, ok := rawBody.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	if len(body) == 0 {
+		return fmt.Errorf("the %s API returned a successful response without a JSON object body; the request was not treated as an empty result", apiProductCode)
+	}
+	return nil
 }
 
 // applyOpenapiSignVersion writes the configured signature version (if any)

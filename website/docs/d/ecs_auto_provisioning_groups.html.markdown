@@ -48,7 +48,7 @@ The following arguments are supported:
 * `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 10 entries is allowed. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.
 * `types` - (Optional, List of String) A list of auto provisioning group types to filter by. A maximum of 10 entries is allowed. Valid values: `request`, `maintain` and `candidate`.
 * `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain `http://` or `https://`. A value may be empty, is limited to 128 characters and must not contain `http://` or `https://`. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.
-* `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` or greater. Defaults to `1`. The rows of the pages before `page_number` are not read and are not part of the result; `total_count` still reports them. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.
+* `page_number` - (Optional, Int) The number of the first page to read. Valid values: `1` to `2147483647` (`PageNumber` is an int32 on the wire). Defaults to `1`. The rows of the pages before `page_number` are not read and are not part of the result; `total_count` still reports them. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.
 * `page_size` - (Optional, Int) The number of entries per page. Valid values: `1` to `100`. Defaults to `100`. A page with fewer entries than this value ends the read only when the rows read account for every row that is readable from `page_number`; otherwise the read is reported as incomplete.
 
 ## Attributes Reference
@@ -56,7 +56,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - (Computed, String) The ID of the data source, derived from the matched auto provisioning group IDs.
-* `total_count` - (Computed, Int) The `TotalCount` reported by `DescribeAutoProvisioningGroups` for the configured filters. It counts every matching group in the region, not only the rows returned from `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written.
+* `total_count` - (Computed, Int) The `TotalCount` reported by `DescribeAutoProvisioningGroups` for the configured filters. It counts every matching group in the region, not only the rows returned from `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written. A response that does not report `TotalCount` falls back to the number of rows read.
 * `names` - (Computed, List of String) A list of auto provisioning group names that match the configured filters.
 * `groups` - (Computed, List of Object) A list of auto provisioning groups. Each element contains the following attributes:
   * `auto_provisioning_group_id` - (String) The ID of the auto provisioning group.

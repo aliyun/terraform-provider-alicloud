@@ -3,6 +3,7 @@ package ecs
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -186,9 +187,9 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			},
 			"page_number": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The rows of the pages before `page_number` are not read and are not part of the result; `total_count` still reports them. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.",
+				Description: "The number of the first page to read. Valid values: 1 to 2147483647 (`PageNumber` is an int32 on the wire). Defaults to 1. The rows of the pages before `page_number` are not read and are not part of the result; `total_count` still reports them. The data source continues with the following pages until the rows that are readable from `page_number` have been read, or the read budget is exhausted.",
 				Validators: []validator.Int64{
-					int64validator.AtLeast(1),
+					int64validator.Between(1, math.MaxInt32),
 				},
 			},
 			"page_size": schema.Int64Attribute{
@@ -200,7 +201,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "The number of reserved instances that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching reserved instance in the region, not only the rows returned from `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written.",
+				Description: "The number of reserved instances that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching reserved instance in the region, not only the rows returned from `page_number`. A total that changes between pages, or that disagrees with the rows read, is reported as an error instead of being written. A response that does not report `TotalCount` falls back to the number of rows read.",
 			},
 			"names": schema.ListAttribute{
 				Computed:    true,

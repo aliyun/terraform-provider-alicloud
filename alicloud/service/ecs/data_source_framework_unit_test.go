@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -74,7 +75,8 @@ func TestUnitFwTagMapValidatorNullValues(t *testing.T) {
 		if !response.Diagnostics.HasError() {
 			return false, ""
 		}
-		return true, response.Diagnostics.Errors()[0].Summary()
+		diagnostic := response.Diagnostics.Errors()[0]
+		return true, diagnostic.Summary() + ": " + diagnostic.Detail()
 	}
 
 	apg := fwTagMapValidator{allowEmptyValue: true}
@@ -89,10 +91,20 @@ func TestUnitFwTagMapValidatorNullValues(t *testing.T) {
 	assert.False(t, hasError, "an explicit empty value stays allowed for this API")
 
 	reserved := fwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}}
-	hasError, _ = validate(reserved, map[string]attr.Value{"env": types.StringNull()})
+	hasError, summary = validate(reserved, map[string]attr.Value{"env": types.StringNull()})
 	assert.True(t, hasError)
-	hasError, _ = validate(reserved, map[string]attr.Value{"env": types.StringValue("")})
+	// The guidance must be usable for this API: an empty value is rejected, so
+	// telling the caller to send one would lead straight into a second error.
+	assert.Contains(t, summary, "omit the entry", "a null value must point at leaving the entry out")
+	assert.NotContains(t, summary, "use an empty string", "a null value must not suggest a value this API rejects")
+	hasError, summary = validate(reserved, map[string]attr.Value{"env": types.StringValue("")})
+	assert.True(t, hasError, "an explicit empty value stays rejected for this API")
+	assert.Contains(t, summary, "must not be empty")
+
+	hasError, summary = validate(apg, map[string]attr.Value{"env": types.StringNull()})
 	assert.True(t, hasError)
+	assert.Contains(t, summary, "omit the entry")
+	assert.Contains(t, summary, "empty string", "the APIs that accept an empty value may still mention it")
 }
 
 func TestUnitFwApplyTagsSerialization(t *testing.T) {
@@ -173,6 +185,17 @@ func TestUnitFwDecodeCountAndToken(t *testing.T) {
 	assert.Error(t, err, "a blank token is not a cursor that can be followed")
 }
 
+// The three data sources share the reserved-key contract of the tags package
+// instead of keeping their own copy of the prefix list.
+func TestUnitFwTagKeyReservedUsesTheSharedContract(t *testing.T) {
+	for _, key := range []string{"aliyun", "aliyun-tag", "acs:tag", "http://example.com", "https://example.com", "sae.do.not.delete"} {
+		assert.True(t, fwTagKeyReserved(key), "%q must be a reserved key", key)
+	}
+	for _, key := range []string{"env", "sae-do-not-delete-x", "saeXdoYnotZdelete", ""} {
+		assert.False(t, fwTagKeyReserved(key), "%q must be an ordinary key", key)
+	}
+}
+
 func TestUnitFwDecodeTags(t *testing.T) {
 	tags, err := fwDecodeTags(nil)
 	require.NoError(t, err)
@@ -233,6 +256,33 @@ func TestUnitFwCollectTokenPagesRejectsRepeatedToken(t *testing.T) {
 	assert.Nil(t, objects, "an incomplete result must not be returned")
 	assert.Empty(t, lastToken)
 	assert.Equal(t, 2, calls, "the repeated token must not be followed again")
+}
+
+// The configured start token is already in use when the read begins. A server
+// that echoes it back must not make the loop send the same request a second
+// time before it notices the repeat.
+func TestUnitFwCollectTokenPagesRejectsAnEchoedStartTokenWithoutRefetching(t *testing.T) {
+	visited := make([]string, 0)
+	objects, lastToken, err := fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+		visited = append(visited, token)
+		return []map[string]interface{}{{"ExecutionId": "exec-1"}}, token, nil
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, objects, "an incomplete result must not be returned")
+	assert.Empty(t, lastToken)
+	assert.Equal(t, []string{"start-token"}, visited, "the echoed start token must be requested exactly once")
+
+	// A different first continuation token is still followed normally.
+	_, _, err = fwCollectTokenPages(context.Background(), 10, "start-token", "Discover", "ExecutionId", func(token string) ([]map[string]interface{}, string, error) {
+		switch token {
+		case "start-token":
+			return []map[string]interface{}{{"ExecutionId": "exec-1"}}, "next-token", nil
+		default:
+			return []map[string]interface{}{{"ExecutionId": "exec-2"}}, "", nil
+		}
+	})
+	assert.NoError(t, err)
 }
 
 func TestUnitFwCollectTokenPagesFailsWhenBudgetExhausted(t *testing.T) {
@@ -479,6 +529,33 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesAcceptsStartPageBeyondTotal(t 
 	assert.Equal(t, int64(3), totalCount)
 }
 
+// PageNumber and PageSize are int32 on the wire: a value outside that range is
+// rejected before it can overflow the skipped-row arithmetic or wrap after the
+// cast, and the loop never increments past the largest page number.
+func TestUnitFwCollectNumberedPagesValidatesTheInt32PageRange(t *testing.T) {
+	fetch := func(pageNumber int64) (fwNumberedPage, error) {
+		return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": fmt.Sprintf("apg-%d", pageNumber)}}}, nil
+	}
+
+	for _, startPage := range []int64{0, -1, math.MaxInt32 + 1} {
+		_, _, err := fwCollectNumberedPages(context.Background(), 10, startPage, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", fetch)
+		assert.Error(t, err, "start page %d must be rejected", startPage)
+	}
+	for _, pageSize := range []int64{0, -1, math.MaxInt32 + 1} {
+		_, _, err := fwCollectNumberedPages(context.Background(), 10, 1, pageSize, autoProvisioningGroupsAction, "AutoProvisioningGroupId", fetch)
+		assert.Error(t, err, "page size %d must be rejected", pageSize)
+	}
+
+	// The largest accepted start page is sent as-is and never incremented.
+	requested := make([]int64, 0)
+	_, _, err := fwCollectNumberedPages(context.Background(), 10, math.MaxInt32, 1, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
+		requested = append(requested, pageNumber)
+		return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": "apg-last"}}}, nil
+	})
+	assert.Error(t, err, "the loop must stop instead of incrementing past the largest page number")
+	assert.Equal(t, []int64{math.MaxInt32}, requested)
+}
+
 // An explicit TotalCount of 0 is a real total: it must be reported as 0 and it
 // must reject rows that contradict it, unlike a response that omits the total.
 func TestUnitEcsReservedInstancesCollectPagesKeepsExplicitZeroTotal(t *testing.T) {
@@ -555,16 +632,27 @@ func TestUnitEcsReservedInstancesCollectPagesRejectsShortPageWithOutstandingRows
 	assert.Equal(t, int64(0), totalCount)
 }
 
+// An empty page that still owes readable rows is rejected on the empty-page
+// branch, not on the short-page branch: the first page is full, so the loop
+// actually requests page 2 and has to stop on that empty response.
 func TestUnitEcsReservedInstancesCollectPagesRejectsEmptyPageWithOutstandingRows(t *testing.T) {
+	requestedPages := make([]int64, 0)
 	objects, _, err := fwCollectNumberedPages(context.Background(), 10, 1, 10, reservedInstancesAction, "ReservedInstanceId", func(pageNumber int64) (fwNumberedPage, error) {
+		requestedPages = append(requestedPages, pageNumber)
 		if pageNumber == 1 {
-			return fwNumberedPage{items: []map[string]interface{}{{"ReservedInstanceId": "ri-1"}}, total: 2, totalKnown: true}, nil
+			items := make([]map[string]interface{}, 0, 10)
+			for i := 0; i < 10; i++ {
+				items = append(items, map[string]interface{}{"ReservedInstanceId": fmt.Sprintf("ri-%02d", i)})
+			}
+			return fwNumberedPage{items: items, total: 12, totalKnown: true}, nil
 		}
-		return fwNumberedPage{total: 2, totalKnown: true}, nil
+		return fwNumberedPage{total: 12, totalKnown: true}, nil
 	})
 
-	assert.Error(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "returned an empty page at page 2", "the empty page must be the reported failure")
 	assert.Nil(t, objects)
+	assert.Equal(t, []int64{1, 2}, requestedPages, "the collector must request page 2 exactly once before failing")
 }
 
 func TestUnitEcsReservedInstancesCollectPagesRejectsInconsistentTotal(t *testing.T) {
@@ -676,7 +764,7 @@ func TestUnitEcsReservedInstancesRequest(t *testing.T) {
 	assert.Equal(t, 1, request["PageNumber"])
 	assert.Equal(t, 100, request["PageSize"])
 	assert.Equal(t, "cn-hangzhou-k", request["ZoneId"])
-	assert.Equal(t, "Zone", request["Scope"], "zone_id without scope requests Scope = Zone")
+	assert.Equal(t, "Zone", request["Scope"], "the resolved zone scope must reach the request")
 	assert.Equal(t, "ri-1", request["ReservedInstanceId.1"])
 	assert.Equal(t, "Active", request["Status.1"])
 	assert.Equal(t, "env", request["Tag.1.Key"])
@@ -737,18 +825,19 @@ func TestUnitFwDecodeCountRejectsInvalidValues(t *testing.T) {
 		_, _, err := fwDecodeCount(map[string]interface{}{"TotalCount": value}, "TotalCount", "Describe")
 		assert.Error(t, err, "value %v must not be a valid count", value)
 	}
-	assert.Equal(t, 0, fwRemainingBudgetMillis(context.Background()), "a context without deadline leaves the SDK defaults in place")
 }
 
-// The transport receives the remaining read budget and the SDK retry loop is
-// off; every retry stays under the caller's own deadline.
-func TestUnitFwRpcPostBoundsTransportWithReadBudget(t *testing.T) {
+// The pagination transport configuration must not change from page to page: the
+// SDK keys its client and transport pool on the runtime timeouts, so a per-page
+// budget would allocate a new pool per page and drop the keep-alive connection.
+// The read deadline travels with the context instead.
+func TestUnitFwRpcPostKeepsTheTransportConfigurationFixed(t *testing.T) {
 	original := fwRpcCall
 	defer func() { fwRpcCall = original }()
 
-	var captured *utilV2.RuntimeOptions
+	runtimes := make([]*utilV2.RuntimeOptions, 0)
 	fwRpcCall = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
-		captured = runtime
+		runtimes = append(runtimes, runtime)
 		return map[string]interface{}{}, nil
 	}
 
@@ -756,15 +845,11 @@ func TestUnitFwRpcPostBoundsTransportWithReadBudget(t *testing.T) {
 	defer cancel()
 	_, err := fwRpcPost(ctx, nil, "type", "Action", map[string]interface{}{})
 	require.NoError(t, err)
-	require.NotNil(t, captured)
-	require.NotNil(t, captured.Autoretry)
-	assert.False(t, *captured.Autoretry, "the SDK internal retries must be off")
-	require.NotNil(t, captured.ReadTimeout)
-	require.NotNil(t, captured.ConnectTimeout)
-	assert.Greater(t, *captured.ReadTimeout, 0)
-	assert.LessOrEqual(t, *captured.ReadTimeout, 90*1000)
-	assert.Greater(t, *captured.ConnectTimeout, 0)
-	assert.LessOrEqual(t, *captured.ConnectTimeout, 90*1000)
+	require.Len(t, runtimes, 1)
+	require.NotNil(t, runtimes[0].Autoretry)
+	assert.False(t, *runtimes[0].Autoretry, "the SDK internal retries must be off")
+	assert.Nil(t, runtimes[0].ReadTimeout, "the transport read timeout must keep the client configuration")
+	assert.Nil(t, runtimes[0].ConnectTimeout, "the transport connect timeout must keep the client configuration")
 }
 
 // The request must carry the read context, so cancelling the read aborts the
@@ -860,19 +945,53 @@ func TestUnitEcsAutoProvisioningGroupsLoadRequestToState(t *testing.T) {
 			snapshot[key] = value
 		}
 		requests = append(requests, snapshot)
-		page, _ := request["PageNumber"].(int)
-		items := map[int]map[string]interface{}{
-			1: {"AutoProvisioningGroupId": "apg-a", "AutoProvisioningGroupName": "group-a", "Status": "active"},
-			2: {"AutoProvisioningGroupId": "apg-b", "AutoProvisioningGroupName": "group-b", "Status": "active"},
+
+		// The fixture filters like the real endpoint: it returns the rows whose
+		// status the request asks for, and every row when no status is sent. A
+		// dropped provider filter therefore widens the result and fails the
+		// assertions below instead of still matching the row and total counts.
+		groups := []map[string]interface{}{
+			{"AutoProvisioningGroupId": "apg-a", "AutoProvisioningGroupName": "group-a", "Status": "active"},
+			{"AutoProvisioningGroupId": "apg-b", "AutoProvisioningGroupName": "group-b", "Status": "submitted"},
 		}
-		item, ok := items[page]
-		if !ok {
+		wantedStatuses := map[string]struct{}{}
+		for index := 1; ; index++ {
+			status, ok := request[fmt.Sprintf("AutoProvisioningGroupStatus.%d", index)].(string)
+			if !ok {
+				break
+			}
+			wantedStatuses[status] = struct{}{}
+		}
+		wantedIds := map[string]struct{}{}
+		for index := 1; ; index++ {
+			id, ok := request[fmt.Sprintf("AutoProvisioningGroupId.%d", index)].(string)
+			if !ok {
+				break
+			}
+			wantedIds[id] = struct{}{}
+		}
+		matched := make([]map[string]interface{}, 0, len(groups))
+		for _, group := range groups {
+			if len(wantedStatuses) > 0 {
+				if _, ok := wantedStatuses[group["Status"].(string)]; !ok {
+					continue
+				}
+			}
+			if len(wantedIds) > 0 {
+				if _, ok := wantedIds[group["AutoProvisioningGroupId"].(string)]; !ok {
+					continue
+				}
+			}
+			matched = append(matched, group)
+		}
+
+		if page, _ := request["PageNumber"].(int); page != 1 {
 			return nil, fmt.Errorf("unexpected page %d", page)
 		}
 		return map[string]interface{}{
-			"TotalCount": json.Number("2"),
+			"TotalCount": json.Number(fmt.Sprint(len(matched))),
 			"AutoProvisioningGroups": map[string]interface{}{
-				"AutoProvisioningGroup": []interface{}{item},
+				"AutoProvisioningGroup": matched,
 			},
 		}, nil
 	}
@@ -880,26 +999,59 @@ func TestUnitEcsAutoProvisioningGroupsLoadRequestToState(t *testing.T) {
 	model := autoProvisioningGroupsModel{
 		Ids:                       types.ListValueMust(types.StringType, []attr.Value{types.StringValue("apg-b"), types.StringValue("apg-b"), types.StringValue(" ")}),
 		AutoProvisioningGroupName: types.StringValue("group-b"),
-		Status:                    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("active")}),
+		Status:                    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("submitted")}),
 		PageSize:                  types.Int64Value(1),
 	}
 
 	state, err := (&autoProvisioningGroupsDataSource{}).load(context.Background(), nil, "cn-hangzhou", model)
 	require.NoError(t, err)
 
-	require.Len(t, requests, 2, "the target on the second page must be read")
+	require.Len(t, requests, 1, "only the matching row of page 1 must be read")
 	assert.Equal(t, "group-b", requests[0]["AutoProvisioningGroupName"])
 	assert.Equal(t, "apg-b", requests[0]["AutoProvisioningGroupId.1"], "duplicate and blank IDs are sent once")
 	assert.NotContains(t, requests[0], "AutoProvisioningGroupId.2")
-	assert.Equal(t, "active", requests[0]["AutoProvisioningGroupStatus.1"])
-	assert.Equal(t, 2, requests[1]["PageNumber"])
+	assert.Equal(t, "submitted", requests[0]["AutoProvisioningGroupStatus.1"])
 
-	require.Len(t, state.Ids.Elements(), 2)
-	assert.Equal(t, types.StringValue("apg-a"), state.Ids.Elements()[0])
-	assert.Equal(t, types.StringValue("apg-b"), state.Ids.Elements()[1])
-	assert.Equal(t, int64(2), state.TotalCount.ValueInt64())
-	assert.Len(t, state.Groups.Elements(), 2)
-	assert.Equal(t, types.StringValue("group-b"), state.Names.Elements()[1])
+	require.Len(t, state.Ids.Elements(), 1, "the non-matching status must be filtered out")
+	assert.Equal(t, types.StringValue("apg-b"), state.Ids.Elements()[0])
+	assert.Equal(t, int64(1), state.TotalCount.ValueInt64(), "the total counts the rows that match the status filter")
+	assert.Len(t, state.Groups.Elements(), 1)
+	assert.Equal(t, types.StringValue("group-b"), state.Names.Elements()[0])
+}
+
+// The status filter must change the result: a request without it would return
+// both statuses, and these assertions would fail.
+func TestUnitEcsAutoProvisioningGroupsLoadKeepsOnlyTheFilteredStatus(t *testing.T) {
+	original := fwRpcCall
+	defer func() { fwRpcCall = original }()
+
+	fwRpcCall = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
+		groups := []map[string]interface{}{
+			{"AutoProvisioningGroupId": "apg-active", "Status": "active"},
+			{"AutoProvisioningGroupId": "apg-submitted", "Status": "submitted"},
+		}
+		filtered := make([]map[string]interface{}, 0)
+		for _, group := range groups {
+			if group["Status"] == request["AutoProvisioningGroupStatus.1"] {
+				filtered = append(filtered, group)
+			}
+		}
+		return map[string]interface{}{
+			"TotalCount": json.Number(fmt.Sprint(len(filtered))),
+			"AutoProvisioningGroups": map[string]interface{}{
+				"AutoProvisioningGroup": filtered,
+			},
+		}, nil
+	}
+
+	model := autoProvisioningGroupsModel{
+		Status: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("submitted")}),
+	}
+	state, err := (&autoProvisioningGroupsDataSource{}).load(context.Background(), nil, "cn-hangzhou", model)
+	require.NoError(t, err)
+
+	require.Len(t, state.Ids.Elements(), 1)
+	assert.Equal(t, types.StringValue("apg-submitted"), state.Ids.Elements()[0])
 }
 
 func TestUnitEcsReservedInstancesLoadRequestToState(t *testing.T) {
@@ -936,7 +1088,7 @@ func TestUnitEcsReservedInstancesLoadRequestToState(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, request)
 	assert.Equal(t, "cn-hangzhou-k", request["ZoneId"])
-	assert.Equal(t, "Zone", request["Scope"], "zone_id without scope requests Scope = Zone")
+	assert.Equal(t, "Zone", request["Scope"], "the resolved zone scope must reach the request")
 	assert.Equal(t, "Active", request["Status.1"])
 
 	require.Len(t, state.Ids.Elements(), 1)
@@ -980,7 +1132,7 @@ func TestUnitEcsReservedInstancesLoadLaterPage(t *testing.T) {
 	require.Len(t, requests, 1)
 	assert.Equal(t, 2, requests[0]["PageNumber"])
 	assert.Equal(t, "cn-hangzhou-k", requests[0]["ZoneId"])
-	assert.Equal(t, "Zone", requests[0]["Scope"], "zone_id without scope requests Scope = Zone")
+	assert.Equal(t, "Zone", requests[0]["Scope"], "the resolved zone scope must reach the request")
 	assert.Len(t, state.Instances.Elements(), 1)
 	assert.Equal(t, types.StringValue("ri-3"), state.Ids.Elements()[0])
 	assert.Equal(t, int64(3), state.TotalCount.ValueInt64(), "the total still counts the rows of the skipped page")
@@ -1058,6 +1210,34 @@ func TestUnitEcsImagePipelineExecutionsLoadFiltersByIds(t *testing.T) {
 	assert.Equal(t, types.StringValue("exec-target"), state.Ids.Elements()[0])
 	assert.Len(t, state.Executions.Elements(), 1)
 	assert.Equal(t, int64(1), state.TotalCount.ValueInt64(), "total_count counts the rows after the ids filter")
+}
+
+// An all-blank ids list is dropped entirely, exactly as the argument promises:
+// it must not turn into a filter that matches nothing.
+func TestUnitEcsImagePipelineExecutionsLoadDropsBlankIdsInsteadOfFilteringEverything(t *testing.T) {
+	original := fwRpcCall
+	defer func() { fwRpcCall = original }()
+
+	fwRpcCall = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
+		return map[string]interface{}{
+			"ImagePipelineExecution": map[string]interface{}{
+				"ImagePipelineExecutionSet": []interface{}{
+					map[string]interface{}{"ExecutionId": "exec-1", "Status": "SUCCESS"},
+					map[string]interface{}{"ExecutionId": "exec-2", "Status": "FAILED"},
+				},
+			},
+		}, nil
+	}
+
+	model := imagePipelineExecutionsModel{
+		ImagePipelineId: types.StringValue("pipeline-1"),
+		Ids:             types.ListValueMust(types.StringType, []attr.Value{types.StringValue(""), types.StringValue("   ")}),
+	}
+	state, err := (&imagePipelineExecutionsDataSource{}).load(context.Background(), nil, "cn-hangzhou", model)
+	require.NoError(t, err)
+
+	assert.Len(t, state.Ids.Elements(), 2, "an all-blank ids list must not filter the result")
+	assert.Equal(t, int64(2), state.TotalCount.ValueInt64())
 }
 
 func TestUnitEcsImagePipelineExecutionsLoadRequestToState(t *testing.T) {

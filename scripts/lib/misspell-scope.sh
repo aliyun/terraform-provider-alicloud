@@ -5,13 +5,38 @@
 MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.markdown"
 
 # DescribeImagePipelineExecutions publishes CANCELLING and CANCELLED as status
-# literals, and misspell flags them. Only the argument line that declares that
-# enum is accepted, and only in that one page: the same words in ordinary prose
-# on the same page, and every finding anywhere else, stay reported.
-MISSPELL_ENUM_LINE='^\* `status` - \(Optional, String\) The execution status to filter by\. .*`CANCELLING` and `CANCELLED`\.'
+# literals, and misspell flags them. Only those literals in the `Valid values:`
+# list of that one page are accepted: the exemption is keyed on the exact
+# line:column misspell reports, so the same word as ordinary prose on the same
+# line, the same literals on another page, and every finding anywhere else stay
+# reported.
+
+# misspell_enum_positions prints one `line:column` pair per accepted occurrence.
+# misspell reports the 0-based byte column of the word inside the line, so the
+# column is the offset of the literal after its opening backtick.
+misspell_enum_positions() {
+  awk '
+    /`CANCELLING` and `CANCELLED`/ {
+      start = index($0, "Valid values:")
+      if (start == 0) next
+      segment = substr($0, start)
+      stop = index(segment, ".")
+      if (stop == 0) next
+      segment = substr(segment, 1, stop - 1)
+      base = start - 1
+      consumed = 0
+      while (match(segment, /`(CANCELLING|CANCELLED)`/)) {
+        printf "%d:%d\n", NR, base + consumed + RSTART
+        advance = RSTART + RLENGTH - 1
+        consumed += advance
+        segment = substr(segment, advance + 1)
+      }
+    }
+  ' "$MISSPELL_ENUM_DOC"
+}
 
 run_misspell_scoped() {
-  local output status=0 remaining awk_status=0 enum_lines
+  local output status=0 remaining awk_status=0 enum_positions
   output=$(misspell -error -locale=US "$@" 2>&1) || status=$?
   if [ $status -eq 0 ]; then
     return 0
@@ -28,14 +53,16 @@ run_misspell_scoped() {
     echo "misspell exited with a finding status but printed nothing; the spelling check did not complete."
     return 1
   fi
-  # Line numbers of the API enum declaration. The exemption is keyed on the
-  # source position, not on the file alone, so an ordinary uppercase sentence
-  # elsewhere on the same page is still reported.
-  enum_lines=$(grep -nE "$MISSPELL_ENUM_LINE" "$MISSPELL_ENUM_DOC" 2>/dev/null | cut -d: -f1 | sort -n | paste -sd, -)
-  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" -v lines="$enum_lines" '
+  # Source positions of the API enum declaration. The exemption is keyed on both
+  # the line and the column, not on the file or the line alone, so an ordinary
+  # uppercase sentence that happens to share the line is still reported.
+  enum_positions=$(misspell_enum_positions | paste -sd' ' -)
+  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" -v positions="$enum_positions" '
     BEGIN {
-      count = split(lines, accepted, ",")
-      for (i = 1; i <= count; i++) exempt[accepted[i]] = 1
+      count = split(positions, accepted, " ")
+      for (i = 1; i <= count; i++) {
+        if (accepted[i] != "") exempt[accepted[i]] = 1
+      }
     }
     {
       line = $0
@@ -45,7 +72,7 @@ run_misspell_scoped() {
         rest = substr(line, n + 1)
         if (match(rest, /^:[0-9]+:[0-9]+: "(CANCELLING|CANCELLED)" is a misspelling of "(CANCELING|CANCELED)"$/)) {
           split(substr(rest, 2), parts, ":")
-          if (parts[1] in exempt) {
+          if ((parts[1] ":" parts[2]) in exempt) {
             next
           }
         }
@@ -59,7 +86,7 @@ run_misspell_scoped() {
   fi
   if [ -z "$remaining" ]; then
     printf '%s\n' "$output"
-    echo "Accepted the documented API status literals CANCELLING/CANCELLED on the API enum line."
+    echo "Accepted the documented API status literals CANCELLING/CANCELLED at the enum list positions."
     return 0
   fi
   printf '%s\n' "$remaining"

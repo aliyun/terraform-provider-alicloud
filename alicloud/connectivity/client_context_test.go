@@ -128,3 +128,75 @@ func TestUnitDoWithContextAbortsInFlightRequestOnDeadline(t *testing.T) {
 	}
 	waitForSignal(t, aborted, "the server observing the client disconnect")
 }
+
+// newStaticServer answers every request with the given status and body, which
+// is what a real HTTP fixture needs to pin the body shapes the SDK accepts.
+func newStaticServer(t *testing.T, status int, body string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		if body != "" {
+			_, _ = w.Write([]byte(body))
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// A 2xx response without a JSON object body must fail the read. Handing the
+// empty map back would be read as a zero result and replace the state the
+// caller already holds.
+func TestUnitDoWithContextRejectsAnEmptySuccessBody(t *testing.T) {
+	for name, body := range map[string]string{
+		"empty body": "",
+		"null body":  "null",
+	} {
+		server := newStaticServer(t, http.StatusOK, body)
+		client := newLoopbackClient(t, server.URL)
+
+		_, err := client.DoWithContext(context.Background(), "Ecs", helper.RpcParam("POST", "2014-05-26", "DescribeInstances"), nil,
+			map[string]interface{}{"RegionId": "cn-beijing"}, nil, nil, &utilV2.RuntimeOptions{})
+		if assert.Error(t, err, "%s must not be returned as an empty result", name) {
+			assert.Contains(t, err.Error(), "without a JSON object body")
+		}
+	}
+
+	// A body that is not JSON at all fails in the SDK decoder; it must fail as
+	// well, and it must not be turned into an empty result either.
+	server := newStaticServer(t, http.StatusOK, "  \n")
+	client := newLoopbackClient(t, server.URL)
+	response, err := client.DoWithContext(context.Background(), "Ecs", helper.RpcParam("POST", "2014-05-26", "DescribeInstances"), nil,
+		map[string]interface{}{"RegionId": "cn-beijing"}, nil, nil, &utilV2.RuntimeOptions{})
+	assert.Error(t, err, "a blank body must not be returned as an empty result")
+	assert.Nil(t, response)
+}
+
+// A legitimate empty result keeps its JSON object: an empty list inside the
+// response is a successful read, not a missing body.
+func TestUnitDoWithContextKeepsALegitimateEmptyList(t *testing.T) {
+	server := newStaticServer(t, http.StatusOK, `{"RequestId":"mock","Instances":{"Instance":[]}}`)
+	client := newLoopbackClient(t, server.URL)
+
+	response, err := client.DoWithContext(context.Background(), "Ecs", helper.RpcParam("POST", "2014-05-26", "DescribeInstances"), nil,
+		map[string]interface{}{"RegionId": "cn-beijing"}, nil, nil, &utilV2.RuntimeOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "mock", response["RequestId"])
+	instances, ok := response["Instances"].(map[string]interface{})
+	require.True(t, ok, "the nested object must survive the body check")
+	assert.Empty(t, instances["Instance"])
+}
+
+// The body check must not replace an SDK error: a failed call keeps its own
+// code and message.
+func TestUnitDoWithContextKeepsTheSDKError(t *testing.T) {
+	server := newStaticServer(t, http.StatusBadRequest, `{"RequestId":"mock","Code":"InvalidInstanceId.NotFound","Message":"The specified InstanceId does not exist."}`)
+	client := newLoopbackClient(t, server.URL)
+
+	_, err := client.DoWithContext(context.Background(), "Ecs", helper.RpcParam("POST", "2014-05-26", "DescribeInstances"), nil,
+		map[string]interface{}{"RegionId": "cn-beijing"}, nil, nil, &utilV2.RuntimeOptions{})
+	require.Error(t, err, "a failed call must stay failed")
+	assert.Contains(t, err.Error(), "InvalidInstanceId.NotFound", "the original SDK error must be preserved")
+	assert.NotContains(t, err.Error(), "without a JSON object body")
+}

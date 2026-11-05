@@ -40,6 +40,7 @@ func testSweepEcsImagePipeline(region string) error {
 
 	deleteErrors := make([]string, 0)
 	listErrors := make([]string, 0)
+	recordErrors := make([]string, 0)
 
 	for {
 		var response map[string]interface{}
@@ -70,20 +71,37 @@ func testSweepEcsImagePipeline(region string) error {
 			listErrors = append(listErrors, fmt.Sprintf("%s returned an unexpected image pipeline list: %s", action, err))
 			break
 		}
-		for _, item := range result {
-			name, _ := item["Name"].(string)
-			if !shouldSweepEcsImagePipeline(name, imagePipelineTagMap(item["Tags"])) {
+		for index, item := range result {
+			// A record whose identity or ownership cannot be read is not
+			// silently skipped: skipping it would leave the pipeline behind
+			// while the sweep still reports success, so it is reported next to
+			// the listing and deletion failures.
+			name, nameErr := imagePipelineRecordName(item)
+			if nameErr != nil {
+				recordErrors = append(recordErrors, fmt.Sprintf("%s record %d: %s", action, index, nameErr))
+				continue
+			}
+			tags, tagsErr := imagePipelineTagMap(item["Tags"])
+			if tagsErr != nil {
+				recordErrors = append(recordErrors, fmt.Sprintf("image pipeline %s: %s", name, tagsErr))
+				continue
+			}
+			if !shouldSweepEcsImagePipeline(name, tags) {
 				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", name)
+				continue
+			}
+			id, idErr := imagePipelineRecordId(item)
+			if idErr != nil {
+				recordErrors = append(recordErrors, fmt.Sprintf("image pipeline %s: %s", name, idErr))
 				continue
 			}
 			action := "DeleteImagePipeline"
 			request := map[string]interface{}{
-				"ImagePipelineId": item["ImagePipelineId"],
+				"ImagePipelineId": id,
 				"RegionId":        aliyunClient.RegionId,
 			}
 			_, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
-				id, _ := item["ImagePipelineId"].(string)
 				log.Printf("[ERROR] Failed to delete Ecs Image Pipeline (%s): %s", name, err)
 				deleteErrors = append(deleteErrors, fmt.Sprintf("%s (%s): %s", name, id, err))
 				continue
@@ -96,7 +114,42 @@ func testSweepEcsImagePipeline(region string) error {
 			break
 		}
 	}
-	return imagePipelineSweepError(region, deleteErrors, listErrors)
+	return imagePipelineSweepError(region, deleteErrors, recordErrors, listErrors)
+}
+
+// imagePipelineRecordName returns the name the sweep logs and matches on. A
+// missing or non-string name cannot be matched against the owned fixture
+// patterns, so it is reported instead of being read as an empty name.
+func imagePipelineRecordName(item map[string]interface{}) (string, error) {
+	raw, ok := item["Name"]
+	if !ok || raw == nil {
+		return "", fmt.Errorf("record has no Name")
+	}
+	name, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("Name is %T instead of a string", raw)
+	}
+	if strings.TrimSpace(name) == "" {
+		return "", fmt.Errorf("Name is blank")
+	}
+	return name, nil
+}
+
+// imagePipelineRecordId returns the identity DeleteImagePipeline needs. A
+// missing or non-string identity cannot be deleted and must not be dropped.
+func imagePipelineRecordId(item map[string]interface{}) (string, error) {
+	raw, ok := item["ImagePipelineId"]
+	if !ok || raw == nil {
+		return "", fmt.Errorf("record has no ImagePipelineId")
+	}
+	id, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("ImagePipelineId is %T instead of a string", raw)
+	}
+	if strings.TrimSpace(id) == "" {
+		return "", fmt.Errorf("ImagePipelineId is blank")
+	}
+	return id, nil
 }
 
 // imagePipelineRecords decodes the pipeline list of one page. A response without
@@ -133,12 +186,16 @@ func imagePipelineRecords(response map[string]interface{}) ([]map[string]interfa
 }
 
 // imagePipelineSweepError reports every problem the sweep met. Deletion failures
-// are always part of the message, so a listing error that stops later pages
-// cannot hide an object that was already left behind.
-func imagePipelineSweepError(region string, deleteErrors, listErrors []string) error {
-	parts := make([]string, 0, len(deleteErrors)+len(listErrors))
+// and unreadable records are always part of the message, so a listing error that
+// stops later pages cannot hide an object that was already left behind, and a
+// record whose ownership could not be read cannot be mistaken for a clean sweep.
+func imagePipelineSweepError(region string, deleteErrors, recordErrors, listErrors []string) error {
+	parts := make([]string, 0, len(deleteErrors)+len(recordErrors)+len(listErrors))
 	if len(deleteErrors) > 0 {
 		parts = append(parts, fmt.Sprintf("failed to delete %d Ecs Image Pipeline(s): %s", len(deleteErrors), strings.Join(deleteErrors, "; ")))
+	}
+	if len(recordErrors) > 0 {
+		parts = append(parts, fmt.Sprintf("could not read %d Ecs Image Pipeline record(s): %s", len(recordErrors), strings.Join(recordErrors, "; ")))
 	}
 	if len(listErrors) > 0 {
 		parts = append(parts, fmt.Sprintf("failed to list Ecs Image Pipelines in %s: %s", region, strings.Join(listErrors, "; ")))
@@ -157,34 +214,48 @@ const (
 	imagePipelineOwnerTagValue = "true"
 )
 
-// imagePipelineTagMap decodes the Tags member into a plain map. A malformed
-// member yields an empty map, which means "not owned" and never matches.
-func imagePipelineTagMap(tags interface{}) map[string]string {
+// imagePipelineTagMap decodes the Tags member into a plain map. An absent
+// member means "no tags", which is a legitimate "not owned" answer; a member of
+// the wrong shape is reported instead, because reading it as "no tags" would
+// silently leave an owned pipeline behind. Entries without a string key are
+// reported for the same reason.
+func imagePipelineTagMap(tags interface{}) (map[string]string, error) {
 	result := map[string]string{}
+	if tags == nil {
+		return result, nil
+	}
 	container, ok := tags.(map[string]interface{})
 	if !ok {
-		return result
+		return nil, fmt.Errorf("Tags is %T instead of an object", tags)
 	}
 	raw, ok := container["Tag"]
-	if !ok {
-		return result
+	if !ok || raw == nil {
+		return result, nil
 	}
 	list, ok := raw.([]interface{})
 	if !ok {
-		return result
+		return nil, fmt.Errorf("Tags.Tag is %T instead of a list", raw)
 	}
-	for _, entry := range list {
+	for index, entry := range list {
 		item, ok := entry.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, fmt.Errorf("Tags.Tag[%d] is %T instead of an object", index, entry)
 		}
-		key, _ := item["TagKey"].(string)
-		value, _ := item["TagValue"].(string)
-		if key != "" {
-			result[key] = value
+		key, ok := item["TagKey"].(string)
+		if !ok || key == "" {
+			return nil, fmt.Errorf("Tags.Tag[%d] has no string key", index)
 		}
+		value := ""
+		if item["TagValue"] != nil {
+			text, ok := item["TagValue"].(string)
+			if !ok {
+				return nil, fmt.Errorf("Tags.Tag[%d].TagValue is %T instead of a string", index, item["TagValue"])
+			}
+			value = text
+		}
+		result[key] = value
 	}
-	return result
+	return result, nil
 }
 
 // shouldSweepEcsImagePipeline reports whether a pipeline belongs to a fixture
@@ -228,21 +299,76 @@ func TestUnitShouldSweepEcsImagePipeline(t *testing.T) {
 }
 
 func TestUnitImagePipelineTagMap(t *testing.T) {
-	tags := imagePipelineTagMap(map[string]interface{}{
+	tags, err := imagePipelineTagMap(map[string]interface{}{
 		"Tag": []interface{}{
 			map[string]interface{}{"TagKey": imagePipelineOwnerTagKey, "TagValue": imagePipelineOwnerTagValue},
-			"malformed",
-			map[string]interface{}{"TagValue": "no-key"},
+			map[string]interface{}{"TagKey": "no-value"},
 		},
 	})
+	if err != nil {
+		t.Fatalf("a well formed tag list must decode, got %v", err)
+	}
 	if tags[imagePipelineOwnerTagKey] != imagePipelineOwnerTagValue {
 		t.Fatalf("expected the ownership tag, got %v", tags)
 	}
-	if len(tags) != 1 {
-		t.Fatalf("expected malformed entries to be skipped, got %v", tags)
+	if len(tags) != 2 {
+		t.Fatalf("expected both tags, got %v", tags)
 	}
-	if len(imagePipelineTagMap("not-an-object")) != 0 {
-		t.Fatal("expected an empty map for a malformed Tags member")
+
+	// An absent member means the pipeline has no tags, which is a valid "not
+	// owned" answer rather than a malformed record.
+	for name, value := range map[string]interface{}{
+		"nil member":     nil,
+		"missing Tag":    map[string]interface{}{},
+		"nil Tag":        map[string]interface{}{"Tag": nil},
+		"empty Tag list": map[string]interface{}{"Tag": []interface{}{}},
+	} {
+		tags, err := imagePipelineTagMap(value)
+		if err != nil || len(tags) != 0 {
+			t.Errorf("%s must be an empty tag set, got %v, %v", name, tags, err)
+		}
+	}
+
+	// A malformed ownership member must be reported: reading it as "no tags"
+	// would skip an owned pipeline while the sweep reports success.
+	for name, value := range map[string]interface{}{
+		"Tags wrong type":   "not-an-object",
+		"Tag wrong type":    map[string]interface{}{"Tag": "not-a-list"},
+		"entry wrong type":  map[string]interface{}{"Tag": []interface{}{"malformed"}},
+		"entry without key": map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagValue": "no-key"}}},
+		"blank key":         map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagKey": ""}}},
+		"non-string key":    map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagKey": 1}}},
+		"non-string value":  map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagKey": "k", "TagValue": 1}}},
+	} {
+		if _, err := imagePipelineTagMap(value); err == nil {
+			t.Errorf("%s must be reported instead of being read as an empty tag set", name)
+		}
+	}
+}
+
+// A record whose name or identity cannot be read must be reported: skipping it
+// silently would leave the pipeline behind while the sweep reports success.
+func TestUnitImagePipelineRecordIdentity(t *testing.T) {
+	if name, err := imagePipelineRecordName(map[string]interface{}{"Name": "terraform-example"}); err != nil || name != "terraform-example" {
+		t.Fatalf("a well formed name must decode, got %q, %v", name, err)
+	}
+	if id, err := imagePipelineRecordId(map[string]interface{}{"ImagePipelineId": "ip-1"}); err != nil || id != "ip-1" {
+		t.Fatalf("a well formed identity must decode, got %q, %v", id, err)
+	}
+
+	for name, item := range map[string]map[string]interface{}{
+		"missing name":        {"ImagePipelineId": "ip-1"},
+		"non-string name":     {"Name": 7, "ImagePipelineId": "ip-1"},
+		"blank name":          {"Name": "  ", "ImagePipelineId": "ip-1"},
+		"missing identity":    {"Name": "tf-testAcc-1"},
+		"non-string identity": {"Name": "tf-testAcc-1", "ImagePipelineId": 7},
+		"blank identity":      {"Name": "tf-testAcc-1", "ImagePipelineId": " "},
+	} {
+		_, nameErr := imagePipelineRecordName(item)
+		_, idErr := imagePipelineRecordId(item)
+		if nameErr == nil && idErr == nil {
+			t.Errorf("%s must be reported as unreadable", name)
+		}
 	}
 }
 
@@ -295,27 +421,33 @@ func TestUnitImagePipelineRecords(t *testing.T) {
 }
 
 // A listing error must never hide the objects that failed to delete earlier in
-// the sweep: both failures are reported together.
+// the sweep, and an unreadable record must never look like a clean sweep: every
+// failure is reported together.
 func TestUnitImagePipelineSweepError(t *testing.T) {
-	if err := imagePipelineSweepError("cn-hangzhou", nil, nil); err != nil {
+	if err := imagePipelineSweepError("cn-hangzhou", nil, nil, nil); err != nil {
 		t.Fatalf("no failures must not produce an error, got %v", err)
 	}
 
 	deleteErrors := []string{"terraform-example (ip-1): Forbidden"}
-	if err := imagePipelineSweepError("cn-hangzhou", deleteErrors, nil); err == nil || !strings.Contains(err.Error(), "failed to delete 1") {
+	if err := imagePipelineSweepError("cn-hangzhou", deleteErrors, nil, nil); err == nil || !strings.Contains(err.Error(), "failed to delete 1") {
 		t.Fatalf("a deletion failure must be reported, got %v", err)
 	}
 
+	recordErrors := []string{"DescribeImagePipelines record 2: Name is blank"}
+	if err := imagePipelineSweepError("cn-hangzhou", nil, recordErrors, nil); err == nil || !strings.Contains(err.Error(), "could not read 1") {
+		t.Fatalf("an unreadable record must be reported, got %v", err)
+	}
+
 	listErrors := []string{"DescribeImagePipelines failed to list image pipelines: timeout"}
-	if err := imagePipelineSweepError("cn-hangzhou", nil, listErrors); err == nil || !strings.Contains(err.Error(), "failed to list") {
+	if err := imagePipelineSweepError("cn-hangzhou", nil, nil, listErrors); err == nil || !strings.Contains(err.Error(), "failed to list") {
 		t.Fatalf("a listing failure must be reported, got %v", err)
 	}
 
-	combined := imagePipelineSweepError("cn-hangzhou", deleteErrors, listErrors)
+	combined := imagePipelineSweepError("cn-hangzhou", deleteErrors, recordErrors, listErrors)
 	if combined == nil {
 		t.Fatal("a combined failure must produce an error")
 	}
-	for _, expected := range []string{"failed to delete 1", "terraform-example (ip-1): Forbidden", "failed to list"} {
+	for _, expected := range []string{"failed to delete 1", "terraform-example (ip-1): Forbidden", "could not read 1", "Name is blank", "failed to list"} {
 		if !strings.Contains(combined.Error(), expected) {
 			t.Fatalf("the combined error must keep %q, got %v", expected, combined)
 		}

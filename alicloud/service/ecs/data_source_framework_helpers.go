@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/tags"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -108,17 +109,12 @@ func fwStringMapValue(values map[string]string) types.Map {
 	return types.MapValueMust(types.StringType, elements)
 }
 
-// fwReservedTagPrefixes mirrors the reserved tag namespaces that the shared
-// tags helper drops from data source state.
-var fwReservedTagPrefixes = []string{"aliyun", "acs:", "http://", "https://", "sae.do.not.delete"}
-
+// fwTagKeyReserved reports whether a tag key belongs to a namespace that the
+// provider does not surface in state. The contract lives in the shared tags
+// package so this data source family and every other resource apply the same
+// rule to the same key.
 func fwTagKeyReserved(key string) bool {
-	for _, prefix := range fwReservedTagPrefixes {
-		if strings.HasPrefix(key, prefix) {
-			return true
-		}
-	}
-	return false
+	return tags.IsReservedTagKey(key)
 }
 
 // fwDecodeTags decodes the `Tags` member of an ECS record. An absent member
@@ -283,7 +279,7 @@ func (v fwTagMapValidator) ValidateMap(ctx context.Context, req validator.MapReq
 			continue
 		}
 		if value.IsNull() {
-			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Value", fmt.Sprintf("The value of tag key %q must be set; use an empty string to send an empty value.", key))
+			resp.Diagnostics.AddAttributeError(req.Path, "Invalid Tag Value", fmt.Sprintf("The value of tag key %q must be set; %s", key, v.nullValueGuidance()))
 			return
 		}
 		if message := validateFwTagValue(v, value.ValueString()); message != "" {
@@ -291,6 +287,17 @@ func (v fwTagMapValidator) ValidateMap(ctx context.Context, req validator.MapReq
 			return
 		}
 	}
+}
+
+// nullValueGuidance tells the caller what to do with a null value. Suggesting
+// an empty string is only correct for the APIs that accept one; for the APIs
+// that reject it the only way to leave a tag out of the request is to omit the
+// entry, and the diagnostic must say exactly that.
+func (v fwTagMapValidator) nullValueGuidance() string {
+	if v.allowEmptyValue {
+		return "omit the entry to leave the tag out of the request, or use an empty string to send an empty value."
+	}
+	return "omit the entry to leave the tag out of the request; this API rejects an empty value."
 }
 
 func validateFwTagKey(key string) string {
@@ -351,38 +358,20 @@ var fwRpcCall = func(ctx context.Context, client *connectivity.AliyunClient, act
 	return client.DoWithContext(ctx, "Ecs", helper.RpcParam("POST", "2014-05-26", action), nil, request, nil, nil, runtime)
 }
 
-// fwRemainingBudgetMillis converts the read deadline into the millisecond
-// transport timeouts the SDK expects. Without a deadline it returns 0, which
-// leaves the SDK defaults in place.
-func fwRemainingBudgetMillis(ctx context.Context) int {
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		return 0
-	}
-	remaining := time.Until(deadline)
-	if remaining <= 0 {
-		return 1
-	}
-	millis := remaining.Milliseconds()
-	if millis < 1 {
-		millis = 1
-	}
-	if millis > math.MaxInt32 {
-		millis = math.MaxInt32
-	}
-	return int(millis)
-}
-
-// fwRequestRuntime bounds one request with the remaining read budget and
-// switches off the SDK internal retry loop: every retry is owned by the loop
-// below, which stops on the same deadline and cancellation signal.
-func fwRequestRuntime(ctx context.Context) *utilV2.RuntimeOptions {
+// fwRequestRuntime switches off the SDK internal retry loop: every retry is
+// owned by the loop below, which stops on the read deadline and cancellation
+// signal.
+//
+// The transport timeouts are deliberately left at the client configuration.
+// The SDK keys its process-wide client and transport pool on the runtime
+// timeouts, so writing the shrinking remaining budget into them on every page
+// would allocate a new client and a new connection pool per page and lose the
+// keep-alive connection between pages. The read deadline reaches the request
+// through the context instead, which bounds the exchange without changing the
+// transport configuration.
+func fwRequestRuntime() *utilV2.RuntimeOptions {
 	runtime := &utilV2.RuntimeOptions{}
 	runtime.SetAutoretry(false)
-	if millis := fwRemainingBudgetMillis(ctx); millis > 0 {
-		runtime.ConnectTimeout = &millis
-		runtime.ReadTimeout = &millis
-	}
 	return runtime
 }
 
@@ -416,11 +405,10 @@ func fwNeedRetry(err error) bool {
 // fwRpcPost sends one read-only ECS query with the shared retry policy:
 // transient failures are retried inside the bounded window, everything else
 // fails on the first response. The context carries the read budget: it gates
-// every attempt and the backoff, the same remaining budget is handed to the
-// transport as connect/read timeouts, and the request itself is built from it,
-// so an in-flight call is aborted instead of running on after the read returns.
-// The loop runs inline, so no retry callback can write a response after the
-// caller has stopped waiting.
+// every attempt and the backoff, and the request itself is built from it, so an
+// in-flight call is aborted instead of running on after the read returns. The
+// loop runs inline, so no retry callback can write a response after the caller
+// has stopped waiting.
 func fwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName, action string, request map[string]interface{}) (map[string]interface{}, error) {
 	backoff := fwRetryBackoff
 	retryDeadline := time.Now().Add(fwRetryTimeout)
@@ -428,7 +416,7 @@ func fwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName,
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return nil, errs.WrapErrorf(fmt.Errorf("%s was not sent: %v", action, ctxErr), errs.DataDefaultErrorMsg, typeName, action, errs.AlibabaCloudSdkGoERROR)
 		}
-		response, rpcErr := fwRpcCall(ctx, client, action, request, fwRequestRuntime(ctx))
+		response, rpcErr := fwRpcCall(ctx, client, action, request, fwRequestRuntime())
 		if rpcErr == nil {
 			logs.AddDebug(action, response, request)
 			return response, nil
@@ -703,6 +691,15 @@ type fwNumberedPage struct {
 // pages, so completeness is measured against the readable suffix of the total
 // (TotalCount minus the rows the start page skips), not against the whole total.
 func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, action, identityKey string, fetch func(pageNumber int64) (fwNumberedPage, error)) ([]map[string]interface{}, int64, error) {
+	// PageNumber and PageSize are int32 on the wire. Bounding the two inputs to
+	// that range keeps `skipped` inside int64 and keeps every page number this
+	// loop sends representable, instead of wrapping around after it is cast.
+	if startPage < 1 || startPage > math.MaxInt32 {
+		return nil, 0, fmt.Errorf("%s cannot start at page %d: the start page must be between 1 and %d", action, startPage, math.MaxInt32)
+	}
+	if pageSize < 1 || pageSize > math.MaxInt32 {
+		return nil, 0, fmt.Errorf("%s cannot use PageSize %d: the page size must be between 1 and %d", action, pageSize, math.MaxInt32)
+	}
 	objects := make([]map[string]interface{}, 0)
 	totalCount := int64(0)
 	totalKnown := false
@@ -760,6 +757,9 @@ func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSi
 		if totalKnown && int64(len(objects)) >= readableTotal {
 			break
 		}
+		if pageNumber >= math.MaxInt32 {
+			return nil, 0, fmt.Errorf("%s cannot continue past page %d, which is the largest page number the API accepts; the result was not returned because it would be incomplete", action, pageNumber)
+		}
 		pageNumber++
 		if page == maxPages-1 {
 			return nil, 0, fmt.Errorf("%s returned a full page for %d consecutive requests (PageSize=%d), so pagination did not terminate; the result was not returned because it would be incomplete", action, maxPages, pageSize)
@@ -776,9 +776,16 @@ func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSi
 // overlapping pages are rejected as well. A repeated token or a token for the
 // whole page budget means the cursor never terminates; the accumulated rows are
 // discarded instead of being returned as a partial result.
+//
+// The configured start token is already in use before the first request, so it
+// is recorded up front: a server that echoes it back would otherwise make the
+// loop send the very same request a second time before noticing the repeat.
 func fwCollectTokenPages(ctx context.Context, maxPages int, initialToken, action, identityKey string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
 	objects := make([]map[string]interface{}, 0)
 	seenTokens := map[string]struct{}{}
+	if initialToken != "" {
+		seenTokens[initialToken] = struct{}{}
+	}
 	seenRecords := map[string]struct{}{}
 	token := initialToken
 	for page := 0; page < maxPages; page++ {

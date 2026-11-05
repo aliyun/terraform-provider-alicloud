@@ -214,3 +214,39 @@ func TestUnitCommonConvertLowercaseTags(t *testing.T) {
 		})
 	}
 }
+
+// The reserved namespace contract is literal, not a regular expression: the
+// dots inside "sae.do.not.delete" are characters a reserved key must start
+// with, so a hyphenated lookalike is an ordinary key.
+func TestUnitIsReservedTagKey(t *testing.T) {
+	cases := []struct {
+		key      string
+		reserved bool
+	}{
+		{"aliyun", true},
+		{"aliyun-something", true},
+		{"acs:tag", true},
+		{"http://example.com", true},
+		{"https://example.com", true},
+		{"sae.do.not.delete", true},
+		{"sae.do.not.delete-anything", true},
+		{"sae-do-not-delete-x", false},
+		{"saeXdoYnotZdelete", false},
+		{"env", false},
+		{"", false},
+		{"ALIYUN-upper", false},
+	}
+	for _, testCase := range cases {
+		if got := IsReservedTagKey(testCase.key); got != testCase.reserved {
+			t.Errorf("IsReservedTagKey(%q) = %v, want %v", testCase.key, got, testCase.reserved)
+		}
+	}
+}
+
+// TagIgnored must apply the same contract as the shared predicate.
+func TestUnitTagIgnoredUsesTheReservedContract(t *testing.T) {
+	assert.True(t, TagIgnored("acs:tag", "value"))
+	assert.True(t, TagIgnored("sae.do.not.delete", "value"))
+	assert.False(t, TagIgnored("sae-do-not-delete-x", "value"))
+	assert.False(t, TagIgnored("env", "value"))
+}

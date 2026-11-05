@@ -280,8 +280,12 @@ func (d *imagePipelineExecutionsDataSource) load(ctx context.Context, client *co
 		return model, err
 	}
 
+	// Blank and repeated IDs are dropped before the filter is built, exactly as
+	// the argument and its Schema description promise. An all-blank list is
+	// therefore an empty filter that selects every execution, not a filter that
+	// matches nothing.
 	idsFilter := make(map[string]struct{}, len(model.Ids.Elements()))
-	for _, id := range fwElementsAsStrings(model.Ids) {
+	for _, id := range fwUniqueStrings(fwElementsAsStrings(model.Ids)) {
 		idsFilter[id] = struct{}{}
 	}
 
