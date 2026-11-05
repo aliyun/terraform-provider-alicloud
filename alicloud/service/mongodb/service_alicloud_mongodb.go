@@ -873,23 +873,37 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	// any Read has populated the conventional backup fields. Sending empty values
 	// makes the service reject the whole request (InvalidPreferredBackupTime), so
 	// read the effective values instead of resetting the backup schedule.
+	//
+	// A failed read must stop here instead of falling through to the Modify request:
+	// collapsing the failure into empty values would replace the real error (for
+	// example a permission or transient read failure) with an unrelated
+	// InvalidPreferredBackupTime/Period error and could drop the configured schedule.
 	if backupTime == "" || backupPeriod == "" {
-		if policy, policyErr := s.DescribeMongoDBBackupPolicy(d.Id()); policyErr == nil {
-			if backupTime == "" {
-				if v, ok := policy["PreferredBackupTime"]; ok && fmt.Sprint(v) != "" {
-					backupTime = fmt.Sprint(v)
-				}
+		policy, policyErr := s.DescribeMongoDBBackupPolicy(d.Id())
+		if policyErr != nil {
+			return errs.WrapError(policyErr)
+		}
+		if backupTime == "" {
+			if v, ok := policy["PreferredBackupTime"]; ok && fmt.Sprint(v) != "" {
+				backupTime = fmt.Sprint(v)
 			}
-			if backupPeriod == "" {
-				if v, ok := policy["PreferredBackupPeriod"]; ok && fmt.Sprint(v) != "" {
-					backupPeriod = fmt.Sprint(v)
-				}
+		}
+		if backupPeriod == "" {
+			if v, ok := policy["PreferredBackupPeriod"]; ok && fmt.Sprint(v) != "" {
+				backupPeriod = fmt.Sprint(v)
 			}
 		}
 	}
 
-	request["PreferredBackupTime"] = backupTime
-	request["PreferredBackupPeriod"] = backupPeriod
+	// PreferredBackupTime and PreferredBackupPeriod are optional for the service, so
+	// an undetermined value is omitted instead of being sent as an empty string that
+	// the service rejects.
+	if backupTime != "" {
+		request["PreferredBackupTime"] = backupTime
+	}
+	if backupPeriod != "" {
+		request["PreferredBackupPeriod"] = backupPeriod
+	}
 
 	if v, ok := d.GetOkExists("backup_retention_period"); ok {
 		request["BackupRetentionPeriod"] = v

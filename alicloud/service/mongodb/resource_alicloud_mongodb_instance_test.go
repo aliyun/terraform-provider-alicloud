@@ -1244,6 +1244,72 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
 			},
 			{
+				// Second legal geo-redundant policy: another weekday pair and larger
+				// retention values. cross_backup_period must stay a subset of
+				// backup_period, so the conventional schedule grows in the same apply
+				// (QA-N4). The API readback proves the update converged instead of
+				// leaving the initial Monday/Tuesday and 7/7 values.
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period":             []string{"Monday", "Tuesday", "Wednesday", "Thursday"},
+					"cross_backup_period":       []string{"Wednesday", "Thursday"},
+					"cross_retention_value":     14,
+					"cross_log_retention_value": 10,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#":           "4",
+						"cross_backup_period.#":     "2",
+						"cross_retention_value":     "14",
+						"cross_log_retention_value": "10",
+					}),
+					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, []string{"Wednesday", "Thursday"}, map[string]string{
+						"CrossRetentionType":     "delay",
+						"CrossRetentionValue":    "14",
+						"CrossLogRetentionType":  "delay",
+						"CrossLogRetentionValue": "10",
+						"EnableCrossLogBackup":   "1",
+					}),
+				),
+			},
+			{
+				// The changed period and retention values are readable, so the import
+				// after them keeps every attribute except the write-only selector under
+				// verification.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
+				// The other legal retention types are "never" (no expiry). Both types
+				// change together and the API readback proves the service converges on the
+				// non-delay values (QA-N4).
+				Config: testAccConfig(map[string]interface{}{
+					"cross_retention_type":     "never",
+					"cross_log_retention_type": "never",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cross_retention_type":     "never",
+						"cross_log_retention_type": "never",
+					}),
+					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, []string{"Wednesday", "Thursday"}, map[string]string{
+						"CrossRetentionType":    "never",
+						"CrossLogRetentionType": "never",
+						"EnableCrossLogBackup":  "1",
+					}),
+				),
+			},
+			{
+				// Import after the retention type change must rebuild the same state; the
+				// retention types are read back from the API, so only the write-only
+				// selector is exempted.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: append([]string{"cross_backup_type"}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
 				// Switching cross-region log backup off used to drop the explicit 0 and
 				// leave the cloud-side setting untouched. The API-side check proves the
 				// disable actually reached the service.
@@ -1357,6 +1423,44 @@ func TestAccAliCloudMongoDBInstance_crossBackup(t *testing.T) {
 				// The high-frequency values are readable, so an import after enabling them
 				// keeps them under verification; only the policy attributes exempted for
 				// the deleted policy are skipped.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: append([]string{
+					"cross_backup_type",
+					"cross_backup_period",
+					"cross_retention_type",
+					"cross_retention_value",
+					"cross_log_retention_type",
+					"cross_log_retention_value",
+					"src_region",
+					"dest_region",
+					"enable_cross_log_backup",
+				}, mongodbInstanceImportStateVerifyIgnore...),
+			},
+			{
+				// A second high-frequency combination: the default one-day retention and
+				// the hourly sparse switch turned off. The API readback proves both
+				// transitions reach the service instead of being replayed from state
+				// (QA-N4).
+				Config: testAccConfig(map[string]interface{}{
+					"high_frequency_backup_retention": 1,
+					"preserve_one_each_hour":          false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"high_frequency_backup_retention": "1",
+						"preserve_one_each_hour":          "false",
+					}),
+					testAccCheckMongoDBInstanceCrossBackupPolicyValues(resourceId, nil, map[string]string{
+						"HighFrequencyBackupRetention": "1",
+						"PreserveOneEachHour":          "false",
+					}),
+				),
+			},
+			{
+				// Both high-frequency values are readable, so the import after the second
+				// combination keeps them under verification.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1761,6 +1865,14 @@ const mongodbBackupPolicyFixtureInstanceId = "dds-fixture-instance"
 type mongodbBackupPolicyFixture struct {
 	mu       sync.Mutex
 	requests []map[string]string
+
+	// describeBackupPolicyStatus makes DescribeBackupPolicy answer with an error, so a
+	// test can prove the update chain stops before ModifyBackupPolicy. Zero keeps the
+	// normal successful response. describeBackupPolicyEmpty makes the successful
+	// response carry no schedule, which exercises the omitted-value path.
+	describeBackupPolicyStatus int
+	describeBackupPolicyCode   string
+	describeBackupPolicyEmpty  bool
 }
 
 func (f *mongodbBackupPolicyFixture) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -1788,6 +1900,19 @@ func (f *mongodbBackupPolicyFixture) serveHTTP(w http.ResponseWriter, r *http.Re
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"Code": "InvalidParameter", "Message": "fixture captured the modify request", "RequestId": "fixture"})
 	case "DescribeBackupPolicy":
+		if f.describeBackupPolicyStatus != 0 {
+			w.WriteHeader(f.describeBackupPolicyStatus)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"Code":      f.describeBackupPolicyCode,
+				"Message":   "fixture rejected the describe request",
+				"RequestId": "fixture",
+			})
+			return
+		}
+		if f.describeBackupPolicyEmpty {
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{})
+			return
+		}
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"PreferredBackupTime":   "23:00Z-24:00Z",
 			"PreferredBackupPeriod": "Monday,Tuesday",
@@ -1820,7 +1945,21 @@ func (f *mongodbBackupPolicyFixture) captured(action string) []map[string]string
 
 func newMongoDBBackupPolicyFixture(t *testing.T) (*mongodbBackupPolicyFixture, *connectivity.AliyunClient) {
 	t.Helper()
-	fixture := &mongodbBackupPolicyFixture{}
+	return newMongoDBBackupPolicyFixtureWithDescribeResponse(t, 0, "", false)
+}
+
+func newMongoDBBackupPolicyFixtureWithDescribeFailure(t *testing.T, status int, code string) (*mongodbBackupPolicyFixture, *connectivity.AliyunClient) {
+	t.Helper()
+	return newMongoDBBackupPolicyFixtureWithDescribeResponse(t, status, code, false)
+}
+
+func newMongoDBBackupPolicyFixtureWithDescribeResponse(t *testing.T, status int, code string, empty bool) (*mongodbBackupPolicyFixture, *connectivity.AliyunClient) {
+	t.Helper()
+	fixture := &mongodbBackupPolicyFixture{
+		describeBackupPolicyStatus: status,
+		describeBackupPolicyCode:   code,
+		describeBackupPolicyEmpty:  empty,
+	}
 	server := httptest.NewServer(http.HandlerFunc(fixture.serveHTTP))
 	t.Cleanup(server.Close)
 
@@ -2152,6 +2291,48 @@ func TestUnitAliCloudMongoDBInstanceBackupPolicyRequestSerialization(t *testing.
 		mongodbBackupPolicyFixtureAssertSent(t, request, "PreferredBackupPeriod", "Monday,Tuesday")
 	})
 
+	t.Run("create-time policy read failure stops before the modify request", func(t *testing.T) {
+		// The create-time fallback reads the effective schedule from the service. A
+		// failed read must surface the original error and must not be replaced by a
+		// ModifyBackupPolicy request built from empty values (QA-N3).
+		fixture, client := newMongoDBBackupPolicyFixtureWithDescribeFailure(t, http.StatusForbidden, "Forbidden.RAM")
+		resourceInstance := newMongoDBBackupPolicyFixtureResource()
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		state := mongodbBackupPolicyFixtureState(map[string]string{"backup_time": ""})
+		d := mongodbBackupPolicyFixtureUpdateData(t, resourceInstance, state, raw, values)
+		err := resourceInstance.Update(d, client)
+		if err == nil {
+			t.Fatal("a failed DescribeBackupPolicy must fail the update")
+		}
+		if !strings.Contains(err.Error(), "Forbidden.RAM") {
+			t.Fatalf("the update must surface the original DescribeBackupPolicy error, got %s", err)
+		}
+		if requests := fixture.captured("ModifyBackupPolicy"); len(requests) != 0 {
+			t.Fatalf("a failed DescribeBackupPolicy must not reach ModifyBackupPolicy, got %d requests", len(requests))
+		}
+	})
+
+	t.Run("create-time policy omits an undetermined backup schedule", func(t *testing.T) {
+		// DescribeBackupPolicy can succeed without reporting a schedule. An empty value
+		// must be omitted instead of being sent as an empty string the service rejects
+		// with InvalidPreferredBackupTime/Period (QA-N3).
+		fixture, client := newMongoDBBackupPolicyFixtureWithDescribeResponse(t, 0, "", true)
+		resourceInstance := newMongoDBBackupPolicyFixtureResource()
+		raw, values := mongodbBackupPolicyFixtureCrossConfig(t, 1)
+		state := mongodbBackupPolicyFixtureState(map[string]string{
+			"backup_time": "",
+		})
+		d := mongodbBackupPolicyFixtureUpdateData(t, resourceInstance, state, raw, values)
+		if err := resourceInstance.Update(d, client); err == nil {
+			t.Fatal("the fixture answers ModifyBackupPolicy with 400, so Update must return the API error")
+		}
+		requests := fixture.captured("ModifyBackupPolicy")
+		if len(requests) != 1 {
+			t.Fatalf("expected exactly 1 ModifyBackupPolicy request, got %d", len(requests))
+		}
+		mongodbBackupPolicyFixtureAssertOmitted(t, requests[0], "PreferredBackupTime", "PreferredBackupPeriod")
+	})
+
 	t.Run("delete mode carries the regions and omits the retention attributes", func(t *testing.T) {
 		// The service assembles the delete entry from the region and type fields only:
 		// the policy cannot be located without both regions, and the retention/period
@@ -2345,6 +2526,21 @@ func TestUnitAliCloudMongoDBInstanceCrossBackupValidation(t *testing.T) {
 		err := mongodbBackupPolicyFixtureRunPlanValidation(t, raw)
 		if err == nil || !strings.Contains(err.Error(), "cross_backup_type") {
 			t.Fatalf("the plan must reject a geo attribute without cross_backup_type, got %v", err)
+		}
+	})
+
+	t.Run("an explicit zero geo attribute alone still requires the selector", func(t *testing.T) {
+		// The only geo input is an explicit 0 and no other geo attribute is present, so
+		// nothing except the explicit zero can trigger RequiredWith. The plan must name
+		// cross_backup_type, which proves an explicit zero counts as configured instead
+		// of being treated as absent (QA-N1). Plan validation runs before Update, so no
+		// cloud request can be issued by this case.
+		raw := mongodbBackupPolicyFixtureConfig(map[string]interface{}{
+			"enable_cross_log_backup": 0,
+		})
+		err := mongodbBackupPolicyFixtureRunPlanValidation(t, raw)
+		if err == nil || !strings.Contains(err.Error(), "cross_backup_type") {
+			t.Fatalf("the plan must reject an explicit zero geo attribute without cross_backup_type, got %v", err)
 		}
 	})
 
