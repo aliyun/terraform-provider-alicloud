@@ -523,7 +523,9 @@ func TestUnitDatabaseRemainingBudget(t *testing.T) {
 		if err := waitDatabaseAccountEmpowered(describe, "pc-1:db", "alice", remainingUntil(started.Add(-time.Millisecond))); err == nil {
 			t.Fatal("expected the wait to fail once the shared Update deadline has passed")
 		}
-		if elapsed := time.Since(started); elapsed > 2*time.Second {
+		// The SDK's refresh grace period adds a few seconds; a wait that received a
+		// fresh full Update budget would instead keep polling for minutes.
+		if elapsed := time.Since(started); elapsed > 15*time.Second {
 			t.Fatalf("expected the wait to stop with the shared budget, got %s", elapsed)
 		}
 	})
