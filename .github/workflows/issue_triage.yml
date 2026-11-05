@@ -1,8 +1,10 @@
 name: Issue Triage
 
-# Automatic labeling and a short acknowledgment reply for newly opened
-# issues. Fire-and-forget: the workflow runs once per issue, only adds
-# labels (never removes or re-triggers on edits), and posts one reply.
+# Automatic labeling plus exactly one acknowledgment, posted when the
+# issue is opened and never rewritten. Labels are additive and idempotent
+# (nothing is ever removed). The closing ask is derived from what the title
+# and body already contain, so an issue whose report is complete is not
+# asked for what it already provided.
 
 on:
   issues:
@@ -39,22 +41,58 @@ jobs:
             const text = `${title}\n${body}`;
 
             // ---- Kind labels ---------------------------------------------
-            const kindLabels = [];
-            // A crash word in the title is a strong enough signal; in the
-            // body only panic-style evidence counts, where "crash" alone
-            // is too generic.
+            // Exactly one kind drives the reply wording. Crash is additive
+            // because it describes severity rather than the request, so it
+            // never replaces the kind label. Feature detection has to cover
+            // the phrasings this repo actually receives: a bare
+            // "Support <capability>" title is a feature request even when
+            // the word "new" never appears.
+            const featureEvidence =
+              /\b(feature request|enhancement|new resource|new data source)\b/i.test(text) ||
+              /\bterraform support (for|of)\b/i.test(title) ||
+              /:\s*(support|add|allow|enable|provide|expose)\b/i.test(title) ||
+              /^(please )?(add|adding|support|supporting|allow|allowing|provide|providing|enable|enabling|expose|introduce|consider)\b/i.test(title);
+            const docsEvidence = /\b(docs?|documentation)\b/i.test(title);
+            // A crash word in the title is a strong enough signal. In the
+            // body it takes Terraform's own crash shape — a panic line
+            // followed by a goroutine dump — because a pasted log from an
+            // unrelated program also contains "panic:".
             const crashEvidence =
               /\bcrash(es|ed)?\b/i.test(title) ||
-              /\b(panic|crash\.log|goroutine \d+ \[|runtime error:)\b/i.test(body);
+              /\bcrash\.log\b/i.test(body) ||
+              /\bpanic:[^\n]*\n[\s\S]{0,4000}?\bgoroutine \d+ \[/i.test(body);
+            // Failure vocabulary is split: on the title it is strong, in the
+            // body it is weak, because a question that pastes a log owns
+            // none of the words inside it.
+            const failurePattern =
+              /\b(bug|errors?|fail(s|ed|ing|ure)?|panics?|crash(es|ed)?|regression|incorrect(ly)?|wrong|broken|missing|drift(s|ed|ing)?|mismatch(es)?|inconsistent|stale|ignore[sd]?|repeat(s|ed|ing)?|duplicat(e|es|ed)|leaks?|does not|doesn't|not (work(s|ing)?|sent|applied|persisted|updated|returned)|never (sent|updated|applied)|unexpected(ly)?|timeouts?|denied|throttl(ed|ing)|exceeds?)\b/i;
+            const titleFailureEvidence = failurePattern.test(title);
+            const bodyFailureEvidence = failurePattern.test(body);
+            const questionEvidence =
+              /^(how|what|why|when|which|where|is (it|there)|are (there|they)|can (i|we)|does)\b/i.test(title) ||
+              /\bquestions?\b/i.test(title);
+
+            let kind = null;
+            if (crashEvidence) {
+              kind = "crash";
+            } else if (featureEvidence) {
+              kind = "enhancement";
+            } else if (docsEvidence) {
+              kind = "documentation";
+            } else if (titleFailureEvidence) {
+              kind = "bug";
+            } else if (questionEvidence) {
+              kind = "question";
+            } else if (bodyFailureEvidence) {
+              kind = "bug";
+            }
+
+            const kindLabels = [];
             if (crashEvidence) {
               kindLabels.push("crash");
             }
-            if (/\b(feature request|add (a )?new (resource|data source)|support (a )?new |enhancement)\b/i.test(title)) {
-              kindLabels.push("enhancement");
-            } else if (/\b(documentation|docs?)\b/i.test(title)) {
-              kindLabels.push("documentation");
-            } else if (/^(how (do|can|to)|is (it|there))|question\b/i.test(title)) {
-              kindLabels.push("question");
+            if (kind && kind !== "crash") {
+              kindLabels.push(kind);
             }
 
             // ---- Service labels ------------------------------------------
@@ -95,11 +133,16 @@ jobs:
               const labelByName = new Map(
                 repoLabels.map(({ name }) => [name.toLowerCase(), name])
               );
+              // Distinct resource names can resolve to the same product
+              // label (alicloud_db_instance and alicloud_rds_* both mean
+              // RDS), so dedupe on the resolved label rather than on the
+              // service segment, or duplicates eat the cap below.
+              const matchedLabels = new Map();
               for (const service of services) {
                 const labelName = serviceLabelAliases[service] || service;
                 const label = labelByName.get(labelName.toLowerCase());
                 if (label) {
-                  serviceLabels.push(label);
+                  matchedLabels.set(label.toLowerCase(), label);
                 } else {
                   core.warning(
                     `No repository label matches service ${service}; label skipped.`
@@ -108,7 +151,7 @@ jobs:
               }
               // Keep the label set readable even for issues that touch
               // many products.
-              serviceLabels = serviceLabels.slice(0, 5);
+              serviceLabels = [...matchedLabels.values()].slice(0, 5);
             }
 
             // ---- Current state on GitHub ---------------------------------
@@ -137,38 +180,70 @@ jobs:
             }
 
             // ---- Reply ---------------------------------------------------
-            // One fixed short acknowledgment, mentioning the resource names
-            // the reporter used. The marker guards against a manual re-run
-            // of this workflow posting a duplicate comment.
+            // One short acknowledgment, mentioning the resource names the
+            // reporter used. The closing ask is derived from what the title
+            // and body already contain: an issue that ships versions and a
+            // configuration is acknowledged and nothing more. The marker
+            // keeps a re-run from posting a second copy; the comment is
+            // written once and never edited afterwards.
+            const hasVersion =
+              /\bterraform\b[^\n]{0,12}\bv?\d+\.\d+\.\d+/i.test(text) ||
+              /\b(provider|aliyun\/alicloud)\b[^\n]{0,24}\bv?\d+\.\d+\.\d+/i.test(text);
+            const hasConfiguration = /```[\s\S]{0,2000}?(resource\s+"alicloud_|terraform\s*\{|provider\s+"alicloud")/i.test(body);
+            const hasRepro =
+              hasConfiguration ||
+              /\b(reproduc(e|tion|ible)|steps to reproduce|to reproduce)\b/i.test(body);
+
+            // "A minimal reproducible configuration" only makes sense for a
+            // failure report; a missing capability is asking us for the API,
+            // not handing us one.
+            const asks = [];
+            if (kind === "bug" || kind === "crash") {
+              if (!hasVersion) {
+                asks.push("the provider and Terraform versions");
+              }
+              if (!hasRepro) {
+                asks.push("a minimal reproducible configuration");
+              }
+            } else if (kind === "enhancement" && body.trim().length < 200) {
+              asks.push("the expected behavior and the API it maps to");
+            }
+
+            let hint = "";
+            if (kind === "question") {
+              hint = "For general usage questions, the [community channels](https://www.terraform.io/community.html) also answer quickly.";
+            } else if (asks.length > 0) {
+              hint = `Adding ${asks.join(" and ")} helps us move faster.`;
+            }
+
+            const mentioned = [...new Set(resourceNames.map((name) => name.toLowerCase()))]
+              .slice(0, 3)
+              .map((name) => `\`${name}\``);
+            const resourceMention =
+              mentioned.length > 0 ? ` on ${mentioned.join(", ")}` : "";
+            const marker = "<!-- issue-triage:welcome -->";
+            const reply = [
+              marker,
+              `Thanks for reaching out${resourceMention} — we'll follow up here.${hint ? ` ${hint}` : ""}`,
+            ].join("\n");
+
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner,
               repo,
               issue_number: issueNumber,
               per_page: 100,
             });
-            const hasWelcome = comments.some(({ body: commentBody }) =>
-              commentBody.includes("<!-- issue-triage:welcome -->")
+            const existing = comments.find(({ body: commentBody }) =>
+              (commentBody || "").includes(marker)
             );
 
-            if (!hasWelcome) {
-              const mentioned = [...new Set(resourceNames.map((name) => name.toLowerCase()))]
-                .slice(0, 3)
-                .map((name) => `\`${name}\``);
-              const resourceMention =
-                mentioned.length > 0 ? ` on ${mentioned.join(", ")}` : "";
-              // One template for every reply; only the closing hint
-              // differs — questions get the community pointer, reports
-              // the version/repro ask.
-              const hint = kindLabels.includes("question")
-                ? "For general usage questions, the [community channels](https://www.terraform.io/community.html) also answer quickly."
-                : "If not already included, the provider version and a minimal reproducible configuration help us move faster.";
+            if (existing) {
+              core.info("Acknowledgment already posted; leaving it untouched.");
+            } else {
               await github.rest.issues.createComment({
                 owner,
                 repo,
                 issue_number: issueNumber,
-                body: [
-                  "<!-- issue-triage:welcome -->",
-                  `Thanks for reaching out${resourceMention} — we'll follow up here. ${hint}`,
-                ].join("\n"),
+                body: reply,
               });
             }

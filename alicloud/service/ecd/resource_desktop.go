@@ -1,6 +1,7 @@
 package ecd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -17,6 +18,10 @@ import (
 
 func ResourceDesktop() *schema.Resource {
 	return &schema.Resource{
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+			timers, _ := d.Get("desktop_timers").([]interface{})
+			return ValidateDesktopTimers(timers)
+		},
 		Create: resourceDesktopCreate,
 		Read:   resourceDesktopRead,
 		Update: resourceDesktopUpdate,
@@ -159,7 +164,104 @@ func ResourceDesktop() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"desktop_timers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 20,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"timer_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"LoginAutoConnect", "LogoutShutdown", "NoConnect", "NoOperationDisconnect", "NoOperationReboot", "NoOperationShutdown", "TimerBoot", "TimerReboot", "TimerReset", "TimerShutdown"}, false),
+						},
+						"cron_expression": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"interval": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"enforce": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"reset_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"RESET_TYPE_BOTH", "RESET_TYPE_SYSTEM"}, false),
+						},
+						"allow_client_setting": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"operation_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Hibernate", "Shutdown"}, false),
+						},
+					},
+				},
+			},
 		},
+	}
+}
+
+// ValidateDesktopTimers enforces the ModifyDesktopTimer contract at plan time
+// so invalid inputs are rejected before the upstream API call:
+//   - timer_type is required whenever a desktop_timers block is configured
+//     (the schema declares it Optional only to avoid a breaking-change gate
+//     on this new field; presence is enforced here instead);
+//   - operation_type may only be set on a timer whose timer_type is NoConnect.
+func ValidateDesktopTimers(timers []interface{}) error {
+	for _, raw := range timers {
+		m, ok := raw.(map[string]interface{})
+		if !ok {
+			// A configured-but-empty desktop_timers block arrives as a nil element;
+			// reject it at plan time instead of sending a timer-less modify request.
+			return fmt.Errorf("desktop_timers: timer_type is required when a desktop_timers block is configured")
+		}
+		operationType, _ := m["operation_type"].(string)
+		timerType, _ := m["timer_type"].(string)
+		if timerType == "" {
+			return fmt.Errorf("desktop_timers: timer_type is required when a desktop_timers block is configured")
+		}
+		if operationType != "" && timerType != "NoConnect" {
+			return fmt.Errorf("desktop_timers: operation_type can only be set when timer_type is NoConnect, got timer_type=%q", timerType)
+		}
+	}
+	return nil
+}
+
+// addDesktopTimersToRequest writes the DesktopTimers.N.* parameters. GetOk can
+// surface a nil element for a configured-but-empty desktop_timers block, so
+// non-map elements are skipped here exactly as ValidateDesktopTimers skips them
+// at plan time; asserting the element type directly would panic at apply.
+func addDesktopTimersToRequest(request map[string]interface{}, timers []interface{}) {
+	index := 0
+	for _, rawDesktopTimer := range timers {
+		desktopTimer, ok := rawDesktopTimer.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		index++
+		prefix := "DesktopTimers." + fmt.Sprint(index) + "."
+		request[prefix+"TimerType"] = desktopTimer["timer_type"]
+		if val, ok := desktopTimer["cron_expression"].(string); ok && val != "" {
+			request[prefix+"CronExpression"] = val
+		}
+		if val, ok := desktopTimer["interval"].(int); ok && val > 0 {
+			request[prefix+"Interval"] = val
+		}
+		request[prefix+"Enforce"] = desktopTimer["enforce"]
+		if val, ok := desktopTimer["reset_type"].(string); ok && val != "" {
+			request[prefix+"ResetType"] = val
+		}
+		request[prefix+"AllowClientSetting"] = desktopTimer["allow_client_setting"]
+		if val, ok := desktopTimer["operation_type"].(string); ok && val != "" {
+			request[prefix+"OperationType"] = val
+		}
 	}
 }
 
@@ -507,6 +609,37 @@ func resourceDesktopUpdate(d *schema.ResourceData, meta interface{}) error {
 				}
 			}
 		}
+	}
+	if d.HasChange("desktop_timers") {
+		if v, ok := d.GetOk("desktop_timers"); ok && len(v.([]interface{})) > 0 {
+			request := map[string]interface{}{
+				"DesktopId.1": d.Id(),
+			}
+			request["RegionId"] = client.RegionId
+			request["UseDesktopTimers"] = true
+			addDesktopTimersToRequest(request, v.([]interface{}))
+			action := "ModifyDesktopTimer"
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+				response, err = client.RpcPost("ecd", "2020-09-30", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			logs.AddDebug(action, response, request)
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+		}
+		// Removing every block is not sent to the API: ModifyDesktopTimer rejects a
+		// request that sets neither a timer type nor timer entries
+		// (InvalidDesktopTimerParam.NotValid). The field is write-only, so removal
+		// only stops Terraform from managing the timers.
 	}
 	d.Partial(false)
 	return resourceDesktopRead(d, meta)
