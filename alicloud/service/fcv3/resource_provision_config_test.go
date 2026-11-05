@@ -1372,7 +1372,17 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	assertValue(body, "defaultTarget", float64(0))
 
 	// The qualifier selects the target object and must reach the request query
-	// on every replacement PUT that the resource performs.
+	// on every replacement PUT that the resource performs. The trailing Read
+	// still reads LATEST, so keep LATEST at the values the second plan expects.
+	mu.Lock()
+	stored = map[string]interface{}{
+		"functionArn":       functionArn,
+		"alwaysAllocateCPU": false,
+		"alwaysAllocateGPU": true,
+		"target":            float64(1),
+		"defaultTarget":     float64(1),
+	}
+	mu.Unlock()
 	body = applyUpdate(priorState(map[string]string{
 		"qualifier":           "LATEST",
 		"always_allocate_cpu": "true",
