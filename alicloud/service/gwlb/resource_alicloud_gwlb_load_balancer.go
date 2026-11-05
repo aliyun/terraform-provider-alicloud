@@ -177,6 +177,37 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 		return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 	}
 
+	// CreateLoadBalancer does not accept TrafficMode, so a value configured at creation
+	// must be applied with UpdateLoadBalancerAttribute after the instance becomes Active.
+	if v, ok := d.GetOk("traffic_mode"); ok {
+		action = "UpdateLoadBalancerAttribute"
+		updateRequest := map[string]interface{}{
+			"LoadBalancerId": d.Id(),
+			"RegionId":       client.RegionId,
+			"ClientToken":    helper.BuildClientToken(action),
+			"TrafficMode":    v,
+		}
+		err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
+			response, err = client.RpcPost("Gwlb", "2024-04-15", action, make(map[string]interface{}), updateRequest, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, updateRequest)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+		stateConf = helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		}
+	}
+
 	return resourceLoadBalancerRead(d, meta)
 }
 
