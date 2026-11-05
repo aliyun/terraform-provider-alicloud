@@ -208,5 +208,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceZonalAccount,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_polardb_db_node",
+				Factory:  NewDbNodeResource,
+			},
+		},
 	}
 }
