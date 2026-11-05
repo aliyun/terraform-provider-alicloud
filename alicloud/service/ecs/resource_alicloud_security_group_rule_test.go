@@ -1256,22 +1256,23 @@ func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
 	}
 
 	cases := []struct {
-		value   string
-		valid   bool
-		wantErr string
+		value      string
+		valid      bool
+		wantErr    string
+		notWantErr string
 	}{
-		{"192.168.0.0/16", true, ""},
-		{"10.159.6.18/12", true, ""},
-		{"10.159.6.18", true, ""},
-		{"0.0.0.0/0", true, ""},
-		{"", true, ""},
-		{"192.168.0.0/16,10.0.0.0/8", false, "multiple CIDRs are not supported"},
-		{"192.168.0.0/16 10.0.0.0/8", false, "multiple CIDRs are not supported"},
-		{"::/0", false, "use ipv6_cidr_ip"},
-		{"2001:db8::1", false, "use ipv6_cidr_ip"},
-		{"::ffff:10.0.0.1", false, "use ipv6_cidr_ip"},
-		{"10.0.0.0/33", false, "must be a single IPv4 address or CIDR block"},
-		{"not-a-cidr", false, "must be a single IPv4 address or CIDR block"},
+		{"192.168.0.0/16", true, "", ""},
+		{"10.159.6.18/12", true, "", ""},
+		{"10.159.6.18", true, "", ""},
+		{"0.0.0.0/0", true, "", ""},
+		{"", true, "", ""},
+		{"192.168.0.0/16,10.0.0.0/8", false, "multiple CIDRs are not supported", ""},
+		{"192.168.0.0/16 10.0.0.0/8", false, "multiple CIDRs are not supported", ""},
+		{"::/0", false, "use ipv6_cidr_ip", ""},
+		{"2001:db8::1", false, "use ipv6_cidr_ip", ""},
+		{"::ffff:10.0.0.1", false, "use ipv6_cidr_ip", ""},
+		{"10.0.0.0/33", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
+		{"not-a-cidr", false, "must be a single IPv4 address or CIDR block", "multiple CIDRs"},
 	}
 	for _, tc := range cases {
 		_, errs := validate(tc.value, "cidr_ip")
@@ -1286,6 +1287,9 @@ func TestUnitECSSecurityGroupRuleCidrIpValidation(t *testing.T) {
 		}
 		if !strings.Contains(errs[0].Error(), `"cidr_ip"`) || !strings.Contains(errs[0].Error(), tc.wantErr) {
 			t.Fatalf("unexpected error for %q: %v", tc.value, errs)
+		}
+		if tc.notWantErr != "" && strings.Contains(errs[0].Error(), tc.notWantErr) {
+			t.Fatalf("error for %q must not mention %q: %v", tc.value, tc.notWantErr, errs)
 		}
 	}
 }

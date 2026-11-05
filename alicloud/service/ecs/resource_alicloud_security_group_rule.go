@@ -39,7 +39,10 @@ func validateSecurityGroupRuleCidrIp(v interface{}, k string) ([]string, []error
 	if ip := net.ParseIP(value); ip != nil && ip.To4() != nil {
 		return nil, nil
 	}
-	return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, for example \"10.0.0.0/8\"; multiple CIDRs are not supported in one alicloud_security_group_rule, define one resource per CIDR, got %q", k, value)}
+	if strings.ContainsAny(value, ", \t\r\n") {
+		return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block; multiple CIDRs are not supported in one alicloud_security_group_rule, define one resource per CIDR, got %q", k, value)}
+	}
+	return nil, []error{fmt.Errorf("%q must be a single IPv4 address or CIDR block, for example \"10.0.0.0/8\", got %q", k, value)}
 }
 
 func resourceAliyunSecurityGroupRule() *schema.Resource {
