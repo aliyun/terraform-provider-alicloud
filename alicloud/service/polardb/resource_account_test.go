@@ -649,6 +649,31 @@ func TestAccAliCloudPolarDbAccount_propertyCoverage(t *testing.T) {
 				),
 			},
 			{
+				// Create a database after the cluster-wide account exists so the scenario covers a
+				// database added later, not only databases prepared before account creation.
+				// DescribeAccounts does not enumerate PrivForAllDB grants, so this step records the
+				// account response while the follow-up database exists and does not claim the
+				// per-database effect of the grant.
+				Config: testAccConfig(map[string]interface{}{}) + `
+resource "alicloud_polardb_database" "post_creation" {
+  db_cluster_id = alicloud_polardb_cluster.default.id
+  db_name       = "tf_testacc_db3"
+}
+`,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("alicloud_polardb_database.post_creation", "id"),
+					testAccCheckPolarDbAccountDatabasePrivilegesEmpty(),
+				),
+			},
+			{
+				// Dropping the follow-up database must leave the cluster-wide account unchanged and
+				// still reporting no explicit per-database entries.
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckPolarDbAccountDatabasePrivilegesEmpty(),
+				),
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"account_password": "YourPassword123!update",
 				}),
@@ -909,21 +934,46 @@ resource "alicloud_polardb_database" "second" {
 `, name, name, name, name)
 }
 
-func polarDbAccountDatabasePrivilegesFromObject(account map[string]interface{}) map[string]string {
-	privileges := map[string]string{}
-	items, _ := account["DatabasePrivileges"].([]interface{})
+// polarDbAccountDatabasePrivilegesFromObject extracts the explicit per-database privileges
+// reported by DescribeAccounts. A cluster-wide grant (PrivForAllDB) is not enumerated in this
+// field, so callers must distinguish a field the service omitted from an explicitly empty list;
+// silently treating either an omitted field or malformed entries as "no privileges" would make
+// the assertion unable to tell a parse failure from a real empty response.
+func polarDbAccountDatabasePrivilegesFromObject(account map[string]interface{}) (map[string]string, bool, error) {
+	raw, reported := account["DatabasePrivileges"]
+	if !reported || raw == nil {
+		return map[string]string{}, false, nil
+	}
+	items, ok := raw.([]interface{})
+	if !ok {
+		return nil, true, fmt.Errorf("DescribeAccounts returned DatabasePrivileges with unexpected type %T", raw)
+	}
+	privileges := make(map[string]string, len(items))
 	for _, item := range items {
 		privilege, ok := item.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, true, fmt.Errorf("DescribeAccounts returned a DatabasePrivileges entry with unexpected type %T", item)
 		}
 		dbName, _ := privilege["DBName"].(string)
 		accountPrivilege, _ := privilege["AccountPrivilege"].(string)
-		if dbName != "" {
-			privileges[dbName] = accountPrivilege
+		if dbName == "" {
+			return nil, true, fmt.Errorf("DescribeAccounts returned a DatabasePrivileges entry without DBName: %v", privilege)
+		}
+		privileges[dbName] = accountPrivilege
+	}
+	return privileges, true, nil
+}
+
+func polarDbAccountDatabasePrivilegesMatch(actual, expected map[string]string) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+	for dbName, privilege := range expected {
+		if actual[dbName] != privilege {
+			return false
 		}
 	}
-	return privileges
+	return true
 }
 
 func polarDbAccountDatabasePrivilegeList(privileges map[string]string) []string {
@@ -943,7 +993,7 @@ func testAccCheckPolarDbAccountDatabasePrivileges(expected map[string]string) re
 		}
 		accountName := rs.Primary.Attributes["account_name"]
 		service := polardb.NewPolarDbServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
-		var got []string
+		var got map[string]string
 		for i := 0; i < 24; i++ {
 			account, err := service.DescribePolarDbAccount(rs.Primary.ID)
 			if err != nil {
@@ -952,25 +1002,19 @@ func testAccCheckPolarDbAccountDatabasePrivileges(expected map[string]string) re
 			if respondedName, _ := account["AccountName"].(string); respondedName != accountName {
 				return fmt.Errorf("DescribeAccounts returned account %q instead of %q", respondedName, accountName)
 			}
-			privileges := polarDbAccountDatabasePrivilegesFromObject(account)
-			got = polarDbAccountDatabasePrivilegeList(privileges)
-			matched := 0
-			for dbName, privilege := range expected {
-				if privileges[dbName] == privilege {
-					matched++
-				}
+			privileges, _, err := polarDbAccountDatabasePrivilegesFromObject(account)
+			if err != nil {
+				return err
 			}
-			if matched == len(expected) {
+			got = privileges
+			// Compare the full set, not only the expected keys, so an unintended grant to
+			// another database cannot satisfy the assertion.
+			if polarDbAccountDatabasePrivilegesMatch(privileges, expected) {
 				return nil
 			}
 			time.Sleep(5 * time.Second)
 		}
-		wanted := make([]string, 0, len(expected))
-		for dbName, privilege := range expected {
-			wanted = append(wanted, dbName+":"+privilege)
-		}
-		sort.Strings(wanted)
-		return fmt.Errorf("expected database privileges %v on account %s, got %v", wanted, rs.Primary.ID, got)
+		return fmt.Errorf("expected exactly database privileges %v on account %s, got %v", polarDbAccountDatabasePrivilegeList(expected), rs.Primary.ID, polarDbAccountDatabasePrivilegeList(got))
 	}
 }
 
@@ -991,13 +1035,21 @@ func testAccCheckPolarDbAccountDatabasePrivilegesEmpty() resource.TestCheckFunc 
 			if respondedName, _ := account["AccountName"].(string); respondedName != accountName {
 				return fmt.Errorf("DescribeAccounts returned account %q instead of %q", respondedName, accountName)
 			}
-			got = polarDbAccountDatabasePrivilegeList(polarDbAccountDatabasePrivilegesFromObject(account))
+			privileges, reported, err := polarDbAccountDatabasePrivilegesFromObject(account)
+			if err != nil {
+				return err
+			}
+			got = polarDbAccountDatabasePrivilegeList(privileges)
 			if len(got) == 0 {
+				// Record whether the service omitted the field or returned an explicitly empty
+				// list. DescribeAccounts has no read API for cluster-wide grants, so this is the
+				// strongest control-plane fact available for a PrivForAllDB account.
+				log.Printf("[INFO] alicloud_polardb_account %s: cluster-wide account reports no explicit DatabasePrivileges (fieldReported=%t, accountType=%v)", rs.Primary.ID, reported, account["AccountType"])
 				return nil
 			}
 			time.Sleep(5 * time.Second)
 		}
-		return fmt.Errorf("expected empty database privileges for a cluster-wide grant on account %s, got %v", rs.Primary.ID, got)
+		return fmt.Errorf("expected no explicit database privileges for a cluster-wide grant on account %s, got %v", rs.Primary.ID, got)
 	}
 }
 
@@ -1019,5 +1071,106 @@ func testAccCheckPolarDbAccountTypeMatchesRemote() resource.TestCheckFunc {
 			return fmt.Errorf("expected state account_type %q to match DescribeAccounts AccountType %q", local, remote)
 		}
 		return nil
+	}
+}
+
+// TestUnitPolarDbAccountDatabasePrivilegesParse covers the assertion helper's ability to tell an
+// omitted DatabasePrivileges field, an explicitly empty list, a populated list and malformed
+// entries apart. Without that distinction the cluster-wide (PrivForAllDB) step could pass on a
+// parse failure instead of an actual empty response.
+func TestUnitPolarDbAccountDatabasePrivilegesParse(t *testing.T) {
+	cases := []struct {
+		name         string
+		account      map[string]interface{}
+		want         map[string]string
+		wantReported bool
+		wantErr      bool
+	}{
+		{
+			name:         "field omitted",
+			account:      map[string]interface{}{"AccountName": "acc"},
+			want:         map[string]string{},
+			wantReported: false,
+		},
+		{
+			name:         "field nil",
+			account:      map[string]interface{}{"DatabasePrivileges": nil},
+			want:         map[string]string{},
+			wantReported: false,
+		},
+		{
+			name:         "explicitly empty list",
+			account:      map[string]interface{}{"DatabasePrivileges": []interface{}{}},
+			want:         map[string]string{},
+			wantReported: true,
+		},
+		{
+			name: "populated list",
+			account: map[string]interface{}{"DatabasePrivileges": []interface{}{
+				map[string]interface{}{"DBName": "db1", "AccountPrivilege": "ReadWrite"},
+				map[string]interface{}{"DBName": "db2", "AccountPrivilege": "ReadOnly"},
+			}},
+			want:         map[string]string{"db1": "ReadWrite", "db2": "ReadOnly"},
+			wantReported: true,
+		},
+		{
+			name:         "field of unexpected type",
+			account:      map[string]interface{}{"DatabasePrivileges": "db1:ReadWrite"},
+			wantReported: true,
+			wantErr:      true,
+		},
+		{
+			name:         "entry of unexpected type",
+			account:      map[string]interface{}{"DatabasePrivileges": []interface{}{"db1:ReadWrite"}},
+			wantReported: true,
+			wantErr:      true,
+		},
+		{
+			name: "entry without database name",
+			account: map[string]interface{}{"DatabasePrivileges": []interface{}{
+				map[string]interface{}{"AccountPrivilege": "ReadWrite"},
+			}},
+			wantReported: true,
+			wantErr:      true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, reported, err := polarDbAccountDatabasePrivilegesFromObject(tc.account)
+			if tc.wantErr != (err != nil) {
+				t.Fatalf("%s: wantErr=%v, got %v", tc.name, tc.wantErr, err)
+			}
+			if err != nil {
+				return
+			}
+			if reported != tc.wantReported {
+				t.Fatalf("%s: want reported=%v, got %v", tc.name, tc.wantReported, reported)
+			}
+			if !polarDbAccountDatabasePrivilegesMatch(got, tc.want) {
+				t.Fatalf("%s: want %v, got %v", tc.name, tc.want, got)
+			}
+		})
+	}
+}
+
+func TestUnitPolarDbAccountDatabasePrivilegesMatch(t *testing.T) {
+	cases := []struct {
+		name     string
+		actual   map[string]string
+		expected map[string]string
+		want     bool
+	}{
+		{"equal", map[string]string{"db1": "ReadWrite"}, map[string]string{"db1": "ReadWrite"}, true},
+		{"both empty", map[string]string{}, map[string]string{}, true},
+		{"unexpected extra grant", map[string]string{"db1": "ReadWrite", "db2": "ReadOnly"}, map[string]string{"db1": "ReadWrite"}, false},
+		{"missing grant", map[string]string{"db1": "ReadWrite"}, map[string]string{"db1": "ReadWrite", "db2": "ReadOnly"}, false},
+		{"different privilege", map[string]string{"db1": "ReadOnly"}, map[string]string{"db1": "ReadWrite"}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := polarDbAccountDatabasePrivilegesMatch(tc.actual, tc.expected); got != tc.want {
+				t.Fatalf("%s: want %v, got %v", tc.name, tc.want, got)
+			}
+		})
 	}
 }
