@@ -42,7 +42,7 @@ The following arguments are supported:
 * `is_shared` - (Optional, ForceNew) Whether the catalog is shared. Defaults to `false`.
 * `share_id` - (Optional, ForceNew) The share ID. Required when `is_shared` is `true`.
 
--> **NOTE:** The catalog `options` are not settable. DlfNext populates storage defaults (such as `dlf.trashed-file-retained-days` and `storage.data.redundancy.type`) on its own; surfacing them as a user-set map would conflict with these server-managed keys. `options` is therefore exported read-only (see Attributes Reference).
+  -> **NOTE:** The catalog `options` are not settable. DlfNext populates storage defaults (such as `dlf.trashed-file-retained-days` and `storage.data.redundancy.type`) on its own; surfacing them as a user-set map would conflict with these server-managed keys. `options` is therefore exported read-only (see Attributes Reference).
 
 ## Attributes Reference
 
