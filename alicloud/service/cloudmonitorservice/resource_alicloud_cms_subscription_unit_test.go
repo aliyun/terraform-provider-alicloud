@@ -140,13 +140,15 @@ func cmsSubscriptionUnitValue(t *testing.T, valueType tftypes.Type, raw interfac
 	if raw == nil {
 		return tftypes.NewValue(valueType, nil)
 	}
-	switch typed := valueType.(type) {
-	case tftypes.String:
+	switch {
+	case valueType.Is(tftypes.String):
 		return tftypes.NewValue(valueType, raw.(string))
-	case tftypes.Bool:
+	case valueType.Is(tftypes.Bool):
 		return tftypes.NewValue(valueType, raw.(bool))
-	case tftypes.Number:
+	case valueType.Is(tftypes.Number):
 		return tftypes.NewValue(valueType, raw.(float64))
+	}
+	switch typed := valueType.(type) {
 	case tftypes.List:
 		items := raw.([]interface{})
 		values := make([]tftypes.Value, 0, len(items))
