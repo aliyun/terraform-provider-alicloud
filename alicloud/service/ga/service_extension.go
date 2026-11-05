@@ -127,63 +127,17 @@ func (r *serviceExtensionResource) Schema(_ context.Context, _ resource.SchemaRe
 				ElementType: types.StringType,
 				Description: "A mapping of tags to assign to the resource.",
 			},
-			"components": schema.SetNestedAttribute{
+			"components": schema.SetAttribute{
 				Optional:    true,
 				Computed:    true,
+				ElementType: componentObjectType,
 				Description: "The list of service components added to the service extension.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"service_component_id": schema.StringAttribute{
-							Required:    true,
-							Description: "The ID of the service component.",
-						},
-						"priority": schema.Int64Attribute{
-							Optional:    true,
-							Description: "The priority of the service component.",
-						},
-						"timeout": schema.Int64Attribute{
-							Optional:    true,
-							Description: "The timeout of the service component. Unit: seconds.",
-						},
-						"config": schema.StringAttribute{
-							Optional:    true,
-							Description: "The configuration of the service component.",
-						},
-						"fail_policy": schema.StringAttribute{
-							Optional:    true,
-							Description: "The fail policy of the service component.",
-						},
-						"component_name": schema.StringAttribute{
-							Computed:    true,
-							Description: "The name of the service component.",
-						},
-					},
-				},
 			},
-			"resources": schema.SetNestedAttribute{
+			"resources": schema.SetAttribute{
 				Optional:    true,
 				Computed:    true,
+				ElementType: resourceObjectType,
 				Description: "The list of resources associated with the service extension.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"accelerator_id": schema.StringAttribute{
-							Required:    true,
-							Description: "The ID of the accelerator to associate.",
-						},
-						"resource_type": schema.StringAttribute{
-							Required:    true,
-							Description: "The type of the resource to associate.",
-						},
-						"resource_id": schema.StringAttribute{
-							Required:    true,
-							Description: "The ID of the resource to associate.",
-						},
-						"associate_id": schema.StringAttribute{
-							Computed:    true,
-							Description: "The ID of the association record.",
-						},
-					},
-				},
 			},
 			"create_time": schema.StringAttribute{
 				Computed:    true,

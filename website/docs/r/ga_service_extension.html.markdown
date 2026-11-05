@@ -36,17 +36,24 @@ Associate resources and add service components
 resource "alicloud_ga_service_extension" "default" {
   name        = "example-value"
   description = "example description"
-  resources {
-    accelerator_id = alicloud_ga_accelerator.default.id
-    resource_type  = "accelerator"
-    resource_id    = alicloud_ga_accelerator.default.id
-  }
-  components {
-    service_component_id = "sc-xxx"
-    priority             = 1
-    timeout              = 60
-    fail_policy          = "stop"
-  }
+  resources = [
+    {
+      accelerator_id = alicloud_ga_accelerator.default.id
+      resource_type  = "accelerator"
+      resource_id    = alicloud_ga_accelerator.default.id
+      associate_id   = ""
+    }
+  ]
+  components = [
+    {
+      service_component_id = "sc-xxx"
+      priority             = 1
+      timeout              = 60
+      config               = ""
+      fail_policy          = "stop"
+      component_name       = ""
+    }
+  ]
 }
 ```
 
@@ -58,26 +65,28 @@ The following arguments are supported:
 * `description` - (Optional) The description of the service extension. The description must be `1` to `256` characters in length.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `components` - (Optional) The list of service components added to the service extension. See [`components`](#components) below.
-* `resources` - (Optional) The list of resources associated with the service extension. See [`resources`](#resources) below.
+* `components` - (Optional) The list of service components added to the service extension. Every field of an element must be set; use an empty string for `component_name`. See [`components`](#components) below.
+* `resources` - (Optional) The list of resources associated with the service extension. Every field of an element must be set; use an empty string for `associate_id`. See [`resources`](#resources) below.
 
 ### `components`
 
-The components block supports the following:
+Each element of `components` supports the following:
 
 * `service_component_id` - (Required) The ID of the service component.
 * `priority` - (Optional) The priority of the service component.
 * `timeout` - (Optional) The timeout of the service component. Unit: seconds.
 * `config` - (Optional) The configuration of the service component.
 * `fail_policy` - (Optional) The fail policy of the service component.
+* `component_name` - (Computed) The name of the service component. Set it to an empty string in the configuration.
 
 ### `resources`
 
-The resources block supports the following:
+Each element of `resources` supports the following:
 
 * `accelerator_id` - (Required) The ID of the accelerator to associate.
 * `resource_type` - (Required) The type of the resource to associate.
 * `resource_id` - (Required) The ID of the resource to associate.
+* `associate_id` - (Computed) The ID of the association record. Set it to an empty string in the configuration.
 
 ## Attributes Reference
 

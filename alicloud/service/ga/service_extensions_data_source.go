@@ -127,78 +127,10 @@ func (d *serviceExtensionsDataSource) Schema(_ context.Context, _ datasource.Sch
 				Computed:    true,
 				Description: "Default to false. Set it to true to get the details of each service extension, including components, resources and tags.",
 			},
-			"service_extensions": schema.ListNestedAttribute{
+			"service_extensions": schema.ListAttribute{
 				Computed:    true,
+				ElementType: dsServiceExtensionObjectType,
 				Description: "A list of service extensions.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Computed:    true,
-							Description: "The ID of the service extension, same as `service_extension_id`.",
-						},
-						"service_extension_id": schema.StringAttribute{
-							Computed:    true,
-							Description: "The ID of the service extension.",
-						},
-						"name": schema.StringAttribute{
-							Computed:    true,
-							Description: "The name of the service extension.",
-						},
-						"description": schema.StringAttribute{
-							Computed:    true,
-							Description: "The description of the service extension.",
-						},
-						"type": schema.StringAttribute{
-							Computed:    true,
-							Description: "The type of the service extension.",
-						},
-						"state": schema.StringAttribute{
-							Computed:    true,
-							Description: "The state of the service extension.",
-						},
-						"resource_group_id": schema.StringAttribute{
-							Computed:    true,
-							Description: "The ID of the resource group.",
-						},
-						"tags": schema.MapAttribute{
-							Computed:    true,
-							ElementType: types.StringType,
-							Description: "The tags of the service extension.",
-						},
-						"components": schema.ListNestedAttribute{
-							Computed: true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"service_component_id": schema.StringAttribute{Computed: true},
-									"priority":             schema.Int64Attribute{Computed: true},
-									"timeout":              schema.Int64Attribute{Computed: true},
-									"config":               schema.StringAttribute{Computed: true},
-									"fail_policy":          schema.StringAttribute{Computed: true},
-									"component_name":       schema.StringAttribute{Computed: true},
-								},
-							},
-						},
-						"resources": schema.ListNestedAttribute{
-							Computed: true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"accelerator_id": schema.StringAttribute{Computed: true},
-									"resource_type":  schema.StringAttribute{Computed: true},
-									"resource_id":    schema.StringAttribute{Computed: true},
-									"associate_id":   schema.StringAttribute{Computed: true},
-								},
-							},
-						},
-						"create_time": schema.StringAttribute{
-							Computed:    true,
-							Description: "The time when the service extension was created.",
-						},
-						"update_time": schema.StringAttribute{
-							Computed:    true,
-							Description: "The time when the service extension was last updated.",
-						},
-					},
-				},
 			},
 		},
 	}
