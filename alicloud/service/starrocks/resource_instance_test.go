@@ -984,6 +984,8 @@ type starRocksNodeGroupsHandler struct {
 	convergeAfter int
 	convergeReads int
 	pendingSize   map[string]int
+	// byIdStatus forces the by-id node group read to fail.
+	byIdStatus int
 	// delayedAction delays one action, e.g. to exhaust the update budget.
 	delayedAction   string
 	delayedStatus   int
@@ -1016,6 +1018,11 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			_ = json.Unmarshal(raw, &body)
 		}
 		if ids, byId := body["nodeGroupIds"]; byId {
+			if h.byIdStatus != 0 {
+				w.WriteHeader(h.byIdStatus)
+				writeTestJSON(w, map[string]interface{}{"Code": "InternalError", "Message": "code: 500, injected read failure", "RequestId": "rid"})
+				return
+			}
 			list := ids.([]interface{})
 			nodeGroupId := fmt.Sprint(list[0])
 			h.byIdRequests = append(h.byIdRequests, map[string]string{
@@ -1179,6 +1186,7 @@ func starRocksTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.A
 
 func testBackendGroup(id, zone string) map[string]interface{} {
 	return map[string]interface{}{
+		"InstanceId":  "c-fixture",
 		"NodeGroupId": id, "ComponentType": "CN", "ZoneId": zone,
 		"Cu": float64(8), "DiskNumber": float64(1), "ResidentNodeNumber": float64(3),
 		"SpecType": "standard", "StoragePerformanceLevel": "pl1",
@@ -1290,6 +1298,9 @@ func TestUnitDescribeNodeGroupsPagination(t *testing.T) {
 	}
 	found := false
 	for _, group := range listed {
+		if fmt.Sprint(group["InstanceId"]) != "c-fixture" {
+			t.Fatalf("unexpected InstanceId in the response: %v", group["InstanceId"])
+		}
 		if fmt.Sprint(group["NodeGroupId"]) == "ng-last-page" && fmt.Sprint(group["ComponentType"]) == "CN" {
 			found = true
 		}
@@ -1410,8 +1421,6 @@ func TestUnitBackendNodeGroupLostResponseDoesNotResend(t *testing.T) {
 }
 
 func TestUnitBackendNodeGroupUnknownResultDoesNotResend(t *testing.T) {
-	previous := starrocks.BackendNodeGroupResizeConvergenceWindowForTest(150 * time.Millisecond)
-	defer starrocks.BackendNodeGroupResizeConvergenceWindowForTest(previous)
 	handler := &starRocksNodeGroupsHandler{
 		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
 		total: 1, instanceStatus: "RUNNING", modifyResponses: []int{http.StatusInternalServerError}, convergeAfter: 1000,
@@ -1655,5 +1664,73 @@ func TestUnitBackendNodeGroupThrottledResizeIsRetried(t *testing.T) {
 	}
 	if size := fmt.Sprint(handler.groups[0]["StorageSize"]); size != "300" {
 		t.Fatalf("expected the remote group to reach 300 GiB, got %s", size)
+	}
+}
+
+func TestUnitBackendNodeGroupOtherGroupDoesNotMatch(t *testing.T) {
+	other := testBackendGroup("ng-other", "cn-hangzhou-i")
+	other["Cu"] = float64(16)
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{other}, total: 1, instanceStatus: "RUNNING",
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0)
+	if err == nil || !strings.Contains(err.Error(), "no backend node group matches") {
+		t.Fatalf("a different group must not be bound to the configuration, got %v", err)
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("no resize may be sent when only a different group exists, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupStatusReadBudget(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
+		total: 1, instanceStatus: "RUNNING", byIdStatus: http.StatusInternalServerError,
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), time.Second)
+	if err == nil {
+		t.Fatal("a failing status read must exhaust the shared update budget")
+	}
+	if handler.modifyCalls != 1 {
+		t.Fatalf("exactly one resize is expected before the status read fails, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupTagBudget(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
+		total: 1, instanceStatus: "RUNNING",
+		delayedAction: "/webapi/tags", delayedStatus: http.StatusInternalServerError, delay: 3 * time.Second,
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	config := backendGroupConfig(300, nil)
+	config["tags"] = map[string]interface{}{"env": "test"}
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), config, time.Second)
+	if err == nil {
+		t.Fatal("the slow tag update must exhaust the shared update budget")
+	}
+	if handler.countAction("/webapi/tags") == 0 {
+		t.Fatal("the tag update should have been attempted")
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("no resize may run after the tag update exhausted the budget, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupPersistentReadError(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: []map[string]interface{}{testBackendGroup("ng-target", "cn-hangzhou-i")},
+		total: 1, instanceStatus: "RUNNING", byIdStatus: http.StatusInternalServerError,
+		modifyResponses: []int{http.StatusInternalServerError},
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	err := applyStarRocksInstance(t, client, backendGroupStateAttributes("200"), backendGroupConfig(300, nil), 0)
+	if err == nil || !strings.Contains(err.Error(), "is unknown") {
+		t.Fatalf("a persistent read failure must report an unknown result, got %v", err)
+	}
+	if handler.modifyCalls != 1 {
+		t.Fatalf("the unknown result must not trigger another billable write, got %d", handler.modifyCalls)
 	}
 }

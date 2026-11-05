@@ -814,14 +814,6 @@ func backendNodeGroupResizeRejected(err error) bool {
 // for the remote disk size to converge before the result is reported as unknown.
 var backendNodeGroupResizeConvergenceWindow = 30 * time.Second
 
-// BackendNodeGroupResizeConvergenceWindowForTest overrides the convergence window used
-// before a lost resize response is reported as unknown, and returns the previous value.
-func BackendNodeGroupResizeConvergenceWindowForTest(window time.Duration) time.Duration {
-	previous := backendNodeGroupResizeConvergenceWindow
-	backendNodeGroupResizeConvergenceWindow = window
-	return previous
-}
-
 // backendNodeGroupStorageSizeReached waits briefly for the remote group to report at
 // least the requested size, so a lost resize response can be resolved without sending
 // the billable change again.
