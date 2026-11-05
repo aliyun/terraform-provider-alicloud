@@ -36,7 +36,7 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-example"
+  default = "terraform-ex"
 }
 
 resource "alicloud_ots_instance" "default" {
@@ -51,7 +51,7 @@ resource "alicloud_ots_instance" "default" {
 
 resource "alicloud_ots_table" "default" {
   instance_name = alicloud_ots_instance.default.name
-  table_name    = "tf_example"
+  table_name    = "terraform_example"
   time_to_live  = -1
   max_version   = 1
   enable_sse    = true

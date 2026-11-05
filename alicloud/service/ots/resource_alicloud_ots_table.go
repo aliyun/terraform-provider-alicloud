@@ -370,16 +370,20 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	}
 
-	if tableResp.StreamDetails != nil && tableResp.StreamDetails.EnableStream {
-		d.Set("stream_specification", []interface{}{map[string]interface{}{
-			"enable_stream":   true,
-			"expiration_time": int(tableResp.StreamDetails.ExpirationTime),
-		}})
-	} else {
-		d.Set("stream_specification", nil)
-	}
+	setOtsStreamSpecification(d, tableResp.StreamDetails)
 
 	return nil
+}
+
+func setOtsStreamSpecification(d *schema.ResourceData, details *tablestore.StreamDetails) {
+	if details != nil && details.EnableStream {
+		d.Set("stream_specification", []interface{}{map[string]interface{}{
+			"enable_stream":   true,
+			"expiration_time": int(details.ExpirationTime),
+		}})
+		return
+	}
+	d.Set("stream_specification", nil)
 }
 
 func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) error {

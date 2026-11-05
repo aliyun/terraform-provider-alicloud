@@ -277,7 +277,7 @@ func TestAccAliCloudOtsTable_stream(t *testing.T) {
 						},
 					},
 				}),
-				ExpectError: regexp.MustCompile("expiration_time"),
+				ExpectError: regexp.MustCompile("must be set to a value between 1 and 168 when `enable_stream` is true"),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -288,7 +288,7 @@ func TestAccAliCloudOtsTable_stream(t *testing.T) {
 						},
 					},
 				}),
-				ExpectError: regexp.MustCompile("expiration_time"),
+				ExpectError: regexp.MustCompile(`expected stream_specification\.0\.expiration_time to be in the range \(1 - 168\), got 169`),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -299,7 +299,7 @@ func TestAccAliCloudOtsTable_stream(t *testing.T) {
 						},
 					},
 				}),
-				ExpectError: regexp.MustCompile("expiration_time"),
+				ExpectError: regexp.MustCompile(`expected stream_specification\.0\.expiration_time to be in the range \(1 - 168\), got 0`),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
