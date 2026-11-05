@@ -60,25 +60,17 @@ func TestAccAliCloudPolarDbDatabase_basic11854(t *testing.T) {
 				),
 			},
 			{
-				// The import has no account identity, so the account fields cannot be
-				// recovered. Verify the imported state explicitly instead of ignoring
-				// the create-only account_privilege from the comparison.
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly instead
+				// of ignoring the create-only account_privilege from the comparison.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":        name,
+					"db_description": name,
+					"engine":         "MySQL",
+				}),
 			},
 		},
 	})
@@ -124,25 +116,17 @@ func TestAccAliCloudPolarDbDatabase_basic11854_twin(t *testing.T) {
 				),
 			},
 			{
-				// The import has no account identity, so the account fields cannot be
-				// recovered. Verify the imported state explicitly instead of ignoring
-				// the create-only account_privilege from the comparison.
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":            name,
+					"db_description":     name,
+					"character_set_name": "utf8mb4",
+					"engine":             "MySQL",
+				}),
 			},
 		},
 	})
@@ -245,25 +229,15 @@ func TestAccAliCloudPolarDbDatabase_basic9535(t *testing.T) {
 				),
 			},
 			{
-				// The import has no account identity, so the account fields cannot be
-				// recovered. Verify the imported state explicitly instead of ignoring
-				// the create-only account_privilege from the comparison.
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name": name,
+					"engine":  "MySQL",
+				}),
 			},
 		},
 	})
@@ -310,25 +284,17 @@ func TestAccAliCloudPolarDbDatabase_basic9535_twin(t *testing.T) {
 				),
 			},
 			{
-				// The import has no account identity, so the account fields cannot be
-				// recovered. Verify the imported state explicitly instead of ignoring
-				// the create-only account_privilege from the comparison.
+				// Importing a database has no account identity, so the account fields
+				// stay empty; the fields the API returns are asserted explicitly.
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
-				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("expected 1 imported state, got %d", len(states))
-					}
-					attributes := states[0].Attributes
-					if got := attributes["account_name"]; got != "" {
-						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
-					}
-					if got := attributes["account_privilege"]; got != "" {
-						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
-					}
-					return nil
-				},
+				ImportStateCheck: checkImportedDatabaseState(map[string]string{
+					"db_name":            name,
+					"db_description":     name,
+					"character_set_name": "ISO_8859_5",
+					"engine":             "MySQL",
+				}),
 			},
 		},
 	})
@@ -485,6 +451,32 @@ func checkDatabaseDescription(resourceId, expected string) resource.TestCheckFun
 		}
 		if got := fmt.Sprint(object["DBDescription"]); got != expected {
 			return fmt.Errorf("expected database description %q, got %q for %s", expected, got, rs.Primary.ID)
+		}
+		return nil
+	}
+}
+
+// checkImportedDatabaseState asserts the fields an import can recover plus the
+// account fields it cannot: importing a database has no account identity, so
+// account_name and account_privilege must stay empty in the imported state.
+func checkImportedDatabaseState(expected map[string]string) resource.ImportStateCheckFunc {
+	return func(states []*terraform.InstanceState) error {
+		if len(states) != 1 {
+			return fmt.Errorf("expected 1 imported state, got %d", len(states))
+		}
+		attributes := states[0].Attributes
+		if attributes["db_cluster_id"] == "" {
+			return fmt.Errorf("expected imported db_cluster_id to be set")
+		}
+		for key, want := range expected {
+			if got := attributes[key]; got != want {
+				return fmt.Errorf("expected imported %s %q, got %q", key, want, got)
+			}
+		}
+		for _, key := range []string{"account_name", "account_privilege"} {
+			if got := attributes[key]; got != "" {
+				return fmt.Errorf("expected imported %s to stay empty, got %q", key, got)
+			}
 		}
 		return nil
 	}
