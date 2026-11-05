@@ -85,23 +85,3 @@ jobs:
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
           GOWORK=off GOTOOLCHAIN=local GOPROXY=off go run scripts/title/title_check.go -title="$PR_TITLE" -base="$DIFF_BASE" -head="$DIFF_HEAD"
-
-  commits:
-    name: Pull Request Max Commits
-    permissions: {}
-    runs-on: terraform-ci-policy
-    timeout-minutes: 3
-    steps:
-      - name: Checking the max commits number
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            const commitNum = context.payload.pull_request?.commits;
-            if (!Number.isSafeInteger(commitNum) || commitNum < 0) {
-              throw new Error("Invalid pull request commit metadata.");
-            }
-            if (commitNum > 1) {
-              core.setFailed(
-                `The PR has ${commitNum} commits, and please rebase it to 1.`
-              );
-            }

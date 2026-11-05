@@ -1,15 +1,22 @@
 package dts_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
+	"strings"
+	"sync"
 	"testing"
 
+	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -1067,4 +1074,318 @@ func checkDtsSynchronizationJobDestroy(resourceId string) resource.TestCheckFunc
 		}
 		return nil
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Identity contract regressions for the DTS synchronization and subscription
+// job resources. These are callback-sequence / request-identity tests: they
+// exercise the resource factory lifecycle callbacks (Importer.State, Read,
+// Update) against an in-process HTTP server with fixed responses. They are
+// NOT Terraform plan/apply end-to-end tests; the state-persistence guarantee
+// is established by verifying that a rejected import returns no persisted
+// resource binding, that a canonical JobId survives import→refresh→rename,
+// and that no path issues candidate-discovery (DescribeDtsJobs) requests.
+// ---------------------------------------------------------------------------
+
+// dtsJobImportTestClient builds an AliyunClient backed by an in-process HTTP
+// server. It is shared by the synchronization and subscription identity
+// regressions because both resources exercise the same identity contract
+// through the shared service helpers (validateJobIdentity / importJob).
+func dtsJobImportTestClient(t *testing.T, handler http.HandlerFunc) *connectivity.AliyunClient {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").SetAccessKeyId("test-key").SetAccessKeySecret("test-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints := new(sync.Map)
+	endpoint := strings.TrimPrefix(server.URL, "http://")
+	t.Setenv("NO_PROXY", endpoint)
+	config := &connectivity.Config{AccessKey: "test-key", SecretKey: "test-secret", Credential: credential, RegionId: "eu-west-1", AccountType: "test", Protocol: "http", Endpoints: endpoints, SignVersion: new(sync.Map), SkipRegionValidation: true}
+	client, err := config.Client()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoints.Store("dts", endpoint)
+	return client
+}
+
+// testDtsJobImportIdentity exercises the Import callback for a given resource
+// factory. A canonical JobId is accepted; a mismatched or stale identity is
+// rejected with no persisted resource binding (states is empty on failure).
+func testDtsJobImportIdentity(t *testing.T, factory func() *schema.Resource) {
+	for _, tc := range []struct {
+		name, input, returned, status, apiCode, wantError string
+	}{
+		{name: "canonical_job", input: "njl106g62735gmd", returned: "njl106g62735gmd"},
+		{name: "rebuilt_job", input: "is210es227j5gr6", returned: "is210es227j5gr6"},
+		{name: "not_prefix_based", input: "dts-job-id", returned: "dts-job-id"},
+		{name: "instance_id", input: "dtsnjl106g62735gmd", returned: "njl106g62735gmd", wantError: "does not match"},
+		{name: "instance_with_deleted_history", input: "dtsnjl106g62735gmd", returned: "is210es227j5gr6", wantError: "does not match"},
+		{name: "different_job", input: "njl106g62735gmd", returned: "is210es227j5gr6", wantError: "does not match"},
+		{name: "missing_job_id", input: "njl106g62735gmd", wantError: "DtsJobId"},
+		{name: "deleted_job", input: "njl106g62735gmd", returned: "njl106g62735gmd", status: "Finished", wantError: "cannot import"},
+		{name: "not_found", input: "njl106g62735gmd", apiCode: "Forbidden.InstanceNotFound", wantError: "cannot import"},
+		{name: "permission_denied", input: "njl106g62735gmd", apiCode: "Forbidden.NoPermission", wantError: "Forbidden.NoPermission"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := 0
+			client := dtsJobImportTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				if err := r.ParseForm(); err != nil {
+					t.Error(err)
+				}
+				if r.Form.Get("Action") != "DescribeDtsJobDetail" || r.Form.Get("DtsJobId") != tc.input {
+					t.Errorf("unexpected request: %v", r.Form)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if tc.apiCode != "" {
+					w.WriteHeader(http.StatusForbidden)
+					json.NewEncoder(w).Encode(map[string]interface{}{"Code": tc.apiCode, "Message": "test error", "RequestId": "test-request"})
+					return
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{"Success": true, "DtsJobId": tc.returned, "DtsInstanceID": "dtsnjl106g62735gmd", "Status": tc.status})
+			})
+			resource := factory()
+			d := schema.TestResourceDataRaw(t, resource.Schema, nil)
+			d.SetId(tc.input)
+			states, err := resource.Importer.State(d, client)
+			if tc.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantError) {
+					t.Fatalf("expected %q, got states=%v err=%v", tc.wantError, states, err)
+				}
+				// A rejected import must leave no persisted resource binding.
+				if len(states) != 0 {
+					t.Fatalf("failed import returned state: %v", states)
+				}
+			} else if err != nil || len(states) != 1 || states[0].Id() != tc.input {
+				t.Fatalf("unexpected result states=%v err=%v", states, err)
+			}
+			if d.Id() != tc.input {
+				t.Fatalf("identity switched from %q to %q", tc.input, d.Id())
+			}
+			if requests != 1 {
+				t.Fatalf("expected one exact-ID query, got %d requests", requests)
+			}
+		})
+	}
+}
+
+// testDtsJobReadIdentity exercises the Read callback. A mismatched identity is
+// surfaced as an error without mutating state; a deleted job clears the ID.
+func testDtsJobReadIdentity(t *testing.T, factory func() *schema.Resource) {
+	for _, tc := range []struct {
+		name, input, returned string
+		missing, mismatch     bool
+	}{
+		{name: "canonical", input: "is210es227j5gr6", returned: "is210es227j5gr6"},
+		{name: "legacy_instance_state", input: "dtsnjl106g62735gmd", returned: "is210es227j5gr6", mismatch: true},
+		{name: "different_job", input: "njl106g62735gmd", returned: "is210es227j5gr6", mismatch: true},
+		{name: "missing_identity", input: "njl106g62735gmd", mismatch: true},
+		{name: "deleted_old_job", input: "njl106g62735gmd", missing: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := 0
+			client := dtsJobImportTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				r.ParseForm()
+				if r.Form.Get("Action") != "ListTagResources" && r.Form.Get("DtsJobId") != tc.input {
+					t.Errorf("query switched identity: %v", r.Form)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				switch r.Form.Get("Action") {
+				case "DescribeDtsJobDetail":
+					if tc.missing {
+						w.WriteHeader(http.StatusNotFound)
+						json.NewEncoder(w).Encode(map[string]interface{}{"Code": "Forbidden.InstanceNotFound", "Message": "deleted", "RequestId": "test-request"})
+						return
+					}
+					json.NewEncoder(w).Encode(map[string]interface{}{"Success": true, "DtsJobId": tc.returned, "DtsInstanceID": "dtsnjl106g62735gmd", "Status": "Synchronizing", "MigrationMode": map[string]interface{}{}, "DestinationEndpoint": map[string]interface{}{}, "SourceEndpoint": map[string]interface{}{}, "SubscriptionDataType": map[string]interface{}{}, "Reserved": "{}"})
+				case "ListTagResources":
+					if r.Form.Get("ResourceId.1") != "dtsnjl106g62735gmd" {
+						t.Errorf("unexpected tag resource: %v", r.Form)
+					}
+					json.NewEncoder(w).Encode(map[string]interface{}{"TagResources": map[string]interface{}{"TagResource": []interface{}{}}})
+				case "DescribeDtsJobConfig":
+					json.NewEncoder(w).Encode(map[string]interface{}{"Parameters": []interface{}{}})
+				default:
+					t.Errorf("unexpected mutation or lookup: %v", r.Form)
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			})
+			resource := factory()
+			d := schema.TestResourceDataRaw(t, resource.Schema, nil)
+			d.SetId(tc.input)
+			err := resource.Read(d, client)
+			if tc.mismatch {
+				if err == nil {
+					t.Fatal("expected identity diagnostic")
+				}
+				if d.Id() != tc.input {
+					t.Fatalf("state identity changed to %q", d.Id())
+				}
+				if requests != 1 {
+					t.Fatalf("unexpected follow-up requests: %d", requests)
+				}
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := tc.input
+				if tc.missing {
+					want = ""
+				}
+				if d.Id() != want {
+					t.Fatalf("want ID %q got %q", want, d.Id())
+				}
+			}
+		})
+	}
+}
+
+// A failed mutation must not discover or take over a replacement job via its parent instance.
+func testDtsJobUpdateDoesNotRebind(t *testing.T, factory func() *schema.Resource) {
+	for _, tc := range []struct {
+		id            string
+		businessError bool
+	}{
+		{id: "njl106g62735gmd"}, {id: "dtsnjl106g62735gmd"},
+		{id: "njl106g62735gmd", businessError: true}, {id: "dtsnjl106g62735gmd", businessError: true},
+	} {
+		name := tc.id
+		if tc.businessError {
+			name += "_success_false"
+		}
+		t.Run(name, func(t *testing.T) {
+			id := tc.id
+			requests := 0
+			client := dtsJobImportTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				requests++
+				if err := r.ParseForm(); err != nil {
+					t.Error(err)
+				}
+				if r.Form.Get("Action") != "ModifyDtsJobName" || r.Form.Get("DtsJobId") != id {
+					t.Errorf("unexpected recovery or mutation: %v", r.Form)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if tc.businessError {
+					json.NewEncoder(w).Encode(map[string]interface{}{"Success": false, "ErrCode": "Forbidden.InstanceNotFound", "ErrMessage": "old job missing", "RequestId": "test-request"})
+					return
+				}
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(map[string]interface{}{"Code": "Forbidden.InstanceNotFound", "Message": "old job missing", "RequestId": "test-request"})
+			})
+			resource := factory()
+			d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{"dts_instance_id": "dtsnjl106g62735gmd", "dts_job_name": "renamed"})
+			d.SetId(id)
+			err := resource.Update(d, client)
+			if err == nil || !strings.Contains(err.Error(), "Forbidden.InstanceNotFound") {
+				t.Fatalf("expected original error, got %v", err)
+			}
+			if d.Id() != id {
+				t.Fatalf("state identity changed from %q to %q", id, d.Id())
+			}
+			if requests != 1 {
+				t.Fatalf("expected failed mutation only, got %d requests", requests)
+			}
+		})
+	}
+}
+
+// testDtsJobImportRefreshSequence exercises the callback sequence that
+// Terraform drives for an imported resource: Import → Read(refresh) →
+// Update(rename). It is callback-sequence / request-identity coverage, not a
+// Terraform plan/apply end-to-end test. The canonical JobId is accepted at
+// import, preserved through the subsequent Read refresh, survives a rename via
+// Update, and never switches to a different job. No candidate-discovery request
+// (DescribeDtsJobs) is issued at any point.
+//
+// State-persistence guarantees established:
+//   - A rejected import (see testDtsJobImportIdentity) returns an empty states
+//     slice, leaving no persisted resource binding.
+//   - A canonical JobId passes import, drives the subsequent Read refresh, and
+//     survives a plan/apply rename (Update) without changing identity.
+func testDtsJobImportRefreshSequence(t *testing.T, factory func() *schema.Resource) {
+	id := "njl106g62735gmd"
+	describeRequests := 0
+	modifyRequests := 0
+	client := dtsJobImportTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Form.Get("Action") {
+		case "DescribeDtsJobDetail":
+			describeRequests++
+			if r.Form.Get("DtsJobId") != id {
+				t.Errorf("DescribeDtsJobDetail switched identity: %v", r.Form)
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{"Success": true, "DtsJobId": id, "DtsInstanceID": "dtsnjl106g62735gmd", "DtsJobName": "original-name", "Status": "Synchronizing", "MigrationMode": map[string]interface{}{}, "DestinationEndpoint": map[string]interface{}{}, "SourceEndpoint": map[string]interface{}{}, "SubscriptionDataType": map[string]interface{}{}, "Reserved": "{}"})
+		case "ListTagResources":
+			json.NewEncoder(w).Encode(map[string]interface{}{"TagResources": map[string]interface{}{"TagResource": []interface{}{}}})
+		case "DescribeDtsJobConfig":
+			json.NewEncoder(w).Encode(map[string]interface{}{"Parameters": []interface{}{}})
+		case "ModifyDtsJobName":
+			modifyRequests++
+			if r.Form.Get("DtsJobId") != id {
+				t.Errorf("ModifyDtsJobName switched identity: %v", r.Form)
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{"Success": true, "RequestId": "test-request"})
+		default:
+			t.Errorf("unexpected action during sequence (candidate discovery must not run): %v", r.Form)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	})
+	resource := factory()
+	// Phase 1: Import with the canonical JobId. importJob must accept it and
+	// leave the identity untouched, returning exactly this resource as the
+	// import result.
+	d := schema.TestResourceDataRaw(t, resource.Schema, nil)
+	d.SetId(id)
+	states, err := resource.Importer.State(d, client)
+	if err != nil || len(states) != 1 || states[0].Id() != id {
+		t.Fatalf("import phase failed: states=%v err=%v", states, err)
+	}
+	// Phase 2: Refresh with the same identity. Read must keep it, surface no
+	// identity diagnostic, and issue no follow-up lookup against a different job.
+	if err := resource.Read(states[0], client); err != nil {
+		t.Fatalf("refresh phase failed: %v", err)
+	}
+	if states[0].Id() != id {
+		t.Fatalf("identity switched from %q to %q after refresh", id, states[0].Id())
+	}
+	// Phase 3: Rename via Update. A plan/apply that changes dts_job_name must
+	// carry the canonical JobId through ModifyDtsJobName without switching
+	// identity. This simulates the apply step that follows import+refresh.
+	renameD := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{"dts_job_name": "renamed-job"})
+	renameD.SetId(id)
+	if err := resource.Update(renameD, client); err != nil {
+		t.Fatalf("rename phase failed: %v", err)
+	}
+	if renameD.Id() != id {
+		t.Fatalf("identity switched from %q to %q after rename", id, renameD.Id())
+	}
+	if modifyRequests != 1 {
+		t.Fatalf("expected one ModifyDtsJobName request, got %d", modifyRequests)
+	}
+	if describeRequests != 3 {
+		t.Fatalf("expected Import+Refresh+Update-Read to issue three exact-ID DescribeDtsJobDetail queries, got %d", describeRequests)
+	}
+}
+
+func TestUnitDtsSynchronizationJobImportIdentity(t *testing.T) {
+	testDtsJobImportIdentity(t, dts.ResourceSynchronizationJob)
+}
+
+func TestUnitDtsSynchronizationJobReadIdentity(t *testing.T) {
+	testDtsJobReadIdentity(t, dts.ResourceSynchronizationJob)
+}
+
+func TestUnitDtsSynchronizationJobUpdateDoesNotRebind(t *testing.T) {
+	testDtsJobUpdateDoesNotRebind(t, dts.ResourceSynchronizationJob)
+}
+
+func TestUnitDtsSynchronizationJobImportRefreshSequence(t *testing.T) {
+	testDtsJobImportRefreshSequence(t, dts.ResourceSynchronizationJob)
 }

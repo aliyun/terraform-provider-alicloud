@@ -69,18 +69,21 @@ func testSweepNasFileSystem(region string) error {
 				}
 			}
 			// 删除 fileSystem 时需要先删除其挂载关系
-			if v, ok := item["MountTargets"].(map[string]interface{})["MountTarget"].([]interface{}); ok && len(v) > 0 {
-				log.Printf("[INFO] Delete mount targets with filesystem: %v", item["FileSystemId"])
-				for _, domain := range v {
-					domainInfo := domain.(map[string]interface{})
-					request := map[string]interface{}{
-						"FileSystemId":      item["FileSystemId"],
-						"MountTargetDomain": domainInfo["MountTargetDomain"],
-					}
-					action := "DeleteMountTarget"
-					response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
-					if err != nil {
-						log.Printf("[ERROR] Error delete mount target: %v with filesystem: %v err: %v", domainInfo["MountTargetDomain"], item["FileSystemId"], err)
+			mountTargetsMap, ok := item["MountTargets"].(map[string]interface{})
+			if ok {
+				if v, ok := mountTargetsMap["MountTarget"].([]interface{}); ok && len(v) > 0 {
+					log.Printf("[INFO] Delete mount targets with filesystem: %v", item["FileSystemId"])
+					for _, domain := range v {
+						domainInfo := domain.(map[string]interface{})
+						request := map[string]interface{}{
+							"FileSystemId":      item["FileSystemId"],
+							"MountTargetDomain": domainInfo["MountTargetDomain"],
+						}
+						action := "DeleteMountTarget"
+						response, err = client.RpcPost("NAS", "2017-06-26", action, nil, request, true)
+						if err != nil {
+							log.Printf("[ERROR] Error delete mount target: %v with filesystem: %v err: %v", domainInfo["MountTargetDomain"], item["FileSystemId"], err)
+						}
 					}
 				}
 			}
@@ -283,7 +286,7 @@ func TestAccAliCloudNasFileSystem_basic0_twin(t *testing.T) {
 						"Created": "TF",
 						"For":     "FileSystem",
 					},
-					"zone_id": "${data.alicloud_nas_zones.standard.zones.0.zone_id}",
+					"zone_id": "${local.nas_capacity_zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -649,6 +652,13 @@ func AliCloudNasFileSystemBasicDependence0(name string) string {
 
 	data "alicloud_nas_zones" "standard" {
   		file_system_type = "standard"
+	}
+
+	locals {
+  		nas_capacity_zone_id = try([
+  			for z in data.alicloud_nas_zones.standard.zones : z.zone_id
+  			if length([for it in z.instance_types : it if lower(it.protocol_type) == "nfs" && lower(it.storage_type) == "capacity"]) > 0
+  		][0], data.alicloud_nas_zones.standard.zones.0.zone_id)
 	}
 
 	data "alicloud_nas_zones" "extreme" {
@@ -1687,3 +1697,199 @@ resource "alicloud_vswitch" "CreateVswitchD" {
 }
 
 // Test Nas FileSystem. <<< Resource test cases, automatically generated.
+
+func TestAccAliCloudNasFileSystem_autoUpgradeConfig(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_file_system.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudNasFileSystemAutoUpgradeConfigMap)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return nas.NewNasServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeNasFileSystem")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccNasAutoUpgrade%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudNasFileSystemAutoUpgradeConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":  name,
+					"storage_type": "advance_100",
+					"encrypt_type": "0",
+					"vpc_id":       "${alicloud_vpc.default.id}",
+					"redundancy_vswitch_ids": []string{
+						"${alicloud_vswitch.vswitch_c.id}", "${alicloud_vswitch.vswitch_d.id}", "${alicloud_vswitch.vswitch_f.id}"},
+					"capacity":         "500",
+					"protocol_type":    "cpfs",
+					"file_system_type": "cpfsse",
+					"redundancy_type":  "ZRS",
+					"auto_upgrade_config": []map[string]interface{}{
+						{
+							"enabled":             "true",
+							"capacity_used_ratio": "60",
+							"time":                "90",
+							"step":                "200",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_config.#":                     "1",
+						"auto_upgrade_config.0.enabled":             "true",
+						"auto_upgrade_config.0.capacity_used_ratio": "60",
+						"auto_upgrade_config.0.time":                "90",
+						"auto_upgrade_config.0.step":                "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_config": []map[string]interface{}{
+						{
+							"enabled":             "true",
+							"capacity_used_ratio": "80",
+							"time":                "60",
+							"step":                "300",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_config.#":                     "1",
+						"auto_upgrade_config.0.enabled":             "true",
+						"auto_upgrade_config.0.capacity_used_ratio": "80",
+						"auto_upgrade_config.0.time":                "60",
+						"auto_upgrade_config.0.step":                "300",
+					}),
+				),
+			},
+			{
+				// Sub-attribute removal: only enabled is in the configuration.
+				// The resource must send exactly that attribute instead of
+				// re-sending the previous state values of the Optional+Computed
+				// siblings; the siblings become computed values read back from
+				// the server.
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_config": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_config.#":                     "1",
+						"auto_upgrade_config.0.enabled":             "false",
+						"auto_upgrade_config.0.capacity_used_ratio": acctest.CHECKSET,
+						"auto_upgrade_config.0.time":                acctest.CHECKSET,
+						"auto_upgrade_config.0.step":                acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				// Whole-block removal: the block is Optional+Computed, so
+				// dropping it from the configuration keeps the value computed
+				// by the server and must not send stale state back to
+				// ModifyFileSystem. The step also proves the plan stays stable
+				// after the removal.
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_config": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_config.#":                     "1",
+						"auto_upgrade_config.0.enabled":             "false",
+						"auto_upgrade_config.0.capacity_used_ratio": acctest.CHECKSET,
+						"auto_upgrade_config.0.time":                acctest.CHECKSET,
+						"auto_upgrade_config.0.step":                acctest.CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_config": []map[string]interface{}{
+						{
+							"enabled":             "true",
+							"capacity_used_ratio": "70",
+							"time":                "30",
+							"step":                "100",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_config.#":                     "1",
+						"auto_upgrade_config.0.enabled":             "true",
+						"auto_upgrade_config.0.capacity_used_ratio": "70",
+						"auto_upgrade_config.0.time":                "30",
+						"auto_upgrade_config.0.step":                "100",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"keytab", "keytab_md5", "snapshot_id"},
+			},
+		},
+	})
+}
+
+var AlicloudNasFileSystemAutoUpgradeConfigMap = map[string]string{
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+	"region_id":   acctest.CHECKSET,
+}
+
+func AlicloudNasFileSystemAutoUpgradeConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+# This fixture pins three specific cn-beijing zones and the advance_100 CPFS SE
+# specification: ZRS needs three distinct zones, and cpfsse advance_100 capacity
+# is per-zone inventory. A region-wide zone query only proves API support, not
+# inventory, so a dynamically selected triple can fail at apply time with
+# Resource.OutOfStock. Update the fixed triple when these zones run out of stock.
+resource "alicloud_vpc" "default" {
+  is_default  = false
+  cidr_block  = "192.168.0.0/16"
+  vpc_name    = "tf-testAccNasAutoUpgradeVpc"
+  enable_ipv6 = true
+}
+
+resource "alicloud_vswitch" "vswitch_f" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = "cn-beijing-i"
+  cidr_block   = "192.168.2.0/24"
+  vswitch_name = "tf-testAccNasAutoUpgradeVswF"
+}
+
+resource "alicloud_vswitch" "vswitch_c" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = "cn-beijing-l"
+  cidr_block   = "192.168.3.0/24"
+  vswitch_name = "tf-testAccNasAutoUpgradeVswC"
+}
+
+resource "alicloud_vswitch" "vswitch_d" {
+  is_default   = false
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = "cn-beijing-h"
+  cidr_block   = "192.168.4.0/24"
+  vswitch_name = "tf-testAccNasAutoUpgradeVswD"
+}
+
+`, name)
+}
