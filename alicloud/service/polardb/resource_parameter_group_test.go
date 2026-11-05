@@ -310,6 +310,7 @@ func checkPolarDbParameterGroupInResourceGroup(resourceId, resourceGroupResource
 func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 	var v map[string]interface{}
 	var firstParameterGroupId string
+	var secondParameterGroupId string
 	resourceId := "alicloud_polardb_parameter_group.default"
 	ra := acctest.ResourceAttrInit(resourceId, AlicloudPolarDbParameterGroupResourceGroupIdMap)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -384,9 +385,43 @@ func TestAccAliCloudPolarDbParameterGroup_resourceGroupId(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default", "id"),
 					checkPolarDbParameterGroupInResourceGroup(resourceId, "alicloud_resource_manager_resource_group.default"),
 					func(s *terraform.State) error {
-						secondParameterGroupId := s.RootModule().Resources[resourceId].Primary.ID
+						secondParameterGroupId = s.RootModule().Resources[resourceId].Primary.ID
 						if secondParameterGroupId == firstParameterGroupId {
 							return fmt.Errorf("adding resource_group_id should have replaced the parameter group, but the ID stayed %q", secondParameterGroupId)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_version":           "8.0",
+					"parameter_group_name": name,
+					"db_type":              "MySQL",
+					"parameters": []map[string]interface{}{
+						{
+							"param_name":  "wait_timeout",
+							"param_value": "86400",
+						},
+					},
+					"description":       "tf_testAcc",
+					"resource_group_id": "${alicloud_resource_manager_resource_group.default2.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_version":           "8.0",
+						"parameter_group_name": name,
+						"db_type":              "MySQL",
+						"parameters.#":         "1",
+						"description":          "tf_testAcc",
+						"resource_group_id":    CHECKSET,
+					}),
+					resource.TestCheckResourceAttrPair(resourceId, "resource_group_id", "alicloud_resource_manager_resource_group.default2", "id"),
+					checkPolarDbParameterGroupInResourceGroup(resourceId, "alicloud_resource_manager_resource_group.default2"),
+					func(s *terraform.State) error {
+						thirdParameterGroupId := s.RootModule().Resources[resourceId].Primary.ID
+						if thirdParameterGroupId == secondParameterGroupId {
+							return fmt.Errorf("switching resource_group_id between two explicit resource groups should have replaced the parameter group, but the ID stayed %q", thirdParameterGroupId)
 						}
 						return nil
 					},
@@ -415,6 +450,11 @@ variable "name" {
 resource "alicloud_resource_manager_resource_group" "default" {
   resource_group_name = replace(var.name, "_", "-")
   display_name        = var.name
+}
+
+resource "alicloud_resource_manager_resource_group" "default2" {
+  resource_group_name = "${replace(var.name, "_", "-")}-2"
+  display_name        = "${var.name}-2"
 }
 `, name)
 }
