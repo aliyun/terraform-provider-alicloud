@@ -2,7 +2,15 @@
 
 const POLICY_VERSION = 1;
 const POLICY_CHECK_NAME = "Basic Policy";
-const POLICY_TIMEOUT_MS = 90000;
+// The Basic Policy Gate runs as a separate workflow (pull_request_target) that
+// queues on the shared terraform-ci-policy runner pool independently of the
+// route job. Under runner-pool contention the Gate's Check Run can appear
+// after the route job has already started. The discovery phase budgets for
+// that queue delay; the completion phase bounds the wait once the Check Run is
+// observable. Worst case is discovery + completion = 180s, within the 300s
+// workflow timeout (timeout-minutes: 5) on every route job.
+const POLICY_DISCOVERY_TIMEOUT_MS = 150000;
+const POLICY_COMPLETION_TIMEOUT_MS = 30000;
 const POLICY_POLL_INTERVAL_MS = 3000;
 const TRUSTED_RUNNER = "terraform-ci-trusted";
 const TRUSTED_HEAVY_RUNNER = "terraform-ci-heavy";
@@ -231,7 +239,8 @@ async function selectPolicy({
   now = Date.now,
   sleep = (milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds)),
-  timeoutMs = POLICY_TIMEOUT_MS,
+  discoveryTimeoutMs = POLICY_DISCOVERY_TIMEOUT_MS,
+  completionTimeoutMs = POLICY_COMPLETION_TIMEOUT_MS,
   pollIntervalMs = POLICY_POLL_INTERVAL_MS,
 }) {
   const repository = expectedRepository(context);
@@ -252,18 +261,37 @@ async function selectPolicy({
   if (
     typeof now !== "function" ||
     typeof sleep !== "function" ||
-    !Number.isSafeInteger(timeoutMs) ||
-    timeoutMs <= 0 ||
-    timeoutMs > POLICY_TIMEOUT_MS ||
+    !Number.isSafeInteger(discoveryTimeoutMs) ||
+    discoveryTimeoutMs <= 0 ||
+    discoveryTimeoutMs > POLICY_DISCOVERY_TIMEOUT_MS ||
+    !Number.isSafeInteger(completionTimeoutMs) ||
+    completionTimeoutMs <= 0 ||
+    completionTimeoutMs > POLICY_COMPLETION_TIMEOUT_MS ||
     !Number.isSafeInteger(pollIntervalMs) ||
     pollIntervalMs <= 0 ||
-    pollIntervalMs > timeoutMs
+    pollIntervalMs > discoveryTimeoutMs
   ) {
     throw new Error("Polling configuration is invalid.");
   }
 
-  const deadline = now() + timeoutMs;
-  while (now() < deadline) {
+  // Two-phase bounded wait. The discovery deadline tolerates the Basic Policy
+  // Gate's independent queueing delay; the completion deadline only starts
+  // ticking once a unique Check Run is observable, so a slow-to-appear but
+  // already-completed policy is not penalised by the route job's own start.
+  const discoveryDeadline = now() + discoveryTimeoutMs;
+  let completionDeadline = null;
+  let observed = false;
+
+  while (true) {
+    const deadline = observed ? completionDeadline : discoveryDeadline;
+    if (now() >= deadline) {
+      throw new Error(
+        observed
+          ? "Timed out waiting for a unique Basic Policy result."
+          : "Timed out waiting for a Basic Policy Check Run to appear."
+      );
+    }
+
     const checkRuns = await github.paginate(
       github.rest.checks.listForRef,
       {
@@ -293,11 +321,17 @@ async function selectPolicy({
     const check = candidates[0];
     validateSource(check, repository, event, origin);
     const binding = parseBinding(check.external_id, event);
+    if (!observed) {
+      observed = true;
+      completionDeadline = now() + completionTimeoutMs;
+    }
     if (check.status !== "completed") {
       if (!["queued", "in_progress"].includes(check.status)) {
         throw new Error("Basic Policy Check Run status is invalid.");
       }
-      await sleep(Math.min(pollIntervalMs, Math.max(0, deadline - now())));
+      await sleep(
+        Math.min(pollIntervalMs, Math.max(0, completionDeadline - now()))
+      );
       continue;
     }
     if (check.conclusion !== "success") {
@@ -305,8 +339,6 @@ async function selectPolicy({
     }
     return setOutputs(core, binding.c, binding.q);
   }
-
-  throw new Error("Timed out waiting for a unique Basic Policy result.");
 }
 
 module.exports = {

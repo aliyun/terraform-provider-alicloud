@@ -180,7 +180,7 @@ The volume supports the following:
 * `nfs_volume_read_only` - (Optional) The nfs volume read only. Default to `false`.
 * `nfs_volume_server` - (Optional) The address of the NFS server.
 
--> **NOTE:** Every volume mounted must have a name and type attributes.
+  -> **NOTE:** Every volume mounted must have a name and type attributes.
 
 ### `volumes-config_file_volume_config_file_to_paths`
 

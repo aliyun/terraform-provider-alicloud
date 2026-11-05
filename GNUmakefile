@@ -9,7 +9,7 @@ PARALLEL ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4
 tools:
 	@echo "==> installing required tooling..."
 	go install golang.org/x/tools/cmd/goimports@latest
-	go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@latest
+	GOTOOLCHAIN=go1.26.10 go install github.com/bflad/tfproviderlint/cmd/tfproviderlint@v0.31.0
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH || $$GOPATH)/bin v2.12.2
 
 default: build
@@ -34,6 +34,9 @@ goimports: tools
 
 # Test a specific resource with debug logs
 # Usage: make test-resource-debug RESOURCE=alicloud_vpc TESTCASE=basic LOGLEVEL=TRACE LOGFILE=vpc-test.log
+# Flat-layout resources run against ./alicloud; split-layout resources
+# (alicloud/service/<product>/) are discovered from the service package and
+# run in their own subpackage.
 test-resource-debug:
 	@if [ -z "$(RESOURCE)" ]; then \
 		echo "Error: RESOURCE is required. Usage: make test-resource-debug RESOURCE=alicloud_vpc"; \
@@ -42,16 +45,30 @@ test-resource-debug:
 	@RESOURCE_NAME=$$(echo "$(RESOURCE)" | sed 's/^alicloud_//'); \
 	TEST_FILE="alicloud/resource_alicloud_$${RESOURCE_NAME}_test.go"; \
 	TEST_TYPE="resource"; \
+	TEST_PKG="./alicloud"; \
 	if [ ! -f "$$TEST_FILE" ]; then \
 		TEST_FILE="alicloud/data_source_alicloud_$${RESOURCE_NAME}_test.go"; \
 		TEST_TYPE="data_source"; \
-		if [ ! -f "$$TEST_FILE" ]; then \
-			echo "Error: Test file not found for resource $(RESOURCE)"; \
-			echo "Tried: resource_alicloud_$${RESOURCE_NAME}_test.go and data_source_alicloud_$${RESOURCE_NAME}_test.go"; \
-			exit 1; \
-		fi; \
 	fi; \
-	echo "Found test file: $$TEST_FILE ($$TEST_TYPE)"; \
+	if [ ! -f "$$TEST_FILE" ]; then \
+		for f in alicloud/service/*/resource_*_test.go alicloud/service/*/data_source_*_test.go; do \
+			[ -f "$$f" ] || continue; \
+			d=$$(basename $$(dirname "$$f")); \
+			b=$$(basename "$$f" _test.go); b=$${b#resource_}; b=$${b#data_source_}; \
+			if [ "alicloud_$${d}_$${b}" = "$(RESOURCE)" ]; then \
+				TEST_FILE="$$f"; \
+				TEST_TYPE="split"; \
+				TEST_PKG="./alicloud/service/$${d}"; \
+				break; \
+			fi; \
+		done; \
+	fi; \
+	if [ ! -f "$$TEST_FILE" ]; then \
+		echo "Error: Test file not found for resource $(RESOURCE)"; \
+		echo "Tried alicloud/resource_alicloud_$${RESOURCE_NAME}_test.go, alicloud/data_source_alicloud_$${RESOURCE_NAME}_test.go and alicloud/service/*/{resource,data_source}_$${RESOURCE_NAME}_test.go"; \
+		exit 1; \
+	fi; \
+	echo "Found test file: $$TEST_FILE ($$TEST_TYPE, package $$TEST_PKG)"; \
 	LOGLEVEL=$${LOGLEVEL:-DEBUG}; \
 	LOGFILE_BASE="$(LOGFILE)"; \
 	PROJECT_ROOT=$$(pwd); \
@@ -101,7 +118,7 @@ test-resource-debug:
 		if [ -n "$$LOGFILE_BASE" ]; then \
 			TEST_API_LOG="$${PROJECT_ROOT}/$${LOGFILE_BASE}-$${TEST_NAME}-api.log"; \
 			TEST_CONSOLE_LOG="$${PROJECT_ROOT}/$${LOGFILE_BASE}-$${TEST_NAME}-console.log"; \
-			if TF_LOG=$$LOGLEVEL TF_LOG_PATH=$$TEST_API_LOG TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m 2>&1 | tee $$TEST_CONSOLE_LOG; then \
+			if TF_LOG=$$LOGLEVEL TF_LOG_PATH=$$TEST_API_LOG TF_ACC=1 go test -v $$TEST_PKG -run="^$$TEST_NAME\$$" -timeout 360m 2>&1 | tee $$TEST_CONSOLE_LOG; then \
 				echo "✓ PASSED: $$TEST_NAME"; \
 				echo "  API logs: $$TEST_API_LOG"; \
 				echo "  Console logs: $$TEST_CONSOLE_LOG"; \
@@ -112,7 +129,7 @@ test-resource-debug:
 				FAILED_TESTS="$$FAILED_TESTS$$TEST_NAME\n"; \
 			fi; \
 		else \
-			if TF_LOG=$$LOGLEVEL TF_ACC=1 go test -v ./alicloud -run="^$$TEST_NAME\$$" -timeout 360m; then \
+			if TF_LOG=$$LOGLEVEL TF_ACC=1 go test -v $$TEST_PKG -run="^$$TEST_NAME\$$" -timeout 360m; then \
 				echo "✓ PASSED: $$TEST_NAME"; \
 			else \
 				echo "✗ FAILED: $$TEST_NAME"; \
@@ -134,6 +151,33 @@ vet:
 fmt:
 	gofmt -w $(GOFMT_FILES)
 	goimports -w $(GOFMT_FILES)
+
+# Real production build of the root provider main, covering the root main
+# package and every transitive production dependency it links — including the
+# split alicloud/service/* subpackages. This is a genuine `go build`/link, not a
+# renamed `vet`. It is the entry that proves the root main links; the cloudauth
+# init probe (probe_init) compiles+inits a single service package via a
+# no-such-test-case run and does NOT compile or link the root main.
+provider-build:
+	@echo "==> building root provider main (production)..."
+	go build -o /dev/null .
+
+# Assert the root alicloud production dependency graph (root main, non-test)
+# does not depend — directly or transitively — on
+# github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource. Unlike
+# test-framework-guard.sh (a diff-level scan of newly added import lines),
+# this queries the COMPLETE production dependency graph with `go list -deps`,
+# so already-migrated and not-yet-migrated files are both covered.
+check-production-deps:
+	@"$(CURDIR)/scripts/ci/check-production-deps.sh"
+
+# Compile, link and initialize the standard alicloud/service/cloudauth test
+# binary without running any acceptance test (go test -run '^$' -count=1 -v).
+# INITIALIZATION_ONLY / countsAsAccTest=false: proves ONE service test binary
+# builds+inits, not the root main build and not a real ACC. Run unconditionally
+# inside `ci-check-quick`; see scripts/ci/initialization-check.sh.
+check-initialization:
+	@"$(CURDIR)/scripts/ci/initialization-check.sh"
 
 fmtcheck:
 	"$(CURDIR)/scripts/gofmtcheck.sh"
@@ -177,28 +221,22 @@ commit:
 #   make ci-check SKIP_EXAMPLE=1     # Run all checks except example tests
 #   make ci-check SKIP_TEST=1        # Skip resource integration tests
 #   make ci-check SKIP_BUILD=1       # Skip build check
-#   make ci-check-quick              # Quick check (skip build, tests, errcheck, and example tests)
+#   make ci-check-quick              # Quick check (run changed-file unit tests; skip build, errcheck, and example tests)
+#   CI_CHECK_BASE=<commit> make ci-check-quick  # Compare that base to the current working tree
+# An explicit base must exist locally. Unset it to retain the default change detection.
 ci-check: fmtcheck
 	@echo "Building for current OS only..."
 	@OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
 	if [ "$(SKIP_BUILD)" != "1" ]; then \
 	    if [ "$$OS" = "darwin" ]; then \
-	        $(MAKE) mac; \
-	        cd bin && tar -xzf terraform-provider-alicloud_darwin-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
-	    elif [ "$$OS" = "linux" ]; then \
+	        $(MAKE) native; \
+		elif [ "$$OS" = "linux" ]; then \
 	        $(MAKE) linux; \
-	        cd bin && tar -xzf terraform-provider-alicloud_linux-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
 	    elif echo "$$OS" | grep -q "mingw\|msys\|cygwin"; then \
 	        $(MAKE) windows; \
-	        cd bin && tar -xzf terraform-provider-alicloud_windows-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud.exe . && rmdir bin; fi; \
 	    else \
 	        echo "Unknown OS: $$OS, building for linux as fallback"; \
 	        $(MAKE) linux; \
-	        cd bin && tar -xzf terraform-provider-alicloud_linux-amd64.tgz 2>/dev/null || true; \
-	        if [ -d "bin" ]; then mv bin/terraform-provider-alicloud . && rmdir bin; fi; \
 	    fi; \
 	fi
 	@CI_CHECK_FLAGS="--skip-build"; \
@@ -210,7 +248,7 @@ ci-check: fmtcheck
 	fi; \
 	bash "$(CURDIR)/scripts/local-ci-check.sh" $$CI_CHECK_FLAGS
 
-# Quick CI check (skip build and tests)
+# Quick CI check (quality checks and changed-file unit tests in one run)
 ci-check-quick:
 	@bash "$(CURDIR)/scripts/local-ci-check.sh" --quick
 
@@ -230,11 +268,21 @@ minimal-test-set:
 	go run scripts/testing/minimal_test_set_calculator.go -resource $(RESOURCE) -format $$FORMAT
 
 # Sweep test resources in a specific region
-# Usage: 
-#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc_ipam_ipam
-#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc_ipam_ipam SWEEP_ALL=1  # Delete all resources, skip prefix check
+# Usage:
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc OLDER_THAN=12h              # only delete VPCs created more than 12h ago
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1                 # delete all resource names; VPC cleanup protects explicit do-not-delete VPCs
+#   make sweep REGION=cn-hangzhou RESOURCE=alicloud_vpc SWEEP_ALL=1 OLDER_THAN=24h  # delete all, but protect resources newer than 24h
 # Note: For resources with dependencies (specified in Dependencies field), include them with pipe separator.
 #       Example: RESOURCE="alicloud_vpc_ipam_ipam_pool|alicloud_vpc_ipam_ipam"
+# OLDER_THAN accepts a Go duration (12h, 24h, 30m, 1h30m). When set, resources created within that
+# window are spared even if they match the name prefix — useful when several people run AccTest on
+# the same account and you only want to clean up stale leftovers.
+# SWEEP_ALL traverses a whole dependency graph and may exceed Go's default 10m.
+# SWEEP_TIMEOUT overrides this inner Go deadline; remote runner deadlines still apply.
+# Resolve the owning test binary after product tests and sweepers move out of the root.
+# SWEEP_PACKAGE may disambiguate a resource registered in multiple test binaries.
+SWEEP_TIMEOUT ?= $(if $(filter 1,$(SWEEP_ALL)),3h,10m)
 sweep:
 	@if [ -z "$(REGION)" ]; then \
 		echo "Error: REGION is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
@@ -244,15 +292,16 @@ sweep:
 		echo "Error: RESOURCE is required. Usage: make sweep REGION=cn-hangzhou RESOURCE=alicloud_instance"; \
 		exit 1; \
 	fi
-	@if [ "$(SWEEP_ALL)" = "1" ]; then \
-		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)..."; \
-		SWEEPER_SKIP_PREFIX=1 TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+	@package=$$(go run ./scripts/testing/sweeppackage -resource "$(RESOURCE)" -package "$(SWEEP_PACKAGE)") || exit $$?; \
+	if [ "$(SWEEP_ALL)" = "1" ]; then \
+		echo "Sweeping ALL $(RESOURCE) resources in region $(REGION) (skipping prefix check)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
+		ALICLOUD_SWEEP_ALL_RESOURCES=true ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test "$$package" -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	else \
-		echo "Sweeping $(RESOURCE) in region $(REGION)..."; \
-		TF_ACC=1 go test ./alicloud -v -sweep=$(REGION) -sweep-run=$(RESOURCE); \
+		echo "Sweeping $(RESOURCE) in region $(REGION)$(if $(OLDER_THAN), protecting resources newer than $(OLDER_THAN))..."; \
+		ALICLOUD_SWEEP_OLDER_THAN=$(OLDER_THAN) TF_ACC=1 go test "$$package" -v -timeout=$(SWEEP_TIMEOUT) -sweep=$(REGION) -sweep-run=$(RESOURCE); \
 	fi
 
-.PHONY: build test testacc test-resource test-resource-debug vet fmt fmtcheck errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep
+.PHONY: build test testacc test-resource-debug vet fmt fmtcheck importscheck goimports errcheck test-compile website website-test commit ci-check ci-check-quick minimal-test-set sweep tools native provider-build check-production-deps
 
 all: mac windows linux
 
@@ -272,6 +321,12 @@ mac:
 	GOOS=darwin GOARCH=amd64 go build -o bin/terraform-provider-alicloud
 	tar czvf bin/terraform-provider-alicloud_darwin-amd64.tgz bin/terraform-provider-alicloud
 	rm -rf bin/terraform-provider-alicloud
+
+# Build for the host platform and architecture, named the way
+# scripts/local-example-check.sh discovers binaries
+# (terraform-provider-alicloud_<os>-<arch>), for local checks
+native:
+	GOOS= GOARCH= go build -o bin/terraform-provider-alicloud_$$(go env GOOS)-$$(go env GOARCH)
 
 windowscopy:
 	tar -xvf bin/terraform-provider-alicloud_windows-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)

@@ -27,16 +27,16 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testacc-example"
+  default = "tf-prefixlist-example"
 }
 
 resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-testacc-chenyi"
+  display_name        = "tf-prefixlist-default-rg"
   resource_group_name = var.name
 }
 
 resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-testacc-chenyi-change"
+  display_name        = "tf-prefixlist-change-rg"
   resource_group_name = "${var.name}1"
 }
 
@@ -59,7 +59,7 @@ resource "alicloud_vpc_prefix_list" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `entrys` - (Optional) The CIDR address block list of the prefix list.See the following `Block Entrys`.
+* `entrys` - (Optional) The CIDR address block list of the prefix list. See [`entrys`](#entrys) below.
 * `ip_version` - (Optional, ForceNew, Computed) The IP version of the prefix list. Value:-**IPV4**:IPv4 version.-**IPV6**:IPv6 version.
 * `max_entries` - (Optional, Computed) The maximum number of entries for CIDR address blocks in the prefix list.
 * `prefix_list_description` - (Optional) The description of the prefix list.It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
@@ -67,7 +67,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed, Available since v1.205.0) The ID of the resource group to which the PrefixList belongs.
 * `tags` - (Optional, Map, Available since v1.205.0) The tags of PrefixList.
 
-#### Block Entrys
+### `entrys`
 
 The Entries supports the following:
 * `cidr` - (Optional) The CIDR address block of the prefix list.

@@ -18,6 +18,8 @@ For information about VPN gateway and how to use it, see [What is VPN gateway](h
 
 -> **NOTE:** Available since v1.13.0.
 
+-> **NOTE:** Destroying a `Subscription` or `PrePaid` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage

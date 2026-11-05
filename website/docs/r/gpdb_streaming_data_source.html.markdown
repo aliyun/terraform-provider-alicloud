@@ -115,7 +115,7 @@ resource "alicloud_gpdb_streaming_data_source" "default" {
 The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) The instance ID.
 
--> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/196830.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
+  -> **NOTE:**   You can call the [DescribeDBInstances](https://www.alibabacloud.com/help/en/doc-detail/196830.html) operation to query the information about all AnalyticDB for PostgreSQL instances within a region, including instance IDs.
 
 * `data_source_config` - (Required) The configurations of the data source. 
 * `data_source_description` - (Optional) The description of the data source. 

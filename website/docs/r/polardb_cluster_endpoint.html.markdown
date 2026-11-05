@@ -18,7 +18,7 @@ Provides a PolarDB endpoint resource to manage cluster endpoint of PolarDB clust
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster_endpoint&exampleId=e13b5fcc-5a07-520c-4f55-bfcd06741fb0906fd342&activeTab=example&spm=docs.r.polardb_cluster_endpoint.0.e13b5fcc5a&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_polardb_cluster_endpoint&exampleId=183e61d8-040b-f159-116b-bc7e9411a357961335c8&activeTab=example&spm=docs.r.polardb_cluster_endpoint.0.183e61d804&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -54,6 +54,7 @@ resource "alicloud_polardb_cluster" "default" {
 
 resource "alicloud_polardb_cluster_endpoint" "default" {
   db_cluster_id = alicloud_polardb_cluster.default.id
+  scc_mode      = "on"
 }
 ```
 
@@ -68,6 +69,7 @@ The following arguments are supported:
 * `nodes` - (Optional) Node id list for endpoint configuration. At least 2 nodes if specified, or if the cluster has more than 3 nodes, read-only endpoint is allowed to mount only one node. Default is all nodes.
 * `auto_add_new_nodes` - (Optional) Whether the new node automatically joins the default cluster address. Valid values are `Enable`, `Disable`. When creating a new custom endpoint, default to `Disable`.
 * `endpoint_config` - (Optional) The advanced settings of the endpoint of Apsara PolarDB clusters are in JSON format. Including the settings of consistency level, transaction splitting, connection pool, and offload reads from primary node. For more details, see the [description of EndpointConfig in the Request parameters table for details](https://www.alibabacloud.com/help/doc-detail/116593.htm).
+* `scc_mode` - (Optional, Computed, Available since v1.294.0) Specifies whether to enable global consistency (high-performance mode). Valid values are `on` and `off`. Before setting this argument to `on`, set `ConsistLevel` in `endpoint_config` to `0` (eventual consistency).
 * `ssl_enabled` - (Optional) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
 * `net_type` - (Optional) The network type of the endpoint address.
 * `ssl_auto_rotate` - (Optional) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.

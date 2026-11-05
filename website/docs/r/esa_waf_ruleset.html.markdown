@@ -53,7 +53,7 @@ The following arguments are supported:
 * `site_id` - (Required, ForceNew) The website ID, which can be obtained by calling the [ListSites](https://www.alibabacloud.com/help/en/doc-detail/2850189.html) operation.
 * `site_version` - (Optional, Int) The site version.
 
--> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
+  -> **NOTE:** This parameter only applies during resource creation, update or deletion. If modified in isolation without other property changes, Terraform will not trigger any action.
 
 * `status` - (Optional, Computed) Rule Set Status
 

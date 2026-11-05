@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Ecs Elasticity Assurance available to the user.
 
--> **NOTE:** Available in 1.196.0+
+-> **NOTE:** Available since v1.196.0
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ecs_elasticity_assurances" "default" {
   ids = ["${alicloud_ecs_elasticity_assurance.default.id}"]
 }
@@ -28,11 +28,11 @@ output "alicloud_ecs_elasticity_assurance_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `private_pool_options_ids` - (ForceNew,Optional) The ID of the elastic protection service.
-* `resource_group_id` - (ForceNew,Optional) The ID of the resource group.
-* `status` - (ForceNew,Optional) The status of flexible guarantee services. Possible values: `All`, `Preparing`, `Prepared`, `Active`, `Released`.
-* `tags` - (ForceNew,Optional) The tag key-value pair information bound by the elastic guarantee service.
-* `ids` - (Optional, ForceNew, Computed) A list of Elasticity Assurance IDs.
+* `private_pool_options_ids` - (Optional) The ID of the elastic protection service.
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `status` - (Optional) The status of flexible guarantee services. Possible values: `All`, `Preparing`, `Prepared`, `Active`, `Released`.
+* `tags` - (Optional) The tag key-value pair information bound by the elastic guarantee service.
+* `ids` - (Optional, Computed) A list of Elasticity Assurance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -57,6 +57,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `start_time` - Flexible guarantee service effective time.
   * `start_time_type` - Flexible guarantee effective way. Possible values:-Now: Effective immediately.-Later: the specified time takes effect.
   * `status` - The status of flexible guarantee services. Possible values:-Preparing: in preparation.-Prepared: to take effect.-Active: in effect.-Released: Released.
-  * `tags` - A mapping of tags to assign to the Capacity Reservation.
+  * `tags` - (Optional) A mapping of tags to assign to the Capacity Reservation.
   * `total_assurance_times` - The total number of flexible guarantee services.
   * `used_assurance_times` - This parameter is not yet available.

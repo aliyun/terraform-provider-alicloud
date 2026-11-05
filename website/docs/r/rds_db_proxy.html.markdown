@@ -113,12 +113,12 @@ The following arguments are supported:
   - MaintainTime: ApsaraDB RDS applies the new settings during the maintenance window that you specified. For more information, see Modify the maintenance window.
   - SpecificTime: ApsaraDB RDS applies the new settings at a specified point in time.
 
--> **NOTE:** Note If you set the EffectiveTime parameter to SpecificTime, you must specify the EffectiveSpecificTime parameter.
+  -> **NOTE:** Note If you set the EffectiveTime parameter to SpecificTime, you must specify the EffectiveSpecificTime parameter.
 
 * `effective_specific_time` - (Optional) The point in time at which you want to apply the new database proxy settings. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `read_only_instance_max_delay_time` - (Optional) The maximum latency threshold that is allowed for read/write splitting. If the latency on a read-only instance exceeds the threshold that you specified, ApsaraDB RDS no longer forwards read requests to the read-only instance. If you do not specify this parameter, the default value of this parameter is retained. Unit: seconds. Valid values: 0 to 3600.
 
--> **NOTE:** Note If the instance runs PostgreSQL, you can enable only the read/write splitting feature, which is specified by ReadWriteSpliting.
+  -> **NOTE:** Note If the instance runs PostgreSQL, you can enable only the read/write splitting feature, which is specified by ReadWriteSpliting.
 
 * `db_proxy_features` - (Optional) The features that you want to enable for the proxy endpoint. If you specify more than one feature, separate the features with semicolons (;). Format: Feature 1:Status;Feature 2:Status;.... Do not add a semicolon (;) at the end of the last value. Valid feature values:
   - ReadWriteSpliting: read/write splitting.
@@ -128,20 +128,20 @@ The following arguments are supported:
     - 1: enabled.
     - 0: disabled.
 
--> **NOTE:** Note You must specify this parameter only when the read/write splitting feature is enabled.
+  -> **NOTE:** Note You must specify this parameter only when the read/write splitting feature is enabled.
 
 * `read_only_instance_distribution_type` - (Optional) The policy that is used to allocate read weights. Valid values:
   - Standard: ApsaraDB RDS automatically allocates read weights to the instance and its read-only instances based on the specifications of the instances.
   - Custom: You must manually allocate read weights to the instance and its read-only instances.
 
--> **NOTE:** Note If you set the ReadOnlyInstanceDistributionType parameter to Custom, you must specify the ReadOnlyInstanceWeight parameter.
+  -> **NOTE:** Note If you set the ReadOnlyInstanceDistributionType parameter to Custom, you must specify the ReadOnlyInstanceWeight parameter.
 
 * `read_only_instance_weight` - (Optional) A list of the read weights of the instance and its read-only instances.  It contains two sub-fields(instance_id and weight). Read weights increase in increments of 100, and the maximum read weight is 10000. See [`read_only_instance_weight`](#read_only_instance_weight) below.
 * `db_proxy_endpoint_read_write_mode` - (Optional) The read and write attributes of the proxy terminal. Valid values:
   - ReadWrite: The proxy terminal connects to the primary instance and can receive both read and write requests.
   - ReadOnly: The proxy terminal does not connect to the primary instance and can receive only read requests. This is the default value.
 
--> **NOTE:** Note This setting causes your instance to restart. Proceed with caution.
+  -> **NOTE:** Note This setting causes your instance to restart. Proceed with caution.
 
 * `db_proxy_ssl_enabled` - (Optional) The SSL configuration setting that you want to apply on the instance. Valid values:
   - Close: disables SSL encryption.

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Rds Modify Parameter Logs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.174.0+.
+-> **NOTE:** Available since v1.174.0+.
 
 ## Example Usage
 
@@ -34,7 +34,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `start_time` - (Required, ForceNew) The start time.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

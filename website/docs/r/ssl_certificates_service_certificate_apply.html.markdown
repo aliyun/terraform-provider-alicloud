@@ -82,7 +82,7 @@ The following arguments are supported:
 * `key_algorithm` - (Optional, ForceNew, Computed) The key algorithm the certificate is issued with, such as `RSA_2048`, `RSA_4096`, `ECC_256` or `SM2`.
 * `generate_csr_method` - (Optional, ForceNew, Computed) How the certificate signing request is produced. Valid values: `online` and `upload`.
 
-~> **NOTE:** The five application settings above are stored on the certificate instance and are written there by the instance resource. `ApplyCertificate` accepts none of them — it submits whatever the instance holds at that moment. They are accepted here so that changing one of them replaces this resource and resubmits the application, since a different configuration means a different certificate is being requested. **Reference the corresponding attribute of `alicloud_ssl_certificates_service_instance` rather than hardcoding a value**; a configured value that disagrees with the instance is rejected when the resource is created.
+  ~> **NOTE:** The five application settings above are stored on the certificate instance and are written there by the instance resource. `ApplyCertificate` accepts none of them — it submits whatever the instance holds at that moment. They are accepted here so that changing one of them replaces this resource and resubmits the application, since a different configuration means a different certificate is being requested. **Reference the corresponding attribute of `alicloud_ssl_certificates_service_instance` rather than hardcoding a value**; a configured value that disagrees with the instance is rejected when the resource is created.
 
 ## Attributes Reference
 
@@ -101,7 +101,7 @@ The following attributes are exported:
   * `cname` - The record value used when the domain is validated through a CNAME record.
   * `cname_key` - The host record used when the domain is validated through a CNAME record.
 
--> **NOTE:** Reference `certificate_id` and `cert_identifier` from `alicloud_ssl_certificates_service_certificate_validation` rather than from this resource. The values here are only populated once the certificate happens to have been issued by the time of a refresh, whereas the validation resource guarantees issuance has completed.
+  -> **NOTE:** Reference `certificate_id` and `cert_identifier` from `alicloud_ssl_certificates_service_certificate_validation` rather than from this resource. The values here are only populated once the certificate happens to have been issued by the time of a refresh, whereas the validation resource guarantees issuance has completed.
 
 ## Timeouts
 

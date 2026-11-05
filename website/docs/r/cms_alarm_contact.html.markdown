@@ -49,7 +49,7 @@ The following arguments are supported:
 * `describe` - (Required) The description of the alarm contact.
 * `lang` - (Optional) The language type of the alarm. Valid values: `en`, `zh-cn`.
 
--> **NOTE:** Specify at least one of the following alarm notification targets: `channels_aliim`, `channels_ding_web_hook`, `channels_mail`, `channels_sms`.
+  -> **NOTE:** Specify at least one of the following alarm notification targets: `channels_aliim`, `channels_ding_web_hook`, `channels_mail`, `channels_sms`.
 
 ## Attributes Reference
 

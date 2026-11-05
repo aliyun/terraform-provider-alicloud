@@ -29,9 +29,8 @@ data "alicloud_cdn_service" "open" {
 The following arguments are supported:
 
 * `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Default value: `Off`. Valid values: `On`, `Off`.
-* `internet_charge_type` - (Optional) The new billing method. Valid values: `PayByTraffic` and `PayByBandwidth`. Default value: `PayByTraffic`.
-It is required when `enable = on`. If the CDN service has been opened and you can update its internet charge type by modifying the filed `internet_charge_type`. 
-As a note, the updated internet charge type will be effective in the next day zero time.
+* `internet_charge_type` - (Optional) The billing method used when this data source opens the CDN service. Valid values: `PayByTraffic` and `PayByBandwidth`. Defaults to `PayByTraffic`.
+It is required when `enable` is `On`. It only takes effect when the service is opened; this data source never changes the billing method of an already opened service. To change the billing method of an opened service, use the CDN console or the `ModifyCdnService` API instead.
 
 -> **NOTE:** Setting `enable = "On"` to open the CDN service that means you have read and agreed the [CDN Terms of Service](https://help.aliyun.com/document_detail/27110.html). The service can not closed once it is opened.
 
@@ -40,6 +39,7 @@ As a note, the updated internet charge type will be effective in the next day ze
 The following attributes are exported in addition to the arguments listed above:
 
 * `status` - The current service enable status.
+* `internet_charge_type` - The current billing method of the opened service, read back from the CDN service.
 * `opening_time` - The time when the CDN service was activated. The time follows the ISO 8601 standard in the yyyy-MM-ddThh:mmZ format.
 * `changing_charge_type` -  The metering method for the next cycle.
-* `changing_affect_time` - 	The time when the metering method for the next cycle takes effect. The time is displayed in GMT.
+* `changing_affect_time` - The time when the metering method for the next cycle takes effect. The time is displayed in GMT.

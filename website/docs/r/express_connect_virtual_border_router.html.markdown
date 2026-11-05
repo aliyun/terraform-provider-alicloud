@@ -98,7 +98,6 @@ The default value is the logon Alibaba Cloud account ID.
 * `virtual_border_router_name` - (Optional) The name of the VBR instance.
 * `vlan_id` - (Required, Int) The VLAN ID of the VBR instance. Valid values: `0` to `2999`.
 * `associated_physical_connections` - (Deprecated since v1.263.0) Field `associated_physical_connections` has been deprecated from provider version 1.263.0. Please use the resource `alicloud_express_connect_vbr_pconn_association` instead.
-* `include_cross_account_vbr` - (Removed since v1.263.0) Field `include_cross_account_vbr` has been removed from provider version 1.263.0.
 
 ## Attributes Reference
 

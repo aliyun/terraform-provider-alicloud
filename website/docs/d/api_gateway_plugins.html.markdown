@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Api Gateway Plugins of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
@@ -42,18 +42,18 @@ The following arguments are supported:
 * `plugin_type` - (Optional, ForceNew) The type of the plug-in. Valid values: `backendSignature`, `caching`, `cors`, `ipControl`, `jwtAuth`, `trafficControl`.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Plugin names.
 * `plugins` - A list of Api Gateway Plugins. Each element contains the following attributes:
-	* `create_time` - The CreateTime of the resource.
-	* `description` - The description of the plug-in, which cannot exceed 200 characters.
-	* `id` - The ID of the Plugin.
-	* `modified_time` - The ModifiedTime of the resource.
-	* `plugin_data` - The definition statement of the plug-in. Plug-in definition statements in the JSON and YAML formats are supported.
-	* `plugin_id` - The first ID of the resource.
-	* `plugin_name` - The name of the plug-in that you want to create.
-	* `plugin_type` - The type of the plug-in.
-	* `tags` - The tag of the resource.
+  * `create_time` - The CreateTime of the resource.
+  * `description` - The description of the plug-in, which cannot exceed 200 characters.
+  * `id` - The ID of the Plugin.
+  * `modified_time` - The ModifiedTime of the resource.
+  * `plugin_data` - The definition statement of the plug-in. Plug-in definition statements in the JSON and YAML formats are supported.
+  * `plugin_id` - The first ID of the resource.
+  * `plugin_name` - The name of the plug-in that you want to create.
+  * `plugin_type` - The type of the plug-in.
+  * `tags` - The tag of the resource.

@@ -57,15 +57,15 @@ resource "alicloud_cen_transit_route_table_aggregation" "example" {
 The following arguments are supported:
 * `transit_route_table_aggregation_cidr` - (Required, ForceNew) The destination CIDR block of the aggregate route.
 
--> **NOTE:**   The following CIDR blocks are not supported:
+  -> **NOTE:**   The following CIDR blocks are not supported:
 
--> **NOTE:** *   CIDR blocks that start with 0 or 100.64.
+  -> **NOTE:** *   CIDR blocks that start with 0 or 100.64.
 
--> **NOTE:** *   Multicast CIDR blocks, including 224.0.0.1 to 239.255.255.254.
+  -> **NOTE:** *   Multicast CIDR blocks, including 224.0.0.1 to 239.255.255.254.
 
 * `transit_route_table_aggregation_description` - (Optional) The list of propagation ranges of the aggregation route.
 
--> **NOTE:**   You must specify at least one of the following attributes: Aggregation Scope and Aggregate Scope List. We recommend that you specify the latter. The elements in the two attributes cannot be duplicate.
+  -> **NOTE:**   You must specify at least one of the following attributes: Aggregation Scope and Aggregate Scope List. We recommend that you specify the latter. The elements in the two attributes cannot be duplicate.
 
 * `transit_route_table_aggregation_name` - (Optional) The name of the aggregate route.
 The name can be empty or 1 to 128 characters in length, and cannot start with http:// or https://.

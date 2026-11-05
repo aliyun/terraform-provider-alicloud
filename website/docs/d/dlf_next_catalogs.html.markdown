@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the DLF Next Catalogs of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v1.293.0.
+-> **NOTE:** Available since v2.1.0.
 
 ## Example Usage
 
@@ -33,26 +33,28 @@ The following arguments are supported:
 
 * `catalog_name_pattern` - (Optional) A pattern to filter catalog names.
 * `name_regex` - (Optional) A regex string to filter results by catalog name.
-* `names` - (Optional) A list of catalog names to filter results.
+* `ids` - (Optional, Computed) A list of catalog names to filter results. The matched catalog names are also returned in `ids`.
 * `output_file` - (Optional) File name where to save data source results after running `terraform plan`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
+* `ids` - A list of matched catalog names.
+* `names` - A list of matched catalog names.
 * `catalogs` - A list of DLF Next Catalogs. Each element contains the following attributes:
   * `name` - The name of the catalog.
   * `type` - The type of the catalog.
   * `options` - The configuration options of the catalog.
   * `is_shared` - Whether the catalog is shared.
   * `share_id` - The share ID of the catalog.
-  * `id` - The server-generated id of the catalog (of the form `clg-xxx`). This is distinct from the catalog name, which is the Terraform resource id of `alicloud_dlf_next_catalog`.
+  * `id` - The catalog name, which is also the Terraform resource id of `alicloud_dlf_next_catalog`.
   * `region_id` - The region ID of the catalog.
   * `status` - The status of the catalog. Valid values: `NEW`, `INITIALIZING`, `INITIALIZE_FAILED`, `RUNNING`, `TERMINATED`, `DELETING`, `DELETE_FAILED`, `DELETED`, `STORAGE_RESTRICTED`.
   * `owner` - The owner of the catalog.
-  * `created_at` - The creation time of the catalog.
+  * `created_at` - The creation time of the catalog, in milliseconds since the epoch, as a string.
   * `created_by` - The creator of the catalog.
-  * `updated_at` - The update time of the catalog.
+  * `updated_at` - The update time of the catalog, in milliseconds since the epoch, as a string.
   * `updated_by` - The updater of the catalog.
 
 ## RAM Permissions

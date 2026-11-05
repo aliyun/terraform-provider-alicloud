@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cddc Dedicated Hosts of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.147.0+.
+-> **NOTE:** Available since v1.147.0.
 
 ## Example Usage
 
@@ -87,7 +87,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The ID of the zone.
 * `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -119,8 +119,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - The state of the host.
   * `storage_used` - The storage usage of the host. Unit: `GB`.
   * `tags` - The tag of the resource.
-    * `tag_key` - The key of the tags.
-    * `tag_value` - The value of the tags.
   * `vpc_id` - The ID of the virtual private cloud (VPC) to which the host is connected.
   * `vswitch_id` - The ID of the vSwitch.
   * `zone_id` - The zone ID of the host.

@@ -104,7 +104,7 @@ The following arguments are supported:
 * `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
 * `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
 
--> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
+  -> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
 
 ### `ui_proxy_conn_addrs`
 

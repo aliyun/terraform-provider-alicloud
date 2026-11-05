@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 data "alicloud_wafv3_instances" "default" {}
 
 resource "alicloud_ssl_certificates_service_certificate" "default" {
@@ -148,7 +156,7 @@ The listen supports the following:
   - `2`: WAF reads the value of a custom header field as the originating IP address of the client.
 * `xff_headers` - (Optional, List) The custom header fields that are used to obtain the originating IP address of a client. Specify the value in the **\["header1","header2",...]** format.
 
--> **NOTE:**   This parameter is required only if you set `XffHeaderMode` to 2.
+  -> **NOTE:**   This parameter is required only if you set `XffHeaderMode` to 2.
 
 
 ### `redirect`
@@ -159,6 +167,7 @@ The redirect supports the following:
   - If you specify IP addresses, specify the value in the **\["ip1","ip2",...]** format. You can enter up to 20 IP addresses.
   - If you specify domain names, specify the value in the **\["domain"]** format. You can enter up to 20 domain names.
 * `backup_backends` - (Optional, Computed, List, Available since v1.257.0) The secondary IP address or domain name of the origin server.
+* `backend_ports` - (Optional, Computed, Set, Available since v2.2.0) The custom port configurations that map listening ports to back-to-source ports. Each item contains the listening port, back-to-source port, and protocol; all three fields must be set together. If this parameter is not specified when the domain is created, the back-to-source port is the same as the listening port. Once configured, the value is read back from the server, so removing it from the configuration does not restore the default mapping; to reset a mapping, set the back-to-source port to the same value as the listening port. When an existing state does not contain this attribute, the provider omits the parameter instead of sending an empty list; mappings configured outside Terraform are read back on refresh and resent on later updates. When this parameter is configured, every listening port in `listen` must have a mapping; the API rejects partial mappings (`Waf.Pullin.BackendPortNotMatched`). See [`backend_ports`](#redirect-backend_ports) below.
 * `connect_timeout` - (Optional, Int) Connection timeout duration. Unit: seconds.
 Value range: 1~3600. Default value: 5.
 * `focus_http_backend` - (Optional) Specifies whether to enable force redirect from HTTPS to HTTP for back-to-origin requests. This parameter is available only if you specify `HttpsPorts`. Valid values:
@@ -176,11 +185,11 @@ Value range: 1~3600. Default value: 5.
 * `keepalive_requests` - (Optional, Computed, Int) The number of reused persistent connections. Valid values: 60 to 1000. Default value: 1000
 
 
--> **NOTE:**   This parameter specifies the number of persistent connections that can be reused after you enable the persistent connection feature.
+  -> **NOTE:**   This parameter specifies the number of persistent connections that can be reused after you enable the persistent connection feature.
 
 * `keepalive_timeout` - (Optional, Computed, Int) Idle long connection timeout, value range: 1~60, default 15, unit: seconds.
 
--> **NOTE:**  How long the multiplexed long connection is idle and then released.
+  -> **NOTE:**  How long the multiplexed long connection is idle and then released.
 
 * `loadbalance` - (Required) The load balancing algorithm that you want to use to forward requests to the origin server. Valid values:
 
@@ -188,7 +197,8 @@ Value range: 1~3600. Default value: 5.
   - `roundRobin`
   - `leastTime`: This value is available only if you set `ProtectionResource` to `gslb`.
 * `max_body_size` - (Optional, Int, Available since v1.269.0) The maximum size of a request body. Valid values: `2` to `10`. Default value: `2`. Unit: GB.
--> **NOTE:** This parameter is supported only by the Ultimate edition.
+
+  -> **NOTE:** This parameter is supported only by the Ultimate edition.
 * `read_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600. Default value: 120.
 * `request_headers` - (Optional, List) The traffic marking field and value of the domain name, which is used to mark the traffic processed by WAF.
 By specifying custom request header fields and corresponding values, when the access traffic of the domain name passes through WAF, WAF automatically adds the set custom field value to the request header as a traffic mark, which facilitates the statistics of back-end services. See [`request_headers`](#redirect-request_headers) below.
@@ -202,12 +212,19 @@ By specifying custom request header fields and corresponding values, when the ac
   - `false` (default)
 * `sni_host` - (Optional) The custom value of the SNI field. If you do not specify this parameter, the value of the `Host` header field is automatically used. In most cases, you do not need to specify a custom value for the SNI field. However, if you want WAF to use an SNI field whose value is different from the value of the Host header field in back-to-origin requests, you can specify a custom value for the SNI field.
 
--> **NOTE:**   This parameter is required only if you set `SniEnabled` to true.
+  -> **NOTE:**   This parameter is required only if you set `SniEnabled` to true.
 
 * `write_timeout` - (Optional, Int) The timeout period of write connections. Unit: seconds. Valid values: 1 to 3600. Default value: 120.
 * `xff_proto` - (Optional, Available since v1.257.0) Specifies whether to use the X-Forward-For-Proto header field to pass the protocol used by WAF to forward requests to the origin server. Valid values:
   - `true`  (default)
   - `false`
+
+### `redirect-backend_ports`
+
+The redirect-backend_ports supports the following:
+* `backend_port` - (Optional, Int, Available since v2.2.0) The back-to-source port. Valid values: `1` to `65535`. Required together with `listen_port` and `protocol`.
+* `listen_port` - (Optional, Int, Available since v2.2.0) The listening port. Valid values: `1` to `65535`. Required together with `backend_port` and `protocol`.
+* `protocol` - (Optional, String, Available since v2.2.0) The protocol type. Valid values: `http` and `https`. Required together with `listen_port` and `backend_port`.
 
 ### `redirect-request_headers`
 

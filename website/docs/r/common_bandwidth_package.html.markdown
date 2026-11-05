@@ -98,11 +98,11 @@ If your services are deployed in China East 1 Finance, this parameter is require
 
  This parameter is required when the value of `InternetChargeType` is `PayBy95`. 
 
--> **NOTE:** This parameter is available only on the Alibaba Cloud China site.
+  -> **NOTE:** This parameter is available only on the Alibaba Cloud China site.
 
 * `resource_group_id` - (Optional, Computed, Available since v1.115.0) The ID of the resource group to which you want to move the resource.
 
--> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+  -> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 * `security_protection_types` - (Optional, ForceNew, List, Available since v1.184.0) The edition of Anti-DDoS. If you do not set this parameter, Anti-DDoS Origin Basic is used. If you set the value to AntiDDoS_Enhanced, Anti-DDoS Pro(Premium) is used. It is valid when `internet_charge_type` is `PayBy95`.
 * `tags` - (Optional, Map) The tag of the resource

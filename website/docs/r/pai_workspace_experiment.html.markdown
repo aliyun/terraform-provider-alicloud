@@ -59,7 +59,14 @@ The following arguments are supported:
 * `accessibility` - (Optional, Computed) Experimental Visibility
 * `artifact_uri` - (Required, ForceNew) ArtifactUri is default OSS storage path of the output of trials in the experiment
 * `experiment_name` - (Required) Name is the name of the experiment, unique in a namespace
+* `labels` - (Optional, Set, Available since v2.1.0) Labels are tags of the experiment. See [`labels`](#labels) below.
 * `workspace_id` - (Required, ForceNew) WorkspaceId is the workspace id which contains the experiment
+
+### `labels`
+
+The labels supports the following:
+* `key` - (Optional, Available since v2.1.0) The key of the experiment label.
+* `value` - (Optional, Available since v2.1.0) The value of the experiment label.
 
 ## Attributes Reference
 

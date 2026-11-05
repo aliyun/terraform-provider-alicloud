@@ -39,14 +39,14 @@ output "alicloud_hbr_udm_snapshot_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `disk_id` - (ForceNew, Optional) Cloud disk ID. This field is valid only when SourceType = UDM_ECS_DISK.
-* `end_time` - (Required, ForceNew) End Time
-* `instance_id` - (Required, ForceNew) ECS instance ID
-* `job_id` - (ForceNew, Optional) The ID of the backup job that creates the snapshot.
-* `source_type` - (Required, ForceNew) Data source type. Only UDM_ECS and UDM_ECS_DISK are supported.
-* `start_time` - (Required, ForceNew) Start Time
-* `ids` - (Optional, ForceNew, Computed) A list of Udm Snapshot IDs. 
-* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
+* `disk_id` - (Optional) Cloud disk ID. This field is valid only when SourceType = UDM_ECS_DISK.
+* `end_time` - (Required) End Time
+* `instance_id` - (Required) ECS instance ID
+* `job_id` - (Optional) The ID of the backup job that creates the snapshot.
+* `source_type` - (Required) Data source type. Only UDM_ECS and UDM_ECS_DISK are supported.
+* `start_time` - (Required) Start Time
+* `ids` - (Optional, Computed) A list of Udm Snapshot IDs.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
 ## Attributes Reference

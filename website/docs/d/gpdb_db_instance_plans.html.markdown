@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Gpdb Db Instance Plans of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.189.0+.
+-> **NOTE:** Available since v1.189.0.
 
 ## Example Usage
 
@@ -47,34 +47,37 @@ The following arguments are supported:
 * `plan_type` - (Optional, ForceNew) The type of the Plan. Valid values: `PauseResume`, `Resize`.
 * `status` - (Optional, ForceNew) Planning Status. Valid values: `active`, `cancel`, `deleted`, `finished`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of DB Instance Plan names.
 * `plans` - A list of Gpdb Db Instance Plans. Each element contains the following attributes:
-	* `id` - The ID of the resource. The value formats as `<db_instance_id>:<plan_id>`.
-	* `db_instance_plan_name` - The name of the Plan.
-	* `plan_id` - The ID of DB Instance Plan.
-	* `plan_config` - Plan configuration information.
-		* `scale_out` - Scale out instance plan config.
-			* `execute_time` - The executed time of the Plan.
-			* `plan_cron_time` - The Cron Time of the plan.
-			* `plan_task_status` - The Status of the plan Task.
-			* `segment_node_num` - The segment Node Num of the Plan.
-		* `pause` - Pause instance plan config.
-			* `execute_time` - The executed time of the Plan.
-			* `plan_cron_time` - The Cron Time of the plan.
-			* `plan_task_status` - The Status of the plan Task.
-		* `resume` - Resume instance plan config.
-			* `plan_cron_time` - The Cron Time of the plan.
-			* `plan_task_status` - The Status of the plan Task.
-			* `execute_time` - The executed time of the Plan.
-		* `scale_in` - Scale In instance plan config.
-			* `plan_task_status` - The Status of the plan Task.
-			* `segment_node_num` - The segment Node Num of the Plan.
-			* `execute_time` - The executed time of the Plan.
-			* `plan_cron_time` - The Cron Time of the plan.
-	* `plan_end_date` - The end time of the Plan.
-	* `plan_start_date` - The start time of the Plan.
-	* `status` - The Status of the Plan.
+  * `id` - The ID of the resource. The value formats as `<db_instance_id>:<plan_id>`.
+  * `db_instance_plan_name` - The name of the Plan.
+  * `plan_id` - The ID of DB Instance Plan.
+  * `plan_desc` - The description of the Plan.
+  * `plan_config` - Plan configuration information.
+    * `scale_out` - Scale out instance plan config.
+      * `execute_time` - The executed time of the Plan.
+      * `plan_cron_time` - The Cron Time of the plan.
+      * `plan_task_status` - The Status of the plan Task.
+      * `segment_node_num` - The segment Node Num of the Plan.
+    * `pause` - Pause instance plan config.
+      * `execute_time` - The executed time of the Plan.
+      * `plan_cron_time` - The Cron Time of the plan.
+      * `plan_task_status` - The Status of the plan Task.
+    * `resume` - Resume instance plan config.
+      * `plan_cron_time` - The Cron Time of the plan.
+      * `plan_task_status` - The Status of the plan Task.
+      * `execute_time` - The executed time of the Plan.
+    * `scale_in` - Scale In instance plan config.
+      * `plan_task_status` - The Status of the plan Task.
+      * `segment_node_num` - The segment Node Num of the Plan.
+      * `execute_time` - The executed time of the Plan.
+      * `plan_cron_time` - The Cron Time of the plan.
+  * `plan_schedule_type` - Plan scheduling type. Valid values: `Postpone`, `Regular`.
+  * `plan_type` - The type of the Plan. Valid values: `PauseResume`, `Resize`.
+  * `plan_end_date` - The end time of the Plan.
+  * `plan_start_date` - The start time of the Plan.
+  * `status` - The Status of the Plan.

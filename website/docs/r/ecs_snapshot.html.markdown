@@ -16,6 +16,8 @@ For information about ECS Snapshot and how to use it, see [What is Snapshot](htt
 
 -> **NOTE:** Available since v1.120.0.
 
+-> **NOTE:** By default, creation waits for `status` to become `accomplished`. Set `wait_until = "available"` to finish when ECS reports `Available=true`. At this point, the snapshot can be used to create disks, roll back disks, or create images, and can be shared, even if background upload is still in progress and `status` remains `progressing`. Each operation's other requirements still apply. `wait_until` only controls when Terraform finishes waiting for snapshot creation; it does not change the snapshot's capabilities. Changing `retention_days` still requires `Status=accomplished`.
+
 ## Example Usage
 
 Basic Usage
@@ -119,12 +121,14 @@ The following arguments are supported:
 * `retention_days` - (Optional, Int) The retention period of the snapshot. Valid values: `1` to `65536`. **NOTE:** From version 1.231.0, `retention_days` can be modified.
 * `snapshot_name` - (Optional) The name of the snapshot.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `wait_until` - (Optional, Available since v1.293.0) Local waiting policy for creation only. Valid values: `accomplished`, which waits for `Status=accomplished`, and `available`, which waits for `Available=true`. When omitted, creation still waits for `Status=accomplished`, but no default waiting policy is inserted into state, avoiding a new `wait_until` default-value diff for existing configurations. This argument is not sent to ECS or read from ECS. Changing only `wait_until` neither recreates nor modifies the snapshot and is not a readiness barrier; it affects subsequent creation only. Metadata updates (`snapshot_name`, `name`, `description`) do not wait for background upload after ECS accepts the update; Read preserves the actual status. Resource-group and tag updates are also unaffected. **NOTE:** Independently of this policy, `retention_days` changes, including mixed attribute updates, must wait for `Status=accomplished` before sending the update, with no additional wait afterward.
 * `name` - (Optional, Deprecated since v1.120.0) Field `name` has been deprecated from provider version 1.120.0. New field `snapshot_name` instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The resource ID in terraform of Snapshot.
+* `available` - Whether ECS reports the snapshot as available. This read-only value can be `true` while `status` is still `progressing`, allowing the operations described in the availability note above. It reflects the most recent refresh, not the configured `wait_until` policy.
 * `create_time` - (Available since v1.239.0) The time when the snapshot was created.
 * `region_id` - (Available since v1.239.0) The region ID of the snapshot.
 * `status` - The status of the Snapshot.
@@ -141,6 +145,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 ## Import
 
 ECS Snapshot can be imported using the id, e.g.
+
+`available` is populated from ECS when the imported snapshot is refreshed. `wait_until` is a local setting and cannot be recovered from the imported snapshot. Keep any explicitly selected waiting policy in the Terraform configuration; omitting it continues to wait for `Status=accomplished` on subsequent creation without adding a default policy to state.
 
 ```shell
 $ terraform import alicloud_ecs_snapshot.example <id>

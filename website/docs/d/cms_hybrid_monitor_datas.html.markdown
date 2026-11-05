@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cms Hybrid Monitor Datas of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.177.0+.
+-> **NOTE:** Available since v1.177.0+.
 
 ## Example Usage
 
@@ -40,15 +40,15 @@ The following arguments are supported:
 * `end` - (Required, ForceNew) The timestamp that specifies the end of the time range to query.
 * `period` - (Optional, ForceNew) The interval at which monitoring data is collected. Unit: seconds.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `datas` - A list of Cms Hybrid Monitor Datas. Each element contains the following attributes:
-    * `metric_name` - The name of the monitoring indicator.
-    * `values` - The metric values that are collected at different timestamps.
-        * `ts` - The timestamp that indicates the time when the metric value is collected. Unit: seconds.
-        * `value` - The value of the monitoring indicator.
-    * `labels` - The label of the time dimension.
-        * `key` - Label key.
-        * `value` - Label value.
+  * `metric_name` - The name of the monitoring indicator.
+  * `values` - The metric values that are collected at different timestamps.
+    * `ts` - The timestamp that indicates the time when the metric value is collected. Unit: seconds.
+    * `value` - The value of the monitoring indicator.
+  * `labels` - The label of the time dimension.
+    * `key` - Label key.
+    * `value` - Label value.

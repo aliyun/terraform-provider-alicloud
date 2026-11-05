@@ -98,7 +98,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in the format `<load_balancer_id>:<listener_port>`.
-* `status` - The status of the listener.
 
 ## Timeouts
 

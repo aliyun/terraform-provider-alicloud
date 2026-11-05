@@ -20,7 +20,7 @@ For information about DTS Migration Job and how to use it, see [What is Migratio
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_migration_job&exampleId=ea959101-7442-6daa-8188-6eaa970d360efac93b4e&activeTab=example&spm=docs.r.dts_migration_job.0.ea95910174&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_dts_migration_job&exampleId=8439a6c8-6f61-b1ea-3974-140f4ded3f603c50c914&activeTab=example&spm=docs.r.dts_migration_job.0.8439a6c86f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -71,7 +71,7 @@ resource "alicloud_db_instance" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.0.min
   instance_charge_type     = "Postpaid"
   instance_name            = format("${var.name}_%d", count.index + 1)
   vswitch_id               = alicloud_vswitch.example.id
@@ -151,10 +151,11 @@ The following arguments supported:
 * `structure_initialization` - (Required, ForceNew) Whether to perform a database table structure to migrate.
 * `data_synchronization` - (Required, ForceNew) Whether to perform incremental data migration.
 * `db_list` - (Required, ForceNew) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, migration or subscription objects](https://help.aliyun.com/document_detail/209545.html).
+* `data_check_configure` - (Optional, String, ForceNew, Available since v2.1.1) The data verification configuration of the migration job, in the format of a JSON string, such as parameter limits or alarm configurations. The `dataCheckDbList` field is required when this argument is set. For more information, see the DataCheckConfigure parameter description [datacheckconfigure-parameter](https://help.aliyun.com/zh/dts/developer-reference/datacheckconfigure-parameter).
 * `source_endpoint_ssl` - (Optional, Computed, Available since v1.287.0) The connection method of the source instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection). Only supported when the source endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `destination_endpoint_ssl` - (Optional, Computed, Available since v1.287.0) The connection method of the destination instance. Valid values: `0` (an unencrypted connection), `1` (an SSL-secured connection), `3` (a connection using SCRAM-SHA-256, for a Kafka destination only). `1` is only supported when the destination endpoint is accessed as a cloud instance or as a self-managed database hosted on ECS.
 * `source_endpoint_instance_type` - (Required, ForceNew) The type of source instance. Valid values: `CEN`, `DG`, `DISTRIBUTED_DMSLOGICDB`, `ECS`, `EXPRESS`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`.
-* `source_endpoint_engine_name` - (Required, ForceNew) The type of source database. Valid values: `AS400`, `DB2`, `DMSPOLARDB`, `HBASE`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `POSTGRESQL`, `TERADATA`.
+* `source_endpoint_engine_name` - (Required, ForceNew) The type of source database. Valid values: `AS400`, `DB2`, `DMSPOLARDB`, `HBASE`, `MARIADB`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `POSTGRESQL`, `TERADATA`.
 * `source_endpoint_instance_id` - (Optional, ForceNew) The ID of source instance.
 * `source_endpoint_region` - (Optional, ForceNew) The region of source instance.
 * `source_endpoint_ip` - (Optional, ForceNew) The ip of source endpoint.
@@ -168,7 +169,7 @@ The following arguments supported:
 * `src_primary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the primary vSwitch on the source side of a VPC NAT connection.
 * `src_secondary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the secondary vSwitch on the source side of a VPC NAT connection.
 * `destination_endpoint_instance_type` - (Required, ForceNew) The type of destination instance. Valid values: `ADS`, `CEN`, `DATAHUB`, `DG`, `ECS`, `EXPRESS`, `GREENPLUM`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`.
-* `destination_endpoint_engine_name` - (Required, ForceNew) The type of destination database. Valid values: `ADS`, `ADB30`, `AS400`, `DATAHUB`, `DB2`, `GREENPLUM`, `KAFKA`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `PostgreSQL`.
+* `destination_endpoint_engine_name` - (Required, ForceNew) The type of destination database. Valid values: `ADS`, `ADB30`, `AS400`, `DATAHUB`, `DB2`, `GREENPLUM`, `KAFKA`, `MARIADB`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `PostgreSQL`.
 * `destination_endpoint_instance_id` - (Optional, ForceNew) The ID of destination instance.
 * `destination_endpoint_region` - (Optional, ForceNew) The region of destination instance.
 * `destination_endpoint_ip` - (Optional, ForceNew) The ip of source endpoint.
@@ -179,9 +180,10 @@ The following arguments supported:
 * `destination_endpoint_oracle_sid` - (Optional, ForceNew) The SID of Oracle database.
 * `dest_primary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the primary vSwitch on the destination side of a VPC NAT connection.
 * `dest_secondary_vswitch_id` - (Optional, ForceNew, Available since v1.289.0) The ID of the secondary vSwitch on the destination side of a VPC NAT connection.
-* `status` - (Optional) The status of the resource. Valid values: `Migrating`, `Suspending`. You can suspend the task by specifying `Suspending` and start the task by specifying `Migrating`.
 
--> **NOTE:** `src_primary_vswitch_id`, `src_secondary_vswitch_id`, `dest_primary_vswitch_id` and `dest_secondary_vswitch_id` are only used when the job is created. They are not refreshed from the server, and are not populated by `terraform import`.
+  -> **NOTE:** `src_primary_vswitch_id`, `src_secondary_vswitch_id`, `dest_primary_vswitch_id` and `dest_secondary_vswitch_id` are only used when the job is created. They are not refreshed from the server, and are not populated by `terraform import`.
+
+* `status` - (Optional, String, Computed) The status of the resource. Valid values: `Migrating`, `Suspending`. You can suspend the task by specifying `Suspending` and start the task by specifying `Migrating`. While the job is being prepared or is running, the computed value is `Migrating`.
 
 ## Notice
 

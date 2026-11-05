@@ -60,9 +60,8 @@ The following arguments are supported:
 * `description` - (Optional, ForceNew) The description of the Resource Manager role.
 * `max_session_duration` - (Optional) Role maximum session time. Valid values: [3600-43200]. Default to `3600`.
 * `role_name` - (Required, ForceNew) Role Name. The length is 1 ~ 64 characters, which can include English letters, numbers, dots "." and dashes "-".
-* `create_date` (Removed form v1.114.0) - Role creation time.
-
-## Attributes Reference
+_
+_## Attributes Reference
 
 The following attributes are exported:
 

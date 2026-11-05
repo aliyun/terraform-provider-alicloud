@@ -26,6 +26,7 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
 
 ## Example Usage
 
+
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -99,6 +100,94 @@ resource "alicloud_ga_endpoint_group" "default" {
 }
 ```
 
+### IpTarget Usage
+
+The following example shows how to create an endpoint group with `IpTarget` type endpoints.
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/terraform?resource=alicloud_ga_endpoint_group&exampleId=d869845e-cab2-6de1-8b7f-90587e028ae20e4d661b&activeTab=example&spm=docs.r.ga_endpoint_group.1.d869845eca&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
+```terraform
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region  = var.region
+  profile = "default"
+}
+
+resource "alicloud_ga_accelerator" "default" {
+  duration        = 1
+  auto_use_coupon = true
+  spec            = "1"
+}
+
+resource "alicloud_ga_bandwidth_package" "default" {
+  bandwidth      = 100
+  type           = "Basic"
+  bandwidth_type = "Basic"
+  payment_type   = "PayAsYouGo"
+  billing_type   = "PayBy95"
+  ratio          = 30
+}
+
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+}
+
+resource "alicloud_ga_listener" "default" {
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  port_ranges {
+    from_port = 8080
+    to_port   = 8080
+  }
+  client_affinity = "SOURCE_IP"
+  protocol        = "HTTP"
+  name            = "terraform-example"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "terraform-example"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.1.0/24"
+  zone_id      = "cn-hangzhou-h"
+}
+
+resource "alicloud_vswitch" "update" {
+  vswitch_name = "terraform-example-update"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.2.0/24"
+  zone_id      = "cn-hangzhou-i"
+}
+
+resource "alicloud_ga_endpoint_group" "default" {
+  accelerator_id = alicloud_ga_accelerator.default.id
+  endpoint_configurations {
+    endpoint                     = "192.168.1.10"
+    type                         = "IpTarget"
+    weight                       = "20"
+    vpc_id                       = alicloud_vpc.default.id
+    vswitch_ids                  = [alicloud_vswitch.default.id]
+    enable_proxy_protocol        = true
+    enable_clientip_preservation = false
+  }
+  endpoint_group_region = var.region
+  listener_id           = alicloud_ga_listener.default.id
+  name                  = "terraform-example"
+  description           = "terraform-example"
+}
+```
+
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_ga_endpoint_group&spm=docs.r.ga_endpoint_group.example&intl_lang=EN_US)
 
 ## Argument Reference
@@ -109,11 +198,14 @@ The following arguments are supported:
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
 * `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
--> **NOTE:** Currently, only `HTTP` or `HTTPS` protocol listener can directly create a `virtual` Endpoint Group. If it is `TCP` protocol listener, and you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
+
+  -> **NOTE:** Currently, only `HTTP` or `HTTPS` protocol listener can directly create a `virtual` Endpoint Group. If it is `TCP` protocol listener, and you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
 * `endpoint_request_protocol` - (Optional) The protocol that is used by the backend server. Valid values: `HTTP`, `HTTPS`.
--> **NOTE:** `endpoint_request_protocol` can be specified only if the listener that is associated with the endpoint group uses `HTTP` or `HTTPS`. For the listener of `HTTP` protocol, `endpoint_request_protocol` can only be set to `HTTP`.
+
+  -> **NOTE:** `endpoint_request_protocol` can be specified only if the listener that is associated with the endpoint group uses `HTTP` or `HTTPS`. For the listener of `HTTP` protocol, `endpoint_request_protocol` can only be set to `HTTP`.
 * `endpoint_protocol_version` - (Optional, Available since v1.230.1) The backend service protocol of the endpoint that is associated with the intelligent routing listener. Valid values: `HTTP1.1`, `HTTP2`.
--> **NOTE:** `endpoint_protocol_version` is valid only when `endpoint_request_protocol` is set to `HTTPS`.
+
+  -> **NOTE:** `endpoint_protocol_version` is valid only when `endpoint_request_protocol` is set to `HTTPS`.
 * `health_check_enabled` - (Optional, Bool, Available since v1.215.0) Specifies whether to enable the health check feature. Valid values:
   - `true`: Enables the health check feature.
   - `false`: Disables the health check feature.
@@ -123,7 +215,8 @@ The following arguments are supported:
   - `TCP` or `tcp`: TCP protocol.
   - `HTTP` or `http`: HTTP protocol.
   - `HTTPS` or `https`: HTTPS protocol.
--> **NOTE:** From version 1.223.0, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
+
+  -> **NOTE:** From version 1.223.0, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
 * `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
 * `threshold_count` - (Optional, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
@@ -131,7 +224,8 @@ The following arguments are supported:
 * `description` - (Optional) The description of the endpoint group.
 * `endpoint_configurations` - (Required, Set) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
 * `port_overrides` - (Optional, Set) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
--> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
+
+  -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ### `endpoint_configurations`
@@ -142,7 +236,7 @@ The endpoint_configurations supports the following:
 * `type` - (Required) The type of Endpoint N in the endpoint group. Valid values:
   - `Domain`: A custom domain name.
   - `Ip`: A custom IP address.
-  - `IpTarget`: (Available since v1.262.0) An Alibaba Cloud public IP address.
+  - `IpTarget`: (Available since v1.262.0) a custom private IP address.
   - `PublicIp`: An Alibaba Cloud public IP address.
   - `ECS`: An Elastic Compute Service (ECS) instance.
   - `SLB`: A Classic Load Balancer (CLB) instance.
@@ -151,17 +245,19 @@ The endpoint_configurations supports the following:
   - `ENI`: (Available since v1.232.0) An Elastic Network Interface (ENI).
   - `OSS`: (Available since v1.232.0) An Object Storage Service (OSS) bucket.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
--> **NOTE:** If the weight of a terminal node is set to `0`, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
+
+  -> **NOTE:** If the weight of a terminal node is set to `0`, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
 * `sub_address` - (Optional, Available since v1.232.0) The private IP address of the ENI.
--> **NOTE:** `sub_address` is valid only when `type` is set to `ENI`.
+
+  -> **NOTE:** `sub_address` is valid only when `type` is set to `ENI`.
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
 * `enable_clientip_preservation` - (Optional, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
   - `true`: Client IP addresses are reserved.
   - `false`: Client IP addresses are not reserved.
-* `vpc_id` - (Optional, Available since v1.262.0) The ID of the VPC.
-* `vswitch_ids` - (Optional, List, Available since v1.262.0) The IDs of vSwitches that are deployed in the VPC.
+* `vpc_id` - (Optional, Available since v1.262.0) The ID of the Virtual Private Cloud (VPC). This parameter is required only when the endpoint type is set to IpTarget.
+* `vswitch_ids` - (Optional, List, Available since v1.262.0) A list of vSwitches in the VPC. You can specify a maximum of two vSwitch IDs for an endpoint group of an intelligent routing listener. This parameter is required when the endpoint type is IpTarget. The vSwitch must belong to the VPC specified by the VpcId parameter.
 
 ### `port_overrides`
 

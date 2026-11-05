@@ -75,7 +75,7 @@ The following arguments are supported:
 *   To create a VPC peering connection within your Alibaba Cloud account, enter the ID of your Alibaba Cloud account.
 *   To create a VPC peering connection between your Alibaba Cloud account and another Alibaba Cloud account, enter the ID of the peer Alibaba Cloud account.
 
--> **NOTE:**   If the accepter is a RAM user, set `AcceptingAliUid` to the ID of the Alibaba Cloud account that created the RAM user.
+  -> **NOTE:**   If the accepter is a RAM user, set `AcceptingAliUid` to the ID of the Alibaba Cloud account that created the RAM user.
 
 * `accepting_region_id` - (Required, ForceNew) The region ID of the accepter VPC of the VPC peering connection that you want to create.
 
@@ -97,15 +97,15 @@ The description must be 2 to 256 characters in length. The description must star
   - Platinum.
   - Gold: default value.
 
--> **NOTE:**  
+  -> **NOTE:**
 
--> **NOTE:**  - If you need to specify this parameter, ensure that the VPC peering connection is an inter-region connection.
+  -> **NOTE:**  - If you need to specify this parameter, ensure that the VPC peering connection is an inter-region connection.
 
 * `peer_connection_name` - (Optional, Computed) The name of the VPC peering connection.
 The name must be 2 to 128 characters in length, and can contain digits, underscores (\_), and hyphens (-). It must start with a letter.
 * `resource_group_id` - (Optional, Computed) The ID of the new resource group.
 
--> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+  -> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
 
 * `status` - (Optional, Computed) The status of the resource
 * `tags` - (Optional, Map) The tags of VpcPeer.

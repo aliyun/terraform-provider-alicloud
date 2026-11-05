@@ -14,6 +14,8 @@ For information about Realtime Compute Vvp Instance and how to use it, see [What
 
 -> **NOTE:** Available since v1.214.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, unsubscribe the instance in the Alibaba Cloud console or wait for it to expire. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
@@ -91,12 +93,16 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_renew_duration` - (Optional) The auto-renewal period of the subscription instance. It only takes effect when `payment_type = "Subscription"` and `renew_status = "AutoRenewal"`. Valid values: `1`, `2`, `3`, `6`, `12`. The unit is specified by `renewal_duration_unit`.
 * `duration` - (Optional) The number of subscription periods. If the payment type is PRE, this parameter is required.
 * `payment_type` - (Required, ForceNew) The payment type of the resource.
 * `pricing_cycle` - (Optional) The subscription period. If the payment type is PRE, this parameter is required.
+* `renew_status` - (Optional, Computed) The renewal status of the subscription instance. It only takes effect when `payment_type = "Subscription"`. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`.
+* `renewal_duration_unit` - (Optional, Computed) The unit of the auto-renewal period. It only takes effect when `payment_type = "Subscription"` and `renew_status = "AutoRenewal"`. Valid values: `M` (month), `Y` (year).
 * `resource_group_id` - (Optional, Computed) The resource group to which the newly purchased instance belongs.
 * `resource_spec` - (Optional) Resource specifications. See [`resource_spec`](#resource_spec) below.
 * `storage` - (Required, ForceNew) Store information. See [`storage`](#storage) below.
+* `default_namespace_resource_spec` - (Optional, ForceNew, Available since v2.2.0) The default namespace resource configuration. See [`default_namespace_resource_spec`](#default_namespace_resource_spec) below.
 * `vswitch_ids` - (Required, ForceNew) Virtual Switch ID.
 * `vpc_id` - (Required, ForceNew) The VPC ID of the user.
 * `vvp_instance_name` - (Required, ForceNew) The name of the workspace.
@@ -118,6 +124,13 @@ The storage supports the following:
 
 The oss supports the following:
 * `bucket` - (Required, ForceNew) OSS Bucket name.
+
+### `default_namespace_resource_spec`
+
+The default_namespace_resource_spec supports the following:
+
+* `cpu` - (Optional) The number of CPUs.
+* `memory_gb` - (Optional) The memory size.
 
 ## Attributes Reference
 

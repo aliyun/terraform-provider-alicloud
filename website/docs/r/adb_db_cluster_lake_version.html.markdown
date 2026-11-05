@@ -15,6 +15,8 @@ For information about AnalyticDB for MySQL (ADB) DB Cluster Lake Version and how
 
 -> **NOTE:** Available since v1.190.0.
 
+-> **NOTE:** Destroying a `Subscription` instance fails with an error since v2.1.0. To destroy it, convert the instance to `PayAsYouGo` by setting `payment_type = "PayAsYouGo"` and re-applying, or unsubscribe it in the Alibaba Cloud console. To remove the instance from the state only, run `terraform state rm`.
+
 ## Example Usage
 
 Basic Usage
@@ -73,7 +75,8 @@ The following arguments are supported:
 * `product_version` - (Optional, ForceNew, Available since v1.245.0) The edition of the cluster. Valid values:
   - `BasicVersion`: Basic Edition.
   - `EnterpriseVersion`: Enterprise Edition.
--> **NOTE:** `product_version` must be specified only when `product_form` is set to `IntegrationForm`.
+
+  -> **NOTE:** `product_version` must be specified only when `product_form` is set to `IntegrationForm`.
 * `compute_resource` - (Optional) The computing resources of the cluster.
 * `storage_resource` - (Optional) The storage resources of the cluster.
 * `reserved_node_size` - (Optional, Available since v1.245.0) The specifications of reserved resource nodes.

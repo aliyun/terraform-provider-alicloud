@@ -61,7 +61,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Bandwidth Package Attachment. It formats as `<accelerator_id>:<bandwidth_package_id>`.
--> **NOTE:** Before provider version 1.120.0, it formats as `<bandwidth_package_id>`.
+
+  -> **NOTE:** Before provider version 1.120.0, it formats as `<bandwidth_package_id>`.
 * `accelerators` - Accelerators bound with current Bandwidth Package.
 * `status` - State of Bandwidth Package.
 

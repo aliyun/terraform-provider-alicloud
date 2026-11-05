@@ -17,7 +17,10 @@ echo "==> Checking the code complies with goimports requirements..."
 
 # HACK: If we seem to be running inside a GitHub Actions pull request check
 # then we'll use the PR's target branch from this variable instead.
-if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+if [[ -n "${CI_CHECK_BASE:-}" ]]; then
+  git rev-parse --verify "${CI_CHECK_BASE}^{commit}" >/dev/null
+  target_files=$(git diff --name-only "$CI_CHECK_BASE" --diff-filter=MA -- | grep "\.go$" | grep -v ".pb.go" | grep -v ".go-version" || true)
+elif [[ -n "${GITHUB_BASE_REF:-}" ]]; then
   # CI mode: check entire PR branch vs target branch
   base_branch="origin/$GITHUB_BASE_REF"
   target_files=$(git diff --name-only ${base_branch} --diff-filter=MA 2>/dev/null | grep "\.go$" | grep -v ".pb.go" | grep -v ".go-version" || true)
