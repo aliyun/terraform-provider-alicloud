@@ -62,12 +62,6 @@ resource "alicloud_log_store" "default" {
   append_meta           = true
 }
 
-resource "time_sleep" "wait_10_minutes" {
-  depends_on = [alicloud_log_store.default]
-
-  create_duration = "10m"
-}
-
 resource "alicloud_fcv3_function" "function" {
   memory_size   = "512"
   cpu           = 0.5
@@ -85,8 +79,6 @@ resource "alicloud_fcv3_function" "function" {
     logstore                = alicloud_log_store.default.logstore_name
     log_begin_rule          = "None"
   }
-
-  depends_on = [time_sleep.wait_10_minutes]
 }
 
 resource "alicloud_fcv3_provision_config" "default" {

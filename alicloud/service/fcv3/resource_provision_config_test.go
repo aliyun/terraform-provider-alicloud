@@ -246,8 +246,8 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"function_name":       acctest.CHECKSET,
-						"always_allocate_cpu": "true",
-						"always_allocate_gpu": "true",
+						"always_allocate_cpu": acctest.CHECKSET,
+						"always_allocate_gpu": acctest.CHECKSET,
 						"target":              "1",
 						"qualifier":           "LATEST",
 					}),
@@ -260,8 +260,8 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"function_name":       acctest.CHECKSET,
-						"always_allocate_cpu": "true",
-						"always_allocate_gpu": "true",
+						"always_allocate_cpu": acctest.CHECKSET,
+						"always_allocate_gpu": acctest.CHECKSET,
 						"target":              "2",
 						"qualifier":           "LATEST",
 					}),
