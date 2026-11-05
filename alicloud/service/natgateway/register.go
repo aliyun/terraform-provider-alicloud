@@ -6,6 +6,9 @@ import "github.com/aliyun/terraform-provider-alicloud/alicloud/provider/conns"
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "NatGateway",
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_nat_gateway_capacity_reservation", Factory: NewNatGatewayCapacityReservationResource},
+		},
 		SDKResources: []conns.SDKResource{
 			{TypeName: "alicloud_forward_entry", Factory: resourceAliCloudNatGatewayForwardEntry},
 			{TypeName: "alicloud_nat_gateway", Factory: resourceAliCloudNatGateway},
