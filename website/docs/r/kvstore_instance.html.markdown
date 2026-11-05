@@ -248,6 +248,7 @@ The following arguments are supported:
 * `security_group_id` - (Optional, Available since v1.76.0) The ID of security groups. Separate multiple security group IDs with commas (,), such as `sg-***,sg-***,sg-***`.
 * `private_ip`- (Optional, ForceNew) The internal IP address of the instance.
 * `backup_id`- (Optional, ForceNew) The ID of the backup file of the source instance.
+* `cluster_backup_id` - (Optional, ForceNew, String, Available since v2.2.0) The ID of the cluster backup set of the source instance. You can call the `DescribeClusterBackupList` operation to query cluster backup set IDs. It is valid when you clone a new instance from a cluster-architecture instance that supports cluster backup sets, and it replaces the need to list per-shard backup IDs in `backup_id`. It must be used together with `srcdb_instance_id`.
 * `srcdb_instance_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the source instance.
 * `restore_time`- (Optional, ForceNew, Available since v1.101.0) The point in time of a backup file.
 * `vpc_auth_mode`- (Optional) Only meaningful if instance_type is `Redis` and network type is VPC. Valid values: `Close`, `Open`. Default value: `Open`. `Close` means the redis instance can be accessed without authentication. `Open` means authentication is required.
@@ -263,6 +264,7 @@ The following arguments are supported:
 * `connection_string_prefix` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `port` - (Optional, Int, Available since v1.94.0) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `order_type`- (Optional, Available since v1.101.0) Specifies a change type when you change the configuration of a subscription instance. Valid values: `UPGRADE`, `DOWNGRADE`. Default value: `UPGRADE`. `UPGRADE` means upgrades the configuration of a subscription instance. `DOWNGRADE` means downgrades the configuration of a subscription instance.
+* `auto_pay` - (Optional, Bool, Available since v2.2.0) Specifies whether to automatically pay the order generated when the instance specification is changed or when the billing method is converted. Valid values: `true`: automatically pays the order. `false`: does not automatically pay the order; you must pay it manually in the console. Defaults to `true`. **NOTE:** It is valid only for subscription (`payment_type = "PrePaid"`) instances; pay-as-you-go instances do not generate orders.
 * `node_type`- (Optional, ForceNew) The node type. Valid values:
   - `MASTER_SLAVE`: High availability (master-replica)
   - `STAND_ALONE`: Standalone
@@ -272,7 +274,8 @@ The following arguments are supported:
   -> **NOTE:** To create a cloud-native instance, set this parameter to `MASTER_SLAVE` or `STAND_ALONE`. To create a classic instance, set this parameter to `double` or `single`.
 * `ssl_enable`- (Optional, Available since v1.101.0) Modifies the SSL status. Valid values: `Disable`, `Enable` and `Update`.
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
-* `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.
+* `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Defaults to `true`.
+* `force_trans` - (Optional, Bool, Available since v2.2.0) Specifies whether to skip the minor version check before changing the instance specification. Valid values: `false`: the system checks the current minor version of the instance before the specification change and reports an error if the minor version is too low; upgrade the minor version and retry. `true`: skips the check and directly performs the specification change. Defaults to `false`. It is valid when `instance_class` changes.
 * `dedicated_host_group_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the dedicated cluster. This parameter is required when you create a Tair (Redis OSS-Compatible) And Memcache (KVStore) Classic Instance in a dedicated cluster.
 * `coupon_no`- (Optional, Available since v1.101.0) The coupon code. **NOTE:** The default value `youhuiquan_promotion_option_id_for_blank` removed since v1.216.0, this can cause your status file to change even if it has not been modified, so please review your change plan before apply change plan.
 * `business_info`- (Optional, Available since v1.101.0) The ID of the event or the business information.
@@ -306,6 +309,7 @@ The following arguments are supported:
 * `is_auto_upgrade_open` - (Optional, Available since v1.228.0) Specifies whether to enable automatic minor version update. Valid values:
   - `1`: Enables automatic minor version update.
   - `0`: Disables automatic minor version update.
+* `minor_version` - (Optional, String, Available since v2.2.0) The minor version of the instance. Changing this attribute upgrades the instance to the specified minor version in place. If it is not specified, the latest minor version is used when the upgrade is triggered. **NOTE:** The minor version can only be upgraded, not downgraded; a newly created instance is always provisioned with the latest minor version. The current minor version is read back into this attribute.
 * `bandwidth` - (Optional, Int) The total bandwidth of the instance. **NOTE:** From version 1.232.0, `bandwidth` can be set. If the instance is a cluster instance, `bandwidth` must be divisible by the number of `shard_count` in the instance, and if the instance is a read/write splitting instance, `bandwidth` cannot be set.
 * `bandwidth_burst` - (Optional, Bool, Available since v2.2.0) Specifies whether to enable Elastic Burst for the instance. After it is enabled, the instance can temporarily burst beyond the default bandwidth limit during bandwidth auto scaling. **NOTE:** This attribute is only submitted through the `EnableAdditionalBandwidth` API and cannot be read back by instance query APIs; Terraform keeps the configured value in the state. The additional bandwidth is charged on a pay-as-you-go basis.
 * `additional_bandwidth` - (Optional, Set, Available since v2.2.0) The additional bandwidth to add to each data shard of the instance. Unit: MB/s. Setting this block adjusts the shard bandwidth to the specification default plus the configured value, which also changes the total `bandwidth` of the instance. See [`additional_bandwidth`](#additional_bandwidth) below. **NOTE:** The purchased bandwidth is read back from the `DescribeRoleZoneInfo` API as each data node's `CurrentBandWidth` minus its `DefaultBandWidth` (the specification default) for the shards managed by this resource, so bandwidth changed outside Terraform is detected on refresh. Removing a block does not release the purchased bandwidth of that shard; set its `bandwidth` to `0` explicitly to release it. **NOTE:** The additional bandwidth is purchased for a limited order duration (the API default is 1 day) and must be renewed with the `RenewAdditionalBandwidth` operation before it expires; this resource does not manage the renewal or the order duration. The additional bandwidth is charged on a pay-as-you-go basis.
@@ -318,7 +322,7 @@ The following arguments are supported:
 
   -> **NOTE:** The `private_ip` must be in the Classless Inter-Domain Routing (CIDR) block of the VSwitch to which the instance belongs.
 
-  -> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify the `backup_id` or `restore_time` parameter.
+  -> **NOTE:** If you specify the `srcdb_instance_id` parameter, you must specify one of the `backup_id`, `cluster_backup_id` or `restore_time` parameters.
 
 ### `additional_bandwidth`
 
