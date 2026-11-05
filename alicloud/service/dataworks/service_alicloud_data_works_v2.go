@@ -1,6 +1,7 @@
 package dataworks
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -734,3 +735,106 @@ func (s *Service) DataWorksDwResourceGroupStateRefreshFunc(id string, field stri
 }
 
 // DescribeDataWorksDwResourceGroup >>> Encapsulated.
+
+// DescribeDataWorksProjectRole <<< Encapsulated get interface for DataWorks ProjectRole.
+
+const (
+	dataWorksProjectRoleReadTimeout   = 1 * time.Minute
+	dataWorksProjectRoleDeleteTimeout = 5 * time.Minute
+)
+
+func (s *Service) DescribeDataWorksProjectRole(id string) (object map[string]interface{}, err error) {
+	return s.DescribeDataWorksProjectRoleContext(context.Background(), id)
+}
+
+func (s *Service) DescribeDataWorksProjectRoleContext(ctx context.Context, id string) (object map[string]interface{}, err error) {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return object, errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length 2, got %d", id, len(parts)))
+	}
+	action := "GetProjectRole"
+	request := map[string]interface{}{
+		"ProjectId": parts[0],
+		"Code":      parts[1],
+		"RegionId":  client.RegionId,
+	}
+
+	var response map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.RetryContext(ctx, dataWorksProjectRoleReadTimeout, func() *retry.RetryError {
+		var callErr error
+		response, callErr = client.RpcPost("dataworks-public", "2024-05-18", action, nil, request, true)
+		if callErr != nil {
+			if helper.NeedRetry(callErr) || errs.IsExpectedErrors(callErr, []string{"9990020002", "9990040003"}) {
+				wait()
+				return retry.RetryableError(callErr)
+			}
+			return retry.NonRetryableError(callErr)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		// 1101030502 is returned by GetProjectRole when the project role no longer exists.
+		if errs.IsExpectedErrors(err, []string{"1101030502"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("ProjectRole", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.ProjectRole", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.ProjectRole", response)
+	}
+	role, ok := v.(map[string]interface{})
+	if !ok {
+		return object, errs.WrapErrorf(fmt.Errorf("unexpected ProjectRole response type %T", v), errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return role, nil
+}
+
+// DescribeDataWorksProjectRole >>> Encapsulated.
+
+// DeleteDataWorksProjectRole deletes a DataWorks project role. A role that is
+// already gone (error code 1101030502 or a typed 404) is treated as success.
+func (s *Service) DeleteDataWorksProjectRole(id string) error {
+	return s.DeleteDataWorksProjectRoleContext(context.Background(), id)
+}
+
+func (s *Service) DeleteDataWorksProjectRoleContext(ctx context.Context, id string) error {
+	client := s.client
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		return errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length 2, got %d", id, len(parts)))
+	}
+	action := "DeleteProjectRole"
+	request := map[string]interface{}{
+		"ProjectId": parts[0],
+		"Code":      parts[1],
+		"RegionId":  client.RegionId,
+	}
+
+	var response map[string]interface{}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err := retry.RetryContext(ctx, dataWorksProjectRoleDeleteTimeout, func() *retry.RetryError {
+		var callErr error
+		response, callErr = client.RpcPost("dataworks-public", "2024-05-18", action, nil, request, true)
+		if callErr != nil {
+			if helper.NeedRetry(callErr) || errs.IsExpectedErrors(callErr, []string{"9990020002", "9990040003"}) {
+				wait()
+				return retry.RetryableError(callErr)
+			}
+			return retry.NonRetryableError(callErr)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"1101030502"}) || errs.IsTypedNotFound(err) {
+			return nil
+		}
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
