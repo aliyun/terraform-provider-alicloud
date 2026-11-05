@@ -17,6 +17,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
+	"github.com/hashicorp/go-cty/cty"
 	schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -1083,12 +1084,17 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 
 	var mu sync.Mutex
 	var requests []capturedRequest
+	functionArn := "acs:fc:cn-hangzhou:1234567890123456:functions/unit-provision"
 	stored := map[string]interface{}{
-		"functionArn":       "acs:fc:cn-hangzhou:1234567890123456:functions/unit-provision",
+		"functionArn":       functionArn,
 		"alwaysAllocateCPU": true,
 		"alwaysAllocateGPU": true,
 		"target":            float64(1),
 	}
+	// The service stores one provision configuration per qualifier. The empty
+	// qualifier is LATEST and keeps using stored so the existing cases retain
+	// their behaviour; every other qualifier gets its own object.
+	qualifiedStored := map[string]map[string]interface{}{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var body map[string]interface{}
@@ -1103,22 +1109,33 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 				}
 			}
 		}
+		qualifier := req.URL.Query().Get("qualifier")
 
 		mu.Lock()
 		requests = append(requests, capturedRequest{method: req.Method, query: req.URL.RawQuery, body: body})
+		object := stored
+		if qualifier != "" {
+			if qualifiedStored[qualifier] == nil {
+				qualifiedStored[qualifier] = map[string]interface{}{"functionArn": functionArn}
+			}
+			object = qualifiedStored[qualifier]
+		}
 		if req.Method == http.MethodPut {
 			// PutProvisionConfig replaces the whole configuration: keys missing
 			// from the request are gone from the response.
-			replaced := map[string]interface{}{
-				"functionArn": "acs:fc:cn-hangzhou:1234567890123456:functions/unit-provision",
-			}
+			replaced := map[string]interface{}{"functionArn": functionArn}
 			for key, value := range body {
 				replaced[key] = value
 			}
-			stored = replaced
+			object = replaced
+			if qualifier == "" {
+				stored = replaced
+			} else {
+				qualifiedStored[qualifier] = replaced
+			}
 		}
-		response := make(map[string]interface{}, len(stored))
-		for key, value := range stored {
+		response := make(map[string]interface{}, len(object))
+		for key, value := range object {
 			response[key] = value
 		}
 		mu.Unlock()
@@ -1155,6 +1172,16 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		}
 		t.Fatal("no PUT request captured")
 		return ""
+	}
+	requestCount := func() int {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(requests)
+	}
+	requestsSince := func(start int) []capturedRequest {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]capturedRequest(nil), requests[start:]...)
 	}
 	assertValue := func(body map[string]interface{}, key string, want interface{}) {
 		t.Helper()
@@ -1203,6 +1230,33 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 		if diff == nil || diff.Empty() {
 			t.Fatalf("expected a plan for %#v", config)
 		}
+		next, diags := r.Apply(ctx, prior, diff, client)
+		if diags.HasError() {
+			t.Fatalf("apply: %v", diags)
+		}
+		again, err := r.Diff(ctx, next, resourceConfig, nil)
+		if err != nil {
+			t.Fatalf("diff after apply: %v", err)
+		}
+		if again != nil && !again.Empty() {
+			t.Fatalf("configuration did not converge after apply: %#v", again)
+		}
+		return lastPut()
+	}
+	// applyUpdateWithRawConfig mirrors the protocol layer, which hands the
+	// evaluated configuration to the provider as cty raw config before Apply.
+	// The schema test helpers do not populate it, so set it explicitly here.
+	applyUpdateWithRawConfig := func(prior *sdktf.InstanceState, config map[string]interface{}, rawConfig cty.Value) map[string]interface{} {
+		t.Helper()
+		resourceConfig := sdktf.NewResourceConfigRaw(config)
+		diff, err := r.Diff(ctx, prior, resourceConfig, nil)
+		if err != nil {
+			t.Fatalf("diff: %v", err)
+		}
+		if diff == nil || diff.Empty() {
+			t.Fatalf("expected a plan for %#v", config)
+		}
+		diff.RawConfig = rawConfig
 		next, diags := r.Apply(ctx, prior, diff, client)
 		if diags.HasError() {
 			t.Fatalf("apply: %v", diags)
@@ -1543,6 +1597,109 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 	}
 	if !foundDefaultTargetReason {
 		t.Fatalf("unexpected diagnostics: %v", diags)
+	}
+
+	// CR3-04: when the update has to ask the service for the configured
+	// default, the read must address the same qualifier as the replacement
+	// PUT. LATEST carries a different default (7) on purpose: reading it
+	// would persist 7 on the configured alias.
+	mu.Lock()
+	stored = map[string]interface{}{
+		"functionArn":       functionArn,
+		"alwaysAllocateCPU": false,
+		"alwaysAllocateGPU": true,
+		"target":            float64(7),
+		"defaultTarget":     float64(7),
+	}
+	qualifiedStored["prod"] = map[string]interface{}{
+		"functionArn":       functionArn,
+		"alwaysAllocateCPU": true,
+		"alwaysAllocateGPU": true,
+		"target":            float64(5),
+		"defaultTarget":     float64(42),
+	}
+	mu.Unlock()
+
+	qualifiedPrior := priorState(map[string]string{
+		"target":              "0",
+		"qualifier":           "prod",
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	})
+	start := requestCount()
+	body = applyUpdate(qualifiedPrior, map[string]interface{}{
+		"function_name":       "unit-provision",
+		"qualifier":           "prod",
+		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
+	})
+	assertValue(body, "target", float64(42))
+	assertValue(body, "defaultTarget", float64(42))
+	if query := lastPutQuery(); !strings.Contains(query, "qualifier=prod") {
+		t.Fatalf("PUT query %q does not carry the configured qualifier", query)
+	}
+	fallbackReads := 0
+	for _, request := range requestsSince(start) {
+		if request.method == http.MethodPut {
+			break
+		}
+		if request.method != http.MethodGet {
+			continue
+		}
+		fallbackReads++
+		if !strings.Contains(request.query, "qualifier=prod") {
+			t.Fatalf("fallback GET query %q does not carry the configured qualifier", request.query)
+		}
+	}
+	if fallbackReads != 1 {
+		t.Fatalf("fallback reads = %d, want exactly one read on the configured qualifier", fallbackReads)
+	}
+
+	// N-01: prior state 0, configuration 0 and no target change. The raw
+	// configuration proves the zero is explicit, so the update must not read
+	// the service default. The stored default is 7: falling back would send 7,
+	// which fails the body assertion and the convergence check.
+	mu.Lock()
+	stored = map[string]interface{}{
+		"functionArn":       functionArn,
+		"alwaysAllocateCPU": true,
+		"alwaysAllocateGPU": true,
+		"target":            float64(7),
+		"defaultTarget":     float64(7),
+	}
+	mu.Unlock()
+
+	configType := r.CoreConfigSchema().ImpliedType()
+	rawValues := make(map[string]cty.Value, len(configType.AttributeTypes()))
+	for name, attrType := range configType.AttributeTypes() {
+		rawValues[name] = cty.NullVal(attrType)
+	}
+	rawValues["function_name"] = cty.StringVal("unit-provision")
+	rawValues["target"] = cty.NumberIntVal(0)
+	rawValues["always_allocate_cpu"] = cty.True
+	rawValues["always_allocate_gpu"] = cty.True
+
+	zeroPrior := priorState(map[string]string{
+		"target":              "0",
+		"always_allocate_cpu": "true",
+		"always_allocate_gpu": "true",
+	})
+	start = requestCount()
+	body = applyUpdateWithRawConfig(zeroPrior, map[string]interface{}{
+		"function_name":       "unit-provision",
+		"target":              0,
+		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
+	}, cty.ObjectVal(rawValues))
+	assertValue(body, "target", float64(0))
+	assertValue(body, "defaultTarget", float64(0))
+	for _, request := range requestsSince(start) {
+		if request.method == http.MethodPut {
+			break
+		}
+		if request.method == http.MethodGet {
+			t.Fatalf("update read the service default %q although the configuration set target explicitly", request.query)
+		}
 	}
 }
 
