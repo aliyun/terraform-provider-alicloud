@@ -48,6 +48,12 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceProject,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_data_works_project_role",
+				Factory:  NewProjectRoleResource,
+			},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
 				TypeName: "alicloud_data_works_folders",
