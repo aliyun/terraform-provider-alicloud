@@ -70,6 +70,17 @@ case "$mode" in
     fi
     exit 0
     ;;
+  same_page_paragraph)
+    # Another paragraph of the same page repeats the enum phrase. Only the
+    # status argument definition may be exempt, so these findings stay reported.
+    if [ "$is_enum_page" -eq 1 ]; then
+      printf '%s\n' \
+        "$last:${FAKE_PARAGRAPH_LINE}:${FAKE_PARAGRAPH_COL_FIRST}: \"CANCELLING\" is a misspelling of \"CANCELING\"" \
+        "$last:${FAKE_PARAGRAPH_LINE}:${FAKE_PARAGRAPH_COL_SECOND}: \"CANCELLED\" is a misspelling of \"CANCELED\""
+      exit 2
+    fi
+    exit 0
+    ;;
   prose)
     # Uppercase CANCELLING in ordinary prose on the same page: not exempt.
     if [ "$is_enum_page" -eq 1 ]; then
@@ -149,6 +160,37 @@ expect "changed docs same line wrong column rejected" fail same_line_wrong_colum
 expect "changed docs prose rejected" fail prose run_misspell_changed_docs "$(printf '%s\n%s' "$enum_doc" "$other_doc")"
 expect "changed docs mixed findings rejected" fail mixed run_misspell_changed_docs "$(printf '%s\n%s' "$enum_doc" "$other_doc")"
 expect "changed docs empty tool failure rejected" fail empty run_misspell_changed_docs "$enum_doc"
+
+# Another paragraph of the same page that repeats the enum phrase must not be
+# exempt. The fixture is a copy of the real page with such a paragraph appended,
+# so the accepted positions are computed from a page that contains the duplicate.
+paragraph_line='* `other` - (Optional, String) The same words are repeated in this paragraph. Valid values: `CANCELLING` and `CANCELLED`.'
+fixture_doc="$tmpdir/ecs_image_pipeline_executions.html.markdown"
+cp "$enum_doc" "$fixture_doc"
+paragraph_line_number=$(( $(wc -l < "$fixture_doc") + 1 ))
+printf '%s\n' "$paragraph_line" >> "$fixture_doc"
+paragraph_col_first="$(awk -v line="$paragraph_line" 'BEGIN { print index(line, "`CANCELLING`") }')"
+paragraph_col_second="$(awk -v line="$paragraph_line" 'BEGIN { print index(line, "`CANCELLED`") }')"
+export FAKE_PARAGRAPH_LINE="$paragraph_line_number"
+export FAKE_PARAGRAPH_COL_FIRST="$paragraph_col_first"
+export FAKE_PARAGRAPH_COL_SECOND="$paragraph_col_second"
+
+saved_enum_doc="$MISSPELL_ENUM_DOC"
+MISSPELL_ENUM_DOC="$fixture_doc"
+fixture_positions="$(misspell_enum_positions)"
+fixture_position_count="$(printf '%s\n' "$fixture_positions" | grep -c .)"
+if [ "$fixture_position_count" -ne 2 ]; then
+  echo "FAIL: expected the two status literals of the fixture page, got: $fixture_positions"
+  failures=$((failures + 1))
+fi
+if printf '%s\n' "$fixture_positions" | grep -qx "${paragraph_line_number}:${paragraph_col_first}"; then
+  echo "FAIL: the repeated enum phrase in another paragraph was exempted"
+  failures=$((failures + 1))
+fi
+expect "strict same page paragraph rejected" fail same_page_paragraph run_misspell_scoped "$fixture_doc"
+expect "strict fixture page keeps the status literals" pass literals run_misspell_scoped "$fixture_doc"
+expect "changed docs same page paragraph rejected" fail same_page_paragraph run_misspell_changed_docs "$fixture_doc"
+MISSPELL_ENUM_DOC="$saved_enum_doc"
 
 if [ "$failures" -ne 0 ]; then
   echo "spelling scope test: $failures failure(s)"

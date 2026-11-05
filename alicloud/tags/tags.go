@@ -208,16 +208,15 @@ const (
 )
 
 // ReservedTagKeyPrefixes lists the key namespaces that belong to Alibaba Cloud
-// rather than to the user. The list is a contract, not a set of patterns: every
-// entry is compared as a literal string prefix, so the dots inside
-// "sae.do.not.delete" are the characters a reserved key must start with and not
-// wildcards. A key such as "sae-do-not-delete-x" is therefore an ordinary key.
+// rather than to the user. Every entry is compared as a literal string prefix.
 //
 // The entries split into two groups:
 //   - namespace prefixes, "aliyun" and "acs:", which every Alibaba Cloud tag
 //     API reserves;
 //   - injected keys, "http://", "https://" and "sae.do.not.delete", which the
 //     service adds itself.
+//
+// The SAE entry is also matched by reservedTagKeySaePattern; see IsReservedTagKey.
 var ReservedTagKeyPrefixes = []string{
 	reservedTagPrefixAliyun,
 	reservedTagPrefixAcs,
@@ -226,16 +225,33 @@ var ReservedTagKeyPrefixes = []string{
 	reservedTagPrefixSae,
 }
 
-// IsReservedTagKey reports whether a tag key starts with one of the reserved
-// prefixes. It never logs the key or the value: callers use it on every tag of
-// every record, and tag values are user data.
+// reservedTagKeySaePattern is the SAE rule exactly as the historical filter
+// shipped it: a regular expression in which each dot matches any single
+// character. Keys such as "sae-do-not-delete-x" have therefore always been
+// treated as reserved, and every existing caller still hides them from state.
+// Narrowing this to the literal dots would surface those keys in the state of
+// resources and data sources that never showed them, so the compatibility rule
+// stays even though the other prefixes compare literally.
+var reservedTagKeySaePattern = regexp.MustCompile(`^sae.do.not.delete`)
+
+// IsReservedTagKey reports whether a tag key belongs to a namespace that the
+// provider does not surface in state. It is the single decision shared by the
+// historical TagIgnored callers and the ECS data source decoders, so one key is
+// treated the same way everywhere. The four namespace prefixes compare as
+// literal strings; the SAE entry keeps its historical single-character
+// separator match. "sae.do.not.delete", "sae.do.not.delete.x" and
+// "sae-do-not-delete-x" are reserved, while "sae.do.not" and an ordinary key
+// such as "env" are not.
+//
+// It never logs the key or the value: callers use it on every tag of every
+// record, and tag values are user data.
 func IsReservedTagKey(tagKey string) bool {
 	for _, prefix := range ReservedTagKeyPrefixes {
 		if strings.HasPrefix(tagKey, prefix) {
 			return true
 		}
 	}
-	return false
+	return reservedTagKeySaePattern.MatchString(tagKey)
 }
 
 func TagIgnored(tagKey string, tagValue interface{}) bool {

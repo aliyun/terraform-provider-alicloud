@@ -342,6 +342,9 @@ func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.C
 		if err != nil {
 			return fwNumberedPage{}, err
 		}
+		if err := fwValidateQueryEnvelope(response, "ReservedInstances", reservedInstancesAction); err != nil {
+			return fwNumberedPage{}, err
+		}
 		items, err := fwDecodeRecordList(response, "ReservedInstances", "ReservedInstance", reservedInstancesAction)
 		if err != nil {
 			return fwNumberedPage{}, err

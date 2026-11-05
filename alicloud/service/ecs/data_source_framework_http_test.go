@@ -306,6 +306,72 @@ func TestUnitEcsReservedInstancesReadRejectsZoneScopeWithoutZone(t *testing.T) {
 	assert.Zero(t, calls, "the rejected configuration must not reach the API")
 }
 
+// A 2xx body that is a JSON object but not the success envelope of the query
+// must fail the read: decoding it would write a zero result over the state even
+// though the service never answered the question.
+func TestUnitEcsReservedInstancesReadRejectsANonEnvelopeBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"unexpected": "document",
+		}); err != nil {
+			t.Error(err)
+		}
+	}))
+	t.Cleanup(server.Close)
+	client, _ := newEcsLoopbackClient(t, server.URL)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{
+		"zone_id": "cn-hangzhou-k",
+	})
+	assert.True(t, response.Diagnostics.HasError(), "a non-envelope 2xx document must not be written as an empty result")
+	assert.Nil(t, state, "no state may be written when the response is not the query envelope")
+	for _, err := range response.Diagnostics.Errors() {
+		assert.Contains(t, fmt.Sprintf("%s %s", err.Summary(), err.Detail()), "success envelope")
+	}
+}
+
+// The legitimate empty results keep working: an explicit empty list, and the
+// envelope the service returns when it omits the container because nothing
+// matched.
+func TestUnitEcsReservedInstancesReadKeepsLegitimateEmptyResults(t *testing.T) {
+	cases := map[string]map[string]interface{}{
+		"explicit empty list": {
+			"RequestId":         "mock",
+			"TotalCount":        0,
+			"ReservedInstances": map[string]interface{}{"ReservedInstance": []interface{}{}},
+		},
+		"container omitted": {
+			"RequestId":  "mock",
+			"TotalCount": 0,
+		},
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if err := json.NewEncoder(w).Encode(body); err != nil {
+					t.Error(err)
+				}
+			}))
+			t.Cleanup(server.Close)
+			client, _ := newEcsLoopbackClient(t, server.URL)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{
+				"zone_id": "cn-hangzhou-k",
+			})
+			require.False(t, response.Diagnostics.HasError(), "diagnostics: %+v", response.Diagnostics)
+			require.NotNil(t, state)
+			assert.Empty(t, state.Ids.Elements(), "an empty result must keep an empty id list")
+			assert.Equal(t, int64(0), state.TotalCount.ValueInt64())
+		})
+	}
+}
+
 // A 2xx response without a JSON object body must fail the read instead of being
 // written as an empty result.
 func TestUnitEcsReservedInstancesReadRejectsAnEmptyBody(t *testing.T) {

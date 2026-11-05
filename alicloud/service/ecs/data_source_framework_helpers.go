@@ -436,6 +436,33 @@ func fwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName,
 	}
 }
 
+// fwValidateQueryEnvelope rejects a 2xx response that is not the success
+// envelope of the query that was sent. Decoding such a document would produce no
+// records and overwrite the state with a zero result even though the service
+// never answered the question.
+//
+// A success envelope carries the documented container of the action, even when
+// the list itself is empty. The ECS RPC omits the container when nothing
+// matches, so a response without it is accepted only when it still carries the
+// RequestId that every ECS response includes; that is what separates a
+// legitimate empty result from a document of another API, a proxy page or an
+// error shape. A present container is decoded by fwDecodeRecordList, which
+// reports a member or entry of the wrong shape.
+func fwValidateQueryEnvelope(response map[string]interface{}, container, action string) error {
+	if response == nil {
+		return fmt.Errorf("%s returned an empty response body", action)
+	}
+	if _, ok := response[container]; ok {
+		return nil
+	}
+	if raw, ok := response["RequestId"]; ok {
+		if requestId, isString := raw.(string); isString && strings.TrimSpace(requestId) != "" {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s returned a response without the %s member or a RequestId; it is not this action's success envelope and is not treated as an empty result", action, container)
+}
+
 // fwDecodeRecordList decodes a list of records nested under
 // `container.member`. A missing container or member is a valid empty result:
 // the ECS RPC omits them when nothing matches. A member of the wrong shape, or

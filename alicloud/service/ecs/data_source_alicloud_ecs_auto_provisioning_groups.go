@@ -333,6 +333,9 @@ func (d *autoProvisioningGroupsDataSource) autoProvisioningGroupsDescribeAll(ctx
 		if err != nil {
 			return fwNumberedPage{}, err
 		}
+		if err := fwValidateQueryEnvelope(response, "AutoProvisioningGroups", autoProvisioningGroupsAction); err != nil {
+			return fwNumberedPage{}, err
+		}
 		items, err := fwDecodeRecordList(response, "AutoProvisioningGroups", "AutoProvisioningGroup", autoProvisioningGroupsAction)
 		if err != nil {
 			return fwNumberedPage{}, err

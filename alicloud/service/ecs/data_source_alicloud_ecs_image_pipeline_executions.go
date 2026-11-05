@@ -380,6 +380,9 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 		if err != nil {
 			return nil, "", err
 		}
+		if err := fwValidateQueryEnvelope(response, "ImagePipelineExecution", imagePipelineExecutionsAction); err != nil {
+			return nil, "", err
+		}
 		items, err := fwDecodeRecordList(response, "ImagePipelineExecution", "ImagePipelineExecutionSet", imagePipelineExecutionsAction)
 		if err != nil {
 			return nil, "", err

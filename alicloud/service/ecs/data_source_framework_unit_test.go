@@ -188,10 +188,10 @@ func TestUnitFwDecodeCountAndToken(t *testing.T) {
 // The three data sources share the reserved-key contract of the tags package
 // instead of keeping their own copy of the prefix list.
 func TestUnitFwTagKeyReservedUsesTheSharedContract(t *testing.T) {
-	for _, key := range []string{"aliyun", "aliyun-tag", "acs:tag", "http://example.com", "https://example.com", "sae.do.not.delete"} {
+	for _, key := range []string{"aliyun", "aliyun-tag", "acs:tag", "http://example.com", "https://example.com", "sae.do.not.delete", "sae.do.not.delete.x", "sae-do-not-delete-x"} {
 		assert.True(t, fwTagKeyReserved(key), "%q must be a reserved key", key)
 	}
-	for _, key := range []string{"env", "sae-do-not-delete-x", "saeXdoYnotZdelete", ""} {
+	for _, key := range []string{"env", "sae", "sae.do.not", "", "SAE.do.not.delete"} {
 		assert.False(t, fwTagKeyReserved(key), "%q must be an ordinary key", key)
 	}
 }
@@ -205,11 +205,19 @@ func TestUnitFwDecodeTags(t *testing.T) {
 		"Tag": []interface{}{
 			map[string]interface{}{"TagKey": "env", "TagValue": "test"},
 			map[string]interface{}{"TagKey": "aliyun-reserved", "TagValue": "skip"},
+			map[string]interface{}{"TagKey": "sae.do.not.delete", "TagValue": "skip"},
+			map[string]interface{}{"TagKey": "sae.do.not.delete.x", "TagValue": "skip"},
+			map[string]interface{}{"TagKey": "sae-do-not-delete-x", "TagValue": "skip"},
+			map[string]interface{}{"TagKey": "sae.do.not", "TagValue": "kept"},
 		},
 	})
 	require.NoError(t, err)
 	assert.Equal(t, types.StringValue("test"), tags.Elements()["env"])
 	assert.NotContains(t, tags.Elements(), "aliyun-reserved")
+	assert.NotContains(t, tags.Elements(), "sae.do.not.delete")
+	assert.NotContains(t, tags.Elements(), "sae.do.not.delete.x")
+	assert.NotContains(t, tags.Elements(), "sae-do-not-delete-x", "the historical SAE filter must keep hiding the separator variant")
+	assert.Equal(t, types.StringValue("kept"), tags.Elements()["sae.do.not"], "a key that only shares part of the prefix is ordinary")
 
 	_, err = fwDecodeTags(map[string]interface{}{"Tag": "not-a-list"})
 	assert.Error(t, err)
@@ -222,6 +230,43 @@ func TestUnitFwDecodeTags(t *testing.T) {
 
 	_, err = fwDecodeTags(map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagKey": 1, "TagValue": "test"}}})
 	assert.Error(t, err, "a non-string tag key is malformed")
+}
+
+// A successful response must be the envelope of the action that was sent: the
+// documented container, or the RequestId an empty ECS result still carries. Any
+// other 2xx document would decode to zero records and overwrite the state.
+func TestUnitFwValidateQueryEnvelope(t *testing.T) {
+	assert.NoError(t, fwValidateQueryEnvelope(map[string]interface{}{
+		"RequestId":         "mock",
+		"TotalCount":        0,
+		"ReservedInstances": map[string]interface{}{"ReservedInstance": []interface{}{}},
+	}, "ReservedInstances", "DescribeReservedInstances"), "an explicit empty list is the envelope")
+
+	assert.NoError(t, fwValidateQueryEnvelope(map[string]interface{}{
+		"RequestId":  "mock",
+		"TotalCount": 0,
+	}, "ReservedInstances", "DescribeReservedInstances"), "the service omits the container for an empty result but keeps the RequestId")
+
+	assert.NoError(t, fwValidateQueryEnvelope(map[string]interface{}{
+		"ReservedInstances": "not-an-object",
+	}, "ReservedInstances", "DescribeReservedInstances"), "a present container is validated by the decoder, not here")
+
+	for name, response := range map[string]map[string]interface{}{
+		"nil response":        nil,
+		"unexpected document": {"unexpected": "shape"},
+		"error shaped body":   {"Code": "InvalidSecurityToken", "Message": "denied"},
+		"request id not text": {"RequestId": 7},
+		"blank request id":    {"RequestId": "  "},
+		"nil request id":      {"RequestId": nil},
+	} {
+		err := fwValidateQueryEnvelope(response, "ReservedInstances", "DescribeReservedInstances")
+		if err == nil {
+			t.Errorf("%s must be rejected instead of being read as an empty result", name)
+			continue
+		}
+		assert.Contains(t, err.Error(), "DescribeReservedInstances")
+		assert.Contains(t, err.Error(), "success envelope")
+	}
 }
 
 func TestUnitFwCollectTokenPagesFollowsTokens(t *testing.T) {

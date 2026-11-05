@@ -15,6 +15,8 @@ import (
 	tfsweep "github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -71,43 +73,22 @@ func testSweepEcsImagePipeline(region string) error {
 			listErrors = append(listErrors, fmt.Sprintf("%s returned an unexpected image pipeline list: %s", action, err))
 			break
 		}
-		for index, item := range result {
-			// A record whose identity or ownership cannot be read is not
-			// silently skipped: skipping it would leave the pipeline behind
-			// while the sweep still reports success, so it is reported next to
-			// the listing and deletion failures.
-			name, nameErr := imagePipelineRecordName(item)
-			if nameErr != nil {
-				recordErrors = append(recordErrors, fmt.Sprintf("%s record %d: %s", action, index, nameErr))
-				continue
-			}
-			tags, tagsErr := imagePipelineTagMap(item["Tags"])
-			if tagsErr != nil {
-				recordErrors = append(recordErrors, fmt.Sprintf("image pipeline %s: %s", name, tagsErr))
-				continue
-			}
-			if !shouldSweepEcsImagePipeline(name, tags) {
-				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", name)
-				continue
-			}
-			id, idErr := imagePipelineRecordId(item)
-			if idErr != nil {
-				recordErrors = append(recordErrors, fmt.Sprintf("image pipeline %s: %s", name, idErr))
-				continue
-			}
+		outcome := sweepImagePipelineRecords(result, func(name, id string) error {
 			action := "DeleteImagePipeline"
 			request := map[string]interface{}{
 				"ImagePipelineId": id,
 				"RegionId":        aliyunClient.RegionId,
 			}
-			_, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
+			_, err := aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Ecs Image Pipeline (%s): %s", name, err)
-				deleteErrors = append(deleteErrors, fmt.Sprintf("%s (%s): %s", name, id, err))
-				continue
+			} else {
+				log.Printf("[INFO] Delete Ecs Image Pipeline success: %s ", name)
 			}
-			log.Printf("[INFO] Delete Ecs Image Pipeline success: %s ", name)
-		}
+			return err
+		})
+		deleteErrors = append(deleteErrors, outcome.deleteErrors...)
+		recordErrors = append(recordErrors, outcome.recordErrors...)
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
@@ -258,44 +239,181 @@ func imagePipelineTagMap(tags interface{}) (map[string]string, error) {
 	return result, nil
 }
 
-// shouldSweepEcsImagePipeline reports whether a pipeline belongs to a fixture
-// this sweeper owns. Acceptance-test fixtures are matched by name prefix. The
-// documentation example's generic name is matched only together with its
-// ownership tag, so an unrelated pipeline with the same name is left alone.
-func shouldSweepEcsImagePipeline(name string, tags map[string]string) bool {
+// imagePipelineSweepOutcome collects the decisions of one page: the pipelines
+// that were deleted, the deletions that failed and the records whose identity or
+// ownership could not be read.
+type imagePipelineSweepOutcome struct {
+	deleted      []string
+	deleteErrors []string
+	recordErrors []string
+}
+
+// sweepImagePipelineRecords applies the ownership rule to the records of one
+// page and deletes every pipeline it owns. Ownership is decided from the name
+// first: a fixture name prefix identifies the pipeline on its own, so an
+// unrelated malformed tag member cannot keep an owned pipeline from being
+// deleted. Only the documentation example's generic name needs the ownership
+// tag, and a record whose ownership cannot be established there is left alone
+// and reported. A deletion that fails is reported and the remaining records are
+// still processed, so one failure cannot hide another.
+func sweepImagePipelineRecords(records []map[string]interface{}, deletePipeline func(name, id string) error) imagePipelineSweepOutcome {
+	outcome := imagePipelineSweepOutcome{}
+	for index, item := range records {
+		name, err := imagePipelineRecordName(item)
+		if err != nil {
+			outcome.recordErrors = append(outcome.recordErrors, fmt.Sprintf("DescribeImagePipelines record %d: %s", index, err))
+			continue
+		}
+		owned, err := imagePipelineOwnedBySweeper(name, item["Tags"])
+		if err != nil {
+			outcome.recordErrors = append(outcome.recordErrors, fmt.Sprintf("image pipeline %s: %s", name, err))
+			continue
+		}
+		if !owned {
+			log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", name)
+			continue
+		}
+		id, err := imagePipelineRecordId(item)
+		if err != nil {
+			outcome.recordErrors = append(outcome.recordErrors, fmt.Sprintf("image pipeline %s: %s", name, err))
+			continue
+		}
+		if err := deletePipeline(name, id); err != nil {
+			outcome.deleteErrors = append(outcome.deleteErrors, fmt.Sprintf("%s (%s): %s", name, id, err))
+			continue
+		}
+		outcome.deleted = append(outcome.deleted, id)
+	}
+	return outcome
+}
+
+// imagePipelineOwnedBySweeper reports whether a pipeline belongs to a fixture
+// this sweeper owns. Acceptance-test fixtures are matched by name prefix, which
+// identifies them without looking at their tags. The documentation example's
+// generic name is matched only together with its ownership tag, so an unrelated
+// pipeline with the same name is left alone and a malformed tag member makes the
+// ownership unknown instead of owned.
+func imagePipelineOwnedBySweeper(name string, tags interface{}) (bool, error) {
 	lower := strings.ToLower(name)
 	for _, prefix := range []string{"tf-testacc", "tf_testacc"} {
 		if strings.HasPrefix(lower, prefix) {
-			return true
+			return true, nil
 		}
 	}
-	if lower == "terraform-example" {
-		return tags[imagePipelineOwnerTagKey] == imagePipelineOwnerTagValue
+	if lower != "terraform-example" {
+		return false, nil
 	}
-	return false
+	tagMap, err := imagePipelineTagMap(tags)
+	if err != nil {
+		return false, err
+	}
+	return tagMap[imagePipelineOwnerTagKey] == imagePipelineOwnerTagValue, nil
 }
 
-func TestUnitShouldSweepEcsImagePipeline(t *testing.T) {
-	owned := map[string]string{imagePipelineOwnerTagKey: imagePipelineOwnerTagValue}
+func TestUnitImagePipelineOwnedBySweeper(t *testing.T) {
+	ownedTags := map[string]interface{}{
+		"Tag": []interface{}{
+			map[string]interface{}{"TagKey": imagePipelineOwnerTagKey, "TagValue": imagePipelineOwnerTagValue},
+		},
+	}
+	notOwnedTags := map[string]interface{}{
+		"Tag": []interface{}{
+			map[string]interface{}{"TagKey": imagePipelineOwnerTagKey, "TagValue": "false"},
+		},
+	}
 	cases := []struct {
 		name string
-		tags map[string]string
+		tags interface{}
 		want bool
 	}{
 		{"tf-testAccimagepipeline1234", nil, true},
-		{"tf_testAccimage", nil, true},
-		{"terraform-example", owned, true},
+		{"tf_testAccimage", "not-an-object", true},
+		{"terraform-example", ownedTags, true},
 		{"terraform-example", nil, false},
-		{"terraform-example", map[string]string{imagePipelineOwnerTagKey: "false"}, false},
-		{"terraform-example-2", owned, false},
-		{"terraform-examples-backup", owned, false},
-		{"production-image-pipeline", owned, false},
+		{"terraform-example", notOwnedTags, false},
+		{"terraform-example-2", ownedTags, false},
+		{"terraform-examples-backup", ownedTags, false},
+		{"production-image-pipeline", ownedTags, false},
 	}
 	for _, testCase := range cases {
-		if got := shouldSweepEcsImagePipeline(testCase.name, testCase.tags); got != testCase.want {
-			t.Errorf("shouldSweepEcsImagePipeline(%q, %v) = %v, want %v", testCase.name, testCase.tags, got, testCase.want)
+		got, err := imagePipelineOwnedBySweeper(testCase.name, testCase.tags)
+		if err != nil {
+			t.Errorf("imagePipelineOwnedBySweeper(%q, %v) returned %v", testCase.name, testCase.tags, err)
+			continue
+		}
+		if got != testCase.want {
+			t.Errorf("imagePipelineOwnedBySweeper(%q, %v) = %v, want %v", testCase.name, testCase.tags, got, testCase.want)
 		}
 	}
+
+	// The generic name depends on its tags, so unreadable tags leave the
+	// ownership unknown instead of guessing either way.
+	if _, err := imagePipelineOwnedBySweeper("terraform-example", "not-an-object"); err == nil {
+		t.Fatal("unreadable ownership tags must be reported instead of deciding ownership")
+	}
+}
+
+// A pipeline identified by name is deleted even when it carries an unrelated
+// malformed tag, an object whose ownership cannot be read is protected and
+// reported, and one failed deletion does not hide the others.
+func TestUnitSweepImagePipelineRecords(t *testing.T) {
+	t.Run("name identified fixture ignores unrelated malformed tags", func(t *testing.T) {
+		deleted := make([]string, 0)
+		outcome := sweepImagePipelineRecords([]map[string]interface{}{
+			{"ImagePipelineId": "ip-fixture", "Name": "tf-testAcc-image", "Tags": "not-an-object"},
+		}, func(name, id string) error {
+			deleted = append(deleted, id)
+			return nil
+		})
+		assert.Equal(t, []string{"ip-fixture"}, deleted, "the fixture must be deleted")
+		assert.Empty(t, outcome.deleteErrors)
+		assert.Empty(t, outcome.recordErrors)
+	})
+
+	t.Run("unknown ownership is protected and reported", func(t *testing.T) {
+		deleted := make([]string, 0)
+		outcome := sweepImagePipelineRecords([]map[string]interface{}{
+			{"ImagePipelineId": "ip-generic", "Name": "terraform-example", "Tags": "not-an-object"},
+		}, func(name, id string) error {
+			deleted = append(deleted, id)
+			return nil
+		})
+		assert.Empty(t, deleted, "an object whose ownership is unknown must not be deleted")
+		require.Len(t, outcome.recordErrors, 1)
+		assert.Contains(t, outcome.recordErrors[0], "terraform-example")
+	})
+
+	t.Run("unrelated pipeline is left alone", func(t *testing.T) {
+		deleted := make([]string, 0)
+		outcome := sweepImagePipelineRecords([]map[string]interface{}{
+			{"ImagePipelineId": "ip-unrelated", "Name": "production-image-pipeline"},
+		}, func(name, id string) error {
+			deleted = append(deleted, id)
+			return nil
+		})
+		assert.Empty(t, deleted)
+		assert.Empty(t, outcome.recordErrors)
+		assert.Empty(t, outcome.deleteErrors)
+	})
+
+	t.Run("independent deletion failures are preserved", func(t *testing.T) {
+		deleted := make([]string, 0)
+		outcome := sweepImagePipelineRecords([]map[string]interface{}{
+			{"ImagePipelineId": "ip-1", "Name": "tf-testAcc-1"},
+			{"ImagePipelineId": "ip-2", "Name": "tf-testAcc-2"},
+		}, func(name, id string) error {
+			if id == "ip-1" {
+				return fmt.Errorf("Forbidden")
+			}
+			deleted = append(deleted, id)
+			return nil
+		})
+		assert.Equal(t, []string{"ip-2"}, deleted, "the remaining records must still be deleted")
+		require.Len(t, outcome.deleteErrors, 1)
+		assert.Contains(t, outcome.deleteErrors[0], "ip-1")
+		assert.Contains(t, outcome.deleteErrors[0], "Forbidden")
+		assert.Empty(t, outcome.recordErrors)
+	})
 }
 
 func TestUnitImagePipelineTagMap(t *testing.T) {
