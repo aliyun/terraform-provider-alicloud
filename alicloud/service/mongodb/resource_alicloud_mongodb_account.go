@@ -71,12 +71,12 @@ func resourceAliCloudMongodbAccount() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"role": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 							ForceNew: true,
 						},
 						"db_name": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 							ForceNew: true,
 						},
 					},
@@ -269,17 +269,29 @@ func resourceAliCloudMongodbAccountRead(d *schema.ResourceData, meta interface{}
 	// set through ModifyAccountDescription, which is not supported for shard
 	// accounts, so a configured description is kept when the API omits it.
 	if v, ok := objectRaw["AccountDescription"]; ok && fmt.Sprint(v) != "" {
-		d.Set("account_description", v)
+		if err := d.Set("account_description", v); err != nil {
+			return errs.WrapError(err)
+		}
 	}
-	d.Set("character_type", objectRaw["CharacterType"])
+	if err := d.Set("character_type", objectRaw["CharacterType"]); err != nil {
+		return errs.WrapError(err)
+	}
 	// db_name is part of the identity, so it is only overwritten when the API
 	// returns a value for it.
 	if v, ok := objectRaw["DBName"]; ok && fmt.Sprint(v) != "" {
-		d.Set("db_name", v)
+		if err := d.Set("db_name", v); err != nil {
+			return errs.WrapError(err)
+		}
 	}
-	d.Set("status", objectRaw["AccountStatus"])
-	d.Set("account_name", objectRaw["AccountName"])
-	d.Set("instance_id", objectRaw["DBInstanceId"])
+	if err := d.Set("status", objectRaw["AccountStatus"]); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("account_name", objectRaw["AccountName"]); err != nil {
+		return errs.WrapError(err)
+	}
+	if err := d.Set("instance_id", objectRaw["DBInstanceId"]); err != nil {
+		return errs.WrapError(err)
+	}
 
 	roles := make([]interface{}, 0)
 	if v, ok := objectRaw["Roles"]; ok {

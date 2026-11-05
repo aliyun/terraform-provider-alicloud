@@ -95,7 +95,7 @@ The following arguments are supported:
   - Start with Chinese and English letters.
   - Can contain Chinese characters, English characters, underscores (_), dashes (-), and numbers, and can be 2 to 256 characters in length.
 
-  -> **NOTE:** For shard accounts (both `db` and `cs`) `ModifyAccountDescription` is not supported, so the description is only applied when the account is created and is not returned by `DescribeAccounts` afterwards.
+  -> **NOTE:** For shard accounts (both `db` and `cs`) `ModifyAccountDescription` is not supported, so the description is only applied when the account is created and is not returned by `DescribeAccounts` afterwards. Changing or removing `account_description` on such an account fails the apply.
 * `account_name` - (Required, ForceNew) Account Name
 * `account_password` - (Required) Account Password
 * `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account type. Value:
@@ -105,7 +105,7 @@ The following arguments are supported:
 
   -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
 
-* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.2.0) The database where the account resides. Defaults to `admin`.
+* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.2.0) The database where the account resides. Defaults to `admin` when the account is created.
 * `instance_id` - (Required, ForceNew) Instance Id
 * `roles` - (Optional, ForceNew, Set, Available since v2.2.0) The list of roles granted to the account. See [`roles`](#roles) below.
 
@@ -114,8 +114,8 @@ The following arguments are supported:
 ### `roles`
 
 The roles supports the following:
-* `db_name` - (Optional, ForceNew, String, Available since v2.2.0) The database the role applies to.
-* `role` - (Optional, ForceNew, String, Available since v2.2.0) The role to grant.
+* `db_name` - (Required, ForceNew, String, Available since v2.2.0) The database the role applies to.
+* `role` - (Required, ForceNew, String, Available since v2.2.0) The role to grant.
 
 ## Attributes Reference
 
