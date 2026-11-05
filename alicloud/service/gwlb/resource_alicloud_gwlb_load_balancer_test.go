@@ -113,6 +113,22 @@ func TestAccAliCloudGwlbLoadBalancer_basic7994(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"traffic_mode": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_mode": "ByPass",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -301,6 +317,22 @@ func TestAccAliCloudGwlbLoadBalancer_basic8565(t *testing.T) {
 					testAccCheck(map[string]string{
 						"resource_group_id": acctest.CHECKSET,
 						"traffic_mode":      "ByPass",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_mode": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_mode": "ByPass",
 					}),
 				),
 			},

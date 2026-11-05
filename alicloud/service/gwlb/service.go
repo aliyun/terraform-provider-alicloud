@@ -86,6 +86,38 @@ func (s *Service) LoadBalancerStateRefreshFunc(id string, field string, failStat
 	}
 }
 
+// LoadBalancerTrafficModeStateRefreshFunc reports "<status>/<trafficMode>" so callers can
+// wait for an asynchronous traffic-mode change to take effect. LoadBalancerStatus on its own
+// is already Active before the change is applied, so waiting for it alone can read the old mode.
+func (s *Service) LoadBalancerTrafficModeStateRefreshFunc(id string, failStates []string) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeLoadBalancer(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+
+		statusValue, err := jsonpath.Get("$.LoadBalancerStatus", object)
+		if err != nil {
+			return object, "", errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.LoadBalancerStatus", object)
+		}
+		modeValue, err := jsonpath.Get("$.TrafficMode", object)
+		if err != nil {
+			return object, "", errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.TrafficMode", object)
+		}
+		currentStatus := fmt.Sprintf("%v/%v", statusValue, modeValue)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
 // DescribeLoadBalancer >>> Encapsulated.
 
 // SetResourceTags <<< Encapsulated tag function for Gwlb.

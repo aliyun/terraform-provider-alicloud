@@ -202,7 +202,7 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error 
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
-		stateConf = helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		stateConf = helper.BuildStateConf([]string{}, []string{fmt.Sprintf("Active/%v", v)}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gwlbService.LoadBalancerTrafficModeStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
@@ -327,7 +327,7 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error 
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
 		gwlbService := NewService(client)
-		stateConf := helper.BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerStateRefreshFunc(d.Id(), "LoadBalancerStatus", []string{}))
+		stateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprintf("Active/%v", d.Get("traffic_mode"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gwlbService.LoadBalancerTrafficModeStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
