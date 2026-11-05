@@ -87,11 +87,12 @@ The following arguments are supported:
   - Start with Chinese and English letters.
   - Can contain Chinese characters, English characters, underscores (_), dashes (-), and numbers, and can be 2 to 256 characters in length.
 
-  -> **NOTE:** For shard accounts `ModifyAccountDescription` is not supported, so the description is only applied when the account is created and is not returned by `DescribeAccounts` afterwards.
+  -> **NOTE:** For shard accounts (both `db` and `cs`) `ModifyAccountDescription` is not supported, so the description is only applied when the account is created and is not returned by `DescribeAccounts` afterwards.
 * `account_name` - (Required, ForceNew) Account Name
 * `account_password` - (Required) Account Password
-* `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account Comment Information type. Value:
-  - `db`: shard account.
+* `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account type. Value:
+  - `db`: shard direct-connection account.
+  - `cs`: config server account.
   - `normal`: The replica set account. (The default value).
 
   -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
@@ -100,7 +101,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) Instance Id
 * `roles` - (Optional, ForceNew, Set, Available since v2.2.0) The list of roles granted to the account. See [`roles`](#roles) below.
 
-  -> **NOTE:** `CreateAccount` currently creates shard accounts only and documents that shard account privileges are fixed to read-only, so the API may reject a configured `roles` with `InvalidRoles.NotSupported`. `roles` can only be configured for shard accounts (`character_type = "db"`).
+  -> **NOTE:** `roles` are only supported when creating a config server account (`character_type = "cs"`), where `CreateAccount` requires them. Shard direct-connection accounts (`character_type = "db"`) have fixed privileges, and the API rejects a configured `roles` with the error code `InvalidRoles.NotSupported`. For replica set accounts (`character_type = "normal"`) this resource manages the existing `root` account through `ResetAccountPassword`, which does not accept roles.
 
 ### `roles`
 

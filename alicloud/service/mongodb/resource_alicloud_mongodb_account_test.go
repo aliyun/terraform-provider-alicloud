@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
@@ -625,3 +626,182 @@ resource "alicloud_mongodb_instance" "default7eOftZ" {
 }
 
 // Test Mongodb Account. <<< Resource test cases, automatically generated.
+
+// TestAccAliCloudMongodbAccount_shardingAccountRoles covers the product decision
+// for CreateAccount roles: shard direct-connection (db) accounts reject roles
+// with InvalidRoles.NotSupported, config server (cs) accounts require and honor
+// custom roles.
+func TestAccAliCloudMongodbAccount_shardingAccountRoles(t *testing.T) {
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testacc_roles_%d", rand)
+	dbAccountName := fmt.Sprintf("tf_db_%d", rand)
+	dbRolesAccountName := fmt.Sprintf("tf_dbr_%d", rand)
+	csAccountName := fmt.Sprintf("tf_cs_%d", rand)
+	dbResourceId := "alicloud_mongodb_account.db"
+	csResourceId := "alicloud_mongodb_account.cs"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			os.Setenv("ALICLOUD_REGION", "cn-shanghai")
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", false, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dbResourceId, "account_name", dbAccountName),
+					resource.TestCheckResourceAttr(dbResourceId, "character_type", "db"),
+					resource.TestCheckResourceAttr(dbResourceId, "db_name", "admin"),
+					resource.TestCheckResourceAttrSet(dbResourceId, "instance_id"),
+					resource.TestCheckResourceAttrSet(dbResourceId, "status"),
+				),
+			},
+			{
+				// A shard direct-connection account must not carry roles; the API
+				// rejects the create with InvalidRoles.NotSupported.
+				Config:      testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", true, false),
+				ExpectError: regexp.MustCompile("InvalidRoles.NotSupported"),
+			},
+			{
+				// Config server accounts require and honor custom roles.
+				Config: testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer1234!!!", false, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(csResourceId, "account_name", csAccountName),
+					resource.TestCheckResourceAttr(csResourceId, "character_type", "cs"),
+					resource.TestCheckResourceAttr(csResourceId, "db_name", "admin"),
+					resource.TestCheckResourceAttr(csResourceId, "roles.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(csResourceId, "roles.*", map[string]string{
+						"role":    "read",
+						"db_name": "admin",
+					}),
+				),
+			},
+			{
+				Config: testAccMongodbAccountShardingRolesConfig(name, dbAccountName, dbRolesAccountName, csAccountName, "qwer12345!!!", false, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(csResourceId, "roles.#", "1"),
+				),
+			},
+			{
+				ResourceName:            csResourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password"},
+			},
+		},
+	})
+}
+
+func testAccMongodbAccountShardingRolesConfig(name, dbAccount, dbRolesAccount, csAccount, password string, withDbRoles, withCs bool) string {
+	dbRolesBlock := ""
+	if withDbRoles {
+		dbRolesBlock = fmt.Sprintf(`
+resource "alicloud_mongodb_account" "db_roles" {
+  account_name     = "%s"
+  account_password = "%s"
+  instance_id      = alicloud_mongodb_sharding_instance.default.id
+  character_type   = "db"
+  db_name          = "admin"
+
+  roles {
+    role    = "read"
+    db_name = "admin"
+  }
+}
+`, dbRolesAccount, password)
+	}
+	csBlock := ""
+	if withCs {
+		csBlock = fmt.Sprintf(`
+resource "alicloud_mongodb_account" "cs" {
+  account_name     = "%s"
+  account_password = "%s"
+  instance_id      = alicloud_mongodb_sharding_instance.default.id
+  character_type   = "cs"
+  db_name          = "admin"
+
+  roles {
+    role    = "read"
+    db_name = "admin"
+  }
+}
+`, csAccount, password)
+	}
+	return fmt.Sprintf(`
+%s
+
+resource "alicloud_mongodb_account" "db" {
+  account_name        = "%s"
+  account_password    = "%s"
+  instance_id         = alicloud_mongodb_sharding_instance.default.id
+  character_type      = "db"
+  db_name             = "admin"
+  account_description = "%s"
+}
+%s
+%s
+`, testAccMongodbAccountShardingRolesDependence(name), dbAccount, password, name, dbRolesBlock, csBlock)
+}
+
+func testAccMongodbAccountShardingRolesDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_mongodb_zones" "default" {}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+locals {
+  vswitch_zone_ids = [for zone in data.alicloud_zones.default.zones : zone.id]
+  mongodb_zone_ids = [for zone in data.alicloud_mongodb_zones.default.zones : zone.id if contains(local.vswitch_zone_ids, zone.id)]
+  zone_id          = local.mongodb_zone_ids[0]
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
+  zone_id    = local.zone_id
+  cidr_block = "10.0.0.0/24"
+}
+
+resource "alicloud_mongodb_sharding_instance" "default" {
+  engine_version = "4.2"
+  storage_type   = "cloud_essd1"
+  vswitch_id     = alicloud_vswitch.default.id
+  vpc_id         = alicloud_vpc.default.id
+  storage_engine = "WiredTiger"
+  network_type   = "VPC"
+  zone_id        = local.zone_id
+  name           = var.name
+
+  mongo_list {
+    node_class = "mdb.shard.4x.large.d"
+  }
+  mongo_list {
+    node_class = "mdb.shard.4x.large.d"
+  }
+  shard_list {
+    node_class   = "mdb.shard.4x.large.d"
+    node_storage = "20"
+  }
+  shard_list {
+    node_class   = "mdb.shard.4x.large.d"
+    node_storage = "20"
+  }
+  config_server_list {
+    node_class   = "mdb.shard.2x.xlarge.d"
+    node_storage = "80"
+  }
+}
+`, name)
+}

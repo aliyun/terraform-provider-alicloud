@@ -103,14 +103,18 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
-	if len(parts) != 2 {
-		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	if len(parts) != 2 && len(parts) != 3 {
+		return nil, errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d or %d, got %d", id, 2, 3, len(parts)))
 	}
+	accountName := parts[len(parts)-1]
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["AccountName"] = parts[1]
+	request["AccountName"] = accountName
 	request["DBInstanceId"] = parts[0]
 	request["RegionId"] = client.RegionId
+	if len(parts) == 3 {
+		request["DBName"] = parts[1]
+	}
 	action := "DescribeAccounts"
 
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
@@ -136,11 +140,35 @@ func (s *MongodbServiceV2) DescribeMongodbAccount(id string) (object map[string]
 		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Accounts.Account[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), errs.NotFoundMsg, response)
+	accounts, ok := v.([]interface{})
+	if !ok {
+		return object, errs.WrapErrorf(fmt.Errorf("unexpected DescribeAccounts response format for %s", id), errs.FailedGetAttributeMsg, id, "$.Accounts.Account[*]", response)
+	}
+	matched := make([]map[string]interface{}, 0, 1)
+	for _, item := range accounts {
+		account, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(account["AccountName"]) != accountName {
+			continue
+		}
+		// Account names are only unique inside a database, so filter by the
+		// database scope as well whenever the caller supplied one.
+		if len(parts) == 3 && fmt.Sprint(account["DBName"]) != parts[1] {
+			continue
+		}
+		matched = append(matched, account)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	if len(matched) == 0 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), errs.NotFoundMsg, response)
+	}
+	if len(matched) > 1 {
+		return object, errs.WrapError(fmt.Errorf("found %d accounts named %s in instance %s, use id <instance_id>:<db_name>:<account_name> to identify the account", len(matched), accountName, parts[0]))
+	}
+
+	return matched[0], nil
 }
 
 func (s *MongodbServiceV2) MongodbAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
@@ -156,14 +184,21 @@ func (s *MongodbServiceV2) MongodbAccountStateRefreshFuncWithApi(id string, fiel
 			}
 			return nil, "", errs.WrapError(err)
 		}
-		v, err := jsonpath.Get(field, object)
-		currentStatus := fmt.Sprint(v)
-
+		var currentStatus string
 		if strings.HasPrefix(field, "#") {
 			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
 			if v != nil {
 				currentStatus = "#CHECKSET"
 			}
+		} else {
+			v, err := jsonpath.Get(field, object)
+			if err != nil {
+				return nil, "", errs.WrapError(err)
+			}
+			if v == nil {
+				return nil, "", errs.WrapError(fmt.Errorf("field %s is missing in the DescribeAccounts response of %s", field, id))
+			}
+			currentStatus = fmt.Sprint(v)
 		}
 
 		for _, failState := range failStates {
