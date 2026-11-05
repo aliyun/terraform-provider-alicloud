@@ -256,11 +256,12 @@ func TestUnitFwValidateQueryEnvelope(t *testing.T) {
 	assert.Contains(t, nilErr.Error(), "DescribeReservedInstances")
 
 	for name, response := range map[string]map[string]interface{}{
-		"unexpected document": {"unexpected": "shape"},
-		"error shaped body":   {"Code": "InvalidSecurityToken", "Message": "denied"},
-		"request id not text": {"RequestId": 7},
-		"blank request id":    {"RequestId": "  "},
-		"nil request id":      {"RequestId": nil},
+		"unexpected document":   {"unexpected": "shape"},
+		"error shaped body":     {"Code": "InvalidSecurityToken", "Message": "denied"},
+		"error with request id": {"RequestId": "mock", "Code": "InvalidSecurityToken", "Message": "denied"},
+		"request id not text":   {"RequestId": 7},
+		"blank request id":      {"RequestId": "  "},
+		"nil request id":        {"RequestId": nil},
 	} {
 		err := fwValidateQueryEnvelope(response, "ReservedInstances", "DescribeReservedInstances")
 		if err == nil {

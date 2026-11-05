@@ -457,6 +457,11 @@ func fwValidateQueryEnvelope(response map[string]interface{}, container, action 
 	}
 	if raw, ok := response["RequestId"]; ok {
 		if requestId, isString := raw.(string); isString && strings.TrimSpace(requestId) != "" {
+			if _, hasCode := response["Code"]; hasCode {
+				// An error document can carry the request id as well; it is not
+				// an empty result of the query.
+				return fmt.Errorf("%s returned an error document instead of the %s member of its success envelope", action, container)
+			}
 			return nil
 		}
 	}

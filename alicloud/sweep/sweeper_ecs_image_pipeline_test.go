@@ -43,6 +43,7 @@ func testSweepEcsImagePipeline(region string) error {
 	deleteErrors := make([]string, 0)
 	listErrors := make([]string, 0)
 	recordErrors := make([]string, 0)
+	seenTokens := map[string]struct{}{}
 
 	for {
 		var response map[string]interface{}
@@ -89,13 +90,40 @@ func testSweepEcsImagePipeline(region string) error {
 		})
 		deleteErrors = append(deleteErrors, outcome.deleteErrors...)
 		recordErrors = append(recordErrors, outcome.recordErrors...)
-		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
-			request["NextToken"] = nextToken
-		} else {
+		nextToken, tokenErr := imagePipelineNextToken(response, seenTokens)
+		if tokenErr != nil {
+			listErrors = append(listErrors, fmt.Sprintf("%s pagination failed: %s", action, tokenErr))
 			break
 		}
+		if nextToken == "" {
+			break
+		}
+		request["NextToken"] = nextToken
 	}
 	return imagePipelineSweepError(region, deleteErrors, recordErrors, listErrors)
+}
+
+// imagePipelineNextToken returns the continuation token the next request must
+// send, or "" when the page was the last one. A token that was already followed
+// is reported: the same page would be requested again, forever. A member of the
+// wrong type is reported for the same reason.
+func imagePipelineNextToken(response map[string]interface{}, seen map[string]struct{}) (string, error) {
+	raw, ok := response["NextToken"]
+	if !ok || raw == nil {
+		return "", nil
+	}
+	token, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("NextToken is %T instead of a string", raw)
+	}
+	if token == "" {
+		return "", nil
+	}
+	if _, repeated := seen[token]; repeated {
+		return "", fmt.Errorf("the server repeated the pagination token %q", token)
+	}
+	seen[token] = struct{}{}
+	return token, nil
 }
 
 // imagePipelineRecordName returns the name the sweep logs and matches on. A
@@ -350,6 +378,31 @@ func TestUnitImagePipelineOwnedBySweeper(t *testing.T) {
 	// ownership unknown instead of guessing either way.
 	if _, err := imagePipelineOwnedBySweeper("terraform-example", "not-an-object"); err == nil {
 		t.Fatal("unreadable ownership tags must be reported instead of deciding ownership")
+	}
+}
+
+func TestUnitImagePipelineNextToken(t *testing.T) {
+	for name, response := range map[string]map[string]interface{}{
+		"missing token": {},
+		"nil token":     {"NextToken": nil},
+		"empty token":   {"NextToken": ""},
+	} {
+		token, err := imagePipelineNextToken(response, map[string]struct{}{})
+		if err != nil || token != "" {
+			t.Errorf("%s must end the sweep, got %q, %v", name, token, err)
+		}
+	}
+
+	seen := map[string]struct{}{}
+	token, err := imagePipelineNextToken(map[string]interface{}{"NextToken": "page-2"}, seen)
+	if err != nil || token != "page-2" {
+		t.Fatalf("a new token must be followed, got %q, %v", token, err)
+	}
+	if _, err := imagePipelineNextToken(map[string]interface{}{"NextToken": "page-2"}, seen); err == nil {
+		t.Fatal("a repeated token must be reported instead of requesting the same page again")
+	}
+	if _, err := imagePipelineNextToken(map[string]interface{}{"NextToken": 2}, map[string]struct{}{}); err == nil {
+		t.Fatal("a non-string token must be reported")
 	}
 }
 

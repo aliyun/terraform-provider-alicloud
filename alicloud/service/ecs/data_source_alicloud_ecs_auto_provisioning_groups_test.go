@@ -112,6 +112,16 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				),
 			},
 			{
+				// The type filter must narrow the result as the request asks:
+				// every returned group carries the requested type, and the
+				// count drops below the unfiltered count whenever the account
+				// holds a group of another type.
+				Config: autoProvisioningGroupsConfig("  types = [data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_type]\n"),
+				Check: resource.ComposeTestCheckFunc(
+					checkAutoProvisioningGroupsTypesFilter(resourceId, allResourceId),
+				),
+			},
+			{
 				// A name that cannot match must not return the groups that do.
 				Config: autoProvisioningGroupsConfig("  auto_provisioning_group_name = \"apg-does-not-exist\"\n"),
 				Check: resource.ComposeTestCheckFunc(
@@ -221,6 +231,61 @@ func autoProvisioningGroupsStateCount(state *terraform.State, resourceId, key st
 		return 0, fmt.Errorf("%s.%s is not a count: %w", resourceId, key, err)
 	}
 	return count, nil
+}
+
+// checkAutoProvisioningGroupsTypesFilter proves the type filter actually narrows
+// the result: every row carries the requested type, and the count stays below
+// the unfiltered one whenever the account holds a group of another type.
+func checkAutoProvisioningGroupsTypesFilter(resourceId, allResourceId string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		allCount, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
+		if err != nil {
+			return err
+		}
+		if allCount < 1 {
+			return fmt.Errorf("%s did not return a group to filter by type", allResourceId)
+		}
+		target, err := autoProvisioningGroupsStateAttribute(state, allResourceId, "groups.0.auto_provisioning_group_type")
+		if err != nil {
+			return err
+		}
+		if target == "" {
+			return fmt.Errorf("%s did not return a group type to filter by", allResourceId)
+		}
+		count, err := autoProvisioningGroupsStateCount(state, resourceId, "groups.#")
+		if err != nil {
+			return err
+		}
+		if count < 1 {
+			return fmt.Errorf("the type filter %q matched no group although the unfiltered read returned one", target)
+		}
+		if count > allCount {
+			return fmt.Errorf("the type filter returned %d groups while only %d exist", count, allCount)
+		}
+		otherType := false
+		for index := 0; index < allCount; index++ {
+			groupType, err := autoProvisioningGroupsStateAttribute(state, allResourceId, fmt.Sprintf("groups.%d.auto_provisioning_group_type", index))
+			if err != nil {
+				return err
+			}
+			if groupType != target {
+				otherType = true
+			}
+		}
+		if otherType && count >= allCount {
+			return fmt.Errorf("the type filter did not narrow %d groups of mixed types down", allCount)
+		}
+		for index := 0; index < count; index++ {
+			groupType, err := autoProvisioningGroupsStateAttribute(state, resourceId, fmt.Sprintf("groups.%d.auto_provisioning_group_type", index))
+			if err != nil {
+				return err
+			}
+			if groupType != target {
+				return fmt.Errorf("group %d is %q, want the filtered type %q", index, groupType, target)
+			}
+		}
+		return nil
+	}
 }
 
 // checkAutoProvisioningGroupsNameFilter proves the name filter actually narrows
