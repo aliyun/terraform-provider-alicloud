@@ -62,5 +62,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  DataSourceService,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_data_works_parameter",
+				Factory:  NewParameterResource,
+			},
+		},
 	}
 }
