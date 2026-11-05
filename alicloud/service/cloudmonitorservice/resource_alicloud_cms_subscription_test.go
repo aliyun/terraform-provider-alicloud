@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -1595,16 +1596,6 @@ func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
 			}),
 			wantError: true,
 		},
-		"emptyDescription": {
-			attributes: base(map[string]interface{}{"description": ""}),
-			wantError:  true,
-		},
-		"emptyExpression": {
-			attributes: base(map[string]interface{}{
-				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{"expression": ""})},
-			}),
-			wantError: true,
-		},
 		"omittedValues": {
 			attributes: base(map[string]interface{}{
 				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{"relation": "AND"})},
@@ -1628,6 +1619,79 @@ func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
 			}
 			if resp.Diagnostics.HasError() {
 				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+		})
+	}
+}
+
+// TestUnitCmsSubscriptionEmptyOptionalStringRejected proves every optional
+// string attribute rejects an explicit empty value and accepts both a non-empty
+// value and omission.
+func TestUnitCmsSubscriptionEmptyOptionalStringRejected(t *testing.T) {
+	r := cloudmonitorservice.NewSubscriptionResource()
+	resourceSchema, _ := subscriptionUnitSchema(t, r)
+
+	nestedBlock := func(blocks map[string]fwschema.Block, name string) fwschema.ListNestedBlock {
+		t.Helper()
+		block, ok := blocks[name].(fwschema.ListNestedBlock)
+		if !ok {
+			t.Fatalf("%s is %T, want a list nested block", name, blocks[name])
+		}
+		return block
+	}
+	filterBlock := nestedBlock(resourceSchema.Blocks, "filter_setting")
+	pushingBlock := nestedBlock(resourceSchema.Blocks, "pushing_setting")
+	agentBlock := nestedBlock(resourceSchema.Blocks, "agent_config")
+	routeBlock := nestedBlock(agentBlock.NestedObject.Blocks, "routes")
+	channelBlock := nestedBlock(routeBlock.NestedObject.Blocks, "channels")
+	windowBlock := nestedBlock(routeBlock.NestedObject.Blocks, "effect_time_range")
+
+	stringValidators := func(attributes map[string]fwschema.Attribute, name string) []validator.String {
+		t.Helper()
+		attribute, ok := attributes[name].(fwschema.StringAttribute)
+		if !ok {
+			t.Fatalf("%s is %T, want a string attribute", name, attributes[name])
+		}
+		return attribute.Validators
+	}
+	channelsPath := path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).
+		AtName("channels").AtListIndex(0)
+	windowsPath := path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).
+		AtName("effect_time_range").AtListIndex(0)
+
+	cases := map[string]struct {
+		path       path.Path
+		validators []validator.String
+	}{
+		"description":      {path.Root("description"), stringValidators(resourceSchema.Attributes, "description")},
+		"notifyStrategyId": {path.Root("notify_strategy_id"), stringValidators(resourceSchema.Attributes, "notify_strategy_id")},
+		"expression":       {path.Root("filter_setting").AtListIndex(0).AtName("expression"), stringValidators(filterBlock.NestedObject.Attributes, "expression")},
+		"templateUuid":     {path.Root("pushing_setting").AtListIndex(0).AtName("template_uuid"), stringValidators(pushingBlock.NestedObject.Attributes, "template_uuid")},
+		"responsePlanId":   {path.Root("pushing_setting").AtListIndex(0).AtName("response_plan_id"), stringValidators(pushingBlock.NestedObject.Attributes, "response_plan_id")},
+		"agentUuid":        {path.Root("agent_config").AtListIndex(0).AtName("agent_uuid"), stringValidators(agentBlock.NestedObject.Attributes, "agent_uuid")},
+		"channelType":      {channelsPath.AtName("channel_type"), stringValidators(channelBlock.NestedObject.Attributes, "channel_type")},
+		"timeZone":         {windowsPath.AtName("time_zone"), stringValidators(windowBlock.NestedObject.Attributes, "time_zone")},
+	}
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			if len(testCase.validators) == 0 {
+				t.Fatal("the attribute carries no validator")
+			}
+			rejected := func(value types.String) bool {
+				resp := &validator.StringResponse{}
+				for _, attributeValidator := range testCase.validators {
+					attributeValidator.ValidateString(context.Background(), validator.StringRequest{ConfigValue: value, Path: testCase.path}, resp)
+				}
+				return resp.Diagnostics.HasError()
+			}
+			if !rejected(types.StringValue("")) {
+				t.Fatal("an explicit empty string must be rejected")
+			}
+			if rejected(types.StringNull()) {
+				t.Fatal("an omitted value must be accepted")
+			}
+			if rejected(types.StringValue("value")) {
+				t.Fatal("a non-empty value must be accepted")
 			}
 		})
 	}
