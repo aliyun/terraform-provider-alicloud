@@ -150,7 +150,7 @@ func TestUnitListenerAclAttachmentErrorClassification(t *testing.T) {
 		"TLSPolicyConfiguring",
 	}
 	for _, code := range retryable {
-		err := &tea.SDKError{Code: tea.String(code), Data: tea.String("{}")}
+		err := &tea.SDKError{Code: tea.String(code), Message: tea.String(""), Data: tea.String("{}")}
 		if !isTransientListenerError(err) {
 			t.Fatalf("%s should be retryable", code)
 		}
@@ -165,7 +165,7 @@ func TestUnitListenerAclAttachmentErrorClassification(t *testing.T) {
 		"InvalidParameter",
 	}
 	for _, code := range terminal {
-		err := &tea.SDKError{Code: tea.String(code), Data: tea.String("{}")}
+		err := &tea.SDKError{Code: tea.String(code), Message: tea.String(""), Data: tea.String("{}")}
 		if isTransientListenerError(err) {
 			t.Fatalf("%s must not be retried", code)
 		}
