@@ -2248,7 +2248,6 @@ variable "name" {
 
 
 data "alicloud_esa_sites" "default" {
-  plan_subscribe_type = "enterpriseplan"
 }
 
 resource "alicloud_esa_waf_ruleset" "default" {
@@ -2537,6 +2536,126 @@ resource "alicloud_esa_waf_ruleset" "default" {
 }
 
 `, name)
+}
+
+// Case resource_wafrule_batch_update_preserves_other_rules
+// Regression for: updating one http_anti_scan/http_bot rule via
+// BatchUpdateWafRules must not delete the other rules in the same ruleset.
+// BatchUpdateWafRules replaces the whole rule list with the Configs array;
+// previously only the updated rule was sent, wiping out the rest.
+func TestAccAliCloudESAWafRule_batchUpdatePreservesOtherRules(t *testing.T) {
+	var v map[string]interface{}
+	resourceIdA := "alicloud_esa_waf_rule.rule_a"
+	resourceIdB := "alicloud_esa_waf_rule.rule_b"
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceIdA, &v, func() interface{} {
+		return esa.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEsaWafRule")
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sESAWafRuleBatch%d", acctest.DefaultRegionToTest, rand)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rc.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// Create two rules of different types in the same http_anti_scan ruleset.
+				Config: testAccEsaWafRuleBatchUpdateConfig(name, "on"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.status", "on"),
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.type", "http_scan_tools"),
+					resource.TestCheckResourceAttr(resourceIdB, "config.0.type", "http_high_frequency"),
+				),
+			},
+			{
+				// Update rule_a only (status on -> off). rule_b must survive the
+				// batch update that previously wiped the whole ruleset.
+				Config: testAccEsaWafRuleBatchUpdateConfig(name, "off"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.status", "off"),
+					resource.TestCheckResourceAttr(resourceIdA, "config.0.type", "http_scan_tools"),
+					resource.TestCheckResourceAttr(resourceIdB, "config.0.type", "http_high_frequency"),
+				),
+			},
+		},
+	})
+}
+
+func testAccEsaWafRuleBatchUpdateConfig(name, statusA string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_esa_sites" "default" {
+}
+
+resource "alicloud_esa_waf_ruleset" "default" {
+  site_id      = data.alicloud_esa_sites.default.sites.0.site_id
+  phase        = "http_anti_scan"
+  site_version = "0"
+}
+
+resource "alicloud_esa_waf_rule" "rule_a" {
+  site_id    = data.alicloud_esa_sites.default.sites.0.site_id
+  ruleset_id = alicloud_esa_waf_ruleset.default.ruleset_id
+  phase      = "http_anti_scan"
+  config {
+    status       = "%s"
+    type         = "http_scan_tools"
+    managed_list = "intelligence_scan_tools"
+  }
+  shared {
+    action     = "deny"
+    expression = "(ip.src eq 1.1.1.1)"
+    name       = "tttt"
+    actions {
+      response {
+        id   = "0"
+        code = "403"
+      }
+    }
+  }
+}
+
+resource "alicloud_esa_waf_rule" "rule_b" {
+  site_id    = data.alicloud_esa_sites.default.sites.0.site_id
+  ruleset_id = alicloud_esa_waf_ruleset.default.ruleset_id
+  phase      = "http_anti_scan"
+  config {
+    status = "on"
+    type   = "http_high_frequency"
+    rate_limit {
+      characteristics {
+        criteria {
+          match_type = "ip.src"
+        }
+        logic = "and"
+      }
+      ttl = "1800"
+      threshold {
+        managed_rules_blocked  = "20"
+        distinct_managed_rules = "2"
+      }
+      interval = "10"
+    }
+  }
+  shared {
+    action     = "deny"
+    expression = "(ip.src eq 1.1.1.1)"
+    name       = "tttt"
+    actions {
+      response {
+        id   = "0"
+        code = "403"
+      }
+    }
+  }
+}
+`, name, statusA)
 }
 
 // Case resource_wafrule_http_sigchl_test
