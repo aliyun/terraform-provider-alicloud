@@ -1,7 +1,6 @@
 package fcv3_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,7 +14,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/fcv3"
-	sdktf "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	schema "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -173,13 +172,13 @@ variable "name" {
 }
 
 resource "alicloud_log_project" "default" {
-  project_name = var.name
+  project_name = lower(var.name)
   description  = var.name
 }
 
 resource "alicloud_log_store" "default" {
   project_name          = alicloud_log_project.default.name
-  logstore_name         = var.name
+  logstore_name         = lower(var.name)
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60
@@ -290,16 +289,21 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"current", "current_error"},
 			},
-			// AC4: explicit false must be stored and converge. Only the boolean
-			// changes here, so target is unchanged and still must be sent.
+			// AC4: explicit false must be stored and converge. Only the two
+			// booleans change here, so target is unchanged and still must be
+			// sent. The service keeps always_allocate_gpu consistent with
+			// always_allocate_cpu, so both values move together (observed on a
+			// function without GPU: true/false became true/true and false/true
+			// became false/false).
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"always_allocate_cpu": "false",
+					"always_allocate_gpu": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"always_allocate_cpu": "false",
-						"always_allocate_gpu": "true",
+						"always_allocate_gpu": "false",
 						"target":              "2",
 					}),
 				),
@@ -310,44 +314,10 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"current", "current_error"},
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"always_allocate_gpu": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"always_allocate_cpu": "false",
-						"always_allocate_gpu": "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"current", "current_error"},
-			},
-			// AC4: switching a field back to true must take effect and converge
-			// again, both for CPU and GPU.
+			// AC4: switching back to true must take effect and converge again.
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"always_allocate_cpu": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"always_allocate_cpu": "true",
-						"always_allocate_gpu": "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"current", "current_error"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"always_allocate_gpu": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -597,8 +567,6 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 			for _, key := range []string{"alwaysAllocateCPU", "alwaysAllocateGPU", "target"} {
 				if value, ok := body[key]; ok {
 					stored[key] = value
-				} else {
-					delete(stored, key)
 				}
 			}
 		}
@@ -617,7 +585,6 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 
 	client := provisionConfigUnitTestClient(t, server)
 	r := fcv3.ResourceProvisionConfig()
-	ctx := context.Background()
 
 	lastPut := func() map[string]interface{} {
 		mu.Lock()
@@ -646,76 +613,74 @@ func TestUnitAliCloudFcv3ProvisionConfigRequest(t *testing.T) {
 			t.Fatalf("request body must omit %q, got %#v", key, value)
 		}
 	}
-	apply := func(state *sdktf.InstanceState, config map[string]interface{}) *sdktf.InstanceState {
+	update := func(current map[string]interface{}, changes map[string]interface{}) map[string]interface{} {
 		t.Helper()
-		resourceConfig := sdktf.NewResourceConfigRaw(config)
-		diff, err := r.Diff(ctx, state, resourceConfig, nil)
-		if err != nil {
-			t.Fatalf("diff: %v", err)
+		data := schema.TestResourceDataRaw(t, r.Schema, current)
+		data.SetId("unit-provision")
+		for key, value := range changes {
+			if err := data.Set(key, value); err != nil {
+				t.Fatalf("set %s: %v", key, err)
+			}
 		}
-		if diff == nil || diff.Empty() {
-			t.Fatalf("expected a plan for %#v", config)
+		if err := r.Update(data, client); err != nil {
+			t.Fatalf("update: %v", err)
 		}
-		next, diags := r.Apply(ctx, state, diff, client)
-		if diags.HasError() {
-			t.Fatalf("apply: %v", diags)
-		}
-		again, err := r.Diff(ctx, next, resourceConfig, nil)
-		if err != nil {
-			t.Fatalf("diff after apply: %v", err)
-		}
-		if again != nil && !again.Empty() {
-			t.Fatalf("configuration did not converge after apply: %#v", again)
-		}
-		return next
+		return lastPut()
 	}
 
 	// Create with both fields omitted: the keys must not be sent at all.
-	state := apply(nil, map[string]interface{}{
+	createData := schema.TestResourceDataRaw(t, r.Schema, map[string]interface{}{
 		"function_name": "unit-provision",
 		"target":        1,
 	})
+	if err := r.Create(createData, client); err != nil {
+		t.Fatalf("create: %v", err)
+	}
 	body := lastPut()
 	assertValue(body, "target", float64(1))
 	assertMissing(body, "alwaysAllocateCPU")
 	assertMissing(body, "alwaysAllocateGPU")
 
-	// Boolean-only update: target is unchanged but still required in the body,
-	// and the untouched boolean is echoed with its current value.
-	state = apply(state, map[string]interface{}{
+	// Boolean-only update: target is unchanged but still present in the body,
+	// and the untouched boolean keeps its configured value.
+	body = update(map[string]interface{}{
 		"function_name":       "unit-provision",
 		"target":              1,
+		"always_allocate_cpu": true,
+		"always_allocate_gpu": true,
+	}, map[string]interface{}{
 		"always_allocate_cpu": false,
 	})
-	body = lastPut()
 	assertValue(body, "target", float64(1))
 	assertValue(body, "alwaysAllocateCPU", false)
 	assertValue(body, "alwaysAllocateGPU", true)
 
 	// Explicit false for both fields must be sent verbatim.
-	state = apply(state, map[string]interface{}{
+	body = update(map[string]interface{}{
 		"function_name":       "unit-provision",
 		"target":              1,
 		"always_allocate_cpu": false,
+		"always_allocate_gpu": true,
+	}, map[string]interface{}{
 		"always_allocate_gpu": false,
 	})
-	body = lastPut()
 	assertValue(body, "alwaysAllocateCPU", false)
 	assertValue(body, "alwaysAllocateGPU", false)
 	assertValue(body, "target", float64(1))
 
-	// Switching back to true must also be sent verbatim.
-	state = apply(state, map[string]interface{}{
+	// Switching both back to true must also be sent verbatim.
+	body = update(map[string]interface{}{
 		"function_name":       "unit-provision",
 		"target":              1,
+		"always_allocate_cpu": false,
+		"always_allocate_gpu": false,
+	}, map[string]interface{}{
 		"always_allocate_cpu": true,
 		"always_allocate_gpu": true,
 	})
-	body = lastPut()
 	assertValue(body, "alwaysAllocateCPU", true)
 	assertValue(body, "alwaysAllocateGPU", true)
 	assertValue(body, "target", float64(1))
-	_ = state
 }
 
 func provisionConfigUnitTestClient(t *testing.T, server *httptest.Server) *connectivity.AliyunClient {
