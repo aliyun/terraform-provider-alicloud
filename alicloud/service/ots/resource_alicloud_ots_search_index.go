@@ -20,7 +20,7 @@ import (
 // arbitrarily deep Nested fields cannot be represented recursively.
 const maxSearchIndexFieldNestingDepth = 1
 
-func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
+func otsSearchIndexFieldSchema(remainingNestingDepth int, isSubField bool) *schema.Resource {
 	fieldTypes := []string{
 		string(OtsSearchTypeLong),
 		string(OtsSearchTypeDouble),
@@ -29,9 +29,13 @@ func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
 		string(OtsSearchTypeText),
 		string(OtsSearchTypeDate),
 		string(OtsSearchTypeGeoPoint),
-		string(OtsSearchTypeVector),
-		string(OtsSearchTypeFuzzyKeyword),
 	}
+	// The service rejects Vector fields inside Nested/JSON fields, so the
+	// attribute is only exposed on top-level fields.
+	if !isSubField {
+		fieldTypes = append(fieldTypes, string(OtsSearchTypeVector))
+	}
+	fieldTypes = append(fieldTypes, string(OtsSearchTypeFuzzyKeyword))
 	if remainingNestingDepth > 0 {
 		fieldTypes = append(fieldTypes, string(OtsSearchTypeNested))
 	}
@@ -100,39 +104,42 @@ func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"vector_options": {
-				Type:     schema.TypeList,
-				Optional: true,
-				ForceNew: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"data_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(OtsSearchVectorDataTypeFloat32)}, false),
-						},
-						"dimension": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ForceNew:     true,
-							ValidateFunc: validation.IntBetween(1, 4096),
-						},
-						"metric_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(OtsSearchVectorMetricEuclidean),
-								string(OtsSearchVectorMetricCosine),
-								string(OtsSearchVectorMetricDotProduct)}, false),
-						},
+		},
+	}
+
+	if !isSubField {
+		fieldSchema.Schema["vector_options"] = &schema.Schema{
+			Type:     schema.TypeList,
+			Optional: true,
+			ForceNew: true,
+			MaxItems: 1,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"data_type": {
+						Type:     schema.TypeString,
+						Optional: true,
+						ForceNew: true,
+						ValidateFunc: validation.StringInSlice([]string{
+							string(OtsSearchVectorDataTypeFloat32)}, false),
+					},
+					"dimension": {
+						Type:         schema.TypeInt,
+						Optional:     true,
+						ForceNew:     true,
+						ValidateFunc: validation.IntBetween(1, 4096),
+					},
+					"metric_type": {
+						Type:     schema.TypeString,
+						Optional: true,
+						ForceNew: true,
+						ValidateFunc: validation.StringInSlice([]string{
+							string(OtsSearchVectorMetricEuclidean),
+							string(OtsSearchVectorMetricCosine),
+							string(OtsSearchVectorMetricDotProduct)}, false),
 					},
 				},
 			},
-		},
+		}
 	}
 
 	if remainingNestingDepth > 0 {
@@ -140,7 +147,7 @@ func otsSearchIndexFieldSchema(remainingNestingDepth int) *schema.Resource {
 			Type:     schema.TypeSet,
 			Optional: true,
 			ForceNew: true,
-			Elem:     otsSearchIndexFieldSchema(remainingNestingDepth - 1),
+			Elem:     otsSearchIndexFieldSchema(remainingNestingDepth-1, true),
 		}
 	}
 
@@ -196,7 +203,7 @@ func ResourceOtsSearchIndex() *schema.Resource {
 							Type:     schema.TypeList,
 							Required: true,
 							ForceNew: true,
-							Elem:     otsSearchIndexFieldSchema(maxSearchIndexFieldNestingDepth),
+							Elem:     otsSearchIndexFieldSchema(maxSearchIndexFieldNestingDepth, false),
 						},
 
 						"index_setting": {

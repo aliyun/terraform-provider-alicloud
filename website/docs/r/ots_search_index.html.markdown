@@ -262,7 +262,7 @@ The vector_options supports the following:
 
 The sub_field_schemas supports the following:
 * `field_name` - (Required, ForceNew, String) Specifies the name of the sub-field. Available since v2.3.0.
-* `field_type` - (Required, ForceNew, String) Specifies the type of the sub-field. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `FuzzyKeyword`, `Date`, `GeoPoint`, `Vector`. Available since v2.3.0.
+* `field_type` - (Required, ForceNew, String) Specifies the type of the sub-field. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `FuzzyKeyword`, `Date`, `GeoPoint`. `Vector` is not supported for `Nested` sub-fields. Available since v2.3.0.
 * `is_array` - (Optional, ForceNew, Bool) Specifies whether the value is an array. Available since v2.3.0.
 * `index` - (Optional, ForceNew, Bool) Specifies whether to enable indexing for the sub-field. Available since v2.3.0.
 * `analyzer` - (Optional, ForceNew, String) Specifies the type of the analyzer that you want to use. Available since v2.3.0.
@@ -271,14 +271,6 @@ The sub_field_schemas supports the following:
 * `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the sub-field. This parameter is required for `Date` sub-fields. Available since v2.3.0.
 * `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the sub-field is a virtual column. Defaults to `false`. When you set this parameter to `true`, `source_field_name` is required for the sub-field and the source column must already exist in the data table, following the [virtual column type mapping](https://help.aliyun.com/zh/tablestore/table-store-service/virtual-columns). Available since v2.3.0.
 * `source_field_name` - (Optional, ForceNew, String) Specifies the source column to which the virtual sub-field maps. This parameter is required for virtual sub-fields, and only one source field is supported. The source column must already exist in the data table, and its type must map to the sub-field type according to the virtual column rules. This parameter can be set only when the sub-field's `is_virtual_field` is `true`. Available since v2.3.0.
-* `vector_options` - (Optional, ForceNew, List) Specifies the vector configuration. This parameter is required for `Vector` sub-fields. See [`vector_options`](#schema-field_schema-sub_field_schemas-vector_options) below. Available since v2.3.0.
-
-### `schema-field_schema-sub_field_schemas-vector_options`
-
-The vector_options supports the following:
-* `data_type` - (Optional, ForceNew, String) Specifies the vector data type. This parameter is required when `vector_options` is configured. Valid values: `float32`. Available since v2.3.0.
-* `dimension` - (Optional, ForceNew, Int) Specifies the vector dimension. This parameter is required when `vector_options` is configured. Valid values: 1-4096. Available since v2.3.0.
-* `metric_type` - (Optional, ForceNew, String) Specifies the distance metric that is used between vectors. This parameter is required when `vector_options` is configured. Valid values: `euclidean`, `cosine`, `dot_product`. Available since v2.3.0.
 
 ### `schema-index_setting`
 

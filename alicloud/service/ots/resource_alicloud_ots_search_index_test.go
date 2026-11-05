@@ -320,7 +320,7 @@ func TestAccAliCloudOtsSearchIndex_complete(t *testing.T) {
 						"field_schema.2.vector_options.0.metric_type": "cosine",
 						"field_schema.3.field_type":                   "FuzzyKeyword",
 						"field_schema.4.field_type":                   "Nested",
-						"field_schema.4.sub_field_schemas.#":          "7",
+						"field_schema.4.sub_field_schemas.#":          "6",
 						"field_schema.5.date_format_list.#":           "2",
 						"field_schema.6.is_virtual_field":             "true",
 						"field_schema.6.source_field_name":            "pk2",
@@ -511,11 +511,11 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_name = "col1"
       field_type = "Nested"
       sub_field_schemas {
-        field_name = "nested_date"
-        field_type = "Date"
+        field_name = "nested_vector"
+        field_type = "Vector"
       }
     }`),
-				ExpectError: regexp.MustCompile(`field "nested_date" of type Date requires date_format_list`),
+				ExpectError: regexp.MustCompile("field_type to be one of"),
 			},
 			{
 				Config: resourceOtsSearchIndexInvalidConfig(`
@@ -523,11 +523,11 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
       field_name = "col1"
       field_type = "Nested"
       sub_field_schemas {
-        field_name = "nested_vector"
-        field_type = "Vector"
+        field_name = "nested_date"
+        field_type = "Date"
       }
     }`),
-				ExpectError: regexp.MustCompile(`field "nested_vector" of type Vector requires vector_options`),
+				ExpectError: regexp.MustCompile(`field "nested_date" of type Date requires date_format_list`),
 			},
 			{
 				Config: resourceOtsSearchIndexInvalidConfig(`
@@ -702,15 +702,6 @@ resource "alicloud_ots_search_index" "default" {
         date_format_list = ["yyyy-MM-dd HH:mm:ss", "epoch_millis"]
       }
       sub_field_schemas {
-        field_name = "nested_vector"
-        field_type = "Vector"
-        vector_options {
-          data_type   = "float32"
-          dimension   = 4
-          metric_type = "cosine"
-        }
-      }
-      sub_field_schemas {
         field_name        = "nested_virtual"
         field_type        = "Keyword"
         is_virtual_field  = true
@@ -793,7 +784,6 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 			"nested_keyword_array":   tablestore.FieldType_KEYWORD,
 			"nested_keyword_noindex": tablestore.FieldType_KEYWORD,
 			"nested_date":            tablestore.FieldType_DATE,
-			"nested_vector":          tablestore.FieldType_VECTOR,
 			"nested_virtual":         tablestore.FieldType_KEYWORD,
 			"date_col":               tablestore.FieldType_DATE,
 			"virtual_keyword":        tablestore.FieldType_KEYWORD,
@@ -879,20 +869,6 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 			if _, ok := expectedNestedDateFormats[dateFormat]; !ok {
 				return fmt.Errorf("nested_date has unexpected date format %s", dateFormat)
 			}
-		}
-
-		nestedVector := fields["nested_vector"]
-		if nestedVector.VectorOptions == nil {
-			return fmt.Errorf("nested_vector has no vector options in DescribeSearchIndex response")
-		}
-		if nestedVector.VectorOptions.Dimension == nil || *nestedVector.VectorOptions.Dimension != 4 {
-			return fmt.Errorf("nested_vector dimension is not 4")
-		}
-		if nestedVector.VectorOptions.VectorDataType == nil || *nestedVector.VectorOptions.VectorDataType != tablestore.VectorDataType_FLOAT_32 {
-			return fmt.Errorf("nested_vector data type is not float32")
-		}
-		if nestedVector.VectorOptions.VectorMetricType == nil || *nestedVector.VectorOptions.VectorMetricType != tablestore.VectorMetricType_COSINE {
-			return fmt.Errorf("nested_vector metric type is not cosine")
 		}
 
 		nestedVirtual := fields["nested_virtual"]
