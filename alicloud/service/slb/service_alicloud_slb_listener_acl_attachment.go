@@ -12,12 +12,15 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
-const (
-	listenerAclAttachmentOperationTimeout = 300 * time.Second
-	listenerAclAttachmentPollInterval     = 3 * time.Second
+const listenerAclAttachmentOperationTimeout = 300 * time.Second
+
+// The confirm window and poll interval are variables so unit tests can shorten
+// them without changing production behaviour.
+var (
+	listenerAclAttachmentConfirmTimeout = 30 * time.Second
+	listenerAclAttachmentPollInterval   = 3 * time.Second
 )
 
 // errListenerAclAttachmentListeningNotVisible marks a Describe response that does
@@ -36,29 +39,17 @@ var errListenerAclAttachmentWriteUnknown = errors.New("listener ACL write outcom
 var listenerTransientErrors = append(append([]string{}, errs.SlbIsBusy...), "TLSPolicyConfiguring")
 
 // listenerAclAttachmentRpcPost is the single transport entry for the two SLB
-// actions used by this resource. The SDK level retry is disabled and the HTTP
-// read timeout is bound to the remaining lifecycle budget, so a request cannot
-// outlive the operation that issued it.
-var listenerAclAttachmentRpcPost = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
-	return client.RpcPostWithTimeout("Slb", string(connectivity.ApiVersion20140515), action, nil, request, false, budget)
+// actions used by this resource. The actual HTTP request carries the lifecycle
+// context and the SDK level retry is disabled, so a cancelled operation aborts
+// the round trip instead of leaving it running in the background.
+var listenerAclAttachmentRpcPost = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}) (map[string]interface{}, error) {
+	return client.RpcPostWithContext(ctx, "Slb", string(connectivity.ApiVersion20140515), action, nil, request, false)
 }
 
-// listenerAclAttachmentBudget returns the time left in the lifecycle context so
-// each request is bounded by the same operation deadline as the retries.
-func listenerAclAttachmentBudget(ctx context.Context) time.Duration {
-	if deadline, ok := ctx.Deadline(); ok {
-		if remaining := time.Until(deadline); remaining > 0 {
-			return remaining
-		}
-		return time.Millisecond
-	}
-	return listenerAclAttachmentOperationTimeout
-}
-
-// ListenerAclAttachmentApi is the SLB surface of the attachment lifecycle. The
+// listenerAclAttachmentApi is the SLB surface of the attachment lifecycle. The
 // concrete implementation below wraps the provider client; keeping the surface
 // explicit lets the lifecycle be exercised without a live endpoint.
-type ListenerAclAttachmentApi interface {
+type listenerAclAttachmentApi interface {
 	Describe(ctx context.Context, listenerId string) (map[string]interface{}, error)
 	SetAcl(ctx context.Context, listenerId, aclId, aclType string, enable bool) error
 }
@@ -67,7 +58,7 @@ type listenerAclAttachmentClient struct {
 	client *connectivity.AliyunClient
 }
 
-func NewListenerAclAttachmentApi(client *connectivity.AliyunClient) ListenerAclAttachmentApi {
+func newListenerAclAttachmentApi(client *connectivity.AliyunClient) listenerAclAttachmentApi {
 	return listenerAclAttachmentClient{client: client}
 }
 
@@ -87,7 +78,7 @@ func updateListenerAcl(ctx context.Context, client *connectivity.AliyunClient, l
 	if err != nil {
 		return errs.WrapError(err)
 	}
-	action, err := ListenerAttributeAction(parts[1])
+	action, err := listenerAttributeAction(parts[1])
 	if err != nil {
 		return errs.WrapErrorf(err, "invalid listener ID %s", listenerId)
 	}
@@ -113,7 +104,7 @@ func updateListenerAcl(ctx context.Context, client *connectivity.AliyunClient, l
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		return listenerAclAttachmentRpcPost(client, action, request, listenerAclAttachmentBudget(ctx))
+		return listenerAclAttachmentRpcPost(ctx, client, action, request)
 	}, listenerAclAttachmentOperationTimeout, isTransientListenerError)
 	logs.AddDebug(action, response, request)
 	if err != nil {
@@ -134,7 +125,7 @@ func describeListenerWithContext(ctx context.Context, client *connectivity.Aliyu
 	if err != nil {
 		return nil, errs.WrapError(err)
 	}
-	action, err := ListenerAttributeDescribeAction(parts[1])
+	action, err := listenerAttributeDescribeAction(parts[1])
 	if err != nil {
 		return nil, errs.WrapErrorf(err, "invalid listener ID %s", listenerId)
 	}
@@ -153,7 +144,7 @@ func describeListenerWithContext(ctx context.Context, client *connectivity.Aliyu
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		response, err := listenerAclAttachmentRpcPost(client, action, request, listenerAclAttachmentBudget(ctx))
+		response, err := listenerAclAttachmentRpcPost(ctx, client, action, request)
 		if err != nil {
 			if errs.IsExpectedErrors(err, []string{"The specified resource does not exist"}) {
 				return nil, errs.WrapErrorf(err, errs.NotFoundMsg, errs.AlibabaCloudSdkGoERROR)
@@ -228,41 +219,38 @@ func listenerAclAttachmentConfirms(object map[string]interface{}, aclId, aclType
 	if !listenerAclContains(object, aclId) {
 		return false
 	}
-	if value, ok := object["AclType"].(string); ok && value != "" {
-		return strings.EqualFold(value, aclType)
+	// While access control is on the Describe contract reports AclType. A
+	// missing, empty or non-string value cannot prove that the requested type
+	// took effect, so the write stays unconfirmed.
+	value, ok := object["AclType"].(string)
+	if !ok || strings.TrimSpace(value) == "" {
+		return false
 	}
-	return true
+	return strings.EqualFold(value, aclType)
 }
 
 // waitListenerAclAttachmentConverged reads the listener until it reports the
 // planned binding, so a stale response cannot store the previous type against a
-// new plan. It returns converged=false when the budget ends first.
-func waitListenerAclAttachmentConverged(ctx context.Context, api ListenerAclAttachmentApi, listenerId, aclId, aclType string) (map[string]interface{}, bool, error) {
+// new plan. It polls on the caller goroutine and returns converged=false when
+// the operation budget ends first.
+func waitListenerAclAttachmentConverged(ctx context.Context, api listenerAclAttachmentApi, listenerId, aclId, aclType string) (map[string]interface{}, bool, error) {
 	var last map[string]interface{}
-	err := retry.RetryContext(ctx, listenerAclAttachmentOperationTimeout, func() *retry.RetryError {
+	for {
 		if err := ctx.Err(); err != nil {
-			return retry.NonRetryableError(err)
+			return last, false, nil
 		}
 		object, err := api.Describe(ctx, listenerId)
 		if err != nil {
-			return retry.NonRetryableError(err)
+			return last, false, err
 		}
 		last = object
 		if listenerAclAttachmentConfirms(object, aclId, aclType) {
-			return nil
+			return last, true, nil
 		}
 		if err := waitListenerAclWithContext(ctx, listenerAclAttachmentPollInterval); err != nil {
-			return retry.NonRetryableError(err)
-		}
-		return retry.RetryableError(fmt.Errorf("%s: listener %s has not reported the planned access control settings yet", listenerAclAttachmentTypeName, listenerId))
-	})
-	if err != nil {
-		if ctx.Err() != nil {
 			return last, false, nil
 		}
-		return last, false, err
 	}
-	return last, true, nil
 }
 
 func waitListenerAclWithContext(ctx context.Context, duration time.Duration) error {
@@ -276,9 +264,9 @@ func waitListenerAclWithContext(ctx context.Context, duration time.Duration) err
 	}
 }
 
-// ListenerAclIds returns every access control policy group reported by
+// listenerAclIds returns every access control policy group reported by
 // DescribeLoadBalancer*ListenerAttribute.
-func ListenerAclIds(object map[string]interface{}) []string {
+func listenerAclIds(object map[string]interface{}) []string {
 	var ids []string
 	seen := map[string]struct{}{}
 	appendID := func(id string) {
@@ -312,7 +300,7 @@ func ListenerAclIds(object map[string]interface{}) []string {
 // listenerAclContains reports whether the configured policy group is part of
 // the listener ACLs described by DescribeLoadBalancer*ListenerAttribute.
 func listenerAclContains(object map[string]interface{}, aclId string) bool {
-	for _, id := range ListenerAclIds(object) {
+	for _, id := range listenerAclIds(object) {
 		if id == aclId {
 			return true
 		}
@@ -320,11 +308,11 @@ func listenerAclContains(object map[string]interface{}, aclId string) bool {
 	return false
 }
 
-// ParseListenerAclAttachmentId parses the resource and import ID. Both the three
+// parseListenerAclAttachmentId parses the resource and import ID. Both the three
 // segment listener form and the four segment form that selects the managed
 // policy group are accepted; the listener part always goes through the same
 // protocol and port validation as the configured listener_id.
-func ParseListenerAclAttachmentId(id string) (listenerId, aclId string, err error) {
+func parseListenerAclAttachmentId(id string) (listenerId, aclId string, err error) {
 	parts := strings.Split(id, ":")
 	if len(parts) != 3 && len(parts) != 4 {
 		return "", "", fmt.Errorf("invalid %s ID %s, expected <load_balancer_id>:<protocol>:<listener_port>[:<acl_id>]", listenerAclAttachmentTypeName, id)
@@ -390,19 +378,19 @@ func isSupportedListenerProtocol(protocol string) bool {
 	return false
 }
 
-// ListenerAttributeAction maps the protocol part of a listener ID to the
+// listenerAttributeAction maps the protocol part of a listener ID to the
 // protocol specific SetLoadBalancer*ListenerAttribute action.
-func ListenerAttributeAction(protocol string) (string, error) {
+func listenerAttributeAction(protocol string) (string, error) {
 	if !isSupportedListenerProtocol(protocol) {
 		return "", fmt.Errorf("unsupported listener protocol %q", protocol)
 	}
 	return fmt.Sprintf("SetLoadBalancer%sListenerAttribute", strings.ToUpper(protocol)), nil
 }
 
-// ListenerAttributeDescribeAction maps the protocol part of a listener ID to
+// listenerAttributeDescribeAction maps the protocol part of a listener ID to
 // the protocol specific DescribeLoadBalancer*ListenerAttribute action. It is
 // kept separate from the write action so both directions are covered.
-func ListenerAttributeDescribeAction(protocol string) (string, error) {
+func listenerAttributeDescribeAction(protocol string) (string, error) {
 	if !isSupportedListenerProtocol(protocol) {
 		return "", fmt.Errorf("unsupported listener protocol %q", protocol)
 	}

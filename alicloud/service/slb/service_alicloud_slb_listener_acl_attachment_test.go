@@ -13,18 +13,18 @@ import (
 )
 
 // These unit tests cover the transport layer of the listener ACL attachment:
-// request construction, the retry classification and the behavior when the
-// endpoint returns a not-found response. The resource lifecycle and schema
-// scenarios live in resource_alicloud_slb_listener_acl_attachment_test.go.
+// request construction, the retry classification, same-port protocol dispatch
+// and the not-found behaviour. The resource lifecycle is exercised through the
+// public resource factory in resource_alicloud_slb_listener_acl_attachment_test.go.
 
 // requestCapture replaces the transport entry for the duration of one test.
-func requestCapture(t *testing.T, handler func(action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error)) *int {
+func requestCapture(t *testing.T, handler func(ctx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error)) *int {
 	t.Helper()
 	original := listenerAclAttachmentRpcPost
 	calls := 0
-	listenerAclAttachmentRpcPost = func(client *connectivity.AliyunClient, action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
+	listenerAclAttachmentRpcPost = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}) (map[string]interface{}, error) {
 		calls++
-		return handler(action, request, budget)
+		return handler(ctx, action, request)
 	}
 	t.Cleanup(func() { listenerAclAttachmentRpcPost = original })
 	return &calls
@@ -32,23 +32,30 @@ func requestCapture(t *testing.T, handler func(action string, request map[string
 
 func TestUnitListenerAclAttachmentWriteRetry(t *testing.T) {
 	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 
 	t.Run("busy then success retries and converges", func(t *testing.T) {
 		var requests []map[string]interface{}
-		var budgets []time.Duration
-		calls := requestCapture(t, func(action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
+		sawDeadline := false
+		calls := requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+			if _, ok := callCtx.Deadline(); ok {
+				sawDeadline = true
+			}
 			requests = append(requests, request)
-			budgets = append(budgets, budget)
 			if len(requests) == 1 {
 				return nil, &tea.SDKError{Code: tea.String("OperationBusy"), Message: tea.String("code: 400, OperationBusy"), Data: tea.String("{}")}
 			}
 			return map[string]interface{}{}, nil
 		})
-		if err := updateListenerAcl(context.Background(), client, "lb-123:http:80", "acl-1", "white", true); err != nil {
+		if err := updateListenerAcl(ctx, client, "lb-123:http:80", "acl-1", "white", true); err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 		if *calls != 2 {
 			t.Fatalf("expected two attempts (busy then success), got %d", *calls)
+		}
+		if !sawDeadline {
+			t.Fatal("the transport must receive the lifecycle context with its deadline")
 		}
 		request := requests[0]
 		if request["LoadBalancerId"] != "lb-123" || fmt.Sprint(request["ListenerPort"]) != "80" {
@@ -57,18 +64,13 @@ func TestUnitListenerAclAttachmentWriteRetry(t *testing.T) {
 		if request["AclId"] != "acl-1" || request["AclType"] != "white" || request["AclStatus"] != "on" {
 			t.Fatalf("request ACL parameters are wrong: %v", request)
 		}
-		for _, budget := range budgets {
-			if budget <= 0 {
-				t.Fatalf("each request must be bound to a positive remaining budget, got %s", budget)
-			}
-		}
 	})
 
 	t.Run("terminal error makes exactly one request", func(t *testing.T) {
-		calls := requestCapture(t, func(action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
+		calls := requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{Code: tea.String("IpVersionConflict"), Message: tea.String("ip version conflict"), Data: tea.String("{}")}
 		})
-		if err := updateListenerAcl(context.Background(), client, "lb-123:http:80", "acl-1", "white", true); err == nil {
+		if err := updateListenerAcl(ctx, client, "lb-123:http:80", "acl-1", "white", true); err == nil {
 			t.Fatal("expected the terminal error to be returned")
 		}
 		if *calls != 1 {
@@ -76,38 +78,82 @@ func TestUnitListenerAclAttachmentWriteRetry(t *testing.T) {
 		}
 	})
 
+	t.Run("quota error goes through the retry path once", func(t *testing.T) {
+		calls := requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+			return nil, &tea.SDKError{Code: tea.String("QuotaLimitExceeds.AclListenerOverLimit"), Message: tea.String("quota exceeded"), Data: tea.String("{}")}
+		})
+		if err := updateListenerAcl(ctx, client, "lb-123:http:80", "acl-1", "white", true); err == nil {
+			t.Fatal("expected the quota error to be returned")
+		}
+		if *calls != 1 {
+			t.Fatalf("quota error must make exactly one request, got %d", *calls)
+		}
+	})
+
 	t.Run("cancelled context sends no request", func(t *testing.T) {
-		calls := requestCapture(t, func(action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
+		calls := requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
 			return map[string]interface{}{}, nil
 		})
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-		if err := updateListenerAcl(ctx, client, "lb-123:http:80", "acl-1", "white", true); err == nil {
+		cancelled, cancelCancelled := context.WithCancel(context.Background())
+		cancelCancelled()
+		if err := updateListenerAcl(cancelled, client, "lb-123:http:80", "acl-1", "white", true); err == nil {
 			t.Fatal("expected the cancelled context to fail the write")
 		}
 		if *calls != 0 {
 			t.Fatalf("cancelled context must not send a request, got %d calls", *calls)
 		}
 	})
+}
 
-	t.Run("describe uses the protocol specific read action", func(t *testing.T) {
-		var actions []string
-		var request map[string]interface{}
-		requestCapture(t, func(action string, req map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
-			actions = append(actions, action)
-			request = req
-			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
-		})
-		if _, err := describeListenerWithContext(context.Background(), client, "lb-123:udp:7000"); err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
-		if len(actions) != 1 || actions[0] != "DescribeLoadBalancerUDPListenerAttribute" {
-			t.Fatalf("unexpected describe action: %v", actions)
-		}
-		if request["LoadBalancerId"] != "lb-123" || fmt.Sprint(request["ListenerPort"]) != "7000" {
-			t.Fatalf("describe request identity is wrong: %v", request)
-		}
+// sameListenerTransport records the actions and requests issued for the same
+// load balancer and port through two different protocols.
+type sameListenerTransport struct {
+	actions  []string
+	requests []map[string]interface{}
+}
+
+func (s *sameListenerTransport) install(t *testing.T) {
+	t.Helper()
+	requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+		s.actions = append(s.actions, action)
+		s.requests = append(s.requests, request)
+		return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
 	})
+}
+
+func TestUnitListenerAclAttachmentSamePortProtocolDispatch(t *testing.T) {
+	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
+	transport := &sameListenerTransport{}
+	transport.install(t)
+
+	for _, protocol := range []string{"http", "https"} {
+		if err := updateListenerAcl(context.Background(), client, "lb-shared:"+protocol+":80", "acl-1", "white", true); err != nil {
+			t.Fatalf("set %s listener: %s", protocol, err)
+		}
+		if _, err := describeListenerWithContext(context.Background(), client, "lb-shared:"+protocol+":80"); err != nil {
+			t.Fatalf("describe %s listener: %s", protocol, err)
+		}
+	}
+
+	want := []string{
+		"SetLoadBalancerHTTPListenerAttribute",
+		"DescribeLoadBalancerHTTPListenerAttribute",
+		"SetLoadBalancerHTTPSListenerAttribute",
+		"DescribeLoadBalancerHTTPSListenerAttribute",
+	}
+	if len(transport.actions) != len(want) {
+		t.Fatalf("expected %d requests, got %v", len(want), transport.actions)
+	}
+	for i, action := range want {
+		if transport.actions[i] != action {
+			t.Fatalf("request %d action = %q, want %q", i, transport.actions[i], action)
+		}
+	}
+	for _, request := range transport.requests {
+		if request["LoadBalancerId"] != "lb-shared" || fmt.Sprint(request["ListenerPort"]) != "80" {
+			t.Fatalf("same port request identity is wrong: %v", request)
+		}
+	}
 }
 
 // The busy codes and the terminal codes come from the shared SLB contract; the
@@ -159,20 +205,20 @@ func listenerAclTestNotFoundError() error {
 // clear the state and delete must succeed when the listener is already gone.
 func TestUnitListenerAclAttachmentTransportNotFound(t *testing.T) {
 	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
-	requestCapture(t, func(action string, request map[string]interface{}, budget time.Duration) (map[string]interface{}, error) {
+	requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
 		return nil, listenerAclTestNotFoundError()
 	})
-	api := NewListenerAclAttachmentApi(client)
-	state := ListenerAclAttachmentModel{
+	api := newListenerAclAttachmentApi(client)
+	state := listenerAclAttachmentResourceModel{
 		Id:         types.StringValue("lb-123:http:80"),
 		ListenerId: types.StringValue("lb-123:http:80"),
 		AclId:      types.StringValue("acl-1"),
 		AclType:    types.StringValue("white"),
 	}
-	if _, found, err := ReadListenerAclAttachment(context.Background(), api, state); err != nil || found {
+	if _, found, err := readListenerAclAttachment(context.Background(), api, state); err != nil || found {
 		t.Fatalf("read must report a missing listener without an error: found=%v err=%v", found, err)
 	}
-	if err := DeleteListenerAclAttachment(context.Background(), api, "lb-123:http:80"); err != nil {
+	if err := deleteListenerAclAttachment(context.Background(), api, "lb-123:http:80"); err != nil {
 		t.Fatalf("delete must tolerate a missing listener: %s", err)
 	}
 }

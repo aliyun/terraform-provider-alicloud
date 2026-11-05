@@ -65,6 +65,11 @@ resource "alicloud_slb_listener" "default" {
 
   lifecycle {
     ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+
+    precondition {
+      condition     = alicloud_slb_acl.default.id != ""
+      error_message = "The policy group must exist before the listener so that destroying the listener releases the ACL association first."
+    }
   }
 }
 
@@ -105,12 +110,22 @@ variable "listener_protocol" {
   description = "The protocol of the existing apiServer listener to manage."
   type        = string
   default     = "tcp"
+
+  validation {
+    condition     = contains(["http", "https", "tcp", "udp"], var.listener_protocol)
+    error_message = "listener_protocol must be one of http, https, tcp and udp."
+  }
 }
 
 variable "listener_frontend_port" {
   description = "The frontend port of the existing apiServer listener to manage."
   type        = number
   default     = 6443
+
+  validation {
+    condition     = var.listener_frontend_port >= 1 && var.listener_frontend_port <= 65535 && floor(var.listener_frontend_port) == var.listener_frontend_port
+    error_message = "listener_frontend_port must be an integer between 1 and 65535."
+  }
 }
 
 variable "acl_id" {
@@ -125,13 +140,23 @@ data "alicloud_slb_listeners" "apiserver" {
 }
 
 resource "alicloud_slb_listener_acl_attachment" "apiserver" {
-  listener_id = data.alicloud_slb_listeners.apiserver.slb_listeners[0].id
+  # The filters above identify the listener by protocol and frontend port; a
+  # load balancer exposes at most one listener per protocol and port. `one`
+  # keeps the example from silently using the first of several matches.
+  listener_id = one([for listener in data.alicloud_slb_listeners.apiserver.slb_listeners : listener.id])
   acl_id      = var.acl_id
   acl_type    = "white"
+
+  lifecycle {
+    precondition {
+      condition     = length(data.alicloud_slb_listeners.apiserver.slb_listeners) == 1
+      error_message = "The protocol and frontend_port filters must match exactly one listener; check the input variables before binding the policy group."
+    }
+  }
 }
 ```
 
--> **NOTE:** The `protocol` and `frontend_port` filter must select exactly one listener. Check `length(data.alicloud_slb_listeners.apiserver.slb_listeners)` before applying; an empty result fails on the index expression instead of silently managing another listener.
+A load balancer exposes at most one listener per protocol and frontend port, so the filtered query must return exactly one element. The example enforces that requirement with a precondition and `one(...)`, so a zero or ambiguous match fails during plan instead of binding the policy group to an unintended listener.
 
 ## Argument Reference
 

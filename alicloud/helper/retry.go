@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -119,10 +120,18 @@ func retryContextError(ctx context.Context, fallback error) error {
 // ctx is the lifecycle context: cancelling it aborts the backoff and prevents further calls.
 func RetryRpcPost(ctx context.Context, action string, call func() (map[string]interface{}, error), timeout time.Duration, retryable func(error) bool) (map[string]interface{}, error) {
 	wait := incrementalWaitContext(ctx, 3*time.Second, 5*time.Second)
-	var response map[string]interface{}
+	var (
+		response map[string]interface{}
+		mu       sync.Mutex
+	)
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		resp, e := call()
+		// RetryContext can return on cancellation while this callback is still
+		// running, so the shared response is guarded instead of being written
+		// and read without synchronisation.
+		mu.Lock()
 		response = resp
+		mu.Unlock()
 		if e != nil {
 			if retryable(e) {
 				if !wait() {
@@ -135,7 +144,11 @@ func RetryRpcPost(ctx context.Context, action string, call func() (map[string]in
 		return nil
 	})
 	if err != nil {
+		mu.Lock()
+		defer mu.Unlock()
 		return response, errs.WrapErrorf(err, "calling %s failed", action)
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	return response, nil
 }
