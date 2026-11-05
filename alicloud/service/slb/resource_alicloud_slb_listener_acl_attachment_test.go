@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -1189,6 +1190,13 @@ func newListenerAclAttachmentTransportClient(t *testing.T, serverURL string) *co
 	for _, name := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy"} {
 		t.Setenv(name, "")
 	}
+	credential, err := credentials.NewCredential(new(credentials.Config).
+		SetType("access_key").
+		SetAccessKeyId("unit-test-access-key").
+		SetAccessKeySecret("unit-test-access-key-secret"))
+	if err != nil {
+		t.Fatalf("building the credential: %s", err)
+	}
 	var endpoints sync.Map
 	endpoints.Store("slb", strings.TrimPrefix(serverURL, "http://"))
 	client, err := (&connectivity.Config{
@@ -1198,6 +1206,7 @@ func newListenerAclAttachmentTransportClient(t *testing.T, serverURL string) *co
 		AccountType:          "Normal",
 		AccessKey:            "unit-test-access-key",
 		SecretKey:            "unit-test-access-key-secret",
+		Credential:           credential,
 		Endpoints:            &endpoints,
 		SignVersion:          &sync.Map{},
 	}).Client()

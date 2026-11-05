@@ -169,14 +169,22 @@ func TestUnitContextRpcCancellationStopsInFlightWrite(t *testing.T) {
 	for _, action := range []string{"SetLoadBalancerHTTPListenerAttribute", "DescribeLoadBalancerHTTPListenerAttribute"} {
 		t.Run(action, func(t *testing.T) {
 			arrived := make(chan struct{})
+			release := make(chan struct{})
 			var once sync.Once
 			var requests atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				requests.Add(1)
 				once.Do(func() { close(arrived) })
-				<-r.Context().Done()
+				// The handler must never outlive the test, otherwise Close waits
+				// for the connection instead of reporting the assertion result.
+				select {
+				case <-r.Context().Done():
+				case <-release:
+				case <-time.After(3 * time.Second):
+				}
 			}))
 			defer server.Close()
+			defer close(release)
 
 			client := newLocalRpcClient(t, strings.TrimPrefix(server.URL, "http://"))
 			ctx, cancel := context.WithCancel(context.Background())
@@ -197,7 +205,7 @@ func TestUnitContextRpcCancellationStopsInFlightWrite(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected the cancelled request to fail")
 			}
-			if elapsed := time.Since(start); elapsed > 5*time.Second {
+			if elapsed := time.Since(start); elapsed > 2*time.Second {
 				t.Fatalf("the cancelled request did not stop promptly: %s", elapsed)
 			}
 			// Give a runaway retry a chance to show up before asserting the count.
