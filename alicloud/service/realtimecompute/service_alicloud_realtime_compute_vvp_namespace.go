@@ -667,41 +667,6 @@ func vvpNamespaceTagField(t map[string]interface{}, names []string) (string, boo
 	return "", false, nil
 }
 
-// fwFloat navigates a dotted key in m and returns a types.Float64. The CloudSpec model types
-// ResourceUsed.Cpu/Cu/MemoryGb as number/float, so usage values must not be truncated.
-func fwFloat(m map[string]interface{}, key string) types.Float64 {
-	cur := interface{}(m)
-	for _, seg := range strings.Split(key, ".") {
-		mm, ok := cur.(map[string]interface{})
-		if !ok {
-			return types.Float64Null()
-		}
-		cur, ok = mm[seg]
-		if !ok {
-			return types.Float64Null()
-		}
-	}
-	switch v := cur.(type) {
-	case float64:
-		return types.Float64Value(v)
-	case float32:
-		return types.Float64Value(float64(v))
-	case int:
-		return types.Float64Value(float64(v))
-	case int64:
-		return types.Float64Value(float64(v))
-	case json.Number:
-		if n, err := v.Float64(); err == nil {
-			return types.Float64Value(n)
-		}
-	case string:
-		if n, err := strconv.ParseFloat(v, 64); err == nil {
-			return types.Float64Value(n)
-		}
-	}
-	return types.Float64Null()
-}
-
 // vvpNamespaceOptionalStrictInt reads an optional integer field of a response element. A missing or
 // null value reports present=false; a present value of another type is an error.
 func vvpNamespaceOptionalStrictInt(object map[string]interface{}, name string) (int64, bool, error) {
@@ -784,7 +749,7 @@ func vvpNamespaceResourceSpecObjType() types.ObjectType {
 }
 
 // vvpNamespaceResourceSpecObjectValues maps a single API object (map) to framework attr
-// values. Nested sub-lists recurse via their own ToTypeList helpers; scalars use fwStr/fwBool/fwadapt.Int.
+// values. Scalars are converted strictly by the helpers above.
 func vvpNamespaceResourceSpecObjectValues(m map[string]interface{}) (map[string]attr.Value, error) {
 	out := map[string]attr.Value{}
 	cpu, present, err := vvpNamespaceOptionalStrictInt(m, "Cpu")
@@ -863,7 +828,7 @@ func vvpNamespaceResourceUsedObjType() types.ObjectType {
 }
 
 // vvpNamespaceResourceUsedObjectValues maps a single API object (map) to framework attr
-// values. Nested sub-lists recurse via their own ToTypeList helpers; scalars use fwStr/fwBool/fwadapt.Int.
+// values. Scalars are converted strictly by the helpers above.
 func vvpNamespaceResourceUsedObjectValues(m map[string]interface{}) (map[string]attr.Value, error) {
 	out := map[string]attr.Value{}
 	cpu, present, err := vvpNamespaceOptionalStrictFloat(m, "Cpu")

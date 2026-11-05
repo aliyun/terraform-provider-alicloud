@@ -2191,6 +2191,7 @@ func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *t
 		row     string
 		wantErr string
 		wantCPU int64
+		wantTag string
 	}{
 		{
 			name:    "ResourceSpec is not a collection",
@@ -2205,7 +2206,7 @@ func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *t
 		{
 			name:    "ResourceSpec cpu has the wrong type",
 			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":{"Cpu":"two","MemoryGB":8}}`,
-			wantErr: "Cpu field has unexpected type",
+			wantErr: `Cpu value "two" is not an integer`,
 		},
 		{
 			name:    "ResourceUsed is not a collection",
@@ -2230,12 +2231,24 @@ func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *t
 		{
 			name:    "GmtCreate has the wrong type",
 			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":"yesterday"}`,
-			wantErr: "GmtCreate field has unexpected type",
+			wantErr: `the GmtCreate value "yesterday" is not an integer`,
 		},
 		{
 			name:    "Status has the wrong type",
 			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":1}`,
 			wantErr: "Status field has unexpected type",
+		},
+		{
+			// GmtCreate/GmtModified have been observed as numeric strings; parsing keeps the value.
+			name:    "numeric string counter is accepted",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":"1700000000","GmtModified":"1700000000","Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[]}`,
+			wantCPU: 2,
+		},
+		{
+			name:    "valid row with tags",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":1700000000,"GmtModified":1700000000,"Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[{"Key":"env","Value":"prod"}]}`,
+			wantCPU: 2,
+			wantTag: "env",
 		},
 		{
 			name:    "valid control",
@@ -2283,6 +2296,15 @@ func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *t
 			}
 			if cpu.ValueInt64() != tc.wantCPU {
 				t.Fatalf("state resource_spec.cpu = %d, want %d", cpu.ValueInt64(), tc.wantCPU)
+			}
+			if tc.wantTag != "" {
+				var tagValue types.String
+				if err := resp.State.GetAttribute(context.Background(), path.Root("tags").AtMapKey(tc.wantTag), &tagValue); err != nil {
+					t.Fatalf("reading the decoded tag %q: %v", tc.wantTag, err)
+				}
+				if tagValue.ValueString() != "prod" {
+					t.Fatalf("state tags[%q] = %q, want prod", tc.wantTag, tagValue.ValueString())
+				}
 			}
 		})
 	}
