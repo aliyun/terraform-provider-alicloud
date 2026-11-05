@@ -60,10 +60,25 @@ func TestAccAliCloudPolarDbDatabase_basic11854(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype", "account_name", "account_privilege"},
+				// The import has no account identity, so the account fields cannot be
+				// recovered. Verify the imported state explicitly instead of ignoring
+				// the create-only account_privilege from the comparison.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attributes := states[0].Attributes
+					if got := attributes["account_name"]; got != "" {
+						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
+					}
+					if got := attributes["account_privilege"]; got != "" {
+						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
+					}
+					return nil
+				},
 			},
 		},
 	})
@@ -109,10 +124,25 @@ func TestAccAliCloudPolarDbDatabase_basic11854_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype", "account_name", "account_privilege"},
+				// The import has no account identity, so the account fields cannot be
+				// recovered. Verify the imported state explicitly instead of ignoring
+				// the create-only account_privilege from the comparison.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attributes := states[0].Attributes
+					if got := attributes["account_name"]; got != "" {
+						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
+					}
+					if got := attributes["account_privilege"]; got != "" {
+						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
+					}
+					return nil
+				},
 			},
 		},
 	})
@@ -215,10 +245,25 @@ func TestAccAliCloudPolarDbDatabase_basic9535(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype", "account_name", "account_privilege"},
+				// The import has no account identity, so the account fields cannot be
+				// recovered. Verify the imported state explicitly instead of ignoring
+				// the create-only account_privilege from the comparison.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attributes := states[0].Attributes
+					if got := attributes["account_name"]; got != "" {
+						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
+					}
+					if got := attributes["account_privilege"]; got != "" {
+						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
+					}
+					return nil
+				},
 			},
 		},
 	})
@@ -265,10 +310,25 @@ func TestAccAliCloudPolarDbDatabase_basic9535_twin(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"collate", "ctype", "account_name", "account_privilege"},
+				// The import has no account identity, so the account fields cannot be
+				// recovered. Verify the imported state explicitly instead of ignoring
+				// the create-only account_privilege from the comparison.
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					attributes := states[0].Attributes
+					if got := attributes["account_name"]; got != "" {
+						return fmt.Errorf("expected imported account_name to stay empty, got %q", got)
+					}
+					if got := attributes["account_privilege"]; got != "" {
+						return fmt.Errorf("expected imported account_privilege to stay empty, got %q", got)
+					}
+					return nil
+				},
 			},
 		},
 	})
