@@ -126,7 +126,7 @@ func (r *resourceAttachmentResource) Create(ctx context.Context, req resource.Cr
 	resourceRegionId := plan.AssociatedResourceRegionId.ValueString()
 	resourceId := plan.AssociatedResourceId.ValueString()
 
-	client := r.Client()
+	client := r.Meta()
 	request := map[string]interface{}{
 		"AcceleratorId":              acceleratorId,
 		"AssociatedResourceType":     resourceType,
@@ -231,7 +231,7 @@ func (r *resourceAttachmentResource) Delete(ctx context.Context, req resource.De
 		return
 	}
 
-	client := r.Client()
+	client := r.Meta()
 	existing, err := getResourceAttachment(ctx, client, acceleratorId, resourceType, resourceRegionId, resourceId)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -302,7 +302,7 @@ func (r *resourceAttachmentResource) refresh(ctx context.Context, state *resourc
 		return false, diags
 	}
 
-	record, err := getResourceAttachment(ctx, r.Client(), acceleratorId, resourceType, resourceRegionId, resourceId)
+	record, err := getResourceAttachment(ctx, r.Meta(), acceleratorId, resourceType, resourceRegionId, resourceId)
 	if err != nil {
 		diags.AddError(
 			fmt.Sprintf("Reading %s: calling GetGlobalAcceleratorResources", resourceAttachmentTypeName),
