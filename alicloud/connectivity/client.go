@@ -1,7 +1,12 @@
 package connectivity
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -20,7 +25,6 @@ import (
 	roaCS "github.com/alibabacloud-go/cs-20151215/v8/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
-	rpcutil "github.com/alibabacloud-go/tea-rpc-utils/service"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	utilV2 "github.com/alibabacloud-go/tea-utils/v2/service"
@@ -2733,10 +2737,10 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 		protocol = strings.ToLower(value)
 	}
 	method = strings.ToUpper(method)
-	requestQuery, err := rpcutil.FlattenParams(tea.ToMap(map[string]interface{}{
+	requestQuery, err := flattenRpcParams(tea.ToMap(map[string]interface{}{
 		"Action":         apiName,
 		"Format":         "json",
-		"Timestamp":      rpcutil.GetTimestamp(),
+		"Timestamp":      rpcTimestamp(),
 		"Version":        apiVersion,
 		"SignatureNonce": util.GetNonce(),
 	}, query))
@@ -2752,7 +2756,7 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 	var bodyParams map[string]*string
 	formBody := ""
 	if body != nil {
-		bodyParams, err = rpcutil.FlattenParams(body)
+		bodyParams, err = flattenRpcParams(body)
 		if err != nil {
 			return nil, err
 		}
@@ -2768,7 +2772,7 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 	requestQuery["SignatureMethod"] = tea.String("HMAC-SHA1")
 	requestQuery["SignatureVersion"] = tea.String("1.0")
 	requestQuery["AccessKeyId"] = credential.AccessKeyId
-	requestQuery["Signature"] = rpcutil.GetSignatureV1(tea.Merge(requestQuery, bodyParams), tea.String(method), credential.AccessKeySecret)
+	requestQuery["Signature"] = tea.String(rpcSignatureV1(tea.Merge(requestQuery, bodyParams), method, tea.StringValue(credential.AccessKeySecret)))
 
 	values := url.Values{}
 	for key, value := range requestQuery {
@@ -2829,6 +2833,81 @@ func rpcResponseField(response map[string]interface{}, keys ...string) string {
 		}
 	}
 	return ""
+}
+
+// rpcTimestamp returns the RPC Timestamp value in the format the gateway expects.
+func rpcTimestamp() *string {
+	return tea.String(time.Now().UTC().Format("2006-01-02T15:04:05Z"))
+}
+
+// flattenRpcParams flattens a query or body map into the dotted parameter form used by the RPC
+// gateway (nested maps become "A.B", repeated elements become "A.1", "A.2", ...). It mirrors the
+// tea-rpc serializer so the wire format stays identical to the SDK entry point.
+func flattenRpcParams(source map[string]interface{}) (map[string]*string, error) {
+	if source == nil {
+		return map[string]*string{}, nil
+	}
+	encoded, err := json.Marshal(source)
+	if err != nil {
+		return nil, err
+	}
+	var normalized map[string]interface{}
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	decoder.UseNumber()
+	if err := decoder.Decode(&normalized); err != nil {
+		return nil, err
+	}
+	flattened := map[string]*string{}
+	if err := flattenRpcValue("", normalized, flattened); err != nil {
+		return nil, err
+	}
+	return flattened, nil
+}
+
+func flattenRpcValue(prefix string, value interface{}, flattened map[string]*string) error {
+	switch typed := value.(type) {
+	case nil:
+		// An absent parameter is simply not sent.
+		return nil
+	case map[string]interface{}:
+		for key, element := range typed {
+			path := key
+			if prefix != "" {
+				path = prefix + "." + key
+			}
+			if err := flattenRpcValue(path, element, flattened); err != nil {
+				return err
+			}
+		}
+	case []interface{}:
+		for index, element := range typed {
+			if element == nil {
+				return fmt.Errorf("cannot serialize repeated parameter element %q: value is nil", prefix)
+			}
+			if err := flattenRpcValue(fmt.Sprintf("%s.%d", prefix, index+1), element, flattened); err != nil {
+				return err
+			}
+		}
+	default:
+		flattened[prefix] = tea.String(fmt.Sprintf("%v", typed))
+	}
+	return nil
+}
+
+// rpcSignatureV1 computes the HMAC-SHA1 signature required by the RPC signature version 1 protocol.
+// The algorithm is fixed by the API protocol (and matches the tea-rpc client), not a local choice.
+func rpcSignatureV1(params map[string]*string, method string, accessKeySecret string) string {
+	values := url.Values{}
+	for key, value := range params {
+		values.Add(key, tea.StringValue(value))
+	}
+	canonical := values.Encode()
+	canonical = strings.ReplaceAll(canonical, "+", "%20")
+	canonical = strings.ReplaceAll(canonical, "*", "%2A")
+	canonical = strings.ReplaceAll(canonical, "%7E", "~")
+	mac := hmac.New(sha1.New, []byte(accessKeySecret+"&"))
+	mac.Write([]byte(method + "&%2F&" + url.QueryEscape(canonical)))
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }
 
 // rpcRequestWithTimeouts runs one RPC attempt through the legacy SDK entry point.
