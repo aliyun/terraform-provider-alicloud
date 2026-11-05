@@ -541,9 +541,10 @@ func TestAccAliCloudMongoDBInstance_securityIpGroups(t *testing.T) {
 			{
 				// The shared Create/Update backup-policy builder changed in this branch, so
 				// the pre-existing Parameters path also needs same-head execution evidence
-				// (ACC-SCOPE-DIFFERENCE). Read refreshes this set from DescribeParameters'
-				// ParameterName/ParameterValue, so a non-zero count proves both the modify
-				// and the read-back path ran at this commit.
+				// (ACC-SCOPE-DIFFERENCE). The element-level assertion pins the exact
+				// name/value pair rather than only the set size, and the independent
+				// DescribeParameters check proves the modify reached the service instead of
+				// reading a stale configuration value back from the state.
 				Config: testAccConfig(map[string]interface{}{
 					"parameters": []interface{}{
 						map[string]interface{}{
@@ -556,7 +557,23 @@ func TestAccAliCloudMongoDBInstance_securityIpGroups(t *testing.T) {
 					testAccCheck(map[string]string{
 						"parameters.#": "1",
 					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "parameters.*", map[string]string{
+						"name":  "operationProfiling.slowOpThresholdMs",
+						"value": "80",
+					}),
+					testAccCheckMongoDBInstanceParameterValue(resourceId, "operationProfiling.slowOpThresholdMs", "80"),
 				),
+			},
+			{
+				// Each successful configuration step is followed by its own import. The
+				// parameters set is exempt because Read refreshes only the parameters that
+				// are present in the configuration, so an imported state (which has no
+				// configuration) cannot reproduce them; the exact value is proven by the
+				// element assertion and the independent DescribeParameters check above.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "account_password_wo", "account_password_wo_version", "kms_encrypted_password", "kms_encryption_context", "ssl_action", "effective_time", "order_type", "parameters"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1715,6 +1732,50 @@ func testAccCheckMongoDBInstanceCrossLogBackupPolicy(resourceId string, expectEn
 			return fmt.Errorf("DescribeBackupPolicy must report EnableCrossLogBackup=%s, got %q (policy %#v)", want, got, policy)
 		}
 		return nil
+	}
+}
+
+// testAccCheckMongoDBInstanceParameterValue reads the running parameter straight from
+// the DDS API and compares the exact value the configuration asked for. Read refreshes
+// the parameters set from DescribeParameters only for the entries that are present in
+// the configuration, so a state-only assertion cannot distinguish a write that reached
+// the service from a stale value left in the state.
+func testAccCheckMongoDBInstanceParameterValue(resourceId, name, want string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s is not present in the state", resourceId)
+		}
+		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+		object, err := client.RpcPost("Dds", "2015-12-01", "DescribeParameters", nil, map[string]interface{}{
+			"DBInstanceId": rs.Primary.ID,
+			"ExtraParam":   "terraform",
+		}, true)
+		if err != nil {
+			return fmt.Errorf("failed to describe the parameters of %s: %s", rs.Primary.ID, err)
+		}
+		running, ok := object["RunningParameters"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("DescribeParameters did not return RunningParameters for %s (response %#v)", rs.Primary.ID, object)
+		}
+		items, ok := running["Parameter"].([]interface{})
+		if !ok {
+			return fmt.Errorf("DescribeParameters did not return RunningParameters.Parameter for %s (response %#v)", rs.Primary.ID, object)
+		}
+		for _, item := range items {
+			parameter, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if fmt.Sprint(parameter["ParameterName"]) != name {
+				continue
+			}
+			if got := fmt.Sprint(parameter["ParameterValue"]); got != want {
+				return fmt.Errorf("DescribeParameters must report %s=%q, got %q (response %#v)", name, want, got, object)
+			}
+			return nil
+		}
+		return fmt.Errorf("DescribeParameters did not report parameter %q for %s (response %#v)", name, rs.Primary.ID, object)
 	}
 }
 
