@@ -27,6 +27,11 @@ import (
 
 const vvpNamespaceTypeName = "alicloud_realtime_compute_vvp_namespace"
 
+// vvpNamespaceRecoveryWaitBudget bounds how long a create that lost its response waits for the
+// namespace it found to settle. The create budget is normally the thing that just elapsed, so this
+// window is deliberately short and separate instead of restarting the full operation timeout.
+const vvpNamespaceRecoveryWaitBudget = 30 * time.Second
+
 var (
 	_ resource.Resource                = &vvpNamespaceResource{}
 	_ resource.ResourceWithImportState = &vvpNamespaceResource{}
@@ -322,15 +327,13 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 			// The object is listed as soon as the create is accepted, while its capacity allocation
 			// still runs in the background; follow-up calls fail with 903047 until it settles. The
 			// create is only done once the recovered namespace reaches SUCCESS.
-			successBudget, budgetErr := vvpNamespaceBudgetForCall(remaining)
-			if budgetErr != nil {
-				resp.Diagnostics.AddError(
-					fmt.Sprintf("Creating %s: operation budget", vvpNamespaceTypeName),
-					fmt.Sprintf("CreateNamespace failed with %v and %s exists, but its status could not be confirmed as SUCCESS: %v. The namespace stays in state.", err, id, budgetErr),
-				)
-				return
-			}
-			object, waitErr := vvpNamespaceWaitForState(operationCtx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, successBudget)
+			//
+			// The create budget is usually the very thing that elapsed when the response was lost, so
+			// this wait gets its own short bounded window rather than inheriting an expired deadline;
+			// it stays under the Terraform lifecycle context, so cancelling the apply still stops it.
+			recoveryCtx, cancelRecovery := context.WithTimeout(ctx, vvpNamespaceRecoveryWaitBudget)
+			defer cancelRecovery()
+			object, waitErr := vvpNamespaceWaitForState(recoveryCtx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, vvpNamespaceRecoveryWaitBudget)
 			if waitErr != nil {
 				resp.Diagnostics.AddError(
 					fmt.Sprintf("Creating %s: waiting for SUCCESS after a lost create response", vvpNamespaceTypeName),
