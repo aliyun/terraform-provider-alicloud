@@ -44,7 +44,7 @@ output "reserved_instance_ids" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, Computed, List of String) A list of reserved instance IDs. A maximum of 100 entries is allowed. Blank and repeated IDs are sent once.
+* `ids` - (Optional, Computed, List of String) A list of reserved instance IDs. A maximum of 100 entries is allowed. Blank IDs are dropped and repeated IDs are sent once.
 * `reserved_instance_name` - (Optional, String) The name of the reserved instance. The match is exact and is sent to the server.
 * `zone_id` - (Optional, String) The zone ID. It is required when `scope` is `Zone`, and the read is rejected without it. When `zone_id` is set without `scope`, the data source requests `Scope = Zone`; when neither is set, the query is not restricted to a scope.
 * `lock_reason` - (Optional, String) The reason why the reserved instance is locked. Valid values: `financial` and `security`.

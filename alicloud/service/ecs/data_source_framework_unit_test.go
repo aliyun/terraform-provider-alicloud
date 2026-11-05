@@ -1021,6 +1021,45 @@ func TestUnitEcsImagePipelineExecutionsLoadStartsFromConfiguredToken(t *testing.
 	assert.Equal(t, types.StringValue(""), state.NextToken, "the read ends when the server returns no token")
 }
 
+// The provider-side ids filter must drop every execution that is not selected:
+// both records come back from the API, only the configured one reaches state.
+func TestUnitEcsImagePipelineExecutionsLoadFiltersByIds(t *testing.T) {
+	original := fwRpcCall
+	defer func() { fwRpcCall = original }()
+
+	fwRpcCall = func(ctx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
+		if _, ok := request["NextToken"]; !ok {
+			return map[string]interface{}{
+				"NextToken": "token-1",
+				"ImagePipelineExecution": map[string]interface{}{
+					"ImagePipelineExecutionSet": []interface{}{
+						map[string]interface{}{"ExecutionId": "exec-other", "Status": "SUCCESS"},
+					},
+				},
+			}, nil
+		}
+		return map[string]interface{}{
+			"ImagePipelineExecution": map[string]interface{}{
+				"ImagePipelineExecutionSet": []interface{}{
+					map[string]interface{}{"ExecutionId": "exec-target", "Status": "SUCCESS"},
+				},
+			},
+		}, nil
+	}
+
+	model := imagePipelineExecutionsModel{
+		ImagePipelineId: types.StringValue("pipeline-1"),
+		Ids:             types.ListValueMust(types.StringType, []attr.Value{types.StringValue("exec-target")}),
+	}
+	state, err := (&imagePipelineExecutionsDataSource{}).load(context.Background(), nil, "cn-hangzhou", model)
+	require.NoError(t, err)
+
+	require.Len(t, state.Ids.Elements(), 1, "the ids filter must drop every other execution")
+	assert.Equal(t, types.StringValue("exec-target"), state.Ids.Elements()[0])
+	assert.Len(t, state.Executions.Elements(), 1)
+	assert.Equal(t, int64(1), state.TotalCount.ValueInt64(), "total_count counts the rows after the ids filter")
+}
+
 func TestUnitEcsImagePipelineExecutionsLoadRequestToState(t *testing.T) {
 	original := fwRpcCall
 	defer func() { fwRpcCall = original }()

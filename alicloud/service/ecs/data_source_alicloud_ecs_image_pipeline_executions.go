@@ -189,7 +189,7 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: "A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read, so a server that ignores it cannot widen the result. Blank and repeated IDs are sent once.",
+				Description: "A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read, so a server that ignores it cannot widen the result. Blank IDs are dropped and repeated IDs are applied once.",
 			},
 			"max_results": schema.Int64Attribute{
 				Optional:    true,

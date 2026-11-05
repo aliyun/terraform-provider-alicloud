@@ -117,7 +117,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: "A list of reserved instance IDs to filter by. The filter is sent to the server.",
+				Description: "A list of reserved instance IDs to filter by. The filter is sent to the server. A maximum of 100 entries is allowed. Blank IDs are dropped and repeated IDs are sent once. The attribute also reports the IDs that matched.",
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(100),
 				},

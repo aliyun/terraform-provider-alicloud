@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	tflogs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
@@ -100,18 +99,27 @@ func testSweepEcsImagePipeline(region string) error {
 	return imagePipelineSweepError(region, deleteErrors, listErrors)
 }
 
-// imagePipelineRecords decodes the pipeline list of one page. A response that
-// does not carry the list is a malformed response, not an empty page, and a
-// member or entry of another shape is reported instead of being dropped, so a
-// broken response can never look like "nothing left to sweep".
+// imagePipelineRecords decodes the pipeline list of one page. A response without
+// the list is a valid empty page, because the service omits it when nothing
+// matches. A member or entry of another shape is a malformed response and is
+// reported instead of being dropped, so a broken response can never look like
+// "nothing left to sweep".
 func imagePipelineRecords(response map[string]interface{}) ([]map[string]interface{}, error) {
-	resp, err := jsonpath.Get("$.ImagePipeline.ImagePipelineSet", response)
-	if err != nil {
-		return nil, err
+	rawContainer, ok := response["ImagePipeline"]
+	if !ok || rawContainer == nil {
+		return nil, nil
 	}
-	entries, ok := resp.([]interface{})
+	container, ok := rawContainer.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("ImagePipelineSet is %T instead of a list", resp)
+		return nil, fmt.Errorf("ImagePipeline is %T instead of an object", rawContainer)
+	}
+	rawList, ok := container["ImagePipelineSet"]
+	if !ok || rawList == nil {
+		return nil, nil
+	}
+	entries, ok := rawList.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("ImagePipelineSet is %T instead of a list", rawList)
 	}
 	result := make([]map[string]interface{}, 0, len(entries))
 	for index, entry := range entries {
@@ -260,9 +268,22 @@ func TestUnitImagePipelineRecords(t *testing.T) {
 		t.Fatalf("an explicit empty list is a valid empty page, got %v, %v", records, err)
 	}
 
+	// The service omits the list when nothing matches, which is a valid empty
+	// page and must not fail the sweep.
 	for name, response := range map[string]map[string]interface{}{
-		"missing list":    {"ImagePipeline": map[string]interface{}{}},
-		"list wrong type": {"ImagePipeline": map[string]interface{}{"ImagePipelineSet": "not-a-list"}},
+		"missing container": {},
+		"missing list":      {"ImagePipeline": map[string]interface{}{}},
+		"nil list":          {"ImagePipeline": map[string]interface{}{"ImagePipelineSet": nil}},
+	} {
+		records, err := imagePipelineRecords(response)
+		if err != nil || len(records) != 0 {
+			t.Errorf("%s must be a valid empty page, got %v, %v", name, records, err)
+		}
+	}
+
+	for name, response := range map[string]map[string]interface{}{
+		"container wrong type": {"ImagePipeline": "not-an-object"},
+		"list wrong type":      {"ImagePipeline": map[string]interface{}{"ImagePipelineSet": "not-a-list"}},
 		"entry wrong type": {"ImagePipeline": map[string]interface{}{
 			"ImagePipelineSet": []interface{}{"not-an-object"},
 		}},

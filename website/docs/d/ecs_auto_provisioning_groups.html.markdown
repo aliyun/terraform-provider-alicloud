@@ -42,7 +42,7 @@ output "auto_provisioning_group_ids" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, Computed, List of String) A list of auto provisioning group IDs. A maximum of 20 entries may be specified. The `DescribeAutoProvisioningGroups` operation description limits the ID list to 20 entries even though the published schema metadata still declares `maxItems` 100; the provider follows the documented operation limit. Blank and repeated IDs are sent once, so the result does not depend on the server's duplicate handling. The attribute also reports the IDs that matched.
+* `ids` - (Optional, Computed, List of String) A list of auto provisioning group IDs. A maximum of 20 entries may be specified. The `DescribeAutoProvisioningGroups` operation description limits the ID list to 20 entries even though the published schema metadata still declares `maxItems` 100; the provider follows the documented operation limit. Blank IDs are dropped and repeated IDs are sent once, so the result does not depend on the server's duplicate handling. The attribute also reports the IDs that matched.
 * `auto_provisioning_group_name` - (Optional, String) The name of the auto provisioning group. The match is exact and is sent to the server.
 * `resource_group_id` - (Optional, String) The ID of the resource group to which the auto provisioning group belongs.
 * `status` - (Optional, List of String) A list of statuses to filter by. A maximum of 10 entries is allowed. Valid values: `submitted`, `active`, `deleted`, `delete-running` and `modifying`.

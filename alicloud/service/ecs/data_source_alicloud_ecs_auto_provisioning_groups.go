@@ -159,7 +159,7 @@ func (d *autoProvisioningGroupsDataSource) Schema(ctx context.Context, req datas
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: "A list of auto provisioning group IDs to filter by. A maximum of 20 IDs may be specified: the DescribeAutoProvisioningGroups operation description limits the ID list to 20 entries even though the published schema metadata still declares `maxItems` 100, and the provider follows the documented operation limit. Blank and repeated IDs are sent once, so the result does not depend on the server's duplicate handling. The attribute also reports the IDs that matched.",
+				Description: "A list of auto provisioning group IDs to filter by. A maximum of 20 IDs may be specified: the DescribeAutoProvisioningGroups operation description limits the ID list to 20 entries even though the published schema metadata still declares `maxItems` 100, and the provider follows the documented operation limit. Blank IDs are dropped and repeated IDs are sent once, so the result does not depend on the server's duplicate handling. The attribute also reports the IDs that matched.",
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(autoProvisioningGroupsMaxIds),
 				},
