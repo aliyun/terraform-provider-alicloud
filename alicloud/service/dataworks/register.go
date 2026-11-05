@@ -48,6 +48,16 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceProject,
 			},
 		},
+		// Resources registers Framework (terraform-plugin-framework)
+		// resources. These are wired through the conns.ServicePackage.Resources
+		// factory list and supersede the legacy SDKv2 SDKResources map for new
+		// handwritten types.
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_data_works_data_quality_alert_rule",
+				Factory:  NewDataQualityAlertRuleResource,
+			},
+		},
 		SDKDataSources: []conns.SDKDataSource{
 			{
 				TypeName: "alicloud_data_works_folders",
