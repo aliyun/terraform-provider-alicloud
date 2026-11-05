@@ -373,8 +373,8 @@ func validateElasticityAssuranceRecurrenceRuleAttributes(rawConfig cty.Value) er
 }
 
 // A day-based period below the time-division minimum is refused by the service; the documented
-// refusal is 400 InvalidOperation.ElasticityAssuranceActiveTimeTooShort. Return a period-too-short
-// refusal immediately so a deterministic parameter error is not passed to the generic retry path.
+// refusal is 400 InvalidOperation.ElasticityAssuranceActiveTimeTooShort. That error is already
+// non-retryable and is mapped to an explicit message after the retry loop.
 func isElasticityAssurancePeriodTooShortError(err error) bool {
 	if err == nil {
 		return false

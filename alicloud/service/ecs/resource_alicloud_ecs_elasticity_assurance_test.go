@@ -403,9 +403,9 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 				},
 			},
 			{
-				// The permitted update converges after apply, keeps the assurance and only replaces the
-				// schedule. The capacity is scaled down in the same apply, which the service only allows
-				// in a separate request from the schedule.
+				// The permitted update converges after apply and keeps the assurance: the schedule is
+				// replaced in place and the capacity is scaled down in the same apply, which the service
+				// only allows in a separate request from the schedule.
 				Config: testAccConfig(map[string]interface{}{
 					"instance_amount": "1",
 					"recurrence_rules": []map[string]interface{}{
