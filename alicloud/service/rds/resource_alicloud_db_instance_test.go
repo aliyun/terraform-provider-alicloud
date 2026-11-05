@@ -5554,20 +5554,8 @@ func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
 			},
 			importAfterConfigStep(resourceId),
 			{
-				// A direct group may not reuse the name of a group provided by an
-				// attached whitelist template. The update is rejected before any
-				// write, so the template group and its association stay intact.
-				Config: testAccConfig(map[string]interface{}{
-					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}"},
-					"db_instance_ip_arrays": []map[string]interface{}{
-						{"name": templateGroupName, "security_ips": []string{"10.30.0.0/24"}},
-					},
-				}),
-				ExpectError: regexp.MustCompile(`co-managing the same group is unsupported|DuplicatedWithTemplate`),
-			},
-			{
-				// After the rejected update the template group, its addresses and
-				// the template association are unchanged.
+				// The direct groups and the template association are unchanged
+				// before the rejected update below.
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_ip_arrays": []map[string]interface{}{
 						{"name": "office", "security_ips": []string{"10.10.10.0/24", "10.10.11.0/24"}},
@@ -5585,6 +5573,20 @@ func TestAccAliCloudDBInstance_ipArrayTemplateBoundary(t *testing.T) {
 				),
 			},
 			importAfterConfigStep(resourceId),
+			{
+				// A direct group may not reuse the name of a group provided by an
+				// attached whitelist template. The update is rejected before any
+				// write, so the template group and its association stay intact.
+				// This is intentionally the last step: a rejected apply must not
+				// be followed by another block change in the same test.
+				Config: testAccConfig(map[string]interface{}{
+					"template_id_list": []string{"${alicloud_rds_whitelist_template.default.id}"},
+					"db_instance_ip_arrays": []map[string]interface{}{
+						{"name": templateGroupName, "security_ips": []string{"10.30.0.0/24"}},
+					},
+				}),
+				ExpectError: regexp.MustCompile(`co-managing the same group is unsupported|DuplicatedWithTemplate`),
+			},
 		},
 	})
 }
