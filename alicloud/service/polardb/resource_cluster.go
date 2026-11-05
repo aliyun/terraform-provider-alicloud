@@ -472,14 +472,17 @@ func ResourceCluster() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validators.IntBetween(20, 64000),
 				// DescribeDBClusterAttribute only reports StorageUpperBound while
-				// automatic storage scaling is enabled, and ModifyDBCluster does not
-				// apply it while scaling is disabled. Suppressing the diff unless
-				// scaling is explicitly enabled therefore covers both an imported
-				// empty value and a cluster whose API never reports the field, and
-				// does not pretend that a bound edited while disabled was applied:
-				// the configured value is sent by the update that enables scaling.
+				// automatic storage scaling is enabled. When it is disabled the
+				// bound cannot be read back (empty in the import/refresh state), so
+				// keep the configured value instead of diffing against it. A state
+				// that already holds a value is diffed normally, so an explicit
+				// bound change is still applied while scaling is disabled even
+				// though the API only reports it again after scaling is re-enabled.
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("storage_auto_scale"); !ok || v.(string) != "Enable" {
+					if old != "" && old != "0" {
+						return false
+					}
+					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Disable" {
 						return true
 					}
 					return false

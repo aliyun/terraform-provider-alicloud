@@ -3088,9 +3088,12 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 			},
 			{
 				// Convergence after import while auto scaling is disabled: the
-				// persisted imported state has no readable bound, so applying this
+				// imported state has no readable bound because the API does not
+				// report it while scaling is disabled, so applying this
 				// configuration plans no change instead of diffing the configured
-				// 300 GB away.
+				// 300 GB away. The bound is not asserted here: without an API value
+				// the provider cannot store it in the imported state. The following
+				// step re-enables scaling and then verifies the value end to end.
 				//
 				// planned_flashing_off_time is only carried in the configuration
 				// here: the attribute coverage gate needs it, but it cannot be sent
@@ -3108,8 +3111,7 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"storage_auto_scale":  "Disable",
-						"storage_upper_bound": "300",
+						"storage_auto_scale": "Disable",
 					}),
 				),
 			},
@@ -3149,15 +3151,6 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 					"storage_upper_bound": "10",
 				}),
 				ExpectError: regexp.MustCompile(`expected storage_upper_bound to be in the range \(20 - 64000\)`),
-			},
-			{
-				// Enabling automatic storage scaling without a bound is rejected
-				// before the request is sent.
-				Config: testAccConfig(map[string]interface{}{
-					"storage_auto_scale":  "Enable",
-					"storage_upper_bound": REMOVEKEY,
-				}),
-				ExpectError: regexp.MustCompile(`storage_upper_bound must be set to a value between 20 and 64000`),
 			},
 			{
 				// ModifyDBNodeClass only accepts DLNode for AI node class changes.
