@@ -3,7 +3,6 @@ package connectivity
 import (
 	"errors"
 	"io"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -81,8 +80,8 @@ func TestUnitSanitizeRpcErrorKeepsSdkCode(t *testing.T) {
 }
 
 func TestUnitDecodeRpcResponse(t *testing.T) {
-	newResponse := func(status int, body string) *http.Response {
-		return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{}}
+	newResponse := func(status int, body string) *tea.Response {
+		return &tea.Response{StatusCode: tea.Int(status), Body: io.NopCloser(strings.NewReader(body)), Headers: map[string]*string{}}
 	}
 
 	t.Run("json object", func(t *testing.T) {
@@ -135,7 +134,7 @@ func TestUnitDecodeRpcResponse(t *testing.T) {
 	})
 
 	t.Run("truncated body", func(t *testing.T) {
-		response := &http.Response{StatusCode: 200, Body: io.NopCloser(&failingReader{}), Header: http.Header{}}
+		response := &tea.Response{StatusCode: tea.Int(200), Body: io.NopCloser(&failingReader{}), Headers: map[string]*string{}}
 		if _, err := decodeRpcResponse(response); !errors.Is(err, ErrUnreadableResponse) {
 			t.Fatalf("expected ErrUnreadableResponse, got %v", err)
 		}

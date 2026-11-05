@@ -2784,7 +2784,7 @@ func splitRpcBudget(budget time.Duration) (connect, read time.Duration) {
 // decodeRpcResponse reads and validates a JSON object response. It closes the
 // response body and never panics on an empty or non-object payload: such a
 // payload is reported as ErrUnreadableResponse so the caller can reconcile.
-func decodeRpcResponse(response *http.Response) (map[string]interface{}, error) {
+func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
 	if response == nil || response.Body == nil {
 		return nil, fmt.Errorf("%w: empty response", ErrUnreadableResponse)
 	}
@@ -2794,7 +2794,7 @@ func decodeRpcResponse(response *http.Response) (map[string]interface{}, error) 
 		return nil, fmt.Errorf("%w: %v", ErrUnreadableResponse, sanitizeRpcError(err))
 	}
 	if len(bytes.TrimSpace(body)) == 0 {
-		return nil, fmt.Errorf("%w: empty body (status %d)", ErrUnreadableResponse, response.StatusCode)
+		return nil, fmt.Errorf("%w: empty body (status %d)", ErrUnreadableResponse, tea.IntValue(response.StatusCode))
 	}
 	var decoded interface{}
 	if err := json.Unmarshal(body, &decoded); err != nil {
@@ -2802,7 +2802,7 @@ func decodeRpcResponse(response *http.Response) (map[string]interface{}, error) 
 	}
 	result, ok := decoded.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("%w: unexpected JSON payload of type %T (status %d)", ErrUnreadableResponse, decoded, response.StatusCode)
+		return nil, fmt.Errorf("%w: unexpected JSON payload of type %T (status %d)", ErrUnreadableResponse, decoded, tea.IntValue(response.StatusCode))
 	}
 	result["_headers"] = response.Headers
 	if tea.BoolValue(util.Is4xx(response.StatusCode)) || tea.BoolValue(util.Is5xx(response.StatusCode)) {
