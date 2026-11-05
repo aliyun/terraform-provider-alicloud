@@ -9,9 +9,14 @@ import (
 // alicloud root package; generation markers and original SDKv2 framework preserved.
 // alicloud_esa_site_environment is a native Framework-style resource already
 // living in this package; it stays registered here alongside the migrated types.
+// alicloud_esa_api_sec_token is a native Framework resource (handwritten per
+// routePlan existence=new, targetFramework=framework) registered below.
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ESA",
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_esa_api_sec_token", Factory: NewApiSecTokenResource},
+		},
 		SDKResources: []conns.SDKResource{
 			{TypeName: "alicloud_esa_site_environment", Factory: ResourceSiteEnvironment},
 			{TypeName: "alicloud_esa_cache_reserve_instance", Factory: resourceAliCloudEsaCacheReserveInstance},
