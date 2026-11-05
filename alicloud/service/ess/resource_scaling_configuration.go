@@ -126,6 +126,42 @@ func rawConfigListElementIsSet(raw cty.Value, block, attr string) []bool {
 	return flags
 }
 
+// rawConfigListElementHasBoth reports whether any element of a list/set block
+// configures both attributes at the same time.
+func rawConfigListElementHasBoth(raw cty.Value, block, first, second string) bool {
+	if raw.IsNull() || !raw.IsKnown() || !raw.Type().IsObjectType() || !raw.Type().HasAttribute(block) {
+		return false
+	}
+	list := raw.GetAttr(block)
+	if list.IsNull() || !list.IsKnown() {
+		return false
+	}
+	isSet := func(elem cty.Value, name string) bool {
+		if elem.IsNull() || !elem.IsKnown() || !elem.Type().IsObjectType() || !elem.Type().HasAttribute(name) {
+			return false
+		}
+		v := elem.GetAttr(name)
+		return v.IsKnown() && !v.IsNull()
+	}
+	if list.Type().IsSetType() {
+		for it := list.ElementIterator(); it.Next(); {
+			_, elem := it.Element()
+			if isSet(elem, first) && isSet(elem, second) {
+				return true
+			}
+		}
+		return false
+	}
+	length := list.LengthInt()
+	for i := 0; i < length; i++ {
+		elem := list.Index(cty.NumberIntVal(int64(i)))
+		if isSet(elem, first) && isSet(elem, second) {
+			return true
+		}
+	}
+	return false
+}
+
 // validateEssScalingConfigurationConstraints enforces the ESS constraints that
 // cannot be expressed with structural schema flags alone.
 func validateEssScalingConfigurationConstraints(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
@@ -141,6 +177,13 @@ func validateEssScalingConfigurationConstraints(_ context.Context, diff *schema.
 				}
 			}
 		}
+	}
+
+	if rawConfigValueIsSet(raw, "system_disk_category") && rawConfigValueIsSet(raw, "system_disk_categories") {
+		return fmt.Errorf("system_disk_category conflicts with system_disk_categories; configure only one of them")
+	}
+	if rawConfigListElementHasBoth(raw, "data_disk", "category", "categories") {
+		return fmt.Errorf("data_disk.*.category conflicts with data_disk.*.categories; configure only one of them per disk")
 	}
 
 	if rawConfigValueIsSet(raw, "ipv6_address_count") {
@@ -898,8 +941,10 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	instanceTypeOverrides := d.Get("instance_type_override").(*schema.Set).List()
 
 	instancePatternInfos := d.Get("instance_pattern_info").(*schema.Set).List()
-	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) && (instancePatternInfos == nil || len(instancePatternInfos) == 0) {
-		return errs.WrapError(errs.Error("instance_type or instance_types or instance_type_override or instance_pattern_info must be assigned"))
+	cpu := d.Get("cpu").(int)
+	memory := d.Get("memory").(int)
+	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) && (instancePatternInfos == nil || len(instancePatternInfos) == 0) && !(cpu > 0 && memory > 0) {
+		return errs.WrapError(errs.Error("instance_type, instance_types, instance_type_override, instance_pattern_info, or cpu with memory must be assigned"))
 	}
 
 	request["ImageId"] = d.Get("image_id")
