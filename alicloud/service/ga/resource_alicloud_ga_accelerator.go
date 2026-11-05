@@ -163,11 +163,11 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"ddos_id": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"ddos_region_id": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 					},
 				},
@@ -646,6 +646,12 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 		oldDdosConfigs := gaAcceleratorDdosConfigsFromSet(oldDdosConfigList)
 		newDdosConfigs := gaAcceleratorDdosConfigsFromSet(newDdosConfigList)
+
+		for _, ddosConfig := range newDdosConfigs {
+			if ddosConfig["ddos_id"] == "" || ddosConfig["ddos_region_id"] == "" {
+				return errs.WrapErrorf(nil, errs.DefaultErrorMsg, "alicloud_ga_accelerator", "ddos_id and ddos_region_id are required in ddos_config_list", errs.AlibabaCloudSdkGoERROR)
+			}
+		}
 
 		addDdosConfigs, removeDdosConfigs := gaAcceleratorDdosConfigDiff(oldDdosConfigs, newDdosConfigs)
 
