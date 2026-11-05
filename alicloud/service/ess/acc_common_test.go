@@ -126,7 +126,7 @@ data "alicloud_instance_types" "default" {
   image_id          = "${data.alicloud_images.default.images.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
+  name_regex  = "^ubuntu_22.*x64"
   most_recent = true
   owners      = "system"
 }
