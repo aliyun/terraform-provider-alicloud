@@ -3091,7 +3091,7 @@ resource "alicloud_vswitch" "ess" {
 resource "alicloud_ess_scaling_group" "ess" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = var.name
+  scaling_group_name = "${var.name}-ess"
   removal_policies   = ["OldestInstance", "NewestInstance"]
   vswitch_ids        = [alicloud_vswitch.ess.id]
 }
