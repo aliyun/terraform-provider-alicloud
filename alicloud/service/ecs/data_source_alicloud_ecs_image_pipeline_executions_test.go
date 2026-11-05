@@ -129,10 +129,10 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_ecs_image_component" "default" {
-  component_type = "Build"
-  content        = "RUN echo terraform-acceptance-test"
-  name           = var.name
-  system_type    = "Linux"
+  component_type       = "Build"
+  content              = "RUN echo terraform-acceptance-test"
+  image_component_name = var.name
+  system_type          = "Linux"
 }
 
 resource "alicloud_ecs_image_pipeline" "default" {
