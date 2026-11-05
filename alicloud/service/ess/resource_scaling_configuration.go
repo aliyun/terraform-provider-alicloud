@@ -2329,18 +2329,24 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	// configuration sets them, so a plural-only configuration is never forced to
 	// adopt the singular form. During import there is no configuration at all,
 	// and skipping the backfill would drop readable remote values from the
-	// imported state.
+	// imported state. The check must use the raw configuration: d.GetOk reflects
+	// the prior state, so it would keep re-setting a singular that the
+	// configuration removed and produce a perpetual diff.
 	rawConfigForImport := d.GetRawConfig()
 	importRead := rawConfigForImport.IsNull() || !rawConfigForImport.IsKnown()
-	if sg, ok := d.GetOk("security_group_id"); (ok && sg.(string) != "") || importRead {
+	if rawConfigValueIsSet(rawConfigForImport, "security_group_id") || importRead {
 		if v := response["SecurityGroupId"]; v != nil && fmt.Sprint(v) != "" {
 			d.Set("security_group_id", v)
 		}
+	} else {
+		d.Set("security_group_id", "")
 	}
-	if instanceType, ok := d.GetOk("instance_type"); (ok && instanceType.(string) != "") || importRead {
+	if rawConfigValueIsSet(rawConfigForImport, "instance_type") || importRead {
 		if v := response["InstanceType"]; v != nil && fmt.Sprint(v) != "" {
 			d.Set("instance_type", v)
 		}
+	} else {
+		d.Set("instance_type", "")
 	}
 	userData := d.Get("user_data")
 	if userData.(string) != "" {
