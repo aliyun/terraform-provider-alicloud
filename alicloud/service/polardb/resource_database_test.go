@@ -651,7 +651,7 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegeMySQL(t *testing.T) {
 	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
 	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, aliCloudPolarDbDatabaseMySQLDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, databaseMySQLDependence)
 	privilegeConfig := map[string]interface{}{
 		"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
 		"db_name":           name,
@@ -905,7 +905,7 @@ func TestAccAliCloudPolarDbDatabase_accountPrivilegePostgreSQL(t *testing.T) {
 	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
 	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, aliCloudPolarDbDatabasePostgreSQLDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, databasePostgreSQLDependence)
 	privilegeConfig := map[string]interface{}{
 		"db_cluster_id":     "${alicloud_polardb_account.default.db_cluster_id}",
 		"db_name":           name,
@@ -970,7 +970,7 @@ func TestAccAliCloudPolarDbDatabase_oracleAccountPrivilege(t *testing.T) {
 	testAccCheck := databaseCheck(resourceId, AliCloudPolarDbDatabaseMap11854)
 	rand := tfacctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf_testacc%d", rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, aliCloudPolarDbDatabaseOracleDependence)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, databaseOracleDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { databaseTestPreCheck(t) },
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
@@ -1105,10 +1105,10 @@ resource "alicloud_polardb_database" "default" {
 	})
 }
 
-// aliCloudPolarDbDatabaseMySQLDependence creates a self-contained MySQL cluster
+// databaseMySQLDependence creates a self-contained MySQL cluster
 // (VPC, vswitch, cluster and account) so the case does not depend on
 // pre-existing account fixtures.
-func aliCloudPolarDbDatabaseMySQLDependence(name string) string {
+func databaseMySQLDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -1164,10 +1164,10 @@ resource "alicloud_polardb_account" "second" {
 `, name)
 }
 
-// aliCloudPolarDbDatabasePostgreSQLDependence creates a self-contained
+// databasePostgreSQLDependence creates a self-contained
 // PostgreSQL cluster plus two accounts (the second one is used by the
 // account_name update step).
-func aliCloudPolarDbDatabasePostgreSQLDependence(name string) string {
+func databasePostgreSQLDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
@@ -1216,11 +1216,11 @@ resource "alicloud_polardb_account" "update" {
 `, name)
 }
 
-// aliCloudPolarDbDatabaseOracleDependence creates a self-contained
+// databaseOracleDependence creates a self-contained
 // Oracle-compatible cluster. The node class and zone are resolved from the
 // node-class capability query for the Oracle 14 engine instead of being
 // hardcoded, so the fixture adapts to the capabilities of the account/region.
-func aliCloudPolarDbDatabaseOracleDependence(name string) string {
+func databaseOracleDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"
