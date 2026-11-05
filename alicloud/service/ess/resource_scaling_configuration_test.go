@@ -4157,7 +4157,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
+						"spot_strategy":      "NoSpot",
 						"spot_price_limit.#": "0",
 					}),
 				),
@@ -4433,7 +4433,7 @@ func TestAccAliCloudEssScalingConfiguration_OnlyInstancePatternInfo(t *testing.T
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
+						"spot_strategy":      "NoSpot",
 						"spot_price_limit.#": "0",
 					}),
 				),
@@ -4651,7 +4651,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_InstanceTypeFami
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
+						"spot_strategy":      "NoSpot",
 						"spot_price_limit.#": "0",
 					}),
 				),
@@ -4881,7 +4881,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo_CpuAndRange(t *t
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"spot_strategy":    "NoSpot",
+						"spot_strategy":      "NoSpot",
 						"spot_price_limit.#": "0",
 					}),
 				),
