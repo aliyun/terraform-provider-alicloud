@@ -4,6 +4,7 @@ package starrocks
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -111,8 +112,9 @@ func (s *Service) InstanceStateRefreshFunc(id string, field string, failStates [
 }
 
 // DescribeInstance >>> Encapsulated.
-// SetResourceTags <<< Encapsulated tag function for StarRocks.
-func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+// SetResourceTagsWithDeadline applies the tag changes within the caller's budget, so a
+// tag update cannot extend the update timeout that already covers other work.
+func (s *Service) SetResourceTagsWithDeadline(d *schema.ResourceData, resourceType string, deadline time.Time) error {
 	if d.HasChange("tags") {
 		var action string
 		var err error
@@ -140,8 +142,12 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 
 			query["TagKey"] = helper.StringPointer(convert.ConvertListToJsonString(convert.ConvertListStringToListInterface(removedTagKeys)))
 			body = request
+			budget, budgetErr := remainingUpdateDuration(deadline)
+			if budgetErr != nil {
+				return errs.WrapError(budgetErr)
+			}
 			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			err = retry.Retry(budget, func() *retry.RetryError {
 				response, err = client.RoaDelete("starrocks", "2022-10-19", action, query, nil, nil, true)
 				if err != nil {
 					if helper.NeedRetry(err) {
@@ -183,8 +189,12 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 			_ = json.Unmarshal([]byte(jsonString), &request)
 
 			body = request
+			budget, budgetErr := remainingUpdateDuration(deadline)
+			if budgetErr != nil {
+				return errs.WrapError(budgetErr)
+			}
 			wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-			err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			err = retry.Retry(budget, func() *retry.RetryError {
 				response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 				if err != nil {
 					if helper.NeedRetry(err) {
@@ -210,7 +220,12 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 
 // DescribeNodeGroup <<< Encapsulated get interface for StarRocks NodeGroup.
 
-func (s *Service) DescribeNodeGroup(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeNodeGroup(id string) (map[string]interface{}, error) {
+	return s.DescribeNodeGroupWithDeadline(id, time.Now().Add(time.Minute))
+}
+
+// DescribeNodeGroupWithDeadline reads one node group within the caller's budget.
+func (s *Service) DescribeNodeGroupWithDeadline(id string, deadline time.Time) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -230,8 +245,12 @@ func (s *Service) DescribeNodeGroup(id string) (object map[string]interface{}, e
 
 	action := fmt.Sprintf("/webapi/nodegroup/describeNodeGroups")
 
+	budget, budgetErr := remainingUpdateDuration(deadline)
+	if budgetErr != nil {
+		return object, budgetErr
+	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+	err = retry.Retry(budget, func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 
 		if err != nil {
@@ -253,16 +272,33 @@ func (s *Service) DescribeNodeGroup(id string) (object map[string]interface{}, e
 		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.Data[*]", response)
 	}
 
-	if len(v.([]interface{})) == 0 {
+	// The response must describe the requested group of the requested instance. A list
+	// answer that carries another group (or another parent instance) is not evidence for
+	// this group, even when it is the only row returned.
+	requestedGroupId := parts[1]
+	var matched map[string]interface{}
+	for _, raw := range v.([]interface{}) {
+		item, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if fmt.Sprint(item["NodeGroupId"]) != requestedGroupId {
+			continue
+		}
+		if instanceId := fmt.Sprint(item["InstanceId"]); instanceId != "" && instanceId != "<nil>" && instanceId != parts[0] {
+			continue
+		}
+		matched = item
+		break
+	}
+	if matched == nil {
+		return object, errs.WrapErrorf(errs.NotFoundErr("NodeGroup", id), errs.NotFoundMsg, response)
+	}
+	if fmt.Sprint(matched["Status"]) == "DELETED" {
 		return object, errs.WrapErrorf(errs.NotFoundErr("NodeGroup", id), errs.NotFoundMsg, response)
 	}
 
-	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
-	if fmt.Sprint(currentStatus) == "DELETED" {
-		return object, errs.WrapErrorf(errs.NotFoundErr("NodeGroup", id), errs.NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return matched, nil
 }
 
 func (s *Service) NodeGroupStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
@@ -298,3 +334,125 @@ func (s *Service) NodeGroupStateRefreshFuncWithApi(id string, field string, fail
 }
 
 // DescribeNodeGroup >>> Encapsulated.
+
+// DescribeBackendNodeGroups lists the backend compute groups of an instance. A BE
+// or a CN group is a backend group depending on the run mode, and the instance
+// resource does not persist node group ids, so both component types are read and
+// returned together for attribute based matching.
+func (s *Service) DescribeBackendNodeGroups(instanceId string, deadline time.Time) ([]map[string]interface{}, error) {
+	groups := make([]map[string]interface{}, 0)
+	for _, componentType := range []string{"BE", "CN"} {
+		items, err := s.DescribeNodeGroupsByComponentType(instanceId, componentType, deadline)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			if fmt.Sprint(item["Status"]) == "DELETED" {
+				continue
+			}
+			groups = append(groups, item)
+		}
+	}
+	return groups, nil
+}
+
+// DescribeNodeGroupsByComponentType lists every compute group of one component type.
+// The API paginates and a group on a later page is as real as one on the first page,
+// so the complete result set is read before a caller decides which group to use.
+func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType string, deadline time.Time) ([]map[string]interface{}, error) {
+	client := s.client
+	action := fmt.Sprintf("/webapi/nodegroup/describeNodeGroups")
+	const pageSize = 100
+	const maxPages = 100
+	items := make([]map[string]interface{}, 0)
+	for pageNumber := 1; ; pageNumber++ {
+		if pageNumber > maxPages {
+			return nil, errs.WrapErrorf(fmt.Errorf("more than %d pages of node groups", maxPages), errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		query := make(map[string]*string)
+		query["ClusterId"] = helper.StringPointer(clusterId)
+		query["RegionId"] = helper.StringPointer(client.RegionId)
+		query["PageNumber"] = helper.StringPointer(strconv.Itoa(pageNumber))
+		query["PageSize"] = helper.StringPointer(strconv.Itoa(pageSize))
+		request := map[string]interface{}{"componentType": componentType}
+
+		// Every page consumes the caller's absolute deadline: a slow component or page
+		// must not hand a full fresh budget to the next one.
+		budget, budgetErr := remainingUpdateDuration(deadline)
+		if budgetErr != nil {
+			return nil, errs.WrapErrorf(budgetErr, errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
+		}
+		var response map[string]interface{}
+		var err error
+		wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+		err = retry.Retry(budget, func() *retry.RetryError {
+			response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, request, true)
+			if err != nil {
+				if helper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		logs.AddDebug(action, response, request)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
+		}
+
+		v, err := jsonpath.Get("$.Data[*]", response)
+		if err != nil {
+			return nil, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, clusterId, "$.Data[*]", response)
+		}
+		// Accept only rows that belong to the requested instance and component type: the
+		// filters are client validated as well, so a server side drift cannot feed another
+		// instance or another component into the matcher.
+		rawCount := 0
+		batch := make([]map[string]interface{}, 0)
+		for _, raw := range v.([]interface{}) {
+			item, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			rawCount++
+			if instanceId := fmt.Sprint(item["InstanceId"]); instanceId != "" && instanceId != "<nil>" && instanceId != clusterId {
+				continue
+			}
+			if component := fmt.Sprint(item["ComponentType"]); component != "" && component != "<nil>" && component != componentType {
+				continue
+			}
+			batch = append(batch, item)
+		}
+		items = append(items, batch...)
+
+		if rawCount == 0 {
+			break
+		}
+		if rawCount == pageSize {
+			// A full page always means more rows may follow. Stopping here on Total alone
+			// would be unsafe: Total may or may not count the deleted groups that this
+			// listing still returns, and a missed group can look unique to the matcher.
+			continue
+		}
+		total, totalErr := nodeGroupsTotal(response)
+		if totalErr != nil || total <= 0 || len(items) >= total {
+			break
+		}
+		// The page is shorter than requested but the reported total says rows remain
+		// (server side page size cap): keep paging.
+	}
+	return items, nil
+}
+
+func nodeGroupsTotal(response map[string]interface{}) (int, error) {
+	v, err := jsonpath.Get("$.Total", response)
+	if err != nil {
+		return 0, err
+	}
+	total, err := strconv.Atoi(fmt.Sprint(v))
+	if err != nil || total < 0 {
+		return 0, fmt.Errorf("invalid node group total %v", v)
+	}
+	return total, nil
+}

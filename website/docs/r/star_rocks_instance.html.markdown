@@ -27,6 +27,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -68,7 +76,7 @@ resource "alicloud_star_rocks_instance" "default" {
   }
   backend_node_groups {
     cu                          = "8"
-    storage_size                = "100"
+    storage_size                = "200"
     resident_node_number        = "3"
     disk_number                 = "1"
     storage_performance_level   = "pl1"
@@ -109,7 +117,7 @@ resource "alicloud_star_rocks_instance" "default" {
 The following arguments are supported:
 * `admin_password` - (Required) Password of admin user.
 * `auto_renew` - (Optional) Whether to enable automatic renewal. This is only meaningful when payType is set to PrePaid. Disabled by default.
-* `backend_node_groups` - (Optional, ForceNew, List) BackendNodeGroups See [`backend_node_groups`](#backend_node_groups) below.
+* `backend_node_groups` - (Optional, List) BackendNodeGroups See [`backend_node_groups`](#backend_node_groups) below.
 * `cluster_zone_id` - (Required) ZoneId of instance.
 * `duration` - (Optional, Int) Duration of purchase. It is only meaningful when payType is set to PrePaid.
 * `encrypted` - (Optional, ForceNew) Whether encrypted
@@ -157,7 +165,7 @@ The backend_node_groups supports the following:
   - pl1: Maximum random read/write IOPS per disk is 50,000.
   - pl2: Maximum random read/write IOPS per disk is 100,000.
   - pl3: Maximum random read/write IOPS per disk is 1,000,000.
-* `storage_size` - (Optional, ForceNew, Int) Storage size, measured in GiB.
+* `storage_size` - (Optional, Int) Storage size of the backend node group, measured in GiB. The valid range for a backend compute group is 200 to 65000 GiB. Increasing this value expands the disks of the node group in place, without rebuilding the instance. It can only be expanded: decreasing or removing it still replaces the instance, and setting it on a group that had no value also replaces the instance. In-place expansion requires an `official` package instance (`package_type = "official"`) that is in the Running state and a compute group with `spec_type = "standard"`; other specification types cannot be expanded through this API.
 * `zone_id` - (Optional, ForceNew) Zone ID.
 
 ### `frontend_node_groups`
@@ -214,7 +222,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
 * `create` - (Defaults to 20 mins) Used when create the Instance.
 * `delete` - (Defaults to 10 mins) Used when delete the Instance.
-* `update` - (Defaults to 5 mins) Used when update the Instance.
+* `update` - (Defaults to 20 mins) Used when update the Instance.
 
 ## Import
 
