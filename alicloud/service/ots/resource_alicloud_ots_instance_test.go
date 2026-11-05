@@ -40,6 +40,7 @@ func testSweepOtsInstances(region string) error {
 		"tf_test_",
 		"tf-test-",
 		"tftest",
+		"terraform-ex",
 	}
 
 	var insts []sdkots.InstanceInfo

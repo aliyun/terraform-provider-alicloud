@@ -16,6 +16,8 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 
 -> **NOTE:** Available since v1.9.2.
 
+-> **NOTE:** Import reads the current stream configuration back from the table. Add the `stream_specification` block to the configuration if Terraform should keep managing Stream after an import. If the table already has Stream enabled but the configuration does not contain a `stream_specification` block, the next apply disables Stream.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -25,17 +27,25 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
-  default = "tf-example"
+  default = "terraform-ex"
 }
 
 resource "random_integer" "default" {
-  min = 10000
-  max = 99999
+  min = 10
+  max = 99
 }
 
 resource "alicloud_ots_instance" "default" {
-  name        = "${var.name}-${random_integer.default.result}"
+  name        = "${var.name}${random_integer.default.result}"
   description = var.name
   accessed_by = "Any"
   tags = {
@@ -46,7 +56,7 @@ resource "alicloud_ots_instance" "default" {
 
 resource "alicloud_ots_table" "default" {
   instance_name = alicloud_ots_instance.default.name
-  table_name    = "tf_example"
+  table_name    = "terraform_example"
   time_to_live  = -1
   max_version   = 1
   enable_sse    = true
@@ -76,6 +86,11 @@ resource "alicloud_ots_table" "default" {
     name = "col3"
     type = "Binary"
   }
+
+  stream_specification {
+    enable_stream   = true
+    expiration_time = 24
+  }
 }
 ```
 
@@ -89,6 +104,7 @@ The following arguments are supported:
 * `table_name` - (Required, ForceNew) The table name of the OTS instance. If changed, a new table would be created.
 * `primary_key` - (Required, ForceNew) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of primary key. The number of `primary_key` should not be less than one and not be more than four. See [`primary_key`](#primary_key) below.
 * `defined_column` - (Optional, Available since v1.187.0) The property of `TableMeta` which indicates the structure information of a table. It describes the attribute value of defined column. The number of `defined_column` should not be more than 32. See [`defined_column`](#defined_column) below.
+* `stream_specification` - (Optional, Available since v2.3.0) The stream configuration of the table. Stream records the incremental changes of the table data, and the records expire after the configured retention period. See [`stream_specification`](#stream_specification) below.
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 * `allow_update` - (Optional, Available since v1.224.0) Whether allow data update operations. Default value is true. Skipping the resource state refresh step may result in unnecessary execution plan when upgrading from an earlier version.
@@ -109,6 +125,12 @@ The defined_column supports the following:
 The primary_key supports the following:
 * `name` - (Required, ForceNew) Name for primary key.
 * `type` - (Required, ForceNew) Type for primary key. Only `Integer`, `String` or `Binary` is allowed.
+
+### `stream_specification`
+
+The stream_specification supports the following:
+* `enable_stream` - (Optional, Bool, Available since v2.3.0) Whether to enable stream for the table. Defaults to `false`. Setting it to `false`, or removing the `stream_specification` block, disables stream on the next apply. Changing this value updates the stream configuration without recreating the table.
+* `expiration_time` - (Optional, Int, Available since v2.3.0) The retention period of stream records, in hours. Valid values: `1` to `168`. This parameter is required when `enable_stream` is `true`. Changing this value updates the retention period without recreating the table.
 
 ## Attributes Reference
 

@@ -1,6 +1,8 @@
 package ots
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -25,6 +28,7 @@ func ResourceOtsTable() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: resourceTableCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
@@ -81,6 +85,26 @@ func ResourceOtsTable() *schema.Resource {
 				},
 				MaxItems: 32,
 			},
+			"stream_specification": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable_stream": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"expiration_time": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntBetween(1, 168),
+						},
+					},
+				},
+				DiffSuppressFunc: suppressStreamSpecificationDiff,
+			},
 			"time_to_live": {
 				Type:         schema.TypeInt,
 				Required:     true,
@@ -127,6 +151,78 @@ func ResourceOtsTable() *schema.Resource {
 				},
 			},
 		},
+	}
+}
+
+func resourceTableCustomizeDiff(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	raw := d.GetRawConfig()
+	if raw == cty.NilVal || raw.IsNull() || !raw.IsKnown() {
+		return nil
+	}
+	// Validation must wait until an unknown value (for example a reference to another
+	// resource attribute) is resolved; otherwise a valid configuration is rejected at plan time.
+	specs := raw.GetAttr("stream_specification")
+	if specs.IsNull() || !specs.IsKnown() || !specs.IsWhollyKnown() {
+		return nil
+	}
+	if v, ok := d.GetOk("stream_specification"); ok {
+		specList, _ := v.([]interface{})
+		if len(specList) > 0 && specList[0] != nil {
+			spec := specList[0].(map[string]interface{})
+			if enableStream, _ := spec["enable_stream"].(bool); enableStream {
+				expirationTime, _ := spec["expiration_time"].(int)
+				if expirationTime < 1 || expirationTime > 168 {
+					return fmt.Errorf("`expiration_time` must be set to a value between 1 and 168 when `enable_stream` is true")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// suppressStreamSpecificationDiff keeps a disabled block equivalent to an absent block. Read reports a disabled
+// stream as no block, so without this a configuration that sets enable_stream = false would never converge.
+func suppressStreamSpecificationDiff(k, old, new string, d *schema.ResourceData) bool {
+	if k != "stream_specification.#" && !strings.HasPrefix(k, "stream_specification.") {
+		return false
+	}
+	specs, _ := d.Get("stream_specification").([]interface{})
+	if len(specs) == 0 || specs[0] == nil {
+		return false
+	}
+	spec := specs[0].(map[string]interface{})
+	if enableStream, _ := spec["enable_stream"].(bool); enableStream {
+		return false
+	}
+	// Only the transition from an absent block is a no-op; an existing enabled block must still be disabled.
+	return old == "" || old == "0"
+}
+
+// isTransientQuotaError matches the retryable quota variant documented for table operations.
+// The same error code also reports permanent exhaustion, such as the number of tables reaching
+// its limit, which must keep failing fast.
+func isTransientQuotaError(err error) bool {
+	var otsErr *tablestore.OtsError
+	if !errors.As(err, &otsErr) {
+		return false
+	}
+	return otsErr.Code == tablestore.QUOTA_EXHAUSTED &&
+		strings.Contains(otsErr.Message, "Table operations are too frequent.")
+}
+
+func expandStreamSpecification(specs []interface{}) *tablestore.StreamSpecification {
+	if len(specs) == 0 || specs[0] == nil {
+		return nil
+	}
+	spec := specs[0].(map[string]interface{})
+	enableStream, _ := spec["enable_stream"].(bool)
+	if !enableStream {
+		return &tablestore.StreamSpecification{EnableStream: false}
+	}
+	expirationTime, _ := spec["expiration_time"].(int)
+	return &tablestore.StreamSpecification{
+		EnableStream:   true,
+		ExpirationTime: int32(expirationTime),
 	}
 }
 
@@ -182,6 +278,12 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	request.TableOption = tableOption
 	request.ReservedThroughput = reservedThroughput
 
+	if v, ok := d.GetOk("stream_specification"); ok {
+		if streamSpec := expandStreamSpecification(v.([]interface{})); streamSpec != nil && streamSpec.EnableStream {
+			request.StreamSpec = streamSpec
+		}
+	}
+
 	if enableSSE, ok := d.GetOkExists("enable_sse"); ok {
 		sseSpec := new(tablestore.SSESpecification)
 		sseSpec.Enable = enableSSE.(bool)
@@ -217,7 +319,7 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			return tableStoreClient.CreateTable(request)
 		})
 		if err != nil {
-			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
+			if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) || isTransientQuotaError(err) {
 				return retry.RetryableError(err)
 			}
 			return retry.NonRetryableError(err)
@@ -292,7 +394,20 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	}
 
+	setStreamSpecification(d, tableResp.StreamDetails)
+
 	return nil
+}
+
+func setStreamSpecification(d *schema.ResourceData, details *tablestore.StreamDetails) {
+	if details != nil && details.EnableStream {
+		d.Set("stream_specification", []interface{}{map[string]interface{}{
+			"enable_stream":   true,
+			"expiration_time": int(details.ExpirationTime),
+		}})
+		return
+	}
+	d.Set("stream_specification", nil)
 }
 
 func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -326,6 +441,37 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 			})
 			if err != nil {
 				if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) {
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			logs.AddDebug("UpdateTable", raw, requestinfo, request)
+			return nil
+		}); err != nil {
+			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), "UpdateTable", errs.AliyunTablestoreGoSdk)
+		}
+	}
+	if d.HasChange("stream_specification") {
+		_, n := d.GetChange("stream_specification")
+		var newSpecs []interface{}
+		if v, ok := n.([]interface{}); ok {
+			newSpecs = v
+		}
+		streamSpec := expandStreamSpecification(newSpecs)
+		if streamSpec == nil {
+			streamSpec = &tablestore.StreamSpecification{EnableStream: false}
+		}
+		request := new(tablestore.UpdateTableRequest)
+		request.TableName = tableName
+		request.StreamSpec = streamSpec
+		var requestinfo *tablestore.TableStoreClient
+		if err := retry.Retry(3*time.Minute, func() *retry.RetryError {
+			raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+				requestinfo = tableStoreClient
+				return tableStoreClient.UpdateTable(request)
+			})
+			if err != nil {
+				if errs.IsExpectedErrors(err, errs.OtsTableIsTemporarilyUnavailable) || isTransientQuotaError(err) {
 					return retry.RetryableError(err)
 				}
 				return retry.NonRetryableError(err)
