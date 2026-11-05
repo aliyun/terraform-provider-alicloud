@@ -437,8 +437,8 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 		}
 		fieldSchema.FieldType = vv
 	}
-	// Nested fields only carry FieldSchemas; the server rejects index, is_array,
-	// store, enable_sort_and_agg and virtual-column attributes on them.
+	// Nested fields only carry FieldSchemas; reject the attributes that have no
+	// effect on them instead of silently dropping the user's configuration.
 	isNested := fieldSchema.FieldType == tablestore.FieldType_NESTED
 	if isNested {
 		if v, ok := fsMap["enable_sort_and_agg"].(bool); ok && v {
@@ -446,6 +446,18 @@ func parseFieldSchema(fsMap map[string]interface{}) (*tablestore.FieldSchema, er
 		}
 		if v, ok := fsMap["is_virtual_field"].(bool); ok && v {
 			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested cannot be a virtual field", fieldName))
+		}
+		if v, ok := fsMap["is_array"].(bool); ok && v {
+			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested does not support is_array", fieldName))
+		}
+		if v, ok := fsMap["index"].(bool); ok && !v {
+			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested does not support disabling index", fieldName))
+		}
+		if v, ok := fsMap["store"].(bool); ok && v {
+			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested does not support store", fieldName))
+		}
+		if v, ok := fsMap["analyzer"].(string); ok && v != "" {
+			return nil, errs.WrapError(fmt.Errorf("field %q of type Nested does not support analyzer", fieldName))
 		}
 	}
 	if v, ok := fsMap["is_array"]; ok && !isNested {

@@ -197,7 +197,7 @@ resource "alicloud_ots_table" "default" {
 resource "alicloud_ots_search_index" "default" {
   instance_name = alicloud_ots_instance.default.name
   table_name    = alicloud_ots_table.default.table_name
-  index_name    = "example_nested_index"
+  index_name    = "terraform_example_nested_index"
   time_to_live  = -1
   schema {
     field_schema {
@@ -240,11 +240,11 @@ The schema supports the following:
 The field_schema supports the following:
 * `field_name` - (Required, ForceNew) Specifies the name of the field in the search index. The value is used as a column name. A field in a search index can be a primary key column or an attribute column.
 * `field_type` - (Required, ForceNew, String) Specifies the type of the field. Valid values: `Text`, `Long`, `Double`, `Boolean`, `Keyword`, `FuzzyKeyword`, `Date`, `GeoPoint`, `Nested`, `Vector`.
-* `is_array` - (Optional, ForceNew, Bool) Specifies whether the value is an array. This parameter is not supported for `Nested` fields. It is not required for `Vector` fields because they are arrays by nature.
-* `index` - (Optional, ForceNew) Specifies whether to enable indexing for the column. Type: Boolean. This parameter is not supported for `Nested` fields.
-* `analyzer` - (Optional, ForceNew) Specifies the type of the analyzer that you want to use. If fieldType is set to Text, you can configure this parameter. Otherwise, the default analyzer type single-word tokenization is used.
+* `is_array` - (Optional, ForceNew, Bool) Specifies whether the value is an array. This parameter is not supported for `Nested` fields; setting it to `true` on a `Nested` field returns an error. It is not required for `Vector` fields because they are arrays by nature.
+* `index` - (Optional, ForceNew) Specifies whether to enable indexing for the column. Type: Boolean. This parameter is not supported for `Nested` fields; setting it to `false` on a `Nested` field returns an error.
+* `analyzer` - (Optional, ForceNew) Specifies the type of the analyzer that you want to use. If fieldType is set to Text, you can configure this parameter. Otherwise, the default analyzer type single-word tokenization is used. Configuring this parameter for a `Nested` field returns an error.
 * `enable_sort_and_agg` - (Optional, ForceNew, Bool) Specifies whether to enable sorting and aggregation. Sorting can be enabled only for fields for which enable_sort_and_agg is set to true. `Text`, `FuzzyKeyword` and `Nested` fields do not support this parameter, but the sub-fields of a `Nested` field do.
-* `store` - (Optional, ForceNew) Specifies whether to store the value of the field in the search index. Type: Boolean. If you set store to true, you can read the value of the field from the search index without querying the data table. This improves query performance. This parameter is not supported for `Nested` fields.
+* `store` - (Optional, ForceNew) Specifies whether to store the value of the field in the search index. Type: Boolean. If you set store to true, you can read the value of the field from the search index without querying the data table. This improves query performance. This parameter is not supported for `Nested` fields; setting it to `true` on a `Nested` field returns an error.
 * `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the field. This parameter is required for `Date` fields. Available since v2.3.0.
 * `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the field is a virtual column. Defaults to `false`. When you set this parameter to `true`, `source_field_name` is required. Available since v2.3.0.
 * `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual column maps. This parameter is required for virtual columns, and only one source field is supported. This parameter can be set only when `is_virtual_field` is `true`. Available since v2.3.0.
@@ -269,8 +269,8 @@ The sub_field_schemas supports the following:
 * `enable_sort_and_agg` - (Optional, ForceNew, Bool) Specifies whether to enable sorting and aggregation for the sub-field. Available since v2.3.0.
 * `store` - (Optional, ForceNew, Bool) Specifies whether to store the value of the sub-field in the search index. Available since v2.3.0.
 * `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the sub-field. This parameter is required for `Date` sub-fields. Available since v2.3.0.
-* `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the sub-field is a virtual column. Defaults to `false`. Available since v2.3.0.
-* `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual sub-field maps. Available since v2.3.0.
+* `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the sub-field is a virtual column. Defaults to `false`. When you set this parameter to `true`, `source_field_name` is required for the sub-field. Available since v2.3.0.
+* `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual sub-field maps. This parameter is required for virtual sub-fields, and only one source field is supported. This parameter can be set only when the sub-field's `is_virtual_field` is `true`. Available since v2.3.0.
 * `vector_options` - (Optional, ForceNew, List) Specifies the vector configuration. This parameter is required for `Vector` sub-fields. See [`vector_options`](#schema-field_schema-sub_field_schemas-vector_options) below. Available since v2.3.0.
 
 ### `schema-field_schema-sub_field_schemas-vector_options`

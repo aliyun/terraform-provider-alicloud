@@ -453,6 +453,58 @@ func TestAccAliCloudOtsSearchIndex_invalidSchema(t *testing.T) {
     }`),
 				ExpectError: regexp.MustCompile("cannot be a virtual field"),
 			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      is_array   = true
+      sub_field_schemas {
+        field_name = "nested_long"
+        field_type = "Long"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("does not support is_array"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      index      = false
+      sub_field_schemas {
+        field_name = "nested_long"
+        field_type = "Long"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("does not support disabling index"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      store      = true
+      sub_field_schemas {
+        field_name = "nested_long"
+        field_type = "Long"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("does not support store"),
+			},
+			{
+				Config: resourceOtsSearchIndexInvalidConfig(`
+    field_schema {
+      field_name = "col1"
+      field_type = "Nested"
+      analyzer   = "SingleWord"
+      sub_field_schemas {
+        field_name = "nested_long"
+        field_type = "Long"
+      }
+    }`),
+				ExpectError: regexp.MustCompile("does not support analyzer"),
+			},
 		},
 	})
 }

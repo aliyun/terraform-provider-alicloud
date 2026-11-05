@@ -40,6 +40,9 @@ func testSweepOtsInstances(region string) error {
 		"tf_test_",
 		"tf-test-",
 		"tftest",
+		// Documentation examples use this prefix because OTS instance names are
+		// limited to 16 bytes, which rules out the full "terraform-example" prefix.
+		"tf-example-ots",
 	}
 
 	var insts []sdkots.InstanceInfo
