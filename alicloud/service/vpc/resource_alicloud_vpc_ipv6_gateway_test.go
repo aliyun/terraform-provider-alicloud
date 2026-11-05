@@ -246,8 +246,9 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	name128 := "tf-testAcc" + strings.Repeat("a", 118)
 	description256 := strings.Repeat("b", 256)
 	// The OpenAPI bounds are expressed in characters, so the multibyte cases must
-	// use the same 128/256 character limits rather than byte counts.
-	nameCJK128 := strings.Repeat("中", 128)
+	// use the same 128/256 character limits rather than byte counts. The CJK name
+	// keeps the sweeper prefix so an interrupted run can still be cleaned up.
+	nameCJK128 := "tf-testAcc" + strings.Repeat("中", 118)
 	descriptionCJK256 := strings.Repeat("中", 256)
 
 	// checkApiReadback asserts what the provider sent against what the VPC API
