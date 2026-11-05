@@ -214,6 +214,17 @@ run_misspell_scoped() {
   return 1
 }
 
+# The changed-document list is newline separated, so it is read line by line
+# instead of being expanded into a single `for` word list.
+run_misspell_changed_docs() {
+  local doc
+  while IFS= read -r doc; do
+    [ -n "$doc" ] || continue
+    run_misspell_scoped "$doc" || return 1
+  done <<< "$1"
+  return 0
+}
+
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo -e "${RED}ERROR: Not in a git repository.${NC}"
@@ -492,7 +503,7 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
       CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
       if [[ -n "$CHANGED_DOCS" ]]; then
         run_check "Spell Check (changed docs only)" \
-          "for doc in $CHANGED_DOCS; do run_misspell_scoped \"\$doc\" || exit 1; done" \
+          "run_misspell_changed_docs \"\$CHANGED_DOCS\"" \
           || true
       else
         echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"
