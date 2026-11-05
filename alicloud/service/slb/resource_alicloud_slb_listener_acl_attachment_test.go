@@ -698,7 +698,7 @@ func testAccCheckSlbResourcesReleased(captured *[]testAccSlbResource) resource.T
 		for _, item := range *captured {
 			var err error
 			switch item.resourceType {
-			case "alicloud_slb_listener", "alicloud_slb_listener_acl_attachment":
+			case "alicloud_slb_listener":
 				_, err = service.DescribeSlbListener(item.id)
 			case "alicloud_slb_load_balancer":
 				_, err = service.DescribeSlbLoadBalancer(item.id)

@@ -296,6 +296,12 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 	}
 	rejection := fmt.Errorf("%w: status 400: unexpected EOF", connectivity.ErrRpcRejectedResponse)
 	transport := errors.New(`Post "https://slb.aliyuncs.com/": i/o timeout`)
+	// The write error reaches the resource wrapped exactly like production: the
+	// retry helper and the action wrapper each add a ComplexError layer.
+	productionRejection := errs.WrapErrorf(
+		errs.WrapErrorf(rejection, "calling %s failed", "SetLoadBalancerHTTPListenerAttribute"),
+		errs.DefaultErrorMsg, "lb-123:http:80", "SetLoadBalancerHTTPListenerAttribute", errs.AlibabaCloudSdkGoERROR,
+	)
 
 	cases := []struct {
 		name     string
@@ -307,6 +313,7 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 		{"terminal rejection wins over an expired write budget", alive, expired(), terminal, false},
 		{"terminal rejection wins over a passed deadline", alive, pastDeadline(), terminal, false},
 		{"undecodable 4xx rejection wins over an expired write budget", alive, expired(), rejection, false},
+		{"production wrapped rejection wins over an expired write budget", alive, expired(), productionRejection, false},
 		{"expired write budget keeps a transport failure unresolved", alive, expired(), transport, true},
 		{"transport failure stays unresolved", alive, context.Background(), transport, true},
 		{"5xx answer stays unresolved", alive, context.Background(), serverFailure, true},
@@ -316,6 +323,12 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 		if got := isUnresolvedListenerAclWrite(tc.parent, tc.writeCtx, tc.err); got != tc.want {
 			t.Fatalf("%s: isUnresolvedListenerAclWrite = %v, want %v", tc.name, got, tc.want)
 		}
+	}
+	if !isDefinitiveListenerAclWriteOutcome(productionRejection) {
+		t.Fatal("an explicitly rejected write must be definitive even when it is wrapped twice")
+	}
+	if isDefinitiveListenerAclWriteOutcome(transport) {
+		t.Fatal("a transport failure must stay unknown")
 	}
 }
 

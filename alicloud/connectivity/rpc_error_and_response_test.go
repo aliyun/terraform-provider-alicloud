@@ -291,6 +291,10 @@ func TestUnitRedactLogValue(t *testing.T) {
 		},
 		"securitytoken": []interface{}{"list-token-1", "list-token-2"},
 		"HeaderMap":     map[string]*string{"Signature": tea.String("header-signature")},
+		// A credential key whose value is an object or a header map must redact the
+		// values below it, not only the string shapes.
+		"AccessKeySecret": map[string]interface{}{"Value": "object-secret"},
+		"signaturenonce":  map[string]*string{"x-nonce": tea.String("header-nonce")},
 	})
 	payload, err := json.Marshal(redacted)
 	if err != nil {
@@ -300,7 +304,7 @@ func TestUnitRedactLogValue(t *testing.T) {
 	for _, secret := range []string{
 		"LTAI-test", "synthetic", "token-value", "nonce-value",
 		"independent-ak", "independent-signature", "nested-token", "nested-nonce",
-		"list-token-1", "list-token-2", "header-signature",
+		"list-token-1", "list-token-2", "header-signature", "object-secret", "header-nonce",
 	} {
 		if strings.Contains(string(payload), secret) {
 			t.Fatalf("the logged payload still exposes %q: %s", secret, payload)

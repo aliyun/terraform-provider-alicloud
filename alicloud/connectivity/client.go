@@ -2828,7 +2828,9 @@ func redactLogValue(value interface{}, credential bool) interface{} {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(typed))
 		for key, item := range typed {
-			out[key] = redactLogValue(item, isCredentialLogField(key))
+			// A credential name applies to the whole value below it, whatever its
+			// shape, so a nested object cannot leak the credential either.
+			out[key] = redactLogValue(item, credential || isCredentialLogField(key))
 		}
 		return out
 	case map[string]*string:
@@ -2838,7 +2840,7 @@ func redactLogValue(value interface{}, credential bool) interface{} {
 				out[key] = nil
 				continue
 			}
-			if isCredentialLogField(key) {
+			if credential || isCredentialLogField(key) {
 				placeholder := redactedLogPlaceholder
 				out[key] = &placeholder
 				continue

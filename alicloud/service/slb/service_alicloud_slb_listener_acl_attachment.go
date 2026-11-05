@@ -321,7 +321,10 @@ func isDefinitiveListenerAclWriteOutcome(err error) bool {
 	if err == nil {
 		return false
 	}
-	if errors.Is(listenerAclErrorCause(err), connectivity.ErrRpcRejectedResponse) {
+	// The write error reaches this package wrapped twice (the retry helper and the
+	// action wrapper), and ComplexError does not implement errors.Unwrap, so the
+	// whole chain has to be walked explicitly.
+	if listenerAclErrorMatches(err, connectivity.ErrRpcRejectedResponse) {
 		return true
 	}
 	sdkErr := listenerAclSdkError(err)
@@ -334,6 +337,26 @@ func isDefinitiveListenerAclWriteOutcome(err error) bool {
 	}
 	// A decoded error without an HTTP status still carries the service verdict.
 	return status == 0 && strings.TrimSpace(tea.StringValue(sdkErr.Code)) != ""
+}
+
+// listenerAclErrorMatches reports whether target appears in the wrapped error
+// chain, including the provider's ComplexError layers that carry their cause in a
+// field instead of implementing errors.Unwrap.
+func listenerAclErrorMatches(err, target error) bool {
+	for err != nil {
+		if errors.Is(err, target) {
+			return true
+		}
+		switch typed := err.(type) {
+		case *errs.ComplexError:
+			err = typed.Cause
+		case interface{ Unwrap() error }:
+			err = typed.Unwrap()
+		default:
+			return false
+		}
+	}
+	return false
 }
 
 // listenerAclErrorCause exposes the original error behind the provider's
