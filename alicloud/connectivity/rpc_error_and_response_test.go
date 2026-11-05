@@ -198,6 +198,23 @@ func TestUnitDecodeRpcResponse(t *testing.T) {
 		}
 	})
 
+	// A decodable 4xx body that carries no business code must report an empty
+	// code, not the stringified missing value: callers classify the error by the
+	// code, and "<nil>" would look like a real one.
+	t.Run("missing business code decodes as empty", func(t *testing.T) {
+		_, err := decodeRpcResponse(newResponse(403, `{"Forbidden":true}`))
+		sdkErr, ok := err.(*tea.SDKError)
+		if !ok {
+			t.Fatalf("expected a typed business error, got %T: %v", err, err)
+		}
+		if got := tea.StringValue(sdkErr.Code); got != "" {
+			t.Fatalf("a response without a business code reported %q", got)
+		}
+		if strings.Contains(sdkErr.Error(), "<nil>") {
+			t.Fatalf("the decoded error carries a stringified missing value: %s", sdkErr.Error())
+		}
+	})
+
 	// The control case: a decodable 404 that carries the SLB business code stays
 	// usable, so callers can still prove that the entity itself is gone.
 	t.Run("decoded 404 keeps the slb business code", func(t *testing.T) {
@@ -249,12 +266,15 @@ func (f *failingReader) Read([]byte) (int, error) { return 0, errors.New("unexpe
 
 // The debug log boundary receives the provider payloads, so the redaction has to
 // reach every string shape the service logs: plain values, nested objects, lists
-// and the response headers map.
+// and the response headers map. A service may echo only the query string instead
+// of the complete URL, which carries the same credentials.
 func TestUnitRedactLogValue(t *testing.T) {
 	signed := "https://slb.aliyuncs.com/?AccessKeyId=LTAI-test&Signature=synthetic&SecurityToken=token-value"
+	queryOnly := "AccessKeyId=LTAI-test&Signature=synthetic&SignatureNonce=nonce-value&SecurityToken=token-value"
 	redacted := RedactLogValue(map[string]interface{}{
 		"AclStatus": "on",
 		"Echo":      signed,
+		"QueryEcho": queryOnly,
 		"Nested":    map[string]interface{}{"Message": "request " + signed},
 		"List":      []interface{}{signed, "plain"},
 		"_headers":  map[string]*string{"location": tea.String(signed), "empty": nil},
@@ -263,7 +283,7 @@ func TestUnitRedactLogValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshalling the redacted payload: %s", err)
 	}
-	for _, secret := range []string{"AccessKeyId", "Signature=", "SecurityToken", "LTAI-test", "synthetic", "token-value"} {
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "LTAI-test", "synthetic", "token-value", "nonce-value"} {
 		if strings.Contains(string(payload), secret) {
 			t.Fatalf("the logged payload still exposes %q: %s", secret, payload)
 		}

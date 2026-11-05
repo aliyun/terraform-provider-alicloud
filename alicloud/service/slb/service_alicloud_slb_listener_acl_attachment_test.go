@@ -243,6 +243,7 @@ func TestUnitListenerAclAttachmentDebugLogIsRedacted(t *testing.T) {
 			"AclType":      "white",
 			"AclId":        "acl-1",
 			"Echo":         "https://slb.aliyuncs.com/?AccessKeyId=unit-test-access-key&Signature=synthetic-signature&SecurityToken=synthetic-token",
+			"QueryEcho":    "AccessKeyId=unit-test-access-key&Signature=synthetic-signature&SignatureNonce=synthetic-nonce&SecurityToken=synthetic-token",
 		}, nil
 	})
 	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
@@ -253,7 +254,7 @@ func TestUnitListenerAclAttachmentDebugLogIsRedacted(t *testing.T) {
 	if !strings.Contains(output, "DescribeLoadBalancerHTTPListenerAttribute") {
 		t.Fatalf("the debug log did not record the call: %q", output)
 	}
-	for _, secret := range []string{"AccessKeyId", "Signature=", "SecurityToken", "unit-test-access-key", "synthetic-signature", "synthetic-token"} {
+	for _, secret := range []string{"AccessKeyId", "Signature=", "SignatureNonce", "SecurityToken", "unit-test-access-key", "synthetic-signature", "synthetic-nonce", "synthetic-token"} {
 		if strings.Contains(output, secret) {
 			// Do not print the leaking line: it contains the protected value.
 			t.Fatalf("the debug log leaked %q", secret)

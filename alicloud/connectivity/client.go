@@ -2729,11 +2729,19 @@ func (e *redactedError) Unwrap() error { return e.cause }
 
 var signedURLPattern = regexp.MustCompile(`https?://[^\s"']+`)
 
+// credentialParameterPattern matches a signed parameter pair that is not part of
+// a complete URL. A service or gateway may echo only the query string (without
+// scheme and host) in an error message or a response field, and that echo still
+// carries the access key, the signature and the security token.
+var credentialParameterPattern = regexp.MustCompile(`(?i)\b(AccessKeyId|Signature|SignatureNonce|SecurityToken)=[^&\s"']*`)
+
 // redactSignedURLs removes the query string, fragment and credentials of every
-// URL in the message. Signed request URLs carry the access key, signature and
-// security token as query parameters and must never reach Terraform diagnostics.
+// URL in the message, and neutralises any remaining signed parameter pair. Signed
+// request parameters carry the access key, signature and security token and must
+// never reach Terraform diagnostics or a debug log.
 func redactSignedURLs(message string) string {
-	return signedURLPattern.ReplaceAllStringFunc(message, redactURL)
+	redacted := signedURLPattern.ReplaceAllStringFunc(message, redactURL)
+	return credentialParameterPattern.ReplaceAllString(redacted, "$1=<redacted>")
 }
 
 // redactURL strips the secret bearing parts of one URL. A malformed escape in
@@ -2894,14 +2902,27 @@ func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
 	result["_headers"] = response.Headers
 	if tea.BoolValue(util.Is4xx(response.StatusCode)) || tea.BoolValue(util.Is5xx(response.StatusCode)) {
 		return nil, tea.NewSDKError(map[string]interface{}{
-			"code":       tea.ToString(rpc.DefaultAny(result["Code"], result["code"])),
+			"code":       rpcBusinessString(result["Code"], result["code"]),
 			"statusCode": tea.IntValue(response.StatusCode),
-			"message":    "code: " + tea.ToString(tea.IntValue(response.StatusCode)) + ", " + tea.ToString(rpc.DefaultAny(result["Message"], result["message"])) + " request id: " + tea.ToString(rpc.DefaultAny(result["RequestId"], result["requestId"])),
+			"message":    "code: " + tea.ToString(tea.IntValue(response.StatusCode)) + ", " + rpcBusinessString(result["Message"], result["message"]) + " request id: " + rpcBusinessString(result["RequestId"], result["requestId"]),
 			"data":       result,
 			"_headers":   response.Headers,
 		})
 	}
 	return result, nil
+}
+
+// rpcBusinessString returns a decoded JSON string field, or an empty string when
+// the response did not carry a usable one. The tea helpers stringify a missing
+// value as "<nil>", which must not be mistaken for a business code, a message or
+// a request id by the callers that classify the error.
+func rpcBusinessString(values ...interface{}) string {
+	for _, value := range values {
+		if text, ok := value.(string); ok {
+			return strings.TrimSpace(text)
+		}
+	}
+	return ""
 }
 
 // undecodableRpcResponseError classifies a response whose body could not be
