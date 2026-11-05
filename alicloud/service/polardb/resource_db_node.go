@@ -242,8 +242,8 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	// gap#9: RPC APIs require RegionId as a request param (separate from endpoint resolution);
 	// the SDK RpcPost resolves the endpoint by region but does NOT inject RegionId into query/body.
 	// v1 sets request["RegionId"] = client.RegionId authoritatively (provider region wins).
-	request["RegionId"] = r.Client().RegionId
-	createValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	request["RegionId"] = r.Meta().RegionId
+	createValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.AutoUseCoupon.IsNull() && !plan.AutoUseCoupon.IsUnknown() {
 		createValues["AutoUseCoupon"] = fwValueToInterface(plan.AutoUseCoupon, map[string]fwWireField{}, false)
 	}
@@ -322,7 +322,7 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	response, err := retryRpcPost(r.Client(), "polardb", "2017-08-01", "CreateDBNodes", request, operationTimeout)
+	response, err := retryRpcPost(r.Meta(), "polardb", "2017-08-01", "CreateDBNodes", request, operationTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: calling CreateDBNodes", dbNodeTypeName),
@@ -382,7 +382,7 @@ func (r *dbNodeResource) Create(ctx context.Context, req resource.CreateRequest,
 	// ModifyDBNodeClass are rejected with OperationDenied.DBClusterStatus while
 	// the cluster is still working. Wait for the cluster to settle so apply
 	// reflects a node that later operations can act on.
-	object, err := dbNodeWaitSettled(ctx, r.Client(), id, operationTimeout)
+	object, err := dbNodeWaitSettled(ctx, r.Meta(), id, operationTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Creating %s: waiting for node readiness", dbNodeTypeName),
@@ -467,7 +467,7 @@ func (r *dbNodeResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	object, err := dbNodeGet(r.Client(), state.Id.ValueString())
+	object, err := dbNodeGet(r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeDBClusters", dbNodeTypeName),
@@ -497,7 +497,7 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	planValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	planValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !plan.AutoUseCoupon.IsNull() && !plan.AutoUseCoupon.IsUnknown() {
 		planValues["AutoUseCoupon"] = fwValueToInterface(plan.AutoUseCoupon, map[string]fwWireField{}, false)
 	}
@@ -558,7 +558,7 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if !plan.SubCategory.IsNull() && !plan.SubCategory.IsUnknown() {
 		planValues["SubCategory"] = fwValueToInterface(plan.SubCategory, map[string]fwWireField{}, false)
 	}
-	stateValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	stateValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !state.AutoUseCoupon.IsNull() && !state.AutoUseCoupon.IsUnknown() {
 		stateValues["AutoUseCoupon"] = fwValueToInterface(state.AutoUseCoupon, map[string]fwWireField{}, false)
 	}
@@ -635,7 +635,7 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			"DBNodeId":    state.Id.ValueString(),
 			"ClientToken": buildClientToken("RestartDBNode"),
 		}
-		request0["RegionId"] = r.Client().RegionId
+		request0["RegionId"] = r.Meta().RegionId
 		if err := fwApplyMappings(request0, operationValues0, fwChangedUpdateMappings([]fwMapping{
 			{Source: "$.DBNodeId", Target: "DBNodeId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 			{Source: "$.FromTimeService", Target: "FromTimeService", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
@@ -645,11 +645,11 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			resp.Diagnostics.AddError("Building RestartDBNode request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(r.Client(), "polardb", "2017-08-01", "RestartDBNode", request0, operationTimeout); err != nil {
+		if _, err := retryRpcPost(r.Meta(), "polardb", "2017-08-01", "RestartDBNode", request0, operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_polardb_db_node: RestartDBNode", err.Error())
 			return
 		}
-		if _, err := dbNodeWaitSettled(ctx, r.Client(), state.Id.ValueString(), operationTimeout); err != nil {
+		if _, err := dbNodeWaitSettled(ctx, r.Meta(), state.Id.ValueString(), operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_polardb_db_node: waiting after RestartDBNode", err.Error())
 			return
 		}
@@ -677,7 +677,7 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			"DBNodeId":    state.Id.ValueString(),
 			"ClientToken": buildClientToken("ModifyDBNodeClass"),
 		}
-		request1["RegionId"] = r.Client().RegionId
+		request1["RegionId"] = r.Meta().RegionId
 		if err := fwApplyMappings(request1, operationValues1, fwChangedUpdateMappings([]fwMapping{
 			{Source: "$.AutoUseCoupon", Target: "AutoUseCoupon", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 			{Source: "$.CloudProvider", Target: "CloudProvider", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
@@ -694,11 +694,11 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			resp.Diagnostics.AddError("Building ModifyDBNodeClass request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(r.Client(), "polardb", "2017-08-01", "ModifyDBNodeClass", request1, operationTimeout); err != nil {
+		if _, err := retryRpcPost(r.Meta(), "polardb", "2017-08-01", "ModifyDBNodeClass", request1, operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_polardb_db_node: ModifyDBNodeClass", err.Error())
 			return
 		}
-		if _, err := dbNodeWaitSettled(ctx, r.Client(), state.Id.ValueString(), operationTimeout); err != nil {
+		if _, err := dbNodeWaitSettled(ctx, r.Meta(), state.Id.ValueString(), operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_polardb_db_node: waiting after ModifyDBNodeClass", err.Error())
 			return
 		}
@@ -713,7 +713,7 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			"DBNodeId":    state.Id.ValueString(),
 			"ClientToken": buildClientToken("ModifyDBNodeSccMode"),
 		}
-		request2["RegionId"] = r.Client().RegionId
+		request2["RegionId"] = r.Meta().RegionId
 		if err := fwApplyMappings(request2, operationValues2, fwChangedUpdateMappings([]fwMapping{
 			{Source: "$.DBClusterId", Target: "DBClusterId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 			{Source: "$.DBNodeId", Target: "DBNodeId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
@@ -722,18 +722,18 @@ func (r *dbNodeResource) Update(ctx context.Context, req resource.UpdateRequest,
 			resp.Diagnostics.AddError("Building ModifyDBNodeSccMode request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(r.Client(), "polardb", "2017-08-01", "ModifyDBNodeSccMode", request2, operationTimeout); err != nil {
+		if _, err := retryRpcPost(r.Meta(), "polardb", "2017-08-01", "ModifyDBNodeSccMode", request2, operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_polardb_db_node: ModifyDBNodeSccMode", err.Error())
 			return
 		}
-		if _, err := dbNodeWaitSettled(ctx, r.Client(), state.Id.ValueString(), operationTimeout); err != nil {
+		if _, err := dbNodeWaitSettled(ctx, r.Meta(), state.Id.ValueString(), operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Updating alicloud_polardb_db_node: waiting after ModifyDBNodeSccMode", err.Error())
 			return
 		}
 	}
 	// ModifyDBNodesClass is marked as a separate association resource in metadata.
 	// Shared input fields do not make it part of this resource's update contract.
-	object, err := dbNodeGet(r.Client(), state.Id.ValueString())
+	object, err := dbNodeGet(r.Meta(), state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling DescribeDBClusters", dbNodeTypeName),
@@ -761,7 +761,7 @@ func (r *dbNodeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	deleteValues := map[string]interface{}{"RegionId": r.Client().RegionId}
+	deleteValues := map[string]interface{}{"RegionId": r.Meta().RegionId}
 	if !state.AutoUseCoupon.IsNull() && !state.AutoUseCoupon.IsUnknown() {
 		deleteValues["AutoUseCoupon"] = fwValueToInterface(state.AutoUseCoupon, map[string]fwWireField{}, false)
 	}
@@ -838,7 +838,7 @@ func (r *dbNodeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	if deleteEligible0 {
 		request0 := map[string]interface{}{"ClientToken": buildClientToken("DeleteDBNodes")}
-		request0["RegionId"] = r.Client().RegionId
+		request0["RegionId"] = r.Meta().RegionId
 		if err := fwApplyMappings(request0, deleteValues, []fwMapping{
 			{Source: "$.DBClusterId", Target: "DBClusterId", Encoding: "", Constant: "", Repeat: false, Values: map[string]string{}},
 			{Source: "$.DBNodeIds[*]", Target: "DBNodeId[*]", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
@@ -846,14 +846,14 @@ func (r *dbNodeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			resp.Diagnostics.AddError("Building DeleteDBNodes request", err.Error())
 			return
 		}
-		if _, err := retryRpcPost(r.Client(), "polardb", "2017-08-01", "DeleteDBNodes", request0, operationTimeout); err != nil && !dbNodeNotExist(err) {
+		if _, err := retryRpcPost(r.Meta(), "polardb", "2017-08-01", "DeleteDBNodes", request0, operationTimeout); err != nil && !dbNodeNotExist(err) {
 			resp.Diagnostics.AddError("Deleting alicloud_polardb_db_node: DeleteDBNodes", err.Error())
 			return
 		}
 		// DeleteDBNodes is asynchronous: wait until the node is gone so that a
 		// following cluster operation, destroy or CheckDestroy does not observe a
 		// node that is still leaving the cluster.
-		if err := dbNodeWaitDeleted(ctx, r.Client(), state.Id.ValueString(), operationTimeout); err != nil {
+		if err := dbNodeWaitDeleted(ctx, r.Meta(), state.Id.ValueString(), operationTimeout); err != nil {
 			resp.Diagnostics.AddError("Deleting alicloud_polardb_db_node: waiting for node removal", err.Error())
 			return
 		}
