@@ -81,8 +81,10 @@ func TestAccAliCloudNatGatewayCapacityReservation_basic(t *testing.T) {
 // shape and the response parsing without network access.
 func TestUnitAliCloudNatGatewayCapacityReservation(t *testing.T) {
 	rawClient := unitTestMockClient(t)
+	var capturedAction string
 	var capturedQuery map[string]interface{}
 	patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action, protocol, method, version, authType *string, query map[string]interface{}, body map[string]interface{}, runtime *util.RuntimeOptions) (map[string]interface{}, error) {
+		capturedAction = *action
 		capturedQuery = query
 		return map[string]interface{}{
 			"NatGatewayId":              "ngw-test",
@@ -104,8 +106,8 @@ func TestUnitAliCloudNatGatewayCapacityReservation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("describing capacity reservation failed: %s", err)
 	}
-	if got := fmt.Sprint(capturedQuery["Action"]); got != "DescribeNatGatewayCapacityReservation" {
-		t.Fatalf("unexpected action: %s", got)
+	if capturedAction != "DescribeNatGatewayCapacityReservation" {
+		t.Fatalf("unexpected action: %s", capturedAction)
 	}
 	if got := fmt.Sprint(capturedQuery["NatGatewayId"]); got != "ngw-test" {
 		t.Fatalf("unexpected NatGatewayId: %s", got)
