@@ -946,7 +946,8 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 
 // Case ServerGroup Test_health_check_req_exp
 // Covers HealthCheckConfig.HealthCheckReq/HealthCheckExp: the values must
-// round-trip across create, update, removal and import.
+// round-trip across create, update and import, and removing them from the
+// configuration must converge on the value the service keeps.
 func TestAccAliCloudGwlbServerGroup_healthCheckReqExp(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gwlb_server_group.default"
@@ -1042,6 +1043,9 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"dry_run"},
 			},
 			{
+				// The service keeps the current request/expect values when they are omitted
+				// from an update, so removing them from the configuration must converge on
+				// the retained value instead of producing a permanent diff.
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_config": []map[string]interface{}{
 						{
@@ -1058,8 +1062,8 @@ func TestAccAliCloudGwlbServerGroup_healthCheckReqExp(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_config.0.health_check_protocol": "TCP",
-						"health_check_config.0.health_check_req":      "",
-						"health_check_config.0.health_check_exp":      "",
+						"health_check_config.0.health_check_req":      "tfreqlupdate",
+						"health_check_config.0.health_check_exp":      "tfexpupdate",
 					}),
 				),
 			},

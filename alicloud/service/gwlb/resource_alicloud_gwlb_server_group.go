@@ -149,10 +149,12 @@ func ResourceServerGroup() *schema.Resource {
 						"health_check_req": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"health_check_exp": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
