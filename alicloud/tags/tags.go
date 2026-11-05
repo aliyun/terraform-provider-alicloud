@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -529,4 +530,116 @@ func ExpandTagsToMapWithTags(originMap map[string]interface{}, tags []map[string
 	}
 
 	return originMap
+}
+
+// MergeTags overlays resourceTags on top of defaultTags: a key present in the
+// resource's own tags overrides the provider default of the same key, matching
+// the AWS default_tags precedence. A nil defaultTags is treated as empty so
+// callers can pass client.DefaultTags unconditionally.
+func MergeTags(defaultTags, resourceTags map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{}, len(defaultTags)+len(resourceTags))
+	for k, v := range defaultTags {
+		result[k] = v
+	}
+	for k, v := range resourceTags {
+		result[k] = v
+	}
+	return result
+}
+
+// TagsAllSchema is the Computed mirror of a resource's tags field that carries
+// the provider default_tags merged with the resource's own tags. Resources that
+// opt into provider-level default_tags declare it alongside their tags field;
+// CustomizeDiffDefaultTags keeps it in sync so a change to provider default_tags
+// alone plans an update. With no default_tags configured tags_all equals tags,
+// so behaviour is unchanged for providers that do not configure default_tags.
+func TagsAllSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Computed: true,
+		Elem: &schema.Schema{
+			Type: schema.TypeString,
+		},
+	}
+}
+
+// tagsMapsEqual reports whether two tag maps hold the same key/value pairs.
+// Values are compared by their string form so a default tag value read back as
+// a Go string matches the interface{} the provider configuration held.
+func tagsMapsEqual(a, b map[string]interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		bv, ok := b[k]
+		if !ok || fmt.Sprintf("%v", v) != fmt.Sprintf("%v", bv) {
+			return false
+		}
+	}
+	return true
+}
+
+// StripDefaultTags returns cloudTags without the entries that match a provider
+// default tag (same key and value). Use it when reading a resource's tags back
+// into its user-managed tags field so that default tags are not reported as
+// user-configured drift; the merged set is reported via tags_all instead. A
+// resource that overrides a default key with a different value keeps that
+// override in the returned tags.
+func StripDefaultTags(cloudTags map[string]string, defaultTags map[string]interface{}) map[string]string {
+	result := make(map[string]string, len(cloudTags))
+	for k, v := range cloudTags {
+		if dv, ok := defaultTags[k]; ok && fmt.Sprintf("%v", dv) == v {
+			continue
+		}
+		result[k] = v
+	}
+	return result
+}
+
+// SetTagsWithDefault is the default_tags-aware counterpart of SetTags. When
+// provider default_tags are configured the effective tag set is the merge of
+// default_tags and the resource's tags, so a change to provider default_tags
+// (with the resource's own tags unchanged) is still propagated. The prior
+// effective set is read from tags_all, which the Read path keeps equal to the
+// cloud's full tag set; with no default_tags configured it falls back to
+// SetTags, preserving the original tags-only behaviour.
+func SetTagsWithDefault(client *connectivity.AliyunClient, resourceType TagResourceType, d *schema.ResourceData) error {
+	if len(client.DefaultTags) == 0 {
+		return SetTags(client, resourceType, d)
+	}
+	oldEffective, _ := d.Get("tags_all").(map[string]interface{})
+	newEffective := MergeTags(client.DefaultTags, d.Get("tags").(map[string]interface{}))
+	if !tagsMapsEqual(oldEffective, newEffective) {
+		return UpdateTags(client, []string{d.Id()}, resourceType, oldEffective, newEffective)
+	}
+	return nil
+}
+
+// CustomizeDiffDefaultTags keeps a resource's tags_all equal to the merge of
+// the provider default_tags and the resource's own tags. It is the only place
+// that can turn a change to provider default_tags (which the resource's tags
+// field does not reflect) into a planned update: when the merged set differs
+// from the tags_all held in state it marks tags_all for recompute, which drives
+// the resource's Update so SetTagsWithDefault can apply the delta. With no
+// default_tags configured it is a no-op and the tags field drives updates as
+// before. A nil client (meta unavailable at plan time) is treated as no
+// default_tags, so the resource still updates on its own tags field.
+func CustomizeDiffDefaultTags(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	client, ok := meta.(*connectivity.AliyunClient)
+	if !ok || client == nil || len(client.DefaultTags) == 0 {
+		return nil
+	}
+	// On a brand-new resource d.Id() is empty: tags_all has no prior state to
+	// reconcile against, and Create sets it after apply, so skip the drift
+	// guard. (*schema.ResourceDiff has no IsNewResource; Id()=="" is the SDK
+	// v2 CustomizeDiff convention, e.g. cloudfirewall instance v2.)
+	if d.Id() == "" {
+		return nil
+	}
+	oldEffective, _ := d.Get("tags_all").(map[string]interface{})
+	newEffective := MergeTags(client.DefaultTags, d.Get("tags").(map[string]interface{}))
+	if !tagsMapsEqual(oldEffective, newEffective) {
+		return d.SetNewComputed("tags_all")
+	}
+	return nil
 }

@@ -99,6 +99,16 @@ func TestUnitProviderSchema(t *testing.T) {
 				},
 			},
 		},
+		// A TypeMap whose Elem is a *schema.Schema (e.g. default_tags.tags) is
+		// converted to a framework MapAttribute; this case guards the mux
+		// byte-identity of that conversion against the SDK v2 TypeMap proto.
+		"map of strings": {
+			"a_map": {
+				Type:     sdkschema.TypeMap,
+				Optional: true,
+				Elem:     &sdkschema.Schema{Type: sdkschema.TypeString},
+			},
+		},
 	}
 
 	for name, sdk := range testCases {

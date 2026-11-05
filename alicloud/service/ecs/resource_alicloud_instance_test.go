@@ -6544,3 +6544,140 @@ func TestAccAliCloudECSInstanceAdditionalAttributes(t *testing.T) {
 		},
 	})
 }
+
+// resourceECSInstanceDefaultTagsDependence returns the data sources and VPC
+// resources the instance depends on, plus a provider block carrying
+// provider-level default_tags so the resource's tags_all is the merge of the
+// defaults and the resource's own tags. providerTags is an HCL map literal.
+func resourceECSInstanceDefaultTagsDependence(name, providerTags string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+provider "alicloud" {
+  default_tags {
+    tags = %s
+  }
+}
+
+data "alicloud_images" "default" {
+  name_regex = "^ubuntu_18.*64"
+  owners     = "system"
+}
+
+data "alicloud_instance_types" "default" {
+  image_id             = data.alicloud_images.default.images.0.id
+  system_disk_category = "cloud_essd"
+}
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+`, name, providerTags)
+}
+
+// TestAccAliCloudECSInstanceDefaultTags covers the provider default_tags
+// behaviour on alicloud_instance: a resource tag overrides the matching
+// default, default-only tags are stripped from the user-managed tags field on
+// read, tags_all carries the merged set, and a change to a provider default
+// value (with the resource's own tags unchanged) propagates via tags_all.
+func TestAccAliCloudECSInstanceDefaultTags(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"tags.%":     NOSET,
+		"tags_all.%": NOSET,
+	})
+	serviceFunc := func() interface{} {
+		return ecssvc.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := tfacctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsInstanceDefaultTags%d", rand)
+	cfg := func(providerTags string, resourceTags map[string]string) string {
+		return resourceTestAccConfigFunc(resourceId, name, func(n string) string {
+			return resourceECSInstanceDefaultTagsDependence(n, providerTags)
+		})(map[string]interface{}{
+			"image_id":                   "${data.alicloud_images.default.images.0.id}",
+			"instance_type":              "${data.alicloud_instance_types.default.instance_types.0.id}",
+			"availability_zone":          "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+			"security_groups":            []string{"${alicloud_security_group.default.id}"},
+			"vswitch_id":                 "${alicloud_vswitch.default.id}",
+			"instance_name":              name,
+			"system_disk_category":       "cloud_essd",
+			"internet_max_bandwidth_out": "0",
+			"tags":                       resourceTags,
+		})
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				// default_tags = {env=prod, team=a}; the resource overrides env and adds role.
+				// tags_all is the merge (env=dev overrides, team=a from default, role=web);
+				// tags is the user-managed set with the matching default (team) stripped.
+				Config: cfg(`{ env = "prod", team = "a" }`, map[string]string{
+					"env":  "dev",
+					"role": "web",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":        "2",
+						"tags.env":      "dev",
+						"tags.role":     "web",
+						"tags_all.%":    "3",
+						"tags_all.env":  "dev",
+						"tags_all.team": "a",
+						"tags_all.role": "web",
+					}),
+				),
+			},
+			{
+				// Change a provider default value (team a->b) with the resource tags
+				// unchanged: the default-only change must propagate to tags_all.
+				Config: cfg(`{ env = "prod", team = "b" }`, map[string]string{
+					"env":  "dev",
+					"role": "web",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":        "2",
+						"tags.env":      "dev",
+						"tags.role":     "web",
+						"tags_all.%":    "3",
+						"tags_all.env":  "dev",
+						"tags_all.team": "b",
+						"tags_all.role": "web",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}

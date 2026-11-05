@@ -58,6 +58,49 @@ func TestTagsMapEqual(t *testing.T) {
 // Tag converters moved from alicloud/common.go; test names are unchanged
 // from alicloud/common_test.go.
 
+func TestUnitMergeTags(t *testing.T) {
+	// A resource tag overrides the matching provider default of the same key.
+	defaults := map[string]interface{}{"env": "prod", "team": "a"}
+	resource := map[string]interface{}{"env": "dev", "role": "web"}
+	merged := MergeTags(defaults, resource)
+	assert.Equal(t, "dev", merged["env"], "resource tag overrides default")
+	assert.Equal(t, "a", merged["team"], "default-only key carried through")
+	assert.Equal(t, "web", merged["role"], "resource-only key carried through")
+	assert.Equal(t, 3, len(merged))
+
+	// With no default_tags the merge is the resource tags themselves, so a
+	// provider that does not configure default_tags behaves exactly as before.
+	assert.Equal(t, resource, MergeTags(nil, resource))
+	assert.Equal(t, 2, len(MergeTags(nil, resource)))
+}
+
+func TestUnitStripDefaultTags(t *testing.T) {
+	defaults := map[string]interface{}{"env": "prod", "team": "a"}
+	cloud := map[string]string{
+		"env":  "prod", // matches the default exactly -> stripped
+		"team": "b",    // overrides the default value -> kept
+		"role": "web",  // resource-only -> kept
+	}
+	stripped := StripDefaultTags(cloud, defaults)
+	_, hasEnv := stripped["env"]
+	assert.False(t, hasEnv, "an entry matching a default is stripped from user tags")
+	assert.Equal(t, "b", stripped["team"], "an overridden default value is kept")
+	assert.Equal(t, "web", stripped["role"], "a resource-only tag is kept")
+	assert.Equal(t, 2, len(stripped))
+
+	// With no default_tags the cloud set is returned unchanged.
+	assert.Equal(t, len(cloud), len(StripDefaultTags(cloud, nil)))
+}
+
+func TestUnitTagsMapsEqual(t *testing.T) {
+	a := map[string]interface{}{"env": "prod", "team": "a"}
+	b := map[string]interface{}{"team": "a", "env": "prod"}
+	assert.True(t, tagsMapsEqual(a, b), "same pairs in a different order are equal")
+	assert.False(t, tagsMapsEqual(a, map[string]interface{}{"env": "prod"}), "different length is not equal")
+	assert.False(t, tagsMapsEqual(a, map[string]interface{}{"env": "dev", "team": "a"}), "a different value is not equal")
+	assert.True(t, tagsMapsEqual(map[string]interface{}{}, map[string]interface{}{}))
+}
+
 func TestUnitCommonConvertTags(t *testing.T) {
 	tests := []struct {
 		name     string

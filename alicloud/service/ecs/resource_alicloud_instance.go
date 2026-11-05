@@ -507,6 +507,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				}, false),
 			},
 			"tags":        tagsSchemaWithIgnore(),
+			"tags_all":    tagsAllSchema(),
 			"volume_tags": tagsSchemaComputed(),
 			"auto_release_time": {
 				Type:     schema.TypeString,
@@ -1007,9 +1008,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DeletionProtection"] = v
 	}
 
-	if v, ok := d.GetOk("tags"); ok {
+	// Provider default_tags are merged over the resource's own tags so the
+	// instance carries the defaults; a resource key overrides the matching
+	// default. With no default_tags configured mergedTags equals the user tags
+	// and the RunInstances request is unchanged.
+	mergedTags := mergeTags(client.DefaultTags, d.Get("tags").(map[string]interface{}))
+	if len(mergedTags) > 0 {
 		count := 1
-		for key, value := range v.(map[string]interface{}) {
+		for key, value := range mergedTags {
 			request[fmt.Sprintf("Tag.%d.Key", count)] = key
 			request[fmt.Sprintf("Tag.%d.Value", count)] = value
 			count++
@@ -1421,7 +1427,12 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	} else {
 		d.Set("auto_release_time", instance.AutoReleaseTime)
 	}
-	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
+	// tags_all carries the cloud's full tag set (provider defaults merged with
+	// the resource's own tags); tags carries only the user-managed set, with the
+	// matching default entries stripped so default_tags are not reported as drift.
+	cloudTags := ecsService.tagsToMap(instance.Tags.Tag)
+	d.Set("tags_all", cloudTags)
+	d.Set("tags", stripDefaultTags(cloudTags, client.DefaultTags))
 	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	d.Set("deployment_set_id", instance.DeploymentSetId)
 	d.Set("deployment_set_group_no", fmt.Sprintf("%v", instance.DeploymentSetGroupNo))
@@ -1798,7 +1809,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	d.Partial(true)
 
 	if !d.IsNewResource() {
-		if err := setTags(client, TagResourceInstance, d); err != nil {
+		if err := setTagsWithDefault(client, TagResourceInstance, d); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -2779,6 +2790,10 @@ func resourceAliCloudInstanceCustomizeDiff(ctx context.Context, diff *schema.Res
 		if len(merged) > 10 {
 			return fmt.Errorf("additional_attributes: merged with the provider defaults the request would carry %d AdditionalAttributes items %v, but DescribeInstances accepts at most 10, so at most 5 values outside the defaults can be configured", len(merged), merged)
 		}
+	}
+
+	if err := customizeDiffDefaultTags(ctx, diff, meta); err != nil {
+		return err
 	}
 
 	client, ok := meta.(*connectivity.AliyunClient)

@@ -182,6 +182,8 @@ The following arguments are supported:
   - Key: It can be up to `128` characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to `128` characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
+* `tags_all` - (Computed) A map of tags assigned to the resource, containing the provider `default_tags` merged with the resource `tags`.
+
 * `volume_tags` - (Optional) A mapping of tags to assign to the devices created by the instance at launch time.
   - Key: It can be up to `128` characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to `128` characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
