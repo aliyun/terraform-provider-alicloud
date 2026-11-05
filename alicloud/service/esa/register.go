@@ -12,6 +12,9 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ESA",
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_esa_site_custom_log", Factory: NewSiteCustomLogResource},
+		},
 		SDKResources: []conns.SDKResource{
 			{TypeName: "alicloud_esa_site_environment", Factory: ResourceSiteEnvironment},
 			{TypeName: "alicloud_esa_cache_reserve_instance", Factory: resourceAliCloudEsaCacheReserveInstance},
