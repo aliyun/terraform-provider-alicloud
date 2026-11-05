@@ -39,6 +39,7 @@ type listenerAclAttachmentResourceModel struct {
 	AclId      types.String `tfsdk:"acl_id"`
 	AclType    types.String `tfsdk:"acl_type"`
 	AclStatus  types.String `tfsdk:"acl_status"`
+	AclPending types.Bool   `tfsdk:"acl_pending"`
 }
 
 // listenerIdAttributeValidator validates the listener identity of both the
@@ -126,7 +127,14 @@ func (r *listenerAclAttachmentResource) Schema(ctx context.Context, req resource
 			},
 			"acl_status": schema.StringAttribute{
 				Computed:    true,
-				Description: "The access control status of the listener.",
+				Description: "The access control status of the listener, as reported by the last successful read.",
+			},
+			"acl_pending": schema.BoolAttribute{
+				Computed: true,
+				Description: "Whether the last access control write has not been confirmed by the listener yet. " +
+					"It is true after a write whose outcome could not be verified: the planned identity is kept in state, " +
+					"the refresh never drops it while it is pending, and a destroy only releases the binding that is " +
+					"actually attributed to this resource.",
 			},
 		},
 	}
@@ -225,7 +233,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		return
 	}
 
-	listenerId, _, err := parseListenerAclAttachmentId(state.Id.ValueString())
+	listenerId, idAclId, err := parseListenerAclAttachmentId(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s: parsing resource ID", listenerAclAttachmentTypeName),
@@ -233,8 +241,12 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 		)
 		return
 	}
+	aclId := state.AclId.ValueString()
+	if aclId == "" {
+		aclId = idAclId
+	}
 
-	if err := deleteListenerAclAttachment(ctx, r.api(), listenerId); err != nil {
+	if err := deleteListenerAclAttachment(ctx, r.api(), listenerId, aclId, state.AclPending.ValueBool()); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s", listenerAclAttachmentTypeName),
 			err.Error(),
@@ -267,31 +279,39 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	listenerId := plan.ListenerId.ValueString()
 	aclId := plan.AclId.ValueString()
 	aclType := plan.AclType.ValueString()
-	planState := listenerAclAttachmentPlanState(plan)
+	planState := listenerAclAttachmentPendingState(plan)
 
 	writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancelWrite()
 	if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
-		if !isUnresolvedListenerAclWrite(ctx, writeCtx, err) {
+		if !isUnconfirmedListenerAclWrite(err) {
+			// The service refused the request, so no binding was created and no
+			// state is written.
 			return listenerAclAttachmentResourceModel{}, nil, err
 		}
-		// The request may have been applied. Confirm the enabled status, the
-		// membership and the planned type before adopting the binding. The
-		// readback gets its own bounded window so an eventually consistent
-		// response does not drop an applied binding.
-		confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
-		defer cancel()
-		object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
-		if confirmed {
-			return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
-				fmt.Sprintf("The request that binds policy group %s to listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", aclId, listenerId),
-			}, nil
+		// A parent deadline or cancellation stops the reconciliation request, but
+		// the write may already be on the wire. The planned identity is still kept,
+		// as pending, instead of dropping a binding that could exist.
+		if ctx.Err() == nil {
+			// The request may have been applied. Confirm the enabled status, the
+			// membership and the planned type before adopting the binding. The
+			// readback gets its own bounded window so an eventually consistent
+			// response does not drop an applied binding.
+			confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
+			defer cancel()
+			object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
+			if confirmed {
+				return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
+					fmt.Sprintf("The request that binds policy group %s to listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", aclId, listenerId),
+				}, nil
+			}
 		}
 		// The request may still have reached the service. Keep the planned identity
-		// so a later refresh or destroy can release an applied binding instead of
-		// leaving an enabled ACL unmanaged; the diagnostic keeps the failure visible.
+		// as pending so a later refresh never drops it and a destroy can release an
+		// applied binding instead of leaving an enabled ACL unmanaged; the
+		// diagnostic keeps the failure visible.
 		return planState, nil, fmt.Errorf(
-			"the request that binds policy group %s to listener %s returned an unknown result and the listener did not confirm the planned access control settings within %s; the planned identity is kept in state and will be reconciled on the next refresh: %v",
+			"the request that binds policy group %s to listener %s returned an unknown result and the listener did not confirm the planned access control settings within %s; the planned identity is kept in state as pending (acl_pending = true) and will be reconciled on the next refresh: %v",
 			aclId, listenerId, listenerAclAttachmentConfirmTimeout, err,
 		)
 	}
@@ -304,7 +324,7 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	object, converged, complete, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
 	if err != nil {
 		return planState, []string{
-			fmt.Sprintf("The policy group %s was bound to listener %s, but reading the listener failed: %s. The binding is kept in state and will be reconciled on the next refresh.", aclId, listenerId, err),
+			fmt.Sprintf("The policy group %s was bound to listener %s, but reading the listener failed: %s. The planned identity is kept in state as pending and will be reconciled on the next refresh.", aclId, listenerId, err),
 		}, nil
 	}
 	if !converged {
@@ -321,7 +341,7 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 			)
 		}
 		return planState, []string{
-			fmt.Sprintf("The policy group %s was bound to listener %s, but the listener did not report the planned access control settings within the read budget. The planned identity is kept and will be reconciled on the next refresh.", aclId, listenerId),
+			fmt.Sprintf("The policy group %s was bound to listener %s, but the listener did not report the planned access control settings within the read budget. The planned identity is kept as pending and will be reconciled on the next refresh.", aclId, listenerId),
 		}, nil
 	}
 	return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
@@ -336,27 +356,30 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	aclType := plan.AclType.ValueString()
 
 	if !plan.AclId.Equal(state.AclId) || !plan.AclType.Equal(state.AclType) {
-		planState := listenerAclAttachmentPlanState(plan)
+		planState := listenerAclAttachmentPendingState(plan)
 		writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 		defer cancelWrite()
 		if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
-			if !isUnresolvedListenerAclWrite(ctx, writeCtx, err) {
+			if !isUnconfirmedListenerAclWrite(err) {
 				return listenerAclAttachmentResourceModel{}, nil, err
 			}
-			confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
-			defer cancel()
-			object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
-			if !confirmed {
-				// Same rule as create: keep the planned identity of a write that may
-				// have reached the service, so the change stays recoverable.
-				return planState, nil, fmt.Errorf(
-					"the request that updates the access control settings of listener %s returned an unknown result and the listener did not confirm the planned settings within %s; the planned identity is kept in state and will be reconciled on the next refresh: %v",
-					listenerId, listenerAclAttachmentConfirmTimeout, err,
-				)
+			if ctx.Err() == nil {
+				confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
+				defer cancel()
+				object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
+				if confirmed {
+					return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
+						fmt.Sprintf("The request that updates the access control settings of listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", listenerId),
+					}, nil
+				}
 			}
-			return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
-				fmt.Sprintf("The request that updates the access control settings of listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", listenerId),
-			}, nil
+			// Same rule as create: keep the planned identity of a write that may
+			// have reached the service, as pending, so the change stays recoverable
+			// even when the parent deadline stopped the reconciliation request.
+			return planState, nil, fmt.Errorf(
+				"the request that updates the access control settings of listener %s returned an unknown result and the listener did not confirm the planned settings within %s; the planned identity is kept in state as pending (acl_pending = true) and will be reconciled on the next refresh: %v",
+				listenerId, listenerAclAttachmentConfirmTimeout, err,
+			)
 		}
 
 		// The write was acknowledged: wait for the listener to report the
@@ -366,7 +389,7 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		object, converged, complete, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
 		if err != nil {
 			return planState, []string{
-				fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
+				fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept as pending and will be reconciled on the next refresh.", listenerId, err),
 			}, nil
 		}
 		if !converged {
@@ -380,7 +403,7 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 				)
 			}
 			return planState, []string{
-				fmt.Sprintf("The access control settings of listener %s were updated, but the listener did not report the planned settings within the read budget. The planned state is kept and will be reconciled on the next refresh.", listenerId),
+				fmt.Sprintf("The access control settings of listener %s were updated, but the listener did not report the planned settings within the read budget. The planned state is kept as pending and will be reconciled on the next refresh.", listenerId),
 			}, nil
 		}
 		return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
@@ -388,12 +411,19 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 
 	// No ACL field changed, so a single read is enough to refresh the server
 	// values.
-	planState := listenerAclAttachmentPlanState(plan)
 	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
-		return planState, []string{
-			fmt.Sprintf("Reading the access control settings of listener %s failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
+		// No write is outstanding, so the previous state is kept unchanged. Marking
+		// it pending here would wrongly stop a later refresh from removing an object
+		// that access control no longer binds.
+		return state, []string{
+			fmt.Sprintf("Reading the access control settings of listener %s failed: %s. The previous state is kept and will be refreshed again later.", listenerId, err),
 		}, nil
+	}
+	if state.AclPending.ValueBool() && !listenerAclAttachmentConfirms(object, aclId, state.AclType.ValueString()) {
+		// The outstanding write is still not confirmed by this response: keeping the
+		// pending marker stops a single read from settling an unproven change.
+		return state, nil, nil
 	}
 	return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
 }
@@ -438,6 +468,13 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	// and a partial imported resource would silently claim a binding that was
 	// never proven. Such a read reports the pending confirmation instead.
 	importing := state.ListenerId.IsNull()
+	// A pending write may still be applied by the service. While it is pending the
+	// identity is never dropped by an observation that merely does not show the
+	// planned binding: first read lag, a stale group and a still disabled listener
+	// all leave the outcome unproven, and dropping the object would orphan an
+	// applied binding. The marker clears as soon as a complete response proves the
+	// planned binding.
+	pending := state.AclPending.ValueBool()
 	status, statusKnown := listenerAclStatus(object)
 	if !statusKnown {
 		if importing {
@@ -449,6 +486,9 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 		return state, true, nil
 	}
 	if strings.EqualFold(status, "off") {
+		if pending {
+			return state, true, nil
+		}
 		return listenerAclAttachmentResourceModel{}, false, nil
 	}
 	if !strings.EqualFold(status, "on") {
@@ -464,9 +504,10 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	aclIds, membersReported, membersComplete := listenerAclIds(object)
 	if !membersReported || !membersComplete {
 		// An enabled listener always reports its members, so a response that omits
-		// them has not reported the membership: it cannot prove that the managed
-		// group was removed. Keeping the state avoids dropping a live binding on a
-		// gateway that serialises the list differently.
+		// them, reports them unreadably or reports an empty set has not reported
+		// the membership: it cannot prove that the managed group was removed.
+		// Keeping the state avoids dropping a live or pending binding on a gateway
+		// that serialises the list differently.
 		if importing {
 			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
 				"cannot confirm the imported binding of listener %s: the describe response did not report a usable access control member list",
@@ -494,6 +535,9 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 		// target identity is never guessed.
 		switch len(aclIds) {
 		case 0:
+			if pending {
+				return state, true, nil
+			}
 			return listenerAclAttachmentResourceModel{}, false, nil
 		case 1:
 			targetAclId = aclIds[0]
@@ -504,6 +548,12 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 			)
 		}
 	} else if !listenerAclContains(object, targetAclId) {
+		if pending {
+			// The old group or another group is still bound. That does not prove the
+			// pending write failed, so the managed identity stays pending instead of
+			// being removed from state.
+			return state, true, nil
+		}
 		return listenerAclAttachmentResourceModel{}, false, nil
 	}
 
@@ -512,7 +562,13 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 
 // deleteListenerAclAttachment only disables access control and never deletes or
 // rebuilds the listener. The caller supplies the single operation deadline.
-func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, listenerId string) error {
+//
+// When the last write is still pending, the caller cannot prove that the binding
+// on the listener belongs to this resource. The release is then attributed: the
+// managed policy group has to be reported as a member before access control is
+// disabled, so destroying a resource whose write never landed cannot switch off
+// a group that another resource manages.
+func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, listenerId, aclId string, pending bool) error {
 	// A single deadline covers the pre-read, the disabling write and the
 	// status polling, so a Delete cannot spend the budget three times over.
 	ctx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
@@ -534,6 +590,18 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	}
 	if !strings.EqualFold(status, "on") {
 		return fmt.Errorf("cannot confirm that listener %s no longer uses access control: the describe response reported AclStatus %q", listenerId, status)
+	}
+	if pending {
+		_, membersReported, membersComplete := listenerAclIds(object)
+		if !membersReported || !membersComplete {
+			return fmt.Errorf("cannot attribute the pending access control binding of listener %s: the describe response did not report a usable access control member list, so disabling it could release a group this resource does not manage", listenerId)
+		}
+		if aclId == "" || !listenerAclContains(object, aclId) {
+			// The planned group is not bound, so the unconfirmed write never landed:
+			// this resource has nothing to release, and disabling access control
+			// would switch off another group.
+			return nil
+		}
 	}
 	if err := api.SetAcl(ctx, listenerId, "", "", false); err != nil {
 		return err
@@ -577,17 +645,20 @@ func listenerAclAttachmentIdentityKnown(model listenerAclAttachmentResourceModel
 	return !model.ListenerId.IsNull() || !model.Id.IsNull()
 }
 
-// listenerAclAttachmentPlanState stores the identity that is already known
-// once the write succeeds. It is used before the first read so that a transient
-// read failure can never leave an unmanaged binding behind; the next refresh
-// replaces the assumed status with the server values.
-func listenerAclAttachmentPlanState(plan listenerAclAttachmentResourceModel) listenerAclAttachmentResourceModel {
+// listenerAclAttachmentPendingState stores the identity of a write whose
+// confirmation is still outstanding. The planned fields are kept so a later
+// refresh can reconcile or destroy the binding, the status stays unknown because
+// the listener never confirmed it, and acl_pending marks the object so the
+// refresh does not drop it when it still observes the old group or a disabled
+// listener.
+func listenerAclAttachmentPendingState(plan listenerAclAttachmentResourceModel) listenerAclAttachmentResourceModel {
 	return listenerAclAttachmentResourceModel{
 		Id:         types.StringValue(plan.ListenerId.ValueString()),
 		ListenerId: plan.ListenerId,
 		AclId:      plan.AclId,
 		AclType:    plan.AclType,
-		AclStatus:  types.StringValue("on"),
+		AclStatus:  types.StringNull(),
+		AclPending: types.BoolValue(true),
 	}
 }
 
@@ -597,6 +668,7 @@ func listenerAclAttachmentState(listenerId, aclId string, aclType types.String, 
 		ListenerId: types.StringValue(listenerId),
 		AclId:      types.StringValue(aclId),
 		AclType:    aclType,
+		AclPending: types.BoolValue(false),
 	}
 	if value, ok := object["AclType"].(string); ok && value != "" {
 		model.AclType = types.StringValue(value)

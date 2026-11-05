@@ -171,7 +171,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - (String) The resource ID in terraform of the listener ACL attachment. It formats as `<load_balancer_id>:<protocol>:<listener_port>`, which is the ID of the listener whose ACL binding is managed.
-* `acl_status` - (String) The access control status of the listener.
+* `acl_status` - (String) The access control status of the listener, as reported by the last successful read.
+* `acl_pending` - (Bool) Whether the last access control write has not been confirmed by the listener yet. It is `true` after a write whose result could not be verified: the planned `acl_id` and `acl_type` are kept in state, a refresh does not remove the resource while the listener still reports the previous group or a disabled ACL, and a destroy only releases the binding that is attributed to this resource. It becomes `false` once the listener reports the planned binding.
 
 ## Import
 

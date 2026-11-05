@@ -270,18 +270,6 @@ func TestUnitListenerAclAttachmentDebugLogIsRedacted(t *testing.T) {
 // same moment: reconciling it could adopt a pre-existing matching binding as the
 // result of a refused write.
 func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
-	alive := context.Background()
-	expired := func() context.Context {
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel()
-		return ctx
-	}
-	pastDeadline := func() context.Context {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
-		defer cancel()
-		return ctx
-	}
-
 	terminal := &tea.SDKError{
 		StatusCode: tea.Int(400),
 		Code:       tea.String("QuotaLimitExceeds.AclListenerOverLimit"),
@@ -309,26 +297,27 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 	)
 
 	cases := []struct {
-		name     string
-		parent   context.Context
-		writeCtx context.Context
-		err      error
-		want     bool
+		name string
+		err  error
+		want bool
 	}{
-		{"terminal rejection wins over an expired write budget", alive, expired(), terminal, false},
-		{"terminal rejection wins over a passed deadline", alive, pastDeadline(), terminal, false},
-		{"undecodable 4xx rejection wins over an expired write budget", alive, expired(), rejection, false},
-		{"production wrapped rejection wins over an expired write budget", alive, expired(), productionRejection, false},
-		{"production wrapped deadline with a live write budget stays unresolved", alive, context.Background(), productionDeadline, true},
-		{"expired write budget keeps a transport failure unresolved", alive, expired(), transport, true},
-		{"transport failure stays unresolved", alive, context.Background(), transport, true},
-		{"5xx answer stays unresolved", alive, context.Background(), serverFailure, true},
-		{"cancelled parent keeps the plain failure", expired(), context.Background(), transport, false},
+		{"decoded terminal rejection", terminal, false},
+		{"undecodable 4xx rejection", rejection, false},
+		{"production wrapped rejection", productionRejection, false},
+		{"production wrapped deadline", productionDeadline, true},
+		{"transport failure", transport, true},
+		{"5xx answer", serverFailure, true},
 	}
 	for _, tc := range cases {
-		if got := isUnresolvedListenerAclWrite(tc.parent, tc.writeCtx, tc.err); got != tc.want {
-			t.Fatalf("%s: isUnresolvedListenerAclWrite = %v, want %v", tc.name, got, tc.want)
+		if got := isUnconfirmedListenerAclWrite(tc.err); got != tc.want {
+			t.Fatalf("%s: isUnconfirmedListenerAclWrite = %v, want %v", tc.name, got, tc.want)
 		}
+	}
+	// The classification must not depend on the caller's context: a cancelled
+	// parent stops further requests but does not prove that an in-flight write was
+	// not applied, so the caller still keeps the planned identity.
+	if !isUnconfirmedListenerAclWrite(transport) {
+		t.Fatal("a transport failure must stay unconfirmed even after the parent stopped")
 	}
 	if !isDefinitiveListenerAclWriteOutcome(productionRejection) {
 		t.Fatal("an explicitly rejected write must be definitive even when it is wrapped twice")

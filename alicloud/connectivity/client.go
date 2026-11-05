@@ -2698,7 +2698,18 @@ func (c contextHTTPClient) Call(request *http.Request, transport *http.Transport
 		// sockets behind.
 		defer transport.CloseIdleConnections()
 	}
-	httpClient := &http.Client{Transport: transport}
+	httpClient := &http.Client{
+		Transport: transport,
+		// A signed RPC request must not be followed to another endpoint. The
+		// standard redirect handling copies the previous URL into the Referer
+		// header, and that URL carries the access key, signature and security
+		// token, so a cross host redirect would forward the credentials to a host
+		// that never received the original request. The redirect response is
+		// returned unchanged and classified by the caller instead.
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	if c.budget > 0 {
 		httpClient.Timeout = c.budget
 	}
@@ -2735,13 +2746,23 @@ var signedURLPattern = regexp.MustCompile(`https?://[^\s"']+`)
 // carries the access key, the signature and the security token.
 var credentialParameterPattern = regexp.MustCompile(`(?i)\b(AccessKeyId|Signature|SignatureNonce|SecurityToken)=[^&\s"']*`)
 
+// quotedCredentialPattern matches the same credential names when a service or a
+// gateway echoes them as independent fields of a text payload (for example a
+// JSON fragment inside an error message) instead of a signed query string.
+var quotedCredentialPattern = regexp.MustCompile(`(?i)("?\b(AccessKeyId|AccessKeySecret|Signature|SignatureNonce|SecurityToken|Authorization)\b"?\s*[:=]\s*"?)[^"',}&;\s]*`)
+
 // redactSignedURLs removes the query string, fragment and credentials of every
 // URL in the message, and neutralises any remaining signed parameter pair. Signed
 // request parameters carry the access key, signature and security token and must
 // never reach Terraform diagnostics or a debug log.
 func redactSignedURLs(message string) string {
 	redacted := signedURLPattern.ReplaceAllStringFunc(message, redactURL)
-	return credentialParameterPattern.ReplaceAllString(redacted, "$1=<redacted>")
+	redacted = credentialParameterPattern.ReplaceAllString(redacted, "$1=<redacted>")
+	// A structured echo such as `"Signature":"abc"` has no scheme and no
+	// "key=value" text that the query pattern would match, so the quoted form is
+	// neutralised separately. The leading group keeps the field name and the
+	// separators intact so the diagnostic still reads as a structured field.
+	return quotedCredentialPattern.ReplaceAllString(redacted, "$1<redacted>")
 }
 
 // redactURL strips the secret bearing parts of one URL. A malformed escape in
@@ -2791,20 +2812,31 @@ func validateRpcEndpointURL(protocol, endpoint string) error {
 // redactedLogPlaceholder replaces the value of a credential bearing parameter.
 const redactedLogPlaceholder = "<redacted>"
 
-// credentialLogFields lists the parameter names whose value is a credential on
-// its own. A service or gateway may echo the signed request as independent JSON
-// fields (or inside a nested object, list or header map) instead of a URL, and
-// such a value carries no scheme and no "key=value" text to match.
+// credentialLogFields lists the parameter and header names whose value is a
+// credential on its own. A service or gateway may echo the signed request as
+// independent JSON fields (or inside a nested object, list or header map)
+// instead of a URL, and such a value carries no scheme and no "key=value" text to
+// match. Names are compared after removing separators and lower-casing so that
+// an HTTP header such as `X-Acs-Signature` is recognised like a JSON field named
+// `Signature`.
 var credentialLogFields = map[string]struct{}{
-	"accesskeyid":     {},
-	"accesskeysecret": {},
-	"signature":       {},
-	"signaturenonce":  {},
-	"securitytoken":   {},
+	"accesskeyid":         {},
+	"accesskeysecret":     {},
+	"signature":           {},
+	"signaturenonce":      {},
+	"securitytoken":       {},
+	"authorization":       {},
+	"xacssignature":       {},
+	"xacssignaturenonce":  {},
+	"xacssecuritytoken":   {},
+	"xacsaccesskeyid":     {},
+	"xacsaccesskeysecret": {},
 }
 
 func isCredentialLogField(key string) bool {
-	_, ok := credentialLogFields[strings.ToLower(strings.TrimSpace(key))]
+	normalized := strings.ToLower(strings.TrimSpace(key))
+	normalized = strings.NewReplacer("-", "", "_", "", " ", "").Replace(normalized)
+	_, ok := credentialLogFields[normalized]
 	return ok
 }
 
@@ -2862,8 +2894,8 @@ func redactLogValue(value interface{}, credential bool) interface{} {
 	}
 }
 
-// sanitizeRpcError strips signed URLs from transport errors while preserving the
-// underlying error type and chain.
+// sanitizeRpcError strips signed URLs and structured credentials from transport
+// errors while preserving the underlying error type, chain and business code.
 func sanitizeRpcError(err error) error {
 	if err == nil {
 		return nil
@@ -2875,7 +2907,7 @@ func sanitizeRpcError(err error) error {
 			clone.Message = &message
 		}
 		if clone.Data != nil {
-			data := redactSignedURLs(*clone.Data)
+			data := redactSerializedPayload(*clone.Data)
 			clone.Data = &data
 		}
 		return &clone
@@ -2885,6 +2917,22 @@ func sanitizeRpcError(err error) error {
 		return err
 	}
 	return &redactedError{cause: err, message: sanitized}
+}
+
+// redactSerializedPayload redacts a payload that is already serialised (the SDK
+// error Data field is a JSON document). When the text is not decodable it falls
+// back to the textual URL and credential redaction, so an unexpected shape is
+// never passed through unfiltered.
+func redactSerializedPayload(data string) string {
+	var decoded interface{}
+	if err := json.Unmarshal([]byte(data), &decoded); err != nil {
+		return redactSignedURLs(data)
+	}
+	encoded, err := json.Marshal(redactLogValue(decoded, false))
+	if err != nil {
+		return redactSignedURLs(data)
+	}
+	return string(encoded)
 }
 
 // rpcTransportTimeouts maps one operation budget to the tea transport
@@ -2937,12 +2985,28 @@ func decodeRpcResponse(response *tea.Response) (map[string]interface{}, error) {
 		return nil, undecodableRpcResponseError(response, fmt.Errorf("unexpected JSON payload of type %T", decoded))
 	}
 	result["_headers"] = response.Headers
+	status := tea.IntValue(response.StatusCode)
+	// The signed request is never followed across a redirect (see
+	// contextHTTPClient), so a 3xx answer is a non success receipt: the addressed
+	// endpoint did not perform the action. It is reported as an explicit
+	// rejection even when its body decodes, because treating it as a success
+	// would adopt a binding this request never applied.
+	if status >= 300 && status < 400 {
+		return nil, fmt.Errorf("%w: status %d: a signed rpc request is not followed across a redirect", ErrRpcRejectedResponse, status)
+	}
 	if tea.BoolValue(util.Is4xx(response.StatusCode)) || tea.BoolValue(util.Is5xx(response.StatusCode)) {
+		// The service or an intermediary may echo the signed request inside the
+		// response body, including as independent credential fields or headers.
+		// The payload is redacted structurally before it becomes part of the SDK
+		// error, so the diagnostic can never carry the access key, the signature
+		// or the security token. The business code stays intact: callers classify
+		// the failure by it.
+		payload := redactLogValue(result, false)
 		return nil, tea.NewSDKError(map[string]interface{}{
 			"code":       rpcBusinessString(result["Code"], result["code"]),
-			"statusCode": tea.IntValue(response.StatusCode),
-			"message":    "code: " + tea.ToString(tea.IntValue(response.StatusCode)) + ", " + rpcBusinessString(result["Message"], result["message"]) + " request id: " + rpcBusinessString(result["RequestId"], result["requestId"]),
-			"data":       result,
+			"statusCode": status,
+			"message":    "code: " + tea.ToString(status) + ", " + rpcBusinessString(result["Message"], result["message"]) + " request id: " + rpcBusinessString(result["RequestId"], result["requestId"]),
+			"data":       payload,
 			"_headers":   response.Headers,
 		})
 	}
@@ -2977,6 +3041,11 @@ func undecodableRpcResponseError(response *tea.Response, cause error) error {
 	status := 0
 	if response != nil {
 		status = tea.IntValue(response.StatusCode)
+	}
+	if status >= 300 && status < 400 {
+		// The signed request is never followed, so an unreadable redirect is still
+		// a non success receipt and not an unknown outcome.
+		return fmt.Errorf("%w: status %d: a signed rpc request is not followed across a redirect: %v", ErrRpcRejectedResponse, status, sanitizeRpcError(cause))
 	}
 	if status >= 400 && status < 500 {
 		return fmt.Errorf("%w: status %d: %v", ErrRpcRejectedResponse, status, sanitizeRpcError(cause))

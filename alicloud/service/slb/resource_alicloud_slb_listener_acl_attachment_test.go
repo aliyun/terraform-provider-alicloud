@@ -514,11 +514,13 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				ExpectError: regexp.MustCompile(`(?i)(not exist|notfound|invalidloadbalancerid)`),
 			},
 			// Before any correction: the rejection left no attachment in state and
-			// did not change any part of the complete remote ACL.
+			// did not change any part of the complete remote ACL. Each rejection has
+			// its own scenario label so a failure identifies the refused request it
+			// follows, and the three checks cannot be satisfied by one shared result.
 			{
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
-					testAccAssertListenerAclBaseline(t, listenerId, &aclBaseline)
+					testAccAssertListenerAclBaseline(t, "the rejected apply for a missing listener", listenerId, &aclBaseline)
 				},
 				PlanOnly: true,
 			},
@@ -529,7 +531,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 			{
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
-					testAccAssertListenerAclBaseline(t, listenerId, &aclBaseline)
+					testAccAssertListenerAclBaseline(t, "the rejected apply for a missing policy group", listenerId, &aclBaseline)
 				},
 				PlanOnly: true,
 			},
@@ -540,7 +542,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 			{
 				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				PreConfig: func() {
-					testAccAssertListenerAclBaseline(t, listenerId, &aclBaseline)
+					testAccAssertListenerAclBaseline(t, "the rejected apply for an IP version conflict", listenerId, &aclBaseline)
 				},
 				PlanOnly: true,
 			},
@@ -553,7 +555,7 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCheckListenerIdUnchanged(listenerAclAttachmentListenerId, &listenerId),
-					testAccCheckListenerAclBaseline(&listenerId, &aclBaseline),
+					testAccCheckListenerAclBaseline(&listenerId, &aclBaseline, "the three rejected applies"),
 				),
 			},
 		},
@@ -564,6 +566,10 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 // status, type, readable policy groups, and whether the member list was reported
 // and completely readable. Comparing snapshots proves the ACL did not change and
 // keeps an unreported or malformed member list from passing as an empty ACL.
+//
+// The status and type are shape aware: an absent value, a malformed value of
+// another type and a real string value are encoded differently, so a malformed
+// AclType can never compare equal to an absent one.
 type listenerAclSnapshot struct {
 	Status   string
 	Type     string
@@ -572,17 +578,36 @@ type listenerAclSnapshot struct {
 	Complete bool
 }
 
+// testAccAclFieldShape encodes one Describe field so that its presence and its
+// type are part of the comparison.
+func testAccAclFieldShape(object map[string]interface{}, name string) string {
+	value, ok := object[name]
+	if !ok || value == nil {
+		return "absent"
+	}
+	text, ok := value.(string)
+	if !ok {
+		return fmt.Sprintf("malformed:%T:%v", value, value)
+	}
+	return "value:" + strings.ToLower(strings.TrimSpace(text))
+}
+
+func testAccAclStringValue(shape string) (string, bool) {
+	if !strings.HasPrefix(shape, "value:") {
+		return "", false
+	}
+	return strings.TrimPrefix(shape, "value:"), true
+}
+
 func testAccListenerAclSnapshot(listenerId string) (listenerAclSnapshot, error) {
 	object, err := testAccListenerDescribe(listenerId)
 	if err != nil {
 		return listenerAclSnapshot{}, err
 	}
 	ids, reported, complete := slbsvc.ListenerAclIdsCompleteForTest(object)
-	status, _ := object["AclStatus"].(string)
-	aclType, _ := object["AclType"].(string)
 	return listenerAclSnapshot{
-		Status:   strings.ToLower(strings.TrimSpace(status)),
-		Type:     strings.ToLower(strings.TrimSpace(aclType)),
+		Status:   testAccAclFieldShape(object, "AclStatus"),
+		Type:     testAccAclFieldShape(object, "AclType"),
 		Ids:      strings.Join(ids, ","),
 		Reported: reported,
 		Complete: complete,
@@ -602,8 +627,8 @@ func testAccCaptureListenerAclBaseline(listenerId *string, baseline *listenerAcl
 		if err != nil {
 			return err
 		}
-		if snapshot.Status == "" {
-			return fmt.Errorf("listener %s did not report a usable AclStatus for the baseline", *listenerId)
+		if _, ok := testAccAclStringValue(snapshot.Status); !ok {
+			return fmt.Errorf("listener %s did not report a usable AclStatus for the baseline: %s", *listenerId, snapshot.Status)
 		}
 		if !snapshot.Complete {
 			return fmt.Errorf("listener %s reported an unreadable ACL member list for the baseline", *listenerId)
@@ -615,21 +640,25 @@ func testAccCaptureListenerAclBaseline(listenerId *string, baseline *listenerAcl
 
 // testAccCheckListenerAclBaseline verifies that the listener still reports exactly
 // the captured ACL: same status, same type, same readable policy groups and the
-// same reported/complete shape of the member list.
-func testAccCheckListenerAclBaseline(listenerId *string, baseline *listenerAclSnapshot) resource.TestCheckFunc {
+// same reported/complete shape of the member list. The scenario label makes a
+// failure point at the rejected step it follows.
+func testAccCheckListenerAclBaseline(listenerId *string, baseline *listenerAclSnapshot, scenario string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if listenerId == nil || *listenerId == "" || baseline == nil || baseline.Status == "" {
-			return fmt.Errorf("the ACL baseline was not captured before the check")
+		if listenerId == nil || *listenerId == "" || baseline == nil {
+			return fmt.Errorf("the ACL baseline was not captured before the check of %s", scenario)
+		}
+		if _, ok := testAccAclStringValue(baseline.Status); !ok {
+			return fmt.Errorf("the ACL baseline of %s did not record a usable AclStatus: %s", scenario, baseline.Status)
 		}
 		current, err := testAccListenerAclSnapshot(*listenerId)
 		if err != nil {
 			return err
 		}
-		if current.Status == "" || !current.Complete {
-			return fmt.Errorf("listener %s did not report a usable complete ACL: %+v", *listenerId, current)
+		if _, ok := testAccAclStringValue(current.Status); !ok || !current.Complete {
+			return fmt.Errorf("listener %s did not report a usable complete ACL for %s: %+v", *listenerId, scenario, current)
 		}
 		if current != *baseline {
-			return fmt.Errorf("listener %s ACL changed: current %+v, baseline %+v", *listenerId, current, *baseline)
+			return fmt.Errorf("listener %s ACL changed after %s: current %+v, baseline %+v", *listenerId, scenario, current, *baseline)
 		}
 		return nil
 	}
@@ -638,23 +667,26 @@ func testAccCheckListenerAclBaseline(listenerId *string, baseline *listenerAclSn
 // testAccAssertListenerAclBaseline is the PreConfig variant: it has no error
 // return and runs before the next plan, which is the only hook that can observe
 // the listener before the following apply.
-func testAccAssertListenerAclBaseline(t *testing.T, listenerId string, baseline *listenerAclSnapshot) {
+func testAccAssertListenerAclBaseline(t *testing.T, scenario, listenerId string, baseline *listenerAclSnapshot) {
 	t.Helper()
 	if listenerId == "" {
-		t.Fatal("the listener identity was not captured before the next write")
+		t.Fatalf("the listener identity was not captured before the write following %s", scenario)
 	}
-	if baseline == nil || baseline.Status == "" {
-		t.Fatal("the ACL baseline was not captured before the next write")
+	if baseline == nil {
+		t.Fatalf("the ACL baseline was not captured before the write following %s", scenario)
+	}
+	if _, ok := testAccAclStringValue(baseline.Status); !ok {
+		t.Fatalf("the ACL baseline of %s did not record a usable AclStatus: %s", scenario, baseline.Status)
 	}
 	current, err := testAccListenerAclSnapshot(listenerId)
 	if err != nil {
-		t.Fatalf("reading listener %s before the next write: %s", listenerId, err)
+		t.Fatalf("reading listener %s before the write following %s: %s", listenerId, scenario, err)
 	}
-	if current.Status == "" || !current.Complete {
-		t.Fatalf("listener %s did not report a usable complete ACL before the next write: %+v", listenerId, current)
+	if _, ok := testAccAclStringValue(current.Status); !ok || !current.Complete {
+		t.Fatalf("listener %s did not report a usable complete ACL before the write following %s: %+v", listenerId, scenario, current)
 	}
 	if current != *baseline {
-		t.Fatalf("listener %s ACL changed before the next write: current %+v, baseline %+v", listenerId, current, *baseline)
+		t.Fatalf("listener %s ACL changed after %s: current %+v, baseline %+v", listenerId, scenario, current, *baseline)
 	}
 }
 
@@ -780,37 +812,69 @@ func testAccCheckListenerAclAttachmentDestroy(s *terraform.State) error {
 }
 
 // testAccIsClassifiedNotFound reports whether an error proves that the addressed
-// entity no longer exists. A bare HTTP 404 is not enough: the SLB service helpers
-// classify a missing entity themselves (a not-found message wrapped with
-// errs.NotFoundMsg), and a raw SDK error is accepted only when its business code
-// or message names the missing entity.
+// entity no longer exists. A bare HTTP 404 or a route level answer is not enough:
+// the provider's own service helpers wrap a not-found only after validating the
+// answer for the addressed entity, so that typed result is the authoritative
+// release proof; a raw SDK answer is accepted only when its business code names
+// an SLB entity instead of a route or another resource.
 func testAccIsClassifiedNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	if complexErr, ok := err.(*errs.ComplexError); ok {
-		if complexErr.Err != nil && strings.HasPrefix(complexErr.Err.Error(), errs.ResourceNotfound) {
-			return true
+	// The provider classification is authoritative: the SLB service helpers only
+	// build NotFoundMsg after the response proved that the addressed entity is
+	// missing.
+	for current := err; current != nil; {
+		if complexErr, ok := current.(*errs.ComplexError); ok {
+			if complexErr.Err != nil && strings.HasPrefix(complexErr.Err.Error(), errs.ResourceNotfound) {
+				return true
+			}
+			current = complexErr.Cause
+			continue
 		}
-		if complexErr.Cause != nil {
-			return testAccIsClassifiedNotFound(complexErr.Cause)
+		if unwrappable, ok := current.(interface{ Unwrap() error }); ok {
+			current = unwrappable.Unwrap()
+			continue
 		}
+		break
+	}
+	// A raw answer is accepted only when its business code names the entity that
+	// was addressed. A gateway or route level not-found (a generic 404 page, the
+	// code "NotFound") does not prove that a real resource was released.
+	for current := err; current != nil; {
+		switch typed := current.(type) {
+		case *tea.SDKError:
+			return testAccNotFoundCodeNamesEntity(tea.StringValue(typed.Code))
+		case *sdkErrors.ServerError:
+			return testAccNotFoundCodeNamesEntity(typed.ErrorCode())
+		case *errs.ComplexError:
+			current = typed.Cause
+			continue
+		case interface{ Unwrap() error }:
+			current = typed.Unwrap()
+			continue
+		default:
+			return false
+		}
+	}
+	return false
+}
+
+// testAccNotFoundCodeNamesEntity reports whether a not-found business code names
+// an SLB entity. The entity part is compared, so a route level or unrelated
+// not-found code cannot stand in for the release of a real object.
+func testAccNotFoundCodeNamesEntity(code string) bool {
+	lowered := strings.ToLower(strings.TrimSpace(code))
+	if !strings.HasSuffix(lowered, "notfound") {
 		return false
 	}
-	if serverErr, ok := err.(*sdkErrors.ServerError); ok {
-		if strings.Contains(strings.ToLower(serverErr.ErrorCode()), "notfound") {
+	entity := strings.TrimSuffix(lowered, ".notfound")
+	entity = strings.TrimSuffix(entity, "notfound")
+	entity = strings.TrimPrefix(entity, "invalid")
+	for _, name := range []string{"loadbalancer", "listener", "acl", "certificate"} {
+		if strings.Contains(entity, name) {
 			return true
 		}
-		message := strings.ToLower(serverErr.Message())
-		return strings.Contains(message, "does not exist") || strings.Contains(message, "not found")
-	}
-	if sdkErr, ok := err.(*tea.SDKError); ok {
-		code := strings.ToLower(tea.StringValue(sdkErr.Code))
-		if code != "" && strings.Contains(code, "notfound") {
-			return true
-		}
-		message := strings.ToLower(tea.StringValue(sdkErr.Message))
-		return strings.Contains(message, "does not exist") || strings.Contains(message, "not found")
 	}
 	return false
 }
@@ -1326,6 +1390,7 @@ var listenerAclAttachmentTestType = tftypes.Object{AttributeTypes: map[string]tf
 	"acl_id":      tftypes.String,
 	"acl_type":    tftypes.String,
 	"acl_status":  tftypes.String,
+	"acl_pending": tftypes.Bool,
 }}
 
 type listenerAclAttachmentTestProvider struct {
@@ -1488,6 +1553,15 @@ func listenerAclTestString(t *testing.T, v tftypes.Value) string {
 	var out string
 	if err := v.As(&out); err != nil {
 		t.Fatalf("reading a string attribute: %s", err)
+	}
+	return out
+}
+
+func listenerAclTestBool(t *testing.T, v tftypes.Value) bool {
+	t.Helper()
+	var out bool
+	if err := v.As(&out); err != nil {
+		t.Fatalf("reading a bool attribute: %s", err)
 	}
 	return out
 }
@@ -1672,6 +1746,9 @@ func TestUnitListenerAclAttachmentProtocolUnknownWrite(t *testing.T) {
 		if got := listenerAclTestString(t, attrs["acl_type"]); got != "white" {
 			t.Fatalf("acl_type = %q, want white", got)
 		}
+		if !listenerAclTestBool(t, attrs["acl_pending"]) {
+			t.Fatal("the unconfirmed write must be marked pending so a refresh keeps it")
+		}
 
 		stale = false
 		read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
@@ -1682,8 +1759,12 @@ func TestUnitListenerAclAttachmentProtocolUnknownWrite(t *testing.T) {
 			t.Fatalf("ReadResource after the unconfirmed write: %s", err)
 		}
 		listenerAclTestRequireNoError(t, "ReadResource after the unconfirmed write", read.Diagnostics)
-		if got := listenerAclTestString(t, listenerAclTestAttrs(t, read.NewState)["acl_status"]); got != "on" {
+		recovered := listenerAclTestAttrs(t, read.NewState)
+		if got := listenerAclTestString(t, recovered["acl_status"]); got != "on" {
 			t.Fatalf("the recovered binding reports acl_status %q, want on", got)
+		}
+		if listenerAclTestBool(t, recovered["acl_pending"]) {
+			t.Fatal("a confirmed binding must clear the pending marker")
 		}
 	})
 
@@ -1745,6 +1826,9 @@ func TestUnitListenerAclAttachmentProtocolUnknownWrite(t *testing.T) {
 		attrs := listenerAclTestAttrs(t, applied.NewState)
 		if got := listenerAclTestString(t, attrs["acl_type"]); got != "black" {
 			t.Fatalf("the planned update was dropped, acl_type = %q", got)
+		}
+		if !listenerAclTestBool(t, attrs["acl_pending"]) {
+			t.Fatal("the unconfirmed update must be marked pending so a refresh keeps it")
 		}
 		if stub.sets != 1 {
 			t.Fatalf("expected exactly one acknowledged write, got %d", stub.sets)
@@ -2083,9 +2167,58 @@ func TestUnitListenerAclAttachmentProtocolGoneClassification(t *testing.T) {
 			},
 		},
 		{
+			name: "enabled listener with an empty member list",
+			derive: func() (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"ListenerPort": 80,
+					"AclStatus":    "on",
+					"AclType":      "white",
+					"AclIds":       map[string]interface{}{"AclId": []interface{}{}},
+				}, nil
+			},
+		},
+		{
+			name: "enabled listener with a malformed member",
+			derive: func() (map[string]interface{}, error) {
+				return map[string]interface{}{
+					"ListenerPort": 80,
+					"AclStatus":    "on",
+					"AclType":      "white",
+					"AclIds":       map[string]interface{}{"AclId": []interface{}{5}},
+				}, nil
+			},
+		},
+		{
+			name: "unknown acl status is not proof of anything",
+			derive: func() (map[string]interface{}, error) {
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "paused", "AclType": "white", "AclId": "acl-1"}, nil
+			},
+		},
+		{
+			name: "route level not found code",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("NotFound"), Message: tea.String("Not Found"), Data: tea.String("{}")}
+			},
+			readError: true,
+		},
+		{
+			name: "not found code that names another entity",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("AclNotExist"), Message: tea.String("The specified ACL does not exist."), Data: tea.String("{}")}
+			},
+			readError: true,
+		},
+		{
 			name: "missing listener proven by the business code",
 			derive: func() (map[string]interface{}, error) {
 				return nil, &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("InvalidLoadBalancerId.NotFound"), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
+			},
+			gone: true,
+		},
+		{
+			name: "missing listener proven by the listener port code",
+			derive: func() (map[string]interface{}, error) {
+				return nil, &tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InvalidListenerPort.NotFound"), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
 			},
 			gone: true,
 		},
@@ -3277,6 +3410,521 @@ func TestUnitListenerAclAttachmentProtocolDestroyOutcomes(t *testing.T) {
 			}
 			if value.IsNull() {
 				t.Fatal("an unconfirmed unbinding must keep the state")
+			}
+		})
+	}
+}
+
+// listenerAclTestPendingPrior builds the state of a write whose confirmation is
+// still outstanding: the planned identity is kept, the status is unknown and the
+// pending marker is set.
+func listenerAclTestPendingPrior(t *testing.T, aclId, aclType string) *tfprotov5.DynamicValue {
+	t.Helper()
+	return listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, aclId),
+		"acl_type":    tftypes.NewValue(tftypes.String, aclType),
+		"acl_status":  tftypes.NewValue(tftypes.String, nil),
+		"acl_pending": tftypes.NewValue(tftypes.Bool, true),
+	}))
+}
+
+// A pending write may still be applied by the service, so a refresh that still
+// observes the previous group, a disabled listener or an unreadable member list
+// must keep the managed identity instead of dropping it. The control case proves
+// that the same observation still removes a settled resource, so the pending
+// marker is what changes the outcome and not a blanket "never remove" rule.
+func TestUnitListenerAclAttachmentProtocolPendingIdentitySurvivesRefresh(t *testing.T) {
+	cases := []struct {
+		name      string
+		object    map[string]interface{}
+		confirmed bool
+	}{
+		{
+			name:   "the previous group is still bound",
+			object: map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-old"},
+		},
+		{
+			name:   "access control is still disabled",
+			object: map[string]interface{}{"ListenerPort": 80, "AclStatus": "off"},
+		},
+		{
+			name: "the member list is reported empty",
+			object: map[string]interface{}{
+				"ListenerPort": 80,
+				"AclStatus":    "on",
+				"AclType":      "white",
+				"AclIds":       map[string]interface{}{"AclId": []interface{}{}},
+			},
+		},
+		{
+			name:      "the planned binding is reported",
+			object:    map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"},
+			confirmed: true,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			stub := &listenerAclRpcStub{
+				describe: func() (map[string]interface{}, error) { return tc.object, nil },
+			}
+			stub.install(t)
+			server := newListenerAclAttachmentServer(t)
+			read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+				TypeName:     listenerAclAttachmentTestTypeName,
+				CurrentState: listenerAclTestPendingPrior(t, "acl-1", "white"),
+			})
+			if err != nil {
+				t.Fatalf("ReadResource: %s", err)
+			}
+			listenerAclTestRequireNoError(t, "ReadResource (pending)", read.Diagnostics)
+			value, err := read.NewState.Unmarshal(listenerAclAttachmentTestType)
+			if err != nil {
+				t.Fatalf("decoding the read state: %s", err)
+			}
+			if value.IsNull() {
+				t.Fatal("a pending write must not be dropped by a refresh")
+			}
+			attrs := listenerAclTestAttrs(t, read.NewState)
+			if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-1" {
+				t.Fatalf("acl_id = %q, want the planned acl-1", got)
+			}
+			if got := listenerAclTestString(t, attrs["acl_type"]); got != "white" {
+				t.Fatalf("acl_type = %q, want the planned white", got)
+			}
+			if tc.confirmed {
+				if listenerAclTestBool(t, attrs["acl_pending"]) {
+					t.Fatal("a confirmed binding must clear the pending marker")
+				}
+				if got := listenerAclTestString(t, attrs["acl_status"]); got != "on" {
+					t.Fatalf("the confirmed binding reports acl_status %q, want on", got)
+				}
+				return
+			}
+			if !listenerAclTestBool(t, attrs["acl_pending"]) {
+				t.Fatal("an unproven observation must keep the pending marker")
+			}
+		})
+	}
+
+	// Control: without the pending marker the same observation proves that the
+	// managed group is no longer bound, so the resource is removed as before.
+	t.Run("a settled resource is still removed when its group is gone", func(t *testing.T) {
+		stub := &listenerAclRpcStub{
+			describe: func() (map[string]interface{}, error) {
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-old"}, nil
+			},
+		}
+		stub.install(t)
+		server := newListenerAclAttachmentServer(t)
+		settled := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+			"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+			"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+			"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+			"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+			"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+			"acl_pending": tftypes.NewValue(tftypes.Bool, false),
+		}))
+		read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+			TypeName:     listenerAclAttachmentTestTypeName,
+			CurrentState: settled,
+		})
+		if err != nil {
+			t.Fatalf("ReadResource: %s", err)
+		}
+		listenerAclTestRequireNoError(t, "ReadResource (settled)", read.Diagnostics)
+		value, err := read.NewState.Unmarshal(listenerAclAttachmentTestType)
+		if err != nil {
+			t.Fatalf("decoding the read state: %s", err)
+		}
+		if !value.IsNull() {
+			t.Fatalf("a settled resource whose group is gone must be removed, got %s", value)
+		}
+	})
+}
+
+// When the parent operation deadline is reached while the bind request is in
+// flight, the request may still reach the service. No further request can be
+// issued, so there is no readback, but the planned identity must still be kept as
+// pending instead of being dropped with the failure.
+func TestUnitListenerAclAttachmentProtocolParentDeadlineKeepsPendingIdentity(t *testing.T) {
+	sets, describes := 0, 0
+	original := *slbsvc.ListenerAclAttachmentRPCPostForTest
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentRPCPostForTest = original })
+	server := newListenerAclAttachmentServer(t)
+	plan, config := listenerAclTestPlanCreate(t, server, "lb-123:http:80", "acl-1", "white")
+
+	// The write blocks until the parent deadline expires, so the request was in
+	// flight when Terraform stopped waiting.
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	*slbsvc.ListenerAclAttachmentRPCPostForTest = func(callCtx context.Context, client *connectivity.AliyunClient, action string, request map[string]interface{}) (map[string]interface{}, error) {
+		if strings.HasPrefix(action, "Set") {
+			sets++
+			<-ctx.Done()
+			return nil, errors.New(`Post "https://slb.aliyuncs.com": dial tcp 10.0.0.1:443: i/o timeout`)
+		}
+		describes++
+		return map[string]interface{}{"ListenerPort": 80, "AclStatus": "off"}, nil
+	}
+
+	applied, err := server.ApplyResourceChange(ctx, &tfprotov5.ApplyResourceChangeRequest{
+		TypeName:       listenerAclAttachmentTestTypeName,
+		PriorState:     listenerAclTestNull(t),
+		PlannedState:   plan.PlannedState,
+		Config:         config,
+		PlannedPrivate: plan.PlannedPrivate,
+	})
+	if err != nil {
+		t.Fatalf("ApplyResourceChange (parent deadline): %s", err)
+	}
+	if !listenerAclTestHasError(applied.Diagnostics) {
+		t.Fatal("an unconfirmed write must keep the failure visible")
+	}
+	if describes != 0 {
+		t.Fatalf("a finished parent must not issue a reconciliation read, got %d", describes)
+	}
+	if sets != 1 {
+		t.Fatalf("expected exactly one write attempt, got %d", sets)
+	}
+	if applied.NewState == nil {
+		t.Fatal("the planned identity was dropped with the failure")
+	}
+	attrs := listenerAclTestAttrs(t, applied.NewState)
+	if got := listenerAclTestString(t, attrs["id"]); got != "lb-123:http:80" {
+		t.Fatalf("the planned identity was dropped, id = %q", got)
+	}
+	if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-1" {
+		t.Fatalf("acl_id = %q, want acl-1", got)
+	}
+	if !listenerAclTestBool(t, attrs["acl_pending"]) {
+		t.Fatal("a write interrupted by the parent deadline must be marked pending")
+	}
+}
+
+// Changing only the policy group is the update form most likely to lose the
+// managed identity: the type stays the same, so the old binding looks valid. The
+// planned group has to survive the failed confirmation and the following refresh.
+func TestUnitListenerAclAttachmentProtocolAclIdOnlyUpdateKeepsPendingIdentity(t *testing.T) {
+	previousOperation := *slbsvc.ListenerAclAttachmentOperationTimeoutForTest
+	*slbsvc.ListenerAclAttachmentOperationTimeoutForTest = 300 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentOperationTimeoutForTest = previousOperation })
+	previousConfirm := *slbsvc.ListenerAclAttachmentConfirmTimeoutForTest
+	*slbsvc.ListenerAclAttachmentConfirmTimeoutForTest = 100 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentConfirmTimeoutForTest = previousConfirm })
+	previousInterval := *slbsvc.ListenerAclAttachmentPollIntervalForTest
+	*slbsvc.ListenerAclAttachmentPollIntervalForTest = 10 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentPollIntervalForTest = previousInterval })
+
+	bound := "acl-1"
+	stub := &listenerAclRpcStub{
+		set: func(map[string]interface{}) error {
+			return errors.New(`Post "https://slb.aliyuncs.com": dial tcp 10.0.0.1:443: i/o timeout`)
+		},
+		describe: func() (map[string]interface{}, error) {
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": bound}, nil
+		},
+	}
+	stub.install(t)
+	server := newListenerAclAttachmentServer(t)
+
+	prior := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+	config := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-2"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+	plan, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+		TypeName:         listenerAclAttachmentTestTypeName,
+		PriorState:       prior,
+		ProposedNewState: config,
+		Config:           config,
+	})
+	if err != nil {
+		t.Fatalf("PlanResourceChange (acl_id only update): %s", err)
+	}
+	listenerAclTestRequireNoError(t, "PlanResourceChange (acl_id only update)", plan.Diagnostics)
+	applied, err := server.ApplyResourceChange(context.Background(), &tfprotov5.ApplyResourceChangeRequest{
+		TypeName:       listenerAclAttachmentTestTypeName,
+		PriorState:     prior,
+		PlannedState:   plan.PlannedState,
+		Config:         config,
+		PlannedPrivate: plan.PlannedPrivate,
+	})
+	if err != nil {
+		t.Fatalf("ApplyResourceChange (acl_id only update): %s", err)
+	}
+	if !listenerAclTestHasError(applied.Diagnostics) {
+		t.Fatal("an unconfirmed acl_id change must keep the failure visible")
+	}
+	attrs := listenerAclTestAttrs(t, applied.NewState)
+	if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-2" {
+		t.Fatalf("the planned group was dropped, acl_id = %q", got)
+	}
+	if got := listenerAclTestString(t, attrs["acl_type"]); got != "white" {
+		t.Fatalf("acl_type = %q, want white", got)
+	}
+	if !listenerAclTestBool(t, attrs["acl_pending"]) {
+		t.Fatal("the unconfirmed acl_id change must be marked pending")
+	}
+	if stub.sets != 1 {
+		t.Fatalf("expected exactly one write, got %d", stub.sets)
+	}
+
+	// The service applies the change late: the refresh confirms the new group and
+	// clears the marker.
+	bound = "acl-2"
+	read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+		TypeName:     listenerAclAttachmentTestTypeName,
+		CurrentState: applied.NewState,
+	})
+	if err != nil {
+		t.Fatalf("ReadResource after the acl_id only update: %s", err)
+	}
+	listenerAclTestRequireNoError(t, "ReadResource after the acl_id only update", read.Diagnostics)
+	recovered := listenerAclTestAttrs(t, read.NewState)
+	if got := listenerAclTestString(t, recovered["acl_id"]); got != "acl-2" {
+		t.Fatalf("the recovered group was lost, acl_id = %q", got)
+	}
+	if listenerAclTestBool(t, recovered["acl_pending"]) {
+		t.Fatal("the confirmed acl_id change must clear the pending marker")
+	}
+}
+
+// Destroy of a pending object must release only the binding that belongs to this
+// resource. When the planned group is not bound, the write never landed and the
+// listener belongs to someone else, so nothing may be disabled.
+func TestUnitListenerAclAttachmentProtocolPendingDestroyAttribution(t *testing.T) {
+	destroy := func(t *testing.T, set func(request map[string]interface{}) error, describe func() (map[string]interface{}, error)) (*listenerAclRpcStub, *tfprotov5.ApplyResourceChangeResponse) {
+		t.Helper()
+		stub := &listenerAclRpcStub{set: set, describe: describe}
+		stub.install(t)
+		server := newListenerAclAttachmentServer(t)
+		prior := listenerAclTestPendingPrior(t, "acl-1", "white")
+		plan, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+			TypeName:         listenerAclAttachmentTestTypeName,
+			PriorState:       prior,
+			ProposedNewState: listenerAclTestNull(t),
+			Config:           listenerAclTestNull(t),
+		})
+		if err != nil {
+			t.Fatalf("PlanResourceChange (destroy): %s", err)
+		}
+		listenerAclTestRequireNoError(t, "PlanResourceChange (destroy)", plan.Diagnostics)
+		applied, err := server.ApplyResourceChange(context.Background(), &tfprotov5.ApplyResourceChangeRequest{
+			TypeName:       listenerAclAttachmentTestTypeName,
+			PriorState:     prior,
+			PlannedState:   plan.PlannedState,
+			Config:         listenerAclTestNull(t),
+			PlannedPrivate: plan.PlannedPrivate,
+		})
+		if err != nil {
+			t.Fatalf("ApplyResourceChange (destroy): %s", err)
+		}
+		return stub, applied
+	}
+
+	t.Run("another group is bound", func(t *testing.T) {
+		stub, applied := destroy(t, nil, func() (map[string]interface{}, error) {
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-other"}, nil
+		})
+		listenerAclTestRequireNoError(t, "destroy of an unattributed pending object", applied.Diagnostics)
+		if stub.sets != 0 {
+			t.Fatalf("destroy must not disable a group it does not manage, got %d writes", stub.sets)
+		}
+	})
+
+	t.Run("access control is already off", func(t *testing.T) {
+		stub, applied := destroy(t, nil, func() (map[string]interface{}, error) {
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "off"}, nil
+		})
+		listenerAclTestRequireNoError(t, "destroy of a disabled pending object", applied.Diagnostics)
+		if stub.sets != 0 {
+			t.Fatalf("destroy of a disabled listener must not write, got %d writes", stub.sets)
+		}
+	})
+
+	t.Run("the planned group is bound", func(t *testing.T) {
+		writes := 0
+		stub, applied := destroy(t,
+			func(request map[string]interface{}) error {
+				writes++
+				return nil
+			},
+			func() (map[string]interface{}, error) {
+				if writes > 0 {
+					return map[string]interface{}{"ListenerPort": 80, "AclStatus": "off"}, nil
+				}
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
+			})
+		listenerAclTestRequireNoError(t, "destroy of an attributed pending object", applied.Diagnostics)
+		if stub.sets != 1 {
+			t.Fatalf("destroy of an attributed binding must disable access control once, got %d writes", stub.sets)
+		}
+		if writes != 1 {
+			t.Fatalf("expected exactly one disable write, got %d", writes)
+		}
+	})
+
+	t.Run("the member list is unreadable", func(t *testing.T) {
+		stub, applied := destroy(t, nil, func() (map[string]interface{}, error) {
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white"}, nil
+		})
+		if !listenerAclTestHasError(applied.Diagnostics) {
+			t.Fatal("destroy must not guess the attribution of an unreadable member list")
+		}
+		if stub.sets != 0 {
+			t.Fatalf("destroy must not write without attribution, got %d writes", stub.sets)
+		}
+	})
+}
+
+// The negative snapshot must distinguish an absent AclType from a malformed one:
+// collapsing both to an empty string would let a wrong type pass as unchanged.
+// The controls below are pure value checks, so they run with the unit tests.
+func TestUnitListenerAclSnapshotDistinguishesTypeShape(t *testing.T) {
+	absent := testAccAclFieldShape(map[string]interface{}{}, "AclType")
+	null := testAccAclFieldShape(map[string]interface{}{"AclType": nil}, "AclType")
+	malformed := testAccAclFieldShape(map[string]interface{}{"AclType": 5}, "AclType")
+	malformedObject := testAccAclFieldShape(map[string]interface{}{"AclType": map[string]interface{}{"value": "white"}}, "AclType")
+	value := testAccAclFieldShape(map[string]interface{}{"AclType": " White "}, "AclType")
+
+	if absent != null {
+		t.Fatalf("an absent and a null field must encode the same: %q / %q", absent, null)
+	}
+	for _, shape := range []string{absent, malformed, malformedObject} {
+		if _, ok := testAccAclStringValue(shape); ok {
+			t.Fatalf("a non string field was treated as a usable value: %s", shape)
+		}
+	}
+	if value, ok := testAccAclStringValue(value); !ok || value != "white" {
+		t.Fatalf("a usable value was not normalised: %q / %v", value, ok)
+	}
+	seen := map[string]struct{}{absent: {}, malformed: {}, malformedObject: {}}
+	if len(seen) != 3 {
+		t.Fatalf("absent and malformed shapes collapse into the same snapshot value: %v", seen)
+	}
+	if absent == testAccAclFieldShape(map[string]interface{}{"AclType": "white"}, "AclType") {
+		t.Fatal("an absent type compares equal to a real type")
+	}
+}
+
+// The negative snapshot's member controls must report an unreported, empty and
+// malformed list as incomplete, so none of them can pass as an unchanged ACL.
+func TestUnitListenerAclMemberCompletenessControls(t *testing.T) {
+	cases := []struct {
+		name      string
+		object    map[string]interface{}
+		reported  bool
+		complete  bool
+		wantCount int
+	}{
+		{
+			name:      "absent member fields",
+			object:    map[string]interface{}{"AclStatus": "on", "AclType": "white"},
+			reported:  false,
+			complete:  true,
+			wantCount: 0,
+		},
+		{
+			name:      "empty member list",
+			object:    map[string]interface{}{"AclStatus": "on", "AclType": "white", "AclIds": map[string]interface{}{"AclId": []interface{}{}}},
+			reported:  true,
+			complete:  false,
+			wantCount: 0,
+		},
+		{
+			name:      "malformed member",
+			object:    map[string]interface{}{"AclStatus": "on", "AclType": "white", "AclIds": map[string]interface{}{"AclId": []interface{}{5}}},
+			reported:  true,
+			complete:  false,
+			wantCount: 0,
+		},
+		{
+			name:      "readable members",
+			object:    map[string]interface{}{"AclStatus": "on", "AclType": "white", "AclId": "acl-1"},
+			reported:  true,
+			complete:  true,
+			wantCount: 1,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			ids, reported, complete := slbsvc.ListenerAclIdsCompleteForTest(tc.object)
+			if reported != tc.reported || complete != tc.complete || len(ids) != tc.wantCount {
+				t.Fatalf("ids=%v reported=%v complete=%v, want count=%d reported=%v complete=%v", ids, reported, complete, tc.wantCount, tc.reported, tc.complete)
+			}
+		})
+	}
+}
+
+// The destroy proof must not accept a route level not-found as the release of a
+// real object: only the provider's typed not-found or a business code that names
+// an SLB entity proves it.
+func TestUnitListenerAclNotFoundReleaseClassification(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "provider typed not found",
+			err:  errs.WrapErrorf(errs.NotFoundErr("SlbListener", "lb-123:http:80"), errs.NotFoundMsg, errs.ProviderERROR),
+			want: true,
+		},
+		{
+			name: "load balancer business code",
+			err:  &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("InvalidLoadBalancerId.NotFound"), Message: tea.String("The specified resource does not exist.")},
+			want: true,
+		},
+		{
+			name: "listener business code",
+			err:  &tea.SDKError{StatusCode: tea.Int(400), Code: tea.String("InvalidListenerPort.NotFound"), Message: tea.String("The specified resource does not exist.")},
+			want: true,
+		},
+		{
+			name: "wrapped business code",
+			err:  errs.WrapErrorf(&tea.SDKError{Code: tea.String("InvalidLoadBalancerId.NotFound")}, errs.DefaultErrorMsg, "lb-123", "DescribeSlbListener", errs.AlibabaCloudSdkGoERROR),
+			want: true,
+		},
+		{
+			name: "route level not found code",
+			err:  &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("NotFound"), Message: tea.String("Not Found")},
+			want: false,
+		},
+		{
+			name: "bare 404 without a business code",
+			err:  &tea.SDKError{StatusCode: tea.Int(404), Message: tea.String("The specified resource does not exist.")},
+			want: false,
+		},
+		{
+			name: "not found code that names another entity",
+			err:  &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("VpcRouteNotFound"), Message: tea.String("Not Found")},
+			want: false,
+		},
+		{
+			name: "generic gateway body",
+			err:  errors.New("404 page not found"),
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			if got := testAccIsClassifiedNotFound(tc.err); got != tc.want {
+				t.Fatalf("testAccIsClassifiedNotFound(%v) = %v, want %v", tc.err, got, tc.want)
 			}
 		})
 	}

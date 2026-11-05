@@ -1,10 +1,15 @@
 package connectivity
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -327,5 +332,179 @@ func TestUnitRedactLogValue(t *testing.T) {
 	}
 	if list, ok := redacted.(map[string]interface{})["List"].([]interface{}); !ok || list[1] != "plain" {
 		t.Fatalf("a plain list item was changed: %v", redacted.(map[string]interface{})["List"])
+	}
+}
+
+// A service or an intermediary may echo the signed request as independent fields
+// (or as header entries) instead of a URL. Such an echo has no scheme and no
+// "key=value" text, so it used to survive the textual URL redaction and reach the
+// SDK error and the Terraform diagnostic. The structural rule has to hide every
+// credential value while keeping the business code that callers classify by.
+func TestUnitSanitizeRpcErrorRedactsStructuredCredentials(t *testing.T) {
+	sdkErr := &tea.SDKError{
+		Code:       tea.String("InvalidLoadBalancerId.NotFound"),
+		StatusCode: tea.Int(404),
+		Message:    tea.String(`code: 404, refused request {"Signature":"synthetic-message-signature"}`),
+		Data: tea.String(`{
+			"AccessKeyId": "LTAI-synthetic-key",
+			"Signature": "synthetic-data-signature",
+			"SignatureNonce": "synthetic-nonce",
+			"SecurityToken": "synthetic-token",
+			"nested": {"AccessKeySecret": "synthetic-secret"},
+			"list": [{"SecurityToken": "synthetic-list-token"}],
+			"RequestId": "req-1",
+			"Code": "InvalidLoadBalancerId.NotFound"
+		}`),
+	}
+	sanitized, ok := sanitizeRpcError(sdkErr).(*tea.SDKError)
+	if !ok {
+		t.Fatalf("the SDK error type was not preserved: %T", sanitizeRpcError(sdkErr))
+	}
+	if got := tea.StringValue(sanitized.Code); got != "InvalidLoadBalancerId.NotFound" {
+		t.Fatalf("the classification code was lost or changed: %q", got)
+	}
+	if got := tea.IntValue(sanitized.StatusCode); got != 404 {
+		t.Fatalf("the status code was lost: %d", got)
+	}
+	rendered := tea.StringValue(sanitized.Message) + " " + tea.StringValue(sanitized.Data)
+	for _, secret := range []string{
+		"LTAI-synthetic-key", "synthetic-data-signature", "synthetic-nonce",
+		"synthetic-token", "synthetic-secret", "synthetic-list-token",
+		"synthetic-message-signature",
+	} {
+		if strings.Contains(rendered, secret) {
+			t.Fatalf("the sanitized SDK error still exposes %q: %s", secret, rendered)
+		}
+	}
+	for _, kept := range []string{"RequestId", "req-1", "InvalidLoadBalancerId.NotFound"} {
+		if !strings.Contains(rendered, kept) {
+			t.Fatalf("the sanitized SDK error dropped the usable item %q: %s", kept, rendered)
+		}
+	}
+}
+
+// The decoded error is built from a response that may carry the signed request
+// both as independent body fields and as response headers. Both boundaries are
+// redacted before the error can reach a diagnostic.
+func TestUnitDecodeRpcResponseRedactsStructuredEcho(t *testing.T) {
+	body := `{
+		"Code": "InvalidLoadBalancerId.NotFound",
+		"Message": "The specified resource does not exist.",
+		"AccessKeyId": "LTAI-synthetic-key",
+		"Signature": "synthetic-body-signature",
+		"SecurityToken": "synthetic-body-token",
+		"RequestId": "req-1"
+	}`
+	response := &tea.Response{
+		StatusCode: tea.Int(404),
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Headers: map[string]*string{
+			"x-acs-signature":      tea.String("synthetic-header-signature"),
+			"x-acs-security-token": tea.String("synthetic-header-token"),
+			"x-acs-request-id":     tea.String("req-1"),
+		},
+	}
+	_, err := decodeRpcResponse(response)
+	if err == nil {
+		t.Fatal("expected the 404 response to fail")
+	}
+	sanitized, ok := sanitizeRpcError(err).(*tea.SDKError)
+	if !ok {
+		t.Fatalf("expected a typed business error, got %T: %v", sanitizeRpcError(err), err)
+	}
+	if got := tea.StringValue(sanitized.Code); got != "InvalidLoadBalancerId.NotFound" {
+		t.Fatalf("the business code was lost: %q", got)
+	}
+	rendered := tea.StringValue(sanitized.Data)
+	for _, secret := range []string{
+		"LTAI-synthetic-key", "synthetic-body-signature", "synthetic-body-token",
+		"synthetic-header-signature", "synthetic-header-token",
+	} {
+		if strings.Contains(rendered, secret) {
+			t.Fatalf("the SDK error payload still exposes %q: %s", secret, rendered)
+		}
+	}
+	if !strings.Contains(rendered, "req-1") {
+		t.Fatalf("the usable request id was dropped: %s", rendered)
+	}
+}
+
+// A redirect is a non success receipt. The signed request must not be followed to
+// another endpoint (its Referer would carry the credentials), and the answer must
+// be classified as an explicit rejection rather than a successful payload.
+func TestUnitSignedRpcRequestDoesNotFollowRedirect(t *testing.T) {
+	var receivedByTarget int32
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&receivedByTarget, 1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"AclStatus":"on"}`))
+	}))
+	defer target.Close()
+
+	var originRequests int32
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&originRequests, 1)
+		if referer := r.Referer(); referer != "" {
+			t.Errorf("the resolved request carried a Referer: %s", referer)
+		}
+		http.Redirect(w, r, target.URL+"/redirected?AccessKeyId=forwarded", http.StatusFound)
+	}))
+	defer origin.Close()
+
+	originURL, err := url.Parse(origin.URL)
+	if err != nil {
+		t.Fatalf("parsing the origin URL: %s", err)
+	}
+	request := tea.NewRequest()
+	request.Protocol = tea.String("HTTP")
+	request.Method = tea.String("POST")
+	request.Pathname = tea.String("/")
+	request.Headers = map[string]*string{"host": tea.String(originURL.Host)}
+	request.Query = map[string]*string{
+		"Action":        tea.String("SetLoadBalancerHTTPListenerAttribute"),
+		"AccessKeyId":   tea.String("LTAI-synthetic-key"),
+		"Signature":     tea.String("synthetic-signature"),
+		"SecurityToken": tea.String("synthetic-token"),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	response, err := executeSignedRpcRequest(ctx, request)
+	if err != nil {
+		t.Fatalf("executing the signed request: %s", err)
+	}
+	if got := tea.IntValue(response.StatusCode); got != http.StatusFound {
+		t.Fatalf("the redirect status was lost: %d", got)
+	}
+	if got := atomic.LoadInt32(&originRequests); got != 1 {
+		t.Fatalf("the origin received %d requests, want exactly 1", got)
+	}
+	if got := atomic.LoadInt32(&receivedByTarget); got != 0 {
+		t.Fatalf("the redirect target received %d request(s); the signed request must not be followed", got)
+	}
+	if _, err := decodeRpcResponse(response); !errors.Is(err, ErrRpcRejectedResponse) {
+		t.Fatalf("a redirect must be an explicit rejection, got %v", err)
+	} else if errors.Is(err, ErrUnreadableResponse) {
+		t.Fatalf("a redirect must not be reported as an unknown write: %v", err)
+	}
+}
+
+// A redirect with a readable JSON body must not be mistaken for a success: the
+// body is a redirect receipt, not the answer of the addressed action.
+func TestUnitDecodeRpcResponseRedirectWithJsonBodyIsRejected(t *testing.T) {
+	response := &tea.Response{
+		StatusCode: tea.Int(307),
+		Body:       io.NopCloser(strings.NewReader(`{"AclStatus":"on","AclId":"acl-other"}`)),
+		Headers:    map[string]*string{},
+	}
+	result, err := decodeRpcResponse(response)
+	if err == nil {
+		t.Fatalf("a redirect payload was accepted as a result: %v", result)
+	}
+	if !errors.Is(err, ErrRpcRejectedResponse) {
+		t.Fatalf("a redirect must be an explicit rejection, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "status 307") {
+		t.Fatalf("the redirect status was lost: %v", err)
 	}
 }

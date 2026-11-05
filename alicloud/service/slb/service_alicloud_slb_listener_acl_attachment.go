@@ -231,12 +231,16 @@ func listenerAclBusinessCode(err error) string {
 }
 
 // listenerAclListenerGone reports whether err proves that the addressed SLB load
-// balancer or listener no longer exists. Only a decodable business error may
-// prove it: a bare HTTP status (a gateway 404, an undecodable body) or a
-// response without a business code does not show that the SLB entity is gone,
-// and treating it as gone would drop live state on Read or report a successful
-// destroy. The two Describe actions of this resource address only the load
-// balancer and the listener, so a not-found result refers to one of them.
+// balancer or listener no longer exists. Only an answer that names one of those
+// two entities may prove it: a bare HTTP status (a gateway 404, an undecodable
+// body), a response without a business code, and a code that names another
+// entity (a route, a policy group, an unrelated resource) do not show that this
+// resource's target is gone. Treating such an answer as gone would drop live
+// state on Read or report a successful destroy.
+//
+// The two Describe actions address only the load balancer and the listener, so
+// the accepted codes are the SLB not-found codes whose entity part names one of
+// them (for example InvalidLoadBalancerId.NotFound or InvalidListenerPort.NotFound).
 func listenerAclListenerGone(err error) bool {
 	sdkErr := listenerAclSdkError(err)
 	if sdkErr == nil {
@@ -246,11 +250,31 @@ func listenerAclListenerGone(err error) bool {
 	if code == "" {
 		return false
 	}
-	if strings.Contains(strings.ToLower(code), "notfound") {
+	if listenerAclMissingEntityCode(code) {
 		return true
 	}
+	// Some SLB deployments answer with a generic message; it is accepted only when
+	// the same message names the load balancer or the listener explicitly.
 	message := strings.ToLower(strings.TrimSpace(tea.StringValue(sdkErr.Message)))
-	return strings.Contains(message, "does not exist") || strings.Contains(message, "not found")
+	if !strings.Contains(message, "loadbalancer") && !strings.Contains(message, "load balancer") && !strings.Contains(message, "listener") {
+		return false
+	}
+	return strings.Contains(message, "does not exist") || strings.Contains(message, "not found") || strings.Contains(message, "notfound")
+}
+
+// listenerAclMissingEntityCode reports whether a business code is a not-found
+// answer that names the load balancer or the listener. The entity part is
+// compared, not just the suffix, so a route-level or unrelated not-found code
+// cannot be mistaken for the disappearance of the addressed listener.
+func listenerAclMissingEntityCode(code string) bool {
+	lowered := strings.ToLower(strings.TrimSpace(code))
+	if !strings.HasSuffix(lowered, "notfound") {
+		return false
+	}
+	entity := strings.TrimSuffix(lowered, ".notfound")
+	entity = strings.TrimSuffix(entity, "notfound")
+	entity = strings.TrimPrefix(entity, "invalid")
+	return strings.Contains(entity, "loadbalancer") || strings.Contains(entity, "listener")
 }
 
 // isUnknownListenerAclWriteOutcome reports whether a failed write may still have
@@ -286,25 +310,23 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 	return helper.NeedRetry(cause)
 }
 
-// isUnresolvedListenerAclWrite reports whether a failed write may still have
-// been applied: a transport level failure or a write budget that expired while
-// the parent operation is still alive. The caller reconciles those against the
-// listener. A cancelled parent operation keeps the plain failure because no
-// further request can be issued.
+// isUnconfirmedListenerAclWrite reports whether a failed write may still have
+// been applied: a transport level failure, an unreadable response, a write budget
+// that expired, or any other error that does not prove the service refused the
+// request. The answer does not depend on the caller's context: a parent deadline
+// or cancellation stops further requests but says nothing about a request that
+// was already on the wire, so the caller still has to keep the planned identity.
 //
 // A decoded service answer is checked first: it proves the request was answered,
 // so the terminal classification wins over a write budget that expired at the
 // same moment. Reconciling such a rejection could otherwise adopt a pre-existing
 // matching binding as the result of a refused write.
-func isUnresolvedListenerAclWrite(parent, writeCtx context.Context, err error) bool {
-	if parent.Err() != nil {
+func isUnconfirmedListenerAclWrite(err error) bool {
+	if err == nil {
 		return false
 	}
 	if isDefinitiveListenerAclWriteOutcome(err) {
 		return false
-	}
-	if writeCtx.Err() != nil {
-		return true
 	}
 	if isUnknownListenerAclWriteOutcome(err) {
 		return true
@@ -530,6 +552,13 @@ func listenerAclIds(object map[string]interface{}) (ids []string, reported, comp
 				complete = false
 			}
 		}
+	}
+	if reported && len(ids) == 0 {
+		// This resource only enables access control together with a policy group,
+		// and an enabled listener reports at least one member. A reported but empty
+		// member set therefore cannot prove that the managed group was removed, so
+		// it is treated like an unreported list instead of an empty ACL.
+		complete = false
 	}
 	return ids, reported, complete
 }
