@@ -1145,12 +1145,8 @@ func expandSubscriptionFilterSetting(blocks []subscriptionFilterSettingModel) ma
 	if !block.Expression.IsNull() && !block.Expression.IsUnknown() {
 		result["expression"] = block.Expression.ValueString()
 	}
-	// The service ignores relation when expression is set, so sending it would
-	// make the waiter require a value the service never stores.
-	if _, hasExpression := result["expression"]; !hasExpression {
-		if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
-			result["relation"] = block.Relation.ValueString()
-		}
+	if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
+		result["relation"] = block.Relation.ValueString()
 	}
 	if len(block.Conditions) > 0 {
 		conditions := make([]map[string]interface{}, 0, len(block.Conditions))
