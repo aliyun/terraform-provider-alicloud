@@ -1,6 +1,7 @@
 package dlfnext_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sort"
@@ -206,7 +207,7 @@ func testAccAlicloudDlfNextCatalogExists(resourceId string, v *map[string]interf
 			return fmt.Errorf("No DlfNext Catalog ID is set")
 		}
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		object, err := dlfnext.NewService(client).DescribeCatalog(t.Context(), rs.Primary.ID)
+		object, err := dlfnext.NewService(client).DescribeCatalog(context.Background(), rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("Error describing DlfNext Catalog: %s", err)
 		}
@@ -221,7 +222,7 @@ func testAccCheckAlicloudDlfNextCatalogDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_dlf_next_catalog" {
 			continue
 		}
-		_, err := dlfnext.NewService(client).DescribeCatalog(t.Context(), rs.Primary.ID)
+		_, err := dlfnext.NewService(client).DescribeCatalog(context.Background(), rs.Primary.ID)
 		if err != nil {
 			if errs.NotFoundError(err) {
 				continue
@@ -293,7 +294,7 @@ func testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, key, want string) 
 			return fmt.Errorf("not found: %s", resourceId)
 		}
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		obj, err := dlfnext.NewService(client).DescribeCatalog(t.Context(), rs.Primary.ID)
+		obj, err := dlfnext.NewService(client).DescribeCatalog(context.Background(), rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("DescribeCatalog: %s", err)
 		}
@@ -316,7 +317,7 @@ func testAccAlicloudDlfNextCatalogRemoteOptionAbsent(resourceId, key string) res
 			return fmt.Errorf("not found: %s", resourceId)
 		}
 		client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-		obj, err := dlfnext.NewService(client).DescribeCatalog(t.Context(), rs.Primary.ID)
+		obj, err := dlfnext.NewService(client).DescribeCatalog(context.Background(), rs.Primary.ID)
 		if err != nil {
 			return fmt.Errorf("DescribeCatalog: %s", err)
 		}
