@@ -28,8 +28,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -153,6 +155,102 @@ func TestAccAliCloudRealtimeComputeVvpNamespace_basic0(t *testing.T) {
 				// path exercised and pins the prerequisite instead of pretending the lifecycle ran.
 				Config:      testAccAliCloudRealtimeComputeVvpNamespaceHa0(name, namespace, namespaceHa, zone, 8, 32),
 				ExpectError: regexp.MustCompile("903100"),
+			},
+		},
+	})
+}
+
+// TestAccAliCloudRealtimeComputeVvpNamespace_ha0 covers the positive HA lifecycle: the namespace
+// is created with ha = true, read back, imported, replaced when ha flips to false and replaced
+// again when it flips back. The provider's workspace resource cannot buy HA capacity and the
+// product refuses HA on a pay-as-you-go X86 workspace (903100), so this test consumes a
+// pre-provisioned cross-zone workspace instead of creating one; see
+// testAccRealtimeComputeVvpRequireHaWorkspace for how it is located.
+func TestAccAliCloudRealtimeComputeVvpNamespace_ha0(t *testing.T) {
+	resourceId := "alicloud_realtime_compute_vvp_namespace.ha"
+	region := "cn-hangzhou"
+	if err := os.Setenv("ALICLOUD_REGION", region); err != nil {
+		t.Fatalf("setting ALICLOUD_REGION failed: %s", err)
+	}
+	rand := tfacctest.RandIntRange(10000, 99999)
+	namespace := fmt.Sprintf("tf-testacc-ha-ns-%d", rand)
+	// A test step's config is a plain string, so the workspace has to be resolved before the
+	// TestCase is built; PreCheck is too late for that.
+	acctest.PreCheck(t)
+	instanceId := testAccRealtimeComputeVvpRequireHaWorkspace(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             testAccCheckRealtimeComputeVvpNamespaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				// The default namespace of the workspace keeps its own CU, so the HA namespace is
+				// sized to the remaining cross-zone capacity.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, true, 1, 4),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "instance_id", instanceId),
+					resource.TestCheckResourceAttr(resourceId, "namespace", namespace),
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttrSet(resourceId, "status"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.#", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.memory_gb", "4"),
+					resource.TestCheckResourceAttrSet(resourceId, "id"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// Re-applying the same configuration must not plan a change.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, true, 1, 4),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				// ha is immutable at the product: changing it has to replace the namespace, which
+				// frees the cross-zone CU before the non-HA namespace takes the single-zone CU.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, false, 1, 4),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "false"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// The reverse direction is the same replacement: false back to true re-acquires the
+				// cross-zone CU.
+				Config: testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace, true, 1, 4),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "ha", "true"),
+					resource.TestCheckResourceAttr(resourceId, "resource_spec.0.cpu", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -712,6 +810,68 @@ func testAccRealtimeComputeVvpPurchaseCapacity(instanceId string, cpu, memoryGb 
 		}
 		time.Sleep(10 * time.Second)
 	}
+}
+
+// testAccRealtimeComputeVvpHaWorkspacePrefix names the cross-zone workspace the positive HA
+// lifecycle consumes. It is provisioned out of band because neither the provider's workspace
+// resource nor a pay-as-you-go X86 workspace can carry the cross-zone capacity the product
+// requires for ha = true.
+const testAccRealtimeComputeVvpHaWorkspacePrefix = "tf-acc-vvp-ha-ns"
+
+// testAccRealtimeComputeVvpRequireHaWorkspace resolves that workspace from the account the test
+// runs in. PreCheck runs before any Terraform command, so the shared provider has not been
+// configured yet and Meta() is nil; configure it once from the environment to read the listing.
+func testAccRealtimeComputeVvpRequireHaWorkspace(t *testing.T) string {
+	t.Helper()
+	if acctest.Provider.Meta() == nil {
+		raw := sdkterraform.NewResourceConfigRaw(map[string]interface{}{"region": "cn-hangzhou"})
+		if diagnostics := acctest.Provider.Configure(context.Background(), raw); diagnostics.HasError() {
+			t.Fatalf("configuring the provider for the HA workspace lookup failed: %v", diagnostics)
+		}
+	}
+	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
+	response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
+		map[string]interface{}{"Region": "cn-hangzhou", "PageSize": 100}, nil)
+	if err != nil {
+		t.Fatalf("listing the workspaces for the HA lifecycle failed: %s", err)
+	}
+	instances, _ := response["Instances"].([]interface{})
+	for _, item := range instances {
+		instance, _ := item.(map[string]interface{})
+		if !strings.HasPrefix(fmt.Sprint(instance["InstanceName"]), testAccRealtimeComputeVvpHaWorkspacePrefix) {
+			continue
+		}
+		if fmt.Sprint(instance["ChargeType"]) != "PRE" || fmt.Sprint(instance["ClusterStatus"]) != "RUNNING" {
+			continue
+		}
+		haSpec, _ := instance["HaResourceSpec"].(map[string]interface{})
+		if haSpec == nil || fmt.Sprint(haSpec["Cpu"]) == "0" {
+			continue
+		}
+		instanceId := fmt.Sprint(instance["InstanceId"])
+		t.Logf("HA lifecycle uses the pre-provisioned cross-zone workspace %s", instanceId)
+		return instanceId
+	}
+	t.Skipf("no running PRE cross-zone workspace named %q* is available; the HA lifecycle needs one and never creates it", testAccRealtimeComputeVvpHaWorkspacePrefix)
+	return ""
+}
+
+// testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace renders a namespace against an existing
+// workspace, so the lifecycle can flip ha without provisioning another workspace.
+func testAccAliCloudRealtimeComputeVvpNamespaceOnHaWorkspace(instanceId, namespace string, ha bool, cpu, memoryGb int) string {
+	return fmt.Sprintf(`
+resource "alicloud_realtime_compute_vvp_namespace" "ha" {
+  instance_id = %q
+  namespace   = %q
+  ha          = %t
+
+  resource_spec = [
+    {
+      cpu       = %d
+      memory_gb = %d
+    }
+  ]
+}`, instanceId, namespace, ha, cpu, memoryGb)
 }
 
 // realtimeComputeTestZone returns a zone expression usable in HCL. Realtime Compute accepts
