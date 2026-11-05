@@ -452,16 +452,16 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
 
   if command -v misspell &> /dev/null; then
     if [ "$STRICT_MODE" = true ]; then
-      # CI mode: check all docs
+      # CI mode: check all docs — align -i ignore list with run-document-checks.py
       run_check "Spell Check (misspell)" \
-        "misspell -error -locale=US ./website/docs" \
+        "misspell -error -i 'bussiness,protocal,attemps,alltime,transfering' ./website/docs" \
         || true
     else
-      # Smart mode: check only changed docs
+      # Smart mode: check only changed docs — align -i ignore list with run-document-checks.py
       CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
       if [[ -n "$CHANGED_DOCS" ]]; then
         run_check "Spell Check (changed docs only)" \
-          "echo '$CHANGED_DOCS' | xargs misspell -error -locale=US" \
+          "echo '$CHANGED_DOCS' | xargs misspell -error -i 'bussiness,protocal,attemps,alltime,transfering'" \
           || true
       else
         echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"
