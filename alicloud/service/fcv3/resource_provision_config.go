@@ -2,6 +2,7 @@
 package fcv3
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -369,6 +370,12 @@ func provisionConfigUpdateTarget(d *schema.ResourceData, client *connectivity.Al
 		return nil, errs.WrapError(err)
 	}
 	switch v := object["defaultTarget"].(type) {
+	case json.Number:
+		parsed, parseErr := v.Int64()
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid defaultTarget %q for provision config %q: %v", v.String(), d.Id(), parseErr)
+		}
+		return int(parsed), nil
 	case float64:
 		return int(v), nil
 	case int:
