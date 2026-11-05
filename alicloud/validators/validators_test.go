@@ -361,6 +361,51 @@ func TestValidateStringLenBetween(t *testing.T) {
 		"expected length of %s to be in the range (%d - %d), got %s", k, min, max, v)))
 }
 
+func TestValidateStringLenBetweenRune(t *testing.T) {
+	resourceSchemaValidationSkipped = false
+
+	k := "name"
+	// 43 CJK characters are 129 bytes but 43 characters: the rune validator must
+	// accept them under a 128-character limit, unlike the byte-counting helper.
+	v := strings.Repeat("中", 43)
+	s, es := StringLenBetweenRune(0, 128)(v, k)
+	assert.Nil(t, es)
+	assert.Nil(t, s)
+
+	s, es = StringLenBetween(0, 128)(v, k)
+	assert.NotNil(t, es, "byte-counting helper rejects the same value")
+
+	v = strings.Repeat("中", 128)
+	s, es = StringLenBetweenRune(0, 128)(v, k)
+	assert.Nil(t, es)
+	assert.Nil(t, s)
+
+	v = strings.Repeat("中", 129)
+	s, es = StringLenBetweenRune(0, 128)(v, k)
+	assert.Nil(t, s)
+	assert.NotNil(t, es)
+	assert.True(t, strings.Contains(es[0].Error(), "expected length of name to be in the range (0 - 128), got 129 characters"))
+
+	v = strings.Repeat("中", 256)
+	s, es = StringLenBetweenRune(0, 256)(v, k)
+	assert.Nil(t, es)
+	assert.Nil(t, s)
+
+	v = strings.Repeat("中", 257)
+	s, es = StringLenBetweenRune(0, 256)(v, k)
+	assert.Nil(t, s)
+	assert.NotNil(t, es)
+	assert.True(t, strings.Contains(es[0].Error(), "expected length of name to be in the range (0 - 256), got 257 characters"))
+
+	resourceSchemaValidationSkipped = true
+	v = strings.Repeat("中", 129)
+	s, es = StringLenBetweenRune(0, 128)(v, k)
+	assert.Nil(t, es)
+	assert.NotNil(t, s)
+	assert.True(t, strings.Contains(s[0], "expected length of name to be in the range (0 - 128), got 129 characters"))
+	resourceSchemaValidationSkipped = false
+}
+
 func TestValidateStringMatch(t *testing.T) {
 	resourceSchemaValidationSkipped = false
 

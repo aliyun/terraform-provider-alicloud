@@ -38,7 +38,7 @@ func ResourceAliCloudVpcIpv6Gateway() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringLenBetween(0, 256),
+				ValidateFunc: StringLenBetweenRune(0, 256),
 			},
 			"expired_time": {
 				Type:     schema.TypeString,
@@ -55,7 +55,7 @@ func ResourceAliCloudVpcIpv6Gateway() *schema.Resource {
 			"ipv6_gateway_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringLenBetween(0, 128),
+				ValidateFunc: StringLenBetweenRune(0, 128),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,

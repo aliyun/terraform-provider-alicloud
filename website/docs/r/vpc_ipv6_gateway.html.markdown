@@ -35,21 +35,21 @@ terraform {
 }
 
 variable "name" {
-  default = "tf-example-gateway"
+  default = "terraform-example-gateway"
 }
 
 resource "alicloud_vpc" "defaultVpc" {
-  description = "tf-example-gateway"
+  description = "terraform-example-gateway"
   enable_ipv6 = true
 }
 
 resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-example-ipv6gateway503"
+  display_name        = "terraform-example-ipv6gateway503"
   resource_group_name = "${var.name}1"
 }
 
 resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-example-ipv6gateway311"
+  display_name        = "terraform-example-ipv6gateway311"
   resource_group_name = "${var.name}2"
 }
 

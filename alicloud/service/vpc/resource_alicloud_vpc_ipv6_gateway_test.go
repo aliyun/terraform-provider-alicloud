@@ -230,20 +230,55 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudVPCIpv6GatewayMapValidation)
+	ra := acctest.ResourceAttrInit(resourceId, Ipv6GatewayMapValidation)
 	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return NewVpcServiceV2(testAccProvider.Meta().(*connectivity.AliyunClient))
 	}, "DescribeVpcIpv6Gateway")
 	rac := acctest.ResourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%svpcipv6gatewayboundary%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAcc%svpcipv6gatewayboundary%d", defaultRegionToTest, rand)
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudVPCIpv6GatewayBasicDependence0)
 
 	// 128 characters and still reachable by testSweepVpcIpv6Gateway via the
-	// "tf-testacc" prefix, so an interrupted run leaves nothing behind.
-	name128 := "tf-testacc" + strings.Repeat("a", 118)
+	// "tf-testAcc" prefix, so an interrupted run leaves nothing behind.
+	name128 := "tf-testAcc" + strings.Repeat("a", 118)
 	description256 := strings.Repeat("b", 256)
+	// The OpenAPI bounds are expressed in characters, so the multibyte cases must
+	// use the same 128/256 character limits rather than byte counts.
+	nameCJK128 := strings.Repeat("中", 128)
+	descriptionCJK256 := strings.Repeat("中", 256)
+
+	// checkApiReadback asserts what the provider sent against what the VPC API
+	// returns for the resource, independent of the Terraform state, and logs both
+	// sides so the ACC run log carries the request targets and the API response.
+	checkApiReadback := func(expectedName, expectedDescription string) resource.TestCheckFunc {
+		return func(state *terraform.State) error {
+			rs, ok := state.RootModule().Resources[resourceId]
+			if !ok {
+				return fmt.Errorf("resource %s is not in state", resourceId)
+			}
+			client := testAccProvider.Meta().(*connectivity.AliyunClient)
+			request := map[string]interface{}{
+				"RegionId":      client.RegionId,
+				"Ipv6GatewayId": rs.Primary.ID,
+			}
+			response, err := client.RpcPost("Vpc", "2016-04-28", "DescribeIpv6GatewayAttribute", nil, request, true)
+			if err != nil {
+				return fmt.Errorf("DescribeIpv6GatewayAttribute failed: %s", err)
+			}
+			gotName, _ := response["Name"].(string)
+			gotDescription, _ := response["Description"].(string)
+			t.Logf("api readback %s: request name=%q description=%q; API Name=%q Description=%q", rs.Primary.ID, expectedName, expectedDescription, gotName, gotDescription)
+			if gotName != expectedName {
+				return fmt.Errorf("API Name = %q, expected request value %q", gotName, expectedName)
+			}
+			if gotDescription != expectedDescription {
+				return fmt.Errorf("API Description = %q, expected request value %q", gotDescription, expectedDescription)
+			}
+			return nil
+		}
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -264,6 +299,7 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 						"ipv6_gateway_name": "1tf.test-gw",
 						"description":       "tf test, gateway.",
 					}),
+					checkApiReadback("1tf.test-gw", "tf test, gateway."),
 				),
 			},
 			{
@@ -300,6 +336,7 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 						"ipv6_gateway_name": name128,
 						"description":       description256,
 					}),
+					checkApiReadback(name128, description256),
 				),
 			},
 			{
@@ -307,6 +344,38 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": nameCJK128,
+					"description":       descriptionCJK256,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_gateway_name": nameCJK128,
+						"description":       descriptionCJK256,
+					}),
+					checkApiReadback(nameCJK128, descriptionCJK256),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"spec"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": strings.Repeat("中", 129),
+				}),
+				ExpectError: regexp.MustCompile("expected length of ipv6_gateway_name to be in the range \\(0 - 128\\)"),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_gateway_name": nameCJK128,
+					"description":       strings.Repeat("中", 257),
+				}),
+				ExpectError: regexp.MustCompile("expected length of description to be in the range \\(0 - 256\\)"),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -345,7 +414,7 @@ func TestAccAliCloudVpcIpv6Gateway_validationBoundary(t *testing.T) {
 	})
 }
 
-var AlicloudVPCIpv6GatewayMapValidation = map[string]string{
+var Ipv6GatewayMapValidation = map[string]string{
 	"status": acctest.CHECKSET,
 }
 
