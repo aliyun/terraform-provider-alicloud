@@ -261,15 +261,53 @@ func TestUnitSetCertsKubeconfigForbiddenOptional(t *testing.T) {
 		{"serverless", ResourceCSServerlessKubernetes, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := csKubeconfigTestClient(t, csKubeconfigForbiddenHandler)
+			client := csKubeconfigTestClient(t, csKubeconfigHandler(t, testKubeConfigYaml))
 			d := schema.TestResourceDataRaw(t, tc.resource().Schema, map[string]interface{}{})
 			d.SetId("c1")
-			for _, skip := range []bool{false, true} {
+			// Populate credentials through a successful read before access is denied.
+			if err := setCerts(d, client, false, tc.certificateAuthority); err != nil {
+				t.Fatalf("initial credential read: %v", err)
+			}
+			if tc.certificateAuthority {
+				for _, field := range []string{"cluster_cert", "client_cert", "client_key"} {
+					if d.State().Attributes["certificate_authority.0."+field] == "" {
+						t.Fatalf("initial read did not populate %s", field)
+					}
+				}
+			}
+
+			csKubeconfigFixture(t, csKubeconfigForbiddenHandler)
+			// Preserve existing values without opt-out, then clear them when
+			// opt-out is enabled and keep them cleared on subsequent refresh.
+			for _, skip := range []bool{false, true, true} {
+				if tc.certificateAuthority {
+					if err := d.Set("skip_set_certificate_authority", skip); err != nil {
+						t.Fatal(err)
+					}
+				}
 				if err := setCerts(d, client, skip, tc.certificateAuthority); err != nil {
 					t.Fatalf("optional kubeconfig must not block resource refresh: %v", err)
 				}
-				if d.Id() != "c1" {
+				state := d.State()
+				if state.ID != "c1" {
 					t.Fatal("permission denial must not remove the cluster from state")
+				}
+				if tc.certificateAuthority {
+					if got := d.Get("skip_set_certificate_authority").(bool); got != skip {
+						t.Fatalf("skip_set_certificate_authority = %t, want %t", got, skip)
+					}
+					for _, field := range []string{"cluster_cert", "client_cert", "client_key"} {
+						value, exists := state.Attributes["certificate_authority.0."+field]
+						if !exists || (skip && value != "") || (!skip && value == "") {
+							t.Fatalf("unexpected persisted %s state for skip=%t (exists=%t, empty=%t)", field, skip, exists, value == "")
+						}
+					}
+				} else {
+					for key := range state.Attributes {
+						if strings.HasPrefix(key, "certificate_authority.") {
+							t.Fatal("serverless must not acquire undeclared credential state")
+						}
+					}
 				}
 			}
 		})
