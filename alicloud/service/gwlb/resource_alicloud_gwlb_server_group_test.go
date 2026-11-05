@@ -944,4 +944,163 @@ resource "alicloud_vpc" "defaultEaxcvb" {
 `, name)
 }
 
+// Case ServerGroup Test_health_check_req_exp
+// Covers HealthCheckConfig.HealthCheckReq/HealthCheckExp: the values must
+// round-trip across create, update and import, and removing them from the
+// configuration must converge on the value the service keeps.
+func TestAccAliCloudGwlbServerGroup_healthCheckReqExp(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gwlb_server_group.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudGwlbServerGroupMapReqExp)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return gwlb.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeServerGroup")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccGwlbReqExp%d", rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudGwlbServerGroupBasicDependenceReqExp)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			acctest.PreCheck(t)
+		},
+		ProviderFactories: acctest.SDKProviderFactories,
+		CheckDestroy:      rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol":          "GENEVE",
+					"server_group_type": "Ip",
+					"vpc_id":            "${alicloud_vpc.defaultEaxcvb.id}",
+					"server_group_name": name,
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_protocol":        "TCP",
+							"health_check_enabled":         "true",
+							"health_check_connect_port":    "1",
+							"health_check_connect_timeout": "5",
+							"health_check_interval":        "10",
+							"healthy_threshold":            "2",
+							"unhealthy_threshold":          "2",
+							"health_check_req":             "tfreqlcreate",
+							"health_check_exp":             "tfexpcreate",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"server_id":   "10.0.0.1",
+							"server_ip":   "10.0.0.1",
+							"server_type": "Ip",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_group_type": "Ip",
+						"vpc_id":            acctest.CHECKSET,
+						"server_group_name": name,
+						"health_check_config.0.health_check_protocol": "TCP",
+						"health_check_config.0.health_check_req":      "tfreqlcreate",
+						"health_check_config.0.health_check_exp":      "tfexpcreate",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_protocol":        "TCP",
+							"health_check_enabled":         "true",
+							"health_check_connect_port":    "1",
+							"health_check_connect_timeout": "5",
+							"health_check_interval":        "10",
+							"healthy_threshold":            "2",
+							"unhealthy_threshold":          "2",
+							"health_check_req":             "tfreqlupdate",
+							"health_check_exp":             "tfexpupdate",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.0.health_check_protocol": "TCP",
+						"health_check_config.0.health_check_req":      "tfreqlupdate",
+						"health_check_config.0.health_check_exp":      "tfexpupdate",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+			{
+				// The service keeps the current request/expect values when they are omitted
+				// from an update, so removing them from the configuration must converge on
+				// the retained value instead of producing a permanent diff.
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_protocol":        "TCP",
+							"health_check_enabled":         "true",
+							"health_check_connect_port":    "1",
+							"health_check_connect_timeout": "5",
+							"health_check_interval":        "10",
+							"healthy_threshold":            "2",
+							"unhealthy_threshold":          "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.0.health_check_protocol": "TCP",
+						"health_check_config.0.health_check_req":      "tfreqlupdate",
+						"health_check_config.0.health_check_exp":      "tfexpupdate",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudGwlbServerGroupMapReqExp = map[string]string{
+	"status":      acctest.CHECKSET,
+	"create_time": acctest.CHECKSET,
+}
+
+func AlicloudGwlbServerGroupBasicDependenceReqExp(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "region_id" {
+  default = "cn-wulanchabu"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultEaxcvb" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = "tf-testAccGwlbVpc"
+}
+
+
+`, name)
+}
+
 // Test Gwlb ServerGroup. <<< Resource test cases, automatically generated.
