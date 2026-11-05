@@ -445,7 +445,7 @@ func buildCatalogCreateBody(ctx context.Context, plan catalogResourceModel) (map
 	}
 	// is_shared has no documented default: omitting it must not send the field,
 	// while an explicit false must be sent as false.
-	if !plan.IsShared.IsNull() && !plan.IsUnknown() {
+	if !plan.IsShared.IsNull() && !plan.IsShared.IsUnknown() {
 		body["isShared"] = plan.IsShared.ValueBool()
 	}
 	if !plan.ShareId.IsNull() && !plan.ShareId.IsUnknown() && plan.ShareId.ValueString() != "" {
