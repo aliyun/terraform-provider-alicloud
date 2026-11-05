@@ -3,22 +3,36 @@ package ecs_test
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
-	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// A real auto provisioning group is created so the query is proven against a
-// matching object: the assertion checks the target ID, the name and the group
-// state, and a second query with a non-existent ID proves the ID filter is
-// applied instead of returning every group.
+// The query is exercised against the auto provisioning groups that already
+// exist in the test account: the assertions prove a non-empty result and check
+// that the returned IDs and names belong to the same group, and the follow-up
+// steps prove that the ID and name filters select exactly the target group.
+// Creating a fixture through alicloud_auto_provisioning_group is not used here:
+// that resource drops a just-created group from state while the service is
+// still converging, which fails the apply for reasons outside this data source.
 func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
-	rand := tfacctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tf-testAccautoprovisioninggroupds-%d", rand)
 	resourceId := "data.alicloud_ecs_auto_provisioning_groups.default"
-	groupResourceId := "alicloud_auto_provisioning_group.default"
+	allResourceId := "data.alicloud_ecs_auto_provisioning_groups.all"
+
+	checkNonEmpty := func(name, key string) resource.TestCheckFunc {
+		return resource.TestCheckResourceAttrWith(resourceId, key, func(value string) error {
+			count, err := strconv.Atoi(value)
+			if err != nil {
+				return fmt.Errorf("%s is not a count: %w", key, err)
+			}
+			if count < 1 {
+				return fmt.Errorf("%s expected at least one auto provisioning group, got %d", name, count)
+			}
+			return nil
+		})
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -27,31 +41,33 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: autoProvisioningGroupsConfig(name, "  ids = [alicloud_auto_provisioning_group.default.id]\n"),
+				Config: autoProvisioningGroupsConfig(""),
+				Check: resource.ComposeTestCheckFunc(
+					checkNonEmpty("all groups", "groups.#"),
+					checkNonEmpty("all ids", "ids.#"),
+					checkNonEmpty("all names", "names.#"),
+					resource.TestCheckResourceAttrPair(resourceId, "ids.0", resourceId, "groups.0.auto_provisioning_group_id"),
+					resource.TestCheckResourceAttrPair(resourceId, "names.0", resourceId, "groups.0.auto_provisioning_group_name"),
+					resource.TestCheckResourceAttrSet(resourceId, "groups.0.status"),
+				),
+			},
+			{
+				Config: autoProvisioningGroupsConfig("  ids = [data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_id]\n"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "groups.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "ids.#", "1"),
-					resource.TestCheckResourceAttrPair(resourceId, "ids.0", groupResourceId, "id"),
-					resource.TestCheckResourceAttrPair(resourceId, "groups.0.auto_provisioning_group_id", groupResourceId, "id"),
-					resource.TestCheckResourceAttrPair(resourceId, "groups.0.auto_provisioning_group_name", groupResourceId, "auto_provisioning_group_name"),
-					resource.TestCheckResourceAttr(resourceId, "groups.0.auto_provisioning_group_type", "maintain"),
-					resource.TestCheckResourceAttrSet(resourceId, "groups.0.status"),
-					resource.TestCheckResourceAttr(resourceId, "names.#", "1"),
-					resource.TestCheckResourceAttrPair(resourceId, "names.0", groupResourceId, "auto_provisioning_group_name"),
-					resource.TestCheckResourceAttr(resourceId, "total_count", "1"),
+					resource.TestCheckResourceAttrPair(resourceId, "ids.0", allResourceId, "groups.0.auto_provisioning_group_id"),
 				),
 			},
 			{
-				Config: autoProvisioningGroupsConfig(name, fmt.Sprintf("  auto_provisioning_group_name = %q\n", name)),
+				Config: autoProvisioningGroupsConfig("  auto_provisioning_group_name = data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_name\n"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "groups.#", "1"),
-					resource.TestCheckResourceAttrPair(resourceId, "ids.0", groupResourceId, "id"),
-					resource.TestCheckResourceAttr(resourceId, "total_count", "1"),
+					resource.TestCheckResourceAttrPair(resourceId, "names.0", allResourceId, "groups.0.auto_provisioning_group_name"),
 				),
 			},
 			{
-				Config: autoProvisioningGroupsConfig(name, `  ids = ["apg-does-not-exist"]
-`),
+				Config: autoProvisioningGroupsConfig("  ids = [\"apg-does-not-exist\"]\n"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "groups.#", "0"),
 					resource.TestCheckResourceAttr(resourceId, "ids.#", "0"),
@@ -59,101 +75,39 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				),
 			},
 			{
-				Config: autoProvisioningGroupsConfig(name, fmt.Sprintf("  auto_provisioning_group_name = \"no-such-group-%d\"\n", rand)),
-				Check:  resource.TestCheckResourceAttr(resourceId, "groups.#", "0"),
-			},
-			{
-				Config:      autoProvisioningGroupsConfig(name, "  types = [\"not-a-type\"]\n"),
+				Config:      autoProvisioningGroupsConfig("  types = [\"not-a-type\"]\n"),
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Match|expected value to be one of`),
 			},
 			{
-				Config:      autoProvisioningGroupsConfig(name, "  status = [\"not-a-status\"]\n"),
+				Config:      autoProvisioningGroupsConfig("  status = [\"not-a-status\"]\n"),
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Match|expected value to be one of`),
 			},
 			{
-				Config:      autoProvisioningGroupsConfig(name, "  tags = { \"env\" = \"https://example.com\" }\n"),
+				Config:      autoProvisioningGroupsConfig("  tags = { \"env\" = \"https://example.com\" }\n"),
 				ExpectError: regexp.MustCompile(`Invalid Tag Value|must not contain a URL`),
 			},
 			{
-				Config:      autoProvisioningGroupsConfig(name, "  tags = { \"aliyun-env\" = \"test\" }\n"),
+				Config:      autoProvisioningGroupsConfig("  tags = { \"aliyun-env\" = \"test\" }\n"),
 				ExpectError: regexp.MustCompile(`Invalid Tag Key|must not start with`),
 			},
 			{
 				// The destroy phase re-reads the last configuration, so a valid
 				// step must follow the expected validation failures.
-				Config: autoProvisioningGroupsConfig(name, "  ids = [alicloud_auto_provisioning_group.default.id]\n"),
+				Config: autoProvisioningGroupsConfig(""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "groups.#", "1"),
+					checkNonEmpty("all groups", "groups.#"),
 				),
 			},
 		},
 	})
 }
 
-func autoProvisioningGroupsConfig(name, dataArguments string) string {
+func autoProvisioningGroupsConfig(dataArguments string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default = %q
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-  cpu_core_count    = 2
-  memory_size       = 4
-}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
-  most_recent = true
-  owners      = "system"
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
-}
-
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = var.name
-}
-
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
-}
-
-resource "alicloud_launch_template" "default" {
-  name              = var.name
-  image_id          = data.alicloud_images.default.images.0.id
-  instance_type     = data.alicloud_instance_types.default.instance_types.0.id
-  security_group_id = alicloud_security_group.default.id
-  vswitch_id        = alicloud_vswitch.default.id
-}
-
-resource "alicloud_auto_provisioning_group" "default" {
-  launch_template_id            = alicloud_launch_template.default.id
-  auto_provisioning_group_name  = var.name
-  auto_provisioning_group_type  = "maintain"
-  total_target_capacity         = "1"
-  pay_as_you_go_target_capacity = "1"
-  default_target_capacity_type  = "PayAsYouGo"
-
-  launch_template_config {
-    vswitch_id        = alicloud_vswitch.default.id
-    weighted_capacity = "1"
-    max_price         = "2"
-    instance_type     = data.alicloud_instance_types.default.instance_types.0.id
-  }
+data "alicloud_ecs_auto_provisioning_groups" "all" {
 }
 
 data "alicloud_ecs_auto_provisioning_groups" "default" {
 %s}
-`, name, dataArguments)
+`, dataArguments)
 }

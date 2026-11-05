@@ -111,12 +111,6 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-  cpu_core_count    = 2
-  memory_size       = 4
-}
-
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
@@ -130,12 +124,14 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_ecs_image_pipeline" "default" {
-  base_image      = data.alicloud_images.default.images.0.id
-  base_image_type = "IMAGE"
-  vswitch_id      = alicloud_vswitch.default.id
-  instance_type   = data.alicloud_instance_types.default.instance_types.0.id
-  build_content   = "RUN echo terraform-acceptance-test"
-  name            = var.name
+  base_image                 = data.alicloud_images.default.images.0.id
+  base_image_type            = "IMAGE"
+  vswitch_id                 = alicloud_vswitch.default.id
+  build_content              = "RUN echo terraform-acceptance-test"
+  system_disk_size           = 40
+  internet_max_bandwidth_out = 5
+  delete_instance_on_failure = true
+  name                       = var.name
 }
 
 resource "alicloud_ecs_image_pipeline_execution" "default" {
