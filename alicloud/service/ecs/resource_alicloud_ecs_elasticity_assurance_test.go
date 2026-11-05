@@ -533,7 +533,76 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivisionInvalidRules(t *testing.T
 	})
 }
 
-// Case 5: plan-time validation is deferred while period_unit or the rule hour bounds are unknown
+// Case 5: the raw-config boundary checks behind CustomizeDiff are reachable from the resource's
+// public lifecycle, so these regressions live in this acceptance-test file instead of an
+// internal-package test.
+func TestAccAliCloudEcsElasticityAssurance_timeDivisionRuleBoundaries(t *testing.T) {
+	resourceId := "alicloud_ecs_elasticity_assurance.default"
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sEcsElasticityAssurance%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsElasticityAssuranceBasicDependence1716)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				// An attribute that is explicitly null must still be reported as missing. The decoded
+				// rule cannot tell an omitted attribute from its zero value, so the check reads the
+				// raw config inside CustomizeDiff.
+				Config: fmt.Sprintf(`
+%s
+
+resource "alicloud_ecs_elasticity_assurance" "default" {
+  instance_amount                     = 1
+  zone_ids                            = ["${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"]
+  instance_type                       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  private_pool_options_name           = "%s"
+  private_pool_options_match_criteria = "Open"
+  period                              = 7
+  period_unit                         = "Day"
+  assurance_times                     = "Unlimited"
+  recurrence_rules {
+    start_hour       = 8
+    end_hour         = 12
+    recurrence_type  = "Daily"
+    recurrence_value = null
+  }
+}
+`, AliCloudEcsElasticityAssuranceBasicDependence1716(name), name),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?s).*recurrence_value must be specified.*`),
+			},
+			{
+				// Hour 0 is a valid start hour and must reach the raw-config check as a real value
+				// instead of being mistaken for an omitted attribute. The four-hour span keeps the
+				// decoded rule check valid.
+				Config: testAccConfig(map[string]interface{}{
+					"instance_amount": "1",
+					"zone_ids":        []string{"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"},
+					"instance_type":   []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"period":          "7",
+					"period_unit":     "Day",
+					"assurance_times": "Unlimited",
+					"recurrence_rules": []map[string]interface{}{
+						{
+							"recurrence_type":  "Daily",
+							"recurrence_value": "1",
+							"start_hour":       "0",
+							"end_hour":         "4",
+						},
+					},
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// Case 6: plan-time validation is deferred while period_unit or the rule hour bounds are unknown
 func TestAccAliCloudEcsElasticityAssurance_timeDivisionUnknownValues(t *testing.T) {
 	resourceId := "alicloud_ecs_elasticity_assurance.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
