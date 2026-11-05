@@ -2,7 +2,9 @@
 package polardb
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -238,28 +240,60 @@ func (s *PolarDbServiceV2) DescribeAsyncDescribeExtensions(d *schema.ResourceDat
 
 // DescribeAsyncDescribeExtensions >>> Encapsulated.
 
+// DescribeAccounts is queried page by page because the API contract does not guarantee that
+// AccountName filters the result set; an account beyond the first page must not be reported as
+// missing, which would make Read drop a live account from state.
+const (
+	polarDbAccountPageSize = 100
+	polarDbAccountMaxPages = 100
+)
+
+// errPolarDbAccountPageLimitExceeded reports that pagination stopped before a short page; the account
+// may still exist, so callers must not treat it as missing and clear the resource from state.
+var errPolarDbAccountPageLimitExceeded = errors.New("DescribeAccounts pagination exceeded the page limit before reaching the last page")
+
 // DescribePolarDbAccount <<< Encapsulated get interface for PolarDb Account.
 
 func (s *PolarDbServiceV2) DescribePolarDbAccount(id string) (object map[string]interface{}, err error) {
-	client := s.client
 	var request map[string]interface{}
-	var response map[string]interface{}
 	var query map[string]interface{}
 	parts := strings.Split(id, ":")
-	if len(parts) != 2 {
-		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	if len(parts) != 2 && len(parts) != 3 {
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d or %d, got %d", id, 2, 3, len(parts)))
 		return nil, err
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["AccountName"] = parts[1]
 	request["DBClusterId"] = parts[0]
+	request["PageSize"] = polarDbAccountPageSize
+	if len(parts) == 3 && parts[2] != "" {
+		request["NodeType"] = parts[2]
+	}
 
 	action := "DescribeAccounts"
+	account, lastResponse, found, err := findPolarDbAccountByPages(parts[1], polarDbAccountPageSize, func(pageNumber int) (map[string]interface{}, error) {
+		request["PageNumber"] = pageNumber
+		return s.describePolarDbAccountsPage(action, query, request)
+	})
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), NotFoundMsg, lastResponse)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+	if found {
+		return account, nil
+	}
+	return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), NotFoundMsg, lastResponse)
+}
 
+func (s *PolarDbServiceV2) describePolarDbAccountsPage(action string, query, request map[string]interface{}) (map[string]interface{}, error) {
+	var response map[string]interface{}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
-		response, err = client.RpcPost("polardb", "2017-08-01", action, query, request, true)
+	err := retry.Retry(1*time.Minute, func() *retry.RetryError {
+		var err error
+		response, err = s.client.RpcPost("polardb", "2017-08-01", action, query, request, true)
 
 		if err != nil {
 			if helper.NeedRetry(err) {
@@ -271,28 +305,61 @@ func (s *PolarDbServiceV2) DescribePolarDbAccount(id string) (object map[string]
 		return nil
 	})
 	logs.AddDebug(action, response, request)
-	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), NotFoundMsg, response)
+	return response, err
+}
+
+// findPolarDbAccountByPages walks the DescribeAccounts pages until the account is found or the
+// last page is reached. fetch returns the response for a 1-based page number.
+func findPolarDbAccountByPages(name string, pageSize int, fetch func(pageNumber int) (map[string]interface{}, error)) (map[string]interface{}, map[string]interface{}, bool, error) {
+	var lastResponse map[string]interface{}
+	for pageNumber := 1; pageNumber <= polarDbAccountMaxPages; pageNumber++ {
+		response, err := fetch(pageNumber)
+		if err != nil {
+			return nil, lastResponse, false, err
 		}
-		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+		lastResponse = response
+		accounts, err := jsonpath.Get("$.Accounts[*]", response)
+		if err != nil {
+			return nil, lastResponse, false, nil
+		}
+		list, _ := accounts.([]interface{})
+		if account, ok := findPolarDbAccountByName(list, name); ok {
+			return account, lastResponse, true, nil
+		}
+		if polarDbAccountPageRecordCount(response, len(list)) < pageSize {
+			return nil, lastResponse, false, nil
+		}
 	}
+	return nil, lastResponse, false, errPolarDbAccountPageLimitExceeded
+}
 
-	v, err := jsonpath.Get("$.Accounts[*]", response)
-	if err != nil {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), NotFoundMsg, response)
+func findPolarDbAccountByName(accounts []interface{}, name string) (map[string]interface{}, bool) {
+	for _, item := range accounts {
+		account, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if accountName, ok := account["AccountName"].(string); ok && accountName == name {
+			return account, true
+		}
 	}
+	return nil, false
+}
 
-	if len(v.([]interface{})) == 0 {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), NotFoundMsg, response)
+func polarDbAccountPageRecordCount(response map[string]interface{}, fallback int) int {
+	if v, err := jsonpath.Get("$.PageRecordCount", response); err == nil {
+		switch n := v.(type) {
+		case float64:
+			return int(n)
+		case int:
+			return n
+		case string:
+			if count, err := strconv.Atoi(n); err == nil {
+				return count
+			}
+		}
 	}
-
-	currentStatus := v.([]interface{})[0].(map[string]interface{})["AccountName"]
-	if currentStatus == nil {
-		return object, errs.WrapErrorf(errs.NotFoundErr("Account", id), NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return fallback
 }
 
 func (s *PolarDbServiceV2) PolarDbAccountStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
