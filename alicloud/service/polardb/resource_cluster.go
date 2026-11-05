@@ -58,32 +58,41 @@ func ResourceCluster() *schema.Resource {
 				// reports (for example a 24-month renewal that is only expressible
 				// through auto_renew_period), and a plan must not be blocked by a
 				// value the user never configured.
-				if polardbConfigHasAttribute(d, "duration") || polardbConfigHasAttribute(d, "period_unit") {
-					unit := d.Get("period_unit").(string)
-					if unit == "" {
-						unit = string(Month)
-					}
-					if duration := d.Get("duration").(string); duration != "" {
-						valid := map[string]map[string]bool{
-							"Month": {"1": true, "2": true, "3": true, "6": true, "12": true},
-							"Year":  {"1": true, "2": true, "3": true},
+				if configHasAttribute(d, "duration") || configHasAttribute(d, "period_unit") {
+					// ModifyAutoRenewAttribute only carries Duration/PeriodUnit
+					// together with AutoRenewal. Any other status would store the
+					// configured values without ever sending them, so reject the
+					// combination at plan time instead of silently ignoring it.
+					if d.NewValueKnown("renewal_status") {
+						if status := d.Get("renewal_status").(string); status != string(RenewAutoRenewal) {
+							return fmt.Errorf("duration and period_unit only take effect when renewal_status is AutoRenewal; current renewal_status is %q", status)
 						}
-						if !valid[unit][duration] {
-							return fmt.Errorf("duration %q is not valid for period_unit %q: Month supports 1, 2, 3, 6, 12 and Year supports 1, 2, 3", duration, unit)
+					}
+					if d.NewValueKnown("duration") && d.NewValueKnown("period_unit") {
+						unit := d.Get("period_unit").(string)
+						if unit == "" {
+							unit = string(Month)
+						}
+						if duration := d.Get("duration").(string); duration != "" {
+							valid := map[string]map[string]bool{
+								"Month": {"1": true, "2": true, "3": true, "6": true, "12": true},
+								"Year":  {"1": true, "2": true, "3": true},
+							}
+							if !valid[unit][duration] {
+								return fmt.Errorf("duration %q is not valid for period_unit %q: Month supports 1, 2, 3, 6, 12 and Year supports 1, 2, 3", duration, unit)
+							}
 						}
 					}
 				}
-				if err := validatePolarDBAutoRenewSource(d); err != nil {
+				if err := validateAutoRenewSource(d); err != nil {
 					return err
 				}
 			}
-			// is_switch_over_for_disaster is an option of the standby-zone
-			// change. Accepting a new value on its own would apply without any
-			// API call and store a value that never took effect; removing the
-			// attribute is allowed and simply stops sending it.
-			if v, ok := d.GetOk("is_switch_over_for_disaster"); ok && v.(string) != "" &&
-				d.HasChange("is_switch_over_for_disaster") && !d.HasChange("standby_az") {
-				return fmt.Errorf("is_switch_over_for_disaster must be changed together with standby_az")
+			if err := validateWriteOnlyOptionChanges(d); err != nil {
+				return err
+			}
+			if err := validateIPArrayAttributeTransition(d); err != nil {
+				return err
 			}
 			return nil
 		},
@@ -211,15 +220,14 @@ func ResourceCluster() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
-				// A whitelist group is identified by its array name, the managed
-				// IP list and the requested modification mode. modify_mode is a
-				// write-only instruction the Describe API does not return, but it
-				// must stay in the identity so that changing it alone still
-				// produces a diff and reaches ModifyDBClusterAccessWhitelist.
-				// db_cluster_ip_array_attribute is Optional+Computed and read back
-				// from the Describe API, so per R3.10 it must not be part of the
-				// element identity hash: a backfilled value would shift the
-				// element and break convergence. white_list_type is fixed to IP.
+				// A whitelist group is identified by its array name, the requested
+				// attribute, the managed IP list and the requested modification mode.
+				// modify_mode and db_cluster_ip_array_attribute are write-only
+				// instructions the Describe API only partly returns, but they must
+				// stay in the identity: otherwise changing one of them alone would
+				// not produce a diff, the update would never reach
+				// ModifyDBClusterAccessWhitelist, and the configuration would be
+				// silently ignored.
 				Set: func(v interface{}) int {
 					m := v.(map[string]interface{})
 					buf := []string{m["db_cluster_ip_array_name"].(string)}
@@ -229,6 +237,14 @@ func ResourceCluster() *schema.Resource {
 						buf = append(buf, strings.Join(ipList, ","))
 					}
 					buf = append(buf, fmt.Sprint(m["modify_mode"]))
+					// Normalize an omitted Optional+Computed attribute to the empty
+					// string so the hash is the same before and after Read stores
+					// the API value.
+					attribute := ""
+					if value, ok := m["db_cluster_ip_array_attribute"].(string); ok {
+						attribute = value
+					}
+					buf = append(buf, attribute)
 					return schema.HashString(strings.Join(buf, "|"))
 				},
 				Elem: &schema.Resource{
@@ -792,28 +808,33 @@ func ResourceCluster() *schema.Resource {
 	}
 }
 
-// polardbConfigHasAttribute reports whether the attribute is present in the raw
+// configHasAttribute reports whether the attribute is present in the raw
 // configuration, which distinguishes an omitted attribute from a value that is
 // only known after read. d.Get cannot make that distinction for Optional
-// attributes that are also Computed.
-func polardbConfigHasAttribute(d *schema.ResourceDiff, key string) bool {
+// attributes that are also Computed. An unknown value is still "present": it
+// came from the configuration and may resolve to a concrete value at apply
+// time, so callers must check NewValueKnown before comparing it.
+func configHasAttribute(d *schema.ResourceDiff, key string) bool {
 	rawConfig := d.GetRawConfig()
 	if rawConfig == cty.NilVal || !rawConfig.IsKnown() || rawConfig.IsNull() || !rawConfig.Type().IsObjectType() {
 		return false
 	}
-	value := rawConfig.GetAttr(key)
-	return value.IsKnown() && !value.IsNull()
+	return !rawConfig.GetAttr(key).IsNull()
 }
 
-// validatePolarDBAutoRenewSource rejects configurations that set both renewal
+// validateAutoRenewSource rejects configurations that set both renewal
 // duration sources to different values. duration/period_unit and
 // auto_renew_period write the same ModifyAutoRenewAttribute Duration/PeriodUnit
-// pair, so a stable source requires at most one of them.
-func validatePolarDBAutoRenewSource(d *schema.ResourceDiff) error {
-	if !polardbConfigHasAttribute(d, "auto_renew_period") {
+// pair, so a stable source requires at most one of them. Values that are only
+// known at apply time are handled by validateAutoRenewSourceApply.
+func validateAutoRenewSource(d *schema.ResourceDiff) error {
+	if !configHasAttribute(d, "auto_renew_period") {
 		return nil
 	}
-	if !polardbConfigHasAttribute(d, "duration") && !polardbConfigHasAttribute(d, "period_unit") {
+	if !configHasAttribute(d, "duration") && !configHasAttribute(d, "period_unit") {
+		return nil
+	}
+	if !d.NewValueKnown("auto_renew_period") || !d.NewValueKnown("duration") || !d.NewValueKnown("period_unit") {
 		return nil
 	}
 	months := 0
@@ -829,6 +850,130 @@ func validatePolarDBAutoRenewSource(d *schema.ResourceDiff) error {
 	if period := d.Get("auto_renew_period").(int); period != months {
 		return fmt.Errorf("auto_renew_period (%d months) conflicts with duration %q and period_unit %q (%d months); configure only one of them",
 			period, d.Get("duration").(string), d.Get("period_unit").(string), months)
+	}
+	return nil
+}
+
+// validateAutoRenewSourceApply repeats the renewal source conflict check once
+// the values are known during apply. A configuration whose renewal values are
+// unknown at plan time defers here, so an unknown value cannot bypass the
+// single-source rule and let the update pick one source by HasChange.
+func validateAutoRenewSourceApply(d *schema.ResourceData) error {
+	rawConfig := d.GetRawConfig()
+	if rawConfig == cty.NilVal || !rawConfig.IsKnown() || rawConfig.IsNull() || !rawConfig.Type().IsObjectType() {
+		return nil
+	}
+	if rawConfig.GetAttr("auto_renew_period").IsNull() {
+		return nil
+	}
+	if rawConfig.GetAttr("duration").IsNull() && rawConfig.GetAttr("period_unit").IsNull() {
+		return nil
+	}
+	months := 0
+	if duration, err := strconv.Atoi(d.Get("duration").(string)); err == nil {
+		months = duration
+	}
+	if d.Get("period_unit").(string) == string(Year) {
+		months *= 12
+	}
+	if months == 0 {
+		return nil
+	}
+	if period := d.Get("auto_renew_period").(int); period != months {
+		return fmt.Errorf("auto_renew_period (%d months) conflicts with duration %q and period_unit %q (%d months); configure only one of them",
+			period, d.Get("duration").(string), d.Get("period_unit").(string), months)
+	}
+	return nil
+}
+
+// validateWriteOnlyOptionChanges rejects standalone changes of attributes that
+// are only consumed by another update. Each of them is a parameter of a
+// different API call, so accepting the value on its own would apply without any
+// request and store a value that never took effect. Removing the attribute is
+// always allowed.
+func validateWriteOnlyOptionChanges(d *schema.ResourceDiff) error {
+	options := []struct {
+		option    string
+		companion string
+	}{
+		{"planned_flashing_off_time", "db_node_class"},
+		{"db_node_type", "db_node_class"},
+		{"zone_type", "standby_az"},
+		{"is_switch_over_for_disaster", "standby_az"},
+	}
+	if d.Id() == "" {
+		// None of these options is part of CreateDBCluster; they would be
+		// stored in state without ever reaching an API.
+		for _, item := range options {
+			if !configHasAttribute(d, item.option) || !d.NewValueKnown(item.option) {
+				continue
+			}
+			if value, _ := d.Get(item.option).(string); value != "" {
+				return fmt.Errorf("%s is an option of the %s update and is not applied on creation; remove it from the create configuration", item.option, item.companion)
+			}
+		}
+		return nil
+	}
+	for _, item := range options {
+		if !configHasAttribute(d, item.option) || !d.NewValueKnown(item.option) {
+			continue
+		}
+		if value, _ := d.Get(item.option).(string); value == "" {
+			continue
+		}
+		if !d.HasChange(item.option) {
+			continue
+		}
+		if !d.HasChange(item.companion) {
+			return fmt.Errorf("%s is an option of the %s update and has no effect on its own; change %s together with it or remove it", item.option, item.companion, item.companion)
+		}
+	}
+	return nil
+}
+
+// validateIPArrayAttributeTransition rejects the whitelist attribute changes
+// the API cannot perform. ModifyDBClusterAccessWhitelist documents that an IP
+// whitelist group already displayed in the console cannot be hidden, and the
+// API has no operation for making a hidden group visible again. The attribute
+// therefore only takes effect when the group is created.
+func validateIPArrayAttributeTransition(d *schema.ResourceDiff) error {
+	if d.Id() == "" || !d.HasChange("db_cluster_ip_array") {
+		return nil
+	}
+	oldRaw, newRaw := d.GetChange("db_cluster_ip_array")
+	oldAttributes := make(map[string]string)
+	if oldSet, ok := oldRaw.(*schema.Set); ok && oldSet != nil {
+		for _, item := range oldSet.List() {
+			element, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, _ := element["db_cluster_ip_array_name"].(string)
+			attribute, _ := element["db_cluster_ip_array_attribute"].(string)
+			if name != "" {
+				oldAttributes[name] = attribute
+			}
+		}
+	}
+	newSet, ok := newRaw.(*schema.Set)
+	if !ok || newSet == nil {
+		return nil
+	}
+	for _, item := range newSet.List() {
+		element, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := element["db_cluster_ip_array_name"].(string)
+		attribute, _ := element["db_cluster_ip_array_attribute"].(string)
+		oldAttribute, existed := oldAttributes[name]
+		if !existed || oldAttribute == attribute {
+			continue
+		}
+		if attribute == "hidden" {
+			return fmt.Errorf("db_cluster_ip_array_attribute cannot be set to hidden for the existing %q group: the API does not support hiding a whitelist group that is already visible", name)
+		}
+		return fmt.Errorf("db_cluster_ip_array_attribute cannot be removed from the %q group: the API cannot make a hidden whitelist group visible again; delete the group and create it without the hidden attribute", name)
 	}
 	return nil
 }
@@ -990,6 +1135,9 @@ func resourceClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if (d.Get("pay_type").(string) == string(PrePaid)) &&
 		(d.HasChange("renewal_status") || d.HasChange("auto_renew_period") || d.HasChange("duration") || d.HasChange("period_unit")) {
+		if err := validateAutoRenewSourceApply(d); err != nil {
+			return errs.WrapError(err)
+		}
 		status := d.Get("renewal_status").(string)
 		request := polardb.CreateModifyAutoRenewAttributeRequest()
 		request.DBClusterIds = d.Id()
@@ -1989,9 +2137,9 @@ func polarDBParameterModificationPendingStates() []string {
 	return []string{"ConfigSwitching", "Maintaining", "Rebooting"}
 }
 
-// polardbSystemIPArrayNames are whitelist groups created by the DAS/HDM
+// systemIPArrayNames are whitelist groups created by the DAS/HDM
 // guards. They are not managed by Terraform and must not enter state.
-var polardbSystemIPArrayNames = map[string]bool{
+var systemIPArrayNames = map[string]bool{
 	"ali_dms_group":    true,
 	"hdm_security_ips": true,
 }
@@ -2048,7 +2196,7 @@ func resourceClusterRead(d *schema.ResourceData, meta interface{}) error {
 			// a user-managed hidden group (created with attribute "hidden")
 			// must survive import to stay convergent, and db_cluster_ip_array
 			// is Computed when unconfigured so extra entries do not diff.
-			if len(inDBClusterIPArrays) > 0 || polardbSystemIPArrayNames[white.DBClusterIPArrayName] {
+			if len(inDBClusterIPArrays) > 0 || systemIPArrayNames[white.DBClusterIPArrayName] {
 				continue
 			}
 		}

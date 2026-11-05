@@ -1936,6 +1936,16 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 				),
 			},
 			{
+				// QA03: import after the first standby-zone change. zone_type and
+				// is_switch_over_for_disaster are write-only ModifyDBClusterPrimaryZone
+				// parameters the Describe API does not return, so they are the only
+				// ignored fields.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "proxy_type", "proxy_class", "db_node_num", "zone_type", "is_switch_over_for_disaster"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"standby_az":                  "cn-hangzhou-k",
 					"zone_type":                   "Standby",
@@ -1948,6 +1958,13 @@ func TestAccAliCloudPolarDBClusterSENormalEqualCreate(t *testing.T) {
 						"is_switch_over_for_disaster": "false",
 					}),
 				),
+			},
+			{
+				// QA03: import after the second standby-zone change.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "proxy_type", "proxy_class", "db_node_num", "zone_type", "is_switch_over_for_disaster"},
 			},
 		},
 	})
@@ -2937,8 +2954,10 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, resourcePolarDBClusterSENormalArchitectureConfigDependence)
 
-	// A near-future flashing time is required for ModifyDBNodeClass in the
-	// update step; it must stay inside the 24 hour scheduling window.
+	// plannedFlashingOffTime is the planned flash time of the node-class change.
+	// It is carried by the same update as the class change (ModifyDBNodeClass
+	// rejects it on its own) and must be in the future when the update runs, so
+	// the offset covers the cluster creation and the import steps before it.
 	plannedFlashingOffTime := time.Now().Add(45 * time.Minute).UTC().Format("2006-01-02T15:04:05Z")
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -3010,15 +3029,18 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
 			},
 			{
-				// Node class change sends planned_flashing_off_time. Automatic
-				// storage scaling is disabled while storage_upper_bound stays at
-				// 300: the API only reports the bound while scaling is enabled, so
-				// this is the state that the import step below has to converge.
+				// Node class change sends planned_flashing_off_time together with
+				// the real class change; the option is rejected on its own because
+				// ModifyDBNodeClass is the only consumer. Automatic storage scaling
+				// is disabled while storage_upper_bound stays at 300: the API only
+				// reports the bound while scaling is enabled, so this is the state
+				// that the import steps below have to converge.
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class":       "${local.upgrade_node_class}",
-					"storage_auto_scale":  "Disable",
-					"storage_upper_bound": "300",
-					"encrypt_new_tables":  "OFF",
+					"db_node_class":             "${local.upgrade_node_class}",
+					"storage_auto_scale":        "Disable",
+					"storage_upper_bound":       "300",
+					"encrypt_new_tables":        "OFF",
+					"planned_flashing_off_time": plannedFlashingOffTime,
 					// Add a user-managed hidden IP array to verify the write path
 					// sends DBClusterIPArrayAttribute=hidden and the Read path (F2)
 					// keeps it in state so the attribute converges instead of being
@@ -3048,6 +3070,16 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 						"db_cluster_ip_array_attribute": "hidden",
 					}),
 				),
+			},
+			{
+				// QA03: every successful configuration step is followed by an
+				// independent import. planned_flashing_off_time and the write-only
+				// set members are not returned by the Describe API, so they are the
+				// only ignored fields here.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound", "planned_flashing_off_time"},
 			},
 			{
 				// Import with automatic storage scaling disabled: the bound is not
@@ -3092,23 +3124,14 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				// Convergence while auto scaling stays disabled: the applied state
 				// already holds the 300 GB bound, so re-applying the same
 				// configuration plans no change and the value is kept even though
-				// the API does not report it. (The imported state is verified
-				// separately above; it carries no bound because the API cannot
-				// report one while scaling is disabled.)
-				//
-				// planned_flashing_off_time is only carried in the configuration
-				// here: the attribute coverage gate needs it, but it cannot be sent
-				// by an update without deferring the node switch past the provider
-				// wait, and the API rejected a near-future value with
-				// InvalidPlannedStartTime.Malformed in an earlier run. Its write
-				// path therefore stays unverified. The standby-zone write path
-				// (zone_type / is_switch_over_for_disaster) is exercised with real
-				// values by TestAccAliCloudPolarDBClusterSENormalEqualCreate.
+				// the API does not report it. planned_flashing_off_time is removed
+				// again: it is only accepted together with a db_node_class change,
+				// and removing an option never reaches the API.
 				Config: testAccConfig(map[string]interface{}{
 					"encrypt_new_tables":        "OFF",
 					"storage_auto_scale":        "Disable",
 					"storage_upper_bound":       "300",
-					"planned_flashing_off_time": plannedFlashingOffTime,
+					"planned_flashing_off_time": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3116,6 +3139,27 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 						"storage_upper_bound": "300",
 					}),
 				),
+			},
+			{
+				// QA03: import after the disabled-hold step.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound"},
+			},
+			{
+				// IR06: a real imported state must converge. ImportStatePersist
+				// cannot be used here: with terraform-plugin-testing v1.16.0 it runs
+				// `terraform import` in the main working directory, where the address
+				// is still in the applied state ("Resource already managed by
+				// Terraform"). The plannable import copies the state, removes the
+				// resource from the copy and imports it back, then asserts that the
+				// plan is a no-op. The imported state has no storage_upper_bound
+				// because the API cannot report it while scaling is disabled, so the
+				// no-op plan proves the missing-bound convergence IR06 asks for.
+				ResourceName:    resourceId,
+				ImportState:     true,
+				ImportStateKind: resource.ImportBlockWithID,
 			},
 			{
 				// Re-enable automatic storage scaling: ModifyDBCluster sends both
@@ -3132,6 +3176,14 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 						"storage_upper_bound": "300",
 					}),
 				),
+			},
+			{
+				// QA03: import after the re-enable step. The bound is reported again,
+				// so only the write-only set members are ignored here.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
 			},
 			{
 				// The nested block only supports IP whitelists; security groups are
@@ -3170,15 +3222,63 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ExpectError: regexp.MustCompile(`expected zone_type to be one of \[Standby\]`),
 			},
 			{
+				// QA01: hiding a whitelist group that is already visible is not
+				// supported by ModifyDBClusterAccessWhitelist, so the plan must
+				// reject it instead of producing no diff and ignoring the value.
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name":      "default",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}, {
+						"db_cluster_ip_array_name":      "tftesthid",
+						"db_cluster_ip_array_attribute": "hidden",
+						"white_list_type":               "IP",
+						"security_ips":                  []string{"10.168.1.12", "100.69.7.112"},
+						"modify_mode":                   "Cover",
+					}},
+				}),
+				ExpectError: regexp.MustCompile(`db_cluster_ip_array_attribute cannot be set to hidden for the existing "default" group`),
+			},
+			{
+				// QA02: planned_flashing_off_time is only sent by ModifyDBNodeClass,
+				// so setting it without a db_node_class change is rejected instead of
+				// being stored without taking effect.
+				Config: testAccConfig(map[string]interface{}{
+					"planned_flashing_off_time": plannedFlashingOffTime,
+				}),
+				ExpectError: regexp.MustCompile(`planned_flashing_off_time is an option of the db_node_class update`),
+			},
+			{
+				// QA02: db_node_type is only sent by ModifyDBNodeClass together with
+				// a class change.
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_class": "${local.upgrade_node_class}",
+					"db_node_type":  "DLNode",
+				}),
+				ExpectError: regexp.MustCompile(`db_node_type is an option of the db_node_class update`),
+			},
+			{
+				// QA02: zone_type is only sent by ModifyDBClusterPrimaryZone together
+				// with a standby_az change.
+				Config: testAccConfig(map[string]interface{}{
+					"zone_type": "Standby",
+				}),
+				ExpectError: regexp.MustCompile(`zone_type is an option of the standby_az update`),
+			},
+			{
 				// Restore a valid configuration after the negative steps so the
 				// final destroy runs with accepted values instead of the rejected
 				// ones from the expectations above.
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_type":        REMOVEKEY,
-					"zone_type":           REMOVEKEY,
-					"storage_auto_scale":  "Disable",
-					"storage_upper_bound": "300",
-					"encrypt_new_tables":  "OFF",
+					"db_node_type":              REMOVEKEY,
+					"zone_type":                 REMOVEKEY,
+					"planned_flashing_off_time": REMOVEKEY,
+					"storage_auto_scale":        "Disable",
+					"storage_upper_bound":       "300",
+					"encrypt_new_tables":        "OFF",
 					"db_cluster_ip_array": []map[string]interface{}{{
 						"db_cluster_ip_array_name":      "default",
 						"db_cluster_ip_array_attribute": "",
@@ -3199,6 +3299,13 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 						"storage_upper_bound": "300",
 					}),
 				),
+			},
+			{
+				// QA03: import after the final restore step.
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type", "storage_upper_bound"},
 			},
 		},
 	})
