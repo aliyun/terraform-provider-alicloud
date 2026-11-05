@@ -1,6 +1,7 @@
 package ga
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -25,6 +26,7 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: customizeDiffGaAccelerator,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Minute),
@@ -143,11 +145,13 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 			},
 			"ddos_id": {
 				Type:       schema.TypeString,
+				Optional:   true,
 				Computed:   true,
 				Deprecated: "Field `ddos_id` has been deprecated from provider version 2.3.0. Use `ddos_config_list` instead.",
 			},
 			"ddos_region_id": {
 				Type:       schema.TypeString,
+				Optional:   true,
 				Computed:   true,
 				Deprecated: "Field `ddos_region_id` has been deprecated from provider version 2.3.0. Use `ddos_config_list` instead.",
 			},
@@ -175,6 +179,20 @@ func ResourceAliCloudGaAccelerator() *schema.Resource {
 			},
 		},
 	}
+}
+
+func customizeDiffGaAccelerator(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return nil
+	}
+	for _, key := range []string{"ddos_id", "ddos_region_id"} {
+		value := rawConfig.GetAttr(key)
+		if value.IsKnown() && !value.IsNull() {
+			return fmt.Errorf("`%s` is read-only and deprecated; use `ddos_config_list` to manage DDoS associations", key)
+		}
+	}
+	return nil
 }
 
 func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
