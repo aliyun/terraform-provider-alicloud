@@ -683,6 +683,19 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 		}
 		return nil
 	}
+	checkInstanceReplaced := func(s *terraform.State) error {
+		instance, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		if instanceId == "" {
+			return fmt.Errorf("instance id was not captured before the shrink step")
+		}
+		if instance.Primary.ID == instanceId {
+			return fmt.Errorf("shrinking storage_size did not replace the instance %s", instanceId)
+		}
+		return nil
+	}
 	// Read does not backfill node groups, so the state attribute mirrors the
 	// configuration. The remote disk size is resolved through the configured
 	// attributes instead, and the same node group must be the one resized.
@@ -767,37 +780,25 @@ func TestAccAliCloudStarRocksInstance_backendNodeGroupsStorageSize(t *testing.T)
 				ImportStateVerifyIgnore: []string{"admin_password", "auto_renew", "backend_node_groups", "cluster_zone_id", "duration", "frontend_node_groups", "observer_node_groups", "oss_accessing_role_name", "pricing_cycle", "promotion_option_no"},
 			},
 			{
-				// Shrinking cannot be applied in place, so the plan must replace the
-				// instance. Plan only: applying it would rebuild the instance.
+				// Shrinking is not supported in place, so the plan must replace the
+				// instance and the new instance gets a new id.
 				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 100),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
 					},
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
-			},
-			{
-				// Removing storage_size is not an in-place change either.
-				Config: starRocksInstanceBackendNodeGroupsStorageSizeConfig(name, 0),
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(resourceId, plancheck.ResourceActionReplace),
-					},
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					checkInstanceReplaced,
+					resource.TestCheckResourceAttr(resourceId, "backend_node_groups.0.storage_size", "100"),
+					checkBackendNodeGroupStorageSize(100),
+				),
 			},
 		},
 	})
 }
 
 func starRocksInstanceBackendNodeGroupsStorageSizeConfig(name string, storageSize int) string {
-	storageSizeLine := ""
-	if storageSize > 0 {
-		storageSizeLine = fmt.Sprintf("    storage_size              = %d\n", storageSize)
-	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -845,14 +846,15 @@ resource "alicloud_star_rocks_instance" "default" {
 
   backend_node_groups {
     cu                        = 8
-%[2]s    storage_performance_level = "pl1"
+    storage_size              = %d
+    storage_performance_level = "pl1"
     disk_number               = 1
     resident_node_number      = 3
     spec_type                 = "standard"
     zone_id                   = "cn-hangzhou-i"
   }
 }
-`, name, storageSizeLine)
+`, name, storageSize)
 }
 
 // Test StarRocks Instance. <<< Resource test cases, automatically generated.
