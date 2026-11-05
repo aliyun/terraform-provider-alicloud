@@ -612,6 +612,22 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrder(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"current", "current_error"},
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scheduled_actions": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scheduled_actions.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
 		},
 	})
 }
