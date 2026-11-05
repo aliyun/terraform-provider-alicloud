@@ -50,8 +50,8 @@ resource "alicloud_ens_load_balancer" "default" {
 }
 
 resource "alicloud_ens_load_balancer_https_listener" "default" {
-  load_balancer_id     = alicloud_ens_load_balancer.default.id
-  listener_port        = 443
+  load_balancer_id      = alicloud_ens_load_balancer.default.id
+  listener_port         = 443
   server_certificate_id = "your_server_certificate_id"
   backend_server_port   = 80
   health_check          = "on"
@@ -86,9 +86,10 @@ The following arguments are supported:
 * `sticky_session_type` - (Optional, ForceNew) The type of the sticky session. Valid values: `insert` (Cookie insertion), `server` (Server rewrites the cookie).
 * `cookie_timeout` - (Optional, ForceNew, Int) The timeout period of the sticky session when `sticky_session_type` is `insert`. Valid values: `1` to `86400`. This parameter takes effect only when `sticky_session_type` is `insert`.
 * `cookie` - (Optional, ForceNew) The name of the cookie to be configured on the backend server. This parameter takes effect only when `sticky_session_type` is `server`.
-* `status` - (Optional) The status of the listener. Set it to `running` to start the listener or `stopped` to stop it. If not specified, the listener is created in the `stopped` state.
 
--> **NOTE:** The sticky session parameters (`sticky_session_type`, `cookie_timeout` and `cookie`) are write-only; the ENS Describe API does not return them, so they are retained from configuration. Changing any of them forces replacement of the listener.
+  -> **NOTE:** The sticky session parameters (`sticky_session_type`, `cookie_timeout` and `cookie`) are write-only; the ENS Describe API does not return them, so they are retained from configuration. Changing any of them forces replacement of the listener.
+
+* `status` - (Optional) The status of the listener. Set it to `running` to start the listener or `stopped` to stop it. If not specified, the listener is created in the `stopped` state.
 
 ## Attributes Reference
 
