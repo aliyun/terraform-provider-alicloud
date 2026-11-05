@@ -526,6 +526,135 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrder(t *testing.T) {
 	})
 }
 
+// TestAccAliCloudFcv3ProvisionConfig_memberOrderPair keeps the two TypeList
+// reorder applies adjacent, as required by the repository collection-order
+// check (an import step between the original and the reordered apply breaks
+// the reorder pair). Import coverage for the reordered state follows the pair.
+func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_fcv3_provision_config.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeProvisionConfig")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sfcv3provisionpair%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"function_name": "${alicloud_fcv3_function.function.function_name}",
+					"target":        "1",
+					"target_tracking_policies": []map[string]interface{}{
+						{
+							"name":          "t1",
+							"start_time":    "2030-10-10T10:10:10Z",
+							"end_time":      "2035-10-10T10:10:10Z",
+							"min_capacity":  "0",
+							"max_capacity":  "1",
+							"metric_target": "1",
+							"metric_type":   "ProvisionedConcurrencyUtilization",
+						},
+						{
+							"name":          "t2",
+							"start_time":    "2030-10-10T10:10:10Z",
+							"end_time":      "2035-10-10T10:10:10Z",
+							"min_capacity":  "0",
+							"max_capacity":  "1",
+							"metric_target": "1",
+							"metric_type":   "ProvisionedConcurrencyUtilization",
+						},
+					},
+					"scheduled_actions": []map[string]interface{}{
+						{
+							"name":                "s1",
+							"start_time":          "2030-10-10T10:10:10Z",
+							"end_time":            "2035-10-10T10:10:10Z",
+							"schedule_expression": "cron(0 0 4 * * *)",
+							"target":              "0",
+						},
+						{
+							"name":                "s2",
+							"start_time":          "2030-10-10T10:10:10Z",
+							"end_time":            "2035-10-10T10:10:10Z",
+							"schedule_expression": "cron(0 0 6 * * *)",
+							"target":              "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_tracking_policies.#": "2",
+						"scheduled_actions.#":        "2",
+					}),
+				),
+			},
+			// Reorder the members only; the post-apply plan must converge.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target_tracking_policies": []map[string]interface{}{
+						{
+							"name":          "t2",
+							"start_time":    "2030-10-10T10:10:10Z",
+							"end_time":      "2035-10-10T10:10:10Z",
+							"min_capacity":  "0",
+							"max_capacity":  "1",
+							"metric_target": "1",
+							"metric_type":   "ProvisionedConcurrencyUtilization",
+						},
+						{
+							"name":          "t1",
+							"start_time":    "2030-10-10T10:10:10Z",
+							"end_time":      "2035-10-10T10:10:10Z",
+							"min_capacity":  "0",
+							"max_capacity":  "1",
+							"metric_target": "1",
+							"metric_type":   "ProvisionedConcurrencyUtilization",
+						},
+					},
+					"scheduled_actions": []map[string]interface{}{
+						{
+							"name":                "s2",
+							"start_time":          "2030-10-10T10:10:10Z",
+							"end_time":            "2035-10-10T10:10:10Z",
+							"schedule_expression": "cron(0 0 6 * * *)",
+							"target":              "1",
+						},
+						{
+							"name":                "s1",
+							"start_time":          "2030-10-10T10:10:10Z",
+							"end_time":            "2035-10-10T10:10:10Z",
+							"schedule_expression": "cron(0 0 4 * * *)",
+							"target":              "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_tracking_policies.#": "2",
+						"scheduled_actions.#":        "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
+		},
+	})
+}
+
 // TestUnitAliCloudFcv3ProvisionConfigRequest verifies the request payload built
 // by the public CRUD entry points. Omitted Optional+Computed fields must be
 // absent, an explicit false must be sent as false, and an update that only
