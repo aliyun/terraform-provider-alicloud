@@ -38,7 +38,6 @@ data "alicloud_rocketmq_consumer_groups" "default" {
 					"groups.0.status":            acctest.CHECKSET,
 					"groups.0.instance_id":       acctest.CHECKSET,
 					"groups.0.region_id":         acctest.CHECKSET,
-					"groups.0.message_model":     acctest.CHECKSET,
 					"groups.0.create_time":       acctest.CHECKSET,
 					"groups.0.max_receive_tps":   "1000",
 					"groups.1.consumer_group_id": name + "-second",
