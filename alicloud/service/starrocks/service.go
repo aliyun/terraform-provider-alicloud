@@ -394,17 +394,18 @@ func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType str
 		if len(batch) == 0 {
 			break
 		}
-		if total, err := nodeGroupsTotal(response); err == nil && total > 0 {
-			if len(items) >= total {
-				break
-			}
-			// Keep paging on a full page even when the server caps the page size below
-			// the requested one: the reported total decides when the set is complete.
+		if len(batch) == pageSize {
+			// A full page always means more rows may follow. Stopping here on Total alone
+			// would be unsafe: Total may or may not count the deleted groups that this
+			// listing still returns, and a missed group can look unique to the matcher.
 			continue
 		}
-		if len(batch) < pageSize {
+		total, totalErr := nodeGroupsTotal(response)
+		if totalErr != nil || total <= 0 || len(items) >= total {
 			break
 		}
+		// The page is shorter than requested but the reported total says rows remain
+		// (server side page size cap): keep paging.
 	}
 	return items, nil
 }

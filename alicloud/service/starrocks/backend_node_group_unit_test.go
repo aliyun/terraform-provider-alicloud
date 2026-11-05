@@ -823,3 +823,50 @@ func TestUnitBackendNodeGroupRetryWaitsForConvergence(t *testing.T) {
 		t.Fatalf("expected one write once the remote size converged, got %d", handler.modifyCalls)
 	}
 }
+
+func TestUnitDescribeNodeGroupsKeepsPagingOnFullPages(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 105)
+	for i := 0; i < 95; i++ {
+		filler := unitTestBackendNodeGroup(fmt.Sprintf("ng-live-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	for i := 0; i < 5; i++ {
+		deleted := unitTestBackendNodeGroup(fmt.Sprintf("ng-deleted-%03d", i), "cn-hangzhou-h")
+		deleted["Cu"] = float64(4)
+		deleted["Status"] = "DELETED"
+		groups = append(groups, deleted)
+	}
+	for i := 0; i < 4; i++ {
+		filler := unitTestBackendNodeGroup(fmt.Sprintf("ng-live-late-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	target := unitTestBackendNodeGroup("ng-target-late", "cn-hangzhou-i")
+	groups = append(groups, target)
+
+	// Total counts only the live groups: a full first page must still keep paging, as
+	// the deleted rows it contains would otherwise end the listing too early.
+	handler := &starRocksNodeGroupsHandler{t: t, groups: groups, total: 100}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+
+	listed, err := NewService(client).DescribeBackendNodeGroups("c-fixture", 10*time.Second)
+	if err != nil {
+		t.Fatalf("list node groups: %s", err)
+	}
+	for _, group := range listed {
+		if fmt.Sprint(group["Status"]) == "DELETED" {
+			t.Fatalf("deleted groups must not be returned, got %v", group["NodeGroupId"])
+		}
+	}
+	id, err := matchBackendNodeGroup(listed, map[string]interface{}{
+		"cu": 8, "disk_number": 1, "resident_node_number": 3,
+		"zone_id": "cn-hangzhou-i", "spec_type": "standard", "storage_performance_level": "pl1",
+	})
+	if err != nil {
+		t.Fatalf("match the group that only exists after a full first page: %s", err)
+	}
+	if id != "ng-target-late" {
+		t.Fatalf("expected ng-target-late, got %q", id)
+	}
+}
