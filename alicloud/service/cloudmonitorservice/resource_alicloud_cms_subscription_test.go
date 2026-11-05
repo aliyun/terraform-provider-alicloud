@@ -327,7 +327,11 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 		case "alicloud_cms_subscription":
 			id, workspace := rs.Primary.ID, rs.Primary.Attributes["workspace"]
 			check = func() (bool, error) {
-				_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(context.Background(), id, workspace)
+				// DescribeSubscription retries inside its own loop, so the call
+				// needs a deadline of its own to keep the destroy wait bounded.
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+				_, err := cloudmonitorservice.NewCmsService(client).DescribeSubscription(ctx, id, workspace)
 				return subscriptionDestroyed(err)
 			}
 		case "alicloud_cms_workspace":
@@ -1096,6 +1100,72 @@ func TestUnitCmsSubscriptionCreateRequestShape(t *testing.T) {
 	}
 }
 
+// TestUnitCmsSubscriptionRequestOmitsRelationWithExpression proves the request
+// does not send relation when expression is set: the service ignores relation in
+// that case, so the waiter must not require it back.
+func TestUnitCmsSubscriptionRequestOmitsRelationWithExpression(t *testing.T) {
+	var mu sync.Mutex
+	created := map[string]interface{}{}
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		mu.Lock()
+		defer mu.Unlock()
+		if method == http.MethodPost {
+			for key, value := range body {
+				created[key] = value
+			}
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+		}
+		subscription := map[string]interface{}{
+			"subscriptionId":   subscriptionUnitServerId,
+			"subscriptionName": "expression",
+			"workspace":        "ws-1",
+			"enable":           true,
+		}
+		for key, value := range created {
+			subscription[key] = value
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": subscription}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	filterType := subscriptionUnitObjectType(t, objType, "filter_setting")
+	conditionType := subscriptionUnitObjectType(t, filterType, "conditions")
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "expression",
+		"workspace":         "ws-1",
+		"filter_setting": []interface{}{
+			subscriptionUnitObject(t, filterType, map[string]interface{}{
+				"expression": "1 and 2",
+				"relation":   "AND",
+				"conditions": []interface{}{
+					subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"}),
+				},
+			}),
+		},
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	r.Create(context.Background(), req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
+	}
+	bodies := recorder.bodiesFor(http.MethodPost)
+	if len(bodies) != 1 {
+		t.Fatalf("expected one CreateSubscription call, got %v", recorder.requests(http.MethodPost))
+	}
+	filter, ok := bodies[0]["filterSetting"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("filterSetting missing from the request: %v", bodies[0])
+	}
+	if _, present := filter["relation"]; present {
+		t.Fatalf("relation must not be sent when expression is set, got %v", filter["relation"])
+	}
+	if filter["expression"] != "1 and 2" {
+		t.Fatalf("expression = %v, want the configured value", filter["expression"])
+	}
+}
+
 // TestUnitCmsSubscriptionCreateKeepsIdentityOnWaitFailure proves that a failure
 // after CreateSubscription returned an id still leaves a destroyable state.
 func TestUnitCmsSubscriptionCreateKeepsIdentityOnWaitFailure(t *testing.T) {
@@ -1735,6 +1805,8 @@ func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
 	routeType := subscriptionUnitObjectType(t, agentType, "routes")
 	channelType := subscriptionUnitObjectType(t, routeType, "channels")
 	windowType := subscriptionUnitObjectType(t, routeType, "effect_time_range")
+	filterType := subscriptionUnitObjectType(t, objType, "filter_setting")
+	conditionType := subscriptionUnitObjectType(t, filterType, "conditions")
 
 	base := func(extra map[string]interface{}) map[string]interface{} {
 		attributes := map[string]interface{}{
@@ -1812,6 +1884,18 @@ func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
 				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{"relation": "AND"})},
 			}),
 			wantError: false,
+		},
+		// The service ignores relation when expression is set, so the combination
+		// cannot round-trip and is rejected at plan time.
+		"expressionWithRelation": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, filterType, map[string]interface{}{
+					"expression": "1",
+					"relation":   "AND",
+					"conditions": []interface{}{subscriptionUnitObject(t, conditionType, map[string]interface{}{"field": "labels.alertname", "op": "EQ", "value": "CPU"})},
+				})},
+			}),
+			wantError: true,
 		},
 		// A block whose only member is resolved at apply is not empty: a dynamic
 		// value must not be mistaken for an omitted one.
@@ -2505,30 +2589,33 @@ func TestUnitCmsSubscriptionEmptyOptionalListRejected(t *testing.T) {
 		return attribute.Validators
 	}
 	channelsPath := path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).AtName("channels").AtListIndex(0)
-	cases := map[string][]validator.List{
-		"alertActionIds":     listValidators(pushingBlock.NestedObject.Attributes, "alert_action_ids"),
-		"restoreActionIds":   listValidators(pushingBlock.NestedObject.Attributes, "restore_action_ids"),
-		"workspaceUuids":     listValidators(workspaceFilterBlock.NestedObject.Attributes, "workspace_uuids"),
-		"receivers":          listValidators(channelBlock.NestedObject.Attributes, "receivers"),
-		"enabledSubChannels": listValidators(channelBlock.NestedObject.Attributes, "enabled_sub_channels"),
-		"dayInWeek":          listValidators(windowBlock.NestedObject.Attributes, "day_in_week"),
+	cases := map[string]struct {
+		validators []validator.List
+		element    attr.Type
+	}{
+		"alertActionIds":     {listValidators(pushingBlock.NestedObject.Attributes, "alert_action_ids"), types.StringType},
+		"restoreActionIds":   {listValidators(pushingBlock.NestedObject.Attributes, "restore_action_ids"), types.StringType},
+		"workspaceUuids":     {listValidators(workspaceFilterBlock.NestedObject.Attributes, "workspace_uuids"), types.StringType},
+		"receivers":          {listValidators(channelBlock.NestedObject.Attributes, "receivers"), types.StringType},
+		"enabledSubChannels": {listValidators(channelBlock.NestedObject.Attributes, "enabled_sub_channels"), types.StringType},
+		"dayInWeek":          {listValidators(windowBlock.NestedObject.Attributes, "day_in_week"), types.Int64Type},
 	}
-	for name, attributeValidators := range cases {
+	for name, testCase := range cases {
 		t.Run(name, func(t *testing.T) {
-			if len(attributeValidators) == 0 {
+			if len(testCase.validators) == 0 {
 				t.Fatal("the attribute carries no validator")
 			}
 			rejected := func(value types.List) bool {
 				resp := &validator.ListResponse{}
-				for _, attributeValidator := range attributeValidators {
+				for _, attributeValidator := range testCase.validators {
 					attributeValidator.ValidateList(context.Background(), validator.ListRequest{ConfigValue: value, Path: channelsPath}, resp)
 				}
 				return resp.Diagnostics.HasError()
 			}
-			if !rejected(types.ListValueMust(types.StringType, []attr.Value{})) {
+			if !rejected(types.ListValueMust(testCase.element, []attr.Value{})) {
 				t.Fatal("an explicit empty list must be rejected")
 			}
-			if rejected(types.ListNull(types.StringType)) {
+			if rejected(types.ListNull(testCase.element)) {
 				t.Fatal("an omitted list must be accepted")
 			}
 		})

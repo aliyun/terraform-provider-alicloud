@@ -66,7 +66,7 @@ func (s *CmsService) DescribeSubscription(ctx context.Context, id, workspace str
 			logs.AddDebug(action, response, query)
 			return nil, errSubscriptionNotFound
 		}
-		if !helper.NeedRetry(err) {
+		if !subscriptionRetryable(err) {
 			logs.AddDebug(action, response, query)
 			return nil, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
 		}

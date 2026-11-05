@@ -85,7 +85,7 @@ The following arguments are supported:
 ### `filter_setting`
 
 * `conditions` - (Optional, List) The event conditions. At most 10 conditions are supported. The order is significant: `expression` refers to a condition by its one-based position in this list. See [`conditions`](#filter_setting-conditions) below.
-* `expression` - (Optional, String) The boolean expression over the conditions, for example `1 and 2 or 3`. When it is set, the service ignores `relation`.
+* `expression` - (Optional, String) The boolean expression over the conditions, for example `1 and 2 or 3`. Must not be set together with `relation`: the service ignores `relation` when `expression` is set, and the combination is rejected during `terraform plan`.
 * `relation` - (Optional, String) The logical relation applied to all conditions when `expression` is empty. Valid values: `AND`, `OR`. The service echoes the relation it stores, so a configuration that omits this argument keeps the value read back from the service.
 
 ### `filter_setting-conditions`

@@ -3,7 +3,9 @@ package cloudmonitorservice
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -655,7 +657,7 @@ func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPa
 			logs.AddDebug(action, response, logPayload)
 			return response, nil
 		}
-		if !helper.NeedRetry(err) {
+		if !subscriptionRetryable(err) {
 			logs.AddDebug(action, response, logPayload)
 			return response, err
 		}
@@ -663,6 +665,21 @@ func (r *subscriptionResource) roaCall(ctx context.Context, action string, logPa
 			return nil, ctx.Err()
 		}
 	}
+}
+
+// subscriptionRetryable reports whether one attempt may be retried. Transport
+// failures carry no service status and are retried for every verb, matching the
+// retry scope the SDK client applies when its automatic retry is enabled; the
+// service errors retried by the provider keep their existing classification.
+func subscriptionRetryable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var transportErr *url.Error
+	if stderrors.As(err, &transportErr) {
+		return true
+	}
+	return helper.NeedRetry(err)
 }
 
 // subscriptionUnknownWriteSuffix marks a failed write whose outcome cannot be
@@ -1128,8 +1145,12 @@ func expandSubscriptionFilterSetting(blocks []subscriptionFilterSettingModel) ma
 	if !block.Expression.IsNull() && !block.Expression.IsUnknown() {
 		result["expression"] = block.Expression.ValueString()
 	}
-	if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
-		result["relation"] = block.Relation.ValueString()
+	// The service ignores relation when expression is set, so sending it would
+	// make the waiter require a value the service never stores.
+	if _, hasExpression := result["expression"]; !hasExpression {
+		if !block.Relation.IsNull() && !block.Relation.IsUnknown() {
+			result["relation"] = block.Relation.ValueString()
+		}
 	}
 	if len(block.Conditions) > 0 {
 		conditions := make([]map[string]interface{}, 0, len(block.Conditions))
@@ -1775,6 +1796,16 @@ func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req re
 	for i, element := range subscriptionConfigBlockElements(ctx, req.Config, path.Root("filter_setting")) {
 		attributes, ok := subscriptionConfigObjectAttributes(element)
 		if !ok {
+			continue
+		}
+		if subscriptionMemberDeclared(attributes, "expression") && subscriptionMemberDeclared(attributes, "relation") {
+			// The service ignores relation when expression is set, so a state
+			// that carried both could never match the read-back value.
+			resp.Diagnostics.AddAttributeError(
+				path.Root("filter_setting").AtListIndex(i).AtName("relation"),
+				"Conflicting filter_setting members",
+				"relation must not be set when expression is set: the service ignores relation in that case.",
+			)
 			continue
 		}
 		if subscriptionMemberDeclared(attributes, "expression") || subscriptionMemberDeclared(attributes, "relation") ||
