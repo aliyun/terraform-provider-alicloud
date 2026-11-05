@@ -5233,7 +5233,9 @@ func tairInstanceDeferredFixtureData(t *testing.T) *sdkv2schema.ResourceData {
 			"replica_count":  cty.NumberIntVal(2),
 			"effective_time": cty.StringVal("MaintainTime"),
 		},
-		nil)
+		// effective_time is a request option without a state attribute of its own, so it has to be
+		// present in the state for d.Get to return the configured value.
+		map[string]string{"effective_time": "MaintainTime"})
 }
 
 // TestUnitRedisTairInstanceWaitsForDeferredOrderTransition covers a deferred change whose
