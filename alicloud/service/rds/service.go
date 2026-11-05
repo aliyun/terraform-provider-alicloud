@@ -13,6 +13,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -96,6 +97,12 @@ func (s *RdsService) confirmRdsChildError(instanceID string, err error) error {
 
 func (s *RdsService) DescribeDBInstance(id string) (object map[string]interface{}, err error) {
 	return s.describeDBInstance(id, 5*time.Minute)
+}
+
+// DescribeDBInstanceWithTimeout reads the instance with the caller's remaining
+// lifecycle budget instead of opening a fresh five-minute retry window.
+func (s *RdsService) DescribeDBInstanceWithTimeout(id string, timeout time.Duration) (object map[string]interface{}, err error) {
+	return s.describeDBInstance(id, timeout)
 }
 
 func (s *RdsService) describeDBInstance(id string, retryTimeout time.Duration) (object map[string]interface{}, err error) {
@@ -1193,7 +1200,263 @@ func (s *RdsService) ModifyDBSecurityIps(instanceId, ips string) error {
 	return nil
 }
 
+// modifySecurityIpsStateErrors lists the transient instance-state errors that
+// the official ModifySecurityIps error table returns while the instance is still
+// changing state. Terminal parameter, quota or template conflicts are not
+// retried.
+var modifySecurityIpsStateErrors = []string{
+	"IncorrectMasterDBInstanceState",
+	"IncorrectDBInstanceState",
+	"InvalideStatus.Format",
+}
+
+// isRetryableModifySecurityIpsError reports whether a ModifySecurityIps call may
+// succeed later.
+func isRetryableModifySecurityIpsError(err error) bool {
+	return NeedRetry(err) || IsExpectedErrors(err, modifySecurityIpsStateErrors)
+}
+
+// ModifyDBSecurityIpsGroup creates or overwrites one named whitelist group.
+func (s *RdsService) ModifyDBSecurityIpsGroup(instanceId, groupName, ips string, timeout time.Duration) error {
+	return s.modifyDBSecurityIpsGroup(instanceId, groupName, ips, "Cover", timeout)
+}
+
+// DeleteDBSecurityIpsGroup removes a custom whitelist group. ModifySecurityIps
+// has no documented delete-group operation, but a custom group disappears once
+// its IP list is emptied. This behaviour was verified on the PostgreSQL and
+// MySQL instances used by this resource's acceptance tests; it is not a
+// documented API contract for every engine. Cover mode with an empty SecurityIps
+// is tried first, and Delete mode with the group's current IP list is used as a
+// fallback when the group survives. A removal is only reported as done when the
+// group list is read back and the group is really absent.
+func (s *RdsService) DeleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout time.Duration) error {
+	return deleteDBSecurityIpsGroup(instanceId, groupName, currentIps, timeout, serviceSecurityIpsGroupAccess{service: s})
+}
+
+// securityIpsGroupAccess is the minimal API surface the removal decision needs.
+// It keeps the decision testable without issuing cloud calls. Every call takes
+// the remaining update budget so a long Cover step cannot hand the fallback a
+// fresh full timeout.
+type securityIpsGroupAccess interface {
+	modifyGroup(instanceId, groupName, ips, mode string, timeout time.Duration) error
+	groupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error)
+}
+
+type serviceSecurityIpsGroupAccess struct {
+	service *RdsService
+}
+
+func (a serviceSecurityIpsGroupAccess) modifyGroup(instanceId, groupName, ips, mode string, timeout time.Duration) error {
+	return a.service.modifyDBSecurityIpsGroup(instanceId, groupName, ips, mode, timeout)
+}
+
+func (a serviceSecurityIpsGroupAccess) groupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error) {
+	return a.service.dbSecurityIpsGroupAbsent(instanceId, groupName, timeout)
+}
+
+// dbSecurityIpsAbsencePollInterval bounds how often a removal check re-reads the
+// group list. Tests override it so the poll runs deterministically.
+var dbSecurityIpsAbsencePollInterval = 2 * time.Second
+
+// dbSecurityIpsCoverAbsenceWindow caps how long a group may stay visible after
+// Cover mode before Delete mode is used as the fallback. The window never
+// extends past the remaining update budget, and it is capped at half of that
+// budget so the fallback still has time to run.
+var dbSecurityIpsCoverAbsenceWindow = 30 * time.Second
+
+// dbSecurityIpsDeleteAbsenceWindow caps the read-back wait after Delete mode.
+// A group that never disappears then fails with the removal error instead of a
+// generic timeout. The window never extends past the remaining update budget.
+var dbSecurityIpsDeleteAbsenceWindow = 60 * time.Second
+
+// remainingLifecycleBudget reports the budget left before deadline and whether
+// any time remains.
+func remainingLifecycleBudget(deadline time.Time) (time.Duration, bool) {
+	left := time.Until(deadline)
+	return left, left > 0
+}
+
+func deleteDBSecurityIpsGroup(instanceId, groupName, currentIps string, timeout time.Duration, access securityIpsGroupAccess) error {
+	deadline := time.Now().Add(timeout)
+	remaining := func() (time.Duration, error) {
+		left, ok := remainingLifecycleBudget(deadline)
+		if !ok {
+			return 0, WrapErrorf(fmt.Errorf("update timeout budget is exhausted while removing whitelist group %q", groupName), DefaultErrorMsg, instanceId, "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+		}
+		return left, nil
+	}
+
+	budget, err := remaining()
+	if err != nil {
+		return err
+	}
+	absent, err := access.groupAbsent(instanceId, groupName, budget)
+	if err != nil {
+		return err
+	}
+	if absent {
+		return nil
+	}
+
+	budget, err = remaining()
+	if err != nil {
+		return err
+	}
+	coverErr := access.modifyGroup(instanceId, groupName, "", "Cover", budget)
+	// A malformed request was rejected without changing the group, so it must
+	// not wait for a disappearance that cannot happen. It falls through to the
+	// Delete fallback, which is verified by the read-back after the write.
+	// Every other Cover error ends the attempt with its original error: a
+	// fallback write cannot turn a rejected request into a successful removal,
+	// and sending one would hide the real cause.
+	if coverErr != nil && !IsExpectedErrors(coverErr, []string{"InvalidSecurityIps.MalFormed"}) {
+		return coverErr
+	}
+	if coverErr == nil {
+		// A removed group can stay visible for a short while, so poll for it
+		// inside the shared budget instead of deciding on a single read.
+		coverWindow := dbSecurityIpsCoverAbsenceWindow
+		if left, budgetErr := remaining(); budgetErr == nil && left/2 < coverWindow {
+			coverWindow = left / 2
+		}
+		absent, err = pollDBSecurityIpsGroupAbsent(access, instanceId, groupName, remaining, coverWindow)
+		if err != nil {
+			return err
+		}
+		if absent {
+			return nil
+		}
+	}
+
+	if currentIps != "" {
+		budget, err = remaining()
+		if err != nil {
+			return err
+		}
+		deleteErr := access.modifyGroup(instanceId, groupName, currentIps, "Delete", budget)
+		if deleteErr != nil && !IsExpectedErrors(deleteErr, []string{"InvalidSecurityIps.MalFormed"}) {
+			return deleteErr
+		}
+		absent, err = pollDBSecurityIpsGroupAbsent(access, instanceId, groupName, remaining, dbSecurityIpsDeleteAbsenceWindow)
+		if err != nil {
+			return err
+		}
+		if absent {
+			return nil
+		}
+	}
+
+	if coverErr != nil {
+		return coverErr
+	}
+	return WrapErrorf(fmt.Errorf("whitelist group %q still exists after it was removed", groupName), DefaultErrorMsg, instanceId, "ModifySecurityIps", AlibabaCloudSdkGoERROR)
+}
+
+// pollDBSecurityIpsGroupAbsent re-reads the group list until the named group is
+// gone or the wait window closes. Every read uses the shared remaining budget,
+// so a slow API cannot extend the lifecycle deadline. A read error is returned
+// unchanged so the caller keeps the real cause.
+func pollDBSecurityIpsGroupAbsent(access securityIpsGroupAccess, instanceId, groupName string, remaining func() (time.Duration, error), window time.Duration) (bool, error) {
+	end := time.Now().Add(window)
+	for {
+		budget, err := remaining()
+		if err != nil {
+			return false, err
+		}
+		absent, err := access.groupAbsent(instanceId, groupName, budget)
+		if err != nil {
+			return false, err
+		}
+		if absent {
+			return true, nil
+		}
+		pause := dbSecurityIpsAbsencePollInterval
+		if left := time.Until(end); left <= 0 {
+			return false, nil
+		} else if left < pause {
+			pause = left
+		}
+		if left, err := remaining(); err != nil {
+			return false, err
+		} else if left < pause {
+			pause = left
+		}
+		if pause > 0 {
+			time.Sleep(pause)
+		}
+	}
+}
+
+// dbSecurityIpsGroupAbsent reports whether a named whitelist group no longer
+// exists on the instance.
+func (s *RdsService) dbSecurityIpsGroupAbsent(instanceId, groupName string, timeout time.Duration) (bool, error) {
+	ipArrays, err := s.DescribeDBSecurityIpsWithTimeout(instanceId, timeout)
+	if err != nil {
+		return false, WrapError(err)
+	}
+	for _, item := range ipArrays {
+		ipArray, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if name, _ := ipArray["DBInstanceIPArrayName"].(string); name == groupName {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// modifyDBSecurityIpsGroup writes one named whitelist group with the given
+// ModifyMode. An empty ips value with Cover mode removes the group.
+func (s *RdsService) modifyDBSecurityIpsGroup(instanceId, groupName, ips, modifyMode string, timeout time.Duration) error {
+	action := "ModifySecurityIps"
+	request := map[string]interface{}{
+		"RegionId":              s.client.RegionId,
+		"DBInstanceId":          instanceId,
+		"DBInstanceIPArrayName": groupName,
+		"SecurityIps":           ips,
+		"ModifyMode":            modifyMode,
+		"SourceIp":              s.client.SourceIp,
+	}
+
+	var response map[string]interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	deadline := time.Now().Add(timeout)
+	err = retry.Retry(timeout, func() *retry.RetryError {
+		response, err = s.client.RpcPost("Rds", "2014-08-15", action, nil, request, false)
+		if err != nil {
+			if isRetryableModifySecurityIpsError(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+
+	remaining, ok := remainingLifecycleBudget(deadline)
+	if !ok {
+		return WrapErrorf(fmt.Errorf("no time left to wait for the instance after ModifySecurityIps"), IdMsg, instanceId)
+	}
+	stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, remaining, 1*time.Second, s.dbInstanceStateRefreshFuncWithinDeadline(instanceId, []string{"Deleting"}, deadline))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, instanceId)
+	}
+	return nil
+}
+
 func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, error) {
+	return s.DescribeDBSecurityIpsWithTimeout(instanceId, 5*time.Minute)
+}
+
+// DescribeDBSecurityIpsWithTimeout reads the whitelist groups with the caller's
+// remaining update budget instead of a fresh fixed retry window.
+func (s *RdsService) DescribeDBSecurityIpsWithTimeout(instanceId string, timeout time.Duration) ([]interface{}, error) {
 	action := "DescribeDBInstanceIPArrayList"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -1204,7 +1467,7 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	var response map[string]interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+	err = retry.Retry(timeout, func() *retry.RetryError {
 		response, err = client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
@@ -1219,7 +1482,18 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
-	return response["Items"].(map[string]interface{})["DBInstanceIPArray"].([]interface{}), nil
+	items, ok := response["Items"].(map[string]interface{})
+	if !ok {
+		return nil, WrapErrorf(fmt.Errorf("describe response has no Items object"), DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	ipArrays, ok := items["DBInstanceIPArray"].([]interface{})
+	if !ok {
+		// The default group always exists, so a response without the array is
+		// incomplete. Treating it as an empty list would let a removal report
+		// success without a complete read-back.
+		return nil, WrapErrorf(fmt.Errorf("describe response has an invalid or missing DBInstanceIPArray value"), DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
+	}
+	return ipArrays, nil
 }
 
 func (s *RdsService) DescribeParameterTemplates(instanceId, engine, engineVersion string) ([]interface{}, error) {
@@ -1245,7 +1519,12 @@ func (s *RdsService) GetSecurityIps(instanceId string, dbInstanceIpArrayName str
 	if err != nil {
 		return nil, WrapError(err)
 	}
+	return FlattenSecurityIps(object, dbInstanceIpArrayName), nil
+}
 
+// FlattenSecurityIps collects the IP list of one named whitelist group from a
+// DescribeDBInstanceIPArrayList result so callers can reuse a single describe.
+func FlattenSecurityIps(object []interface{}, dbInstanceIpArrayName string) []string {
 	var ips, separator string
 	ipsMap := make(map[string]string)
 	for _, ip := range object {
@@ -1267,7 +1546,7 @@ func (s *RdsService) GetSecurityIps(instanceId string, dbInstanceIpArrayName str
 		}
 	}
 
-	return finalIps, nil
+	return finalIps
 }
 
 func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, error) {
@@ -1642,6 +1921,88 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
 	}
 }
+
+// dbInstanceStateRefreshFuncWithinDeadline is the lifecycle-scoped variant of
+// RdsDBInstanceStateRefreshFunc. Every refresh spends only the budget that is
+// left before deadline, so a persistent retryable error cannot open a new
+// five-minute window inside a wait that already has less time than that.
+func (s *RdsService) dbInstanceStateRefreshFuncWithinDeadline(id string, failStates []string, deadline time.Time) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		budget, ok := remainingLifecycleBudget(deadline)
+		if !ok {
+			return nil, "", WrapError(fmt.Errorf("timeout budget is exhausted while waiting for DB instance %q", id))
+		}
+		object, err := s.DescribeDBInstanceWithTimeout(id, budget)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["DBInstanceStatus"] == failState {
+				return object, fmt.Sprint(object["DBInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, object["DBInstanceStatus"]))
+			}
+		}
+		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
+	}
+}
+
+// dbInstanceDeletePollInterval spaces the instance reads of the delete wait.
+// Tests lower it together with the timeout to keep the loop short.
+var dbInstanceDeletePollInterval = 10 * time.Second
+
+type dbInstanceExistenceReader interface {
+	DescribeDBInstanceWithTimeout(id string, timeout time.Duration) (map[string]interface{}, error)
+}
+
+// isDBInstanceAbsent reports whether an instance lookup result proves that this
+// instance no longer exists. queryDBInstance wraps exactly two instance-specific
+// outcomes with NotFoundMsg: an instance-specific NotFound code and an empty
+// attribute list. A generic 404 from DescribeDBInstanceAttribute (for example
+// InvalidClusterKms, Request.NotFound or HostInfo.NotFound) is wrapped with
+// DefaultErrorMsg and must not be read as absence, even though the shared
+// NotFoundError classifier treats every 404 as not found.
+func isDBInstanceAbsent(err error) bool {
+	for {
+		e, ok := err.(*ComplexError)
+		if !ok {
+			return false
+		}
+		if e.Err != nil {
+			return strings.HasPrefix(e.Err.Error(), ResourceNotfound)
+		}
+		err = e.Cause
+	}
+}
+
+// waitForDBInstanceDeleted waits until the instance lookup confirms absence.
+// DeleteDBInstance stops reporting task entries once the instance is released,
+// so an empty DescribeTasks list cannot prove completion; only instance-specific
+// absence evidence from the lookup can. Reads spend the remaining delete budget,
+// and every other error, including non-instance 404s, keeps its original
+// handling instead of being read as absence.
+func waitForDBInstanceDeleted(reader dbInstanceExistenceReader, id string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		budget, ok := remainingLifecycleBudget(deadline)
+		if !ok {
+			return WrapError(Error("timeout while waiting for DB instance %s to be deleted", id))
+		}
+		if _, err := reader.DescribeDBInstanceWithTimeout(id, budget); err != nil {
+			if isDBInstanceAbsent(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+		if !rdsWaitBefore(deadline, dbInstanceDeletePollInterval) {
+			return WrapError(Error("timeout while waiting for DB instance %s to be deleted", id))
+		}
+	}
+}
+
 func (s *RdsService) RdsDBInstanceNodeIdRefreshFunc(id string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		describeDBInstanceHAConfigObject, err := s.DescribeDBInstanceHAConfig(id)
@@ -2957,49 +3318,60 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 
 func (s *RdsService) DescribeAllWhitelistTemplate(name string) (object map[string]interface{}, err error) {
 	action := "DescribeAllWhitelistTemplate"
-	request := map[string]interface{}{
-		"RegionId":          s.client.RegionId,
-		"MaxRecordsPerPage": 1000,
-		"PageNumbers":       1,
-	}
 	client := s.client
-	response, err := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
-	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	// MaxRecordsPerPage only accepts 10, 30 or 50, so walk the pages until
+	// HasNext is false instead of assuming every template fits on one page.
+	const pageSize = 50
+	for page := 1; page <= 100; page++ {
+		request := map[string]interface{}{
+			"RegionId":          s.client.RegionId,
+			"MaxRecordsPerPage": pageSize,
+			"PageNumbers":       page,
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, response, request)
-	object = make(map[string]interface{})
-	v, err := jsonpath.Get("$.Data.Templates", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Templates", response)
-	}
-	if templatesList, ok := v.([]interface{}); ok {
-		for _, item := range templatesList {
-			if itemMap, ok := item.(map[string]interface{}); ok {
-				templateName, ok := itemMap["TemplateName"].(string)
-				if !ok {
-					continue
-				}
-
-				if templateName == name {
-					object["UserId"] = itemMap["UserId"]
-					object["TemplateName"] = itemMap["TemplateName"]
-					object["Id"] = itemMap["Id"]
-					object["Ips"] = itemMap["Ips"]
-					object["TemplateId"] = itemMap["TemplateId"]
-					return object, nil
-				}
-			} else {
-				log.Printf("[WARN] Unexpected template item type: %T", item)
+		response, respErr := client.RpcPost("Rds", "2014-08-15", action, nil, request, true)
+		if respErr != nil {
+			if IsExpectedErrors(respErr, []string{}) {
+				return nil, WrapErrorf(respErr, NotFoundMsg, AlibabaCloudSdkGoERROR)
 			}
+			return nil, WrapErrorf(respErr, DefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
 		}
-	} else {
-		log.Printf("[WARN] Templates is not an array: %T", v)
+		addDebug(action, response, request)
+		object = make(map[string]interface{})
+		v, pathErr := jsonpath.Get("$.Data.Templates", response)
+		if pathErr != nil {
+			return object, WrapErrorf(pathErr, FailedGetAttributeMsg, action, "$.Data.Templates", response)
+		}
+		if templatesList, ok := v.([]interface{}); ok {
+			for _, item := range templatesList {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					templateName, ok := itemMap["TemplateName"].(string)
+					if !ok {
+						continue
+					}
+					if templateName == name {
+						object["UserId"] = itemMap["UserId"]
+						object["TemplateName"] = itemMap["TemplateName"]
+						object["Id"] = itemMap["Id"]
+						object["Ips"] = itemMap["Ips"]
+						object["TemplateId"] = itemMap["TemplateId"]
+						return object, nil
+					}
+				} else {
+					log.Printf("[WARN] Unexpected template item type: %T", item)
+				}
+			}
+		} else {
+			log.Printf("[WARN] Templates is not an array: %T", v)
+		}
+		hasNext := false
+		if next, nextErr := jsonpath.Get("$.Data.HasNext", response); nextErr == nil {
+			hasNext, _ = next.(bool)
+		}
+		if !hasNext {
+			break
+		}
 	}
-	return nil, WrapErrorf(NotFoundErr("TemplateName", "test02"), NotFoundMsg, ProviderERROR)
+	return nil, WrapErrorf(NotFoundErr("TemplateName", name), NotFoundMsg, ProviderERROR)
 }
 
 func (s *RdsService) DescribeWhitelistTemplate(name string) (object map[string]interface{}, err error) {
