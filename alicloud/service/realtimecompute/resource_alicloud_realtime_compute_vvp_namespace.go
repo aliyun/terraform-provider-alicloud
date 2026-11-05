@@ -27,11 +27,6 @@ import (
 
 const vvpNamespaceTypeName = "alicloud_realtime_compute_vvp_namespace"
 
-// vvpNamespaceRecoveryWaitBudget bounds how long a create that lost its response waits for the
-// namespace it found to settle. The create budget is normally the thing that just elapsed, so this
-// window is deliberately short and separate instead of restarting the full operation timeout.
-const vvpNamespaceRecoveryWaitBudget = 30 * time.Second
-
 var (
 	_ resource.Resource                = &vvpNamespaceResource{}
 	_ resource.ResourceWithImportState = &vvpNamespaceResource{}
@@ -308,48 +303,14 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		// The namespace exists, so the create was accepted even though its response was lost. Persist
-		// the composite identity before judging the status: a namespace that failed, or one that is
-		// still being allocated, must stay traceable instead of disappearing from Terraform.
-		resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(recovered, &plan))...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		recoveredStatus := strings.ToUpper(strings.TrimSpace(fmt.Sprint(recovered["Status"])))
-		if recoveredStatus == "FAILED" {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Creating %s: the namespace reached FAILED", vvpNamespaceTypeName),
-				fmt.Sprintf("CreateNamespace failed with %v, and %s exists but the service reports FAILED. The namespace is kept in state so it can be inspected, imported or removed explicitly instead of being left untracked.", err, id),
-			)
-			return
-		}
-		if recoveredStatus != "SUCCESS" {
-			// The object is listed as soon as the create is accepted, while its capacity allocation
-			// still runs in the background; follow-up calls fail with 903047 until it settles. The
-			// create is only done once the recovered namespace reaches SUCCESS.
-			//
-			// The create budget is usually the very thing that elapsed when the response was lost, so
-			// this wait gets its own short bounded window rather than inheriting an expired deadline;
-			// it stays under the Terraform lifecycle context, so cancelling the apply still stops it.
-			recoveryCtx, cancelRecovery := context.WithTimeout(ctx, vvpNamespaceRecoveryWaitBudget)
-			defer cancelRecovery()
-			object, waitErr := vvpNamespaceWaitForState(recoveryCtx, r.Meta(), id, "Status", []string{"SUCCESS"}, []string{"FAILED"}, vvpNamespaceRecoveryWaitBudget)
-			if waitErr != nil {
-				resp.Diagnostics.AddError(
-					fmt.Sprintf("Creating %s: waiting for SUCCESS after a lost create response", vvpNamespaceTypeName),
-					errs.WrapErrorf(waitErr, "Creating %s: CreateNamespace failed with %v and %s exists but did not reach SUCCESS; the namespace stays in state", vvpNamespaceTypeName, err, id).Error(),
-				)
-				return
-			}
-			if object != nil {
-				recovered = object
-			}
-		}
-		resp.Diagnostics.AddWarning(
-			fmt.Sprintf("Creating %s: create response lost", vvpNamespaceTypeName),
-			fmt.Sprintf("CreateNamespace failed with %v, but %s exists afterwards; the provider adopted the existing namespace.", err, id),
+		// The identity exists after the failed call, but that does not prove this request created
+		// it: the product exposes no request correlation or idempotency token, so a concurrent caller
+		// may own the object. Adopting it would take over someone else's namespace, so the create
+		// stops with an explicit uncertain-result diagnostic and leaves the object out of state.
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: the create result is uncertain", vvpNamespaceTypeName),
+			fmt.Sprintf("CreateNamespace failed with %v, and %s now exists. The provider cannot prove the namespace was created by this request (the product exposes no request correlation or idempotency token), so it was not adopted. If it belongs to this configuration, import it with `terraform import %s %s`; otherwise remove it and retry.", err, id, vvpNamespaceTypeName, id),
 		)
-		resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(recovered, &plan))...)
 		return
 	}
 
