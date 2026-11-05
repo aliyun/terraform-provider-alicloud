@@ -5291,7 +5291,7 @@ func TestUnitRedisTairInstanceDeferredOrderTransitionKeepsDescribeError(t *testi
 			w.WriteHeader(http.StatusForbidden)
 			fmt.Fprint(w, `{"Code":"Forbidden.RAM","Message":"user not authorized","RequestId":"mock"}`)
 		case "ModifyInstanceSpec":
-			*requests = append(*requests, map[string]string{"EffectiveTime": r.Form.Get("EffectiveTime")})
+			requests = append(requests, map[string]string{"EffectiveTime": r.Form.Get("EffectiveTime")})
 			fmt.Fprint(w, `{"RequestId":"mock"}`)
 		default:
 			fmt.Fprint(w, `{"RequestId":"mock"}`)
