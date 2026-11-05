@@ -59,3 +59,25 @@ func TestUnitContextHTTPClientHonoursBudget(t *testing.T) {
 		t.Fatalf("the budget was not enforced: %s", elapsed)
 	}
 }
+
+// A response that arrives inside the remaining budget still succeeds even when
+// the budget is short.
+func TestUnitContextHTTPClientDelayedSuccessWithinBudget(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	client := contextHTTPClient{ctx: context.Background(), budget: 500 * time.Millisecond}
+	request, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatalf("building the request: %s", err)
+	}
+	response, err := client.Call(request, &http.Transport{})
+	if err != nil {
+		t.Fatalf("the delayed response should fit the budget: %s", err)
+	}
+	response.Body.Close()
+}

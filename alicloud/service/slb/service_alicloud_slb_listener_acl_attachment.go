@@ -193,6 +193,11 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 	if errors.Is(err, errListenerAclAttachmentWriteUnknown) {
 		return true
 	}
+	// A response that reached the service but could not be decoded cannot prove
+	// whether the write applied, so it is reconciled like a transport failure.
+	if errors.Is(listenerAclErrorCause(err), connectivity.ErrUnreadableResponse) {
+		return true
+	}
 	return helper.NeedRetry(listenerAclErrorCause(err))
 }
 

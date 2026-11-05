@@ -2,6 +2,7 @@ package slb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // These unit tests cover the transport layer of the listener ACL attachment:
@@ -201,24 +201,54 @@ func listenerAclTestNotFoundError() error {
 	}
 }
 
-// The not-found conversion has to survive the shared retry wrapper: read must
-// clear the state and delete must succeed when the listener is already gone.
-func TestUnitListenerAclAttachmentTransportNotFound(t *testing.T) {
+// The transport layer must keep the not-found and unreadable-response classes
+// distinguishable after the shared retry wrapper and the URL sanitizer.
+func TestUnitListenerAclAttachmentTransportClassification(t *testing.T) {
 	client := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
-	requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
-		return nil, listenerAclTestNotFoundError()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	t.Run("not found stays a not found error", func(t *testing.T) {
+		requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+			return nil, listenerAclTestNotFoundError()
+		})
+		err := updateListenerAcl(ctx, client, "lb-123:http:80", "acl-1", "white", true)
+		if err == nil || !errs.NotFoundError(err) {
+			t.Fatalf("expected a not found error, got %v", err)
+		}
+		if isUnknownListenerAclWriteOutcome(err) {
+			t.Fatal("a missing listener is a terminal result, not an unknown write")
+		}
 	})
-	api := newListenerAclAttachmentApi(client)
-	state := listenerAclAttachmentResourceModel{
-		Id:         types.StringValue("lb-123:http:80"),
-		ListenerId: types.StringValue("lb-123:http:80"),
-		AclId:      types.StringValue("acl-1"),
-		AclType:    types.StringValue("white"),
-	}
-	if _, found, err := readListenerAclAttachment(context.Background(), api, state); err != nil || found {
-		t.Fatalf("read must report a missing listener without an error: found=%v err=%v", found, err)
-	}
-	if err := deleteListenerAclAttachment(context.Background(), api, "lb-123:http:80"); err != nil {
-		t.Fatalf("delete must tolerate a missing listener: %s", err)
-	}
+
+	t.Run("unreadable response is an unknown write", func(t *testing.T) {
+		requestCapture(t, func(callCtx context.Context, action string, request map[string]interface{}) (map[string]interface{}, error) {
+			return nil, fmt.Errorf("%w: unexpected EOF", connectivity.ErrUnreadableResponse)
+		})
+		err := updateListenerAcl(ctx, client, "lb-123:http:80", "acl-1", "white", true)
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+		if !isUnknownListenerAclWriteOutcome(err) {
+			t.Fatalf("an unreadable response must be reconciled, got %v", err)
+		}
+	})
+
+	t.Run("cancel during an attempt stops further attempts", func(t *testing.T) {
+		calls := 0
+		cancelCtx, cancelAttempt := context.WithCancel(context.Background())
+		original := listenerAclAttachmentRpcPost
+		listenerAclAttachmentRpcPost = func(callCtx context.Context, c *connectivity.AliyunClient, action string, request map[string]interface{}) (map[string]interface{}, error) {
+			calls++
+			cancelAttempt()
+			return nil, errors.New(`Post "https://slb.aliyuncs.com/?Signature=abc": i/o timeout`)
+		}
+		t.Cleanup(func() { listenerAclAttachmentRpcPost = original })
+		if err := updateListenerAcl(cancelCtx, client, "lb-123:http:80", "acl-1", "white", true); err == nil {
+			t.Fatal("expected the cancelled operation to fail")
+		}
+		if calls != 1 {
+			t.Fatalf("a cancelled operation must not issue another attempt, got %d calls", calls)
+		}
+	})
 }

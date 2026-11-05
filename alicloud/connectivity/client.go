@@ -1,8 +1,12 @@
 package connectivity
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -2686,11 +2690,131 @@ type contextHTTPClient struct {
 }
 
 func (c contextHTTPClient) Call(request *http.Request, transport *http.Transport) (*http.Response, error) {
+	if transport != nil {
+		// The transport is built per request by tea; close its idle connections
+		// once the round trip ends so a cancelled or failed call cannot leave
+		// sockets behind.
+		defer transport.CloseIdleConnections()
+	}
 	httpClient := &http.Client{Transport: transport}
 	if c.budget > 0 {
 		httpClient.Timeout = c.budget
 	}
 	return httpClient.Do(request.WithContext(c.ctx))
+}
+
+// ErrUnreadableResponse reports that the request reached the service but its
+// response could not be decoded, so the caller cannot tell whether the request
+// was applied. Callers that write resources reconcile this against the remote
+// state instead of treating it as an explicit rejection.
+var ErrUnreadableResponse = errors.New("rpc response body could not be decoded")
+
+// redactedError keeps the original error chain (cancellation, timeouts and
+// retry classification) while exposing a message with signed URLs stripped.
+type redactedError struct {
+	cause   error
+	message string
+}
+
+func (e *redactedError) Error() string { return e.message }
+func (e *redactedError) Unwrap() error { return e.cause }
+
+var signedURLPattern = regexp.MustCompile(`https?://[^\s"']+`)
+
+// redactSignedURLs removes the query string, fragment and credentials of every
+// URL in the message. Signed request URLs carry the access key, signature and
+// security token as query parameters and must never reach Terraform diagnostics.
+func redactSignedURLs(message string) string {
+	return signedURLPattern.ReplaceAllStringFunc(message, func(raw string) string {
+		parsed, err := url.Parse(raw)
+		if err != nil {
+			return raw
+		}
+		parsed.RawQuery = ""
+		parsed.Fragment = ""
+		parsed.User = nil
+		return parsed.String()
+	})
+}
+
+// sanitizeRpcError strips signed URLs from transport errors while preserving the
+// underlying error type and chain.
+func sanitizeRpcError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if sdkErr, ok := err.(*tea.SDKError); ok {
+		clone := *sdkErr
+		if clone.Message != nil {
+			message := redactSignedURLs(*clone.Message)
+			clone.Message = &message
+		}
+		if clone.Data != nil {
+			data := redactSignedURLs(*clone.Data)
+			clone.Data = &data
+		}
+		return &clone
+	}
+	sanitized := redactSignedURLs(err.Error())
+	if sanitized == err.Error() {
+		return err
+	}
+	return &redactedError{cause: err, message: sanitized}
+}
+
+// splitRpcBudget divides one operation budget between the transport dial and
+// the response read. Neither phase may consume the whole allowance, and a short
+// remaining budget still leaves at least one millisecond for the read so the
+// header wait is never compressed to nothing.
+func splitRpcBudget(budget time.Duration) (connect, read time.Duration) {
+	connect = budget / 2
+	if connect > 10*time.Second {
+		connect = 10 * time.Second
+	}
+	read = budget - connect
+	if read < time.Millisecond {
+		read = time.Millisecond
+		if connect > time.Millisecond {
+			connect = budget - read
+		}
+	}
+	return connect, read
+}
+
+// decodeRpcResponse reads and validates a JSON object response. It closes the
+// response body and never panics on an empty or non-object payload: such a
+// payload is reported as ErrUnreadableResponse so the caller can reconcile.
+func decodeRpcResponse(response *http.Response) (map[string]interface{}, error) {
+	if response == nil || response.Body == nil {
+		return nil, fmt.Errorf("%w: empty response", ErrUnreadableResponse)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, 32<<20))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrUnreadableResponse, sanitizeRpcError(err))
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		return nil, fmt.Errorf("%w: empty body (status %d)", ErrUnreadableResponse, response.StatusCode)
+	}
+	var decoded interface{}
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrUnreadableResponse, sanitizeRpcError(err))
+	}
+	result, ok := decoded.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("%w: unexpected JSON payload of type %T (status %d)", ErrUnreadableResponse, decoded, response.StatusCode)
+	}
+	result["_headers"] = response.Headers
+	if tea.BoolValue(util.Is4xx(response.StatusCode)) || tea.BoolValue(util.Is5xx(response.StatusCode)) {
+		return nil, tea.NewSDKError(map[string]interface{}{
+			"code":       tea.ToString(rpc.DefaultAny(result["Code"], result["code"])),
+			"statusCode": tea.IntValue(response.StatusCode),
+			"message":    "code: " + tea.ToString(tea.IntValue(response.StatusCode)) + ", " + tea.ToString(rpc.DefaultAny(result["Message"], result["message"])) + " request id: " + tea.ToString(rpc.DefaultAny(result["RequestId"], result["requestId"])),
+			"data":       result,
+			"_headers":   response.Headers,
+		})
+	}
+	return result, nil
 }
 
 // rpcRequestWithContext mirrors the tea-rpc request construction (query
@@ -2784,15 +2908,9 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 		}
 	}
 	// The transport dial budget is part of the single client budget, so the
-	// connect and read phases cannot each consume a full allowance.
-	connectBudget := budget
-	if connectBudget > 10*time.Second {
-		connectBudget = 10 * time.Second
-	}
-	readBudget := budget - connectBudget
-	if readBudget < time.Millisecond {
-		readBudget = time.Millisecond
-	}
+	// connect and read phases cannot each consume a full allowance and a short
+	// remaining budget still leaves time to wait for the response headers.
+	connectBudget, readBudget := splitRpcBudget(budget)
 	runtime := map[string]interface{}{
 		"connectTimeout": int(connectBudget / time.Millisecond),
 		"readTimeout":    int(readBudget / time.Millisecond),
@@ -2805,24 +2923,9 @@ func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method st
 	}
 	response, err := tea.DoRequest(request, runtime)
 	if err != nil {
-		return nil, err
+		return nil, sanitizeRpcError(err)
 	}
-	obj, err := util.ReadAsJSON(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	result := util.AssertAsMap(obj)
-	result["_headers"] = response.Headers
-	if tea.BoolValue(util.Is4xx(response.StatusCode)) || tea.BoolValue(util.Is5xx(response.StatusCode)) {
-		return nil, tea.NewSDKError(map[string]interface{}{
-			"code":       tea.ToString(rpc.DefaultAny(result["Code"], result["code"])),
-			"statusCode": tea.IntValue(response.StatusCode),
-			"message":    "code: " + tea.ToString(tea.IntValue(response.StatusCode)) + ", " + tea.ToString(rpc.DefaultAny(result["Message"], result["message"])) + " request id: " + tea.ToString(rpc.DefaultAny(result["RequestId"], result["requestId"])),
-			"data":       result,
-			"_headers":   response.Headers,
-		})
-	}
-	return result, nil
+	return decodeRpcResponse(response)
 }
 
 // RpcGet invoking RPC API request with GET method

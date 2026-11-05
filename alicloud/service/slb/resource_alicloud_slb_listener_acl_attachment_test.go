@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -443,9 +444,9 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				ExpectError: regexp.MustCompile(`(?i)ipversionconflict`),
 			},
 			{
-				// A rejected request must not leave attachment state or write
-				// the listener ACLs.
-				Config: testAccListenerAclAttachmentConfigHttp(name, "first", "white", false),
+				// Keep the same TCP listener used by the rejected steps so the
+				// assertion cannot be masked by replacing it with another type.
+				Config: testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNoListenerAclAttachmentState,
 					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
@@ -930,6 +931,31 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 `, testAccListenerAclAttachmentCommonConfig(name))
 }
 
+func testAccListenerAclAttachmentConfigIpVersionConflictNoAttachment(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_slb_acl" "ipv6" {
+  name       = "${var.name}-ipv6"
+  ip_version = "ipv6"
+  entry_list {
+    entry = "2001:db8::/32"
+  }
+}
+
+resource "alicloud_slb_listener" "default" {
+  load_balancer_id = alicloud_slb_load_balancer.default.id
+  backend_port     = 22
+  frontend_port    = 22
+  protocol         = "tcp"
+  bandwidth        = 10
+  health_check_type = "tcp"
+
+  lifecycle {
+    ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
+  }
+}
+`, testAccListenerAclAttachmentCommonConfig(name))
+}
+
 func testAccListenerAclAttachmentConfigIpVersionConflict(name string) string {
 	return fmt.Sprintf(`%s
 resource "alicloud_slb_acl" "ipv6" {
@@ -1404,5 +1430,212 @@ func TestUnitListenerAclAttachmentProtocolUpdateStaleType(t *testing.T) {
 	}
 	if stub.sets != 1 {
 		t.Fatalf("expected one update write, got %d", stub.sets)
+	}
+}
+
+// The Read and Delete not-found paths, the import forms and the single field
+// updates are exercised through the same public factory and protocol entry as
+// the rest of the lifecycle.
+func TestUnitListenerAclAttachmentProtocolReadAndDestroyMissingListener(t *testing.T) {
+	stub := &listenerAclRpcStub{
+		describe: func() (map[string]interface{}, error) {
+			return nil, &tea.SDKError{StatusCode: tea.Int(404), Code: tea.String("InvalidLoadBalancerId.NotFound"), Message: tea.String("The specified resource does not exist."), Data: tea.String("{}")}
+		},
+	}
+	stub.install(t)
+	server := newListenerAclAttachmentServer(t)
+
+	prior := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+
+	read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+		TypeName:     listenerAclAttachmentTestTypeName,
+		CurrentState: prior,
+	})
+	if err != nil {
+		t.Fatalf("ReadResource: %s", err)
+	}
+	listenerAclTestRequireNoError(t, "ReadResource", read.Diagnostics)
+	val, err := read.NewState.Unmarshal(listenerAclAttachmentTestType)
+	if err != nil {
+		t.Fatalf("decoding the read state: %s", err)
+	}
+	if !val.IsNull() {
+		t.Fatalf("a missing listener must clear the state, got %s", val)
+	}
+
+	plan, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+		TypeName:         listenerAclAttachmentTestTypeName,
+		PriorState:       prior,
+		ProposedNewState: listenerAclTestNull(t),
+		Config:           listenerAclTestNull(t),
+	})
+	if err != nil {
+		t.Fatalf("PlanResourceChange (destroy): %s", err)
+	}
+	listenerAclTestRequireNoError(t, "PlanResourceChange (destroy)", plan.Diagnostics)
+	destroyed, err := server.ApplyResourceChange(context.Background(), &tfprotov5.ApplyResourceChangeRequest{
+		TypeName:       listenerAclAttachmentTestTypeName,
+		PriorState:     prior,
+		PlannedState:   plan.PlannedState,
+		Config:         listenerAclTestNull(t),
+		PlannedPrivate: plan.PlannedPrivate,
+	})
+	if err != nil {
+		t.Fatalf("ApplyResourceChange (destroy): %s", err)
+	}
+	listenerAclTestRequireNoError(t, "ApplyResourceChange (destroy)", destroyed.Diagnostics)
+	val, err = destroyed.NewState.Unmarshal(listenerAclAttachmentTestType)
+	if err != nil {
+		t.Fatalf("decoding the destroyed state: %s", err)
+	}
+	if !val.IsNull() {
+		t.Fatalf("destroy of a missing listener must not fail, got %s", val)
+	}
+}
+
+func TestUnitListenerAclAttachmentProtocolImportForms(t *testing.T) {
+	t.Run("three segments uses the only bound group", func(t *testing.T) {
+		stub := &listenerAclRpcStub{
+			describe: func() (map[string]interface{}, error) {
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-9"}, nil
+			},
+		}
+		stub.install(t)
+		server := newListenerAclAttachmentServer(t)
+		imported, err := server.ImportResourceState(context.Background(), &tfprotov5.ImportResourceStateRequest{
+			TypeName: listenerAclAttachmentTestTypeName,
+			ID:       "lb-123:http:80",
+		})
+		if err != nil {
+			t.Fatalf("ImportResourceState: %s", err)
+		}
+		listenerAclTestRequireNoError(t, "ImportResourceState", imported.Diagnostics)
+		read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+			TypeName:     listenerAclAttachmentTestTypeName,
+			CurrentState: imported.ImportedResources[0].State,
+		})
+		if err != nil {
+			t.Fatalf("ReadResource: %s", err)
+		}
+		listenerAclTestRequireNoError(t, "ReadResource", read.Diagnostics)
+		attrs := listenerAclTestAttrs(t, read.NewState)
+		if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-9" {
+			t.Fatalf("acl_id = %q, want acl-9", got)
+		}
+	})
+
+	t.Run("four segments keeps a non-first group", func(t *testing.T) {
+		stub := &listenerAclRpcStub{
+			describe: func() (map[string]interface{}, error) {
+				return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-a,acl-b,acl-c"}, nil
+			},
+		}
+		stub.install(t)
+		server := newListenerAclAttachmentServer(t)
+		imported, err := server.ImportResourceState(context.Background(), &tfprotov5.ImportResourceStateRequest{
+			TypeName: listenerAclAttachmentTestTypeName,
+			ID:       "lb-123:http:80:acl-b",
+		})
+		if err != nil {
+			t.Fatalf("ImportResourceState: %s", err)
+		}
+		listenerAclTestRequireNoError(t, "ImportResourceState", imported.Diagnostics)
+		read, err := server.ReadResource(context.Background(), &tfprotov5.ReadResourceRequest{
+			TypeName:     listenerAclAttachmentTestTypeName,
+			CurrentState: imported.ImportedResources[0].State,
+		})
+		if err != nil {
+			t.Fatalf("ReadResource: %s", err)
+		}
+		listenerAclTestRequireNoError(t, "ReadResource", read.Diagnostics)
+		attrs := listenerAclTestAttrs(t, read.NewState)
+		if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-b" {
+			t.Fatalf("acl_id = %q, want acl-b", got)
+		}
+	})
+}
+
+func TestUnitListenerAclAttachmentProtocolSingleFieldUpdates(t *testing.T) {
+	stub := &listenerAclRpcStub{
+		describe: func() (map[string]interface{}, error) {
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "black", "AclId": "acl-2"}, nil
+		},
+	}
+	stub.install(t)
+	server := newListenerAclAttachmentServer(t)
+
+	prior := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-1"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "white"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+	config := listenerAclTestDynamic(t, listenerAclTestObject(t, map[string]tftypes.Value{
+		"id":          tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"listener_id": tftypes.NewValue(tftypes.String, "lb-123:http:80"),
+		"acl_id":      tftypes.NewValue(tftypes.String, "acl-2"),
+		"acl_type":    tftypes.NewValue(tftypes.String, "black"),
+		"acl_status":  tftypes.NewValue(tftypes.String, "on"),
+	}))
+	plan, err := server.PlanResourceChange(context.Background(), &tfprotov5.PlanResourceChangeRequest{
+		TypeName:         listenerAclAttachmentTestTypeName,
+		PriorState:       prior,
+		ProposedNewState: config,
+		Config:           config,
+	})
+	if err != nil {
+		t.Fatalf("PlanResourceChange (update): %s", err)
+	}
+	listenerAclTestRequireNoError(t, "PlanResourceChange (update)", plan.Diagnostics)
+	applied, err := server.ApplyResourceChange(context.Background(), &tfprotov5.ApplyResourceChangeRequest{
+		TypeName:       listenerAclAttachmentTestTypeName,
+		PriorState:     prior,
+		PlannedState:   plan.PlannedState,
+		Config:         config,
+		PlannedPrivate: plan.PlannedPrivate,
+	})
+	if err != nil {
+		t.Fatalf("ApplyResourceChange (update): %s", err)
+	}
+	listenerAclTestRequireNoError(t, "ApplyResourceChange (update)", applied.Diagnostics)
+	attrs := listenerAclTestAttrs(t, applied.NewState)
+	if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-2" {
+		t.Fatalf("acl_id = %q, want acl-2", got)
+	}
+	if got := listenerAclTestString(t, attrs["acl_type"]); got != "black" {
+		t.Fatalf("acl_type = %q, want black", got)
+	}
+}
+
+// A response that reached the service but could not be decoded is reconciled
+// against the listener instead of being reported as a plain failure.
+func TestUnitListenerAclAttachmentProtocolUnreadableResponse(t *testing.T) {
+	previousOperation := *slbsvc.ListenerAclAttachmentOperationTimeoutForTest
+	*slbsvc.ListenerAclAttachmentOperationTimeoutForTest = 200 * time.Millisecond
+	t.Cleanup(func() { *slbsvc.ListenerAclAttachmentOperationTimeoutForTest = previousOperation })
+
+	stub := &listenerAclRpcStub{
+		set: func(map[string]interface{}) error {
+			return fmt.Errorf("%w: unexpected EOF", connectivity.ErrUnreadableResponse)
+		},
+		describe: func() (map[string]interface{}, error) {
+			return map[string]interface{}{"ListenerPort": 80, "AclStatus": "on", "AclType": "white", "AclId": "acl-1"}, nil
+		},
+	}
+	stub.install(t)
+	server := newListenerAclAttachmentServer(t)
+	plan, config := listenerAclTestPlanCreate(t, server, "lb-123:http:80", "acl-1", "white")
+	applied := listenerAclTestApplyCreate(t, server, plan, config)
+	listenerAclTestRequireNoError(t, "ApplyResourceChange (unreadable response)", applied.Diagnostics)
+	attrs := listenerAclTestAttrs(t, applied.NewState)
+	if got := listenerAclTestString(t, attrs["acl_id"]); got != "acl-1" {
+		t.Fatalf("reconciled binding was not kept, acl_id = %q", got)
 	}
 }
