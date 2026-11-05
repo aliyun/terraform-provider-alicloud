@@ -7,12 +7,14 @@ import (
 	"testing"
 	"time"
 
+	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	sdkots "github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ots"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/sweep"
@@ -94,7 +96,7 @@ func testSweepOtsInstances(region string) error {
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
-			if isOtsObjectNotExist(err) {
+			if isOtsGone(err) {
 				continue
 			}
 			return fmt.Errorf("error listing tables of OTS instance %s: %s", name, err)
@@ -115,7 +117,7 @@ func testSweepOtsInstances(region string) error {
 			req.TableName = t
 			if _, err := client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 				return tableStoreClient.DeleteTable(req)
-			}); err != nil && !isOtsObjectNotExist(err) {
+			}); err != nil && !isOtsGone(err) {
 				return fmt.Errorf("error deleting table %s of OTS instance %s: %s", t, name, err)
 			}
 		}
@@ -130,7 +132,7 @@ func testSweepOtsInstances(region string) error {
 		_, err = client.WithOtsClient(func(otsClient *sdkots.Client) (interface{}, error) {
 			return otsClient.DeleteInstance(req)
 		})
-		if err != nil && !isOtsObjectNotExist(err) {
+		if err != nil && !isOtsGone(err) {
 			return fmt.Errorf("error deleting OTS instance %s: %s", name, err)
 		}
 	}
@@ -138,8 +140,34 @@ func testSweepOtsInstances(region string) error {
 	return nil
 }
 
-func isOtsObjectNotExist(err error) bool {
-	return err != nil && strings.HasPrefix(err.Error(), "OTSObjectNotExist")
+func isOtsGone(err error) bool {
+	if err == nil {
+		return false
+	}
+	// TableStore data SDK: *tablestore.OtsError text starts with the code.
+	if strings.Contains(err.Error(), "OTSObjectNotExist") {
+		return true
+	}
+	// Management SDK errors, tea SDK errors, provider not-found errors and the
+	// tunnel not-found cases recognized by errs.
+	if errs.NotFoundError(err) {
+		return true
+	}
+	if serverErr, ok := err.(*sdkerrors.ServerError); ok {
+		switch serverErr.ErrorCode() {
+		case "InstanceNotExist", "OTSObjectNotExist":
+			return true
+		}
+	}
+	if tunnelErr, ok := err.(*otsTunnel.TunnelError); ok {
+		switch tunnelErr.Code {
+		case otsTunnel.ErrCodeResourceGone, otsTunnel.ErrCodeTunnelExpired:
+			return true
+		}
+		lowerMsg := strings.ToLower(tunnelErr.Message)
+		return strings.Contains(lowerMsg, "not exist") || strings.Contains(lowerMsg, "not found")
+	}
+	return false
 }
 
 func sweepSearchIndexesInTable(client *connectivity.AliyunClient, instanceName string, tableName string) error {
@@ -151,7 +179,7 @@ func sweepSearchIndexesInTable(client *connectivity.AliyunClient, instanceName s
 			})
 		})
 		if err != nil {
-			if isOtsObjectNotExist(err) {
+			if isOtsGone(err) {
 				return nil
 			}
 			return fmt.Errorf("error listing search indexes of table %s in OTS instance %s: %s", tableName, instanceName, err)
@@ -172,7 +200,7 @@ func sweepSearchIndexesInTable(client *connectivity.AliyunClient, instanceName s
 					TableName: tableName,
 					IndexName: index.IndexName,
 				})
-			}); err != nil && !isOtsObjectNotExist(err) {
+			}); err != nil && !isOtsGone(err) {
 				return fmt.Errorf("error deleting search index %s of table %s in OTS instance %s: %s", index.IndexName, tableName, instanceName, err)
 			}
 		}
@@ -190,7 +218,7 @@ func waitForOtsTablesDeleted(client *connectivity.AliyunClient, instanceName str
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
-			if isOtsObjectNotExist(err) {
+			if isOtsGone(err) {
 				return nil
 			}
 			return fmt.Errorf("error listing tables of OTS instance %s while waiting for deletion: %s", instanceName, err)
@@ -214,6 +242,9 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 		})
 	})
 	if err != nil {
+		if isOtsGone(err) {
+			return nil
+		}
 		return fmt.Errorf("error listing tunnels of table %s in OTS instance %s: %s", tableName, instanceName, err)
 	}
 
@@ -225,7 +256,7 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 					TableName:  tableName,
 					TunnelName: t.TunnelName,
 				})
-			}); err != nil && !isOtsObjectNotExist(err) {
+			}); err != nil && !isOtsGone(err) {
 				return fmt.Errorf("error deleting tunnel %s of table %s in OTS instance %s: %s", t.TunnelName, tableName, instanceName, err)
 			}
 		}

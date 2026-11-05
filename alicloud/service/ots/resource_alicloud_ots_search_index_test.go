@@ -679,12 +679,12 @@ resource "alicloud_ots_search_index" "default" {
         field_name          = "nested_long"
         field_type          = "Long"
         enable_sort_and_agg = true
-        store               = true
       }
       sub_field_schemas {
         field_name = "nested_text"
         field_type = "Text"
         analyzer   = "SingleWord"
+        store      = true
       }
       sub_field_schemas {
         field_name = "nested_keyword_array"
@@ -845,9 +845,6 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 		}
 
 		nestedLong := fields["nested_long"]
-		if nestedLong.Store == nil || !*nestedLong.Store {
-			return fmt.Errorf("nested_long store is not enabled")
-		}
 		if nestedLong.EnableSortAndAgg == nil || !*nestedLong.EnableSortAndAgg {
 			return fmt.Errorf("nested_long enable_sort_and_agg is not enabled")
 		}
@@ -856,6 +853,9 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 		if nestedText.Analyzer == nil || *nestedText.Analyzer != tablestore.Analyzer_SingleWord {
 			return fmt.Errorf("nested_text analyzer is not SingleWord")
 		}
+		if nestedText.Store == nil || !*nestedText.Store {
+			return fmt.Errorf("nested_text store is not enabled")
+		}
 
 		nestedKeywordArray := fields["nested_keyword_array"]
 		if nestedKeywordArray.IsArray == nil || !*nestedKeywordArray.IsArray {
@@ -863,8 +863,8 @@ func checkSearchIndexSchemaFields() resource.TestCheckFunc {
 		}
 
 		nestedKeywordNoIndex := fields["nested_keyword_noindex"]
-		if nestedKeywordNoIndex.Index != nil && *nestedKeywordNoIndex.Index {
-			return fmt.Errorf("nested_keyword_noindex is unexpectedly indexed")
+		if nestedKeywordNoIndex.Index == nil || *nestedKeywordNoIndex.Index {
+			return fmt.Errorf("nested_keyword_noindex index is not disabled")
 		}
 
 		nestedDateFormats := fields["nested_date"].DateFormats
