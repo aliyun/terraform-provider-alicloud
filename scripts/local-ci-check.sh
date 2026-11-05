@@ -183,6 +183,12 @@ run_check() {
   fi
 }
 
+# DescribeImagePipelineExecutions publishes CANCELLING and CANCELLED as status
+# literals, and misspell flags them. Only those two literals on that one page are
+# accepted: the same words anywhere else, and ordinary prose on that page, stay
+# reported. Both the strict and the changed-docs spelling checks use this helper.
+. "$(dirname "$0")/lib/misspell-scope.sh"
+
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo -e "${RED}ERROR: Not in a git repository.${NC}"
@@ -454,14 +460,14 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
     if [ "$STRICT_MODE" = true ]; then
       # CI mode: check all docs
       run_check "Spell Check (misspell)" \
-        "misspell -error -locale=US ./website/docs" \
+        "run_misspell_scoped ./website/docs" \
         || true
     else
       # Smart mode: check only changed docs
       CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
       if [[ -n "$CHANGED_DOCS" ]]; then
         run_check "Spell Check (changed docs only)" \
-          "echo '$CHANGED_DOCS' | xargs misspell -error -locale=US" \
+          "run_misspell_changed_docs \"\$CHANGED_DOCS\"" \
           || true
       else
         echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"

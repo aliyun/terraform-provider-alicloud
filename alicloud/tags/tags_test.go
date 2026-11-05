@@ -214,3 +214,69 @@ func TestUnitCommonConvertLowercaseTags(t *testing.T) {
 		})
 	}
 }
+
+// The reserved namespace decision is the one every caller shares. The four
+// namespace prefixes compare literally; the SAE entry keeps the historical
+// single-character separator match, so the hyphenated lookalike that existing
+// callers have always hidden stays reserved. The boundary cases below pin that
+// both the literal prefix and the separator variants are covered.
+func TestUnitIsReservedTagKey(t *testing.T) {
+	cases := []struct {
+		key      string
+		reserved bool
+	}{
+		{"aliyun", true},
+		{"aliyun-something", true},
+		{"acs:tag", true},
+		{"acs", false},
+		{"http://example.com", true},
+		{"https://example.com", true},
+		{"sae.do.not.delete", true},
+		{"sae.do.not.delete-anything", true},
+		{"sae-do-not-delete-x", true},
+		{"saeXdoYnotZdelete", true},
+		{"sae.do.not", false},
+		{"sae", false},
+		{"SAE.do.not.delete", false},
+		{"env", false},
+		{"", false},
+		{"ALIYUN-upper", false},
+	}
+	for _, testCase := range cases {
+		if got := IsReservedTagKey(testCase.key); got != testCase.reserved {
+			t.Errorf("IsReservedTagKey(%q) = %v, want %v", testCase.key, got, testCase.reserved)
+		}
+	}
+}
+
+// TagIgnored must apply the same contract as the shared predicate.
+func TestUnitTagIgnoredUsesTheReservedContract(t *testing.T) {
+	assert.True(t, TagIgnored("acs:tag", "value"))
+	assert.True(t, TagIgnored("sae.do.not.delete", "value"))
+	assert.True(t, TagIgnored("sae-do-not-delete-x", "value"))
+	assert.False(t, TagIgnored("env", "value"))
+}
+
+// The historical TagsToMap callers keep the filtering behaviour they always had:
+// a key the old regular expression hid is still dropped from the map, and the
+// ordinary keys next to it are kept.
+func TestUnitTagsToMapKeepsTheHistoricalSaeFilter(t *testing.T) {
+	result := TagsToMap([]interface{}{
+		map[string]interface{}{"TagKey": "env", "TagValue": "prod"},
+		map[string]interface{}{"TagKey": "sae-do-not-delete-x", "TagValue": "injected"},
+		map[string]interface{}{"TagKey": "sae.do.not.delete", "TagValue": "injected"},
+		map[string]interface{}{"TagKey": "aliyun-reserved", "TagValue": "injected"},
+	})
+	assert.Equal(t, map[string]interface{}{"env": "prod"}, result)
+}
+
+// IgnoredTags keeps its historical four-prefix subset, expressed with the same
+// literal prefixes as the shared contract.
+func TestUnitIgnoredTagsUsesTheSharedPrefixes(t *testing.T) {
+	assert.True(t, IgnoredTags("aliyun-something", "value"))
+	assert.True(t, IgnoredTags("acs:tag", "value"))
+	assert.True(t, IgnoredTags("http://example.com", "value"))
+	assert.True(t, IgnoredTags("https://example.com", "value"))
+	assert.False(t, IgnoredTags("sae.do.not.delete", "value"), "the historical filter never dropped the SAE key")
+	assert.False(t, IgnoredTags("env", "value"))
+}

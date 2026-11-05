@@ -1,0 +1,102 @@
+---
+subcategory: "ECS"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ecs_image_pipeline_executions"
+sidebar_current: "docs-alicloud-datasource-ecs-image-pipeline-executions"
+description: |-
+  Provides a list of ECS image pipeline executions.
+---
+
+# alicloud_ecs_image_pipeline_executions
+
+The `alicloud_ecs_image_pipeline_executions` data source provides a collection of executions of ECS image pipelines in the current region. You can query the executions of one image pipeline or a single execution, and filter the results by status, tags and execution IDs.
+
+For information about the API and its fields, see [DescribeImagePipelineExecutions](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-ecs-2014-05-26-describeimagepipelineexecutions).
+
+-> **NOTE:** Available since v2.3.0.
+
+-> **NOTE:** At least one of `image_pipeline_id` and `execution_id` must be set. The data source reads every page returned by `DescribeImagePipelineExecutions` before applying `ids`, so the result is complete regardless of the number of executions. When `next_token` is configured, the first request sends it and the read starts at that position; otherwise the first request omits it and the read starts at the beginning. Each following request sends the token of the previous response, and the read stops when the server returns none. The read fails instead of writing a partial result when a token repeats, when a token is blank, when 1,000 consecutive requests each still return a token, or when the read has run for 30 minutes.
+
+## Example Usage
+
+```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu"
+  most_recent = true
+  owners      = "system"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = "terraform-example"
+}
+
+resource "alicloud_ecs_image_pipeline" "default" {
+  base_image      = data.alicloud_images.default.images.0.id
+  base_image_type = "IMAGE"
+  vswitch_id      = alicloud_vswitch.default.id
+  build_content   = "RUN echo terraform-example"
+  name            = "terraform-example"
+  tags = {
+    terraform-example = "true"
+  }
+}
+
+data "alicloud_ecs_image_pipeline_executions" "default" {
+  image_pipeline_id = alicloud_ecs_image_pipeline.default.id
+}
+
+output "execution_ids" {
+  value = data.alicloud_ecs_image_pipeline_executions.default.ids
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `image_pipeline_id` - (Optional, String) The ID of the image pipeline whose executions are queried.
+* `execution_id` - (Optional, String) The ID of a specific execution.
+* `status` - (Optional, String) The execution status to filter by. Multiple statuses can be separated by commas. Valid values: `PREPARING`, `REPAIRING`, `BUILDING`, `TESTING`, `DISTRIBUTING`, `RELEASING`, `SUCCESS`, `PARTITION_SUCCESS`, `FAILED`, `TEST_FAILED`, `CANCELLING` and `CANCELLED`. These are the exact status literals published by `DescribeImagePipelineExecutions`. Omit the attribute to query every status; a comma separated value must not contain empty entries.
+* `tags` - (Optional, Map of String) A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key must be 1 to 128 characters, must not start with `aliyun` or `acs:`, and must not contain `http://` or `https://`. A value may be empty, is limited to 128 characters and must not contain `http://` or `https://`. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.
+* `ids` - (Optional, Computed, List of String) A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read; blank IDs are dropped and repeated IDs are applied once.
+* `max_results` - (Optional, Int) The number of entries per page. Valid values: `1` to `500`. Defaults to `50`. Only the server decides when the result ends: a page with fewer entries than this value is still followed when the server returns a continuation token, and no short-page completeness check applies.
+* `next_token` - (Optional, Computed, String) The pagination token to start reading from. When it is configured, the first request sends it and the read starts at that position; when it is not configured, the first request omits it and the read starts at the beginning. Each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, or 1,000 consecutive requests that each still return a token, aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.
+
+## Attributes Reference
+
+The following attributes are exported in addition to the arguments listed above:
+
+* `id` - (Computed, String) The ID of the data source, derived from the matched execution IDs.
+* `total_count` - (Computed, Int) The number of execution records this read returned after all configured filters, including the provider-side `ids` filter. `DescribeImagePipelineExecutions` also returns a `TotalCount` for the query, but that value does not account for `ids`, so the attribute reports the rows actually returned.
+* `executions` - (Computed, List of Object) A list of image pipeline executions. Each element contains the following attributes:
+  * `execution_id` - (String) The ID of the execution.
+  * `image_pipeline_id` - (String) The ID of the image pipeline.
+  * `status` - (String) The status of the execution. Valid values are the same as the `status` filter.
+  * `creation_time` - (String) The time when the execution was created, in UTC and formatted as `2026-11-05T10:00:00Z`.
+  * `modified_time` - (String) The time when the execution was last modified, in UTC and formatted as `2026-11-05T10:00:00Z`.
+  * `resource_group_id` - (String) The ID of the resource group.
+  * `message` - (String) The message about the execution.
+  * `image_id` - (String) The ID of the image created by the execution.
+  * `error_code` - (String) The error code of the execution.
+  * `error_info` - (String) The error details of the execution.
+  * `tags` - (Map of String) A mapping of tags.

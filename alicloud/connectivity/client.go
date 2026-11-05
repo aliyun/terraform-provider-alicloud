@@ -2,8 +2,10 @@ package connectivity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -2900,6 +2902,38 @@ func normalizeOssOpenAPIResponse(response map[string]interface{}) (map[string]in
 //	hostMap - API parameters in hostMap
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, autoRetry bool) (map[string]interface{}, error) {
+	runtime := &utilV2.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return client.do(nil, apiProductCode, apiParams, query, body, headers, hostMap, runtime)
+}
+
+// DoWithContext is Do bound to ctx. The SDK builds the HTTP request from that
+// context, so cancelling ctx or reaching its deadline aborts the request that is
+// already in flight instead of only bounding it with a numeric timeout. runtime
+// carries the caller's retry and timeout policy, exactly as in Do.
+// parameters:
+//
+//	ctx - context that bounds and cancels the whole request
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiParams - API params
+//	query - API parameters in query
+//	body - API parameters in body
+//	headers - API parameters in headers
+//	hostMap - API parameters in hostMap
+//	runtime - runtime options; a nil value leaves the SDK defaults in place
+func (client *AliyunClient) DoWithContext(ctx context.Context, apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if runtime == nil {
+		runtime = &utilV2.RuntimeOptions{}
+	}
+	return client.do(ctx, apiProductCode, apiParams, query, body, headers, hostMap, runtime)
+}
+
+// do calls the API with SDK v2. A nil ctx keeps the historical call path so Do
+// is unchanged for every existing caller.
+func (client *AliyunClient) do(ctx context.Context, apiProductCode string, apiParams *openapi.Params, query map[string]*string, body interface{}, headers map[string]*string, hostMap map[string]*string, runtime *utilV2.RuntimeOptions) (map[string]interface{}, error) {
 	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
@@ -2952,12 +2986,18 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		applyOpenapiSignVersion(openapiClient, client.config.SignVersion, "sls")
 	}
 	var response map[string]interface{}
-	runtime := &utilV2.RuntimeOptions{}
-	runtime.SetAutoretry(autoRetry)
 	if apiParams.Style != nil && *apiParams.Style == "RPC" {
-		response, err = openapiClient.CallApi(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		if ctx != nil {
+			response, err = openapiClient.CallApiWithCtx(ctx, apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		} else {
+			response, err = openapiClient.CallApi(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		}
 	} else {
-		response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		if ctx != nil {
+			response, err = openapiClient.ExecuteWithCtx(ctx, apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		} else {
+			response, err = openapiClient.Execute(apiParams, &openapi.OpenApiRequest{Query: query, Body: body, Headers: headers, HostMap: hostMap}, runtime)
+		}
 	}
 	if apiProductCode == "oss" && response != nil {
 		// Normalizing only reshapes the response map, so it must not assign to err:
@@ -2969,12 +3009,62 @@ func (client *AliyunClient) Do(apiProductCode string, apiParams *openapi.Params,
 		}
 		response = normalized
 	}
+	if ctx != nil && err == nil {
+		if bodyErr := requireContextJSONBody(response, apiProductCode); bodyErr != nil {
+			return nil, bodyErr
+		}
+	}
 	if respBody, isExist := response["body"]; isExist && respBody != nil {
 		if v, ok := respBody.(map[string]interface{}); ok {
 			response = v
 		}
 	}
 	return response, formatError(response, err)
+}
+
+// requireContextJSONBody rejects the successful responses of the context-bound
+// path that carry no JSON object. The SDK decodes an empty body and a JSON null
+// body to an empty object, which is indistinguishable from "{}" and is the only
+// signal left that no document came back; every ECS RPC response carries at
+// least its RequestId. Collapsing that to the response would hand the caller a
+// zero result, which silently replaces the state it already holds instead of
+// failing the read. A legitimate empty result keeps its non-empty object
+// ({"Instances": {"Instance": []}}), a failed call keeps its SDK error, and the
+// non-object body types never reach this check.
+//
+// The SDK may hand back either its transport wrapper (body, headers, status
+// code) or, for some shapes, the decoded body itself, so both are checked.
+func requireContextJSONBody(response map[string]interface{}, apiProductCode string) error {
+	if response == nil {
+		return emptyContextBodyError(apiProductCode)
+	}
+	if rawBody, hasBody := response["body"]; hasBody {
+		if rawBody == nil {
+			return emptyContextBodyError(apiProductCode)
+		}
+		body, ok := rawBody.(map[string]interface{})
+		if !ok {
+			// A binary, byte or string body is not a JSON document.
+			return nil
+		}
+		if len(body) == 0 {
+			return emptyContextBodyError(apiProductCode)
+		}
+		return nil
+	}
+	if _, wrapped := response["statusCode"]; wrapped {
+		// The transport wrapper without a body member: no document came back.
+		return emptyContextBodyError(apiProductCode)
+	}
+	if len(response) == 0 {
+		// The already decoded body is an empty object.
+		return emptyContextBodyError(apiProductCode)
+	}
+	return nil
+}
+
+func emptyContextBodyError(apiProductCode string) error {
+	return fmt.Errorf("the %s API returned a successful response without a JSON object body; the request was not treated as an empty result", apiProductCode)
 }
 
 // applyOpenapiSignVersion writes the configured signature version (if any)
@@ -3021,6 +3111,47 @@ func applyLogClientSignVersion(c *sls.Client, signVersion *sync.Map, apiProductC
 	c.AuthVersion = sls.AuthVersionType(s)
 }
 
+// responseStatusCode reads the StatusCode member of an error-shaped response
+// body without assuming the shape the SDK handed back. The legacy transport
+// produced an *int, while the context bound transport decodes JSON numbers as
+// json.Number, and a service may also answer with a plain number or a numeric
+// string. An unchecked pointer assertion would panic the provider on a 2xx body
+// that carries a numeric status, so every shape is converted and anything
+// unreadable keeps the fallback status.
+func responseStatusCode(value interface{}, fallback int) int {
+	switch v := value.(type) {
+	case nil:
+		return fallback
+	case *int:
+		if v == nil {
+			return fallback
+		}
+		return *v
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	case float64:
+		if v != math.Trunc(v) || v < math.MinInt32 || v > math.MaxInt32 {
+			return fallback
+		}
+		return int(v)
+	case json.Number:
+		if n, err := v.Int64(); err == nil && n >= math.MinInt32 && n <= math.MaxInt32 {
+			return int(n)
+		}
+		return fallback
+	case string:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return n
+		}
+		return fallback
+	}
+	return fallback
+}
+
 func formatError(response map[string]interface{}, err error) error {
 	if err != nil {
 		return err
@@ -3058,7 +3189,7 @@ func formatError(response map[string]interface{}, err error) error {
 	if ok1 || ok2 {
 		statusCode := 200
 		if v, ok := response["StatusCode"]; ok {
-			statusCode = tea.IntValue(v.(*int))
+			statusCode = responseStatusCode(v, statusCode)
 		}
 		return tea.NewSDKError(map[string]interface{}{
 			"statusCode": statusCode,

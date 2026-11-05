@@ -1,0 +1,160 @@
+#!/bin/bash
+# Documentation spelling helpers shared by the strict and changed-docs checks.
+# Sourced by scripts/local-ci-check.sh and exercised by scripts/misspell-scope_test.sh.
+
+# The page that publishes the ECS status literals. The path is fixed here and is
+# not read from the environment: an override could grant the exemption to any
+# other page. A finding is only exempt when it is reported for this page, so a
+# redirect cannot turn the exception into a general one.
+readonly MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.markdown"
+
+# DescribeImagePipelineExecutions publishes CANCELLING and CANCELLED as status
+# literals, and misspell flags them. Only those literals in the `Valid values:`
+# list of the `status` argument inside the `Argument Reference` section of that
+# one page are accepted: the exemption is keyed on the exact line:column
+# misspell reports, so the same word as ordinary prose on the same line, the same
+# literals on another page, the same phrase in another paragraph, in an appendix
+# or inside a fenced block, and every finding anywhere else stay reported.
+
+# misspell_enum_positions_from reads one document from stdin and prints one
+# `line:column` pair per accepted occurrence. misspell reports the 0-based byte
+# column of the word inside the line, so the column is the offset of the literal
+# after its opening backtick. Only the top level `status` argument definition in
+# the Argument Reference section is read: an appendix, an example, a fenced block
+# or another argument that happens to repeat the phrase does not grant an
+# exemption. Every legal fenced code block is skipped, not only a backtick fence
+# at column zero: a tilde fence, or a backtick or tilde fence indented by up to
+# three spaces, hides its content just as well.
+misspell_enum_positions_from() {
+  awk '
+    # Fence opener or closer length: a run of backticks or tildes at the start of
+    # the (indent-stripped) line. Any other first character returns 0.
+    function fence_run(text,   ch, n, i) {
+      ch = substr(text, 1, 1)
+      if (ch != "`" && ch != "~") return 0
+      n = 0
+      for (i = 1; i <= length(text); i++) {
+        if (substr(text, i, 1) == ch) n++
+        else break
+      }
+      return n
+    }
+    {
+      line = $0
+      indent = 0
+      while (indent < 4 && substr(line, indent + 1, 1) == " ") indent++
+      body = substr(line, indent + 1)
+      run = (indent < 4) ? fence_run(body) : 0
+      if (in_fence) {
+        # A closing fence repeats the opening character at least as many times
+        # and carries nothing but whitespace after it.
+        if (run >= fence_len && substr(body, 1, 1) == fence_char && substr(body, run + 1) ~ /^[ \t]*$/) {
+          in_fence = 0
+        }
+        next
+      }
+      if (run >= 3) {
+        info = substr(body, run + 1)
+        # A backtick fence may not carry a backtick in its info string.
+        if (!(substr(body, 1, 1) == "`" && index(info, "`") > 0)) {
+          in_fence = 1
+          fence_char = substr(body, 1, 1)
+          fence_len = run
+          next
+        }
+      }
+    }
+    /^## / { in_arguments = ($0 ~ /^## Argument Reference[ \t]*$/); next }
+    !in_arguments { next }
+    /^\* `status` - / && /Valid values:/ {
+      start = index($0, "Valid values:")
+      if (start == 0) next
+      segment = substr($0, start)
+      stop = index(segment, ".")
+      if (stop == 0) next
+      segment = substr(segment, 1, stop - 1)
+      base = start - 1
+      consumed = 0
+      while (match(segment, /`(CANCELLING|CANCELLED)`/)) {
+        printf "%d:%d\n", NR, base + consumed + RSTART
+        advance = RSTART + RLENGTH - 1
+        consumed += advance
+        segment = substr(segment, advance + 1)
+      }
+    }
+  '
+}
+
+misspell_enum_positions() {
+  misspell_enum_positions_from < "$MISSPELL_ENUM_DOC"
+}
+
+run_misspell_scoped() {
+  local output status=0 remaining awk_status=0 enum_positions
+  output=$(misspell -error -locale=US "$@" 2>&1) || status=$?
+  if [ $status -eq 0 ]; then
+    return 0
+  fi
+  # misspell -error exits 2 when it reported misspellings (its documented
+  # -error contract). Any other status, an empty finding list, or a failing
+  # filter is a tool failure and must not be reported as an accepted exception.
+  if [ $status -ne 2 ]; then
+    printf '%s\n' "$output"
+    echo "misspell failed with exit status ${status}; the spelling check did not complete."
+    return 1
+  fi
+  if [ -z "$output" ]; then
+    echo "misspell exited with a finding status but printed nothing; the spelling check did not complete."
+    return 1
+  fi
+  # Source positions of the API enum declaration on the one exempted page. The
+  # exemption is keyed on both the line and the column, and on the reported
+  # path: an ordinary uppercase sentence that happens to share the line, or a
+  # finding on any other page, is still reported.
+  enum_positions=$(misspell_enum_positions | paste -sd' ' -)
+  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" -v positions="$enum_positions" '
+    BEGIN {
+      count = split(positions, accepted, " ")
+      for (i = 1; i <= count; i++) {
+        if (accepted[i] != "") exempt[accepted[i]] = 1
+      }
+    }
+    {
+      line = $0
+      sub(/^\.\//, "", line)
+      n = length(doc)
+      if (substr(line, 1, n) == doc) {
+        rest = substr(line, n + 1)
+        if (match(rest, /^:[0-9]+:[0-9]+: "(CANCELLING|CANCELLED)" is a misspelling of "(CANCELING|CANCELED)"$/)) {
+          split(substr(rest, 2), parts, ":")
+          if ((parts[1] ":" parts[2]) in exempt) {
+            next
+          }
+        }
+      }
+      print $0
+    }') || awk_status=$?
+  if [ $awk_status -ne 0 ]; then
+    printf '%s\n' "$output"
+    echo "the spelling exemption filter failed with exit status ${awk_status}; the spelling check did not complete."
+    return 1
+  fi
+  if [ -z "$remaining" ]; then
+    printf '%s\n' "$output"
+    echo "Accepted the documented API status literals CANCELLING/CANCELLED at the status argument of $MISSPELL_ENUM_DOC."
+    return 0
+  fi
+  printf '%s\n' "$remaining"
+  return 1
+}
+
+# The changed-document list is newline separated, so it is read line by line
+# instead of being expanded into a single `for` word list.
+run_misspell_changed_docs() {
+  local doc
+  while IFS= read -r doc; do
+    [ -n "$doc" ] || continue
+    run_misspell_scoped "$doc" || return 1
+  done <<< "$1"
+  return 0
+}
