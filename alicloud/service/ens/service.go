@@ -356,6 +356,48 @@ func (s *Service) DescribeEnsNetwork(id string) (object map[string]interface{}, 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
+// DescribeEnsNetworkInterface <<< Encapsulated get interface for Ens NetworkInterface.
+func (s *Service) DescribeEnsNetworkInterface(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeNetworkInterfaces"
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["NetworkInterfaceId"] = id
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Ens", "2017-11-10", action, query, request, true)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		logs.AddDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet[*]", response)
+	if err != nil {
+		return object, errs.WrapErrorf(err, errs.FailedGetAttributeMsg, id, "$.NetworkInterfaceSets.NetworkInterfaceSet[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, errs.WrapErrorf(errs.NotFoundErr("NetworkInterface", id), errs.NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
 func (s *Service) EnsNetworkStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEnsNetwork(id)
