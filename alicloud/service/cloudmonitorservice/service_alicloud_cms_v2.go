@@ -691,3 +691,88 @@ func (s *CmsServiceV2) CmsEventNotifyPolicyStateRefreshFuncWithApi(id string, fi
 func NewCmsServiceV2(client *connectivity.AliyunClient) *CmsServiceV2 {
 	return &CmsServiceV2{client: client}
 }
+
+// DescribeCmsEscalationPolicy <<< Encapsulated get interface for Cms EscalationPolicy.
+
+func (s *CmsServiceV2) DescribeCmsEscalationPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = errs.WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+		return nil, err
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	query["uuid"] = helper.StringPointer(parts[0])
+	query["workspace"] = helper.StringPointer(parts[1])
+	query["regionId"] = helper.StringPointer(client.RegionId)
+	action := fmt.Sprintf("/escalationPolicies/%s", parts[0])
+
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+		response, err = client.RoaGet("Cms", "2024-03-30", action, query, nil, nil)
+
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		if errs.IsExpectedErrors(err, []string{"ResourceNotFound"}) {
+			return object, errs.WrapErrorf(errs.NotFoundErr("EscalationPolicy", id), errs.NotFoundMsg, response)
+		}
+		return object, errs.WrapErrorf(err, errs.DefaultErrorMsg, id, action, errs.AlibabaCloudSdkGoERROR)
+	}
+
+	// The CMS ROA Get response wraps the resource payload under the
+	// "escalationPolicy" key. Unwrap it so callers receive the resource
+	// object directly and d.Set(...) reads actual field values.
+	if raw, ok := response["escalationPolicy"]; ok && raw != nil {
+		if inner, ok := raw.(map[string]interface{}); ok && inner != nil {
+			return inner, nil
+		}
+	}
+	return response, nil
+}
+
+func (s *CmsServiceV2) CmsEscalationPolicyStateRefreshFunc(id string, field string, failStates []string) retry.StateRefreshFunc {
+	return s.CmsEscalationPolicyStateRefreshFuncWithApi(id, field, failStates, s.DescribeCmsEscalationPolicy)
+}
+
+func (s *CmsServiceV2) CmsEscalationPolicyStateRefreshFuncWithApi(id string, field string, failStates []string, call func(id string) (map[string]interface{}, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := call(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", errs.WrapError(err)
+		}
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if strings.HasPrefix(field, "#") {
+			v, _ := jsonpath.Get(strings.TrimPrefix(field, "#"), object)
+			if v != nil {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, errs.WrapError(errs.Error(errs.FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCmsEscalationPolicy >>> Encapsulated.
