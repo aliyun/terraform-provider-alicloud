@@ -16,6 +16,10 @@ For information about Mongodb Account and how to use it, see [What is Account](h
 
 -> **NOTE:** Available since v1.148.0.
 
+-> **NOTE:** The resource id is `<instance_id>:<db_name>:<account_name>`. A `:` or `%` inside `db_name` is escaped in the id as `%3A` and `%25`. The former `<instance_id>:<account_name>` id is still accepted when the account name is unique in the instance, and the id is upgraded to the database scoped form on the next read.
+
+-> **NOTE:** `db_name`, `character_type` and `roles` force a new resource when changed. MongoDB accounts cannot be deleted, so a replacement cannot reuse the same `account_name`: change `account_name` together with the force-new argument, or the apply fails because the account already exists.
+
 ## Example Usage
 
 Basic Usage
@@ -27,13 +31,25 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "terraform-example"
 }
 data "alicloud_mongodb_zones" "default" {}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
 locals {
-  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
-  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
+  vswitch_zone_ids = [for zone in data.alicloud_zones.default.zones : zone.id]
+  zone_ids         = [for zone in data.alicloud_mongodb_zones.default.zones : zone.id if contains(local.vswitch_zone_ids, zone.id)]
+  zone_id          = local.zone_ids[0]
 }
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
@@ -65,6 +81,7 @@ resource "alicloud_mongodb_account" "default" {
   account_password    = "Example_123"
   instance_id         = alicloud_mongodb_instance.default.id
   account_description = var.name
+  db_name             = "admin"
 }
 ```
 
@@ -81,20 +98,33 @@ The following arguments are supported:
   - Cannot start with http:// or https.
   - Start with Chinese and English letters.
   - Can contain Chinese characters, English characters, underscores (_), dashes (-), and numbers, and can be 2 to 256 characters in length.
+
+  -> **NOTE:** For shard accounts (both `db` and `cs`) `ModifyAccountDescription` is not supported, so the description is only applied when the account is created and is not returned by `DescribeAccounts` afterwards. Changing or removing `account_description` on such an account fails the apply.
 * `account_name` - (Required, ForceNew) Account Name
 * `account_password` - (Required) Account Password
-* `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account Comment Information type. Value:
-  - `db`: shard account.
+* `character_type` - (Optional, ForceNew, Computed, Available since v1.241.0) The account type. Value:
+  - `db`: shard direct-connection account.
+  - `cs`: config server account.
   - `normal`: The replica set account. (The default value).
 
-  -> **NOTE:** When setting the account type to normal, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account.
+  -> **NOTE:** When setting the account type to normal without `roles`, the AccountName must be root. This selection does not create a new account; instead, Terraform will update the password for the existing root account. When `roles` is configured, a replica set `normal` account is created through `CreateAccount` with the configured roles.
 
+* `db_name` - (Optional, ForceNew, Computed, String, Available since v2.3.0) The database where the account resides. Defaults to `admin` when the account is created. It cannot contain `/`, `\`, `.`, spaces, `"` or `$`, cannot be `local`, and can be 1 to 63 characters long.
 * `instance_id` - (Required, ForceNew) Instance Id
+* `roles` - (Optional, ForceNew, Set, Available since v2.3.0) The list of roles granted to the account. See [`roles`](#roles) below.
+
+  -> **NOTE:** `roles` are supported for replica set accounts (`character_type = "normal"`) and config server accounts (`character_type = "cs"`), where `CreateAccount` requires them. When `character_type` is omitted it defaults to `normal`, the replica set account type. Shard direct-connection accounts (`character_type = "db"`) have fixed privileges, and the API rejects a configured `roles` with the error code `InvalidRoles.NotSupported`. Changing `roles` forces a new resource; see the replacement note above.
+
+### `roles`
+
+The roles supports the following:
+* `db_name` - (Optional, ForceNew, String, Available since v2.3.0) The database the role applies to. Required whenever a `roles` block is configured. It cannot contain `/`, `\`, `.`, spaces, `"` or `$`, cannot be `local`, and can be 1 to 63 characters long.
+* `role` - (Optional, ForceNew, String, Available since v2.3.0) The MongoDB role granted on that database, for example `read` or `readWrite`. Required whenever a `roles` block is configured.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<account_name>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<instance_id>:<db_name>:<account_name>`.
 * `status` - Account Status
 
 ## Timeouts
@@ -105,8 +135,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-Mongodb Account can be imported using the id, which consists of instance_id and account_name, e.g.
+Mongodb Account can be imported using the id, which consists of instance_id, db_name and account_name, e.g. A `:` or `%` inside `db_name` is written as `%3A` and `%25` in the id.
 
 ```shell
-$ terraform import alicloud_mongodb_account.example <instance_id>:<account_name>
+$ terraform import alicloud_mongodb_account.example <instance_id>:<db_name>:<account_name>
 ```
