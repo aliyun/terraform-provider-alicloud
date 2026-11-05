@@ -151,6 +151,9 @@ func (r *parameterResource) Schema(ctx context.Context, req resource.SchemaReque
 			"description": schema.StringAttribute{
 				Optional:    true,
 				Description: "The description of the parameter.",
+				PlanModifiers: []planmodifier.String{
+					parameterEmptyStringToNullPlanModifier{},
+				},
 			},
 			"create_time": schema.StringAttribute{
 				Computed:    true,
@@ -520,4 +523,31 @@ func isParameterNotExist(err error) bool {
 	return strings.Contains(err.Error(), "Parameter.NotExist") ||
 		strings.Contains(err.Error(), "NotExist.Parameter") ||
 		strings.Contains(err.Error(), "ParameterNotExist")
+}
+
+// parameterEmptyStringToNullPlanModifier normalizes an explicitly-empty configuration value to
+// null so that it converges with the null representation parameterState stores when the API
+// omits or clears the Description. DataWorks represents an absent Description as an empty string;
+// parameterState turns that empty string into types.StringNull(). Without this modifier a config
+// value of description = "" would plan as StringValue("") while the state holds StringNull(), and
+// the two are not equivalent in the Framework, producing a perpetual diff and a redundant
+// UpdateParameter on every apply. It only acts on the configured value; values sourced from state
+// during Read are unaffected, and it never changes the null semantics of Required fields.
+type parameterEmptyStringToNullPlanModifier struct{}
+
+func (m parameterEmptyStringToNullPlanModifier) Description(ctx context.Context) string {
+	return "Treats an empty string configuration value as null to converge with the API's empty representation."
+}
+
+func (m parameterEmptyStringToNullPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m parameterEmptyStringToNullPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	if req.ConfigValue.ValueString() == "" {
+		resp.PlanValue = types.StringNull()
+	}
 }
