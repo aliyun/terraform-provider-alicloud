@@ -66,10 +66,6 @@ resource "alicloud_slb_listener" "default" {
   lifecycle {
     ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
   }
-
-  # Keep the policy group alive until the listener is gone: SLB refuses to
-  # delete an ACL that is still associated with a listener.
-  depends_on = [alicloud_slb_acl.default]
 }
 
 resource "alicloud_slb_acl" "default" {
