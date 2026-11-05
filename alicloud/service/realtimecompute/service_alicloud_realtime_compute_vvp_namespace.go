@@ -271,6 +271,10 @@ func vvpNamespaceTotalPage(response map[string]interface{}) int {
 		return value
 	case int64:
 		return int(value)
+	case json.Number:
+		if parsed, err := value.Int64(); err == nil {
+			return int(parsed)
+		}
 	case string:
 		if parsed, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
 			return parsed
