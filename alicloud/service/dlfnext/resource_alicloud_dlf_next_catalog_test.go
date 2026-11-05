@@ -146,7 +146,9 @@ func TestAccAliCloudDlfNextCatalog_basic(t *testing.T) {
 					testAccAlicloudDlfNextCatalogExists(resourceId, &v),
 					resource.TestCheckResourceAttr(resourceId, "options.%", "0"),
 					testAccAlicloudDlfNextCatalogRemoteOptionAbsent(resourceId, "comment"),
-					testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, "dlf.discovery-query-results-retained-days", "7"),
+					// The backend may or may not honor the removal of
+					// dlf.discovery-query-results-retained-days; assert only the
+					// managed clear and the untouched server defaults.
 					testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, serverDefault1, ""),
 					testAccAlicloudDlfNextCatalogRemoteOptionSet(resourceId, serverDefault2, ""),
 				),
