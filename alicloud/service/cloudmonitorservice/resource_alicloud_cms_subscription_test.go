@@ -83,18 +83,15 @@ resource "alicloud_cms_subscription" "default" {
   description       = "created by terraform"
   enable            = false
 
-  filter_setting = [
-    {
-      relation = "AND"
-      conditions = [
-        {
-          field = "labels.alertname"
-          op    = "EQ"
-          value = "HighCPUUsage"
-        }
-      ]
+  filter_setting {
+    relation = "AND"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
     }
-  ]
+  }
 }
 `, name)
 }
@@ -107,23 +104,21 @@ resource "alicloud_cms_subscription" "default" {
   enable                 = true
   subscribe_legacy_event = true
 
-  filter_setting = [
-    {
-      expression = "1 and 2"
-      conditions = [
-        {
-          field = "labels.alertname"
-          op    = "EQ"
-          value = "HighCPUUsage"
-        },
-        {
-          field = "labels.severity"
-          op    = "IN"
-          value = "P1,P2"
-        }
-      ]
+  filter_setting {
+    expression = "1 and 2"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
     }
-  ]
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P1,P2"
+    }
+  }
 }
 `, name)
 }

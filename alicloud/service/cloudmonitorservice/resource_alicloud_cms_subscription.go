@@ -31,54 +31,6 @@ const cmsSubscriptionTypeName = "alicloud_cms_subscription"
 const cmsSubscriptionTimeout = 5 * time.Minute
 
 var (
-	cmsSubscriptionConditionType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"field": types.StringType,
-		"op":    types.StringType,
-		"value": types.StringType,
-	}}
-
-	cmsSubscriptionFilterSettingType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"conditions": types.ListType{ElemType: cmsSubscriptionConditionType},
-		"expression": types.StringType,
-		"relation":   types.StringType,
-	}}
-
-	cmsSubscriptionPushingSettingType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"alert_action_ids":   types.ListType{ElemType: types.StringType},
-		"restore_action_ids": types.ListType{ElemType: types.StringType},
-		"template_uuid":      types.StringType,
-		"response_plan_id":   types.StringType,
-	}}
-
-	cmsSubscriptionWorkspaceFilterSettingType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"workspace_uuids": types.ListType{ElemType: types.StringType},
-	}}
-
-	cmsSubscriptionAgentChannelType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"channel_type":         types.StringType,
-		"receivers":            types.ListType{ElemType: types.StringType},
-		"enabled_sub_channels": types.ListType{ElemType: types.StringType},
-	}}
-
-	cmsSubscriptionAgentEffectTimeRangeType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"time_zone":            types.StringType,
-		"day_in_week":          types.ListType{ElemType: types.Int64Type},
-		"start_time_in_minute": types.Int64Type,
-		"end_time_in_minute":   types.Int64Type,
-	}}
-
-	cmsSubscriptionAgentRouteType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"channels":          types.ListType{ElemType: cmsSubscriptionAgentChannelType},
-		"effect_time_range": types.ListType{ElemType: cmsSubscriptionAgentEffectTimeRangeType},
-	}}
-
-	cmsSubscriptionAgentConfigType = types.ObjectType{AttrTypes: map[string]attr.Type{
-		"agent_uuid": types.StringType,
-		"routes":     types.ListType{ElemType: cmsSubscriptionAgentRouteType},
-	}}
-)
-
-var (
 	_ resource.Resource                = &cmsSubscriptionResource{}
 	_ resource.ResourceWithImportState = &cmsSubscriptionResource{}
 )
@@ -92,22 +44,68 @@ type cmsSubscriptionResource struct {
 }
 
 type cmsSubscriptionResourceModel struct {
-	Id                     types.String `tfsdk:"id"`
-	SubscriptionName       types.String `tfsdk:"subscription_name"`
-	Description            types.String `tfsdk:"description"`
-	NotifyStrategyId       types.String `tfsdk:"notify_strategy_id"`
-	Workspace              types.String `tfsdk:"workspace"`
-	Enable                 types.Bool   `tfsdk:"enable"`
-	SubscribeLegacyEvent   types.Bool   `tfsdk:"subscribe_legacy_event"`
-	FilterSetting          types.List   `tfsdk:"filter_setting"`
-	PushingSetting         types.List   `tfsdk:"pushing_setting"`
-	WorkspaceFilterSetting types.List   `tfsdk:"workspace_filter_setting"`
-	AgentConfig            types.List   `tfsdk:"agent_config"`
-	UserId                 types.String `tfsdk:"user_id"`
-	SubscriptionType       types.String `tfsdk:"subscription_type"`
-	RegionId               types.String `tfsdk:"region_id"`
-	CreateTime             types.String `tfsdk:"create_time"`
-	UpdateTime             types.String `tfsdk:"update_time"`
+	Id                     types.String                          `tfsdk:"id"`
+	SubscriptionName       types.String                          `tfsdk:"subscription_name"`
+	Description            types.String                          `tfsdk:"description"`
+	NotifyStrategyId       types.String                          `tfsdk:"notify_strategy_id"`
+	Workspace              types.String                          `tfsdk:"workspace"`
+	Enable                 types.Bool                            `tfsdk:"enable"`
+	SubscribeLegacyEvent   types.Bool                            `tfsdk:"subscribe_legacy_event"`
+	FilterSetting          []cmsSubscriptionFilterSettingModel   `tfsdk:"filter_setting"`
+	PushingSetting         []cmsSubscriptionPushingSettingModel  `tfsdk:"pushing_setting"`
+	WorkspaceFilterSetting []cmsSubscriptionWorkspaceFilterModel `tfsdk:"workspace_filter_setting"`
+	AgentConfig            []cmsSubscriptionAgentConfigModel     `tfsdk:"agent_config"`
+	UserId                 types.String                          `tfsdk:"user_id"`
+	SubscriptionType       types.String                          `tfsdk:"subscription_type"`
+	RegionId               types.String                          `tfsdk:"region_id"`
+	CreateTime             types.String                          `tfsdk:"create_time"`
+	UpdateTime             types.String                          `tfsdk:"update_time"`
+}
+
+type cmsSubscriptionFilterSettingModel struct {
+	Conditions []cmsSubscriptionConditionModel `tfsdk:"conditions"`
+	Expression types.String                    `tfsdk:"expression"`
+	Relation   types.String                    `tfsdk:"relation"`
+}
+
+type cmsSubscriptionConditionModel struct {
+	Field types.String `tfsdk:"field"`
+	Op    types.String `tfsdk:"op"`
+	Value types.String `tfsdk:"value"`
+}
+
+type cmsSubscriptionPushingSettingModel struct {
+	AlertActionIds   types.List   `tfsdk:"alert_action_ids"`
+	RestoreActionIds types.List   `tfsdk:"restore_action_ids"`
+	TemplateUuid     types.String `tfsdk:"template_uuid"`
+	ResponsePlanId   types.String `tfsdk:"response_plan_id"`
+}
+
+type cmsSubscriptionWorkspaceFilterModel struct {
+	WorkspaceUuids types.List `tfsdk:"workspace_uuids"`
+}
+
+type cmsSubscriptionAgentConfigModel struct {
+	AgentUuid types.String                     `tfsdk:"agent_uuid"`
+	Routes    []cmsSubscriptionAgentRouteModel `tfsdk:"routes"`
+}
+
+type cmsSubscriptionAgentRouteModel struct {
+	Channels        []cmsSubscriptionAgentChannelModel         `tfsdk:"channels"`
+	EffectTimeRange []cmsSubscriptionAgentEffectTimeRangeModel `tfsdk:"effect_time_range"`
+}
+
+type cmsSubscriptionAgentChannelModel struct {
+	ChannelType        types.String `tfsdk:"channel_type"`
+	Receivers          types.List   `tfsdk:"receivers"`
+	EnabledSubChannels types.List   `tfsdk:"enabled_sub_channels"`
+}
+
+type cmsSubscriptionAgentEffectTimeRangeModel struct {
+	TimeZone          types.String `tfsdk:"time_zone"`
+	DayInWeek         types.List   `tfsdk:"day_in_week"`
+	StartTimeInMinute types.Int64  `tfsdk:"start_time_in_minute"`
+	EndTimeInMinute   types.Int64  `tfsdk:"end_time_in_minute"`
 }
 
 func (r *cmsSubscriptionResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -152,34 +150,6 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"filter_setting": schema.ListAttribute{
-				Optional:    true,
-				ElementType: cmsSubscriptionFilterSettingType,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-			},
-			"pushing_setting": schema.ListAttribute{
-				Optional:    true,
-				ElementType: cmsSubscriptionPushingSettingType,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-			},
-			"workspace_filter_setting": schema.ListAttribute{
-				Optional:    true,
-				ElementType: cmsSubscriptionWorkspaceFilterSettingType,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-			},
-			"agent_config": schema.ListAttribute{
-				Optional:    true,
-				ElementType: cmsSubscriptionAgentConfigType,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-			},
 			"user_id": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
@@ -206,6 +176,135 @@ func (r *cmsSubscriptionResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"update_time": schema.StringAttribute{
 				Computed: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"filter_setting": schema.ListNestedBlock{
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"expression": schema.StringAttribute{
+							Optional: true,
+						},
+						"relation": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"conditions": schema.ListNestedBlock{
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"field": schema.StringAttribute{
+										Required: true,
+									},
+									"op": schema.StringAttribute{
+										Required: true,
+									},
+									"value": schema.StringAttribute{
+										Required: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"pushing_setting": schema.ListNestedBlock{
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"alert_action_ids": schema.ListAttribute{
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+						"restore_action_ids": schema.ListAttribute{
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+						"template_uuid": schema.StringAttribute{
+							Optional: true,
+						},
+						"response_plan_id": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+			},
+			"workspace_filter_setting": schema.ListNestedBlock{
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"workspace_uuids": schema.ListAttribute{
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+					},
+				},
+			},
+			"agent_config": schema.ListNestedBlock{
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"agent_uuid": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"routes": schema.ListNestedBlock{
+							NestedObject: schema.NestedBlockObject{
+								Blocks: map[string]schema.Block{
+									"channels": schema.ListNestedBlock{
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"channel_type": schema.StringAttribute{
+													Optional: true,
+												},
+												"receivers": schema.ListAttribute{
+													Optional:    true,
+													ElementType: types.StringType,
+												},
+												"enabled_sub_channels": schema.ListAttribute{
+													Optional:    true,
+													ElementType: types.StringType,
+												},
+											},
+										},
+									},
+									"effect_time_range": schema.ListNestedBlock{
+										Validators: []validator.List{
+											listvalidator.SizeAtMost(1),
+										},
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"time_zone": schema.StringAttribute{
+													Optional: true,
+												},
+												"day_in_week": schema.ListAttribute{
+													Optional:    true,
+													ElementType: types.Int64Type,
+												},
+												"start_time_in_minute": schema.Int64Attribute{
+													Optional: true,
+												},
+												"end_time_in_minute": schema.Int64Attribute{
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -262,7 +361,7 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		}
 	}
 
-	state := cmsSubscriptionResourceModel{
+	previous := cmsSubscriptionResourceModel{
 		Id:               types.StringValue(id),
 		SubscriptionName: plan.SubscriptionName,
 		Workspace:        plan.Workspace,
@@ -276,7 +375,7 @@ func (r *cmsSubscriptionResource) Create(ctx context.Context, req resource.Creat
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, state))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, cmsSubscriptionState(object, previous))...)
 }
 
 func (r *cmsSubscriptionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -313,7 +412,7 @@ func (r *cmsSubscriptionResource) Update(ctx context.Context, req resource.Updat
 	if !plan.Enable.Equal(state.Enable) {
 		if err := r.setCmsSubscriptionEnable(id, state.Workspace, plan.Enable.ValueBool()); err != nil {
 			resp.Diagnostics.AddError(
-				fmt.Sprintf("Updating %s: toggling subscription enable state", cmsSubscriptionTypeName),
+				fmt.Sprintf("Updating %s: toggling the subscription enabled state", cmsSubscriptionTypeName),
 				errs.WrapErrorf(err, errs.DefaultErrorMsg, cmsSubscriptionTypeName, "/subscriptions/"+id+"/enable", errs.AlibabaCloudSdkGoERROR).Error(),
 			)
 			return
@@ -459,36 +558,28 @@ func expandCmsSubscriptionRequest(plan cmsSubscriptionResourceModel) map[string]
 	return request
 }
 
-func expandCmsSubscriptionFilterSetting(l types.List) map[string]interface{} {
-	object, ok := cmsSubscriptionFirstObject(l)
-	if !ok {
+func expandCmsSubscriptionFilterSetting(blocks []cmsSubscriptionFilterSettingModel) map[string]interface{} {
+	if len(blocks) == 0 {
 		return nil
 	}
-	attrs := object.Attributes()
+	block := blocks[0]
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionAttrString(attrs["expression"]); v != "" {
+	if v := cmsSubscriptionValueString(block.Expression); v != "" {
 		result["expression"] = v
 	}
-	if v := cmsSubscriptionAttrString(attrs["relation"]); v != "" {
+	if v := cmsSubscriptionValueString(block.Relation); v != "" {
 		result["relation"] = v
 	}
-	if conditions, ok := attrs["conditions"].(types.List); ok && !conditions.IsNull() && !conditions.IsUnknown() {
-		items := make([]map[string]interface{}, 0, len(conditions.Elements()))
-		for _, element := range conditions.Elements() {
-			condition, ok := element.(types.Object)
-			if !ok || condition.IsNull() || condition.IsUnknown() {
-				continue
-			}
-			conditionAttrs := condition.Attributes()
-			items = append(items, map[string]interface{}{
-				"field": cmsSubscriptionAttrString(conditionAttrs["field"]),
-				"op":    cmsSubscriptionAttrString(conditionAttrs["op"]),
-				"value": cmsSubscriptionAttrString(conditionAttrs["value"]),
+	if len(block.Conditions) > 0 {
+		conditions := make([]map[string]interface{}, 0, len(block.Conditions))
+		for _, condition := range block.Conditions {
+			conditions = append(conditions, map[string]interface{}{
+				"field": cmsSubscriptionValueString(condition.Field),
+				"op":    cmsSubscriptionValueString(condition.Op),
+				"value": cmsSubscriptionValueString(condition.Value),
 			})
 		}
-		if len(items) > 0 {
-			result["conditions"] = items
-		}
+		result["conditions"] = conditions
 	}
 	if len(result) == 0 {
 		return nil
@@ -496,23 +587,22 @@ func expandCmsSubscriptionFilterSetting(l types.List) map[string]interface{} {
 	return result
 }
 
-func expandCmsSubscriptionPushingSetting(l types.List) map[string]interface{} {
-	object, ok := cmsSubscriptionFirstObject(l)
-	if !ok {
+func expandCmsSubscriptionPushingSetting(blocks []cmsSubscriptionPushingSettingModel) map[string]interface{} {
+	if len(blocks) == 0 {
 		return nil
 	}
-	attrs := object.Attributes()
+	block := blocks[0]
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionAttrStringList(attrs["alert_action_ids"]); len(v) > 0 {
+	if v := cmsSubscriptionValueStringList(block.AlertActionIds); len(v) > 0 {
 		result["alertActionIds"] = v
 	}
-	if v := cmsSubscriptionAttrStringList(attrs["restore_action_ids"]); len(v) > 0 {
+	if v := cmsSubscriptionValueStringList(block.RestoreActionIds); len(v) > 0 {
 		result["restoreActionIds"] = v
 	}
-	if v := cmsSubscriptionAttrString(attrs["template_uuid"]); v != "" {
+	if v := cmsSubscriptionValueString(block.TemplateUuid); v != "" {
 		result["templateUuid"] = v
 	}
-	if v := cmsSubscriptionAttrString(attrs["response_plan_id"]); v != "" {
+	if v := cmsSubscriptionValueString(block.ResponsePlanId); v != "" {
 		result["responsePlanId"] = v
 	}
 	if len(result) == 0 {
@@ -521,14 +611,12 @@ func expandCmsSubscriptionPushingSetting(l types.List) map[string]interface{} {
 	return result
 }
 
-func expandCmsSubscriptionWorkspaceFilterSetting(l types.List) map[string]interface{} {
-	object, ok := cmsSubscriptionFirstObject(l)
-	if !ok {
+func expandCmsSubscriptionWorkspaceFilterSetting(blocks []cmsSubscriptionWorkspaceFilterModel) map[string]interface{} {
+	if len(blocks) == 0 {
 		return nil
 	}
-	attrs := object.Attributes()
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionAttrStringList(attrs["workspace_uuids"]); len(v) > 0 {
+	if v := cmsSubscriptionValueStringList(blocks[0].WorkspaceUuids); len(v) > 0 {
 		result["workspaceUuids"] = v
 	}
 	if len(result) == 0 {
@@ -537,80 +625,55 @@ func expandCmsSubscriptionWorkspaceFilterSetting(l types.List) map[string]interf
 	return result
 }
 
-func expandCmsSubscriptionAgentConfig(l types.List) map[string]interface{} {
-	object, ok := cmsSubscriptionFirstObject(l)
-	if !ok {
+func expandCmsSubscriptionAgentConfig(blocks []cmsSubscriptionAgentConfigModel) map[string]interface{} {
+	if len(blocks) == 0 {
 		return nil
 	}
-	attrs := object.Attributes()
+	block := blocks[0]
 	result := map[string]interface{}{}
-	if v := cmsSubscriptionAttrString(attrs["agent_uuid"]); v != "" {
+	if v := cmsSubscriptionValueString(block.AgentUuid); v != "" {
 		result["agentUuid"] = v
 	}
-	if routes, ok := attrs["routes"].(types.List); ok && !routes.IsNull() && !routes.IsUnknown() {
-		routeItems := make([]map[string]interface{}, 0, len(routes.Elements()))
-		for _, element := range routes.Elements() {
-			route, ok := element.(types.Object)
-			if !ok || route.IsNull() || route.IsUnknown() {
-				continue
-			}
-			routeAttrs := route.Attributes()
+	if len(block.Routes) > 0 {
+		routes := make([]map[string]interface{}, 0, len(block.Routes))
+		for _, route := range block.Routes {
 			routeItem := map[string]interface{}{}
-			if channels, ok := routeAttrs["channels"].(types.List); ok && !channels.IsNull() && !channels.IsUnknown() {
-				channelItems := make([]map[string]interface{}, 0, len(channels.Elements()))
-				for _, channelElement := range channels.Elements() {
-					channel, ok := channelElement.(types.Object)
-					if !ok || channel.IsNull() || channel.IsUnknown() {
-						continue
-					}
-					channelAttrs := channel.Attributes()
+			if len(route.Channels) > 0 {
+				channels := make([]map[string]interface{}, 0, len(route.Channels))
+				for _, channel := range route.Channels {
 					channelItem := map[string]interface{}{
-						"channelType": cmsSubscriptionAttrString(channelAttrs["channel_type"]),
+						"channelType": cmsSubscriptionValueString(channel.ChannelType),
 					}
-					if v := cmsSubscriptionAttrStringList(channelAttrs["receivers"]); len(v) > 0 {
+					if v := cmsSubscriptionValueStringList(channel.Receivers); len(v) > 0 {
 						channelItem["receivers"] = v
 					}
-					if v := cmsSubscriptionAttrStringList(channelAttrs["enabled_sub_channels"]); len(v) > 0 {
+					if v := cmsSubscriptionValueStringList(channel.EnabledSubChannels); len(v) > 0 {
 						channelItem["enabledSubChannels"] = v
 					}
-					channelItems = append(channelItems, channelItem)
+					channels = append(channels, channelItem)
 				}
-				if len(channelItems) > 0 {
-					routeItem["channels"] = channelItems
-				}
+				routeItem["channels"] = channels
 			}
-			if effectTimeRanges, ok := routeAttrs["effect_time_range"].(types.List); ok && !effectTimeRanges.IsNull() && !effectTimeRanges.IsUnknown() {
-				rangeItems := make([]map[string]interface{}, 0, len(effectTimeRanges.Elements()))
-				for _, rangeElement := range effectTimeRanges.Elements() {
-					effectTimeRange, ok := rangeElement.(types.Object)
-					if !ok || effectTimeRange.IsNull() || effectTimeRange.IsUnknown() {
-						continue
-					}
-					rangeAttrs := effectTimeRange.Attributes()
-					rangeItem := map[string]interface{}{}
-					if v := cmsSubscriptionAttrString(rangeAttrs["time_zone"]); v != "" {
-						rangeItem["timeZone"] = v
-					}
-					if v := cmsSubscriptionAttrInt64List(rangeAttrs["day_in_week"]); len(v) > 0 {
-						rangeItem["dayInWeek"] = v
-					}
-					if v, ok := cmsSubscriptionAttrInt64(rangeAttrs["start_time_in_minute"]); ok {
-						rangeItem["startTimeInMinute"] = v
-					}
-					if v, ok := cmsSubscriptionAttrInt64(rangeAttrs["end_time_in_minute"]); ok {
-						rangeItem["endTimeInMinute"] = v
-					}
-					rangeItems = append(rangeItems, rangeItem)
+			if len(route.EffectTimeRange) > 0 {
+				effectTimeRange := route.EffectTimeRange[0]
+				rangeItem := map[string]interface{}{}
+				if v := cmsSubscriptionValueString(effectTimeRange.TimeZone); v != "" {
+					rangeItem["timeZone"] = v
 				}
-				if len(rangeItems) > 0 {
-					routeItem["effectTimeRange"] = rangeItems[0]
+				if v := cmsSubscriptionValueInt64List(effectTimeRange.DayInWeek); len(v) > 0 {
+					rangeItem["dayInWeek"] = v
 				}
+				if v, ok := cmsSubscriptionValueInt64(effectTimeRange.StartTimeInMinute); ok {
+					rangeItem["startTimeInMinute"] = v
+				}
+				if v, ok := cmsSubscriptionValueInt64(effectTimeRange.EndTimeInMinute); ok {
+					rangeItem["endTimeInMinute"] = v
+				}
+				routeItem["effectTimeRange"] = rangeItem
 			}
-			routeItems = append(routeItems, routeItem)
+			routes = append(routes, routeItem)
 		}
-		if len(routeItems) > 0 {
-			result["routes"] = routeItems
-		}
+		result["routes"] = routes
 	}
 	if len(result) == 0 {
 		return nil
@@ -648,153 +711,113 @@ func cmsSubscriptionState(object map[string]interface{}, previous cmsSubscriptio
 	return state
 }
 
-func flattenCmsSubscriptionFilterSetting(raw interface{}) types.List {
+func flattenCmsSubscriptionFilterSetting(raw interface{}) []cmsSubscriptionFilterSettingModel {
 	setting, ok := raw.(map[string]interface{})
 	if !ok || len(setting) == 0 {
-		return types.ListNull(cmsSubscriptionFilterSettingType)
+		return nil
 	}
-	conditions := make([]attr.Value, 0)
+	block := cmsSubscriptionFilterSettingModel{
+		Expression: cmsSubscriptionJSONStringValue(setting["expression"]),
+		Relation:   cmsSubscriptionJSONStringValue(setting["relation"]),
+	}
 	if items, ok := setting["conditions"].([]interface{}); ok {
 		for _, item := range items {
 			condition, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			conditions = append(conditions, types.ObjectValueMust(cmsSubscriptionConditionType.AttrTypes, map[string]attr.Value{
-				"field": cmsSubscriptionJSONStringValue(condition["field"]),
-				"op":    cmsSubscriptionJSONStringValue(condition["op"]),
-				"value": cmsSubscriptionJSONStringValue(condition["value"]),
-			}))
+			block.Conditions = append(block.Conditions, cmsSubscriptionConditionModel{
+				Field: cmsSubscriptionJSONStringValue(condition["field"]),
+				Op:    cmsSubscriptionJSONStringValue(condition["op"]),
+				Value: cmsSubscriptionJSONStringValue(condition["value"]),
+			})
 		}
 	}
-	conditionList := types.ListValueMust(cmsSubscriptionConditionType, conditions)
-	if len(conditions) == 0 {
-		conditionList = types.ListNull(cmsSubscriptionConditionType)
-	}
-	object := types.ObjectValueMust(cmsSubscriptionFilterSettingType.AttrTypes, map[string]attr.Value{
-		"conditions": conditionList,
-		"expression": cmsSubscriptionJSONStringValue(setting["expression"]),
-		"relation":   cmsSubscriptionJSONStringValue(setting["relation"]),
-	})
-	return types.ListValueMust(cmsSubscriptionFilterSettingType, []attr.Value{object})
+	return []cmsSubscriptionFilterSettingModel{block}
 }
 
-func flattenCmsSubscriptionPushingSetting(raw interface{}) types.List {
+func flattenCmsSubscriptionPushingSetting(raw interface{}) []cmsSubscriptionPushingSettingModel {
 	setting, ok := raw.(map[string]interface{})
 	if !ok || len(setting) == 0 {
-		return types.ListNull(cmsSubscriptionPushingSettingType)
+		return nil
 	}
-	object := types.ObjectValueMust(cmsSubscriptionPushingSettingType.AttrTypes, map[string]attr.Value{
-		"alert_action_ids":   cmsSubscriptionJSONStringList(setting["alertActionIds"]),
-		"restore_action_ids": cmsSubscriptionJSONStringList(setting["restoreActionIds"]),
-		"template_uuid":      cmsSubscriptionJSONStringValue(setting["templateUuid"]),
-		"response_plan_id":   cmsSubscriptionJSONStringValue(setting["responsePlanId"]),
-	})
-	return types.ListValueMust(cmsSubscriptionPushingSettingType, []attr.Value{object})
+	return []cmsSubscriptionPushingSettingModel{{
+		AlertActionIds:   cmsSubscriptionJSONStringList(setting["alertActionIds"]),
+		RestoreActionIds: cmsSubscriptionJSONStringList(setting["restoreActionIds"]),
+		TemplateUuid:     cmsSubscriptionJSONStringValue(setting["templateUuid"]),
+		ResponsePlanId:   cmsSubscriptionJSONStringValue(setting["responsePlanId"]),
+	}}
 }
 
-func flattenCmsSubscriptionWorkspaceFilterSetting(raw interface{}) types.List {
+func flattenCmsSubscriptionWorkspaceFilterSetting(raw interface{}) []cmsSubscriptionWorkspaceFilterModel {
 	setting, ok := raw.(map[string]interface{})
 	if !ok || len(setting) == 0 {
-		return types.ListNull(cmsSubscriptionWorkspaceFilterSettingType)
+		return nil
 	}
-	object := types.ObjectValueMust(cmsSubscriptionWorkspaceFilterSettingType.AttrTypes, map[string]attr.Value{
-		"workspace_uuids": cmsSubscriptionJSONStringList(setting["workspaceUuids"]),
-	})
-	return types.ListValueMust(cmsSubscriptionWorkspaceFilterSettingType, []attr.Value{object})
+	return []cmsSubscriptionWorkspaceFilterModel{{
+		WorkspaceUuids: cmsSubscriptionJSONStringList(setting["workspaceUuids"]),
+	}}
 }
 
-func flattenCmsSubscriptionAgentConfig(raw interface{}) types.List {
+func flattenCmsSubscriptionAgentConfig(raw interface{}) []cmsSubscriptionAgentConfigModel {
 	config, ok := raw.(map[string]interface{})
 	if !ok || len(config) == 0 {
-		return types.ListNull(cmsSubscriptionAgentConfigType)
+		return nil
 	}
-	routes := make([]attr.Value, 0)
+	block := cmsSubscriptionAgentConfigModel{
+		AgentUuid: cmsSubscriptionJSONStringValue(config["agentUuid"]),
+	}
 	if items, ok := config["routes"].([]interface{}); ok {
 		for _, item := range items {
 			route, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			routes = append(routes, flattenCmsSubscriptionAgentRoute(route))
+			block.Routes = append(block.Routes, flattenCmsSubscriptionAgentRoute(route))
 		}
 	}
-	routeList := types.ListValueMust(cmsSubscriptionAgentRouteType, routes)
-	if len(routes) == 0 {
-		routeList = types.ListNull(cmsSubscriptionAgentRouteType)
-	}
-	object := types.ObjectValueMust(cmsSubscriptionAgentConfigType.AttrTypes, map[string]attr.Value{
-		"agent_uuid": cmsSubscriptionJSONStringValue(config["agentUuid"]),
-		"routes":     routeList,
-	})
-	return types.ListValueMust(cmsSubscriptionAgentConfigType, []attr.Value{object})
+	return []cmsSubscriptionAgentConfigModel{block}
 }
 
-func flattenCmsSubscriptionAgentRoute(route map[string]interface{}) attr.Value {
-	channels := make([]attr.Value, 0)
+func flattenCmsSubscriptionAgentRoute(route map[string]interface{}) cmsSubscriptionAgentRouteModel {
+	result := cmsSubscriptionAgentRouteModel{}
 	if items, ok := route["channels"].([]interface{}); ok {
 		for _, item := range items {
 			channel, ok := item.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			channels = append(channels, types.ObjectValueMust(cmsSubscriptionAgentChannelType.AttrTypes, map[string]attr.Value{
-				"channel_type":         cmsSubscriptionJSONStringValue(channel["channelType"]),
-				"receivers":            cmsSubscriptionJSONStringList(channel["receivers"]),
-				"enabled_sub_channels": cmsSubscriptionJSONStringList(channel["enabledSubChannels"]),
-			}))
+			result.Channels = append(result.Channels, cmsSubscriptionAgentChannelModel{
+				ChannelType:        cmsSubscriptionJSONStringValue(channel["channelType"]),
+				Receivers:          cmsSubscriptionJSONStringList(channel["receivers"]),
+				EnabledSubChannels: cmsSubscriptionJSONStringList(channel["enabledSubChannels"]),
+			})
 		}
 	}
-	channelList := types.ListValueMust(cmsSubscriptionAgentChannelType, channels)
-	if len(channels) == 0 {
-		channelList = types.ListNull(cmsSubscriptionAgentChannelType)
-	}
-
-	effectTimeRanges := make([]attr.Value, 0)
 	if item, ok := route["effectTimeRange"].(map[string]interface{}); ok {
-		effectTimeRanges = append(effectTimeRanges, types.ObjectValueMust(cmsSubscriptionAgentEffectTimeRangeType.AttrTypes, map[string]attr.Value{
-			"time_zone":            cmsSubscriptionJSONStringValue(item["timeZone"]),
-			"day_in_week":          cmsSubscriptionJSONInt64List(item["dayInWeek"]),
-			"start_time_in_minute": cmsSubscriptionJSONInt64Value(item["startTimeInMinute"]),
-			"end_time_in_minute":   cmsSubscriptionJSONInt64Value(item["endTimeInMinute"]),
-		}))
+		result.EffectTimeRange = append(result.EffectTimeRange, cmsSubscriptionAgentEffectTimeRangeModel{
+			TimeZone:          cmsSubscriptionJSONStringValue(item["timeZone"]),
+			DayInWeek:         cmsSubscriptionJSONInt64List(item["dayInWeek"]),
+			StartTimeInMinute: cmsSubscriptionJSONInt64Value(item["startTimeInMinute"]),
+			EndTimeInMinute:   cmsSubscriptionJSONInt64Value(item["endTimeInMinute"]),
+		})
 	}
-	effectTimeRangeList := types.ListValueMust(cmsSubscriptionAgentEffectTimeRangeType, effectTimeRanges)
-	if len(effectTimeRanges) == 0 {
-		effectTimeRangeList = types.ListNull(cmsSubscriptionAgentEffectTimeRangeType)
-	}
-
-	return types.ObjectValueMust(cmsSubscriptionAgentRouteType.AttrTypes, map[string]attr.Value{
-		"channels":          channelList,
-		"effect_time_range": effectTimeRangeList,
-	})
+	return result
 }
 
-func cmsSubscriptionFirstObject(l types.List) (types.Object, bool) {
-	if l.IsNull() || l.IsUnknown() || len(l.Elements()) == 0 {
-		return types.Object{}, false
-	}
-	object, ok := l.Elements()[0].(types.Object)
-	if !ok || object.IsNull() || object.IsUnknown() {
-		return types.Object{}, false
-	}
-	return object, true
-}
-
-func cmsSubscriptionAttrString(v attr.Value) string {
-	if s, ok := v.(types.String); ok && !s.IsNull() && !s.IsUnknown() {
-		return s.ValueString()
+func cmsSubscriptionValueString(v types.String) string {
+	if !v.IsNull() && !v.IsUnknown() {
+		return v.ValueString()
 	}
 	return ""
 }
 
-func cmsSubscriptionAttrStringList(v attr.Value) []string {
-	list, ok := v.(types.List)
-	if !ok || list.IsNull() || list.IsUnknown() {
+func cmsSubscriptionValueStringList(v types.List) []string {
+	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
-	values := make([]string, 0, len(list.Elements()))
-	for _, element := range list.Elements() {
+	values := make([]string, 0, len(v.Elements()))
+	for _, element := range v.Elements() {
 		if s, ok := element.(types.String); ok && !s.IsNull() && !s.IsUnknown() {
 			values = append(values, s.ValueString())
 		}
@@ -802,20 +825,19 @@ func cmsSubscriptionAttrStringList(v attr.Value) []string {
 	return values
 }
 
-func cmsSubscriptionAttrInt64(v attr.Value) (int64, bool) {
-	if i, ok := v.(types.Int64); ok && !i.IsNull() && !i.IsUnknown() {
-		return i.ValueInt64(), true
+func cmsSubscriptionValueInt64(v types.Int64) (int64, bool) {
+	if !v.IsNull() && !v.IsUnknown() {
+		return v.ValueInt64(), true
 	}
 	return 0, false
 }
 
-func cmsSubscriptionAttrInt64List(v attr.Value) []int64 {
-	list, ok := v.(types.List)
-	if !ok || list.IsNull() || list.IsUnknown() {
+func cmsSubscriptionValueInt64List(v types.List) []int64 {
+	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
-	values := make([]int64, 0, len(list.Elements()))
-	for _, element := range list.Elements() {
+	values := make([]int64, 0, len(v.Elements()))
+	for _, element := range v.Elements() {
 		if i, ok := element.(types.Int64); ok && !i.IsNull() && !i.IsUnknown() {
 			values = append(values, i.ValueInt64())
 		}

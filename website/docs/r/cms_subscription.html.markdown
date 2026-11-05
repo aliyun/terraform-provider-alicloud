@@ -35,18 +35,15 @@ resource "alicloud_cms_subscription" "default" {
   subscription_name = "tf-example-subscription"
   description       = "Event subscription managed by Terraform"
 
-  filter_setting = [
-    {
-      relation = "AND"
-      conditions = [
-        {
-          field = "labels.alertname"
-          op    = "EQ"
-          value = "HighCPUUsage"
-        }
-      ]
+  filter_setting {
+    relation = "AND"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
     }
-  ]
+  }
 }
 ```
 
