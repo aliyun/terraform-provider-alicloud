@@ -4,9 +4,7 @@ package realtimecompute
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -368,7 +366,15 @@ func (r *vvpNamespaceResource) Create(ctx context.Context, req resource.CreateRe
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(object, &plan))...)
+	model, stateErr := vvpNamespaceState(object, &plan)
+	if stateErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Creating %s: decoding the created namespace", vvpNamespaceTypeName),
+			errs.WrapErrorf(stateErr, "Creating %s: decoding the created namespace (%s)", vvpNamespaceTypeName, id).Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *vvpNamespaceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -390,7 +396,16 @@ func (r *vvpNamespaceResource) Read(ctx context.Context, req resource.ReadReques
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(object, &state))...)
+	model, stateErr := vvpNamespaceState(object, &state)
+	if stateErr != nil {
+		// A malformed row must not overwrite valid state: report it and keep what is tracked.
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: decoding DescribeNamespaces", vvpNamespaceTypeName),
+			errs.WrapErrorf(stateErr, "Reading %s: decoding DescribeNamespaces", vvpNamespaceTypeName).Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -507,7 +522,15 @@ func (r *vvpNamespaceResource) Update(ctx context.Context, req resource.UpdateRe
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, vvpNamespaceState(object, &plan))...)
+	model, stateErr := vvpNamespaceState(object, &plan)
+	if stateErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Updating %s: decoding the confirmation read", vvpNamespaceTypeName),
+			errs.WrapErrorf(stateErr, "Updating %s: decoding the confirmation read (%s)", vvpNamespaceTypeName, state.Id.ValueString()).Error(),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *vvpNamespaceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -625,19 +648,28 @@ func (r *vvpNamespaceResource) ImportState(ctx context.Context, req resource.Imp
 // vvpNamespaceState maps the Get response object onto the resource model. Fields present in the
 // response are read via their responseKey (e.g. status -> ListenerStatus); request-only fields
 // (responseKey empty, e.g. dry_run) are preserved from the prior plan/state instead.
-func vvpNamespaceState(object map[string]interface{}, prior *vvpNamespaceResourceModel) vvpNamespaceResourceModel {
-	// Get has already merged and normalized every response mapping.
-	str := func(key string) types.String {
+func vvpNamespaceState(object map[string]interface{}, prior *vvpNamespaceResourceModel) (vvpNamespaceResourceModel, error) {
+	// Get has already merged and normalized every response mapping. A field that is present but has
+	// an unexpected type is an error: mapping it to null or empty would silently overwrite a valid
+	// state value with a wrong one (and can trigger a spurious resize on the next apply).
+	navigate := func(key string) (interface{}, bool) {
 		cur := interface{}(object)
 		for _, seg := range strings.Split(key, ".") {
 			m, ok := cur.(map[string]interface{})
 			if !ok {
-				return types.StringNull()
+				return nil, false
 			}
 			cur, ok = m[seg]
 			if !ok {
-				return types.StringNull()
+				return nil, false
 			}
+		}
+		return cur, true
+	}
+	str := func(key string) (types.String, error) {
+		cur, present := navigate(key)
+		if !present || cur == nil {
+			return types.StringNull(), nil
 		}
 		// gap#7c: present-but-empty strings must return ValueString(""), not Null.
 		// v1 d.Set(field, "") treats empty as set (not absence); TestCheckResourceAttrSet
@@ -645,56 +677,30 @@ func vvpNamespaceState(object map[string]interface{}, prior *vvpNamespaceResourc
 		// no DHCP set). The earlier && v != "" collapsed present-empty to Null, failing Set
 		// checks. Absent fields still return Null via the !ok branches above.
 		if v, ok := cur.(string); ok {
-			return types.StringValue(v)
+			return types.StringValue(v), nil
 		}
-		return types.StringNull()
+		return types.StringNull(), fmt.Errorf("the %s field has unexpected type %T", key, cur)
 	}
-	boolVal := func(key string) types.Bool {
-		cur := interface{}(object)
-		for _, seg := range strings.Split(key, ".") {
-			m, ok := cur.(map[string]interface{})
-			if !ok {
-				return types.BoolNull()
-			}
-			cur, ok = m[seg]
-			if !ok {
-				return types.BoolNull()
-			}
+	boolVal := func(key string) (types.Bool, error) {
+		cur, present := navigate(key)
+		if !present || cur == nil {
+			return types.BoolNull(), nil
 		}
 		if v, ok := cur.(bool); ok {
-			return types.BoolValue(v)
+			return types.BoolValue(v), nil
 		}
-		return types.BoolNull()
+		return types.BoolNull(), fmt.Errorf("the %s field has unexpected type %T", key, cur)
 	}
-	intVal := func(key string) types.Int64 {
-		cur := interface{}(object)
-		for _, seg := range strings.Split(key, ".") {
-			m, ok := cur.(map[string]interface{})
-			if !ok {
-				return types.Int64Null()
-			}
-			cur, ok = m[seg]
-			if !ok {
-				return types.Int64Null()
-			}
+	intVal := func(key string) (types.Int64, error) {
+		cur, present := navigate(key)
+		if !present || cur == nil {
+			return types.Int64Null(), nil
 		}
-		switch v := cur.(type) {
-		case float64:
-			return types.Int64Value(int64(v))
-		case int:
-			return types.Int64Value(int64(v))
-		case int64:
-			return types.Int64Value(v)
-		case json.Number:
-			if n, err := v.Int64(); err == nil {
-				return types.Int64Value(n)
-			}
-		case string:
-			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-				return types.Int64Value(n)
-			}
+		value, err := vvpNamespaceStrictIntValue(cur, key)
+		if err != nil {
+			return types.Int64Null(), err
 		}
-		return types.Int64Null()
+		return types.Int64Value(value), nil
 	}
 	// lookup traverses a dotted responseKey (e.g. "RegionStatuses.RegionStatus") segment by segment
 	// from the Get response object, returning the raw value (array/map/scalar) or nil. gap#5: array
@@ -702,44 +708,69 @@ func vvpNamespaceState(object map[string]interface{}, prior *vvpNamespaceResourc
 	// two-level unwrap (object["RegionStatuses"]["RegionStatus"]) that a literal object[key] lookup
 	// cannot reach. Single-segment keys (e.g. "IpWhiteList") traverse one step == object[key].
 	lookup := func(key string) interface{} {
-		cur := interface{}(object)
-		for _, seg := range strings.Split(key, ".") {
-			m, ok := cur.(map[string]interface{})
-			if !ok {
-				return nil
-			}
-			cur, ok = m[seg]
-			if !ok {
-				return nil
-			}
+		cur, present := navigate(key)
+		if !present {
+			return nil
 		}
 		return cur
+	}
+	instanceId, err := str("InstanceId")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	namespace, err := str("Namespace")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	status, err := str("Status")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	gmtCreate, err := intVal("GmtCreate")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	gmtModified, err := intVal("GmtModified")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	ha, err := boolVal("Ha")
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	resourceSpec, err := vvpNamespaceResourceSpecToTypeList(lookup("ResourceSpec"))
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	resourceUsed, err := vvpNamespaceResourceUsedToTypeList(lookup("ResourceUsed"))
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
+	}
+	tagMap, err := tagsToTypeMap(lookup("Tags"))
+	if err != nil {
+		return vvpNamespaceResourceModel{}, err
 	}
 	// gap#11: composite-ID resource — build the id from all composite fields in the response,
 	// joined by ":" (e.g. AccessGroupName:FileSystemType). The Get response carries every
 	// part, so the state id round-trips through Read/Delete correctly (otherwise Read would
 	// lose FileSystemType and DescribeAccessGroups would query the wrong namespace → 404).
-	_cidParts := []string{
-		str("InstanceId").ValueString(),
-		str("Namespace").ValueString(),
-	}
 	m := vvpNamespaceResourceModel{
 		FwTimeouts:   types.ObjectNull(fwutil.TimeoutTypes("create", "update", "delete")),
-		Id:           types.StringValue(strings.Join(_cidParts, ":")),
-		GmtCreate:    intVal("GmtCreate"),
-		GmtModified:  intVal("GmtModified"),
-		Ha:           boolVal("Ha"),
-		InstanceId:   str("InstanceId"),
-		Namespace:    str("Namespace"),
-		ResourceSpec: vvpNamespaceResourceSpecToTypeList(lookup("ResourceSpec")),
-		ResourceUsed: vvpNamespaceResourceUsedToTypeList(lookup("ResourceUsed")),
-		Status:       str("Status"),
-		Tags:         tagsToTypeMap(lookup("Tags")),
+		Id:           types.StringValue(strings.Join([]string{instanceId.ValueString(), namespace.ValueString()}, ":")),
+		GmtCreate:    gmtCreate,
+		GmtModified:  gmtModified,
+		Ha:           ha,
+		InstanceId:   instanceId,
+		Namespace:    namespace,
+		ResourceSpec: resourceSpec,
+		ResourceUsed: resourceUsed,
+		Status:       status,
+		Tags:         tagMap,
 	}
 	if prior != nil {
 		m.FwTimeouts = prior.FwTimeouts
 		m.ResourceSpec = fwadapt.PreserveRequestValues(m.ResourceSpec, prior.ResourceSpec, map[string]fwadapt.WireField{"cpu": {Name: "Cpu", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}, "memory_gb": {Name: "MemoryGb", Single: false, Read: true, Input: true, Fields: map[string]fwadapt.WireField{}}}).(types.List)
 		m.ResourceUsed = fwadapt.PreserveRequestValues(m.ResourceUsed, prior.ResourceUsed, map[string]fwadapt.WireField{}).(types.List)
 	}
-	return m
+	return m, nil
 }

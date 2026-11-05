@@ -241,7 +241,21 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, rowsErr)
 		}
 		seenRows += len(rows)
-		inner, identityErr := fwadapt.SelectReadObject(rows, identities)
+		// Scope the rows to the requested parent before selection and duplicate detection: a
+		// same-name namespace under another workspace is a different resource, and leaving it in the
+		// candidate set would make the requested one look ambiguous. Rows without a readable
+		// InstanceId stay candidates, because the documented missing-InstanceId limitation only says
+		// their parent cannot be disproved (and they are not adopted as another parent either).
+		scopedRows := make([]interface{}, 0, len(rows))
+		for _, row := range rows {
+			if object, ok := row.(map[string]interface{}); ok {
+				if parent, ok := object["InstanceId"].(string); ok && parent != "" && parent != instanceId {
+					continue
+				}
+			}
+			scopedRows = append(scopedRows, row)
+		}
+		inner, identityErr := fwadapt.SelectReadObject(scopedRows, identities)
 		if identityErr != nil {
 			return nil, fmt.Errorf("selecting DescribeNamespaces resource: %w", identityErr)
 		}
@@ -333,6 +347,12 @@ func vvpNamespaceSearchComplete(response map[string]interface{}, page int, pageR
 		}
 		if hasTotalCount && hasPageSize && pageSize > 0 && totalCount > totalPage*pageSize {
 			return false, fmt.Errorf("the response reports %d namespaces but TotalPage %d with PageSize %d cannot cover them", totalCount, totalPage, pageSize)
+		}
+		// A positive page count below the page just read is contradictory: the collection cannot have
+		// fewer pages than the one the service returned. Treating it as the last page would let the
+		// read conclude absence and clear state, so it is an error regardless of TotalCount/PageSize.
+		if page > totalPage {
+			return false, fmt.Errorf("the response is for page %d but reports TotalPage %d", page, totalPage)
 		}
 		return page >= totalPage, nil
 	}
@@ -503,35 +523,104 @@ func vvpNamespaceWaitForState(ctx context.Context, client *connectivity.AliyunCl
 	return nil, nil
 }
 
+// vvpNamespaceStrictIntValue converts an already-navigated response value to an integer. A
+// non-integral or non-numeric value is an error rather than a silent null, because silently mapping
+// it would overwrite a valid state value with a wrong one.
+func vvpNamespaceStrictIntValue(raw interface{}, name string) (int64, error) {
+	switch value := raw.(type) {
+	case float64:
+		if float64(int64(value)) != value {
+			return 0, fmt.Errorf("the %s value %v is not an integer", name, value)
+		}
+		return int64(value), nil
+	case float32:
+		if float32(int64(value)) != value {
+			return 0, fmt.Errorf("the %s value %v is not an integer", name, value)
+		}
+		return int64(value), nil
+	case int:
+		return int64(value), nil
+	case int32:
+		return int64(value), nil
+	case int64:
+		return value, nil
+	case json.Number:
+		parsed, err := value.Int64()
+		if err != nil {
+			return 0, fmt.Errorf("the %s value %v is not an integer", name, value)
+		}
+		return parsed, nil
+	case string:
+		// The service has returned these counters as numeric strings; parse them rather than losing
+		// the value, but a non-numeric string stays an error.
+		parsed, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("the %s value %q is not an integer", name, value)
+		}
+		return parsed, nil
+	}
+	return 0, fmt.Errorf("the %s field has unexpected type %T", name, raw)
+}
+
+// vvpNamespaceStrictFloatValue converts an already-navigated response value to a float. A
+// non-numeric value is an error for the same reason as vvpNamespaceStrictIntValue.
+func vvpNamespaceStrictFloatValue(raw interface{}, name string) (float64, error) {
+	switch value := raw.(type) {
+	case float64:
+		return value, nil
+	case float32:
+		return float64(value), nil
+	case int:
+		return float64(value), nil
+	case int32:
+		return float64(value), nil
+	case int64:
+		return float64(value), nil
+	case json.Number:
+		parsed, err := value.Float64()
+		if err != nil {
+			return 0, fmt.Errorf("the %s value %v is not a number", name, value)
+		}
+		return parsed, nil
+	case string:
+		parsed, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return 0, fmt.Errorf("the %s value %q is not a number", name, value)
+		}
+		return parsed, nil
+	}
+	return 0, fmt.Errorf("the %s field has unexpected type %T", name, raw)
+}
+
 // tagsToTypeMap wraps an API tags payload ([]interface{} of {"Key","Value"}) into types.Map.
-// Known empty API arrays/maps remain empty; omitted or null API values remain null.
-func tagsToTypeMap(raw interface{}) types.Map {
+// Known empty API arrays/maps remain empty and omitted or null API values remain null; an element or
+// value whose type cannot be read is an error instead of being silently skipped or nulled.
+func tagsToTypeMap(raw interface{}) (types.Map, error) {
+	keyNames := []string{"TagKey", "tag_key", "tagKey", "key", "Key"}
+	valueNames := []string{"TagValue", "tag_value", "tagValue", "value", "Value"}
 	out := map[string]attr.Value{}
 	switch value := raw.(type) {
+	case nil:
+		return types.MapNull(types.StringType), nil
 	case []interface{}:
-		for _, item := range value {
-			if t, ok := item.(map[string]interface{}); ok {
-				key, _ := t["TagKey"].(string)
-				val, _ := t["TagValue"].(string)
-				if key == "" {
-					key, _ = t["tag_key"].(string)
-					val, _ = t["tag_value"].(string)
-				}
-				if key == "" {
-					key, _ = t["tagKey"].(string)
-					val, _ = t["tagValue"].(string)
-				}
-				if key == "" {
-					key, _ = t["key"].(string)
-					val, _ = t["value"].(string)
-				}
-				if key == "" {
-					key, _ = t["Key"].(string)
-					val, _ = t["Value"].(string)
-				}
-				if key != "" && !tags.TagIgnored(key, nil) {
-					out[key] = types.StringValue(val)
-				}
+		for index, item := range value {
+			t, ok := item.(map[string]interface{})
+			if !ok {
+				return types.MapNull(types.StringType), fmt.Errorf("the Tags[%d] element has unexpected type %T", index, item)
+			}
+			key, readable, err := vvpNamespaceTagField(t, keyNames)
+			if err != nil {
+				return types.MapNull(types.StringType), fmt.Errorf("Tags[%d]: %w", index, err)
+			}
+			if !readable {
+				return types.MapNull(types.StringType), fmt.Errorf("the Tags[%d] element has no readable tag key", index)
+			}
+			tagValue, _, err := vvpNamespaceTagField(t, valueNames)
+			if err != nil {
+				return types.MapNull(types.StringType), fmt.Errorf("Tags[%d]: %w", index, err)
+			}
+			if key != "" && !tags.TagIgnored(key, nil) {
+				out[key] = types.StringValue(tagValue)
 			}
 		}
 	case map[string]string:
@@ -547,14 +636,35 @@ func tagsToTypeMap(raw interface{}) types.Map {
 			}
 			text, ok := item.(string)
 			if !ok {
-				return types.MapNull(types.StringType)
+				return types.MapNull(types.StringType), fmt.Errorf("the Tags[%q] value has unexpected type %T", key, item)
 			}
 			out[key] = types.StringValue(text)
 		}
 	default:
-		return types.MapNull(types.StringType)
+		return types.MapNull(types.StringType), fmt.Errorf("the Tags field has unexpected type %T", raw)
 	}
-	return types.MapValueMust(types.StringType, out)
+	mapped, diags := types.MapValue(types.StringType, out)
+	if diags.HasError() {
+		return types.MapNull(types.StringType), fmt.Errorf("building the Tags map: %v", diags)
+	}
+	return mapped, nil
+}
+
+// vvpNamespaceTagField reads the first recognised tag field spelling. readable=false means none of
+// the spellings is present; a present field of another type is an error.
+func vvpNamespaceTagField(t map[string]interface{}, names []string) (string, bool, error) {
+	for _, name := range names {
+		raw, present := t[name]
+		if !present {
+			continue
+		}
+		text, ok := raw.(string)
+		if !ok {
+			return "", false, fmt.Errorf("the tag field %q has unexpected type %T", name, raw)
+		}
+		return text, true, nil
+	}
+	return "", false, nil
 }
 
 // fwFloat navigates a dotted key in m and returns a types.Float64. The CloudSpec model types
@@ -592,12 +702,38 @@ func fwFloat(m map[string]interface{}, key string) types.Float64 {
 	return types.Float64Null()
 }
 
-// vvpNamespaceResourceSpecToTypeList wraps the API object array into a framework
-// types.List of nested objects (types.Object). nil/empty/non-array -> empty list
-// (.#=0) to match v1 d.Set(..., []), so TestCheckResourceAttrSet("x.#") passes and
-// UseStateForUnknown unknown->0 stays consistent (ListNull leaves .# unset, failing
-// the .# check).
-func vvpNamespaceResourceSpecToTypeList(raw interface{}) types.List {
+// vvpNamespaceOptionalStrictInt reads an optional integer field of a response element. A missing or
+// null value reports present=false; a present value of another type is an error.
+func vvpNamespaceOptionalStrictInt(object map[string]interface{}, name string) (int64, bool, error) {
+	raw, present := object[name]
+	if !present || raw == nil {
+		return 0, false, nil
+	}
+	value, err := vvpNamespaceStrictIntValue(raw, name)
+	if err != nil {
+		return 0, false, err
+	}
+	return value, true, nil
+}
+
+// vvpNamespaceOptionalStrictFloat is the float counterpart of vvpNamespaceOptionalStrictInt.
+func vvpNamespaceOptionalStrictFloat(object map[string]interface{}, name string) (float64, bool, error) {
+	raw, present := object[name]
+	if !present || raw == nil {
+		return 0, false, nil
+	}
+	value, err := vvpNamespaceStrictFloatValue(raw, name)
+	if err != nil {
+		return 0, false, err
+	}
+	return value, true, nil
+}
+
+// vvpNamespaceResourceSpecToTypeList wraps the API object array into a framework types.List of
+// nested objects. A nil/absent value stays an empty list (.#=0) to match the earlier behaviour; a
+// present value of another type, or an element/field that cannot be read, is an error so a
+// malformed row cannot replace a valid resource_spec with an empty one.
+func vvpNamespaceResourceSpecToTypeList(raw interface{}) (types.List, error) {
 	objType := vvpNamespaceResourceSpecObjType()
 	elems := make([]attr.Value, 0)
 	// Handle both array (nested list) and single object (MaxItems:1 object type, gap#7)
@@ -608,15 +744,30 @@ func vvpNamespaceResourceSpecToTypeList(raw interface{}) types.List {
 			arr = v
 		case map[string]interface{}:
 			arr = []interface{}{v}
+		default:
+			return types.ListNull(objType), fmt.Errorf("the ResourceSpec field has unexpected type %T", raw)
 		}
-		for _, item := range arr {
-			m, _ := item.(map[string]interface{})
-			obj, _ := types.ObjectValue(vvpNamespaceResourceSpecAttrTypes(), vvpNamespaceResourceSpecObjectValues(m))
+		for index, item := range arr {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				return types.ListNull(objType), fmt.Errorf("the ResourceSpec[%d] element has unexpected type %T", index, item)
+			}
+			values, err := vvpNamespaceResourceSpecObjectValues(m)
+			if err != nil {
+				return types.ListNull(objType), fmt.Errorf("ResourceSpec[%d]: %w", index, err)
+			}
+			obj, diags := types.ObjectValue(vvpNamespaceResourceSpecAttrTypes(), values)
+			if diags.HasError() {
+				return types.ListNull(objType), fmt.Errorf("building ResourceSpec[%d]: %v", index, diags)
+			}
 			elems = append(elems, obj)
 		}
 	}
-	l, _ := types.ListValue(objType, elems)
-	return l
+	list, diags := types.ListValue(objType, elems)
+	if diags.HasError() {
+		return types.ListNull(objType), fmt.Errorf("building the ResourceSpec list: %v", diags)
+	}
+	return list, nil
 }
 
 // vvpNamespaceResourceSpecAttrTypes returns the framework attr types for each nested field.
@@ -634,19 +785,33 @@ func vvpNamespaceResourceSpecObjType() types.ObjectType {
 
 // vvpNamespaceResourceSpecObjectValues maps a single API object (map) to framework attr
 // values. Nested sub-lists recurse via their own ToTypeList helpers; scalars use fwStr/fwBool/fwadapt.Int.
-func vvpNamespaceResourceSpecObjectValues(m map[string]interface{}) map[string]attr.Value {
+func vvpNamespaceResourceSpecObjectValues(m map[string]interface{}) (map[string]attr.Value, error) {
 	out := map[string]attr.Value{}
-	out["cpu"] = fwadapt.Int(m, "Cpu")
-	out["memory_gb"] = fwadapt.Int(m, "MemoryGb")
-	return out
+	cpu, present, err := vvpNamespaceOptionalStrictInt(m, "Cpu")
+	if err != nil {
+		return nil, err
+	}
+	if present {
+		out["cpu"] = types.Int64Value(cpu)
+	} else {
+		out["cpu"] = types.Int64Null()
+	}
+	memoryGb, present, err := vvpNamespaceOptionalStrictInt(m, "MemoryGb")
+	if err != nil {
+		return nil, err
+	}
+	if present {
+		out["memory_gb"] = types.Int64Value(memoryGb)
+	} else {
+		out["memory_gb"] = types.Int64Null()
+	}
+	return out, nil
 }
 
-// vvpNamespaceResourceUsedToTypeList wraps the API object array into a framework
-// types.List of nested objects (types.Object). nil/empty/non-array -> empty list
-// (.#=0) to match v1 d.Set(..., []), so TestCheckResourceAttrSet("x.#") passes and
-// UseStateForUnknown unknown->0 stays consistent (ListNull leaves .# unset, failing
-// the .# check).
-func vvpNamespaceResourceUsedToTypeList(raw interface{}) types.List {
+// vvpNamespaceResourceUsedToTypeList wraps the API object array into a framework types.List of
+// nested objects. A nil/absent value stays an empty list (.#=0) to match the earlier behaviour; a
+// present value of another type, or an element/field that cannot be read, is an error.
+func vvpNamespaceResourceUsedToTypeList(raw interface{}) (types.List, error) {
 	objType := vvpNamespaceResourceUsedObjType()
 	elems := make([]attr.Value, 0)
 	// Handle both array (nested list) and single object (MaxItems:1 object type, gap#7)
@@ -657,15 +822,30 @@ func vvpNamespaceResourceUsedToTypeList(raw interface{}) types.List {
 			arr = v
 		case map[string]interface{}:
 			arr = []interface{}{v}
+		default:
+			return types.ListNull(objType), fmt.Errorf("the ResourceUsed field has unexpected type %T", raw)
 		}
-		for _, item := range arr {
-			m, _ := item.(map[string]interface{})
-			obj, _ := types.ObjectValue(vvpNamespaceResourceUsedAttrTypes(), vvpNamespaceResourceUsedObjectValues(m))
+		for index, item := range arr {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				return types.ListNull(objType), fmt.Errorf("the ResourceUsed[%d] element has unexpected type %T", index, item)
+			}
+			values, err := vvpNamespaceResourceUsedObjectValues(m)
+			if err != nil {
+				return types.ListNull(objType), fmt.Errorf("ResourceUsed[%d]: %w", index, err)
+			}
+			obj, diags := types.ObjectValue(vvpNamespaceResourceUsedAttrTypes(), values)
+			if diags.HasError() {
+				return types.ListNull(objType), fmt.Errorf("building ResourceUsed[%d]: %v", index, diags)
+			}
 			elems = append(elems, obj)
 		}
 	}
-	l, _ := types.ListValue(objType, elems)
-	return l
+	list, diags := types.ListValue(objType, elems)
+	if diags.HasError() {
+		return types.ListNull(objType), fmt.Errorf("building the ResourceUsed list: %v", diags)
+	}
+	return list, nil
 }
 
 // vvpNamespaceResourceUsedAttrTypes returns the framework attr types for each nested field.
@@ -684,12 +864,36 @@ func vvpNamespaceResourceUsedObjType() types.ObjectType {
 
 // vvpNamespaceResourceUsedObjectValues maps a single API object (map) to framework attr
 // values. Nested sub-lists recurse via their own ToTypeList helpers; scalars use fwStr/fwBool/fwadapt.Int.
-func vvpNamespaceResourceUsedObjectValues(m map[string]interface{}) map[string]attr.Value {
+func vvpNamespaceResourceUsedObjectValues(m map[string]interface{}) (map[string]attr.Value, error) {
 	out := map[string]attr.Value{}
-	out["cpu"] = fwFloat(m, "Cpu")
-	out["cu"] = fwFloat(m, "Cu")
-	out["memory_gb"] = fwFloat(m, "MemoryGb")
-	return out
+	cpu, present, err := vvpNamespaceOptionalStrictFloat(m, "Cpu")
+	if err != nil {
+		return nil, err
+	}
+	if present {
+		out["cpu"] = types.Float64Value(cpu)
+	} else {
+		out["cpu"] = types.Float64Null()
+	}
+	cu, present, err := vvpNamespaceOptionalStrictFloat(m, "Cu")
+	if err != nil {
+		return nil, err
+	}
+	if present {
+		out["cu"] = types.Float64Value(cu)
+	} else {
+		out["cu"] = types.Float64Null()
+	}
+	memoryGb, present, err := vvpNamespaceOptionalStrictFloat(m, "MemoryGb")
+	if err != nil {
+		return nil, err
+	}
+	if present {
+		out["memory_gb"] = types.Float64Value(memoryGb)
+	} else {
+		out["memory_gb"] = types.Float64Null()
+	}
+	return out, nil
 }
 
 // fwadapt.WireField preserves API/source names independently of Terraform schema names.

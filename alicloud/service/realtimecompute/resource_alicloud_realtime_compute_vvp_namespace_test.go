@@ -2053,7 +2053,241 @@ func TestUnitRealtimeComputeVvpNamespaceDeleteKeepsStateWithoutWriteOnUnreadable
 	}
 }
 
-// testAccRealtimeComputeVvpCaptureResourceId stores the id of the given resource in target.
+// vvpNamespaceShrinkingTotalPageServer answers page 1 with TotalPage 2 and page 2 with TotalPage 1,
+// both carrying one non-target row and no TotalCount: the collection cannot shrink below the page
+// the service just returned, so a complete search must not be concluded from that page.
+func vvpNamespaceShrinkingTotalPageServer(t *testing.T) (*httptest.Server, func() []string) {
+	t.Helper()
+	var mu sync.Mutex
+	var actions []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		action := r.FormValue("Action")
+		mu.Lock()
+		actions = append(actions, action)
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if action != "DescribeNamespaces" {
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		if r.FormValue("DescribeNamespacesRequest.PageIndex") == "2" {
+			fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":1,"PageIndex":2}`)
+			return
+		}
+		fmt.Fprint(w, `{"RequestId":"mock","Namespaces":[{"InstanceId":"other","Namespace":"other","Status":"SUCCESS"}],"TotalPage":2,"PageIndex":1}`)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), actions...)
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadRejectsShrinkingTotalPage pins that a positive TotalPage
+// below the page just read is reported instead of being taken as the last page: otherwise the read
+// would conclude absence and remove a live namespace from state.
+func TestUnitRealtimeComputeVvpNamespaceReadRejectsShrinkingTotalPage(t *testing.T) {
+	server, _ := vvpNamespaceShrinkingTotalPageServer(t)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("expected the shrinking page count to be reported, got none")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "TotalPage") {
+		t.Fatalf("expected a TotalPage diagnostic, got %q", detail)
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the read removed the namespace from state although the page count was contradictory")
+	}
+	var cpu types.Int64
+	if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+		t.Fatalf("reading the retained spec: %v", err)
+	}
+	if cpu.ValueInt64() != 1 {
+		t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu.ValueInt64())
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceDeleteRejectsShrinkingTotalPage drives the public Delete entry
+// point: a pre-delete read whose page count shrinks is reported, the resource stays in state and
+// DeleteNamespace is never sent.
+func TestUnitRealtimeComputeVvpNamespaceDeleteRejectsShrinkingTotalPage(t *testing.T) {
+	server, observed := vvpNamespaceShrinkingTotalPageServer(t)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+	req := fwresource.DeleteRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.DeleteResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Delete(context.Background(), req, resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatalf("expected the shrinking page count to be reported, got none")
+	}
+	detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+	if !strings.Contains(detail, "TotalPage") {
+		t.Fatalf("expected a TotalPage diagnostic, got %q", detail)
+	}
+	for _, action := range observed() {
+		if action == "DeleteNamespace" {
+			t.Fatalf("Delete sent DeleteNamespace although absence was not proven: %v", observed())
+		}
+	}
+	if resp.State.Raw.IsNull() {
+		t.Fatalf("the delete dropped the namespace from state")
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadSelectsRequestedParentOnSamePage pins that a same-name
+// namespace of another workspace on the same page is scoped out before duplicate detection: the
+// requested parent must still be selectable, while a duplicate inside the requested parent stays an
+// error (covered by the walking reader tests with a single parent).
+func TestUnitRealtimeComputeVvpNamespaceReadSelectsRequestedParentOnSamePage(t *testing.T) {
+	body := `{"RequestId":"mock","Namespaces":[` +
+		`{"InstanceId":"other-instance","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":8,"MemoryGB":32},"Tags":[]},` +
+		`{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"Tags":[]}` +
+		`],"TotalPage":1,"PageIndex":1,"TotalCount":2}`
+	server, _ := vvpNamespaceUnreadableCollectionTestServer(t, body)
+	res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+	value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+	req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+	resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+	res.Read(context.Background(), req, resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("a same-name row of another parent must not make the requested one ambiguous: %v", resp.Diagnostics)
+	}
+	var cpu types.Int64
+	if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+		t.Fatalf("reading the selected spec: %v", err)
+	}
+	if cpu.ValueInt64() != 2 {
+		t.Fatalf("state resource_spec.cpu = %d, want 2 from the requested parent", cpu.ValueInt64())
+	}
+	var id types.String
+	if err := resp.State.GetAttribute(context.Background(), path.Root("id"), &id); err != nil {
+		t.Fatalf("reading the state id: %v", err)
+	}
+	if id.ValueString() != "inst-unit:demo" {
+		t.Fatalf("state id = %q, want inst-unit:demo", id.ValueString())
+	}
+}
+
+// TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields pins that a row whose
+// consumed fields cannot be converted is reported and the previous state is kept: silently mapping a
+// wrong type to null/empty would overwrite a valid resource_spec and cause a spurious resize.
+func TestUnitRealtimeComputeVvpNamespaceReadKeepsStateOnWrongTypedRowFields(t *testing.T) {
+	validRow := `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":1700000000,"GmtModified":1700000000,"Ha":false,"ResourceSpec":{"Cpu":2,"MemoryGB":8},"ResourceUsed":{"Cpu":0,"Cu":0,"MemoryGB":0},"Tags":[]}`
+	cases := []struct {
+		name    string
+		row     string
+		wantErr string
+		wantCPU int64
+	}{
+		{
+			name:    "ResourceSpec is not a collection",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":"unexpected"}`,
+			wantErr: "ResourceSpec field has unexpected type",
+		},
+		{
+			name:    "ResourceSpec element is not an object",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":["unexpected"]}`,
+			wantErr: "ResourceSpec[0] element has unexpected type",
+		},
+		{
+			name:    "ResourceSpec cpu has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceSpec":{"Cpu":"two","MemoryGB":8}}`,
+			wantErr: "Cpu field has unexpected type",
+		},
+		{
+			name:    "ResourceUsed is not a collection",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","ResourceUsed":"unexpected"}`,
+			wantErr: "ResourceUsed field has unexpected type",
+		},
+		{
+			name:    "Tags is not a collection",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Tags":"unexpected"}`,
+			wantErr: "Tags field has unexpected type",
+		},
+		{
+			name:    "Tags element is not an object",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Tags":["unexpected"]}`,
+			wantErr: "Tags[0] element has unexpected type",
+		},
+		{
+			name:    "Ha has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","Ha":"false"}`,
+			wantErr: "Ha field has unexpected type",
+		},
+		{
+			name:    "GmtCreate has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":"SUCCESS","GmtCreate":"yesterday"}`,
+			wantErr: "GmtCreate field has unexpected type",
+		},
+		{
+			name:    "Status has the wrong type",
+			row:     `{"InstanceId":"inst-unit","Namespace":"demo","Status":1}`,
+			wantErr: "Status field has unexpected type",
+		},
+		{
+			name:    "valid control",
+			row:     validRow,
+			wantCPU: 2,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := fmt.Sprintf(`{"RequestId":"mock","Namespaces":[%s],"TotalPage":1,"PageIndex":1,"TotalCount":1}`, tc.row)
+			server, _ := vvpNamespaceUnreadableCollectionTestServer(t, body)
+			res, sch := vvpNamespaceUpdateTestResource(t, server.URL)
+			value := vvpNamespaceUpdateTestValue(t, sch, "1m", 1, 4)
+
+			req := fwresource.ReadRequest{State: tfsdk.State{Schema: sch, Raw: value}}
+			resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: sch, Raw: value}}
+			res.Read(context.Background(), req, resp)
+
+			if tc.wantErr != "" {
+				if !resp.Diagnostics.HasError() {
+					t.Fatalf("expected a wrong-typed field to be reported, got none")
+				}
+				detail := resp.Diagnostics.Errors()[0].Summary() + " " + resp.Diagnostics.Errors()[0].Detail()
+				if !strings.Contains(detail, tc.wantErr) {
+					t.Fatalf("expected a diagnostic containing %q, got %q", tc.wantErr, detail)
+				}
+				if resp.State.Raw.IsNull() {
+					t.Fatalf("the read removed the namespace from state")
+				}
+				var cpu types.Int64
+				if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+					t.Fatalf("reading the retained spec: %v", err)
+				}
+				if cpu.ValueInt64() != 1 {
+					t.Fatalf("state resource_spec.cpu = %d, want the previous 1", cpu.ValueInt64())
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+			var cpu types.Int64
+			if err := resp.State.GetAttribute(context.Background(), path.Root("resource_spec").AtListIndex(0).AtName("cpu"), &cpu); err != nil {
+				t.Fatalf("reading the decoded spec: %v", err)
+			}
+			if cpu.ValueInt64() != tc.wantCPU {
+				t.Fatalf("state resource_spec.cpu = %d, want %d", cpu.ValueInt64(), tc.wantCPU)
+			}
+		})
+	}
+}
+
 func testAccRealtimeComputeVvpCaptureResourceId(resourceName string, target *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
