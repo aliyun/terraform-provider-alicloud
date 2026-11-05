@@ -699,6 +699,7 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 						"account_name":   name,
 						"character_type": "cs",
 					}),
+					resource.TestCheckResourceAttr(resourceId, "account_roles.#", "2"),
 				),
 			},
 			{

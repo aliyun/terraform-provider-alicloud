@@ -58,7 +58,7 @@ func mongoDBGovernanceReadAccount(d *schema.ResourceData, client *connectivity.A
 	}
 	request := map[string]interface{}{"DBInstanceId": parts[0]}
 	if response, err := mongoDBGovernanceRpcPost(client, 2*time.Minute, "DescribeAccountRoles", request); err != nil {
-		log.Printf("[DEBUG] DescribeAccountRoles for %s: %s", d.Id(), err)
+		log.Printf("[WARN] DescribeAccountRoles for %s: %s", d.Id(), err)
 	} else {
 		roles := make([]map[string]interface{}, 0)
 		for _, item := range mongoDBGovernanceMapList(mongoDBGovernancePick(response, "Roles", "roles")) {
@@ -88,6 +88,11 @@ func mongoDBGovernanceUpdateAccount(d *schema.ResourceData, client *connectivity
 		return nil
 	}
 	if len(privileges) == 0 {
+		if d.HasChange("privilege") {
+			// Removing the block cannot call ModifyAccountPrivilege: the API
+			// revokes the listed roles, not every role of the account.
+			log.Printf("[WARN] Removing privilege from alicloud_mongodb_account %s does not revoke the account roles; set privilege_reset_type = \"revoke\" with those roles to revoke them explicitly", d.Id())
+		}
 		return nil
 	}
 	parts := strings.Split(d.Id(), ":")
