@@ -36,16 +36,16 @@ data "alicloud_account" "default" {}
 
 resource "alicloud_data_works_project" "default" {
   project_name            = "${var.name}${random_integer.default.result}"
-  display_name           = var.name
-  description            = "tf_for_parameter"
+  display_name            = var.name
+  description             = "tf_for_parameter"
   dev_environment_enabled = true
 }
 
 resource "alicloud_data_works_parameter" "default" {
-  project_id = alicloud_data_works_project.default.id
-  name       = "workspace.${var.name}${random_integer.default.result}"
-  type       = "PlainConstant"
-  owner      = data.alicloud_account.default.id
+  project_id  = alicloud_data_works_project.default.id
+  name        = "workspace.${var.name}${random_integer.default.result}"
+  type        = "PlainConstant"
+  owner       = data.alicloud_account.default.id
   description = "managed by terraform"
 
   properties {
