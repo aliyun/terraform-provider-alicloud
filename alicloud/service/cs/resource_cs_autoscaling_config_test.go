@@ -262,6 +262,7 @@ data "alicloud_instance_types" "default" {
   cpu_core_count       = 4
   memory_size          = 8
   kubernetes_node_role = "Worker"
+  system_disk_category = "cloud_essd"
 }
 
 resource "alicloud_vpc" "default" {
