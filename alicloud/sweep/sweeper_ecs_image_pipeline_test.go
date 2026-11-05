@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -33,10 +34,6 @@ func testSweepEcsImagePipeline(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	aliyunClient := rawClient.(*connectivity.AliyunClient)
-	prefixes := []string{
-		"tf-testAcc",
-		"tf_testAcc",
-	}
 	action := "DescribeImagePipelines"
 	request := map[string]interface{}{}
 	request["RegionId"] = aliyunClient.RegionId
@@ -71,14 +68,9 @@ func testSweepEcsImagePipeline(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", item["Name"].(string))
+			name, _ := item["Name"].(string)
+			if !shouldSweepEcsImagePipeline(name) {
+				log.Printf("[INFO] Skipping Ecs Image Pipeline: %s", item["Name"])
 				continue
 			}
 			action := "DeleteImagePipeline"
@@ -88,9 +80,9 @@ func testSweepEcsImagePipeline(region string) error {
 			}
 			_, err = aliyunClient.RpcPost("Ecs", "2014-05-26", action, nil, request, false)
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Ecs Image Pipeline (%s): %s", item["Name"].(string), err)
+				log.Printf("[ERROR] Failed to delete Ecs Image Pipeline (%s): %s", item["Name"], err)
 			}
-			log.Printf("[INFO] Delete Ecs Image Pipeline success: %s ", item["Name"].(string))
+			log.Printf("[INFO] Delete Ecs Image Pipeline success: %s ", item["Name"])
 		}
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
@@ -99,4 +91,38 @@ func testSweepEcsImagePipeline(region string) error {
 		}
 	}
 	return nil
+}
+
+// shouldSweepEcsImagePipeline reports whether a pipeline name belongs to the
+// fixtures this sweeper owns. The documentation example uses the exact name
+// `terraform-example`; a prefix match on it would also delete unrelated
+// pipelines that merely share that prefix, so it is matched exactly. The
+// acceptance-test prefixes stay prefix matches.
+func shouldSweepEcsImagePipeline(name string) bool {
+	lower := strings.ToLower(name)
+	if lower == "terraform-example" {
+		return true
+	}
+	for _, prefix := range []string{"tf-testacc", "tf_testacc"} {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestUnitShouldSweepEcsImagePipeline(t *testing.T) {
+	cases := map[string]bool{
+		"terraform-example":           true,
+		"tf-testAccimagepipeline1234": true,
+		"tf_testAccimage":             true,
+		"terraform-example-2":         false,
+		"terraform-examples-backup":   false,
+		"production-image-pipeline":   false,
+	}
+	for name, want := range cases {
+		if got := shouldSweepEcsImagePipeline(name); got != want {
+			t.Errorf("shouldSweepEcsImagePipeline(%q) = %v, want %v", name, got, want)
+		}
+	}
 }

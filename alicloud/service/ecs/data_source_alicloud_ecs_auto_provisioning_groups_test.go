@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
@@ -75,6 +76,32 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				),
 			},
 			{
+				// DescribeAutoProvisioningGroups documents a maximum of 20 IDs
+				// even though the published schema metadata still declares 100.
+				Config: autoProvisioningGroupsConfig(fmt.Sprintf("  ids = [%s]\n", autoProvisioningGroupsIdList(20))),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "groups.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "total_count", "0"),
+				),
+			},
+			{
+				Config:      autoProvisioningGroupsConfig(fmt.Sprintf("  ids = [%s]\n", autoProvisioningGroupsIdList(21))),
+				ExpectError: regexp.MustCompile(`Invalid Attribute Value Size|at most 20`),
+			},
+			{
+				// The status filter must narrow the result: the total the API
+				// reports for the filter has to match the rows that were read.
+				Config: autoProvisioningGroupsConfig("  status = [\"active\"]\n"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceId, "groups.#", resourceId, "total_count"),
+				),
+			},
+			{
+				// A null value is not the same request as an empty value.
+				Config:      autoProvisioningGroupsConfig("  tags = { env = null }\n"),
+				ExpectError: regexp.MustCompile(`Invalid Tag Value|must be set`),
+			},
+			{
 				Config:      autoProvisioningGroupsConfig("  types = [\"not-a-type\"]\n"),
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Match|expected value to be one of`),
 			},
@@ -100,6 +127,14 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 			},
 		},
 	})
+}
+
+func autoProvisioningGroupsIdList(count int) string {
+	ids := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		ids = append(ids, fmt.Sprintf("%q", fmt.Sprintf("apg-does-not-exist-%d", i)))
+	}
+	return strings.Join(ids, ", ")
 }
 
 func autoProvisioningGroupsConfig(dataArguments string) string {

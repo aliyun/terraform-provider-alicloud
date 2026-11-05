@@ -183,6 +183,37 @@ run_check() {
   fi
 }
 
+# DescribeImagePipelineExecutions publishes CANCELLING and CANCELLED as status
+# literals, and misspell flags them. Only those two literals on that one page are
+# accepted: the same words anywhere else, and ordinary prose on that page, stay
+# reported. Both the strict and the changed-docs spelling checks use this helper.
+MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.markdown"
+
+run_misspell_scoped() {
+  local output status=0 remaining
+  output=$(misspell -error -locale=US "$@" 2>&1) || status=$?
+  if [ $status -eq 0 ]; then
+    return 0
+  fi
+  remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" '
+    {
+      line = $0
+      sub(/^\.\//, "", line)
+      n = length(doc)
+      if (substr(line, 1, n) == doc && substr(line, n + 1) ~ /^:[0-9]+:[0-9]+: "(CANCELLING|CANCELLED)" is a misspelling of "(CANCELING|CANCELED)"$/) {
+        next
+      }
+      print $0
+    }')
+  if [ -z "$remaining" ]; then
+    printf '%s\n' "$output"
+    echo "Accepted the documented API status literals CANCELLING/CANCELLED."
+    return 0
+  fi
+  printf '%s\n' "$remaining"
+  return 1
+}
+
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
   echo -e "${RED}ERROR: Not in a git repository.${NC}"
@@ -454,14 +485,14 @@ if echo "$CHANGED_FILES" | grep -q "website/docs"; then
     if [ "$STRICT_MODE" = true ]; then
       # CI mode: check all docs
       run_check "Spell Check (misspell)" \
-        "misspell -error -locale=US -i 'cancelling,cancelled' ./website/docs" \
+        "run_misspell_scoped ./website/docs" \
         || true
     else
       # Smart mode: check only changed docs
       CHANGED_DOCS=$(echo "$CHANGED_FILES" | grep "website/docs" || true)
       if [[ -n "$CHANGED_DOCS" ]]; then
         run_check "Spell Check (changed docs only)" \
-          "echo '$CHANGED_DOCS' | xargs misspell -error -locale=US -i 'cancelling,cancelled'" \
+          "for doc in $CHANGED_DOCS; do run_misspell_scoped \"\$doc\" || exit 1; done" \
           || true
       else
         echo -e "${BLUE}▶ Misspell Check: No changed doc files${NC}"

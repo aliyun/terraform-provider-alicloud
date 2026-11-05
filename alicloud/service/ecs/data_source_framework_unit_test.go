@@ -7,11 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUnitEcsFwInt64DecodesJSONNumber(t *testing.T) {
@@ -53,9 +55,146 @@ func TestUnitEcsFwTagMapValidator(t *testing.T) {
 	assertTagMap(reserved, map[string]attr.Value{"env": types.StringValue("test")}, false)
 }
 
-func TestUnitEcsImagePipelineExecutionsCollectPagesFollowsTokens(t *testing.T) {
+// A null value must not skip the key rules, and it must not be sent as an empty
+// string: null, unknown and an explicit empty string are three different
+// requests.
+func TestUnitEcsFwTagMapValidatorNullValues(t *testing.T) {
+	validate := func(v ecsFwTagMapValidator, tags map[string]attr.Value) (bool, string) {
+		var response validator.MapResponse
+		v.ValidateMap(context.Background(), validator.MapRequest{
+			ConfigValue: types.MapValueMust(types.StringType, tags),
+			Path:        path.Root("tags"),
+		}, &response)
+		if !response.Diagnostics.HasError() {
+			return false, ""
+		}
+		return true, response.Diagnostics.Errors()[0].Summary()
+	}
+
+	apg := ecsFwTagMapValidator{allowEmptyValue: true}
+	hasError, _ := validate(apg, map[string]attr.Value{"env": types.StringNull()})
+	assert.True(t, hasError, "a null value must be rejected")
+	hasError, summary := validate(apg, map[string]attr.Value{"acs:env": types.StringNull()})
+	assert.True(t, hasError, "the key rules apply even when the value is null")
+	assert.Contains(t, summary, "Invalid Tag Key")
+	hasError, _ = validate(apg, map[string]attr.Value{"env": types.StringUnknown()})
+	assert.False(t, hasError, "an unknown value cannot be validated yet")
+	hasError, _ = validate(apg, map[string]attr.Value{"env": types.StringValue("")})
+	assert.False(t, hasError, "an explicit empty value stays allowed for this API")
+
+	reserved := ecsFwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}}
+	hasError, _ = validate(reserved, map[string]attr.Value{"env": types.StringNull()})
+	assert.True(t, hasError)
+	hasError, _ = validate(reserved, map[string]attr.Value{"env": types.StringValue("")})
+	assert.True(t, hasError)
+}
+
+func TestUnitEcsFwApplyTagsSerialization(t *testing.T) {
+	request := map[string]interface{}{}
+	ecsFwApplyTags(request, types.MapValueMust(types.StringType, map[string]attr.Value{
+		"env":   types.StringValue("test"),
+		"empty": types.StringValue(""),
+		"null":  types.StringNull(),
+		"known": types.StringUnknown(),
+	}))
+
+	serialized := map[string]string{}
+	for key, value := range request {
+		if !strings.HasPrefix(key, "Tag.") || !strings.HasSuffix(key, ".Key") {
+			continue
+		}
+		index := strings.TrimSuffix(strings.TrimPrefix(key, "Tag."), ".Key")
+		serialized[value.(string)] = request[fmt.Sprintf("Tag.%s.Value", index)].(string)
+	}
+	assert.Equal(t, map[string]string{"env": "test", "empty": ""}, serialized, "null and unknown values must not be serialized")
+}
+
+func TestUnitEcsFwDecodeRecordList(t *testing.T) {
+	items, err := ecsFwDecodeRecordList(map[string]interface{}{}, "AutoProvisioningGroups", "AutoProvisioningGroup", "Describe")
+	assert.NoError(t, err, "a missing member is a valid empty result")
+	assert.Empty(t, items)
+
+	items, err = ecsFwDecodeRecordList(map[string]interface{}{
+		"AutoProvisioningGroups": map[string]interface{}{
+			"AutoProvisioningGroup": []interface{}{
+				map[string]interface{}{"AutoProvisioningGroupId": "apg-1"},
+			},
+		},
+	}, "AutoProvisioningGroups", "AutoProvisioningGroup", "Describe")
+	require.NoError(t, err)
+	assert.Len(t, items, 1)
+
+	_, err = ecsFwDecodeRecordList(map[string]interface{}{
+		"AutoProvisioningGroups": "not-an-object",
+	}, "AutoProvisioningGroups", "AutoProvisioningGroup", "Describe")
+	assert.Error(t, err, "a malformed container must not be treated as empty")
+
+	_, err = ecsFwDecodeRecordList(map[string]interface{}{
+		"AutoProvisioningGroups": map[string]interface{}{"AutoProvisioningGroup": "not-a-list"},
+	}, "AutoProvisioningGroups", "AutoProvisioningGroup", "Describe")
+	assert.Error(t, err, "a malformed list must not be treated as empty")
+
+	_, err = ecsFwDecodeRecordList(map[string]interface{}{
+		"AutoProvisioningGroups": map[string]interface{}{
+			"AutoProvisioningGroup": []interface{}{"not-an-object"},
+		},
+	}, "AutoProvisioningGroups", "AutoProvisioningGroup", "Describe")
+	assert.Error(t, err, "a malformed record must not be dropped")
+}
+
+func TestUnitEcsFwDecodeCountAndToken(t *testing.T) {
+	total, known, err := ecsFwDecodeCount(map[string]interface{}{}, "TotalCount", "Describe")
+	assert.NoError(t, err)
+	assert.False(t, known)
+	assert.Zero(t, total)
+
+	total, known, err = ecsFwDecodeCount(map[string]interface{}{"TotalCount": json.Number("7")}, "TotalCount", "Describe")
+	assert.NoError(t, err)
+	assert.True(t, known)
+	assert.Equal(t, int64(7), total)
+
+	_, _, err = ecsFwDecodeCount(map[string]interface{}{"TotalCount": "many"}, "TotalCount", "Describe")
+	assert.Error(t, err, "an invalid count must not become 0")
+
+	token, err := ecsFwDecodeToken(map[string]interface{}{}, "NextToken", "Describe")
+	assert.NoError(t, err)
+	assert.Empty(t, token)
+
+	_, err = ecsFwDecodeToken(map[string]interface{}{"NextToken": 42}, "NextToken", "Describe")
+	assert.Error(t, err, "an invalid token must not be treated as the last page")
+}
+
+func TestUnitEcsFwDecodeTags(t *testing.T) {
+	tags, err := ecsFwDecodeTags(nil)
+	require.NoError(t, err)
+	assert.Empty(t, tags.Elements(), "an absent member is an empty map")
+
+	tags, err = ecsFwDecodeTags(map[string]interface{}{
+		"Tag": []interface{}{
+			map[string]interface{}{"TagKey": "env", "TagValue": "test"},
+			map[string]interface{}{"TagKey": "aliyun-reserved", "TagValue": "skip"},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, types.StringValue("test"), tags.Elements()["env"])
+	assert.NotContains(t, tags.Elements(), "aliyun-reserved")
+
+	_, err = ecsFwDecodeTags(map[string]interface{}{"Tag": "not-a-list"})
+	assert.Error(t, err)
+
+	_, err = ecsFwDecodeTags(map[string]interface{}{"Tag": []interface{}{"not-an-object"}})
+	assert.Error(t, err, "a malformed tag entry must be reported instead of panicking")
+
+	_, err = ecsFwDecodeTags(map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagValue": "test"}}})
+	assert.Error(t, err, "a tag without a key is malformed")
+
+	_, err = ecsFwDecodeTags(map[string]interface{}{"Tag": []interface{}{map[string]interface{}{"TagKey": 1, "TagValue": "test"}}})
+	assert.Error(t, err, "a non-string tag key is malformed")
+}
+
+func TestUnitEcsFwCollectTokenPagesFollowsTokens(t *testing.T) {
 	var visited []string
-	objects, lastToken, err := imagePipelineExecutionsCollectPages(10, "", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := ecsFwCollectTokenPages(context.Background(), 10, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
 		visited = append(visited, token)
 		switch token {
 		case "":
@@ -74,9 +213,9 @@ func TestUnitEcsImagePipelineExecutionsCollectPagesFollowsTokens(t *testing.T) {
 	assert.Empty(t, lastToken)
 }
 
-func TestUnitEcsImagePipelineExecutionsCollectPagesRejectsRepeatedToken(t *testing.T) {
+func TestUnitEcsFwCollectTokenPagesRejectsRepeatedToken(t *testing.T) {
 	calls := 0
-	objects, lastToken, err := imagePipelineExecutionsCollectPages(10, "", func(token string) ([]map[string]interface{}, string, error) {
+	objects, lastToken, err := ecsFwCollectTokenPages(context.Background(), 10, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
 		calls++
 		return []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, "same-token", nil
 	})
@@ -87,9 +226,9 @@ func TestUnitEcsImagePipelineExecutionsCollectPagesRejectsRepeatedToken(t *testi
 	assert.Equal(t, 2, calls, "the repeated token must not be followed again")
 }
 
-func TestUnitEcsImagePipelineExecutionsCollectPagesFailsWhenBudgetExhausted(t *testing.T) {
+func TestUnitEcsFwCollectTokenPagesFailsWhenBudgetExhausted(t *testing.T) {
 	calls := 0
-	objects, _, err := imagePipelineExecutionsCollectPages(2, "", func(token string) ([]map[string]interface{}, string, error) {
+	objects, _, err := ecsFwCollectTokenPages(context.Background(), 2, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
 		calls++
 		return []map[string]interface{}{{"ExecutionId": fmt.Sprintf("exec-%d", calls)}}, fmt.Sprintf("token-%d", calls), nil
 	})
@@ -97,6 +236,21 @@ func TestUnitEcsImagePipelineExecutionsCollectPagesFailsWhenBudgetExhausted(t *t
 	assert.Error(t, err)
 	assert.Nil(t, objects, "an incomplete result must not be returned")
 	assert.Equal(t, 2, calls)
+}
+
+func TestUnitEcsFwCollectTokenPagesStopsOnCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	calls := 0
+	objects, _, err := ecsFwCollectTokenPages(ctx, 10, "", "Discover", func(token string) ([]map[string]interface{}, string, error) {
+		calls++
+		return nil, "", nil
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, objects)
+	assert.Zero(t, calls, "a cancelled read must not issue another request")
 }
 
 func TestUnitEcsImagePipelineExecutionsStatusValidator(t *testing.T) {
@@ -129,7 +283,7 @@ func TestUnitEcsImagePipelineExecutionsNormalizedStatus(t *testing.T) {
 }
 
 func TestUnitEcsImagePipelineExecutionObject(t *testing.T) {
-	object := imagePipelineExecutionObject(map[string]interface{}{
+	object, err := imagePipelineExecutionObject(map[string]interface{}{
 		"ExecutionId":     "exec-1",
 		"ImagePipelineId": "pipeline-1",
 		"Status":          "SUCCESS",
@@ -140,6 +294,7 @@ func TestUnitEcsImagePipelineExecutionObject(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	attributes := object.Attributes()
 	assert.Equal(t, types.StringValue("exec-1"), attributes["execution_id"])
@@ -155,7 +310,7 @@ func TestUnitEcsImagePipelineExecutionObject(t *testing.T) {
 }
 
 func TestUnitEcsAutoProvisioningGroupsObject(t *testing.T) {
-	object := autoProvisioningGroupObject(map[string]interface{}{
+	object, err := autoProvisioningGroupObject(map[string]interface{}{
 		"AutoProvisioningGroupId":   "apg-1",
 		"AutoProvisioningGroupName": "example",
 		"TerminateInstances":        true,
@@ -191,6 +346,7 @@ func TestUnitEcsAutoProvisioningGroupsObject(t *testing.T) {
 			"SuspendedProcess": []interface{}{"ScaleOut"},
 		},
 	})
+	require.NoError(t, err)
 
 	attributes := object.Attributes()
 	assert.Equal(t, types.StringValue("apg-1"), attributes["auto_provisioning_group_id"])
@@ -240,7 +396,7 @@ func TestUnitEcsAutoProvisioningGroupsObject(t *testing.T) {
 }
 
 func TestUnitEcsReservedInstanceObject(t *testing.T) {
-	object := reservedInstanceObject(map[string]interface{}{
+	object, err := reservedInstanceObject(map[string]interface{}{
 		"ReservedInstanceId":   "ri-1",
 		"ReservedInstanceName": "example",
 		"InstanceAmount":       json.Number("2"),
@@ -252,6 +408,7 @@ func TestUnitEcsReservedInstanceObject(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	attributes := object.Attributes()
 	assert.Equal(t, types.StringValue("ri-1"), attributes["reserved_instance_id"])
@@ -268,13 +425,13 @@ func TestUnitEcsReservedInstanceObject(t *testing.T) {
 
 func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsAtTotalCount(t *testing.T) {
 	var pages []int64
-	objects, totalCount, err := ecsFwCollectNumberedPages(10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		pages = append(pages, pageNumber)
 		switch pageNumber {
 		case 1:
-			return []map[string]interface{}{{}, {}}, 3, nil
+			return []map[string]interface{}{{"AutoProvisioningGroupId": "apg-1"}, {"AutoProvisioningGroupId": "apg-2"}}, 3, nil
 		case 2:
-			return []map[string]interface{}{{}}, 3, nil
+			return []map[string]interface{}{{"AutoProvisioningGroupId": "apg-3"}}, 3, nil
 		default:
 			return nil, 0, fmt.Errorf("unexpected page %d", pageNumber)
 		}
@@ -287,8 +444,8 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsAtTotalCount(t *testing.T
 }
 
 func TestUnitEcsAutoProvisioningGroupsCollectPagesFailsWhenBudgetExhausted(t *testing.T) {
-	objects, totalCount, err := ecsFwCollectNumberedPages(2, 1, 1, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
-		return []map[string]interface{}{{}}, 0, nil
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 2, 1, 1, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		return []map[string]interface{}{{"AutoProvisioningGroupId": fmt.Sprintf("apg-%d", pageNumber)}}, 0, nil
 	})
 
 	assert.Error(t, err)
@@ -296,12 +453,36 @@ func TestUnitEcsAutoProvisioningGroupsCollectPagesFailsWhenBudgetExhausted(t *te
 	assert.Equal(t, int64(0), totalCount)
 }
 
+func TestUnitEcsAutoProvisioningGroupsCollectPagesRejectsRepeatedPage(t *testing.T) {
+	objects, _, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		return []map[string]interface{}{{"AutoProvisioningGroupId": "apg-1"}, {"AutoProvisioningGroupId": "apg-2"}}, 0, nil
+	})
+
+	assert.Error(t, err, "an endpoint that ignores PageNumber must not produce duplicated rows")
+	assert.Nil(t, objects)
+}
+
+func TestUnitEcsAutoProvisioningGroupsCollectPagesStopsOnCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	calls := 0
+	objects, _, err := ecsFwCollectNumberedPages(ctx, 10, 1, 2, autoProvisioningGroupsAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		calls++
+		return nil, 0, nil
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, objects)
+	assert.Zero(t, calls, "a cancelled read must not issue another request")
+}
+
 func TestUnitEcsReservedInstancesCollectPagesStopsOnShortPage(t *testing.T) {
-	objects, totalCount, err := ecsFwCollectNumberedPages(10, 1, 2, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+	objects, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 2, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		if pageNumber == 1 {
-			return []map[string]interface{}{{}, {}}, 0, nil
+			return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}, {"ReservedInstanceId": "ri-2"}}, 0, nil
 		}
-		return []map[string]interface{}{{}}, 0, nil
+		return []map[string]interface{}{{"ReservedInstanceId": "ri-3"}}, 0, nil
 	})
 
 	assert.NoError(t, err)
@@ -310,8 +491,8 @@ func TestUnitEcsReservedInstancesCollectPagesStopsOnShortPage(t *testing.T) {
 }
 
 func TestUnitEcsReservedInstancesCollectPagesKeepsServerTotal(t *testing.T) {
-	_, totalCount, err := ecsFwCollectNumberedPages(10, 1, 10, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
-		return []map[string]interface{}{{}}, 7, nil
+	_, totalCount, err := ecsFwCollectNumberedPages(context.Background(), 10, 1, 10, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
+		return []map[string]interface{}{{"ReservedInstanceId": "ri-1"}}, 7, nil
 	})
 
 	assert.NoError(t, err)
@@ -330,4 +511,112 @@ func TestUnitEcsDataSourceRequestHelpers(t *testing.T) {
 	}))
 	assert.Equal(t, "env", tagRequest["Tag.1.Key"])
 	assert.Equal(t, "test", tagRequest["Tag.1.Value"])
+}
+
+// The request-to-state regressions below pin the exact request each data source
+// builds from its configuration. They cover the cloud scenarios whose live test
+// can only observe an empty result.
+func TestUnitEcsAutoProvisioningGroupsRequest(t *testing.T) {
+	model := autoProvisioningGroupsModel{
+		Ids:                       types.ListValueMust(types.StringType, []attr.Value{types.StringValue("apg-1"), types.StringValue("apg-2")}),
+		AutoProvisioningGroupName: types.StringValue("example"),
+		ResourceGroupId:           types.StringValue("rg-1"),
+		Status:                    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("active")}),
+		Types:                     types.ListValueMust(types.StringType, []attr.Value{types.StringValue("maintain")}),
+		Tags: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"env": types.StringValue("test"),
+		}),
+	}
+
+	request := (&autoProvisioningGroupsDataSource{}).autoProvisioningGroupsRequest(model, "cn-hangzhou", 2, 50)
+
+	assert.Equal(t, "cn-hangzhou", request["RegionId"])
+	assert.Equal(t, 2, request["PageNumber"])
+	assert.Equal(t, 50, request["PageSize"])
+	assert.Equal(t, "example", request["AutoProvisioningGroupName"])
+	assert.Equal(t, "rg-1", request["ResourceGroupId"])
+	assert.Equal(t, "apg-1", request["AutoProvisioningGroupId.1"])
+	assert.Equal(t, "apg-2", request["AutoProvisioningGroupId.2"])
+	assert.Equal(t, "active", request["AutoProvisioningGroupStatus.1"])
+	assert.Equal(t, "maintain", request["AutoProvisioningGroupTypes.1"])
+	assert.Equal(t, "env", request["Tag.1.Key"])
+	assert.Equal(t, "test", request["Tag.1.Value"])
+}
+
+func TestUnitEcsReservedInstancesRequest(t *testing.T) {
+	model := reservedInstancesModel{
+		Ids:                  types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ri-1")}),
+		ReservedInstanceName: types.StringValue("example"),
+		ZoneId:               types.StringValue("cn-hangzhou-k"),
+		LockReason:           types.StringValue("financial"),
+		InstanceType:         types.StringValue("ecs.g6.large"),
+		InstanceTypeFamily:   types.StringValue("ecs.g6"),
+		OfferingType:         types.StringValue("No Upfront"),
+		AllocationType:       types.StringValue("Normal"),
+		Status:               types.ListValueMust(types.StringType, []attr.Value{types.StringValue("Active")}),
+		Tags: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"env": types.StringValue("test"),
+		}),
+	}
+
+	request := reservedInstancesRequest(model, "cn-hangzhou", "Zone", 1, 100)
+
+	assert.Equal(t, "cn-hangzhou", request["RegionId"])
+	assert.Equal(t, 1, request["PageNumber"])
+	assert.Equal(t, 100, request["PageSize"])
+	assert.Equal(t, "cn-hangzhou-k", request["ZoneId"])
+	assert.Equal(t, "Zone", request["Scope"], "zone_id without scope requests Scope = Zone")
+	assert.Equal(t, "ri-1", request["ReservedInstanceId.1"])
+	assert.Equal(t, "Active", request["Status.1"])
+	assert.Equal(t, "env", request["Tag.1.Key"])
+}
+
+func TestUnitEcsImagePipelineExecutionsRequest(t *testing.T) {
+	model := imagePipelineExecutionsModel{
+		ImagePipelineId: types.StringValue("pipeline-1"),
+		Status:          types.StringValue(" SUCCESS , FAILED "),
+		MaxResults:      types.Int64Value(10),
+		NextToken:       types.StringValue("token-1"),
+		Tags: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"env": types.StringValue("test"),
+		}),
+	}
+
+	request := imagePipelineExecutionsRequest(model, "cn-hangzhou")
+
+	assert.Equal(t, "cn-hangzhou", request["RegionId"])
+	assert.Equal(t, "pipeline-1", request["ImagePipelineId"])
+	assert.Equal(t, "SUCCESS,FAILED", request["Status"])
+	assert.Equal(t, 10, request["MaxResults"])
+	assert.Equal(t, "token-1", request["NextToken"])
+	assert.Equal(t, "env", request["Tag.1.Key"])
+
+	defaults := imagePipelineExecutionsRequest(imagePipelineExecutionsModel{
+		ImagePipelineId: types.StringValue("pipeline-1"),
+		Status:          types.StringNull(),
+		MaxResults:      types.Int64Null(),
+		NextToken:       types.StringNull(),
+		Tags:            types.MapNull(types.StringType),
+	}, "cn-hangzhou")
+	assert.Equal(t, imagePipelineExecutionsDefaultMaxResults, defaults["MaxResults"])
+	assert.NotContains(t, defaults, "Status")
+	assert.NotContains(t, defaults, "NextToken")
+}
+
+func TestUnitEcsAutoProvisioningGroupsIdsLimit(t *testing.T) {
+	validate := func(count int) bool {
+		elements := make([]attr.Value, 0, count)
+		for i := 0; i < count; i++ {
+			elements = append(elements, types.StringValue(fmt.Sprintf("apg-%d", i)))
+		}
+		var response validator.ListResponse
+		listvalidator.SizeAtMost(autoProvisioningGroupsMaxIds).ValidateList(context.Background(), validator.ListRequest{
+			ConfigValue: types.ListValueMust(types.StringType, elements),
+			Path:        path.Root("ids"),
+		}, &response)
+		return response.Diagnostics.HasError()
+	}
+
+	assert.False(t, validate(autoProvisioningGroupsMaxIds), "20 IDs are within the documented limit")
+	assert.True(t, validate(autoProvisioningGroupsMaxIds+1), "21 IDs exceed the documented limit")
 }

@@ -73,6 +73,15 @@ func TestAccAliCloudReservedInstancesDataSource(t *testing.T) {
 				),
 			},
 			{
+				// zone_id without scope keeps the documented compatibility
+				// behaviour: the read requests Scope = Zone instead of failing.
+				Config: reservedInstancesDataBlock("  zone_id = data.alicloud_zones.default.zones.0.id\n"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "instances.#", "0"),
+					resource.TestCheckResourceAttr(resourceId, "total_count", "0"),
+				),
+			},
+			{
 				Config:      reservedInstancesDataBlock("  status = [\"NotAStatus\"]\n"),
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Match|expected value to be one of`),
 			},
@@ -87,6 +96,12 @@ func TestAccAliCloudReservedInstancesDataSource(t *testing.T) {
 			{
 				Config:      reservedInstancesDataBlock("  tags = { \"env\" = \"\" }\n"),
 				ExpectError: regexp.MustCompile(`Invalid Tag Value|must not be empty`),
+			},
+			{
+				// A null value must be rejected even though the key itself is
+				// valid; it must not be serialized as an empty value.
+				Config:      reservedInstancesDataBlock("  tags = { \"env\" = null }\n"),
+				ExpectError: regexp.MustCompile(`Invalid Tag Value|must be set`),
 			},
 			{
 				Config:      reservedInstancesDataBlock("  tags = { \"acs:env\" = \"test\" }\n"),

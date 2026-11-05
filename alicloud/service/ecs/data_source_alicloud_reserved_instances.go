@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -28,6 +27,9 @@ const (
 	reservedInstancesReadBudget = 30 * time.Minute
 )
 
+// reservedInstanceStatuses keeps `Expired` accepted because existing
+// configurations may still send it, even though DescribeReservedInstances marks
+// that filter value deprecated. The documentation states the deprecation.
 var reservedInstanceStatuses = []string{
 	"Creating",
 	"Active",
@@ -125,7 +127,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			},
 			"zone_id": schema.StringAttribute{
 				Optional:    true,
-				Description: "The zone ID. The value is only effective when `scope` is `Zone`; when it is set without `scope`, the data source requests `Scope = Zone`.",
+				Description: "The zone ID. It is required when `scope` is `Zone` and the request is rejected without it. When `zone_id` is set without `scope`, the data source requests `Scope = Zone`; when neither is set, the query is not restricted to a scope.",
 			},
 			"lock_reason": schema.StringAttribute{
 				Optional:    true,
@@ -144,7 +146,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			},
 			"scope": schema.StringAttribute{
 				Optional:    true,
-				Description: "The scope of the reserved instance. Valid values: `Region` and `Zone`.",
+				Description: "The scope of the reserved instance. Valid values: `Region` and `Zone`. When set to `Zone`, `zone_id` is required.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("Region", "Zone"),
 				},
@@ -166,7 +168,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			"status": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "A list of statuses to filter by. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`.",
+				Description: "A list of statuses to filter by. Valid values: `Creating`, `Active`, `Retired`, `Updating` and `Expired`. `Expired` is deprecated by `DescribeReservedInstances` and may be removed from the API; it is still accepted for compatibility, and new configurations should filter with the other values.",
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(100),
 					listvalidator.ValueStringsAre(stringvalidator.OneOf(reservedInstanceStatuses...)),
@@ -175,7 +177,7 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			"tags": schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain a URL.",
+				Description: "A mapping of tags to filter by. Each entry is sent as a `Tag` filter. A maximum of 20 entries is allowed. A key and a value must be 1 to 128 characters; a key must not start with `aliyun` or `acs:`, a value must not start with `acs:`, and neither may contain a URL. A tag filter returns at most 1,000 reserved instances; when more may match, query `ListTagResources` instead.",
 				Validators: []validator.Map{
 					mapvalidator.SizeAtMost(20),
 					ecsFwTagMapValidator{valueForbiddenPrefixes: []string{"acs:"}},
@@ -183,21 +185,21 @@ func (d *reservedInstancesDataSource) Schema(ctx context.Context, req datasource
 			},
 			"page_number": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1.",
+				Description: "The number of the first page to read. Valid values: 1 or greater. Defaults to 1. The data source continues with the following pages until a short or empty page, the server total or the read budget is reached.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
 			},
 			"page_size": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100.",
+				Description: "The number of entries per page. Valid values: 1 to 100. Defaults to 100. A page shorter than this value ends the read.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 100),
 				},
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "The number of reserved instances that match all configured filters.",
+				Description: "The number of reserved instances that match all configured filters, as reported by the `TotalCount` of the API response. It counts every matching reserved instance in the region, not only the rows returned from `page_number`; when the page parameter is ignored and the read is aborted, no value is written.",
 			},
 			"names": schema.ListAttribute{
 				Computed:    true,
@@ -248,22 +250,11 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 		pageSize = model.PageSize.ValueInt64()
 	}
 
-	request := map[string]interface{}{
-		"RegionId":   d.Meta().RegionId,
-		"PageNumber": int(pageNumber),
-		"PageSize":   int(pageSize),
-	}
-	ecsFwSetRequestString(request, "ReservedInstanceName", model.ReservedInstanceName)
-	ecsFwSetRequestString(request, "ZoneId", model.ZoneId)
-	ecsFwSetRequestString(request, "LockReason", model.LockReason)
-	ecsFwSetRequestString(request, "InstanceType", model.InstanceType)
-	ecsFwSetRequestString(request, "InstanceTypeFamily", model.InstanceTypeFamily)
-	ecsFwSetRequestString(request, "Scope", types.StringValue(scope))
-	ecsFwSetRequestString(request, "OfferingType", model.OfferingType)
-	ecsFwSetRequestString(request, "AllocationType", model.AllocationType)
-	ecsFwApplyRepeatList(request, "ReservedInstanceId", ecsFwElementsAsStrings(model.Ids))
-	ecsFwApplyRepeatList(request, "Status", ecsFwElementsAsStrings(model.Status))
-	ecsFwApplyTags(request, model.Tags)
+	// One deadline covers every page, every retry and the final state write.
+	ctx, cancel := context.WithTimeout(ctx, reservedInstancesReadBudget)
+	defer cancel()
+
+	request := reservedInstancesRequest(model, d.Meta().RegionId, scope, pageNumber, pageSize)
 
 	objects, totalCount, err := d.reservedInstancesDescribeAll(ctx, request, pageNumber, pageSize)
 	if err != nil {
@@ -285,7 +276,24 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 	for _, object := range sorted {
 		ids = append(ids, ecsFwString(object["ReservedInstanceId"]).ValueString())
 		names = append(names, ecsFwString(object["ReservedInstanceName"]).ValueString())
-		elements = append(elements, reservedInstanceObject(object))
+		element, err := reservedInstanceObject(object)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: decoding a record", reservedInstancesTypeName),
+				err.Error(),
+			)
+			return
+		}
+		elements = append(elements, element)
+	}
+
+	// A cancelled or expired read must not write a partial result to state.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: the read did not finish", reservedInstancesTypeName),
+			fmt.Sprintf("The read was cancelled or ran out of time before the result was written: %v", ctxErr),
+		)
+		return
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
@@ -297,50 +305,54 @@ func (d *reservedInstancesDataSource) Read(ctx context.Context, req datasource.R
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 }
 
+// reservedInstancesRequest builds the full DescribeReservedInstances request
+// from the configuration. It is kept separate from Read so the request-to-state
+// mapping can be asserted directly.
+func reservedInstancesRequest(model reservedInstancesModel, regionId, scope string, pageNumber, pageSize int64) map[string]interface{} {
+	request := map[string]interface{}{
+		"RegionId":   regionId,
+		"PageNumber": int(pageNumber),
+		"PageSize":   int(pageSize),
+	}
+	ecsFwSetRequestString(request, "ReservedInstanceName", model.ReservedInstanceName)
+	ecsFwSetRequestString(request, "ZoneId", model.ZoneId)
+	ecsFwSetRequestString(request, "LockReason", model.LockReason)
+	ecsFwSetRequestString(request, "InstanceType", model.InstanceType)
+	ecsFwSetRequestString(request, "InstanceTypeFamily", model.InstanceTypeFamily)
+	ecsFwSetRequestString(request, "Scope", types.StringValue(scope))
+	ecsFwSetRequestString(request, "OfferingType", model.OfferingType)
+	ecsFwSetRequestString(request, "AllocationType", model.AllocationType)
+	ecsFwApplyRepeatList(request, "ReservedInstanceId", ecsFwElementsAsStrings(model.Ids))
+	ecsFwApplyRepeatList(request, "Status", ecsFwElementsAsStrings(model.Status))
+	ecsFwApplyTags(request, model.Tags)
+	return request
+}
+
 func (d *reservedInstancesDataSource) reservedInstancesDescribeAll(ctx context.Context, request map[string]interface{}, startPage, pageSize int64) ([]map[string]interface{}, int64, error) {
-	deadline := time.Now().Add(reservedInstancesReadBudget)
-	pagesRead := 0
-	return ecsFwCollectNumberedPages(reservedInstancesMaxPages, startPage, pageSize, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
-		if time.Now().After(deadline) {
-			return nil, 0, fmt.Errorf("%s read exceeded the %s budget after %d pages; the result was not returned because it would be incomplete", reservedInstancesAction, reservedInstancesReadBudget, pagesRead)
-		}
-		pagesRead++
+	return ecsFwCollectNumberedPages(ctx, reservedInstancesMaxPages, startPage, pageSize, reservedInstancesAction, func(pageNumber int64) ([]map[string]interface{}, int64, error) {
 		request["PageNumber"] = int(pageNumber)
 		request["PageSize"] = int(pageSize)
 		response, err := ecsFwRpcPost(ctx, d.Meta(), reservedInstancesTypeName, reservedInstancesAction, request)
 		if err != nil {
 			return nil, 0, err
 		}
-		totalCount := int64(0)
-		if value, ok := response["TotalCount"]; ok {
-			totalCount = ecsFwInt64(value).ValueInt64()
+		items, err := ecsFwDecodeRecordList(response, "ReservedInstances", "ReservedInstance", reservedInstancesAction)
+		if err != nil {
+			return nil, 0, err
 		}
-		return reservedInstancesItems(response), totalCount, nil
+		totalCount, _, err := ecsFwDecodeCount(response, "TotalCount", reservedInstancesAction)
+		if err != nil {
+			return nil, 0, err
+		}
+		return items, totalCount, nil
 	})
 }
 
-func reservedInstancesItems(response map[string]interface{}) []map[string]interface{} {
-	items := make([]map[string]interface{}, 0)
-	if response == nil {
-		return items
-	}
-	raw, err := jsonpath.Get("$.ReservedInstances.ReservedInstance", response)
+func reservedInstanceObject(object map[string]interface{}) (types.Object, error) {
+	tags, err := ecsFwDecodeTags(object["Tags"])
 	if err != nil {
-		return items
+		return types.ObjectNull(reservedInstanceAttrTypes), fmt.Errorf("%s: %w", ecsFwString(object["ReservedInstanceId"]).ValueString(), err)
 	}
-	list, ok := raw.([]interface{})
-	if !ok {
-		return items
-	}
-	for _, entry := range list {
-		if item, ok := entry.(map[string]interface{}); ok {
-			items = append(items, item)
-		}
-	}
-	return items
-}
-
-func reservedInstanceObject(object map[string]interface{}) types.Object {
 	return types.ObjectValueMust(reservedInstanceAttrTypes, map[string]attr.Value{
 		"reserved_instance_id":   ecsFwString(object["ReservedInstanceId"]),
 		"reserved_instance_name": ecsFwString(object["ReservedInstanceName"]),
@@ -359,8 +371,8 @@ func reservedInstanceObject(object map[string]interface{}) types.Object {
 		"description":            ecsFwString(object["Description"]),
 		"resource_group_id":      ecsFwString(object["ResourceGroupId"]),
 		"operation_locks":        reservedInstanceOperationLocks(object["OperationLocks"]),
-		"tags":                   ecsFwTagsValue(object["Tags"]),
-	})
+		"tags":                   tags,
+	}), nil
 }
 
 func reservedInstanceOperationLocks(value interface{}) types.List {

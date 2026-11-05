@@ -15,7 +15,7 @@ For information about the API and its fields, see [DescribeImagePipelineExecutio
 
 -> **NOTE:** Available since v2.3.0.
 
--> **NOTE:** At least one of `image_pipeline_id` and `execution_id` must be set. The data source reads every page returned by `DescribeImagePipelineExecutions` before applying `ids`, so the result is complete regardless of the number of executions.
+-> **NOTE:** At least one of `image_pipeline_id` and `execution_id` must be set. The data source reads every page returned by `DescribeImagePipelineExecutions` before applying `ids`, so the result is complete regardless of the number of executions. It starts from `next_token`, follows each token the server returns until none is left, and fails instead of writing a partial result when a token repeats, when a page with `max_results` entries keeps returning a new token for 1,000 consecutive requests, or when the read has run for 30 minutes.
 
 ## Example Usage
 
@@ -73,18 +73,18 @@ The following arguments are supported:
 
 * `image_pipeline_id` - (Optional, String) The ID of the image pipeline whose executions are queried.
 * `execution_id` - (Optional, String) The ID of a specific execution.
-* `status` - (Optional, String) The execution status to filter by. Multiple statuses can be separated by commas. Valid values: `PREPARING`, `REPAIRING`, `BUILDING`, `TESTING`, `DISTRIBUTING`, `RELEASING`, `SUCCESS`, `PARTITION_SUCCESS`, `FAILED`, `TEST_FAILED`, `CANCELLING` and `CANCELLED`. Omit the attribute to query every status; a comma separated value must not contain empty entries.
-* `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed.
+* `status` - (Optional, String) The execution status to filter by. Multiple statuses can be separated by commas. Valid values: `PREPARING`, `REPAIRING`, `BUILDING`, `TESTING`, `DISTRIBUTING`, `RELEASING`, `SUCCESS`, `PARTITION_SUCCESS`, `FAILED`, `TEST_FAILED`, `CANCELLING` and `CANCELLED`. `CANCELLING` and `CANCELLED` are the exact status literals published by `DescribeImagePipelineExecutions`. Omit the attribute to query every status; a comma separated value must not contain empty entries.
+* `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed. A null value is rejected: omit the entry to leave the tag out of the request, or use an empty string to send an empty value.
 * `ids` - (Optional, Computed, List of String) A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read.
-* `max_results` - (Optional, Int) The number of entries per page. Valid values: `1` to `500`. Defaults to `50`.
-* `next_token` - (Optional, Computed, String) The pagination token to start reading from. The data source follows the remaining tokens itself; the value stored afterwards is the last token the server returned, and it is empty when every page has been read.
+* `max_results` - (Optional, Int) The number of entries per page. Valid values: `1` to `500`. Defaults to `50`. A page with fewer entries than this value is still followed when the server returns a token, because only the server decides when the result ends.
+* `next_token` - (Optional, Computed, String) The pagination token to start reading from. The first request omits it; the value stored afterwards is the last token the server returned, and it is empty when every page has been read.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `id` - (Computed, String) The ID of the data source, derived from the matched execution IDs.
-* `total_count` - (Computed, Int) The number of execution records returned by this read after all configured filters, including `ids`.
+* `total_count` - (Computed, Int) The number of execution records returned by this read after all configured filters, including `ids`. `DescribeImagePipelineExecutions` does not report a total, so this is the number of rows read, not a server-side total.
 * `executions` - (Computed, List of Object) A list of image pipeline executions. Each element contains the following attributes:
   * `execution_id` - (String) The ID of the execution.
   * `image_pipeline_id` - (String) The ID of the image pipeline.

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/provider/fwadapt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
@@ -192,7 +191,7 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 			},
 			"max_results": schema.Int64Attribute{
 				Optional:    true,
-				Description: "The number of entries per page. Valid values: 1 to 500. Defaults to 50.",
+				Description: "The number of entries per page. Valid values: 1 to 500. Defaults to 50. A page shorter than this value ends the read.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 500),
 				},
@@ -200,11 +199,11 @@ func (d *imagePipelineExecutionsDataSource) Schema(ctx context.Context, req data
 			"next_token": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "The pagination token to start reading from. The data source follows the remaining tokens itself; the value stored afterwards is the last token the server returned, and it is empty when every page has been read.",
+				Description: "The pagination token to start reading from. The first request omits it; each following request sends the token of the previous response, and the read stops when the server returns none. A token that repeats, or a token after 1,000 consecutive requests, aborts the read with an error instead of returning a partial result. The value stored afterwards is the last token the server returned, and it is empty when every page has been read.",
 			},
 			"total_count": schema.Int64Attribute{
 				Computed:    true,
-				Description: "The number of execution records that match all configured filters.",
+				Description: "The number of execution records returned by this read after all configured filters, including `ids`. DescribeImagePipelineExecutions does not report a total, so this is the number of rows read, not a server-side total.",
 			},
 			"executions": schema.ListAttribute{
 				Computed:    true,
@@ -243,20 +242,11 @@ func (d *imagePipelineExecutionsDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-	request := map[string]interface{}{
-		"RegionId":   d.Meta().RegionId,
-		"MaxResults": int(imagePipelineExecutionsDefaultMaxResults),
-	}
-	ecsFwSetRequestString(request, "ImagePipelineId", model.ImagePipelineId)
-	ecsFwSetRequestString(request, "ExecutionId", model.ExecutionId)
-	ecsFwSetRequestString(request, "Status", imagePipelineExecutionsNormalizedStatus(model.Status))
-	if !model.MaxResults.IsNull() && !model.MaxResults.IsUnknown() {
-		request["MaxResults"] = int(model.MaxResults.ValueInt64())
-	}
-	ecsFwApplyTags(request, model.Tags)
-	if !model.NextToken.IsNull() && !model.NextToken.IsUnknown() && model.NextToken.ValueString() != "" {
-		request["NextToken"] = model.NextToken.ValueString()
-	}
+	// One deadline covers every page, every retry and the final state write.
+	ctx, cancel := context.WithTimeout(ctx, imagePipelineExecutionsReadBudget)
+	defer cancel()
+
+	request := imagePipelineExecutionsRequest(model, d.Meta().RegionId)
 
 	objects, lastToken, err := d.imagePipelineExecutionsDescribeAll(ctx, request)
 	if err != nil {
@@ -292,7 +282,24 @@ func (d *imagePipelineExecutionsDataSource) Read(ctx context.Context, req dataso
 	elements := make([]attr.Value, 0, len(matched))
 	for _, object := range matched {
 		ids = append(ids, ecsFwString(object["ExecutionId"]).ValueString())
-		elements = append(elements, imagePipelineExecutionObject(object))
+		element, err := imagePipelineExecutionObject(object)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Reading %s: decoding a record", imagePipelineExecutionsTypeName),
+				err.Error(),
+			)
+			return
+		}
+		elements = append(elements, element)
+	}
+
+	// A cancelled or expired read must not write a partial result to state.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Reading %s: the read did not finish", imagePipelineExecutionsTypeName),
+			fmt.Sprintf("The read was cancelled or ran out of time before the result was written: %v", ctxErr),
+		)
+		return
 	}
 
 	model.Id = types.StringValue(helper.DataResourceIdHash(ids))
@@ -302,6 +309,27 @@ func (d *imagePipelineExecutionsDataSource) Read(ctx context.Context, req dataso
 	model.Executions = types.ListValueMust(imagePipelineExecutionObjectType, elements)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// imagePipelineExecutionsRequest builds the full DescribeImagePipelineExecutions
+// request from the configuration. It is kept separate from Read so the
+// request-to-state mapping can be asserted directly.
+func imagePipelineExecutionsRequest(model imagePipelineExecutionsModel, regionId string) map[string]interface{} {
+	request := map[string]interface{}{
+		"RegionId":   regionId,
+		"MaxResults": int(imagePipelineExecutionsDefaultMaxResults),
+	}
+	ecsFwSetRequestString(request, "ImagePipelineId", model.ImagePipelineId)
+	ecsFwSetRequestString(request, "ExecutionId", model.ExecutionId)
+	ecsFwSetRequestString(request, "Status", imagePipelineExecutionsNormalizedStatus(model.Status))
+	if !model.MaxResults.IsNull() && !model.MaxResults.IsUnknown() {
+		request["MaxResults"] = int(model.MaxResults.ValueInt64())
+	}
+	ecsFwApplyTags(request, model.Tags)
+	if !model.NextToken.IsNull() && !model.NextToken.IsUnknown() && model.NextToken.ValueString() != "" {
+		request["NextToken"] = model.NextToken.ValueString()
+	}
+	return request
 }
 
 // imagePipelineExecutionsNormalizedStatus trims the comma separated tokens so
@@ -324,13 +352,7 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 	if v, ok := request["NextToken"].(string); ok {
 		initialToken = v
 	}
-	deadline := time.Now().Add(imagePipelineExecutionsReadBudget)
-	pagesRead := 0
-	return imagePipelineExecutionsCollectPages(imagePipelineExecutionsMaxPages, initialToken, func(token string) ([]map[string]interface{}, string, error) {
-		if time.Now().After(deadline) {
-			return nil, "", fmt.Errorf("%s read exceeded the %s budget after %d pages; the result was not returned because it would be incomplete", imagePipelineExecutionsAction, imagePipelineExecutionsReadBudget, pagesRead)
-		}
-		pagesRead++
+	return ecsFwCollectTokenPages(ctx, imagePipelineExecutionsMaxPages, initialToken, imagePipelineExecutionsAction, func(token string) ([]map[string]interface{}, string, error) {
 		if token == "" {
 			delete(request, "NextToken")
 		} else {
@@ -340,71 +362,23 @@ func (d *imagePipelineExecutionsDataSource) imagePipelineExecutionsDescribeAll(c
 		if err != nil {
 			return nil, "", err
 		}
-		return imagePipelineExecutionsItems(response), imagePipelineExecutionsNextToken(response), nil
-	})
-}
-
-// imagePipelineExecutionsCollectPages follows the NextToken cursor until the
-// server returns no further token. A repeated token, or a full page for the
-// whole page budget, means the cursor never terminates; in both cases the
-// accumulated rows are discarded instead of being returned as a partial result.
-func imagePipelineExecutionsCollectPages(maxPages int, initialToken string, fetch func(token string) ([]map[string]interface{}, string, error)) ([]map[string]interface{}, string, error) {
-	objects := make([]map[string]interface{}, 0)
-	seenTokens := map[string]struct{}{}
-	token := initialToken
-	for page := 0; page < maxPages; page++ {
-		pageItems, nextToken, err := fetch(token)
+		items, err := ecsFwDecodeRecordList(response, "ImagePipelineExecution", "ImagePipelineExecutionSet", imagePipelineExecutionsAction)
 		if err != nil {
 			return nil, "", err
 		}
-		objects = append(objects, pageItems...)
-		if nextToken == "" {
-			return objects, "", nil
+		nextToken, err := ecsFwDecodeToken(response, "NextToken", imagePipelineExecutionsAction)
+		if err != nil {
+			return nil, "", err
 		}
-		if _, duplicate := seenTokens[nextToken]; duplicate {
-			return nil, "", fmt.Errorf("%s returned the same continuation token %q twice, so pagination did not terminate; the result was not returned because it would be incomplete", imagePipelineExecutionsAction, nextToken)
-		}
-		seenTokens[nextToken] = struct{}{}
-		token = nextToken
-	}
-	return nil, "", fmt.Errorf("%s returned a continuation token for %d consecutive requests, so pagination did not terminate; the result was not returned because it would be incomplete", imagePipelineExecutionsAction, maxPages)
+		return items, nextToken, nil
+	})
 }
 
-// imagePipelineExecutionsItems parses the execution array. A response without
-// the member yields an empty slice: the API omits it when nothing matches and
-// an empty result is not an error.
-func imagePipelineExecutionsItems(response map[string]interface{}) []map[string]interface{} {
-	items := make([]map[string]interface{}, 0)
-	if response == nil {
-		return items
-	}
-	raw, err := jsonpath.Get("$.ImagePipelineExecution.ImagePipelineExecutionSet", response)
+func imagePipelineExecutionObject(object map[string]interface{}) (types.Object, error) {
+	tags, err := ecsFwDecodeTags(object["Tags"])
 	if err != nil {
-		return items
+		return types.ObjectNull(imagePipelineExecutionAttrTypes), fmt.Errorf("%s: %w", ecsFwString(object["ExecutionId"]).ValueString(), err)
 	}
-	list, ok := raw.([]interface{})
-	if !ok {
-		return items
-	}
-	for _, entry := range list {
-		if item, ok := entry.(map[string]interface{}); ok {
-			items = append(items, item)
-		}
-	}
-	return items
-}
-
-func imagePipelineExecutionsNextToken(response map[string]interface{}) string {
-	if response == nil {
-		return ""
-	}
-	if token, ok := response["NextToken"].(string); ok {
-		return token
-	}
-	return ""
-}
-
-func imagePipelineExecutionObject(object map[string]interface{}) types.Object {
 	return types.ObjectValueMust(imagePipelineExecutionAttrTypes, map[string]attr.Value{
 		"execution_id":      ecsFwString(object["ExecutionId"]),
 		"image_pipeline_id": ecsFwString(object["ImagePipelineId"]),
@@ -416,6 +390,6 @@ func imagePipelineExecutionObject(object map[string]interface{}) types.Object {
 		"image_id":          ecsFwString(object["ImageId"]),
 		"error_code":        ecsFwString(object["ErrorCode"]),
 		"error_info":        ecsFwString(object["ErrorInfo"]),
-		"tags":              ecsFwTagsValue(object["Tags"]),
-	})
+		"tags":              tags,
+	}), nil
 }
