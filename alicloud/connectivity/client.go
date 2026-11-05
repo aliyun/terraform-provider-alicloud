@@ -2642,7 +2642,7 @@ func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) 
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	return client.rpcRequest("POST", apiProductCode, apiVersion, apiName, query, body, autoRetry, "")
+	return client.rpcRequest("POST", apiProductCode, apiVersion, apiName, query, body, autoRetry, "", 0)
 }
 
 // RpcPostWithEndpoint invoking RPC API request with POST method and specified endpoint
@@ -2656,7 +2656,23 @@ func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, ap
 //		autoRetry - whether to auto retry while the runtime has a 5xx error
 //	 endpoint - The domain of invoking api
 func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
-	return client.rpcRequest("POST", apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint)
+	return client.rpcRequest("POST", apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint, 0)
+}
+
+// RpcPostWithTimeout invoking RPC API request with POST method and a per-call
+// HTTP read timeout. Callers pass the remaining lifecycle budget so a request
+// cannot outlive the operation that issued it.
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+//	readTimeout - HTTP read timeout for this call; zero keeps the client default
+func (client *AliyunClient) RpcPostWithTimeout(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, readTimeout time.Duration) (map[string]interface{}, error) {
+	return client.rpcRequest("POST", apiProductCode, apiVersion, apiName, query, body, autoRetry, "", readTimeout)
 }
 
 // RpcGet invoking RPC API request with GET method
@@ -2668,10 +2684,10 @@ func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersio
 //	query - API parameters in query
 //	body - API parameters in body
 func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}) (map[string]interface{}, error) {
-	return client.rpcRequest("GET", apiProductCode, apiVersion, apiName, query, body, true, "")
+	return client.rpcRequest("GET", apiProductCode, apiVersion, apiName, query, body, true, "", 0)
 }
 
-func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string, readTimeout time.Duration) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
@@ -2682,6 +2698,9 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	}
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
+	if readTimeout > 0 {
+		sdkConfig.SetTimeout(int(readTimeout / time.Millisecond))
+	}
 	credential, err := client.config.Credential.GetCredential()
 	if err != nil || credential == nil {
 		return nil, fmt.Errorf("get credential failed. Error: %#v", err)

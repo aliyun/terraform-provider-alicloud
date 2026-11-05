@@ -3,7 +3,6 @@ package slb
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
@@ -25,6 +24,7 @@ var (
 	_ resource.Resource                = &listenerAclAttachmentResource{}
 	_ resource.ResourceWithImportState = &listenerAclAttachmentResource{}
 	_ validator.String                 = listenerIdAttributeValidator{}
+	_ validator.String                 = aclIdAttributeValidator{}
 )
 
 func NewListenerAclAttachmentResource() resource.Resource {
@@ -35,7 +35,7 @@ type listenerAclAttachmentResource struct {
 	fwadapt.ResourceBase
 }
 
-type listenerAclAttachmentResourceModel struct {
+type ListenerAclAttachmentModel struct {
 	Id         types.String `tfsdk:"id"`
 	ListenerId types.String `tfsdk:"listener_id"`
 	AclId      types.String `tfsdk:"acl_id"`
@@ -62,6 +62,27 @@ func (listenerIdAttributeValidator) ValidateString(ctx context.Context, req vali
 	}
 	if _, err := parseListenerAclListenerId(req.ConfigValue.ValueString()); err != nil {
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid listener_id", err.Error())
+	}
+}
+
+// aclIdAttributeValidator rejects a combined ACL value locally: the resource
+// manages exactly one policy group.
+type aclIdAttributeValidator struct{}
+
+func (aclIdAttributeValidator) Description(context.Context) string {
+	return "must be a single access control policy group ID; comma separated IDs are not supported"
+}
+
+func (v aclIdAttributeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (aclIdAttributeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	if err := validateSingleListenerAclId(req.ConfigValue.ValueString()); err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid acl_id", err.Error())
 	}
 }
 
@@ -95,10 +116,7 @@ func (r *listenerAclAttachmentResource) Schema(ctx context.Context, req resource
 				Required:    true,
 				Description: "The ID of the access control policy group bound to the listener. Exactly one policy group is managed by this resource.",
 				Validators: []validator.String{
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[^, \t\r\n]+$`),
-						"must be a single access control policy group ID; comma separated IDs are not supported",
-					),
+					aclIdAttributeValidator{},
 				},
 			},
 			"acl_type": schema.StringAttribute{
@@ -116,18 +134,18 @@ func (r *listenerAclAttachmentResource) Schema(ctx context.Context, req resource
 	}
 }
 
-func (r *listenerAclAttachmentResource) api() listenerAclAttachmentApi {
-	return newListenerAclAttachmentApi(r.Meta())
+func (r *listenerAclAttachmentResource) api() ListenerAclAttachmentApi {
+	return NewListenerAclAttachmentApi(r.Meta())
 }
 
 func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan listenerAclAttachmentResourceModel
+	var plan ListenerAclAttachmentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	model, warnings, err := createListenerAclAttachment(ctx, r.api(), plan)
+	model, warnings, err := CreateListenerAclAttachment(ctx, r.api(), plan)
 	for _, warning := range warnings {
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Created %s with a warning", listenerAclAttachmentTypeName),
@@ -145,13 +163,13 @@ func (r *listenerAclAttachmentResource) Create(ctx context.Context, req resource
 }
 
 func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state listenerAclAttachmentResourceModel
+	var state ListenerAclAttachmentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	model, found, err := readListenerAclAttachment(ctx, r.api(), state)
+	model, found, err := ReadListenerAclAttachment(ctx, r.api(), state)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s", listenerAclAttachmentTypeName),
@@ -167,14 +185,14 @@ func (r *listenerAclAttachmentResource) Read(ctx context.Context, req resource.R
 }
 
 func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan, state listenerAclAttachmentResourceModel
+	var plan, state ListenerAclAttachmentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	model, warnings, err := updateListenerAclAttachment(ctx, r.api(), plan, state)
+	model, warnings, err := UpdateListenerAclAttachment(ctx, r.api(), plan, state)
 	for _, warning := range warnings {
 		resp.Diagnostics.AddWarning(
 			fmt.Sprintf("Updated %s with a warning", listenerAclAttachmentTypeName),
@@ -192,13 +210,13 @@ func (r *listenerAclAttachmentResource) Update(ctx context.Context, req resource
 }
 
 func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state listenerAclAttachmentResourceModel
+	var state ListenerAclAttachmentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	listenerId, _, err := parseListenerAclAttachmentId(state.Id.ValueString())
+	listenerId, _, err := ParseListenerAclAttachmentId(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s: parsing resource ID", listenerAclAttachmentTypeName),
@@ -211,7 +229,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 	// polling, so a Delete cannot spend the budget three times over.
 	deleteCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancel()
-	if err := deleteListenerAclAttachment(deleteCtx, r.api(), listenerId); err != nil {
+	if err := DeleteListenerAclAttachment(deleteCtx, r.api(), listenerId); err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Deleting %s", listenerAclAttachmentTypeName),
 			err.Error(),
@@ -220,7 +238,7 @@ func (r *listenerAclAttachmentResource) Delete(ctx context.Context, req resource
 }
 
 func (r *listenerAclAttachmentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	listenerId, aclId, err := parseListenerAclAttachmentId(req.ID)
+	listenerId, aclId, err := ParseListenerAclAttachmentId(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Importing %s: parsing import ID", listenerAclAttachmentTypeName),
@@ -236,45 +254,52 @@ func (r *listenerAclAttachmentResource) ImportState(ctx context.Context, req res
 	}
 }
 
-// createListenerAclAttachment binds the policy group and returns the state that
+// CreateListenerAclAttachment binds the policy group and returns the state that
 // Terraform should keep. A write whose outcome is unknown is reconciled against
 // the listener instead of being reported as a plain failure, so an applied
 // binding can never stay unmanaged.
-func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, plan listenerAclAttachmentResourceModel) (listenerAclAttachmentResourceModel, []string, error) {
+func CreateListenerAclAttachment(ctx context.Context, api ListenerAclAttachmentApi, plan ListenerAclAttachmentModel) (ListenerAclAttachmentModel, []string, error) {
 	listenerId := plan.ListenerId.ValueString()
 	aclId := plan.AclId.ValueString()
 	aclType := plan.AclType.ValueString()
 
 	if err := api.SetAcl(ctx, listenerId, aclId, aclType, true); err != nil {
 		if !isUnknownListenerAclWriteOutcome(err) {
-			return listenerAclAttachmentResourceModel{}, nil, err
+			return ListenerAclAttachmentModel{}, nil, err
 		}
+		// The request may have been applied. Confirm the enabled status, the
+		// membership and the planned type before adopting the binding.
 		object, describeErr := api.Describe(ctx, listenerId)
-		if describeErr == nil && listenerAclContains(object, aclId) {
+		if describeErr == nil && listenerAclAttachmentConfirms(object, aclId, aclType) {
 			return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
-				fmt.Sprintf("The request that binds policy group %s to listener %s returned an unknown result, but the binding is present on the listener; the identity is kept in state.", aclId, listenerId),
+				fmt.Sprintf("The request that binds policy group %s to listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", aclId, listenerId),
 			}, nil
 		}
-		return listenerAclAttachmentResourceModel{}, nil, err
+		return ListenerAclAttachmentModel{}, nil, err
 	}
 
-	// The write is confirmed, so the identity is persisted before the first
-	// read. A transient read failure must not drop a binding Terraform owns;
-	// the next refresh reconciles the server values.
-	planState := listenerAclAttachmentPlanState(plan)
-	object, err := api.Describe(ctx, listenerId)
+	// The write was acknowledged, so the identity is persisted before the first
+	// read. The read waits for the listener to report the planned settings, so a
+	// stale response cannot store the previous type against the new plan.
+	planState := ListenerAclAttachmentPlanState(plan)
+	object, converged, err := waitListenerAclAttachmentConverged(ctx, api, listenerId, aclId, aclType)
 	if err != nil {
 		return planState, []string{
 			fmt.Sprintf("The policy group %s was bound to listener %s, but reading the listener failed: %s. The binding is kept in state and will be reconciled on the next refresh.", aclId, listenerId, err),
 		}, nil
 	}
+	if !converged {
+		return planState, []string{
+			fmt.Sprintf("The policy group %s was bound to listener %s, but the listener did not report the planned access control settings within the read budget. The planned identity is kept and will be reconciled on the next refresh.", aclId, listenerId),
+		}, nil
+	}
 	return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
 }
 
-// updateListenerAclAttachment rewrites the ACL settings only when the identity
+// UpdateListenerAclAttachment rewrites the ACL settings only when the identity
 // or the type changed, and follows the same unknown outcome and read failure
 // rules as create.
-func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, plan, state listenerAclAttachmentResourceModel) (listenerAclAttachmentResourceModel, []string, error) {
+func UpdateListenerAclAttachment(ctx context.Context, api ListenerAclAttachmentApi, plan, state ListenerAclAttachmentModel) (ListenerAclAttachmentModel, []string, error) {
 	listenerId := plan.ListenerId.ValueString()
 	aclId := plan.AclId.ValueString()
 	aclType := plan.AclType.ValueString()
@@ -282,34 +307,39 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	if !plan.AclId.Equal(state.AclId) || !plan.AclType.Equal(state.AclType) {
 		if err := api.SetAcl(ctx, listenerId, aclId, aclType, true); err != nil {
 			if !isUnknownListenerAclWriteOutcome(err) {
-				return listenerAclAttachmentResourceModel{}, nil, err
+				return ListenerAclAttachmentModel{}, nil, err
 			}
 			object, describeErr := api.Describe(ctx, listenerId)
-			if describeErr != nil || !listenerAclContains(object, aclId) {
-				return listenerAclAttachmentResourceModel{}, nil, err
+			if describeErr != nil || !listenerAclAttachmentConfirms(object, aclId, aclType) {
+				return ListenerAclAttachmentModel{}, nil, err
 			}
 			return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
-				fmt.Sprintf("The request that updates the access control settings of listener %s returned an unknown result, but the planned binding is present on the listener; the identity is kept in state.", listenerId),
+				fmt.Sprintf("The request that updates the access control settings of listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", listenerId),
 			}, nil
 		}
 	}
 
-	planState := listenerAclAttachmentPlanState(plan)
-	object, err := api.Describe(ctx, listenerId)
+	planState := ListenerAclAttachmentPlanState(plan)
+	object, converged, err := waitListenerAclAttachmentConverged(ctx, api, listenerId, aclId, aclType)
 	if err != nil {
 		return planState, []string{
 			fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
 		}, nil
 	}
+	if !converged {
+		return planState, []string{
+			fmt.Sprintf("The access control settings of listener %s were updated, but the listener did not report the planned settings within the read budget. The planned state is kept and will be reconciled on the next refresh.", listenerId),
+		}, nil
+	}
 	return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), nil, nil
 }
 
-// readListenerAclAttachment resolves the managed policy group and reports
+// ReadListenerAclAttachment resolves the managed policy group and reports
 // whether the resource still exists.
-func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, state listenerAclAttachmentResourceModel) (listenerAclAttachmentResourceModel, bool, error) {
-	listenerId, idAclId, err := parseListenerAclAttachmentId(state.Id.ValueString())
+func ReadListenerAclAttachment(ctx context.Context, api ListenerAclAttachmentApi, state ListenerAclAttachmentModel) (ListenerAclAttachmentModel, bool, error) {
+	listenerId, idAclId, err := ParseListenerAclAttachmentId(state.Id.ValueString())
 	if err != nil {
-		return listenerAclAttachmentResourceModel{}, false, err
+		return ListenerAclAttachmentModel{}, false, err
 	}
 	targetAclId := state.AclId.ValueString()
 	if targetAclId == "" {
@@ -317,7 +347,7 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	}
 	if targetAclId != "" {
 		if err := validateSingleListenerAclId(targetAclId); err != nil {
-			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+			return ListenerAclAttachmentModel{}, false, fmt.Errorf(
 				"invalid acl_id in state for listener %s: %v; the state holds a combined ACL value that this resource cannot manage, remove the resource from state and import it again with <load_balancer_id>:<protocol>:<listener_port>[:<acl_id>]",
 				listenerId, err,
 			)
@@ -327,44 +357,44 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
 		if errs.NotFoundError(err) {
-			return listenerAclAttachmentResourceModel{}, false, nil
+			return ListenerAclAttachmentModel{}, false, nil
 		}
-		return listenerAclAttachmentResourceModel{}, false, err
+		return ListenerAclAttachmentModel{}, false, err
 	}
 
 	// SLB has no dedicated de-association API: the binding is considered gone
 	// once access control is disabled or the configured policy group is no
 	// longer part of the listener ACLs.
 	if status, _ := object["AclStatus"].(string); !strings.EqualFold(status, "on") {
-		return listenerAclAttachmentResourceModel{}, false, nil
+		return ListenerAclAttachmentModel{}, false, nil
 	}
 
 	if targetAclId == "" {
 		// Imported without the ACL part. A single bound policy group is
 		// unambiguous; several groups need the four segment import form so the
 		// target identity is never guessed.
-		aclIds := listenerAclIds(object)
+		aclIds := ListenerAclIds(object)
 		switch len(aclIds) {
 		case 0:
-			return listenerAclAttachmentResourceModel{}, false, nil
+			return ListenerAclAttachmentModel{}, false, nil
 		case 1:
 			targetAclId = aclIds[0]
 		default:
-			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+			return ListenerAclAttachmentModel{}, false, fmt.Errorf(
 				"listener %s has multiple access control policy groups (%s); import with the four segment ID <load_balancer_id>:<protocol>:<listener_port>:<acl_id> to select the managed group",
 				listenerId, strings.Join(aclIds, ", "),
 			)
 		}
 	} else if !listenerAclContains(object, targetAclId) {
-		return listenerAclAttachmentResourceModel{}, false, nil
+		return ListenerAclAttachmentModel{}, false, nil
 	}
 
 	return listenerAclAttachmentState(listenerId, targetAclId, state.AclType, object), true, nil
 }
 
-// deleteListenerAclAttachment only disables access control and never deletes or
+// DeleteListenerAclAttachment only disables access control and never deletes or
 // rebuilds the listener. The caller supplies the single operation deadline.
-func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi, listenerId string) error {
+func DeleteListenerAclAttachment(ctx context.Context, api ListenerAclAttachmentApi, listenerId string) error {
 	object, err := api.Describe(ctx, listenerId)
 	if err != nil {
 		if errs.NotFoundError(err) {
@@ -403,12 +433,12 @@ func deleteListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	})
 }
 
-// listenerAclAttachmentPlanState stores the identity that is already known
+// ListenerAclAttachmentPlanState stores the identity that is already known
 // once the write succeeds. It is used before the first read so that a transient
 // read failure can never leave an unmanaged binding behind; the next refresh
 // replaces the assumed status with the server values.
-func listenerAclAttachmentPlanState(plan listenerAclAttachmentResourceModel) listenerAclAttachmentResourceModel {
-	return listenerAclAttachmentResourceModel{
+func ListenerAclAttachmentPlanState(plan ListenerAclAttachmentModel) ListenerAclAttachmentModel {
+	return ListenerAclAttachmentModel{
 		Id:         types.StringValue(plan.ListenerId.ValueString()),
 		ListenerId: plan.ListenerId,
 		AclId:      plan.AclId,
@@ -417,8 +447,8 @@ func listenerAclAttachmentPlanState(plan listenerAclAttachmentResourceModel) lis
 	}
 }
 
-func listenerAclAttachmentState(listenerId, aclId string, aclType types.String, object map[string]interface{}) listenerAclAttachmentResourceModel {
-	model := listenerAclAttachmentResourceModel{
+func listenerAclAttachmentState(listenerId, aclId string, aclType types.String, object map[string]interface{}) ListenerAclAttachmentModel {
+	model := ListenerAclAttachmentModel{
 		Id:         types.StringValue(listenerId),
 		ListenerId: types.StringValue(listenerId),
 		AclId:      types.StringValue(aclId),

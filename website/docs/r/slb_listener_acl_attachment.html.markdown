@@ -66,6 +66,10 @@ resource "alicloud_slb_listener" "default" {
   lifecycle {
     ignore_changes = [acl_status, acl_type, acl_id, acl_ids]
   }
+
+  # Keep the policy group alive until the listener is gone: SLB refuses to
+  # delete an ACL that is still associated with a listener.
+  depends_on = [alicloud_slb_acl.default]
 }
 
 resource "alicloud_slb_acl" "default" {
@@ -85,7 +89,7 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
 
 ### Attach an ACL to a listener that is not managed by Terraform
 
-An ACK-created apiServer SLB listener can be located through the `alicloud_slb_listeners` data source and bound directly. The load balancer and the policy group are existing resources:
+An ACK-created apiServer SLB listener can be located through the `alicloud_slb_listeners` data source and bound directly. The load balancer and the policy group are existing resources. Because a load balancer can expose several listeners, always filter the query by the target protocol and frontend port so the example cannot bind the policy group to another listener.
 
 ```terraform
 terraform {
@@ -101,30 +105,37 @@ variable "load_balancer_id" {
   type        = string
 }
 
-variable "acl_name" {
-  description = "The name of the policy group to bind."
+variable "listener_protocol" {
+  description = "The protocol of the existing apiServer listener to manage."
   type        = string
-  default     = "terraform-exampleSlbListenerAclAck"
+  default     = "tcp"
+}
+
+variable "listener_frontend_port" {
+  description = "The frontend port of the existing apiServer listener to manage."
+  type        = number
+  default     = 6443
+}
+
+variable "acl_id" {
+  description = "The ID of the existing access control policy group to bind."
+  type        = string
 }
 
 data "alicloud_slb_listeners" "apiserver" {
   load_balancer_id = var.load_balancer_id
-}
-
-resource "alicloud_slb_acl" "apiserver" {
-  name       = var.acl_name
-  ip_version = "ipv4"
-  entry_list {
-    entry = "10.10.10.0/24"
-  }
+  protocol         = var.listener_protocol
+  frontend_port    = var.listener_frontend_port
 }
 
 resource "alicloud_slb_listener_acl_attachment" "apiserver" {
   listener_id = data.alicloud_slb_listeners.apiserver.slb_listeners[0].id
-  acl_id      = alicloud_slb_acl.apiserver.id
+  acl_id      = var.acl_id
   acl_type    = "white"
 }
 ```
+
+-> **NOTE:** The `protocol` and `frontend_port` filter must select exactly one listener. Check `length(data.alicloud_slb_listeners.apiserver.slb_listeners)` before applying; an empty result fails on the index expression instead of silently managing another listener.
 
 ## Argument Reference
 
