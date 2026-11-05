@@ -213,6 +213,23 @@ func TestAccAliCloudPrivatelinkVpcEndpoint_base(t *testing.T) {
 					}),
 				),
 			},
+			// Enabling zone affinity and resetting the endpoint policy are rejected
+			// by the service unless the account/region has the capability enabled,
+			// so these two steps verify the schema and plan wiring only.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_affinity_enabled": "true",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reset_policy": "true",
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
 		},
 	})
 }
