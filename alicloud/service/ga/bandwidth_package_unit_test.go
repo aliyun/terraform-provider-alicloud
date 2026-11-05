@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -344,21 +345,17 @@ func TestUnitAliCloudGaBandwidthPackage(t *testing.T) {
 // lintignore: R001
 func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
 	p := unitTestProviderResources()
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := unitTestSharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	rawClient = rawClient.(*connectivity.AliyunClient)
+	rawClient := &connectivity.AliyunClient{RegionId: "cn-hangzhou"}
 
 	describedResponse := func() map[string]interface{} {
 		return map[string]interface{}{
 			"Bandwidth":          10,
 			"BandwidthPackageId": "MockBandwidthPackageId",
 			"BandwidthType":      "Basic",
+			"BillingType":        "PayByTraffic",
 			"ChargeType":         "PREPAY",
-			"RegionId":           region,
+			"Ratio":              10,
+			"RegionId":           "cn-hangzhou",
 			"State":              "active",
 			"Type":               "Basic",
 		}
@@ -388,10 +385,13 @@ func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
 			}
 
 			var createRequest map[string]interface{}
-			patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, params map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-				if *action == "CreateBandwidthPackage" {
-					createRequest = make(map[string]interface{}, len(params))
-					for k, v := range params {
+			retryPatches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "GetRetryTimeout", func(_ *connectivity.AliyunClient, defaultTimeout time.Duration) time.Duration {
+				return 30 * time.Second
+			})
+			rpcPatches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, apiName string, _ map[string]interface{}, body map[string]interface{}, _ bool) (map[string]interface{}, error) {
+				if apiName == "CreateBandwidthPackage" {
+					createRequest = make(map[string]interface{}, len(body))
+					for k, v := range body {
 						createRequest[k] = v
 					}
 					return map[string]interface{}{"BandwidthPackageId": "MockBandwidthPackageId"}, nil
@@ -399,7 +399,8 @@ func TestUnitAliCloudGaBandwidthPackagePricingCycle(t *testing.T) {
 				return describedResponse(), nil
 			})
 			err := resourceAliCloudGaBandwidthPackageCreate(d, rawClient)
-			patches.Reset()
+			rpcPatches.Reset()
+			retryPatches.Reset()
 
 			assert.Nil(t, err)
 			if !assert.NotNil(t, createRequest, "CreateBandwidthPackage request was not captured") {
