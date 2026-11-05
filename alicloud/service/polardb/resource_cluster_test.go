@@ -3029,18 +3029,24 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "db_cluster_ip_array.modify_mode", "db_cluster_ip_array.white_list_type", "db_cluster_ip_array.0.modify_mode", "db_cluster_ip_array.0.white_list_type", "db_cluster_ip_array.1.modify_mode", "db_cluster_ip_array.1.white_list_type"},
 			},
 			{
-				// Node class change sends planned_flashing_off_time together with
-				// the real class change; the option is rejected on its own because
+				// Node class change. The option is rejected on its own because
 				// ModifyDBNodeClass is the only consumer. Automatic storage scaling
 				// is disabled while storage_upper_bound stays at 300: the API only
 				// reports the bound while scaling is enabled, so this is the state
 				// that the import steps below have to converge.
+				//
+				// planned_flashing_off_time is deliberately not sent here: a real
+				// update with 2026-11-05T11:27:28Z was rejected by
+				// ModifyDBNodeClass with InvalidPlannedStartTime.Malformed
+				// ("The specified parameter PlannedStartTime is not valid",
+				// request 01A1AB5E-5F51-5D2F-81BB-F5CE5A0B202A), so the write path
+				// cannot be exercised end to end until the product fixes the
+				// contract. Setting it alone is still rejected at plan time.
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class":             "${local.upgrade_node_class}",
-					"storage_auto_scale":        "Disable",
-					"storage_upper_bound":       "300",
-					"encrypt_new_tables":        "OFF",
-					"planned_flashing_off_time": plannedFlashingOffTime,
+					"db_node_class":       "${local.upgrade_node_class}",
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
+					"encrypt_new_tables":  "OFF",
 					// Add a user-managed hidden IP array to verify the write path
 					// sends DBClusterIPArrayAttribute=hidden and the Read path (F2)
 					// keeps it in state so the attribute converges instead of being
@@ -3124,14 +3130,11 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				// Convergence while auto scaling stays disabled: the applied state
 				// already holds the 300 GB bound, so re-applying the same
 				// configuration plans no change and the value is kept even though
-				// the API does not report it. planned_flashing_off_time is removed
-				// again: it is only accepted together with a db_node_class change,
-				// and removing an option never reaches the API.
+				// the API does not report it.
 				Config: testAccConfig(map[string]interface{}{
-					"encrypt_new_tables":        "OFF",
-					"storage_auto_scale":        "Disable",
-					"storage_upper_bound":       "300",
-					"planned_flashing_off_time": REMOVEKEY,
+					"encrypt_new_tables":  "OFF",
+					"storage_auto_scale":  "Disable",
+					"storage_upper_bound": "300",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
