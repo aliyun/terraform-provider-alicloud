@@ -12,7 +12,7 @@ Provides a Realtime Compute Vvp Namespace resource.
 
 For information about Realtime Compute Vvp Namespace and how to use it, see [What is Vvp Namespace](https://next.api.alibabacloud.com/document/foasconsole/2019-06-01/CreateNamespace).
 
--> **NOTE:** Available since v2.2.0.
+-> **NOTE:** Available since v2.3.0.
 
 -> **NOTE:** A namespace belongs to one Realtime Compute instance. `instance_id` and `namespace` are the composite identifier (`<instance_id>:<namespace>`) and cannot be changed in place; changing either one replaces the resource.
 
