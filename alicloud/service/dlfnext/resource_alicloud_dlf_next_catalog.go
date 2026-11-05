@@ -213,8 +213,23 @@ func (r *catalogResource) Create(ctx context.Context, req resource.CreateRequest
 
 	// The catalog now exists. Record the identity before waiting so a waiter or
 	// read failure leaves a tracked (tainted) resource instead of an orphan.
-	pending := plan
-	pending.Id = types.StringValue(name)
+	// Computed fields must be known values in an applied state, so they start
+	// as null rather than carrying unknown plan values.
+	pending := catalogResourceModel{
+		Id:            types.StringValue(name),
+		Name:          plan.Name,
+		Type:          types.StringValue(effectiveCatalogType(plan.Type)),
+		Options:       knownMapOrNull(plan.Options),
+		RemoteOptions: types.MapNull(types.StringType),
+		IsShared:      knownBoolOrNull(plan.IsShared),
+		ShareId:       knownStringOrNull(plan.ShareId),
+		Status:        types.StringNull(),
+		Owner:         types.StringNull(),
+		CreatedAt:     types.StringNull(),
+		CreatedBy:     types.StringNull(),
+		UpdatedAt:     types.StringNull(),
+		UpdatedBy:     types.StringNull(),
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &pending)...)
 
 	// CreateCatalog is asynchronous. A brief NotFound is Pending (eventual
@@ -549,6 +564,27 @@ func stringValue(v interface{}) string {
 		return ""
 	}
 	return fmt.Sprint(v)
+}
+
+func knownMapOrNull(v types.Map) types.Map {
+	if v.IsNull() || v.IsUnknown() {
+		return types.MapNull(types.StringType)
+	}
+	return v
+}
+
+func knownBoolOrNull(v types.Bool) types.Bool {
+	if v.IsNull() || v.IsUnknown() {
+		return types.BoolNull()
+	}
+	return v
+}
+
+func knownStringOrNull(v types.String) types.String {
+	if v.IsNull() || v.IsUnknown() {
+		return types.StringNull()
+	}
+	return v
 }
 
 func stringOrNull(v interface{}) types.String {
