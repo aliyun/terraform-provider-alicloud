@@ -701,6 +701,8 @@ func resourceInstanceResolveBackendNodeGroupResizes(d *schema.ResourceData, serv
 		newGroup, _ := newGroups[i].(map[string]interface{})
 		oldStorageSize, oldOk := backendNodeGroupStorageSize(oldGroup)
 		newStorageSize, newOk := backendNodeGroupStorageSize(newGroup)
+		// CustomizeDiff already forces replacement for these transitions. The guard keeps
+		// a direct Update call, or a future plan change, from silently skipping the resize.
 		if backendNodeGroupStorageSizeChangeForcesReplacement(oldStorageSize, oldOk, newStorageSize, newOk) {
 			switch {
 			case !newOk:
@@ -767,7 +769,7 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 				// The resize may already be applied even though the response was lost.
 				// Re-read the group before sending the billable change again so a retry
 				// cannot expand the same disk twice.
-				reached, checkErr := backendNodeGroupStorageSizeReached(service, d.Id(), resize.nodeGroupId, resize.target)
+				reached, checkErr := backendNodeGroupStorageSizeReached(service, d.Id(), resize.nodeGroupId, resize.target, deadline)
 				if checkErr == nil && reached {
 					return nil
 				}
@@ -794,18 +796,34 @@ func resourceInstanceApplyBackendNodeGroupResize(d *schema.ResourceData, service
 	return nil
 }
 
-// backendNodeGroupStorageSizeReached reports whether the remote group already has at
-// least the requested disk size, which makes a repeated resize unnecessary.
-func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupId string, target int) (bool, error) {
-	object, err := service.DescribeNodeGroup(instanceId + ":" + nodeGroupId)
-	if err != nil {
-		return false, err
+// backendNodeGroupStorageSizeReached waits briefly for the remote group to report at
+// least the requested size. It is consulted before a retry so a lost response does
+// not turn into a second billable resize, while a genuinely failed call still retries.
+// The wait is bounded by the shared update deadline and by a short convergence window.
+func backendNodeGroupStorageSizeReached(service *Service, instanceId, nodeGroupId string, target int, deadline time.Time) (bool, error) {
+	waitUntil := time.Now().Add(30 * time.Second)
+	if remaining := time.Until(deadline); remaining < time.Until(waitUntil) {
+		waitUntil = deadline
 	}
-	current, err := strconv.Atoi(fmt.Sprint(object["StorageSize"]))
-	if err != nil {
-		return false, err
+	var lastErr error
+	for {
+		budget := time.Until(waitUntil)
+		if budget <= 0 {
+			return false, lastErr
+		}
+		object, err := service.DescribeNodeGroupWithTimeout(instanceId+":"+nodeGroupId, budget)
+		if err == nil {
+			if current, convErr := strconv.Atoi(fmt.Sprint(object["StorageSize"])); convErr == nil && current >= target {
+				return true, nil
+			}
+		} else {
+			lastErr = err
+		}
+		if time.Until(waitUntil) <= time.Second {
+			return false, lastErr
+		}
+		time.Sleep(5 * time.Second)
 	}
-	return current >= target, nil
 }
 
 // matchBackendNodeGroup resolves the single remote backend node group described by

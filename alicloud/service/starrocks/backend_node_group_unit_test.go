@@ -212,6 +212,14 @@ type starRocksNodeGroupsHandler struct {
 	actions         []string
 	modifyQueries   []map[string]string
 	instanceStatus  string
+	// pageErrors injects a failure for one page number (1-based).
+	pageErrors map[int]int
+	// alwaysFullPage keeps returning a full page without Total to exercise the guard.
+	alwaysFullPage bool
+	// convergeAfter keeps reporting the old size for this many reads after a resize.
+	convergeAfter int
+	convergeReads int
+	pendingSize   map[string]int
 }
 
 func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -225,10 +233,19 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 			_ = json.Unmarshal(raw, &body)
 		}
 		if _, byId := body["nodeGroupIds"]; byId {
-			item := h.groupById(fmt.Sprint(body["nodeGroupIds"].([]interface{})[0]))
+			nodeGroupId := fmt.Sprint(body["nodeGroupIds"].([]interface{})[0])
+			item := h.groupById(nodeGroupId)
 			item["Status"] = "RUNNING"
 			if h.instanceStatus != "" {
 				item["Status"] = h.instanceStatus
+			}
+			if target, pending := h.pendingSize[nodeGroupId]; pending {
+				if h.convergeReads <= 1 {
+					item["StorageSize"] = float64(target)
+					delete(h.pendingSize, nodeGroupId)
+				} else {
+					h.convergeReads--
+				}
 			}
 			writeJSON(w, map[string]interface{}{"Data": []interface{}{item}})
 			return
@@ -237,6 +254,19 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		pageSize := 100
 		fmt.Sscan(query.Get("PageNumber"), &pageNumber)
 		fmt.Sscan(query.Get("PageSize"), &pageSize)
+		if status, ok := h.pageErrors[pageNumber]; ok {
+			w.WriteHeader(status)
+			writeJSON(w, map[string]interface{}{"Code": "InternalError", "Message": "code: 500, injected page failure", "RequestId": "rid"})
+			return
+		}
+		if h.alwaysFullPage {
+			page := make([]interface{}, 0, pageSize)
+			for i := 0; i < pageSize; i++ {
+				page = append(page, unitTestBackendNodeGroup(fmt.Sprintf("ng-loop-%d-%03d", pageNumber, i), "cn-hangzhou-h"))
+			}
+			writeJSON(w, map[string]interface{}{"Data": page})
+			return
+		}
 		componentType := fmt.Sprint(body["componentType"])
 		filtered := make([]map[string]interface{}, 0, len(h.groups))
 		for _, group := range h.groups {
@@ -273,9 +303,17 @@ func (h *starRocksNodeGroupsHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		// is exactly what the retry has to detect by re-reading the group.
 		target := 0
 		fmt.Sscan(query.Get("Target"), &target)
-		for _, group := range h.groups {
-			if fmt.Sprint(group["NodeGroupId"]) == query.Get("NodeGroupId") {
-				group["StorageSize"] = float64(target)
+		if h.convergeAfter > 0 {
+			if h.pendingSize == nil {
+				h.pendingSize = make(map[string]int)
+			}
+			h.pendingSize[query.Get("NodeGroupId")] = target
+			h.convergeReads = h.convergeAfter
+		} else {
+			for _, group := range h.groups {
+				if fmt.Sprint(group["NodeGroupId"]) == query.Get("NodeGroupId") {
+					group["StorageSize"] = float64(target)
+				}
 			}
 		}
 		status := http.StatusOK
@@ -438,6 +476,7 @@ func TestUnitBackendNodeGroupAmbiguityWritesNothing(t *testing.T) {
 	data := starRocksInstanceData(t, backendGroupStateAttributes("200"), map[string]*terraform.ResourceAttrDiff{
 		"backend_node_groups.0.storage_size": {Old: "200", New: "300"},
 		"instance_name":                      {Old: "tf-testacc-starrocks", New: "tf-testacc-starrocks-renamed"},
+		"resource_group_id":                  {Old: "rg-old", New: "rg-new"},
 	})
 
 	err := resourceInstanceUpdate(data, client)
@@ -509,12 +548,17 @@ func TestUnitResourceInstanceBackendNodeGroupPlan(t *testing.T) {
 		data.SetId("c-fixture")
 		return data.State()
 	}
-	diffRequiresNew := func(t *testing.T, oldCfg, newCfg map[string]interface{}) bool {
+	planDiff := func(t *testing.T, oldCfg, newCfg map[string]interface{}) *terraform.InstanceDiff {
 		t.Helper()
 		diff, err := resource.Diff(context.Background(), state(oldCfg), terraform.NewResourceConfigRaw(newCfg), nil)
 		if err != nil {
 			t.Fatalf("diff: %s", err)
 		}
+		return diff
+	}
+	diffRequiresNew := func(t *testing.T, oldCfg, newCfg map[string]interface{}) bool {
+		t.Helper()
+		diff := planDiff(t, oldCfg, newCfg)
 		if diff == nil {
 			return false
 		}
@@ -525,7 +569,11 @@ func TestUnitResourceInstanceBackendNodeGroupPlan(t *testing.T) {
 	shrink := backendGroupConfig(200, nil)
 
 	t.Run("growing is in place", func(t *testing.T) {
-		if diffRequiresNew(t, backendGroupConfig(200, nil), grow) {
+		diff := planDiff(t, backendGroupConfig(200, nil), grow)
+		if diff == nil || len(diff.Attributes) == 0 {
+			t.Fatal("growing storage_size must still produce an in-place change")
+		}
+		if diff.RequiresNew() {
 			t.Fatal("growing storage_size must stay an in-place update")
 		}
 	})
@@ -580,6 +628,21 @@ func TestUnitResourceInstanceBackendNodeGroupPlan(t *testing.T) {
 			t.Fatal("removing a backend group must replace the instance")
 		}
 	})
+	t.Run("changing observer groups replaces", func(t *testing.T) {
+		oldCfg := backendGroupConfig(200, nil)
+		oldCfg["observer_node_groups"] = []interface{}{map[string]interface{}{
+			"cu": 8, "zone_id": "cn-hangzhou-i", "spec_type": "standard", "disk_number": 1,
+			"storage_performance_level": "pl1", "resident_node_number": 1, "storage_size": 100,
+		}}
+		newCfg := backendGroupConfig(200, nil)
+		newCfg["observer_node_groups"] = []interface{}{map[string]interface{}{
+			"cu": 16, "zone_id": "cn-hangzhou-i", "spec_type": "standard", "disk_number": 1,
+			"storage_performance_level": "pl1", "resident_node_number": 1, "storage_size": 100,
+		}}
+		if !diffRequiresNew(t, oldCfg, newCfg) {
+			t.Fatal("changing observer_node_groups must replace the instance")
+		}
+	})
 	t.Run("changing frontend groups replaces", func(t *testing.T) {
 		oldCfg := backendGroupConfig(200, nil)
 		oldCfg["frontend_node_groups"] = []interface{}{map[string]interface{}{
@@ -595,4 +658,168 @@ func TestUnitResourceInstanceBackendNodeGroupPlan(t *testing.T) {
 			t.Fatal("changing frontend_node_groups must replace the instance")
 		}
 	})
+}
+
+func twoBackendGroupStateAttributes(sizeA, sizeB string) map[string]string {
+	return map[string]string{
+		"backend_node_groups.#":                             "2",
+		"backend_node_groups.0.cu":                          "8",
+		"backend_node_groups.0.zone_id":                     "cn-hangzhou-i",
+		"backend_node_groups.0.spec_type":                   "standard",
+		"backend_node_groups.0.disk_number":                 "1",
+		"backend_node_groups.0.storage_performance_level":   "pl1",
+		"backend_node_groups.0.resident_node_number":        "3",
+		"backend_node_groups.0.storage_size":                sizeA,
+		"backend_node_groups.0.local_storage_instance_type": "null",
+		"backend_node_groups.1.cu":                          "16",
+		"backend_node_groups.1.zone_id":                     "cn-hangzhou-h",
+		"backend_node_groups.1.spec_type":                   "standard",
+		"backend_node_groups.1.disk_number":                 "1",
+		"backend_node_groups.1.storage_performance_level":   "pl1",
+		"backend_node_groups.1.resident_node_number":        "3",
+		"backend_node_groups.1.storage_size":                sizeB,
+		"backend_node_groups.1.local_storage_instance_type": "null",
+	}
+}
+
+func TestUnitDescribeNodeGroupsCrossPageAmbiguity(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 101)
+	groups = append(groups, unitTestBackendNodeGroup("ng-first-page", "cn-hangzhou-i"))
+	for i := 0; i < 99; i++ {
+		filler := unitTestBackendNodeGroup(fmt.Sprintf("ng-filler-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	groups = append(groups, unitTestBackendNodeGroup("ng-second-page", "cn-hangzhou-i"))
+	handler := &starRocksNodeGroupsHandler{t: t, groups: groups, total: len(groups)}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+
+	listed, err := NewService(client).DescribeNodeGroupsByComponentType("c-fixture", "CN", 10*time.Second)
+	if err != nil {
+		t.Fatalf("list node groups: %s", err)
+	}
+	if len(listed) != 101 {
+		t.Fatalf("expected all 101 groups, got %d", len(listed))
+	}
+	_, err = matchBackendNodeGroup(listed, map[string]interface{}{
+		"cu": 8, "disk_number": 1, "resident_node_number": 3,
+		"zone_id": "cn-hangzhou-i", "spec_type": "standard", "storage_performance_level": "pl1",
+	})
+	if err == nil || !strings.Contains(err.Error(), "refusing to guess") {
+		t.Fatalf("expected a cross page ambiguity error, got %v", err)
+	}
+}
+
+func TestUnitDescribeNodeGroupsPageErrorPropagates(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 150)
+	for i := 0; i < 150; i++ {
+		groups = append(groups, unitTestBackendNodeGroup(fmt.Sprintf("ng-filler-%03d", i), "cn-hangzhou-h"))
+	}
+	handler := &starRocksNodeGroupsHandler{
+		t: t, groups: groups, total: len(groups),
+		pageErrors: map[int]int{2: http.StatusInternalServerError},
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+
+	if _, err := NewService(client).DescribeNodeGroupsByComponentType("c-fixture", "CN", 2*time.Second); err == nil {
+		t.Fatal("expected the second page failure to be returned")
+	}
+}
+
+func TestUnitDescribeNodeGroupsEndsWithoutMatch(t *testing.T) {
+	groups := make([]map[string]interface{}, 0, 150)
+	for i := 0; i < 150; i++ {
+		filler := unitTestBackendNodeGroup(fmt.Sprintf("ng-filler-%03d", i), "cn-hangzhou-h")
+		filler["Cu"] = float64(4)
+		groups = append(groups, filler)
+	}
+	handler := &starRocksNodeGroupsHandler{t: t, groups: groups, total: len(groups)}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+
+	listed, err := NewService(client).DescribeNodeGroupsByComponentType("c-fixture", "CN", 10*time.Second)
+	if err != nil {
+		t.Fatalf("list node groups: %s", err)
+	}
+	_, err = matchBackendNodeGroup(listed, map[string]interface{}{
+		"cu": 8, "disk_number": 1, "resident_node_number": 3,
+		"zone_id": "cn-hangzhou-i", "spec_type": "standard", "storage_performance_level": "pl1",
+	})
+	if err == nil || !strings.Contains(err.Error(), "no backend node group matches") {
+		t.Fatalf("expected a no-match error after paging, got %v", err)
+	}
+}
+
+func TestUnitDescribeNodeGroupsPageLimit(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{t: t, alwaysFullPage: true}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+
+	_, err := NewService(client).DescribeNodeGroupsByComponentType("c-fixture", "CN", 20*time.Second)
+	if err == nil || !strings.Contains(err.Error(), "more than 100 pages") {
+		t.Fatalf("expected the page limit to stop an endless listing, got %v", err)
+	}
+}
+
+func TestUnitBackendNodeGroupLaterAmbiguityWritesNothing(t *testing.T) {
+	groupA := unitTestBackendNodeGroup("ng-a", "cn-hangzhou-i")
+	groupB1 := unitTestBackendNodeGroup("ng-b1", "cn-hangzhou-h")
+	groupB1["Cu"] = float64(16)
+	groupB2 := unitTestBackendNodeGroup("ng-b2", "cn-hangzhou-h")
+	groupB2["Cu"] = float64(16)
+	handler := &starRocksNodeGroupsHandler{
+		t:              t,
+		groups:         []map[string]interface{}{groupA, groupB1, groupB2},
+		total:          3,
+		instanceStatus: "RUNNING",
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	data := starRocksInstanceData(t, twoBackendGroupStateAttributes("200", "200"), map[string]*terraform.ResourceAttrDiff{
+		"backend_node_groups.0.storage_size": {Old: "200", New: "300"},
+		"backend_node_groups.1.storage_size": {Old: "200", New: "300"},
+	})
+
+	err := resourceInstanceUpdate(data, client)
+	if err == nil || !strings.Contains(err.Error(), "refusing to guess") {
+		t.Fatalf("expected an ambiguity error, got %v", err)
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("the resolvable first group must not be resized before the ambiguity fails, got %d writes", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupExpiredDeadlineWritesNothing(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{t: t, groups: []map[string]interface{}{unitTestBackendNodeGroup("ng-target", "cn-hangzhou-i")}, total: 1}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	data := starRocksInstanceData(t, backendGroupStateAttributes("200"), nil)
+
+	err := resourceInstanceApplyBackendNodeGroupResizes(data, NewService(client), []nodeGroupResize{
+		{nodeGroupId: "ng-target", target: 300},
+	}, time.Now().Add(-time.Second))
+	if err == nil {
+		t.Fatal("expected the expired update budget to fail the resize")
+	}
+	if handler.modifyCalls != 0 {
+		t.Fatalf("no write may be sent after the budget expired, got %d", handler.modifyCalls)
+	}
+}
+
+func TestUnitBackendNodeGroupRetryWaitsForConvergence(t *testing.T) {
+	handler := &starRocksNodeGroupsHandler{
+		t:               t,
+		groups:          []map[string]interface{}{unitTestBackendNodeGroup("ng-target", "cn-hangzhou-i")},
+		total:           1,
+		modifyResponses: []int{http.StatusInternalServerError},
+		convergeAfter:   2,
+		instanceStatus:  "RUNNING",
+	}
+	client := starRocksTestClient(t, handler.ServeHTTP)
+	data := starRocksInstanceData(t, backendGroupStateAttributes("200"), map[string]*terraform.ResourceAttrDiff{
+		"backend_node_groups.0.storage_size": {Old: "200", New: "300"},
+	})
+
+	if err := resourceInstanceUpdate(data, client); err != nil {
+		t.Fatalf("update: %s", err)
+	}
+	if handler.modifyCalls != 1 {
+		t.Fatalf("expected one write once the remote size converged, got %d", handler.modifyCalls)
+	}
 }

@@ -211,7 +211,12 @@ func (s *Service) SetResourceTags(d *schema.ResourceData, resourceType string) e
 
 // DescribeNodeGroup <<< Encapsulated get interface for StarRocks NodeGroup.
 
-func (s *Service) DescribeNodeGroup(id string) (object map[string]interface{}, err error) {
+func (s *Service) DescribeNodeGroup(id string) (map[string]interface{}, error) {
+	return s.DescribeNodeGroupWithTimeout(id, time.Minute)
+}
+
+// DescribeNodeGroupWithTimeout reads one node group within the caller's budget.
+func (s *Service) DescribeNodeGroupWithTimeout(id string, timeout time.Duration) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -231,8 +236,12 @@ func (s *Service) DescribeNodeGroup(id string) (object map[string]interface{}, e
 
 	action := fmt.Sprintf("/webapi/nodegroup/describeNodeGroups")
 
+	budget := timeout
+	if budget <= 0 {
+		budget = time.Minute
+	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
-	err = retry.Retry(1*time.Minute, func() *retry.RetryError {
+	err = retry.Retry(budget, func() *retry.RetryError {
 		response, err = client.RoaPost("starrocks", "2022-10-19", action, query, nil, body, true)
 
 		if err != nil {
@@ -330,6 +339,10 @@ func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType str
 	const pageSize = 100
 	const maxPages = 100
 	items := make([]map[string]interface{}, 0)
+	deadline := time.Now().Add(timeout)
+	if timeout <= 0 {
+		deadline = time.Now().Add(time.Minute)
+	}
 	for pageNumber := 1; ; pageNumber++ {
 		if pageNumber > maxPages {
 			return nil, errs.WrapErrorf(fmt.Errorf("more than %d pages of node groups", maxPages), errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
@@ -341,9 +354,11 @@ func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType str
 		query["PageSize"] = helper.StringPointer(strconv.Itoa(pageSize))
 		request := map[string]interface{}{"componentType": componentType}
 
-		budget := timeout
+		// Every page consumes the same budget: a slow first page must not hand a full
+		// fresh timeout to the next one.
+		budget := time.Until(deadline)
 		if budget <= 0 {
-			budget = time.Minute
+			return nil, errs.WrapErrorf(fmt.Errorf("listing node groups did not finish within the configured timeout"), errs.DefaultErrorMsg, clusterId, action, errs.AlibabaCloudSdkGoERROR)
 		}
 		var response map[string]interface{}
 		var err error
@@ -376,10 +391,18 @@ func (s *Service) DescribeNodeGroupsByComponentType(clusterId, componentType str
 		}
 		items = append(items, batch...)
 
-		if len(batch) == 0 || len(batch) < pageSize {
+		if len(batch) == 0 {
 			break
 		}
-		if total, err := nodeGroupsTotal(response); err == nil && total > 0 && len(items) >= total {
+		if total, err := nodeGroupsTotal(response); err == nil && total > 0 {
+			if len(items) >= total {
+				break
+			}
+			// Keep paging on a full page even when the server caps the page size below
+			// the requested one: the reported total decides when the set is complete.
+			continue
+		}
+		if len(batch) < pageSize {
 			break
 		}
 	}
