@@ -250,9 +250,11 @@ func TestAccAliCloudKVStoreRedisInstance_clusterBackupId(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccKvstoreInstanceClusterBackup%d", rand)
 
 	var zoneId, secondaryZoneId, vswitchId, sourceId, clusterBackupId string
+	// Register cleanup before provisioning so a fixture failure cannot leak the
+	// out-of-band source instance.
+	defer func() { testAccKvstoreDeleteInstanceOutOfBand(t, sourceId) }()
 	if os.Getenv("TF_ACC") != "" {
-		sourceId, clusterBackupId, zoneId, secondaryZoneId, vswitchId = testAccKvstorePrepareClusterBackupSource(t, name+"-src")
-		defer testAccKvstoreDeleteInstanceOutOfBand(t, sourceId)
+		clusterBackupId, zoneId, secondaryZoneId, vswitchId = testAccKvstorePrepareClusterBackupSource(t, name+"-src", &sourceId)
 	}
 
 	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, func(string) string { return "" })
@@ -305,7 +307,7 @@ func TestAccAliCloudKVStoreRedisInstance_clusterBackupId(t *testing.T) {
 // instance from the default VPC and waits for a completed cluster backup. It
 // returns the source instance id, the cluster backup set id and the
 // zone/secondary-zone/vSwitch the target instance must reuse.
-func testAccKvstorePrepareClusterBackupSource(t *testing.T, name string) (string, string, string, string, string) {
+func testAccKvstorePrepareClusterBackupSource(t *testing.T, name string, sourceId *string) (string, string, string, string) {
 	region := os.Getenv("ALICLOUD_REGION")
 	if region == "" {
 		region = "cn-beijing"
@@ -333,26 +335,36 @@ func testAccKvstorePrepareClusterBackupSource(t *testing.T, name string) (string
 	if err != nil {
 		t.Fatalf("failed to create cluster backup source instance: %s", err)
 	}
-	sourceId := fmt.Sprint(response["InstanceId"])
-	if sourceId == "" || sourceId == "<nil>" {
+	*sourceId = fmt.Sprint(response["InstanceId"])
+	if *sourceId == "" || *sourceId == "<nil>" {
 		t.Fatalf("CreateInstance response has no InstanceId: %v", response)
 	}
-	testAccKvstoreWaitInstanceStatus(t, client, sourceId, "Normal", 30*time.Minute)
+	testAccKvstoreWaitInstanceStatus(t, client, *sourceId, "Normal", 30*time.Minute)
 
 	backupRequest := map[string]interface{}{
 		"RegionId":   client.RegionId,
-		"InstanceId": sourceId,
+		"InstanceId": *sourceId,
 	}
-	if _, err = client.RpcPost("R-kvstore", "2015-01-01", "CreateBackup", nil, backupRequest, true); err != nil {
-		// A backup job is already running on a freshly created instance; wait for
-		// that job instead of failing the fixture.
-		if !strings.Contains(err.Error(), "BackupJobExists") {
-			t.Fatalf("failed to create cluster backup for source instance %s: %s", sourceId, err)
+	// A freshly created instance keeps a short-lived internal backup job that
+	// rejects CreateBackup with BackupJobExists; retry until the manual backup is
+	// accepted so it shows up in DescribeClusterBackupList.
+	backupAccepted := false
+	for attempt := 0; attempt < 20; attempt++ {
+		if _, err = client.RpcPost("R-kvstore", "2015-01-01", "CreateBackup", nil, backupRequest, true); err == nil {
+			backupAccepted = true
+			break
 		}
-		t.Logf("[INFO] source instance %s already has a running backup job; waiting for it", sourceId)
+		if !strings.Contains(err.Error(), "BackupJobExists") {
+			t.Fatalf("failed to create cluster backup for source instance %s: %s", *sourceId, err)
+		}
+		t.Logf("[INFO] source instance %s still has a running backup job; retrying", *sourceId)
+		time.Sleep(30 * time.Second)
 	}
-	clusterBackupId := testAccKvstoreWaitClusterBackupId(t, client, sourceId, 30*time.Minute)
-	return sourceId, clusterBackupId, zoneId, secondaryZoneId, vswitchId
+	if !backupAccepted {
+		t.Fatalf("could not create a cluster backup for source instance %s", *sourceId)
+	}
+	clusterBackupId := testAccKvstoreWaitClusterBackupId(t, client, *sourceId, 30*time.Minute)
+	return clusterBackupId, zoneId, secondaryZoneId, vswitchId
 }
 
 // testAccKvstoreDefaultZoneVSwitch resolves a default VPC and two vSwitches in
@@ -438,14 +450,16 @@ func testAccKvstoreWaitInstanceStatus(t *testing.T, client *connectivity.AliyunC
 func testAccKvstoreWaitClusterBackupId(t *testing.T, client *connectivity.AliyunClient, instanceId string, timeout time.Duration) string {
 	deadline := time.Now().Add(timeout)
 	for {
-		response, err := client.RpcPost("R-kvstore", "2015-01-01", "DescribeClusterBackupList", nil, map[string]interface{}{
+		// DescribeClusterBackupList only accepts GET; a POST returns 403
+		// UnsupportedHTTPMethod.
+		response, err := client.RpcGet("R-kvstore", "2015-01-01", "DescribeClusterBackupList", map[string]interface{}{
 			"RegionId":   client.RegionId,
 			"InstanceId": instanceId,
 			"StartTime":  time.Now().UTC().Add(-24 * time.Hour).Format("2006-01-02T15:04Z"),
 			"EndTime":    time.Now().UTC().Add(24 * time.Hour).Format("2006-01-02T15:04Z"),
 			"PageSize":   50,
 			"PageNumber": 1,
-		}, true)
+		}, nil)
 		if err == nil {
 			if backups, errJP := jsonpath.Get("$.ClusterBackups", response); errJP == nil {
 				if list, ok := backups.([]interface{}); ok {
