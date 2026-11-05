@@ -13,6 +13,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/dts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -555,4 +556,20 @@ resource "alicloud_rds_account" "target_account" {
   account_password = "N1cetest"
 }
 `, name)
+}
+
+func TestUnitDtsSubscriptionJobImportIdentity(t *testing.T) {
+	testDtsJobImportIdentity(t, dts.ResourceSubscriptionJob)
+}
+
+func TestUnitDtsSubscriptionJobReadIdentity(t *testing.T) {
+	testDtsJobReadIdentity(t, dts.ResourceSubscriptionJob)
+}
+
+func TestUnitDtsSubscriptionJobUpdateDoesNotRebind(t *testing.T) {
+	testDtsJobUpdateDoesNotRebind(t, dts.ResourceSubscriptionJob)
+}
+
+func TestUnitDtsSubscriptionJobImportRefreshSequence(t *testing.T) {
+	testDtsJobImportRefreshSequence(t, dts.ResourceSubscriptionJob)
 }

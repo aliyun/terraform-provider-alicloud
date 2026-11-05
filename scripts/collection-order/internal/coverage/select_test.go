@@ -187,3 +187,103 @@ func ServicePackage() conns.ServicePackage { return conns.ServicePackage{
 		}
 	}
 }
+
+// TestUnitHelperTest covers same-package helper test files (validation, unit, ...)
+// whose mechanically trimmed implementation path never existed. Select must
+// associate them with the registered resource whose real implementation is
+// already in fileFunctions and run that resource's main coverage check, never
+// calling oldSource on the nonexistent derived path. Real coverage gaps still
+// surface because the resource stays selected, and genuinely unresolvable or
+// deleted-but-registered cases still fail closed. The TestUnit prefix makes
+// ci-check-quick's changed-unit-tests stage execute these regressions.
+func TestUnitHelperTest(t *testing.T) {
+	flatOld := map[string]string{"alicloud_example": "resourceExample"}
+	flatAfter := map[string]string{"alicloud_example": "resourceExample"}
+	flatSources := map[string][]byte{
+		"alicloud/resource_alicloud_example.go": []byte(`package alicloud; func resourceExample() {}`),
+	}
+	splitBefore := map[string]string{"alicloud_cloudauth_face_config": "resourceAlicloudCloudauthFaceConfig"}
+	splitAfter := map[string]string{"alicloud_cloudauth_face_config": "cloudauth.ResourceFaceConfig"}
+	splitSources := map[string][]byte{
+		"alicloud/service/cloudauth/resource_face_config.go": []byte(`package cloudauth; func ResourceFaceConfig() {}`),
+	}
+	// missing fails on every call, so any case that reaches oldSource errors.
+	missing := func(string) ([]byte, error) { return nil, fmt.Errorf("missing") }
+
+	cases := []struct {
+		name    string
+		paths   []string
+		before  map[string]string
+		after   map[string]string
+		sources map[string][]byte
+		want    map[string]string
+		fail    bool
+	}{
+		// AC1: legal helper naming must not trigger a git show on a file that
+		// never existed; the resource's main test is selected instead.
+		{"flat validation helper", []string{"alicloud/resource_alicloud_example_validation_test.go"}, flatOld, flatAfter, flatSources, map[string]string{"alicloud_example": "alicloud/resource_alicloud_example_test.go"}, false},
+		{"flat unit helper", []string{"alicloud/resource_alicloud_example_unit_test.go"}, flatOld, flatAfter, flatSources, map[string]string{"alicloud_example": "alicloud/resource_alicloud_example_test.go"}, false},
+		{"split validation helper", []string{"alicloud/service/cloudauth/resource_face_config_validation_test.go"}, splitBefore, splitAfter, splitSources, map[string]string{"alicloud_cloudauth_face_config": "alicloud/service/cloudauth/resource_face_config_test.go"}, false},
+		{"split unit helper", []string{"alicloud/service/cloudauth/resource_face_config_unit_test.go"}, splitBefore, splitAfter, splitSources, map[string]string{"alicloud_cloudauth_face_config": "alicloud/service/cloudauth/resource_face_config_test.go"}, false},
+		// AC2: existing main test, new registration and existing-resource
+		// helper changes all select the resource without error.
+		{"flat main test", []string{"alicloud/resource_alicloud_example_test.go"}, flatOld, flatAfter, flatSources, map[string]string{"alicloud_example": "alicloud/resource_alicloud_example_test.go"}, false},
+		{"flat new registration", []string{"alicloud/provider.go"}, map[string]string{}, flatAfter, flatSources, map[string]string{"alicloud_example": "alicloud/resource_alicloud_example_test.go"}, false},
+		{"split new registration", []string{"alicloud/service/cloudauth/register.go"}, map[string]string{}, splitAfter, splitSources, map[string]string{"alicloud_cloudauth_face_config": "alicloud/service/cloudauth/resource_face_config_test.go"}, false},
+		// AC3: renaming a main test to a helper name cannot bypass the gate;
+		// the resource is still selected so its coverage check runs.
+		{"renamed main test selects resource", []string{"alicloud/resource_alicloud_example_helper_test.go"}, flatOld, flatAfter, flatSources, map[string]string{"alicloud_example": "alicloud/resource_alicloud_example_test.go"}, false},
+		// AC4: a test with no matching implementation in the package is
+		// genuinely unresolvable and fails closed.
+		{"unresolvable test blocks", []string{"alicloud/service/cloudauth/resource_orphan_test.go"}, splitBefore, splitAfter, splitSources, nil, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Select(tc.paths, tc.before, tc.after, tc.sources, missing)
+			if (err != nil) != tc.fail || !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("got %v, %v; want %v fail=%v", got, err, tc.want, tc.fail)
+			}
+		})
+	}
+	// AC1: assert oldSource is never called for a helper test.
+	t.Run("helper does not call oldSource", func(t *testing.T) {
+		called := false
+		oldSource := func(string) ([]byte, error) { called = true; return nil, fmt.Errorf("missing") }
+		if _, err := Select([]string{"alicloud/service/cloudauth/resource_face_config_validation_test.go"}, splitBefore, splitAfter, splitSources, oldSource); err != nil {
+			t.Fatalf("helper test failed: %v", err)
+		}
+		if called {
+			t.Fatal("oldSource was called for a helper test")
+		}
+	})
+	// AC4: implementation deleted but still registered blocks; oldSource
+	// succeeds on the base, add fails because the implementation is gone.
+	t.Run("deleted implementation with kept registration blocks", func(t *testing.T) {
+		impl := []byte(`package cloudauth; func ResourceFaceConfig() {}`)
+		if _, err := Select([]string{"alicloud/service/cloudauth/resource_face_config.go"}, splitBefore, splitAfter, map[string][]byte{}, func(string) ([]byte, error) { return impl, nil }); err == nil {
+			t.Fatal("expected missing-implementation failure")
+		}
+	})
+	// AC2/AC3: the longest implementation stem wins, so an extra-resource
+	// helper selects the extra resource and not its shorter neighbor.
+	t.Run("longest stem match", func(t *testing.T) {
+		sources := map[string][]byte{
+			"alicloud/service/cloudauth/resource_face_config.go":       []byte(`package cloudauth; func ResourceFaceConfig() {}`),
+			"alicloud/service/cloudauth/resource_face_config_extra.go": []byte(`package cloudauth; func ResourceFaceConfigExtra() {}`),
+		}
+		after := map[string]string{
+			"alicloud_cloudauth_face_config":       "cloudauth.ResourceFaceConfig",
+			"alicloud_cloudauth_face_config_extra": "cloudauth.ResourceFaceConfigExtra",
+		}
+		got, err := Select([]string{"alicloud/service/cloudauth/resource_face_config_extra_validation_test.go"}, splitBefore, after, sources, missing)
+		if err != nil {
+			t.Fatalf("longest stem match failed: %v", err)
+		}
+		if got["alicloud_cloudauth_face_config_extra"] != "alicloud/service/cloudauth/resource_face_config_extra_test.go" {
+			t.Fatalf("extra resource not selected: %v", got)
+		}
+		if _, ok := got["alicloud_cloudauth_face_config"]; ok {
+			t.Fatalf("shorter resource should not be selected by the extra helper: %v", got)
+		}
+	})
+}
