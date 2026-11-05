@@ -270,5 +270,3 @@ resource "alicloud_pvtz_inbound_endpoint" "default" {
 }
 `, name, name, acctest.DefaultRegionToTest, testAccPvtzInboundEndpointIpConfigsHCL(ipConfigsIndices))
 }
-
-// lintignore: R001

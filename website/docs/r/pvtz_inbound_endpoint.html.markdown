@@ -13,7 +13,7 @@ Provides a Private Zone Inbound Endpoint resource.
 
 For information about Private Zone Inbound Endpoint and how to use it, see [What is Inbound Endpoint](https://www.alibabacloud.com/help/en/privatezone/latest/add-inbound-endpoint).
 
--> **NOTE:** Available since v2.2.0.
+-> **NOTE:** Available since v2.3.0.
 
 
 ## Example Usage
@@ -78,29 +78,29 @@ resource "alicloud_pvtz_inbound_endpoint" "default" {
 
 The following arguments are supported:
 
-* `endpoint_name` - (Required) The name of the resource.
-* `ip_configs` - (Required) The Ip Configs. See [`ip_configs`](#ip_configs) below. **NOTE:** In order to ensure high availability, add at least 2 and up to 6.
-* `security_group_id` - (Required, ForceNew) The ID of the Security Group.
-* `vpc_id` - (Required, ForceNew) The VPC ID.
-* `vpc_region_id` - (Required, ForceNew) The Region of the VPC.
-* `spec_version` - (Required, ForceNew) The specification version. Valid value: `standard`.
+* `endpoint_name` - (Required, String) The name of the resource.
+* `ip_configs` - (Required, Set) The Ip Configs. See [`ip_configs`](#ip_configs) below. **NOTE:** In order to ensure high availability, add at least 2 and up to 6.
+* `security_group_id` - (Required, ForceNew, String) The ID of the Security Group.
+* `vpc_id` - (Required, ForceNew, String) The VPC ID.
+* `vpc_region_id` - (Required, ForceNew, String) The Region of the VPC.
+* `spec_version` - (Required, ForceNew, String) The specification version. Valid value: `standard`.
 
 ### `ip_configs`
 
 The ip_configs supports the following:
 
-* `cidr_block` - (Required) The Subnet mask.
-* `ip` - (Optional) The IP address within the parameter range of the subnet mask. It is recommended to use the IP address assigned by the system.
-* `vswitch_id` - (Required) The Vswitch id.
-* `zone_id` - (Required) The Zone ID.
+* `cidr_block` - (Required, String) The Subnet mask.
+* `ip` - (Optional, String) The IP address within the parameter range of the subnet mask. It is recommended to use the IP address assigned by the system.
+* `vswitch_id` - (Required, String) The Vswitch id.
+* `zone_id` - (Required, String) The Zone ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Inbound Endpoint.
-* `status` - The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
-* `endpoint_type` - The type of the inbound endpoint. Currently only `public` is supported.
+* `id` - (String) The resource ID in terraform of Inbound Endpoint.
+* `status` - (String) The status of the resource. Valid values: `CHANGE_FAILED`, `CHANGE_INIT`, `EXCEPTION`, `FAILED`, `INIT`, `SUCCESS`.
+* `endpoint_type` - (String) The type of the inbound endpoint. Currently only `public` is supported.
 
 ## Import
 
