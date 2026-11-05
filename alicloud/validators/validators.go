@@ -436,7 +436,8 @@ func StringLenBetweenRune(min, max int) schema.SchemaValidateFunc {
 
 // StringMatch returns a SchemaValidateFunc which tests if the provided value
 // matches a given regexp. Optionally an error message can be provided to
-// return something friendlier than "must match some globby regexp".func StringMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
+// return something friendlier than "must match some globby regexp".
+func StringMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (s []string, es []error) {
 		v, ok := i.(string)
 		if !ok {
