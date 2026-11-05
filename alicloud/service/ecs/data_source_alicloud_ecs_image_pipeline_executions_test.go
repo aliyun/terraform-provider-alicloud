@@ -83,6 +83,14 @@ func TestAccAliCloudECSImagePipelineExecutionsDataSource(t *testing.T) {
 				Config:      baseConfig + imagePipelineExecutionsDataBlock(fmt.Sprintf("  execution_id = %s\n  status       = \"SUCCESS,NOT_A_STATUS\"\n", executionId)),
 				ExpectError: regexp.MustCompile(`Invalid Status|not a valid image pipeline execution status`),
 			},
+			{
+				// The destroy phase re-reads the last configuration, so a valid
+				// step must follow the expected validation failure.
+				Config: baseConfig + imagePipelineExecutionsDataBlock(fmt.Sprintf("  execution_id = %s\n", executionId)),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "executions.#", "1"),
+				),
+			},
 		},
 	})
 }

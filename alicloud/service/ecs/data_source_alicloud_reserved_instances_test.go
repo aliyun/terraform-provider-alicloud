@@ -84,6 +84,14 @@ func TestAccAliCloudReservedInstancesDataSource(t *testing.T) {
 				Config:      reservedInstancesDataBlock("  scope = \"Zone\"\n"),
 				ExpectError: regexp.MustCompile("must be set when"),
 			},
+			{
+				// The destroy phase re-reads the last configuration, so a valid
+				// step must follow the expected validation failures.
+				Config: reservedInstancesDataBlock(fmt.Sprintf("  reserved_instance_name = %q\n", name)),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "instances.#", "0"),
+				),
+			},
 		},
 	})
 }

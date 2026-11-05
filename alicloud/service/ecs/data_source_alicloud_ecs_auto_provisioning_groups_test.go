@@ -61,6 +61,14 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				Config:      autoProvisioningGroupsDataBlock("  status = [\"not-a-status\"]\n"),
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Match|expected value to be one of`),
 			},
+			{
+				// The destroy phase re-reads the last configuration, so a valid
+				// step must follow the expected validation failures.
+				Config: autoProvisioningGroupsDataBlock(nameFilter),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceId, "groups.#", "0"),
+				),
+			},
 		},
 	})
 }
