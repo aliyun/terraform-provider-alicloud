@@ -126,13 +126,68 @@ func TestUnitRocketmqListItems(t *testing.T) {
 		}
 	})
 
-	t.Run("missing list is an empty result", func(t *testing.T) {
-		items, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{}})
+	t.Run("empty list is an empty result", func(t *testing.T) {
+		items, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{"list": []interface{}{}}})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if len(items) != 0 {
 			t.Fatalf("expected no items, got %d", len(items))
+		}
+	})
+
+	t.Run("null list is an empty result", func(t *testing.T) {
+		items, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{"list": nil}})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(items) != 0 {
+			t.Fatalf("expected no items, got %d", len(items))
+		}
+	})
+
+	t.Run("missing list with a zero count is an empty result", func(t *testing.T) {
+		// ListInstances answers an empty result without a list key at all.
+		items, err := rocketmqListItems(map[string]interface{}{
+			"success": true,
+			"data":    map[string]interface{}{"pageNumber": float64(1), "pageSize": float64(10), "totalCount": float64(0)},
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(items) != 0 {
+			t.Fatalf("expected no items, got %d", len(items))
+		}
+	})
+
+	t.Run("missing list with rows reported is an error", func(t *testing.T) {
+		_, err := rocketmqListItems(map[string]interface{}{
+			"success": true,
+			"data":    map[string]interface{}{"totalCount": float64(3)},
+		})
+		if err == nil || !strings.Contains(err.Error(), "$.data.list") {
+			t.Fatalf("expected a parse error naming $.data.list, got %v", err)
+		}
+	})
+
+	t.Run("missing list without a count is an error", func(t *testing.T) {
+		_, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{}})
+		if err == nil || !strings.Contains(err.Error(), "$.data.list") {
+			t.Fatalf("expected a parse error naming $.data.list, got %v", err)
+		}
+	})
+
+	t.Run("list under the wrong type is an error", func(t *testing.T) {
+		_, err := rocketmqListItems(map[string]interface{}{"success": true, "data": map[string]interface{}{"list": "not-an-array"}})
+		if err == nil || !strings.Contains(err.Error(), "instead of an array") {
+			t.Fatalf("expected a type error naming the list, got %v", err)
+		}
+	})
+
+	t.Run("empty response body is an error", func(t *testing.T) {
+		_, err := rocketmqListItems(nil)
+		if err == nil || !strings.Contains(err.Error(), "empty response body") {
+			t.Fatalf("expected an empty-body error, got %v", err)
 		}
 	})
 

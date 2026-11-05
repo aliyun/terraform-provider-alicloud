@@ -10,12 +10,13 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccAliCloudRocketmqInstances_basic(t *testing.T) {
 	resourceId := "data.alicloud_rocketmq_instances.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%srocketmqds%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAcc%srocketmqds%d", acctest.DefaultRegionToTest, rand)
 	dependence := testAccRocketmqDataSourceInstance(name)
 
 	resource.Test(t, resource.TestCase{
@@ -52,8 +53,8 @@ data "alicloud_rocketmq_instances" "default" {
 						"instances.0.update_time":             acctest.CHECKSET,
 						"instances.0.product_info.#":          "1",
 						"instances.0.product_info.0.trace_on": acctest.CHECKSET,
-						// capacity_type is only returned for some series; the key
-						// stays in the schema and is asserted when present.
+						// capacity_type is only returned for some series, so the value is
+						// checked separately when the API includes it.
 						"instances.0.tags.#": acctest.CHECKSET,
 						"ids.#":              "1",
 						"names.#":            "1",
@@ -63,6 +64,7 @@ data "alicloud_rocketmq_instances" "default" {
 					// The data source ID must be the real instance created for the
 					// test, not an arbitrary non-empty value.
 					resource.TestCheckResourceAttrPair(resourceId, "instances.0.instance_id", "alicloud_rocketmq_instance.default", "id"),
+					rocketmqCheckOptionalEnum(resourceId, "instances.0.product_info.0.capacity_type", "provisioned", "ondemand"),
 				),
 			},
 			{
@@ -164,6 +166,28 @@ data "alicloud_rocketmq_instances" "default" {
 // from earlier steps after the result set has shrunk.
 func rocketmqDataSourceChecks(resourceId string, checks map[string]string) resource.TestCheckFunc {
 	return acctest.ResourceAttrInit(resourceId, map[string]string{}).ResourceAttrMapUpdateSet()(checks)
+}
+
+// rocketmqCheckOptionalEnum accepts an attribute the API returns only for some
+// configurations. When the attribute is present it must be one of the allowed
+// values, so an unexpected value fails instead of being silently accepted.
+func rocketmqCheckOptionalEnum(resourceId, key string, allowed ...string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		resourceState, ok := state.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("%s is not present in the state", resourceId)
+		}
+		value, ok := resourceState.Primary.Attributes[key]
+		if !ok || value == "" {
+			return nil
+		}
+		for _, allowedValue := range allowed {
+			if value == allowedValue {
+				return nil
+			}
+		}
+		return fmt.Errorf("%s.%s = %q, want one of %v", resourceId, key, value, allowed)
+	}
 }
 
 // rocketmqMissingInstanceIdError matches the plan-time diagnostic produced when

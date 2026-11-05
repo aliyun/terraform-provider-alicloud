@@ -123,7 +123,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - (String) The status of the instance. Valid values: `CREATING`, `CHANGING`, `RUNNING`, `STOPPED` and `RELEASED`.
   * `region_id` - (String) The region ID of the instance.
   * `series_code` - (String) The series code of the instance.
-  * `sub_series_code` - (String) The sub-series code of the instance.
+  * `sub_series_code` - (String) The sub-series code of the instance. Valid values: `cluster_ha` (cluster high-availability), `single_node` (single node) and `serverless` (serverless).
   * `payment_type` - (String) The payment type of the instance. Valid values: `Subscription` and `PayAsYouGo`.
   * `commodity_code` - (String) The commodity code of the instance.
   * `service_code` - (String) The service code of the instance.

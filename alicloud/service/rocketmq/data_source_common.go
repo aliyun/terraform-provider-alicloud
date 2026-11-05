@@ -91,24 +91,35 @@ func rocketmqCollectPages(action string, key func(item map[string]interface{}) s
 	return nil, fmt.Errorf("%s returned a full page for %d consecutive requests (pageSize=%d), so pagination did not terminate; the result was not returned because it would be incomplete", action, rocketmqDataSourceMaxPages, rocketmqDataSourcePageSize)
 }
 
-// rocketmqListItems extracts data.list from a list response. A response without
-// the key yields an empty slice; an explicit unsuccessful response is an error
-// so a failed call cannot be mistaken for "no matching resources".
+// rocketmqListItems extracts data.list from a list response. The list APIs omit
+// data.list when nothing matched, so totalCount==0 is the legitimate empty
+// result; a response without a body, with a missing list while rows are
+// reported, or with the list under another type is a parse failure that must
+// reach the caller instead of looking like an empty result.
 func rocketmqListItems(response map[string]interface{}) ([]map[string]interface{}, error) {
 	items := make([]map[string]interface{}, 0)
 	if response == nil {
-		return items, nil
+		return nil, fmt.Errorf("RocketMQ returned an empty response body, so the result list cannot be read")
 	}
 	if success, ok := response["success"].(bool); ok && !success {
 		return nil, fmt.Errorf("RocketMQ reported an unsuccessful response (code %q): %v", rocketmqString(response, "code"), response["message"])
 	}
 	raw, err := jsonpath.Get("$.data.list", response)
 	if err != nil {
+		// ListInstances returns {"data":{"pageNumber":1,"pageSize":10,"totalCount":0}}
+		// with no list key at all when no instance matches.
+		totalCount, countErr := jsonpath.Get("$.data.totalCount", response)
+		if countErr == nil && rocketmqCountIsZero(totalCount) {
+			return items, nil
+		}
+		return nil, fmt.Errorf("RocketMQ response has no readable $.data.list and does not report an empty result: %w", err)
+	}
+	if raw == nil {
 		return items, nil
 	}
 	list, ok := raw.([]interface{})
 	if !ok {
-		return items, nil
+		return nil, fmt.Errorf("RocketMQ response carries $.data.list as %T instead of an array", raw)
 	}
 	for _, v := range list {
 		if item, ok := v.(map[string]interface{}); ok {
@@ -116,6 +127,24 @@ func rocketmqListItems(response map[string]interface{}) ([]map[string]interface{
 		}
 	}
 	return items, nil
+}
+
+// rocketmqCountIsZero reports whether a decoded JSON number is zero. A missing
+// or unreadable count is not zero, so the caller keeps treating the response as
+// malformed.
+func rocketmqCountIsZero(value interface{}) bool {
+	switch v := value.(type) {
+	case float64:
+		return v == 0
+	case json.Number:
+		n, err := v.Float64()
+		return err == nil && n == 0
+	case int:
+		return v == 0
+	case int64:
+		return v == 0
+	}
+	return false
 }
 
 func rocketmqString(item map[string]interface{}, key string) string {

@@ -13,7 +13,7 @@ import (
 func TestAccAliCloudRocketmqConsumerGroups_basic(t *testing.T) {
 	resourceId := "data.alicloud_rocketmq_consumer_groups.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%srocketmqds%d", acctest.DefaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testAcc%srocketmqds%d", acctest.DefaultRegionToTest, rand)
 	dependence := testAccRocketmqConsumerGroupsDataSourceDependence(name)
 
 	resource.Test(t, resource.TestCase{
