@@ -70,10 +70,6 @@ resource "alicloud_rocketmq_instance" "default" {
   sub_series_code   = "cluster_ha"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   remark            = "example"
-  ip_whitelists     = ["192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16", "0.0.0.0/0"]
-  software {
-    maintain_time = "02:00-06:00"
-  }
   tags = {
     Created = "TF"
   }
@@ -89,6 +85,7 @@ resource "alicloud_rocketmq_instance" "default" {
       internet_spec      = "enable"
       flow_out_type      = "payByBandwidth"
       flow_out_bandwidth = "30"
+      ip_whitelist       = []
     }
   }
 }
