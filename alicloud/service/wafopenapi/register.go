@@ -52,5 +52,13 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  DataSourceWafv3Instances,
 			},
 		},
+		// Framework-native resources. New types land on the framework; the legacy
+		// SDK v2 resources above remain on the SDK until migrated.
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_waf_defense_asset",
+				Factory:  NewWafDefenseAssetResource,
+			},
+		},
 	}
 }
