@@ -489,12 +489,19 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				// non-empty even when the user only configures system_disk_categories; a
 				// Describe response created from the plural returns no singular category,
 				// which would otherwise produce a perpetual drift. Suppress the singular
-				// diff whenever the plural categories is configured.
+				// diff only for a user-configured plural list: the read path mirrors the
+				// remote singular into the computed plural, and that mirrored value must
+				// not hide a later singular change.
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if cats, ok := d.GetOk("system_disk_categories"); ok && len(cats.([]interface{})) > 0 {
-						return true
+					raw := d.GetRawConfig()
+					if !rawConfigValueIsSet(raw, "system_disk_categories") {
+						return false
 					}
-					return false
+					categories := raw.GetAttr("system_disk_categories")
+					if categories.IsNull() || !categories.IsKnown() {
+						return false
+					}
+					return categories.LengthInt() > 0
 				},
 			},
 			"security_enhancement_strategy": {
