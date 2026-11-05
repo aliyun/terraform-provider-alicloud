@@ -3174,23 +3174,7 @@ func TestAccAliCloudESAWafRuleresource_wafrule_coverage_modify_test(t *testing.T
 					"config": []map[string]interface{}{
 						{
 							"status": "on",
-							"rate_limit": []map[string]interface{}{
-								{
-									"characteristics": []map[string]interface{}{
-										{
-											"criteria": []map[string]interface{}{
-												{
-													"match_type": "http.request.session",
-												},
-											},
-										},
-									},
-									"ttl":       "1800",
-									"threshold": []map[string]interface{}{{"request": "50"}},
-									"interval":  "10",
-								},
-							},
-							"type": "http_directory_traversal",
+							"type":   "http_directory_traversal",
 						},
 					},
 					"shared": []map[string]interface{}{
