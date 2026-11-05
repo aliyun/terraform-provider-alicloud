@@ -37,7 +37,7 @@ variable "name" {
 }
 
 resource "alicloud_ots_instance" "default" {
-  name        = "tf-${substr(uuid(), 0, 8)}"
+  name        = "tf-example-ots1"
   description = var.name
   accessed_by = "Any"
   tags = {
@@ -173,7 +173,7 @@ terraform {
 }
 
 resource "alicloud_ots_instance" "default" {
-  name          = "tf-${substr(uuid(), 0, 8)}"
+  name          = "tf-example-ots2"
   description   = "tf-example-nested"
   accessed_by   = "Any"
   instance_type = "Capacity"
