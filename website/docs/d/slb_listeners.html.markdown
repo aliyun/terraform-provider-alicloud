@@ -44,6 +44,10 @@ data "alicloud_slb_listeners" "sample_ds" {
 output "first_slb_listener_protocol" {
   value = data.alicloud_slb_listeners.sample_ds.slb_listeners[0].protocol
 }
+
+output "first_slb_listener_id" {
+  value = data.alicloud_slb_listeners.sample_ds.slb_listeners[0].id
+}
 ```
 
 ## Argument Reference
@@ -61,6 +65,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `slb_listeners` - A list of SLB listeners. Each element contains the following attributes:
+  * `id` - The listener ID, in the format of `<load_balancer_id>:<protocol>:<frontend_port>`. It is the same as the import ID of `alicloud_slb_listener`.
   * `frontend_port` - Frontend port used to receive incoming traffic and distribute it to the backend servers.
   * `backend_port` - Port opened on the backend server to receive requests.
   * `protocol` - Listener protocol. Possible values: `http`, `https`, `tcp` and `udp`.
