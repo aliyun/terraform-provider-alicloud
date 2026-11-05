@@ -8,6 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	polardb "github.com/aliyun/terraform-provider-alicloud/alicloud/service/polardb"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -17,7 +18,8 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 	endpointId := "alicloud_polardb_polar_fs_endpoint.default"
 	instancesId := "data.alicloud_polardb_polar_fs_instances.default"
 	tokenId := "data.alicloud_polardb_lakebase_tenant_token.default"
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, "default", testAccPolarDBPolarFsDependence)
+	name := tfacctest.RandomWithPrefix("tf-testacc-polarfs")
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, testAccPolarDBPolarFsDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Beijing})
@@ -34,11 +36,17 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 					"pay_type":                "Postpaid",
 					"accelerate_switch":       "ON",
 					"accelerate_storage_size": 5000,
-					"accelerate_type":         "juice",
-					"db_cluster_id":           "${alicloud_polardb_cluster.polarfs.id}",
-					"vpc_id":                  "${data.alicloud_vswitches.polarfs.vswitches[0].vpc_id}",
-					"vswitch_id":              "${data.alicloud_vswitches.polarfs.vswitches[0].id}",
-					"zone_id":                 "${data.alicloud_vswitches.polarfs.vswitches[0].zone_id}",
+					"accelerate_type":         "alluxio",
+					"custom_bucket_path_list": []map[string]interface{}{
+						{
+							"bucket": "${alicloud_oss_bucket.default.bucket}.oss-cn-beijing-internal.aliyuncs.com",
+							"path":   "/terraform-acc",
+						},
+					},
+					"db_cluster_id": "${alicloud_polardb_cluster.polarfs.id}",
+					"vpc_id":        "${data.alicloud_vswitches.polarfs.vswitches[0].vpc_id}",
+					"vswitch_id":    "${data.alicloud_vswitches.polarfs.vswitches[0].id}",
+					"zone_id":       "${data.alicloud_vswitches.polarfs.vswitches[0].zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceId, "db_type", "PostgreSQL"),
@@ -48,7 +56,12 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceId, "creation_category", "basic"),
 					resource.TestCheckResourceAttr(resourceId, "accelerate_switch", "ON"),
 					resource.TestCheckResourceAttr(resourceId, "accelerate_storage_size", "5000"),
-					resource.TestCheckResourceAttr(resourceId, "accelerate_type", "juice"),
+					resource.TestCheckResourceAttr(resourceId, "accelerate_type", "alluxio"),
+					resource.TestCheckResourceAttr(resourceId, "custom_bucket_path_list.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "custom_bucket_path_list.*", map[string]string{
+						"bucket": name + ".oss-cn-beijing-internal.aliyuncs.com",
+						"path":   "/terraform-acc",
+					}),
 					resource.TestCheckResourceAttrSet(resourceId, "status"),
 					resource.TestCheckResourceAttrSet(resourceId, "meta_instance_name"),
 					resource.TestCheckResourceAttr(endpointId, "endpoint_type", "S3Gateway"),
@@ -68,11 +81,15 @@ func TestAccAliCloudPolarDBPolarFs_complete(t *testing.T) {
 		},
 	})
 }
-func testAccPolarDBPolarFsDependence(string) string {
-	return `
+func testAccPolarDBPolarFsDependence(name string) string {
+	return fmt.Sprintf(`
 data "alicloud_vswitches" "polarfs" {
   status  = "Available"
   zone_id = "cn-beijing-l"
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "%[1]s"
 }
 
 resource "alicloud_polardb_cluster" "polarfs" {
@@ -110,7 +127,7 @@ data "alicloud_polardb_lakebase_tenant_token" "default" {
   db_cluster_id        = alicloud_polardb_cluster.polarfs.id
   subdir               = "/terraform-acc"
 }
-`
+`, name)
 }
 func testAccCheckPolarDBPolarFsDestroy(s *terraform.State) error {
 	client := acctest.Provider.Meta().(*connectivity.AliyunClient)

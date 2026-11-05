@@ -51,8 +51,20 @@ func ResourcePolarFs() *schema.Resource {
 			"accelerate_storage_size": {
 				Type: schema.TypeInt, Optional: true, ForceNew: true,
 			},
-			"creation_category":               {Type: schema.TypeString, Optional: true, Computed: true, ForceNew: true, ValidateFunc: validators.StringInSlice([]string{"basic", "cold", "high_performance"}, false)},
-			"accelerate_type":                 {Type: schema.TypeString, Optional: true, Computed: true, ForceNew: true, ValidateFunc: validators.StringInSlice([]string{"juice", "alluxio"}, false)},
+			"creation_category": {Type: schema.TypeString, Optional: true, Computed: true, ForceNew: true, ValidateFunc: validators.StringInSlice([]string{"basic", "cold", "high_performance"}, false)},
+			"accelerate_type":   {Type: schema.TypeString, Optional: true, Computed: true, ForceNew: true, ValidateFunc: validators.StringInSlice([]string{"juice", "alluxio"}, false)},
+			"custom_bucket_path_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 100,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"bucket": {Type: schema.TypeString, Optional: true},
+						"path":   {Type: schema.TypeString, Optional: true},
+					},
+				},
+			},
 			"polar_fs_path":                   {Type: schema.TypeString, Computed: true},
 			"status":                          {Type: schema.TypeString, Computed: true},
 			"polar_fs_version":                {Type: schema.TypeString, Computed: true},
@@ -86,6 +98,9 @@ func ResourcePolarFs() *schema.Resource {
 func resourcePolarFsCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "CreatePolarFs"
+	if err := validatePolarDBPolarFsCreateRequest(d); err != nil {
+		return errs.WrapError(err)
+	}
 	request := buildPolarDBPolarFsCreateRequest(d, client.RegionId)
 	response, err := polarDBRpcPost(client, action, request, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
@@ -121,10 +136,59 @@ func buildPolarDBPolarFsCreateRequest(d *schema.ResourceData, regionId string) m
 			request[apiField] = value
 		}
 	}
+	if value, ok := d.GetOk("custom_bucket_path_list"); ok {
+		if list := expandPolarDBPolarFsCustomBucketPathList(polarDBPolarFsCustomBucketPathListRaw(value)); len(list) > 0 {
+			request["CustomBucketPathList"] = list
+		}
+	}
 	if value, ok := d.GetOk("db_type"); ok {
 		request["DBType"] = expandPolarDBPolarFsDBType(value.(string))
 	}
 	return request
+}
+
+func validatePolarDBPolarFsCreateRequest(d *schema.ResourceData) error {
+	accelerateType, ok := d.GetOk("accelerate_type")
+	if !ok || accelerateType.(string) != "alluxio" {
+		return nil
+	}
+	value, ok := d.GetOk("custom_bucket_path_list")
+	if !ok || len(expandPolarDBPolarFsCustomBucketPathList(polarDBPolarFsCustomBucketPathListRaw(value))) == 0 {
+		return fmt.Errorf("custom_bucket_path_list must contain at least one bucket/path pair when accelerate_type is alluxio")
+	}
+	return nil
+}
+
+func polarDBPolarFsCustomBucketPathListRaw(value interface{}) []interface{} {
+	switch typed := value.(type) {
+	case *schema.Set:
+		return typed.List()
+	case []interface{}:
+		return typed
+	}
+	return nil
+}
+
+func expandPolarDBPolarFsCustomBucketPathList(raw []interface{}) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(raw))
+	for _, item := range raw {
+		entry, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		pair := make(map[string]interface{}, 2)
+		if bucket, ok := entry["bucket"].(string); ok && bucket != "" {
+			pair["Bucket"] = bucket
+		}
+		if path, ok := entry["path"].(string); ok && path != "" {
+			pair["Path"] = path
+		}
+		if len(pair) == 0 {
+			continue
+		}
+		result = append(result, pair)
+	}
+	return result
 }
 
 // lintignore: R001
@@ -181,7 +245,47 @@ func flattenPolarDBPolarFsAttribute(d *schema.ResourceData, object map[string]in
 			}
 		}
 	}
+	if value, ok := object["CustomBucketPathList"]; ok && value != nil {
+		list, err := flattenPolarDBPolarFsCustomBucketPathList(value)
+		if err != nil {
+			return errs.WrapErrorf(err, "failed to decode CustomBucketPathList from %v", value)
+		}
+		if err := d.Set("custom_bucket_path_list", list); err != nil {
+			return errs.WrapError(err)
+		}
+	}
 	return nil
+}
+
+func flattenPolarDBPolarFsCustomBucketPathList(value interface{}) ([]map[string]interface{}, error) {
+	var items []interface{}
+	switch raw := value.(type) {
+	case []interface{}:
+		items = raw
+	case []map[string]interface{}:
+		items = make([]interface{}, 0, len(raw))
+		for _, item := range raw {
+			items = append(items, item)
+		}
+	default:
+		return nil, fmt.Errorf("unexpected type %T", value)
+	}
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		entry, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		pair := make(map[string]interface{}, 2)
+		if bucket, ok := entry["Bucket"]; ok && bucket != nil {
+			pair["bucket"] = fmt.Sprint(bucket)
+		}
+		if path, ok := entry["Path"]; ok && path != nil {
+			pair["path"] = fmt.Sprint(path)
+		}
+		result = append(result, pair)
+	}
+	return result, nil
 }
 
 func expandPolarDBPolarFsDBType(value string) string {
