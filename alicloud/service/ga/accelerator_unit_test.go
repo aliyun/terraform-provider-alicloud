@@ -531,15 +531,15 @@ func TestUnitAliCloudGaAcceleratorDdosDetachRequest(t *testing.T) {
 // TestUnitAliCloudGaAcceleratorPlanValidation covers the plan-time rejections
 // through the public Resource.Diff entry with a real RawConfig: incomplete DDoS
 // entries, writes to the deprecated read-only aliases and the mutually
-// exclusive renewal arguments. It also proves the plan never creates a cloud
-// client.
+// exclusive renewal arguments. It also proves the plan never issues a cloud
+// request.
 // lintignore: R001
 func TestUnitAliCloudGaAcceleratorPlanValidation(t *testing.T) {
 	accelerator := ResourceAliCloudGaAccelerator()
 	clientCalls := 0
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGaplusClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		clientCalls++
-		return nil, fmt.Errorf("unexpected cloud client creation during plan")
+		return nil, fmt.Errorf("unexpected cloud request during plan")
 	})
 	defer patches.Reset()
 
@@ -602,9 +602,9 @@ func TestUnitAliCloudGaAcceleratorPlanValidation(t *testing.T) {
 // lintignore: R001
 func TestUnitAliCloudGaAcceleratorDdosConfigListPreWriteGuard(t *testing.T) {
 	clientCalls := 0
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGaplusClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "RpcPost", func(_ *connectivity.AliyunClient, _ string, _ string, _ string, _ map[string]interface{}, _ map[string]interface{}, _ bool) (map[string]interface{}, error) {
 		clientCalls++
-		return nil, fmt.Errorf("unexpected cloud client creation")
+		return nil, fmt.Errorf("unexpected cloud request")
 	})
 	defer patches.Reset()
 
