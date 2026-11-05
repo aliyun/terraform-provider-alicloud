@@ -129,7 +129,7 @@ The following arguments are supported:
 * `namespace` - (Required, ForceNew, String) The name of the namespace. A workspace gets its default namespace automatically, named `<workspace_name>-default` (or `<workspace_name>-default-ha` when the workspace is multi-availability-zone).
 * `ha` - (Optional, ForceNew, Bool) Whether the namespace is highly available. It can only be set when the namespace is created, and changing a configured value forces a new namespace; removing the argument keeps the value already in state. When it is omitted, the service decides, and a namespace created on a single-availability-zone workspace reports `false`. An HA namespace also needs HA capacity on the parent workspace: a workspace without it refuses the create with `903100`.
 * `resource_spec` - (Optional, List) The resource specification (CU) of the namespace. See [`resource_spec`](#resource_spec) below.
-* `timeouts` - (Optional) See [Timeouts](#timeouts) below.
+* `timeouts` - (Optional, Object) See [Timeouts](#timeouts) below.
 
 ### `resource_spec`
 
@@ -140,7 +140,7 @@ The resource_spec supports the following:
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above. The value is formulated as `<instance_id>:<namespace>`.
+* `id` - (String) The ID of the resource supplied above. The value is formulated as `<instance_id>:<namespace>`.
 * `gmt_create` - (Computed, Int) The creation time reported by the service, as a Unix epoch timestamp in milliseconds.
 * `gmt_modified` - (Computed, Int) The last modification time reported by the service, as a Unix epoch timestamp in milliseconds.
 * `resource_used` - (Computed, List) The resource usage of the namespace.
@@ -153,9 +153,9 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Vvp Namespace.
-* `delete` - (Defaults to 5 mins) Used when delete the Vvp Namespace.
-* `update` - (Defaults to 5 mins) Used when update the Vvp Namespace.
+* `create` - (String, Defaults to `5 mins`) Used when create the Vvp Namespace.
+* `delete` - (String, Defaults to `5 mins`) Used when delete the Vvp Namespace.
+* `update` - (String, Defaults to `5 mins`) Used when update the Vvp Namespace.
 
 ## Import
 

@@ -21,6 +21,7 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/realtimecompute"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -745,23 +746,65 @@ func testAccCheckRealtimeComputeVvpDefaultWorkspaceDestroy(s *terraform.State) e
 		if rs.Type != "alicloud_realtime_compute_vvp_instance" {
 			continue
 		}
-		instanceId := rs.Primary.ID
-		deadline := time.Now().Add(5 * time.Minute)
-		for {
-			response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
-				map[string]interface{}{"Region": client.RegionId, "InstanceId": instanceId}, nil)
-			if err == nil {
-				if items, ok := response["Instances"].([]interface{}); !ok || len(items) == 0 {
-					return nil
-				}
-			}
-			if time.Now().After(deadline) {
-				return fmt.Errorf("workspace %s still exists after destroy: last error %v", instanceId, err)
-			}
-			time.Sleep(10 * time.Second)
+		if err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, rs.Primary.ID, 10*time.Second, 5*time.Minute); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// testAccRealtimeComputeVvpWaitWorkspaceGone polls DescribeInstances until the workspace is
+// definitively gone. Only a decoded empty Instances collection or an explicit not-found error
+// proves absence: an omitted, null or mistyped collection is an unreadable response, and reading it
+// as "deleted" would let the destroy check pass while the workspace, and every namespace it owns
+// including ones created outside state, still exists. Other errors keep the bounded wait.
+func testAccRealtimeComputeVvpWaitWorkspaceGone(client *connectivity.AliyunClient, instanceId string, interval, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for {
+		response, err := client.RpcGet("foasconsole", "2021-10-28", "DescribeInstances",
+			map[string]interface{}{"Region": client.RegionId, "InstanceId": instanceId}, nil)
+		lastErr = err
+		if err != nil {
+			if errs.NotFoundError(err) {
+				return nil
+			}
+		} else {
+			absent, decodeErr := testAccRealtimeComputeVvpInstancesAbsent(response)
+			if decodeErr != nil {
+				return fmt.Errorf("cannot tell whether workspace %s is gone after destroy: %w", instanceId, decodeErr)
+			}
+			if absent {
+				return nil
+			}
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("workspace %s still exists after destroy: last error %v", instanceId, lastErr)
+		}
+		time.Sleep(interval)
+	}
+}
+
+// testAccRealtimeComputeVvpInstancesAbsent reports whether a DescribeInstances response proves the
+// workspace no longer exists. The response schema is not published in the API metadata, so an
+// omitted, null or mistyped Instances field is treated as unreadable instead of empty; only an
+// explicitly decoded array is accepted, and an empty array is a legal empty collection.
+func testAccRealtimeComputeVvpInstancesAbsent(response map[string]interface{}) (bool, error) {
+	if response == nil {
+		return false, fmt.Errorf("DescribeInstances returned an empty response")
+	}
+	raw, ok := response["Instances"]
+	if !ok {
+		return false, fmt.Errorf("DescribeInstances response does not contain Instances")
+	}
+	if raw == nil {
+		return false, fmt.Errorf("DescribeInstances response Instances is null")
+	}
+	items, ok := raw.([]interface{})
+	if !ok {
+		return false, fmt.Errorf("DescribeInstances response Instances has unexpected type %T", raw)
+	}
+	return len(items) == 0, nil
 }
 
 func testAccCheckRealtimeComputeVvpNamespaceDestroy(s *terraform.State) error {
@@ -1252,6 +1295,29 @@ func vvpNamespaceUpdateTestServer(t *testing.T, failReads bool, delay time.Durat
 // vvpNamespaceUpdateTestResource configures a fresh resource against a local foasconsole endpoint.
 func vvpNamespaceUpdateTestResource(t *testing.T, endpoint string) (fwresource.Resource, fwschema.Schema) {
 	t.Helper()
+	client := vvpNamespaceTestClient(t, endpoint)
+	res := realtimecompute.NewVvpNamespaceResource()
+	configurable, ok := res.(fwresource.ResourceWithConfigure)
+	if !ok {
+		t.Fatalf("the resource does not implement the Configure interface")
+	}
+	var configureResp fwresource.ConfigureResponse
+	configurable.Configure(context.Background(), fwresource.ConfigureRequest{ProviderData: client}, &configureResp)
+	if configureResp.Diagnostics.HasError() {
+		t.Fatalf("configuring the resource: %v", configureResp.Diagnostics)
+	}
+	var schemaResp fwresource.SchemaResponse
+	res.Schema(context.Background(), fwresource.SchemaRequest{}, &schemaResp)
+	if schemaResp.Diagnostics.HasError() {
+		t.Fatalf("building schema: %v", schemaResp.Diagnostics)
+	}
+	return res, schemaResp.Schema
+}
+
+// vvpNamespaceTestClient builds a foasconsole client whose endpoint is the given local stub, so a
+// test can drive code that takes the client directly (the acceptance destroy helpers included).
+func vvpNamespaceTestClient(t *testing.T, endpoint string) *connectivity.AliyunClient {
+	t.Helper()
 	t.Setenv("NO_PROXY", "127.0.0.1")
 	t.Setenv("no_proxy", "127.0.0.1")
 	credential, err := credentials.NewCredential(new(credentials.Config).SetType("access_key").
@@ -1278,23 +1344,7 @@ func vvpNamespaceUpdateTestResource(t *testing.T, endpoint string) (fwresource.R
 	}
 	// Both the tea RPC layer and the legacy SDK prepend the scheme themselves.
 	endpoints.Store("foasconsole", strings.TrimPrefix(endpoint, "http://"))
-
-	res := realtimecompute.NewVvpNamespaceResource()
-	configurable, ok := res.(fwresource.ResourceWithConfigure)
-	if !ok {
-		t.Fatalf("the resource does not implement the Configure interface")
-	}
-	var configureResp fwresource.ConfigureResponse
-	configurable.Configure(context.Background(), fwresource.ConfigureRequest{ProviderData: client}, &configureResp)
-	if configureResp.Diagnostics.HasError() {
-		t.Fatalf("configuring the resource: %v", configureResp.Diagnostics)
-	}
-	var schemaResp fwresource.SchemaResponse
-	res.Schema(context.Background(), fwresource.SchemaRequest{}, &schemaResp)
-	if schemaResp.Diagnostics.HasError() {
-		t.Fatalf("building schema: %v", schemaResp.Diagnostics)
-	}
-	return res, schemaResp.Schema
+	return client
 }
 
 // vvpNamespaceUpdateTestValue builds one state or plan value at the given specification with the
@@ -1865,5 +1915,125 @@ func TestUnitRealtimeComputeVvpNamespaceCreateAdoptsUncertainResult(t *testing.T
 	resp.State.GetAttribute(context.Background(), path.Root("resource_spec"), &spec)
 	if spec.IsNull() || len(spec.Elements()) != 1 {
 		t.Fatalf("state resource_spec = %v, want one element", spec)
+	}
+}
+
+// vvpNamespaceInstancesTestServer answers DescribeInstances with the given status and body and
+// counts the calls, so the destroy wait can be driven without a workspace behind it.
+func vvpNamespaceInstancesTestServer(t *testing.T, status int, body string) (*httptest.Server, func() int) {
+	t.Helper()
+	var mu sync.Mutex
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		w.Header().Set("Content-Type", "application/json")
+		if r.FormValue("Action") != "DescribeInstances" {
+			fmt.Fprint(w, `{"RequestId":"mock"}`)
+			return
+		}
+		mu.Lock()
+		calls++
+		mu.Unlock()
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+		}
+		fmt.Fprint(w, body)
+	}))
+	t.Cleanup(server.Close)
+	return server, func() int {
+		mu.Lock()
+		defer mu.Unlock()
+		return calls
+	}
+}
+
+// TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyRejectsUnreadableInstances pins the cleanup
+// criterion the default0 acceptance case relies on: the destroy of the parent workspace is what
+// removes the side namespace created outside state, so an Instances collection that cannot be
+// decoded neither proves the workspace gone nor may it be retried into a timeout silently — it is
+// reported as an unreadable response.
+func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyRejectsUnreadableInstances(t *testing.T) {
+	cases := []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{name: "missing collection", body: `{"RequestId":"mock"}`, wantErr: "does not contain Instances"},
+		{name: "null collection", body: `{"RequestId":"mock","Instances":null}`, wantErr: "Instances is null"},
+		{name: "mistyped collection", body: `{"RequestId":"mock","Instances":{}}`, wantErr: "unexpected type"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, calls := vvpNamespaceInstancesTestServer(t, http.StatusOK, tc.body)
+			client := vvpNamespaceTestClient(t, server.URL)
+			started := time.Now()
+			err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, "inst-unit", 10*time.Millisecond, time.Minute)
+			if err == nil {
+				t.Fatalf("an unreadable Instances response was accepted as a destroyed workspace")
+			}
+			if !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("expected an error containing %q, got %q", tc.wantErr, err)
+			}
+			if calls() != 1 {
+				t.Fatalf("DescribeInstances was called %d times, want 1: an unreadable response is reported, not retried", calls())
+			}
+			if elapsed := time.Since(started); elapsed > 30*time.Second {
+				t.Fatalf("the unreadable response took %s to be reported", elapsed)
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyAcceptsDecodedAbsence is the control for the
+// counterexamples above: a decoded empty collection is a legal empty result and proves absence.
+func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyAcceptsDecodedAbsence(t *testing.T) {
+	cases := []struct {
+		name   string
+		status int
+		body   string
+	}{
+		{name: "empty collection", status: http.StatusOK, body: `{"RequestId":"mock","Instances":[]}`},
+		{name: "explicit not-found error", status: http.StatusNotFound, body: `{"RequestId":"mock","Code":"NotFound","Message":"InvalidInstanceId.NotFound: the specified instance is not found."}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			server, calls := vvpNamespaceInstancesTestServer(t, tc.status, tc.body)
+			client := vvpNamespaceTestClient(t, server.URL)
+			if err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, "inst-unit", 10*time.Millisecond, 10*time.Second); err != nil {
+				t.Fatalf("decoded absence is proof the workspace is gone, got %v", err)
+			}
+			if calls() != 1 {
+				t.Fatalf("DescribeInstances was called %d times, want 1", calls())
+			}
+		})
+	}
+}
+
+// TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyKeepsWaitingWhileWorkspaceExists is the second
+// control: a decoded non-empty collection keeps the bounded wait and fails the check with the
+// workspace named, so a live workspace can never be reported as destroyed.
+func TestUnitRealtimeComputeVvpDefaultWorkspaceDestroyKeepsWaitingWhileWorkspaceExists(t *testing.T) {
+	server, calls := vvpNamespaceInstancesTestServer(t, http.StatusOK,
+		`{"RequestId":"mock","Instances":[{"InstanceId":"inst-unit","ClusterStatus":"RUNNING"}]}`)
+	client := vvpNamespaceTestClient(t, server.URL)
+
+	started := time.Now()
+	err := testAccRealtimeComputeVvpWaitWorkspaceGone(client, "inst-unit", 20*time.Millisecond, 200*time.Millisecond)
+	elapsed := time.Since(started)
+
+	if err == nil {
+		t.Fatalf("a workspace still listed by DescribeInstances was reported as destroyed")
+	}
+	if !strings.Contains(err.Error(), "still exists") || !strings.Contains(err.Error(), "inst-unit") {
+		t.Fatalf("expected a still-exists error naming the workspace, got %q", err)
+	}
+	if calls() < 2 {
+		t.Fatalf("DescribeInstances was called %d times, want at least 2: the wait must keep polling the live workspace", calls())
+	}
+	if elapsed < 150*time.Millisecond {
+		t.Fatalf("the wait returned after %s, before its budget was spent", elapsed)
+	}
+	if elapsed > 30*time.Second {
+		t.Fatalf("the wait took %s, which is not bounded", elapsed)
 	}
 }
