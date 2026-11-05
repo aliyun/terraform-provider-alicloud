@@ -3248,8 +3248,9 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				// QA02: db_node_type is only sent by ModifyDBNodeClass together with
 				// a class change.
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_class": "${local.upgrade_node_class}",
-					"db_node_type":  "DLNode",
+					"db_node_class":             "${local.upgrade_node_class}",
+					"db_node_type":              "DLNode",
+					"planned_flashing_off_time": REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile(`db_node_type is an option of the db_node_class update`),
 			},
@@ -3257,7 +3258,8 @@ func TestAccAliCloudPolarDBCluster_ArchitectureAndStorage(t *testing.T) {
 				// QA02: zone_type is only sent by ModifyDBClusterPrimaryZone together
 				// with a standby_az change.
 				Config: testAccConfig(map[string]interface{}{
-					"zone_type": "Standby",
+					"zone_type":    "Standby",
+					"db_node_type": REMOVEKEY,
 				}),
 				ExpectError: regexp.MustCompile(`zone_type is an option of the standby_az update`),
 			},
