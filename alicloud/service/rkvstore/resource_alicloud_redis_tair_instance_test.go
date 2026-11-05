@@ -5137,34 +5137,51 @@ func TestUnitRedisTairInstanceWaitsForMissingAttribute(t *testing.T) {
 }
 
 // TestUnitRedisTairInstanceWaitsForNodeTypeAndReadOnlyCount covers the read-only/node_type paths
-// that previously had no comparable attribute: the response normalizes NodeType ('double' means
-// MASTER_SLAVE), so the waiter has to compare the normalized value instead of the raw string.
+// that previously had no comparable attribute. The fixture reports the previous values on the
+// first poll, so an update that only waited for the order flag would release too early. Both the
+// schema values and the raw 'double'/'single' values are accepted by the schema and must be
+// compared after the same normalization the response uses.
 func TestUnitRedisTairInstanceWaitsForNodeTypeAndReadOnlyCount(t *testing.T) {
-	var requests []map[string]string
-	describes := 0
-	client := tairInstanceSpecFixtureClient(t, &requests, &describes, func(describe int) []string {
-		return []string{`"NodeType":"double"`, `"ReadOnlyCount":2`}
-	})
-	d := tairInstanceUpdateFixtureData(t,
-		map[string][2]string{
-			"node_type":       {"STAND_ALONE", "MASTER_SLAVE"},
-			"read_only_count": {"1", "2"},
-		},
-		map[string]cty.Value{
-			"config":          cty.NullVal(cty.Map(cty.String)),
-			"instance_class":  cty.StringVal("tair.rdb.2g"),
-			"node_type":       cty.StringVal("MASTER_SLAVE"),
-			"read_only_count": cty.NumberIntVal(2),
-		},
-		map[string]string{"node_type": "STAND_ALONE", "read_only_count": "1"})
-
-	if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
-		t.Fatalf("update failed: %v", err)
+	cases := []struct {
+		name       string
+		configured string
+		applied    string
+	}{
+		{name: "schema value", configured: "MASTER_SLAVE", applied: "double"},
+		{name: "raw api value", configured: "double", applied: "double"},
 	}
-	assert.Len(t, requests, 1)
-	assert.Equal(t, "MASTER_SLAVE", requests[0]["NodeType"])
-	assert.Equal(t, "2", requests[0]["ReadOnlyCount"])
-	assert.GreaterOrEqual(t, describes, 1)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var requests []map[string]string
+			describes := 0
+			client := tairInstanceSpecFixtureClient(t, &requests, &describes, func(describe int) []string {
+				if describe == 1 {
+					return []string{`"NodeType":"single"`, `"ReadOnlyCount":1`}
+				}
+				return []string{fmt.Sprintf(`"NodeType":%q`, tc.applied), `"ReadOnlyCount":2`}
+			})
+			d := tairInstanceUpdateFixtureData(t,
+				map[string][2]string{
+					"node_type":       {"STAND_ALONE", tc.configured},
+					"read_only_count": {"1", "2"},
+				},
+				map[string]cty.Value{
+					"config":          cty.NullVal(cty.Map(cty.String)),
+					"instance_class":  cty.StringVal("tair.rdb.2g"),
+					"node_type":       cty.StringVal(tc.configured),
+					"read_only_count": cty.NumberIntVal(2),
+				},
+				map[string]string{"node_type": "STAND_ALONE", "read_only_count": "1"})
+
+			if err := rkvstore.ResourceAliCloudRedisTairInstanceUpdate(d, client); err != nil {
+				t.Fatalf("update failed: %v", err)
+			}
+			assert.Len(t, requests, 1)
+			assert.Equal(t, tc.configured, requests[0]["NodeType"])
+			assert.Equal(t, "2", requests[0]["ReadOnlyCount"])
+			assert.GreaterOrEqual(t, describes, 2, "the waiter must not release before the applied node type and read-only count are visible")
+		})
+	}
 }
 
 // tairInstanceTransformRetryFixtureClient fails the first TransformInstanceChargeType call
@@ -5392,15 +5409,6 @@ func TestUnitRedisTairInstanceStoragePerformanceLevelRequests(t *testing.T) {
 			})
 		assert.Empty(t, requests, "removing an Optional+Computed performance level must not send a specification change on its own")
 	})
-
-	t.Run("removed storage performance level alone plans no specification change", func(t *testing.T) {
-		requests := tairInstanceStoragePublicApply(t,
-			map[string]string{"storage_performance_level": "PL2", "storage_size_gb": "480"},
-			map[string]cty.Value{
-				"storage_size_gb": cty.NumberIntVal(480),
-			})
-		assert.Empty(t, requests, "removing an Optional+Computed performance level must not send a specification change on its own")
-	})
 }
 
 func TestUnitRedisTairInstanceCreateThenUpdate(t *testing.T) {
@@ -5465,9 +5473,6 @@ func captureTairInstanceId(target *string, object *map[string]interface{}) resou
 	}
 }
 
-// releasePrepaidTairInstance releases an instance left behind by a failed step. A Subscription
-// instance cannot be deleted directly, so a leftover is converted back to pay-as-you-go first.
-// Failures are logged and never replace the original test failure.
 // findTairInstanceIdByName returns the ID of the instance whose name matches exactly, or an
 // empty string when the account has no such instance. The exact match keeps the fallback from
 // widening the deletion scope to instances that merely share a prefix.

@@ -1750,9 +1750,9 @@ func tairInstanceSpecAppliedAttributes(d *schema.ResourceData, request map[strin
 		expected["SlaveReadOnlyCount"] = v
 	}
 	if v, ok := request["NodeType"].(string); ok && v != "" && d.HasChange("node_type") {
-		// The request carries the schema value; the response value is normalized by
-		// tairInstanceAttributesApplied before it is compared.
-		expected["NodeType"] = v
+		// Both the configuration and the response may use either the schema values or the raw
+		// 'double'/'single' values, so the expectation is normalized the same way as the response.
+		expected["NodeType"] = fmt.Sprint(convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(v))
 	}
 	return expected
 }
