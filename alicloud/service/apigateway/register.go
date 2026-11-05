@@ -8,6 +8,9 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "ApiGateway",
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_api_gateway_app_key", Factory: NewApiGatewayAppKeyResource},
+		},
 		SDKResources: []conns.SDKResource{
 			{TypeName: "alicloud_api_gateway_access_control_list", Factory: ResourceAccessControlList},
 			{TypeName: "alicloud_api_gateway_acl_entry_attachment", Factory: ResourceAclEntryAttachment},
