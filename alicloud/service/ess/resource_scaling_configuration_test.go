@@ -1879,7 +1879,7 @@ func TestAccAliCloudEssScalingConfiguration_DedicatedHostClusterId_HttpEndpoint(
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":        "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -2104,7 +2104,7 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":       "${alicloud_ess_scaling_group.default.id}",
 					"image_id":               "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":          "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":      "${alicloud_security_group.default1.id}",
 					"force_delete":           "true",
 					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
@@ -2168,7 +2168,7 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesOrder(t *testing.T
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":        "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -2245,7 +2245,7 @@ func TestAccAliCloudEssScalingConfiguration_PropertyAttributes(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":             "${alicloud_ess_scaling_group.default.id}",
 					"image_id":                     "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":                "${data.alicloud_instance_types.c8i_auto.instance_types.0.id}",
+					"instance_type":                "${data.alicloud_instance_types.r5_auto.instance_types.0.id}",
 					"security_group_id":            "${alicloud_security_group.default1.id}",
 					"force_delete":                 "true",
 					"system_disk_category":         "cloud_auto",
@@ -2330,7 +2330,7 @@ func TestAccAliCloudEssScalingConfiguration_ConstraintValidation(t *testing.T) {
 	base := map[string]interface{}{
 		"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
 		"image_id":          "${data.alicloud_images.default1.images.0.id}",
-		"instance_type":     "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+		"instance_type":     "${data.alicloud_instance_types.r5.instance_types.0.id}",
 		"security_group_id": "${alicloud_security_group.default1.id}",
 		"force_delete":      "true",
 	}
@@ -2453,7 +2453,7 @@ func TestAccAliCloudEssScalingConfiguration_EmptyBlockGuard(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":        "${data.alicloud_instance_types.c8i_auto.instance_types.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5_auto.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_auto",
@@ -2508,7 +2508,7 @@ func TestAccAliCloudEssScalingConfiguration_SingularPluralConflict(t *testing.T)
 	base := map[string]interface{}{
 		"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
 		"image_id":          "${data.alicloud_images.default1.images.0.id}",
-		"instance_type":     "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+		"instance_type":     "${data.alicloud_instance_types.r5.instance_types.0.id}",
 		"security_group_id": "${alicloud_security_group.default1.id}",
 		"force_delete":      "true",
 	}
@@ -2574,7 +2574,7 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesImport(t *testin
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":       "${alicloud_ess_scaling_group.default.id}",
 					"image_id":               "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":          "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":      "${alicloud_security_group.default1.id}",
 					"force_delete":           "true",
 					"system_disk_categories": []interface{}{"cloud_essd", "cloud"},
@@ -2626,7 +2626,7 @@ func TestAccAliCloudEssScalingConfiguration_DataDiskCategoriesImport(t *testing.
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":        "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -2727,7 +2727,7 @@ func TestAccAliCloudEssScalingConfiguration_PropertyCoverage(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":        "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -3057,28 +3057,30 @@ const essScalingConfigurationSecondaryForOrder = `
 resource "alicloud_ess_scaling_configuration" "sco_other" {
   scaling_group_id     = alicloud_ess_scaling_group.default.id
   image_id             = data.alicloud_images.default1.images.0.id
-  instance_type        = data.alicloud_instance_types.c8i.instance_types.0.id
+  instance_type        = data.alicloud_instance_types.r5.instance_types.0.id
   security_group_id    = alicloud_security_group.default1.id
   force_delete         = true
   system_disk_category = "cloud_essd"
 }
 `
 
-// essScalingConfigurationRobustDependence pins the instance fixture to a type
-// that is actually available and places the vswitch in a zone where that type
-// is offered. A data source that only filters by zone can return an empty list
-// when the zone has no stock, which fails the plan with an index error before
-// any API call is made.
+// essScalingConfigurationRobustDependence pins the instance fixture to a
+// family that is actually available and places the vswitch in a zone where
+// that type is offered. ecs.r5 supports the cloud_ssd and cloud_essd system
+// disks used by the regression steps, and the non-GPU ubuntu image is
+// compatible with it. A data source filtered by family and disk category can
+// return an empty list when the combination has no stock (for example
+// ecs.c8i with cloud_efficiency), which fails the plan with an index error
+// before any API call is made.
 const essScalingConfigurationRobustDependence = `
 data "alicloud_images" "ess" {
-  name_regex  = "^ubuntu_22.*x64"
+  name_regex  = "^ubuntu_22_04_x64_20G_alibase"
   most_recent = true
   owners      = "system"
 }
 data "alicloud_instance_types" "ess" {
   instance_charge_type = "PostPaid"
-  instance_type_family = "ecs.c8i"
-  system_disk_category = "cloud_efficiency"
+  instance_type_family = "ecs.r5"
 }
 resource "alicloud_vswitch" "ess" {
   vpc_id       = alicloud_vpc.default.id
@@ -3991,19 +3993,19 @@ func resourceEssScalingConfiguration_NetworkInterfaces(name string) string {
 	  vpc_id = "${alicloud_vpc.vpc.id}"
 	}
 	data "alicloud_images" "default1" {
-		name_regex   = "^aliyun.*vhd"
+		name_regex   = "^aliyun_3_x64_20G_alibase"
 		most_recent  = true
 		owners       = "system"
 		architecture = "x86_64"
 	}
-    data "alicloud_instance_types" "c8i" {
+    data "alicloud_instance_types" "r5" {
         availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-        instance_type_family = "ecs.c8i"
-        system_disk_category = "cloud_efficiency"
+        instance_type_family = "ecs.r5"
+        system_disk_category = "cloud_essd"
     }
-    data "alicloud_instance_types" "c8i_auto" {
+    data "alicloud_instance_types" "r5_auto" {
         availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-        instance_type_family = "ecs.c8i"
+        instance_type_family = "ecs.r5"
         system_disk_category = "cloud_auto"
     }
 	resource "alicloud_ess_scaling_group" "default" {
@@ -5088,7 +5090,7 @@ func TestAccAliCloudEssScalingConfiguration_NetworkInterfaces(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"scaling_group_id":     "${alicloud_ess_scaling_group.default.id}",
 					"image_id":             "${data.alicloud_images.default1.images.0.id}",
-					"instance_type":        "${data.alicloud_instance_types.c8i.instance_types.0.id}",
+					"instance_type":        "${data.alicloud_instance_types.r5.instance_types.0.id}",
 					"security_group_id":    "${alicloud_security_group.default1.id}",
 					"force_delete":         "true",
 					"system_disk_category": "cloud_essd",
@@ -6259,9 +6261,10 @@ func resourceEssScalingConfigurationIPv6Dependence(name string) string {
 		available_resource_creation = "VSwitch"
 	}
 	data "alicloud_images" "default" {
-		name_regex  = "^aliyun.*vhd"
-		most_recent = true
-		owners      = "system"
+		name_regex   = "^aliyun_3_x64_20G_alibase"
+		most_recent  = true
+		owners       = "system"
+		architecture = "x86_64"
 	}
 	data "alicloud_instance_types" "compatible" {
 		availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
@@ -6301,7 +6304,7 @@ func resourceEssScalingConfigurationCpuMemoryDependence(name string) string {
 		default = "%s"
 	}
 	data "alicloud_images" "cpu_memory" {
-		name_regex  = "^ubuntu_22.*x64"
+		name_regex  = "^ubuntu_22_04_x64_20G_alibase"
 		most_recent = true
 		owners      = "system"
 	}
@@ -6310,11 +6313,12 @@ func resourceEssScalingConfigurationCpuMemoryDependence(name string) string {
 		vpc_id = alicloud_vpc.default.id
 	}
 	resource "alicloud_ess_scaling_group" "cpu_memory" {
-		min_size           = 1
-		max_size           = 1
-		scaling_group_name = var.name
-		multi_az_policy    = "COST_OPTIMIZED"
-		vswitch_ids        = [alicloud_vswitch.default.id]
+		min_size            = 1
+		max_size            = 1
+		scaling_group_name  = var.name
+		multi_az_policy     = "COST_OPTIMIZED"
+		spot_instance_pools = 2
+		vswitch_ids         = [alicloud_vswitch.default.id]
 	}`, EcsInstanceCommonTestCase, name)
 }
 
