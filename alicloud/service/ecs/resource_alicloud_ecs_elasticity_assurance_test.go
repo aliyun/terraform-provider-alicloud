@@ -293,10 +293,12 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 							"end_hour":         "12",
 						},
 						{
+							// start_hour 0 is the documented lower bound and must survive Create and Read
+							// instead of being treated as an omitted optional attribute.
 							"recurrence_type":  "Daily",
 							"recurrence_value": "1",
-							"start_hour":       "13",
-							"end_hour":         "17",
+							"start_hour":       "0",
+							"end_hour":         "4",
 						},
 					},
 				}),
@@ -321,8 +323,8 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 					resource.TestCheckTypeSetElemNestedAttrs(resourceId, "recurrence_rules.*", map[string]string{
 						"recurrence_type":  "Daily",
 						"recurrence_value": "1",
-						"start_hour":       "13",
-						"end_hour":         "17",
+						"start_hour":       "0",
+						"end_hour":         "4",
 					}),
 				),
 			},
@@ -334,8 +336,8 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						{
 							"recurrence_type":  "Daily",
 							"recurrence_value": "1",
-							"start_hour":       "13",
-							"end_hour":         "17",
+							"start_hour":       "0",
+							"end_hour":         "4",
 						},
 						{
 							"recurrence_type":  "Daily",
@@ -357,8 +359,8 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						{
 							"recurrence_type":  "Daily",
 							"recurrence_value": "1",
-							"start_hour":       "13",
-							"end_hour":         "17",
+							"start_hour":       "0",
+							"end_hour":         "4",
 						},
 						{
 							"recurrence_type":  "Daily",
@@ -383,8 +385,8 @@ func TestAccAliCloudEcsElasticityAssurance_timeDivision(t *testing.T) {
 						{
 							"recurrence_type":  "Daily",
 							"recurrence_value": "1",
-							"start_hour":       "13",
-							"end_hour":         "17",
+							"start_hour":       "0",
+							"end_hour":         "4",
 						},
 						{
 							"recurrence_type":  "Daily",
