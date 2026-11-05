@@ -1,5 +1,9 @@
 ## 2.3.0 (Unreleased)
 
+FEATURES:
+
+- **New Resource:** `alicloud_polardb_db_node` ([#11127](https://github.com/aliyun/terraform-provider-alicloud/pull/11127))
+
 ## 2.2.0 (November 5, 2026)
 
 NOTES:

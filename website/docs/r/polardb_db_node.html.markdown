@@ -14,7 +14,7 @@ Adds a read-only, standby or DLNode to an existing PolarDB cluster. The resource
 
 For information about Polardb Db Node and how to use it, see [What is Db Node](https://next.api.alibabacloud.com/document/polardb/2017-08-01/CreateDBNodes).
 
--> **NOTE:** Available since v2.2.0.
+-> **NOTE:** Available since v2.3.0.
 
 -> **NOTE:** Destroying this resource removes the node from the cluster. The cluster and its other nodes are not affected.
 
