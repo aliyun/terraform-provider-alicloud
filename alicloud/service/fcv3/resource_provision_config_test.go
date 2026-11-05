@@ -212,9 +212,11 @@ resource "alicloud_fcv3_function" "function" {
 // hits ProjectQuotaExceed (account at the 300-project SLS quota). This case
 // deliberately omits CPU/GPU autoScaling policies and uses a minimal function
 // dependency without an SLS log_project, relying only on the always-available
-// `target` + `qualifier` fields. basic7182 step 1 already proved the account
-// and API accept a basic provision config, so this case provides a real,
-// non-empty ProvisionConfig PASS for the provision_config type.
+// `target` + `qualifier` fields for the initial configuration. Later steps
+// cover the optional always_allocate_cpu/always_allocate_gpu fields, including
+// omitted, explicit, and removed values. basic7182 step 1 already proved the
+// account and API accept a basic provision config, so this case provides a
+// real, non-empty ProvisionConfig PASS for the provision_config type.
 func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv3_provision_config.default"
@@ -243,9 +245,11 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name": acctest.CHECKSET,
-						"target":        "1",
-						"qualifier":     "LATEST",
+						"function_name":       acctest.CHECKSET,
+						"always_allocate_cpu": "true",
+						"always_allocate_gpu": "true",
+						"target":              "1",
+						"qualifier":           "LATEST",
 					}),
 				),
 			},
@@ -255,9 +259,64 @@ func TestAccAliCloudFcv3ProvisionConfig_basic7183(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"function_name": acctest.CHECKSET,
-						"target":        "2",
-						"qualifier":     "LATEST",
+						"function_name":       acctest.CHECKSET,
+						"always_allocate_cpu": "true",
+						"always_allocate_gpu": "true",
+						"target":              "2",
+						"qualifier":           "LATEST",
+					}),
+				),
+			},
+			// Set explicit values (CPU keeps the default, GPU gets a non-default
+			// value), remove them, then run an unrelated update: Optional+Computed
+			// must keep the last values and never produce a diff.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"always_allocate_cpu": "true",
+					"always_allocate_gpu": "false",
+					"target":              "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"always_allocate_cpu": "true",
+						"always_allocate_gpu": "false",
+						"target":              "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"qualifier"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"always_allocate_cpu": acctest.REMOVEKEY,
+					"always_allocate_gpu": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"always_allocate_cpu": "true",
+						"always_allocate_gpu": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"qualifier"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target": "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"always_allocate_cpu": "true",
+						"always_allocate_gpu": "false",
+						"target":              "4",
 					}),
 				),
 			},

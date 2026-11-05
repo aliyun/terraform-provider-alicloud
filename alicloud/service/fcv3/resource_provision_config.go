@@ -33,10 +33,12 @@ func ResourceProvisionConfig() *schema.Resource {
 			"always_allocate_cpu": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"always_allocate_gpu": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"current": {
 				Type:     schema.TypeInt,
