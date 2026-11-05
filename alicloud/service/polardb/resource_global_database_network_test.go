@@ -163,6 +163,12 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_global_domain_name", "resource_group_id"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":       "tf-testAcc",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -173,6 +179,12 @@ func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 						"resource_group_id": CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_global_domain_name", "resource_group_id"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{

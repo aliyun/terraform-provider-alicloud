@@ -98,8 +98,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the Global Database Network.
   * `gdn_id` - The ID of the Global Database Network.
   * `description` - The description of the Global Database Network.
-  * `gdn_version` - (String, Available since v2.2.0) The version of the Global Database Network.
-  * `resource_group_id` - (String, Available since v2.2.0) The ID of the resource group.
+  * `gdn_version` - (String, Available since v2.3.0) The version of the Global Database Network.
+  * `resource_group_id` - (String, Available since v2.3.0) The ID of the resource group.
 
     -> **NOTE:** The current Global Database Network response does not return a readable resource group ID, so this value is usually empty.
   * `db_type` - The type of the database engine. Only MySQL is supported.
