@@ -22,6 +22,14 @@ Provides a PolarDB PolarFS resource.
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 resource "alicloud_polardb_polar_fs" "example" {
   db_type           = "PostgreSQL"
   creation_category = "high_performance"
