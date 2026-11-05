@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -133,13 +134,13 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 			"description": schema.StringAttribute{
 				Optional: true,
 				Validators: []validator.String{
-					subscriptionNonEmptyStringValidator{},
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"notify_strategy_id": schema.StringAttribute{
 				Optional: true,
 				Validators: []validator.String{
-					subscriptionNonEmptyStringValidator{},
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"workspace": schema.StringAttribute{
@@ -196,7 +197,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 						"expression": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								subscriptionNonEmptyStringValidator{},
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 						"relation": schema.StringAttribute{
@@ -243,21 +244,27 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 						"alert_action_ids": schema.ListAttribute{
 							Optional:    true,
 							ElementType: types.StringType,
+							Validators: []validator.List{
+								listvalidator.SizeAtLeast(1),
+							},
 						},
 						"restore_action_ids": schema.ListAttribute{
 							Optional:    true,
 							ElementType: types.StringType,
+							Validators: []validator.List{
+								listvalidator.SizeAtLeast(1),
+							},
 						},
 						"template_uuid": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								subscriptionNonEmptyStringValidator{},
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 						"response_plan_id": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								subscriptionNonEmptyStringValidator{},
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 					},
@@ -272,6 +279,9 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 						"workspace_uuids": schema.ListAttribute{
 							Optional:    true,
 							ElementType: types.StringType,
+							Validators: []validator.List{
+								listvalidator.SizeAtLeast(1),
+							},
 						},
 					},
 				},
@@ -285,7 +295,7 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 						"agent_uuid": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								subscriptionNonEmptyStringValidator{},
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 					},
@@ -299,16 +309,22 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 												"channel_type": schema.StringAttribute{
 													Optional: true,
 													Validators: []validator.String{
-														subscriptionNonEmptyStringValidator{},
+														stringvalidator.LengthAtLeast(1),
 													},
 												},
 												"receivers": schema.ListAttribute{
 													Optional:    true,
 													ElementType: types.StringType,
+													Validators: []validator.List{
+														listvalidator.SizeAtLeast(1),
+													},
 												},
 												"enabled_sub_channels": schema.ListAttribute{
 													Optional:    true,
 													ElementType: types.StringType,
+													Validators: []validator.List{
+														listvalidator.SizeAtLeast(1),
+													},
 												},
 											},
 										},
@@ -322,13 +338,14 @@ func (r *subscriptionResource) Schema(ctx context.Context, req resource.SchemaRe
 												"time_zone": schema.StringAttribute{
 													Optional: true,
 													Validators: []validator.String{
-														subscriptionNonEmptyStringValidator{},
+														stringvalidator.LengthAtLeast(1),
 													},
 												},
 												"day_in_week": schema.ListAttribute{
 													Optional:    true,
 													ElementType: types.Int64Type,
 													Validators: []validator.List{
+														listvalidator.SizeAtLeast(1),
 														listvalidator.ValueInt64sAre(int64validator.Between(0, 6)),
 													},
 												},
@@ -364,7 +381,11 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 	action := "/subscriptions"
 	request := expandSubscriptionRequest(plan)
 	response, err := r.roaCall(ctx, action, request, func() (map[string]interface{}, error) {
-		return r.Meta().RoaPost("Cms", "2024-03-30", action, subscriptionQuery(plan.Workspace), nil, request, true)
+		// The shared ROA client cannot attach the operation context to an
+		// already-issued HTTP request, so its own automatic retry is disabled
+		// here: every retry goes through roaCall, which observes the context
+		// before issuing the next attempt.
+		return r.Meta().RoaPost("Cms", "2024-03-30", action, subscriptionQuery(plan.Workspace), nil, request, false)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -409,9 +430,12 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		// The converged read already reports the requested state, so it is used
-		// directly instead of issuing a second, unverified read.
-		object, err = r.waitSubscriptionEnable(ctx, id, plan.Workspace, false)
+		// The disable operation returns before the change is visible, and a
+		// response that only carries the switch can still hold a partially
+		// applied body. Wait for the requested configuration and the switch
+		// together instead of accepting the first read that reports the switch.
+		disabled := false
+		object, err = r.waitSubscriptionUpdate(ctx, id, plan.Workspace, request, nil, &disabled)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Creating %s: waiting for DisableSubscription", subscriptionTypeName),
@@ -421,7 +445,7 @@ func (r *subscriptionResource) Create(ctx context.Context, req resource.CreateRe
 		}
 	}
 
-	state, err := subscriptionState(object, identity, identity, r.Meta().RegionId)
+	state, err := subscriptionState(object, identity, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -454,7 +478,7 @@ func (r *subscriptionResource) Read(ctx context.Context, req resource.ReadReques
 		)
 		return
 	}
-	next, err := subscriptionState(object, state, state, r.Meta().RegionId)
+	next, err := subscriptionState(object, state, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -521,7 +545,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 				return
 			}
 		}
-		next, err := subscriptionState(object, subscriptionIntent(plan, state), state, r.Meta().RegionId)
+		next, err := subscriptionState(object, state, r.Meta().RegionId)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -534,7 +558,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	_, err = r.roaCall(ctx, action, request, func() (map[string]interface{}, error) {
-		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, request, true)
+		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, request, false)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -552,7 +576,7 @@ func (r *subscriptionResource) Update(ctx context.Context, req resource.UpdateRe
 		)
 		return
 	}
-	next, err := subscriptionState(object, subscriptionIntent(plan, state), state, r.Meta().RegionId)
+	next, err := subscriptionState(object, state, r.Meta().RegionId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			fmt.Sprintf("Reading %s: calling GetSubscription", subscriptionTypeName),
@@ -576,7 +600,7 @@ func (r *subscriptionResource) Delete(ctx context.Context, req resource.DeleteRe
 	action := fmt.Sprintf("/subscriptions/%s", state.Id.ValueString())
 	var rawErr error
 	_, err := r.roaCall(ctx, action, subscriptionQuery(state.Workspace), func() (map[string]interface{}, error) {
-		response, callErr := r.Meta().RoaDelete("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, nil, true)
+		response, callErr := r.Meta().RoaDelete("Cms", "2024-03-30", action, subscriptionQuery(state.Workspace), nil, nil, false)
 		rawErr = callErr
 		return response, callErr
 	})
@@ -652,7 +676,7 @@ func (r *subscriptionResource) setSubscriptionEnable(ctx context.Context, id str
 	action := fmt.Sprintf("/subscriptions/%s/%s", id, suffix)
 
 	_, err := r.roaCall(ctx, action, action, func() (map[string]interface{}, error) {
-		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(workspace), nil, nil, true)
+		return r.Meta().RoaPut("Cms", "2024-03-30", action, subscriptionQuery(workspace), nil, nil, false)
 	})
 	return err
 }
@@ -961,10 +985,10 @@ func subscriptionPathCleared(object map[string]interface{}, fieldPath subscripti
 	return subscriptionValueEmpty(current), nil
 }
 
-// subscriptionIntent resolves the plan for comparison and read-back: the
-// Service echoes a relation even when the configuration omits it, so an
-// unknown computed relation falls back to the value already in state and does
-// not look like a body change.
+// subscriptionIntent resolves the plan for the request comparison: the service
+// echoes a relation even when the configuration omits it, so an unknown
+// computed relation falls back to the value already in state and does not look
+// like a body change.
 func subscriptionIntent(plan, state subscriptionResourceModel) subscriptionResourceModel {
 	resolved := plan
 	if len(plan.FilterSetting) > 0 && len(state.FilterSetting) > 0 {
@@ -1362,10 +1386,10 @@ func subscriptionKnownAgentConfig(blocks []subscriptionAgentConfigModel) []subsc
 // subscriptionState converts one GetSubscription response into state. The
 // confirmed identity is authoritative: a response that omits it keeps the
 // confirmed value, and a response that disagrees is an error rather than a
-// silent overwrite. intent carries the configuration that produced this
-// request, so an argument that was removed stays null instead of being turned
-// into an empty value.
-func subscriptionState(object map[string]interface{}, intent, identity subscriptionResourceModel, regionId string) (subscriptionResourceModel, error) {
+// silent overwrite. Every block and optional value is rebuilt from the response
+// only, so Refresh and a bare Import produce the same state for the same
+// response.
+func subscriptionState(object map[string]interface{}, identity subscriptionResourceModel, regionId string) (subscriptionResourceModel, error) {
 	expectedId := subscriptionValueString(identity.Id)
 	actualId := subscriptionJSONString(object["subscriptionId"])
 	if actualId == "" {
@@ -1390,15 +1414,15 @@ func subscriptionState(object map[string]interface{}, intent, identity subscript
 		return subscriptionResourceModel{}, fmt.Errorf("the response reports workspace %q but %q was requested", actualWorkspace, expectedWorkspace)
 	}
 
-	filterSetting, err := flattenSubscriptionFilterSetting(object["filterSetting"], intent.FilterSetting)
+	filterSetting, err := flattenSubscriptionFilterSetting(object["filterSetting"])
 	if err != nil {
 		return subscriptionResourceModel{}, err
 	}
-	pushingSetting, err := flattenSubscriptionPushingSetting(object["pushingSetting"], intent.PushingSetting)
+	pushingSetting, err := flattenSubscriptionPushingSetting(object["pushingSetting"])
 	if err != nil {
 		return subscriptionResourceModel{}, err
 	}
-	workspaceFilterSetting, err := flattenSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"], intent.WorkspaceFilterSetting)
+	workspaceFilterSetting, err := flattenSubscriptionWorkspaceFilterSetting(object["workspaceFilterSetting"])
 	if err != nil {
 		return subscriptionResourceModel{}, err
 	}
@@ -1409,7 +1433,7 @@ func subscriptionState(object map[string]interface{}, intent, identity subscript
 
 	return subscriptionResourceModel{
 		Id:                     types.StringValue(actualId),
-		SubscriptionName:       subscriptionJSONStringValue(object["subscriptionName"]),
+		SubscriptionName:       subscriptionStringStateValue(object["subscriptionName"]),
 		Description:            subscriptionStringStateValue(object["description"]),
 		NotifyStrategyId:       subscriptionStringStateValue(object["notifyStrategyId"]),
 		Workspace:              types.StringValue(actualWorkspace),
@@ -1419,11 +1443,11 @@ func subscriptionState(object map[string]interface{}, intent, identity subscript
 		PushingSetting:         pushingSetting,
 		WorkspaceFilterSetting: workspaceFilterSetting,
 		AgentConfig:            agentConfig,
-		UserId:                 subscriptionJSONStringValue(object["userId"]),
-		SubscriptionType:       subscriptionJSONStringValue(object["subscriptionType"]),
+		UserId:                 subscriptionStringStateValue(object["userId"]),
+		SubscriptionType:       subscriptionStringStateValue(object["subscriptionType"]),
 		RegionId:               types.StringValue(regionId),
-		CreateTime:             subscriptionJSONStringValue(object["createTime"]),
-		UpdateTime:             subscriptionJSONStringValue(object["updateTime"]),
+		CreateTime:             subscriptionStringStateValue(object["createTime"]),
+		UpdateTime:             subscriptionStringStateValue(object["updateTime"]),
 	}, nil
 }
 
@@ -1444,7 +1468,7 @@ func subscriptionObjectValue(raw interface{}, attribute string) (map[string]inte
 // flattenSubscriptionFilterSetting rebuilds the block from the response only.
 // An absent block means the subscription has no filter; the prior state is not
 // reused, so Refresh and a bare Import see the same remote configuration.
-func flattenSubscriptionFilterSetting(raw interface{}, previous []subscriptionFilterSettingModel) ([]subscriptionFilterSettingModel, error) {
+func flattenSubscriptionFilterSetting(raw interface{}) ([]subscriptionFilterSettingModel, error) {
 	setting, present, err := subscriptionObjectValue(raw, "filterSetting")
 	if err != nil {
 		return nil, err
@@ -1475,15 +1499,15 @@ func flattenSubscriptionConditions(raw interface{}) ([]subscriptionConditionMode
 			return nil, fmt.Errorf("the response value of $.filterSetting.conditions[%d] has unexpected type %T", index, item)
 		}
 		conditions = append(conditions, subscriptionConditionModel{
-			Field: subscriptionJSONStringValue(condition["field"]),
-			Op:    subscriptionJSONStringValue(condition["op"]),
-			Value: subscriptionJSONStringValue(condition["value"]),
+			Field: subscriptionStringStateValue(condition["field"]),
+			Op:    subscriptionStringStateValue(condition["op"]),
+			Value: subscriptionStringStateValue(condition["value"]),
 		})
 	}
 	return conditions, nil
 }
 
-func flattenSubscriptionPushingSetting(raw interface{}, previous []subscriptionPushingSettingModel) ([]subscriptionPushingSettingModel, error) {
+func flattenSubscriptionPushingSetting(raw interface{}) ([]subscriptionPushingSettingModel, error) {
 	setting, present, err := subscriptionObjectValue(raw, "pushingSetting")
 	if err != nil {
 		return nil, err
@@ -1491,21 +1515,15 @@ func flattenSubscriptionPushingSetting(raw interface{}, previous []subscriptionP
 	if !present {
 		return nil, nil
 	}
-	previousAlert := types.ListNull(types.StringType)
-	previousRestore := types.ListNull(types.StringType)
-	if len(previous) > 0 {
-		previousAlert = previous[0].AlertActionIds
-		previousRestore = previous[0].RestoreActionIds
-	}
 	return []subscriptionPushingSettingModel{{
-		AlertActionIds:   subscriptionJSONStringListState(setting["alertActionIds"], previousAlert),
-		RestoreActionIds: subscriptionJSONStringListState(setting["restoreActionIds"], previousRestore),
+		AlertActionIds:   subscriptionJSONStringList(setting["alertActionIds"]),
+		RestoreActionIds: subscriptionJSONStringList(setting["restoreActionIds"]),
 		TemplateUuid:     subscriptionStringStateValue(setting["templateUuid"]),
 		ResponsePlanId:   subscriptionStringStateValue(setting["responsePlanId"]),
 	}}, nil
 }
 
-func flattenSubscriptionWorkspaceFilterSetting(raw interface{}, previous []subscriptionWorkspaceFilterModel) ([]subscriptionWorkspaceFilterModel, error) {
+func flattenSubscriptionWorkspaceFilterSetting(raw interface{}) ([]subscriptionWorkspaceFilterModel, error) {
 	setting, present, err := subscriptionObjectValue(raw, "workspaceFilterSetting")
 	if err != nil {
 		return nil, err
@@ -1513,12 +1531,8 @@ func flattenSubscriptionWorkspaceFilterSetting(raw interface{}, previous []subsc
 	if !present {
 		return nil, nil
 	}
-	previousUuids := types.ListNull(types.StringType)
-	if len(previous) > 0 {
-		previousUuids = previous[0].WorkspaceUuids
-	}
 	return []subscriptionWorkspaceFilterModel{{
-		WorkspaceUuids: subscriptionJSONStringListState(setting["workspaceUuids"], previousUuids),
+		WorkspaceUuids: subscriptionJSONStringList(setting["workspaceUuids"]),
 	}}, nil
 }
 
@@ -1535,7 +1549,7 @@ func flattenSubscriptionAgentConfig(raw interface{}) ([]subscriptionAgentConfigM
 		return nil, err
 	}
 	return []subscriptionAgentConfigModel{{
-		AgentUuid: subscriptionJSONStringValue(config["agentUuid"]),
+		AgentUuid: subscriptionStringStateValue(config["agentUuid"]),
 		Routes:    routes,
 	}}, nil
 }
@@ -1579,7 +1593,7 @@ func flattenSubscriptionAgentChannels(raw interface{}) ([]subscriptionAgentChann
 			return nil, fmt.Errorf("the response value of $.agentConfig.routes.channels[%d] has unexpected type %T", index, item)
 		}
 		channels = append(channels, subscriptionAgentChannelModel{
-			ChannelType:        subscriptionJSONStringValue(channel["channelType"]),
+			ChannelType:        subscriptionStringStateValue(channel["channelType"]),
 			Receivers:          subscriptionJSONStringList(channel["receivers"]),
 			EnabledSubChannels: subscriptionJSONStringList(channel["enabledSubChannels"]),
 		})
@@ -1596,7 +1610,7 @@ func flattenSubscriptionAgentEffectTimeRange(raw interface{}) ([]subscriptionAge
 		return nil, nil
 	}
 	return []subscriptionAgentEffectTimeRangeModel{{
-		TimeZone:          subscriptionJSONStringValue(window["timeZone"]),
+		TimeZone:          subscriptionStringStateValue(window["timeZone"]),
 		DayInWeek:         subscriptionJSONInt64List(window["dayInWeek"]),
 		StartTimeInMinute: subscriptionJSONInt64Value(window["startTimeInMinute"]),
 		EndTimeInMinute:   subscriptionJSONInt64Value(window["endTimeInMinute"]),
@@ -1650,18 +1664,11 @@ func subscriptionJSONString(v interface{}) string {
 	return ""
 }
 
-func subscriptionJSONStringValue(v interface{}) types.String {
-	if s := subscriptionJSONString(v); s != "" {
-		return types.StringValue(s)
-	}
-	return types.StringNull()
-}
-
-// subscriptionStringStateValue defines one representation for every optional
-// string: the service drops a cleared value from the response, and an explicit
-// empty string is rejected by validation, so an absent or empty member always
-// reads back as null. Refresh and a bare Import therefore produce the same
-// state for the same GET response.
+// subscriptionStringStateValue defines one representation for every string:
+// the service drops a cleared value from the response, and an explicit empty
+// string is rejected by validation, so an absent or empty member always reads
+// back as null. Refresh and a bare Import therefore produce the same state for
+// the same GET response.
 func subscriptionStringStateValue(v interface{}) types.String {
 	if s := subscriptionJSONString(v); s != "" {
 		return types.StringValue(s)
@@ -1686,10 +1693,12 @@ func subscriptionBoolStateValue(v interface{}) types.Bool {
 	return types.BoolValue(false)
 }
 
+// subscriptionJSONStringList defines one representation for every optional
+// list: an omitted, empty or unusable member reads back as null. The response
+// alone decides the value, never the previous state, so Refresh and a bare
+// Import of the same response produce the same state and a configuration that
+// omits the argument plans no change.
 func subscriptionJSONStringList(v interface{}) types.List {
-	if v == nil {
-		return types.ListNull(types.StringType)
-	}
 	items, ok := subscriptionJSONItems(v)
 	if !ok {
 		return types.ListNull(types.StringType)
@@ -1700,23 +1709,13 @@ func subscriptionJSONStringList(v interface{}) types.List {
 			values = append(values, types.StringValue(s))
 		}
 	}
+	if len(values) == 0 {
+		return types.ListNull(types.StringType)
+	}
 	return types.ListValueMust(types.StringType, values)
 }
 
-func subscriptionJSONStringListState(v interface{}, previous types.List) types.List {
-	if v == nil {
-		if !previous.IsNull() && !previous.IsUnknown() {
-			return types.ListValueMust(types.StringType, []attr.Value{})
-		}
-		return types.ListNull(types.StringType)
-	}
-	return subscriptionJSONStringList(v)
-}
-
 func subscriptionJSONInt64List(v interface{}) types.List {
-	if v == nil {
-		return types.ListNull(types.Int64Type)
-	}
 	items, ok := subscriptionJSONItems(v)
 	if !ok {
 		return types.ListNull(types.Int64Type)
@@ -1727,6 +1726,9 @@ func subscriptionJSONInt64List(v interface{}) types.List {
 		if !value.IsNull() {
 			values = append(values, value)
 		}
+	}
+	if len(values) == 0 {
+		return types.ListNull(types.Int64Type)
 	}
 	return types.ListValueMust(types.Int64Type, values)
 }
@@ -1747,36 +1749,11 @@ func subscriptionJSONInt64Value(v interface{}) types.Int64 {
 	return types.Int64Null()
 }
 
-// subscriptionNonEmptyStringValidator keeps one representation for an unset
-// optional string: the read path maps an empty or missing member to null, so a
-// configured empty string would never converge.
-type subscriptionNonEmptyStringValidator struct{}
-
-func (v subscriptionNonEmptyStringValidator) Description(ctx context.Context) string {
-	return "must not be an empty string; remove the argument to unset it"
-}
-
-func (v subscriptionNonEmptyStringValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v subscriptionNonEmptyStringValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	if req.ConfigValue.ValueString() != "" {
-		return
-	}
-	resp.Diagnostics.AddAttributeError(
-		req.Path,
-		"Empty string is not a valid value",
-		fmt.Sprintf("%s must not be an empty string: remove the argument to unset it.", req.Path),
-	)
-}
-
 // subscriptionBlockValidator rejects blocks that declare no member. A block
 // with no configured member is omitted from the request, dropped from the read
-// response and therefore cannot round-trip through apply.
+// response and therefore cannot round-trip through apply. A member that is only
+// known after apply counts as declared, and an unknown nested collection cannot
+// be judged before apply, so neither is rejected here.
 type subscriptionBlockValidator struct{}
 
 func (v subscriptionBlockValidator) Description(ctx context.Context) string {
@@ -1788,13 +1765,13 @@ func (v subscriptionBlockValidator) MarkdownDescription(ctx context.Context) str
 }
 
 func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var config subscriptionResourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	for i, block := range config.FilterSetting {
-		if subscriptionStringConfigured(block.Expression) || subscriptionStringConfigured(block.Relation) || len(block.Conditions) > 0 {
+	for i, element := range subscriptionConfigBlockElements(ctx, req.Config, path.Root("filter_setting")) {
+		attributes, ok := subscriptionConfigObjectAttributes(element)
+		if !ok {
+			continue
+		}
+		if subscriptionMemberDeclared(attributes, "expression") || subscriptionMemberDeclared(attributes, "relation") ||
+			subscriptionNestedBlockDeclared(attributes, "conditions") {
 			continue
 		}
 		resp.Diagnostics.AddAttributeError(
@@ -1803,9 +1780,14 @@ func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req re
 			"filter_setting must configure expression, relation or at least one conditions block.",
 		)
 	}
-	for i, block := range config.PushingSetting {
-		if subscriptionStringConfigured(block.TemplateUuid) || subscriptionStringConfigured(block.ResponsePlanId) ||
-			subscriptionListConfigured(block.AlertActionIds) || subscriptionListConfigured(block.RestoreActionIds) {
+
+	for i, element := range subscriptionConfigBlockElements(ctx, req.Config, path.Root("pushing_setting")) {
+		attributes, ok := subscriptionConfigObjectAttributes(element)
+		if !ok {
+			continue
+		}
+		if subscriptionMemberDeclared(attributes, "alert_action_ids") || subscriptionMemberDeclared(attributes, "restore_action_ids") ||
+			subscriptionMemberDeclared(attributes, "template_uuid") || subscriptionMemberDeclared(attributes, "response_plan_id") {
 			continue
 		}
 		resp.Diagnostics.AddAttributeError(
@@ -1814,8 +1796,13 @@ func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req re
 			"pushing_setting must configure at least one member: alert_action_ids, restore_action_ids, template_uuid or response_plan_id.",
 		)
 	}
-	for i, block := range config.WorkspaceFilterSetting {
-		if subscriptionListConfigured(block.WorkspaceUuids) {
+
+	for i, element := range subscriptionConfigBlockElements(ctx, req.Config, path.Root("workspace_filter_setting")) {
+		attributes, ok := subscriptionConfigObjectAttributes(element)
+		if !ok {
+			continue
+		}
+		if subscriptionMemberDeclared(attributes, "workspace_uuids") {
 			continue
 		}
 		resp.Diagnostics.AddAttributeError(
@@ -1824,29 +1811,47 @@ func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req re
 			"workspace_filter_setting must configure workspace_uuids.",
 		)
 	}
-	for i, block := range config.AgentConfig {
-		if !subscriptionStringConfigured(block.AgentUuid) && len(block.Routes) == 0 {
+
+	for i, element := range subscriptionConfigBlockElements(ctx, req.Config, path.Root("agent_config")) {
+		attributes, ok := subscriptionConfigObjectAttributes(element)
+		if !ok {
+			continue
+		}
+		agentPath := path.Root("agent_config").AtListIndex(i)
+		if !subscriptionMemberDeclared(attributes, "agent_uuid") && !subscriptionNestedBlockDeclared(attributes, "routes") {
 			resp.Diagnostics.AddAttributeError(
-				path.Root("agent_config").AtListIndex(i),
+				agentPath,
 				"Empty agent_config block",
 				"agent_config must configure agent_uuid or at least one routes block.",
 			)
 		}
-		for j, route := range block.Routes {
-			routePath := path.Root("agent_config").AtListIndex(i).AtName("routes").AtListIndex(j)
-			if len(route.Channels) == 0 && len(route.EffectTimeRange) == 0 {
+		for j, routeElement := range subscriptionConfigNestedBlockElements(attributes, "routes") {
+			routeAttributes, ok := subscriptionConfigObjectAttributes(routeElement)
+			if !ok {
+				continue
+			}
+			routePath := agentPath.AtName("routes").AtListIndex(j)
+			if !subscriptionNestedBlockDeclared(routeAttributes, "channels") && !subscriptionNestedBlockDeclared(routeAttributes, "effect_time_range") {
 				resp.Diagnostics.AddAttributeError(routePath, "Empty routes block", "routes must configure at least one channels or effect_time_range block.")
 			}
-			for k, channel := range route.Channels {
-				if subscriptionStringConfigured(channel.ChannelType) || subscriptionListConfigured(channel.Receivers) ||
-					subscriptionListConfigured(channel.EnabledSubChannels) {
+			for k, channelElement := range subscriptionConfigNestedBlockElements(routeAttributes, "channels") {
+				channelAttributes, ok := subscriptionConfigObjectAttributes(channelElement)
+				if !ok {
+					continue
+				}
+				if subscriptionMemberDeclared(channelAttributes, "channel_type") || subscriptionMemberDeclared(channelAttributes, "receivers") ||
+					subscriptionMemberDeclared(channelAttributes, "enabled_sub_channels") {
 					continue
 				}
 				resp.Diagnostics.AddAttributeError(routePath.AtName("channels").AtListIndex(k), "Empty channels block", "channels must configure channel_type, receivers or enabled_sub_channels.")
 			}
-			for k, window := range route.EffectTimeRange {
-				if subscriptionStringConfigured(window.TimeZone) || subscriptionListConfigured(window.DayInWeek) ||
-					subscriptionInt64Configured(window.StartTimeInMinute) || subscriptionInt64Configured(window.EndTimeInMinute) {
+			for k, windowElement := range subscriptionConfigNestedBlockElements(routeAttributes, "effect_time_range") {
+				windowAttributes, ok := subscriptionConfigObjectAttributes(windowElement)
+				if !ok {
+					continue
+				}
+				if subscriptionMemberDeclared(windowAttributes, "time_zone") || subscriptionMemberDeclared(windowAttributes, "day_in_week") ||
+					subscriptionMemberDeclared(windowAttributes, "start_time_in_minute") || subscriptionMemberDeclared(windowAttributes, "end_time_in_minute") {
 					continue
 				}
 				resp.Diagnostics.AddAttributeError(routePath.AtName("effect_time_range").AtListIndex(k), "Empty effect_time_range block", "effect_time_range must configure at least one member.")
@@ -1855,16 +1860,67 @@ func (v subscriptionBlockValidator) ValidateResource(ctx context.Context, req re
 	}
 }
 
-func subscriptionStringConfigured(v types.String) bool {
-	return !v.IsNull() && !v.IsUnknown()
+// subscriptionConfigBlockElements reads one nested block list from the
+// configuration. A null or unknown list is not judged: the block is either
+// absent or its value is only known once the plan is applied.
+func subscriptionConfigBlockElements(ctx context.Context, config tfsdk.Config, blockPath path.Path) []attr.Value {
+	var blocks types.List
+	if diags := config.GetAttribute(ctx, blockPath, &blocks); diags.HasError() {
+		return nil
+	}
+	return subscriptionKnownListElements(blocks)
 }
 
-func subscriptionListConfigured(v types.List) bool {
-	return !v.IsNull() && !v.IsUnknown()
+func subscriptionConfigNestedBlockElements(attributes map[string]attr.Value, name string) []attr.Value {
+	value, ok := attributes[name]
+	if !ok {
+		return nil
+	}
+	list, ok := value.(types.List)
+	if !ok {
+		return nil
+	}
+	return subscriptionKnownListElements(list)
 }
 
-func subscriptionInt64Configured(v types.Int64) bool {
-	return !v.IsNull() && !v.IsUnknown()
+func subscriptionKnownListElements(list types.List) []attr.Value {
+	if list.IsNull() || list.IsUnknown() {
+		return nil
+	}
+	return list.Elements()
+}
+
+// subscriptionConfigObjectAttributes returns the members of one known block
+// element. A null or unknown element cannot be judged before apply and is
+// skipped.
+func subscriptionConfigObjectAttributes(element attr.Value) (map[string]attr.Value, bool) {
+	object, ok := element.(types.Object)
+	if !ok || object.IsNull() || object.IsUnknown() {
+		return nil, false
+	}
+	return object.Attributes(), true
+}
+
+// subscriptionMemberDeclared reports whether an attribute was declared.
+// Unknown counts as declared: a dynamic value is resolved before apply and must
+// not be mistaken for an empty block.
+func subscriptionMemberDeclared(attributes map[string]attr.Value, name string) bool {
+	value, ok := attributes[name]
+	return ok && !value.IsNull()
+}
+
+// subscriptionNestedBlockDeclared reports whether a nested block list is
+// unknown or carries at least one element.
+func subscriptionNestedBlockDeclared(attributes map[string]attr.Value, name string) bool {
+	value, ok := attributes[name]
+	if !ok || value.IsNull() {
+		return false
+	}
+	if value.IsUnknown() {
+		return true
+	}
+	list, ok := value.(types.List)
+	return ok && len(list.Elements()) > 0
 }
 
 type subscriptionChannelValidator struct{}
@@ -1878,32 +1934,41 @@ func (v subscriptionChannelValidator) MarkdownDescription(ctx context.Context) s
 }
 
 func (v subscriptionChannelValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var config subscriptionResourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	for i, agent := range config.AgentConfig {
-		for j, route := range agent.Routes {
-			for k, channel := range route.Channels {
-				if channel.ChannelType.IsNull() || channel.ChannelType.IsUnknown() {
+	for i, agentElement := range subscriptionConfigBlockElements(ctx, req.Config, path.Root("agent_config")) {
+		agentAttributes, ok := subscriptionConfigObjectAttributes(agentElement)
+		if !ok {
+			continue
+		}
+		for j, routeElement := range subscriptionConfigNestedBlockElements(agentAttributes, "routes") {
+			routeAttributes, ok := subscriptionConfigObjectAttributes(routeElement)
+			if !ok {
+				continue
+			}
+			for k, channelElement := range subscriptionConfigNestedBlockElements(routeAttributes, "channels") {
+				channelAttributes, ok := subscriptionConfigObjectAttributes(channelElement)
+				if !ok {
 					continue
 				}
-				switch channel.ChannelType.ValueString() {
+				channelType, ok := channelAttributes["channel_type"].(types.String)
+				if !ok || channelType.IsNull() || channelType.IsUnknown() {
+					continue
+				}
+				switch channelType.ValueString() {
 				case "CONTACT", "GROUP", "DUTY":
-					if channel.EnabledSubChannels.IsUnknown() {
+					enabledSubChannels, declared := channelAttributes["enabled_sub_channels"].(types.List)
+					if declared && enabledSubChannels.IsUnknown() {
 						// The value is only known after apply; validation runs again
 						// once it is known.
 						continue
 					}
-					if channel.EnabledSubChannels.IsNull() || len(channel.EnabledSubChannels.Elements()) == 0 {
+					if !declared || enabledSubChannels.IsNull() || len(enabledSubChannels.Elements()) == 0 {
 						resp.Diagnostics.AddAttributeError(
 							path.Root("agent_config").AtListIndex(i).
 								AtName("routes").AtListIndex(j).
 								AtName("channels").AtListIndex(k).
 								AtName("enabled_sub_channels"),
 							"Missing enabled_sub_channels",
-							fmt.Sprintf("enabled_sub_channels must contain at least one value when channel_type is %s.", channel.ChannelType.ValueString()),
+							fmt.Sprintf("enabled_sub_channels must contain at least one value when channel_type is %s.", channelType.ValueString()),
 						)
 					}
 				}

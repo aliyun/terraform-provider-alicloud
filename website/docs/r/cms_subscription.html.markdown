@@ -16,7 +16,9 @@ For information about Cms Subscription and how to use it, see [What is Subscript
 
 -> **NOTE:** The subscription belongs to a Cms 2.0 workspace, and every request is sent to the endpoint of the region configured on the provider. Keep `workspace` and the provider `region` in the same region.
 
--> **NOTE:** Every optional block must configure at least one member. A block that is declared but empty is rejected during `terraform plan`, because the service neither stores nor returns an empty block. Optional strings must not be set to an empty string either: omit the argument to clear a value, and the read path reports a cleared or omitted value as null.
+-> **NOTE:** Every optional block must configure at least one member. A block that is declared but empty is rejected during `terraform plan`, because the service neither stores nor returns an empty block. Optional strings and lists must not be set to an empty value either: omit the argument to clear a value, and the read path reports a cleared, omitted or empty value as null. A block whose only member is not known until apply (for example a value from another resource) is accepted, because it is resolved before the request is sent.
+
+-> **NOTE:** Create, update, delete and enable/disable requests are retried by the provider only within the operation deadline: no new attempt is sent after the operation stops. The underlying client does not accept a context for an HTTP request that is already on the wire, so a request issued just before the operation stops may still complete on the server; when that happens the provider reports the server-side result as unknown and keeps the confirmed subscription identity in state.
 
 ## Example Usage
 
@@ -71,8 +73,8 @@ The following arguments are supported:
 
 * `subscription_name` - (Required, String) The name of the subscription.
 * `description` - (Optional, String) The description of the subscription. Cms does not return a cleared description, so a cleared or omitted value reads back as null; remove the argument to clear it and do not set an empty string.
-* `notify_strategy_id` - (Optional, String) The UUID of the notification strategy bound to the subscription. Use the `uuid` attribute of an `alicloud_cms_event_notify_policy` resource, for example `alicloud_cms_event_notify_policy.default.uuid`. Removing the argument omits the binding from the request; the Cms API does not document whether an omitted member clears or keeps the stored binding, so confirm the effective binding after such an update.
-* `workspace` - (Required, String, ForceNew) The name of the workspace the subscription belongs to. Changing this forces a new subscription to be created.
+* `notify_strategy_id` - (Optional, String) The UUID of the notification strategy bound to the subscription. Use the `uuid` attribute of an `alicloud_cms_event_notify_policy` resource, for example `alicloud_cms_event_notify_policy.default.uuid`. Adding or changing the binding is an in-place update that keeps the subscription identity. Removing the argument omits the binding from the request; the Cms API does not document whether an omitted member clears or keeps the stored binding, so confirm the effective binding after such an update.
+* `workspace` - (Required, String, ForceNew) The name of the workspace the subscription belongs to. Changing this replaces the subscription: the previous subscription is deleted and a new one with a new id is created.
 * `enable` - (Optional, Bool) Whether the subscription is enabled. The provider default is `true`. The enabled state is controlled by the separate enable and disable operations and is never part of the subscription body.
 * `subscribe_legacy_event` - (Optional, Bool) Whether events from Cms 1.0, ARMS and SLS resources that have no workspace are also subscribed. The provider default is `false`; the Cms contract treats `false` and `null` as the same value.
 * `filter_setting` - (Optional, List) The event filter. At most one block is supported. See [`filter_setting`](#filter_setting) below.

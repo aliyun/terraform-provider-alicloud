@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
 	credentials "github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/cloudmonitorservice"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/sls"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -159,6 +159,7 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 	resourceId := "alicloud_cms_subscription.default"
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc-cmssubscription-full-%d", rand)
+	var boundId string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -166,12 +167,13 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 		CheckDestroy:             testAccCheckCmsSubscriptionDependenciesDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCmsSubscriptionConfigComplete(name),
+				Config: testAccCmsSubscriptionConfigCompleteUnbound(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionCaptureId(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription"),
 					resource.TestCheckResourceAttr(resourceId, "enable", "true"),
 					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "true"),
-					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
+					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.#", "1"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.expression", "1 and 2"),
 					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
@@ -190,10 +192,28 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
+				// Binding the notification strategy is an in-place update: the
+				// subscription must keep the identity captured while it was unbound.
+				Config: testAccCmsSubscriptionConfigComplete(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionCheckIdUnchanged(resourceId, &boundId),
+					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
+					resource.TestCheckResourceAttr(resourceId, "filter_setting.0.conditions.#", "2"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
 				// A name/description/filter update on the bound subscription: the
-				// binding stays and the changed members must be visible remotely.
+				// binding stays, the identity stays and the changed members must be
+				// visible remotely.
 				Config: testAccCmsSubscriptionConfigCompleteUpdated(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionCheckIdUnchanged(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "subscription_name", name+"-updated"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
 					resource.TestCheckResourceAttrPair(resourceId, "notify_strategy_id", "alicloud_cms_event_notify_policy.default", "uuid"),
@@ -211,7 +231,25 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 				// and the service normalizes the cleared member to false.
 				Config: testAccCmsSubscriptionConfigCompleteLegacyOmitted(name),
 				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionCheckIdUnchanged(resourceId, &boundId),
 					resource.TestCheckResourceAttr(resourceId, "subscribe_legacy_event", "false"),
+					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateIdFunc: testAccCmsSubscriptionImportStateIdFunc(resourceId),
+				ImportStateVerify: true,
+			},
+			{
+				// Moving the subscription to another workspace replaces it: the
+				// replacement must return a different identity.
+				Config: testAccCmsSubscriptionConfigCompleteOtherWorkspace(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCmsSubscriptionCheckIdChanged(resourceId, &boundId),
+					resource.TestCheckResourceAttr(resourceId, "workspace", strings.ToLower(name)+"-second"),
+					resource.TestCheckNoResourceAttr(resourceId, "notify_strategy_id"),
 					resource.TestCheckResourceAttr(resourceId, "description", "complete subscription updated"),
 				),
 			},
@@ -225,6 +263,43 @@ func TestAccAliCloudCmsSubscription_complete(t *testing.T) {
 	})
 }
 
+func testAccCmsSubscriptionCaptureId(resourceId string, captured *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		*captured = rs.Primary.ID
+		return nil
+	}
+}
+
+func testAccCmsSubscriptionCheckIdUnchanged(resourceId string, captured *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		if rs.Primary.ID != *captured {
+			return fmt.Errorf("subscription id changed from %q to %q; this update must stay in place", *captured, rs.Primary.ID)
+		}
+		return nil
+	}
+}
+
+func testAccCmsSubscriptionCheckIdChanged(resourceId string, captured *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceId]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceId)
+		}
+		if rs.Primary.ID == *captured {
+			return fmt.Errorf("subscription id %q did not change; a workspace change must replace the subscription", *captured)
+		}
+		return nil
+	}
+}
+
 func testAccCmsSubscriptionImportStateIdFunc(resourceId string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
 		rs, ok := s.RootModule().Resources[resourceId]
@@ -236,12 +311,12 @@ func testAccCmsSubscriptionImportStateIdFunc(resourceId string) resource.ImportS
 }
 
 // testAccCheckCmsSubscriptionDependenciesDestroy verifies the subscription and
-// every object this test creates: the workspace, the event notification policy
-// and the SLS project they depend on.
+// every object this test creates: the workspaces, the event notification policy
+// and the SLS project they depend on. Each dependency is looked up directly by
+// its own id and scope so a not-found answer for another object, or a text that
+// merely mentions not-found, cannot be mistaken for a successful deletion.
 func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 	client := acctest.Provider.Meta().(*connectivity.AliyunClient)
-	cmsV2 := cloudmonitorservice.NewCmsServiceV2(client)
-	slsService := sls.NewService(client)
 	for _, rs := range s.RootModule().Resources {
 		var check func() (bool, error)
 		switch rs.Type {
@@ -252,22 +327,26 @@ func testAccCheckCmsSubscriptionDependenciesDestroy(s *terraform.State) error {
 				return subscriptionDestroyed(err)
 			}
 		case "alicloud_cms_workspace":
-			id := rs.Primary.ID
+			action := fmt.Sprintf("/workspace/%s", rs.Primary.ID)
 			check = func() (bool, error) {
-				_, err := cmsV2.DescribeCmsWorkspace(id)
-				return providerResourceDestroyed(err)
+				_, err := client.RoaGet("Cms", "2024-03-30", action, nil, nil, nil)
+				return cmsDependencyDestroyed(err, "WorkspaceNotExist")
 			}
 		case "alicloud_cms_event_notify_policy":
-			id := rs.Primary.ID
+			uuid, workspace := rs.Primary.Attributes["uuid"], rs.Primary.Attributes["workspace"]
+			query := map[string]*string{
+				"uuid":      helper.StringPointer(uuid),
+				"workspace": helper.StringPointer(workspace),
+			}
 			check = func() (bool, error) {
-				_, err := cmsV2.DescribeCmsEventNotifyPolicy(id)
-				return providerResourceDestroyed(err)
+				_, err := client.RoaGet("Cms", "2024-03-30", "/api/eventbase/notify-policy", query, nil, nil)
+				return cmsDependencyDestroyed(err, "NotFound")
 			}
 		case "alicloud_log_project":
-			id := rs.Primary.ID
+			hostMap := map[string]*string{"project": helper.StringPointer(rs.Primary.ID)}
 			check = func() (bool, error) {
-				_, err := slsService.DescribeSlsProject(id)
-				return providerResourceDestroyed(err)
+				_, err := client.Do("Sls", helper.RoaParam("GET", "2020-12-30", "GetProject", "/"), nil, nil, nil, hostMap, false)
+				return cmsDependencyDestroyed(err, "ProjectNotExist")
 			}
 		default:
 			continue
@@ -292,18 +371,29 @@ func subscriptionDestroyed(err error) (bool, error) {
 	return false, err
 }
 
-// providerResourceDestroyed accepts only the provider's structured not-found
-// signal built with errs.NotFoundMsg by the workspace, notification-policy and
-// SLS services. Matching free text such as "not found" could otherwise hide a
-// missing dependency, a permission error or a transient service failure.
-func providerResourceDestroyed(err error) (bool, error) {
+// cmsDependencyDestroyed accepts only the documented absence code returned by
+// the dependency lookup itself. An authorization or server error is never a
+// deletion, even when its message or data happens to contain "NotFound", and
+// the code must match the contract for the object that was queried.
+func cmsDependencyDestroyed(err error, codes ...string) (bool, error) {
 	if err == nil {
 		return false, nil
 	}
-	if errs.IsProviderNotFound(err) {
-		return true, nil
+	sdkErr, ok := err.(*tea.SDKError)
+	if !ok {
+		return false, err
 	}
-	return false, err
+	status := tea.IntValue(sdkErr.StatusCode)
+	code := tea.StringValue(sdkErr.Code)
+	if status == http.StatusUnauthorized || status == http.StatusForbidden || status >= http.StatusInternalServerError {
+		return false, fmt.Errorf("the dependency lookup was rejected with HTTP %d and code %q", status, code)
+	}
+	for _, expected := range codes {
+		if code == expected {
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("the dependency lookup returned code %q, which is not the documented absence code", code)
 }
 
 // waitForCmsDependencyDestroy polls because Cms and SLS delete asynchronously:
@@ -513,6 +603,75 @@ resource "alicloud_cms_event_notify_policy" "default" {
   }
 }
 `, testAccCmsSubscriptionDependence(name))
+}
+
+func testAccCmsSubscriptionSecondWorkspaceDependence(name string) string {
+	baseName := strings.ToLower(name)
+	return fmt.Sprintf(`%s
+resource "alicloud_log_project" "second" {
+  project_name = "%s-second"
+}
+
+resource "alicloud_cms_workspace" "second" {
+  workspace_name = alicloud_log_project.second.project_name
+  sls_project    = alicloud_log_project.second.project_name
+}
+`, testAccCmsSubscriptionCompleteDependence(name), baseName)
+}
+
+func testAccCmsSubscriptionConfigCompleteUnbound(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name      = var.name
+  workspace              = alicloud_cms_workspace.default.workspace_name
+  description            = "complete subscription"
+  enable                 = true
+  subscribe_legacy_event = true
+
+  filter_setting {
+    expression = "1 and 2"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P1,P2"
+    }
+  }
+}
+`, testAccCmsSubscriptionCompleteDependence(name))
+}
+
+func testAccCmsSubscriptionConfigCompleteOtherWorkspace(name string) string {
+	return fmt.Sprintf(`%s
+resource "alicloud_cms_subscription" "default" {
+  subscription_name = "${var.name}-updated"
+  workspace         = alicloud_cms_workspace.second.workspace_name
+  description       = "complete subscription updated"
+  enable            = true
+
+  filter_setting {
+    expression = "1 and 2"
+
+    conditions {
+      field = "labels.alertname"
+      op    = "EQ"
+      value = "HighCPUUsage"
+    }
+
+    conditions {
+      field = "labels.severity"
+      op    = "IN"
+      value = "P1"
+    }
+  }
+}
+`, testAccCmsSubscriptionSecondWorkspaceDependence(name))
 }
 
 func testAccCmsSubscriptionConfigComplete(name string) string {
@@ -1602,6 +1761,55 @@ func TestUnitCmsSubscriptionEmptyConfigurationRejected(t *testing.T) {
 			}),
 			wantError: false,
 		},
+		// A block whose only member is resolved at apply is not empty: a dynamic
+		// value must not be mistaken for an omitted one.
+		"dynamicFilterSettingExpression": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{"expression": subscriptionUnitUnknown{}})},
+			}),
+			wantError: false,
+		},
+		"dynamicPushingTemplateUuid": {
+			attributes: base(map[string]interface{}{
+				"pushing_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "pushing_setting"), map[string]interface{}{"template_uuid": subscriptionUnitUnknown{}})},
+			}),
+			wantError: false,
+		},
+		"dynamicEffectTimeRangeMember": {
+			attributes: base(map[string]interface{}{
+				"agent_config": agentWith(map[string]interface{}{
+					"routes": []interface{}{subscriptionUnitObject(t, routeType, map[string]interface{}{
+						"effect_time_range": []interface{}{subscriptionUnitObject(t, windowType, map[string]interface{}{"start_time_in_minute": subscriptionUnitUnknown{}})},
+					})},
+				}),
+			}),
+			wantError: false,
+		},
+		// A nested collection that is entirely unknown cannot be judged at plan
+		// time and must not be rejected.
+		"unknownAgentConfig": {
+			attributes: base(map[string]interface{}{
+				"agent_config": subscriptionUnitUnknown{},
+			}),
+			wantError: false,
+		},
+		"unknownRoutes": {
+			attributes: base(map[string]interface{}{
+				"agent_config": agentWith(map[string]interface{}{
+					"agent_uuid": "agent-1",
+					"routes":     subscriptionUnitUnknown{},
+				}),
+			}),
+			wantError: false,
+		},
+		"unknownConditions": {
+			attributes: base(map[string]interface{}{
+				"filter_setting": []interface{}{subscriptionUnitObject(t, subscriptionUnitObjectType(t, objType, "filter_setting"), map[string]interface{}{
+					"conditions": subscriptionUnitUnknown{},
+				})},
+			}),
+			wantError: false,
+		},
 	}
 	for name, testCase := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -1879,27 +2087,441 @@ func subscriptionUnitAssertKnown(t *testing.T, value tftypes.Value, at string) {
 	}
 }
 
+// TestUnitCmsSubscriptionReadUnifiesOmittedListState proves the same response
+// produces the same state through Refresh and a bare Import: an omitted or
+// empty list reads back as null instead of reusing the previous state.
+func TestUnitCmsSubscriptionReadUnifiesOmittedListState(t *testing.T) {
+	apiClient, _ := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		return http.StatusOK, map[string]interface{}{"requestId": "req", "subscription": map[string]interface{}{
+			"subscriptionId":   "sub-1",
+			"subscriptionName": "name",
+			"workspace":        "ws-1",
+			"pushingSetting": map[string]interface{}{
+				"templateUuid": "tpl-1",
+			},
+			"workspaceFilterSetting": map[string]interface{}{
+				"workspaceUuids": []interface{}{},
+			},
+		}}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	pushingType := subscriptionUnitObjectType(t, objType, "pushing_setting")
+	workspaceFilterType := subscriptionUnitObjectType(t, objType, "workspace_filter_setting")
+
+	refreshed := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                "sub-1",
+		"subscription_name": "name",
+		"workspace":         "ws-1",
+		"pushing_setting": []interface{}{
+			subscriptionUnitObject(t, pushingType, map[string]interface{}{
+				"alert_action_ids":   []interface{}{"previous"},
+				"restore_action_ids": []interface{}{"previous"},
+				"template_uuid":      "tpl-1",
+			}),
+		},
+		"workspace_filter_setting": []interface{}{
+			subscriptionUnitObject(t, workspaceFilterType, map[string]interface{}{
+				"workspace_uuids": []interface{}{"previous"},
+			}),
+		},
+	})
+	imported := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":        "sub-1",
+		"workspace": "ws-1",
+	})
+
+	read := func(stateValue tftypes.Value) *fwresource.ReadResponse {
+		req := fwresource.ReadRequest{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+		resp := &fwresource.ReadResponse{State: tfsdk.State{Schema: resourceSchema, Raw: stateValue}}
+		r.Read(context.Background(), req, resp)
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("Read returned diagnostics: %v", resp.Diagnostics)
+		}
+		return resp
+	}
+
+	states := map[string]*fwresource.ReadResponse{"refresh": read(refreshed), "import": read(imported)}
+	for name, resp := range states {
+		for label, attributePath := range map[string]path.Path{
+			"pushing_setting.alert_action_ids":         path.Root("pushing_setting").AtListIndex(0).AtName("alert_action_ids"),
+			"pushing_setting.restore_action_ids":       path.Root("pushing_setting").AtListIndex(0).AtName("restore_action_ids"),
+			"workspace_filter_setting.workspace_uuids": path.Root("workspace_filter_setting").AtListIndex(0).AtName("workspace_uuids"),
+		} {
+			var list types.List
+			if diags := resp.State.GetAttribute(context.Background(), attributePath, &list); diags.HasError() {
+				t.Fatalf("%s: reading %s: %v", name, label, diags)
+			}
+			if !list.IsNull() {
+				t.Fatalf("%s: %s = %v, want null for an omitted member", name, label, list)
+			}
+		}
+	}
+}
+
+// TestUnitCmsSubscriptionCreateVerifiesConfigurationWithDisable proves the
+// initial disable wait requires the requested configuration and the switch
+// together: a response that only reports the switch does not converge.
+func TestUnitCmsSubscriptionCreateVerifiesConfigurationWithDisable(t *testing.T) {
+	cases := map[string]struct {
+		keepConfiguration bool
+		wantError         bool
+	}{
+		"switchOnly":  {keepConfiguration: false, wantError: true},
+		"fullPayload": {keepConfiguration: true, wantError: false},
+	}
+	for name, testCase := range cases {
+		t.Run(name, func(t *testing.T) {
+			var mu sync.Mutex
+			created := map[string]interface{}{}
+			disabled := false
+			apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+				mu.Lock()
+				defer mu.Unlock()
+				if method == http.MethodPost {
+					for key, value := range body {
+						created[key] = value
+					}
+					return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+				}
+				if method == http.MethodPut && strings.HasSuffix(path, "/disable") {
+					disabled = true
+					return http.StatusOK, map[string]interface{}{"requestId": "req-2"}
+				}
+				subscription := map[string]interface{}{
+					"subscriptionId":   subscriptionUnitServerId,
+					"subscriptionName": "disable",
+					"workspace":        "ws-1",
+					"enable":           !disabled,
+				}
+				// Before the disable the configuration is complete; after it a
+				// switch-only response must not be accepted.
+				if !disabled || testCase.keepConfiguration {
+					for key, value := range created {
+						subscription[key] = value
+					}
+				}
+				return http.StatusOK, map[string]interface{}{"requestId": "req-3", "subscription": subscription}
+			})
+			r := subscriptionUnitResource(t, apiClient)
+			resourceSchema, objType := subscriptionUnitSchema(t, r)
+			planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+				"id":                subscriptionUnitUnknown{},
+				"subscription_name": "disable",
+				"workspace":         "ws-1",
+				"description":       "keep me",
+				"enable":            false,
+			})
+			ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+			defer cancel()
+			req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+			resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+			r.Create(ctx, req, resp)
+
+			if len(recorder.requests(http.MethodPut)) == 0 {
+				t.Fatal("the disable action was never called")
+			}
+			if testCase.wantError {
+				if !resp.Diagnostics.HasError() {
+					t.Fatal("expected Create to fail while the read never confirms the requested configuration")
+				}
+				return
+			}
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
+			}
+			if got := subscriptionUnitStringAttribute(t, resp.State, "description").ValueString(); got != "keep me" {
+				t.Fatalf("state description = %q, want the confirmed configuration", got)
+			}
+		})
+	}
+}
+
+// TestUnitCmsSubscriptionCreateStopsAfterCancellationOnRetryableFailure proves
+// a retryable failure does not produce another attempt once the operation is
+// cancelled: the SDK-level retry is disabled and the provider-level loop
+// observes the same context.
+func TestUnitCmsSubscriptionCreateStopsAfterCancellationOnRetryableFailure(t *testing.T) {
+	attempted := make(chan struct{}, 1)
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		if method == http.MethodPost {
+			attempted <- struct{}{}
+			return http.StatusInternalServerError, map[string]interface{}{"requestId": "req-1", "Code": "InternalError", "Message": "code: 500, internal error"}
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2"}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "retryable",
+		"workspace":         "ws-1",
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		r.Create(ctx, req, resp)
+	}()
+	<-attempted
+	cancel()
+	<-done
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected Create to stop once the operation context is cancelled")
+	}
+	if posts := len(recorder.requests(http.MethodPost)); posts != 1 {
+		t.Fatalf("create requests = %d, want exactly one attempt after cancellation", posts)
+	}
+	if gets := len(recorder.requests(http.MethodGet)); gets != 0 {
+		t.Fatalf("follow-up reads = %d, want none after cancellation", gets)
+	}
+}
+
+// TestUnitCmsSubscriptionRequestCoversExternalFixtures records the request and
+// the read-back state for the pushing, workspace-filter and agent blocks. Their
+// referenced action, template, response plan and agent objects have no
+// Terraform resource, so the wire contract is the evidence for these members.
+func TestUnitCmsSubscriptionRequestCoversExternalFixtures(t *testing.T) {
+	var mu sync.Mutex
+	created := map[string]interface{}{}
+	apiClient, recorder := subscriptionUnitClient(t, func(method, path string, body map[string]interface{}) (int, interface{}) {
+		mu.Lock()
+		defer mu.Unlock()
+		if method == http.MethodPost {
+			for key, value := range body {
+				created[key] = value
+			}
+			return http.StatusOK, map[string]interface{}{"requestId": "req-1", "subscriptionId": subscriptionUnitServerId}
+		}
+		subscription := map[string]interface{}{
+			"subscriptionId":   subscriptionUnitServerId,
+			"subscriptionName": "fixtures",
+			"workspace":        "ws-1",
+			"enable":           true,
+			"userId":           "1",
+			"subscriptionType": "NORMAL",
+			"createTime":       "1",
+			"updateTime":       "1",
+		}
+		for key, value := range created {
+			subscription[key] = value
+		}
+		return http.StatusOK, map[string]interface{}{"requestId": "req-2", "subscription": subscription}
+	})
+	r := subscriptionUnitResource(t, apiClient)
+	resourceSchema, objType := subscriptionUnitSchema(t, r)
+	pushingType := subscriptionUnitObjectType(t, objType, "pushing_setting")
+	workspaceFilterType := subscriptionUnitObjectType(t, objType, "workspace_filter_setting")
+	agentType := subscriptionUnitObjectType(t, objType, "agent_config")
+	routeType := subscriptionUnitObjectType(t, agentType, "routes")
+	channelType := subscriptionUnitObjectType(t, routeType, "channels")
+	windowType := subscriptionUnitObjectType(t, routeType, "effect_time_range")
+
+	planValue := subscriptionUnitObject(t, objType, map[string]interface{}{
+		"id":                subscriptionUnitUnknown{},
+		"subscription_name": "fixtures",
+		"workspace":         "ws-1",
+		"pushing_setting": []interface{}{
+			subscriptionUnitObject(t, pushingType, map[string]interface{}{
+				"alert_action_ids":   []interface{}{"action-1"},
+				"restore_action_ids": []interface{}{"action-2"},
+				"template_uuid":      "template-1",
+				"response_plan_id":   "plan-1",
+			}),
+		},
+		"workspace_filter_setting": []interface{}{
+			subscriptionUnitObject(t, workspaceFilterType, map[string]interface{}{
+				"workspace_uuids": []interface{}{"workspace-uuid-1"},
+			}),
+		},
+		"agent_config": []interface{}{
+			subscriptionUnitObject(t, agentType, map[string]interface{}{
+				"agent_uuid": "agent-1",
+				"routes": []interface{}{
+					subscriptionUnitObject(t, routeType, map[string]interface{}{
+						"channels": []interface{}{
+							subscriptionUnitObject(t, channelType, map[string]interface{}{
+								"channel_type":         "WEBHOOK",
+								"receivers":            []interface{}{"receiver-1"},
+								"enabled_sub_channels": []interface{}{"EMAIL"},
+							}),
+						},
+						"effect_time_range": []interface{}{
+							subscriptionUnitObject(t, windowType, map[string]interface{}{
+								"time_zone":            "Asia/Shanghai",
+								"day_in_week":          []interface{}{float64(1), float64(2)},
+								"start_time_in_minute": float64(0),
+								"end_time_in_minute":   float64(1439),
+							}),
+						},
+					}),
+				},
+			}),
+		},
+	})
+	req := fwresource.CreateRequest{Plan: tfsdk.Plan{Schema: resourceSchema, Raw: planValue}}
+	resp := &fwresource.CreateResponse{State: tfsdk.State{Schema: resourceSchema, Raw: planValue}}
+	r.Create(context.Background(), req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("Create returned diagnostics: %v", resp.Diagnostics)
+	}
+
+	bodies := recorder.bodiesFor(http.MethodPost)
+	if len(bodies) != 1 {
+		t.Fatalf("expected one CreateSubscription call, got %v", recorder.requests(http.MethodPost))
+	}
+	body := bodies[0]
+	pushing, ok := body["pushingSetting"].(map[string]interface{})
+	if !ok || pushing["templateUuid"] != "template-1" || pushing["responsePlanId"] != "plan-1" {
+		t.Fatalf("unexpected pushingSetting payload: %v", body["pushingSetting"])
+	}
+	workspaceFilter, ok := body["workspaceFilterSetting"].(map[string]interface{})
+	if !ok || fmt.Sprint(workspaceFilter["workspaceUuids"]) != "[workspace-uuid-1]" {
+		t.Fatalf("unexpected workspaceFilterSetting payload: %v", body["workspaceFilterSetting"])
+	}
+	agent, ok := body["agentConfig"].(map[string]interface{})
+	if !ok || agent["agentUuid"] != "agent-1" {
+		t.Fatalf("unexpected agentConfig payload: %v", body["agentConfig"])
+	}
+
+	stringList := func(attributePath path.Path) []string {
+		t.Helper()
+		var list types.List
+		if diags := resp.State.GetAttribute(context.Background(), attributePath, &list); diags.HasError() {
+			t.Fatalf("reading %s: %v", attributePath, diags)
+		}
+		result := make([]string, 0)
+		for _, element := range list.Elements() {
+			result = append(result, element.(types.String).ValueString())
+		}
+		return result
+	}
+	if got := fmt.Sprint(stringList(path.Root("pushing_setting").AtListIndex(0).AtName("alert_action_ids"))); got != "[action-1]" {
+		t.Fatalf("state alert_action_ids = %s, want [action-1]", got)
+	}
+	if got := fmt.Sprint(stringList(path.Root("workspace_filter_setting").AtListIndex(0).AtName("workspace_uuids"))); got != "[workspace-uuid-1]" {
+		t.Fatalf("state workspace_uuids = %s, want [workspace-uuid-1]", got)
+	}
+	if got := subscriptionUnitStringAttribute(t, resp.State, "subscription_name").ValueString(); got != "fixtures" {
+		t.Fatalf("state subscription_name = %q", got)
+	}
+	channelPath := path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).AtName("channels").AtListIndex(0)
+	var channelTypeValue types.String
+	if diags := resp.State.GetAttribute(context.Background(), channelPath.AtName("channel_type"), &channelTypeValue); diags.HasError() {
+		t.Fatalf("reading channel_type: %v", diags)
+	}
+	if channelTypeValue.ValueString() != "WEBHOOK" {
+		t.Fatalf("state channel_type = %q, want WEBHOOK", channelTypeValue.ValueString())
+	}
+	if got := fmt.Sprint(stringList(channelPath.AtName("enabled_sub_channels"))); got != "[EMAIL]" {
+		t.Fatalf("state enabled_sub_channels = %s, want [EMAIL]", got)
+	}
+}
+
+// TestUnitCmsSubscriptionEmptyOptionalListRejected proves every optional list
+// rejects an explicitly empty value and accepts omission, matching the
+// documented "omit the argument to unset it" rule.
+func TestUnitCmsSubscriptionEmptyOptionalListRejected(t *testing.T) {
+	r := cloudmonitorservice.NewSubscriptionResource()
+	resourceSchema, _ := subscriptionUnitSchema(t, r)
+
+	nestedBlock := func(blocks map[string]fwschema.Block, name string) fwschema.ListNestedBlock {
+		t.Helper()
+		block, ok := blocks[name].(fwschema.ListNestedBlock)
+		if !ok {
+			t.Fatalf("%s is %T, want a list nested block", name, blocks[name])
+		}
+		return block
+	}
+	pushingBlock := nestedBlock(resourceSchema.Blocks, "pushing_setting")
+	workspaceFilterBlock := nestedBlock(resourceSchema.Blocks, "workspace_filter_setting")
+	agentBlock := nestedBlock(resourceSchema.Blocks, "agent_config")
+	routeBlock := nestedBlock(agentBlock.NestedObject.Blocks, "routes")
+	channelBlock := nestedBlock(routeBlock.NestedObject.Blocks, "channels")
+	windowBlock := nestedBlock(routeBlock.NestedObject.Blocks, "effect_time_range")
+
+	listValidators := func(attributes map[string]fwschema.Attribute, name string) []validator.List {
+		t.Helper()
+		attribute, ok := attributes[name].(fwschema.ListAttribute)
+		if !ok {
+			t.Fatalf("%s is %T, want a list attribute", name, attributes[name])
+		}
+		return attribute.Validators
+	}
+	channelsPath := path.Root("agent_config").AtListIndex(0).AtName("routes").AtListIndex(0).AtName("channels").AtListIndex(0)
+	cases := map[string][]validator.List{
+		"alertActionIds":     listValidators(pushingBlock.NestedObject.Attributes, "alert_action_ids"),
+		"restoreActionIds":   listValidators(pushingBlock.NestedObject.Attributes, "restore_action_ids"),
+		"workspaceUuids":     listValidators(workspaceFilterBlock.NestedObject.Attributes, "workspace_uuids"),
+		"receivers":          listValidators(channelBlock.NestedObject.Attributes, "receivers"),
+		"enabledSubChannels": listValidators(channelBlock.NestedObject.Attributes, "enabled_sub_channels"),
+		"dayInWeek":          listValidators(windowBlock.NestedObject.Attributes, "day_in_week"),
+	}
+	for name, attributeValidators := range cases {
+		t.Run(name, func(t *testing.T) {
+			if len(attributeValidators) == 0 {
+				t.Fatal("the attribute carries no validator")
+			}
+			rejected := func(value types.List) bool {
+				resp := &validator.ListResponse{}
+				for _, attributeValidator := range attributeValidators {
+					attributeValidator.ValidateList(context.Background(), validator.ListRequest{ConfigValue: value, Path: channelsPath}, resp)
+				}
+				return resp.Diagnostics.HasError()
+			}
+			if !rejected(types.ListValueMust(types.StringType, []attr.Value{})) {
+				t.Fatal("an explicit empty list must be rejected")
+			}
+			if rejected(types.ListNull(types.StringType)) {
+				t.Fatal("an omitted list must be accepted")
+			}
+		})
+	}
+}
+
 // TestUnitCmsSubscriptionDestroyCheckUsesStructuredSignal proves the destroy
-// check does not treat an arbitrary message that mentions not-found as proof
-// that the object is gone.
+// check only accepts the documented absence code of the object it queried: a
+// permission error whose text mentions not-found, an answer for another object
+// or free text never counts as a successful deletion.
 func TestUnitCmsSubscriptionDestroyCheckUsesStructuredSignal(t *testing.T) {
-	structured := errs.WrapErrorf(errs.NotFoundErr("Workspace", "ws-1"), errs.NotFoundMsg, map[string]interface{}{"RequestId": "req"})
-	if gone, err := providerResourceDestroyed(structured); !gone || err != nil {
-		t.Fatalf("structured not-found = (%t, %v), want (true, nil)", gone, err)
-	}
-	textual := fmt.Errorf("the workspace not found because the request was denied")
-	if gone, err := providerResourceDestroyed(textual); gone || err == nil {
-		t.Fatalf("textual not-found = (%t, %v), want (false, err)", gone, err)
-	}
-	if gone, err := providerResourceDestroyed(nil); gone || err != nil {
+	if gone, err := cmsDependencyDestroyed(nil, "WorkspaceNotExist"); gone || err != nil {
 		t.Fatalf("existing object = (%t, %v), want (false, nil)", gone, err)
 	}
+	missing := &tea.SDKError{
+		StatusCode: tea.Int(http.StatusNotFound),
+		Code:       tea.String("WorkspaceNotExist"),
+		Message:    tea.String("code: 404, the workspace does not exist"),
+	}
+	if gone, err := cmsDependencyDestroyed(missing, "WorkspaceNotExist"); !gone || err != nil {
+		t.Fatalf("contract absence = (%t, %v), want (true, nil)", gone, err)
+	}
+	forbidden := &tea.SDKError{
+		StatusCode: tea.Int(http.StatusForbidden),
+		Code:       tea.String("NotFound"),
+		Message:    tea.String("code: 403, NotFound: the caller is not authorized"),
+	}
+	if gone, err := cmsDependencyDestroyed(forbidden, "NotFound"); gone || err == nil {
+		t.Fatalf("403 mentioning NotFound = (%t, %v), want (false, err)", gone, err)
+	}
+	otherObject := &tea.SDKError{
+		StatusCode: tea.Int(http.StatusNotFound),
+		Code:       tea.String("ProjectNotExist"),
+		Message:    tea.String("code: 404, the project does not exist"),
+	}
+	if gone, err := cmsDependencyDestroyed(otherObject, "WorkspaceNotExist"); gone || err == nil {
+		t.Fatalf("absence of another object = (%t, %v), want (false, err)", gone, err)
+	}
+	textual := fmt.Errorf("the workspace not found because the request was denied")
+	if gone, err := cmsDependencyDestroyed(textual, "WorkspaceNotExist"); gone || err == nil {
+		t.Fatalf("textual not-found = (%t, %v), want (false, err)", gone, err)
+	}
+
 	subscriptionTextual := fmt.Errorf("subscription not found")
 	if gone, err := subscriptionDestroyed(subscriptionTextual); gone || err == nil {
 		t.Fatalf("textual subscription not-found = (%t, %v), want (false, err)", gone, err)
-	}
-	subscriptionMissing := errs.WrapErrorf(fmt.Errorf("ResourceNotFound"), errs.DefaultErrorMsg, "sub-1", "/subscriptions/sub-1", errs.AlibabaCloudSdkGoERROR)
-	if gone, _ := subscriptionDestroyed(subscriptionMissing); gone {
-		t.Fatal("a wrapped default error must not be read as a deletion")
 	}
 }
