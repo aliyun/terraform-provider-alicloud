@@ -7,7 +7,7 @@ description: |-
   Provides a list of ECS reserved instances.
 ---
 
-# alicloud\_reserved\_instances
+# alicloud_reserved_instances
 
 The `alicloud_reserved_instances` data source provides a collection of ECS reserved instances (reserved instance coupons) in the current region. You can filter the results by ID, name, zone, instance type, scope, payment type, allocation type, status, lock reason and tags.
 

@@ -7,7 +7,7 @@ description: |-
   Provides a list of ECS auto provisioning groups.
 ---
 
-# alicloud\_ecs\_auto\_provisioning\_groups
+# alicloud_ecs_auto_provisioning_groups
 
 The `alicloud_ecs_auto_provisioning_groups` data source provides a collection of ECS auto provisioning groups in the current region. You can filter the results by ID, name, resource group, status, type and tags.
 

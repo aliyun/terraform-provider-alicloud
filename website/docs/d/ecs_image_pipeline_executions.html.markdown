@@ -7,7 +7,7 @@ description: |-
   Provides a list of ECS image pipeline executions.
 ---
 
-# alicloud\_ecs\_image\_pipeline\_executions
+# alicloud_ecs_image_pipeline_executions
 
 The `alicloud_ecs_image_pipeline_executions` data source provides a collection of executions of ECS image pipelines in the current region. You can query the executions of one image pipeline or a single execution, and filter the results by status, tags and execution IDs.
 
@@ -55,7 +55,7 @@ The following arguments are supported:
 
 * `image_pipeline_id` - (Optional, String) The ID of the image pipeline whose executions are queried.
 * `execution_id` - (Optional, String) The ID of a specific execution.
-* `status` - (Optional, String) The execution status to filter by. Multiple statuses can be separated by commas. Valid values: `PREPARING`, `REPAIRING`, `BUILDING`, `TESTING`, `DISTRIBUTING`, `RELEASING`, `SUCCESS`, `PARTITION_SUCCESS`, `FAILED`, `TEST_FAILED`, `CANCELLING` and `CANCELLED`.
+* `status` - (Optional, String) The execution status to filter by. Multiple statuses can be separated by commas. Valid values: `PREPARING`, `REPAIRING`, `BUILDING`, `TESTING`, `DISTRIBUTING`, `RELEASING`, `SUCCESS`, `PARTITION_SUCCESS`, `FAILED`, `TEST_FAILED`, and the cancellation statuses documented for `DescribeImagePipelineExecutions`.
 * `tags` - (Optional, Map of String) A mapping of tags to filter by. A maximum of 20 entries is allowed.
 * `ids` - (Optional, Computed, List of String) A list of execution IDs to filter by. The filter is applied on the provider side after all pages are read.
 * `max_results` - (Optional, Int) The number of entries per page. Valid values: `1` to `500`. Defaults to `50`.
