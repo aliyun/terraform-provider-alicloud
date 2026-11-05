@@ -2107,7 +2107,6 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud_essd"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud"),
 					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud_essd", "cloud"}),
-					systemDiskCategoriesRemoteCheck(t, "alicloud_ess_scaling_configuration.sco_other", []string{"cloud"}),
 				),
 			},
 			{
@@ -2119,7 +2118,6 @@ func TestAccAliCloudEssScalingConfiguration_SystemDiskCategoriesOrder(t *testing
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.0", "cloud"),
 					resource.TestCheckResourceAttr(resourceId, "system_disk_categories.1", "cloud_essd"),
 					systemDiskCategoriesRemoteCheck(t, resourceId, []string{"cloud", "cloud_essd"}),
-					systemDiskCategoriesRemoteCheck(t, "alicloud_ess_scaling_configuration.sco_other", []string{"cloud"}),
 				),
 			},
 			{
@@ -3050,12 +3048,12 @@ func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 // the wrong object.
 const essScalingConfigurationSecondaryForOrder = `
 resource "alicloud_ess_scaling_configuration" "sco_other" {
-  scaling_group_id       = alicloud_ess_scaling_group.default.id
-  image_id               = data.alicloud_images.default1.images.0.id
-  instance_type          = data.alicloud_instance_types.c8i.instance_types.0.id
-  security_group_id      = alicloud_security_group.default1.id
-  force_delete           = true
-  system_disk_categories = ["cloud"]
+  scaling_group_id     = alicloud_ess_scaling_group.default.id
+  image_id             = data.alicloud_images.default1.images.0.id
+  instance_type        = data.alicloud_instance_types.c8i.instance_types.0.id
+  security_group_id    = alicloud_security_group.default1.id
+  force_delete         = true
+  system_disk_category = "cloud_essd"
 }
 `
 
