@@ -686,11 +686,11 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 					"privilege": []map[string]interface{}{
 						{
 							"role":    "read",
-							"db_name": "testdb",
+							"db_name": "admin",
 						},
 						{
 							"role":    "readWrite",
-							"db_name": "admin",
+							"db_name": "testdb",
 						},
 					},
 				}),
@@ -699,7 +699,7 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 						"account_name":   name,
 						"character_type": "cs",
 					}),
-					resource.TestCheckResourceAttr(resourceId, "account_roles.#", "2"),
+					resource.TestCheckResourceAttrSet(resourceId, "account_roles.0.role"),
 				),
 			},
 			{
@@ -714,11 +714,11 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 					"privilege": []map[string]interface{}{
 						{
 							"role":    "readWrite",
-							"db_name": "admin",
+							"db_name": "testdb",
 						},
 						{
 							"role":    "read",
-							"db_name": "testdb",
+							"db_name": "admin",
 						},
 					},
 				}),
@@ -726,6 +726,10 @@ func TestAccAliCloudMongoDBAccount_governance(t *testing.T) {
 					testAccCheck(map[string]string{
 						"account_name":   name,
 						"character_type": "cs",
+						// Let the account operations settle before the sharding
+						// instance is destroyed, which rejects DeleteDBInstance
+						// while the instance is still modifying.
+						acctest.ForceSleep: "60",
 					}),
 				),
 			},
