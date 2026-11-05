@@ -1,0 +1,186 @@
+package resourcemanager
+
+import (
+	"fmt"
+	"regexp"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func DataSourceResourceShares() *schema.Resource {
+	return &schema.Resource{
+		Read: DataSourceResourceSharesRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"resource_share_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_share_owner": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Self", "OtherAccounts"}, false),
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Active", "Deleted", "Deleting"}, false),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"shares": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_share_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_share_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_share_owner": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func DataSourceResourceSharesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "ListResourceShares"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("resource_share_name"); ok {
+		request["ResourceShareName"] = v
+	}
+	request["ResourceOwner"] = d.Get("resource_share_owner")
+	request["MaxResults"] = helper.PageSizeMedium
+	var objects []map[string]interface{}
+	var resourceShareNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		resourceShareNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	status, statusOk := d.GetOk("status")
+	var response map[string]interface{}
+	var err error
+	for {
+		response, err = client.RpcPost("ResourceSharing", "2020-01-10", action, nil, request, true)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.DataDefaultErrorMsg, "alicloud_resource_manager_resource_shares", action, errs.AlibabaCloudSdkGoERROR)
+		}
+		logs.AddDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.ResourceShares", response)
+		if err != nil {
+			return errs.WrapErrorf(err, errs.FailedGetAttributeMsg, action, "$.ResourceShares", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if resourceShareNameRegex != nil {
+				if !resourceShareNameRegex.MatchString(fmt.Sprint(item["ResourceShareName"])) {
+					continue
+				}
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["ResourceShareId"])]; !ok {
+					continue
+				}
+			}
+			if statusOk && status.(string) != "" && status.(string) != item["ResourceShareStatus"].(string) {
+				continue
+			}
+			objects = append(objects, item)
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":                   fmt.Sprint(object["ResourceShareId"]),
+			"resource_share_id":    fmt.Sprint(object["ResourceShareId"]),
+			"resource_share_name":  object["ResourceShareName"],
+			"resource_share_owner": object["ResourceShareOwner"],
+			"status":               object["ResourceShareStatus"],
+		}
+		ids = append(ids, fmt.Sprint(object["ResourceShareId"]))
+		names = append(names, object["ResourceShareName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("shares", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

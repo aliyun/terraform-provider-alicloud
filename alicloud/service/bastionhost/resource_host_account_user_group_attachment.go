@@ -1,0 +1,204 @@
+package bastionhost
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func ResourceHostAccountUserGroupAttachment() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceHostAccountUserGroupAttachmentCreate,
+		Read:   resourceHostAccountUserGroupAttachmentRead,
+		Update: resourceHostAccountUserGroupAttachmentUpdate,
+		Delete: resourceHostAccountUserGroupAttachmentDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Schema: map[string]*schema.Schema{
+			"host_account_ids": {
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"host_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"user_group_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceHostAccountUserGroupAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+	d.SetId(fmt.Sprint(d.Get("instance_id"), ":", d.Get("user_group_id"), ":", d.Get("host_id")))
+
+	return resourceHostAccountUserGroupAttachmentUpdate(d, meta)
+}
+func resourceHostAccountUserGroupAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	yundunBastionhostService := NewService(client)
+	object, err := yundunBastionhostService.DescribeBastionhostHostAccountUserGroupAttachment(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_bastionhost_host_account_user_attachment yundunBastionhostService.DescribeBastionhostHostAccountUserGroupAttachment Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return errs.WrapError(err)
+	}
+	parts, err := helper.ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	d.Set("host_id", parts[2])
+	d.Set("instance_id", parts[0])
+	d.Set("user_group_id", parts[1])
+	hostAccountIdsItems := make([]string, 0)
+	for _, item := range object {
+		itemMap := item.(map[string]interface{})
+		if v, ok := itemMap["IsAuthorized"]; !ok || !v.(bool) {
+			continue
+		}
+		if v, ok := itemMap["HostAccountId"]; ok && v != nil {
+			hostAccountIdsItems = append(hostAccountIdsItems, fmt.Sprint(v))
+		}
+	}
+	d.Set("host_account_ids", hostAccountIdsItems)
+	return nil
+}
+func resourceHostAccountUserGroupAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	if d.HasChange("host_account_ids") {
+		parts, err := helper.ParseResourceId(d.Id(), 3)
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		action := "AttachHostAccountsToUserGroup"
+		request := make(map[string]interface{})
+
+		oraw, nraw := d.GetChange("host_account_ids")
+		request["InstanceId"] = parts[0]
+		request["RegionId"] = client.RegionId
+		request["UserGroupId"] = parts[1]
+
+		if oraw != nil && len(oraw.(*schema.Set).List()) > 0 {
+			action = "DetachHostAccountsFromUserGroup"
+			hostRequestMaps := make([]map[string]interface{}, 0)
+			hostRequestMap := make(map[string]interface{}, 0)
+			hostRequestMap["HostId"] = parts[2]
+			hostRequestMap["HostAccountIds"] = oraw.(*schema.Set).List()
+			hostRequestMaps = append(hostRequestMaps, hostRequestMap)
+			if v, err := convert.ConvertListMapToJsonString(hostRequestMaps); err != nil {
+				return errs.WrapError(err)
+			} else {
+				request["Hosts"] = v
+			}
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+				_, err := client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+		}
+		if nraw != nil && len(nraw.(*schema.Set).List()) > 0 {
+			action = "AttachHostAccountsToUserGroup"
+			hostRequestMaps := make([]map[string]interface{}, 0)
+			hostRequestMap := make(map[string]interface{}, 0)
+			hostRequestMap["HostId"] = parts[2]
+			hostRequestMap["HostAccountIds"] = nraw.(*schema.Set).List()
+			hostRequestMaps = append(hostRequestMaps, hostRequestMap)
+			if v, err := convert.ConvertListMapToJsonString(hostRequestMaps); err != nil {
+				return errs.WrapError(err)
+			} else {
+				request["Hosts"] = v
+			}
+			wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+			err = retry.Retry(d.Timeout(schema.TimeoutDelete), func() *retry.RetryError {
+				_, err := client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+				if err != nil {
+					if helper.NeedRetry(err) {
+						wait()
+						return retry.RetryableError(err)
+					}
+					return retry.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+	return resourceHostAccountUserGroupAttachmentRead(d, meta)
+}
+func resourceHostAccountUserGroupAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	parts, err := helper.ParseResourceId(d.Id(), 3)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+	action := "DetachHostAccountsFromUserGroup"
+	var response map[string]interface{}
+	request := map[string]interface{}{
+		"InstanceId":  parts[0],
+		"UserGroupId": parts[1],
+	}
+	request["RegionId"] = client.RegionId
+	hostRequestMaps := make([]map[string]interface{}, 0)
+	hostRequestMap := make(map[string]interface{}, 0)
+	hostRequestMap["HostId"] = parts[2]
+	hostRequestMap["HostAccountIds"] = d.Get("host_account_ids").(*schema.Set).List()
+	hostRequestMaps = append(hostRequestMaps, hostRequestMap)
+	if v, err := convert.ConvertListMapToJsonString(hostRequestMaps); err != nil {
+		return errs.WrapError(err)
+	} else {
+		request["Hosts"] = v
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+		response, err = client.RpcPost("Yundun-bastionhost", "2019-12-09", action, nil, request, false)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}

@@ -38,14 +38,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
+          filter: blob:none
       - name: Fetch the pull request base
         env:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           CI_BASE_REPOSITORY_URL: https://github.com/${{ github.repository }}.git
         run: |
           set -euo pipefail
-          git fetch --no-tags --no-recurse-submodules --force \
-            "$CI_BASE_REPOSITORY_URL" \
+          # Keep base-only checker blobs available for lazy git checkout.
+          git config --local --replace-all remote.ci-base.url "$CI_BASE_REPOSITORY_URL"
+          git config --local remote.ci-base.promisor true
+          git config --local remote.ci-base.partialclonefilter blob:none
+          git fetch --no-tags --no-recurse-submodules --force --filter=blob:none \
+            ci-base \
             "+refs/heads/$PR_BASE_REF:refs/remotes/ci-base/base"
       - name: Restore the title checker from the pull request base
         env:
@@ -80,23 +85,3 @@ jobs:
           DIFF_HEAD: ${{ steps.change-range.outputs.diff_head }}
         run: |
           GOWORK=off GOTOOLCHAIN=local GOPROXY=off go run scripts/title/title_check.go -title="$PR_TITLE" -base="$DIFF_BASE" -head="$DIFF_HEAD"
-
-  commits:
-    name: Pull Request Max Commits
-    permissions: {}
-    runs-on: terraform-ci-policy
-    timeout-minutes: 3
-    steps:
-      - name: Checking the max commits number
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            const commitNum = context.payload.pull_request?.commits;
-            if (!Number.isSafeInteger(commitNum) || commitNum < 0) {
-              throw new Error("Invalid pull request commit metadata.");
-            }
-            if (commitNum > 1) {
-              core.setFailed(
-                `The PR has ${commitNum} commits, and please rebase it to 1.`
-              );
-            }

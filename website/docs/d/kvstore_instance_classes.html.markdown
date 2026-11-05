@@ -50,9 +50,10 @@ The following arguments are supported:
 * `edition_type` - (Optional, Available since v1.68.0) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance edition type required by the user. Valid values: `Community` and `Enterprise`.
 * `series_type` - (Optional, Available since v1.68.0) The Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance series type required by the user. Valid values: `enhanced_performance_type` and `hybrid_storage`.
 * `shard_number` - (Optional, Available since v1.68.0) The number of shard.Valid values: `1`, `2`, `4`, `8`, `16`, `32`, `64`, `128`, `256`.
+* `sorted_by` - (Optional) The field used to sort the returned instance classes. Valid values: `Price`.
 * `product_type` - (Optional, Available since v1.130.0) The type of the service. Valid values:
-    * Local: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a local disk.
-    * OnECS: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a standard disk. This type is available only on the Alibaba Cloud China site.
+  * Local: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a local disk.
+  * OnECS: a Tair (Redis OSS-Compatible) And Memcache (KVStore) Instance with a standard disk. This type is available only on the Alibaba Cloud China site.
 
 ## Attributes Reference
 
@@ -61,3 +62,4 @@ The following attributes are exported in addition to the arguments listed above:
 * `instance_classes` - A list of KVStore available instance classes.
 * `classes` - A list of KVStore available instance classes when the `sorted_by` is "Price". include:
   * `instance_class` - KVStore available instance class.
+  * `price` - The price of the instance class.

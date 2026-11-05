@@ -7,11 +7,11 @@ description: |-
   Provides a list of Schedulerx Namespaces to the user.
 ---
 
-# alicloud\_schedulerx\_namespaces
+# alicloud_schedulerx_namespaces
 
 This data source provides the Schedulerx Namespaces of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.173.0+.
+-> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
 
@@ -39,13 +39,13 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Namespace name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Namespace names.
 * `namespaces` - A list of Schedulerx Namespaces. Each element contains the following attributes:
-	* `description` - The description of the resource.
-	* `id` - The ID of the resource.
-	* `namespace_id` - The ID of the Namespace.
-	* `namespace_name` - The name of the resource.
+  * `description` - The description of the resource.
+  * `id` - The ID of the resource.
+  * `namespace_id` - The ID of the Namespace.
+  * `namespace_name` - The name of the resource.

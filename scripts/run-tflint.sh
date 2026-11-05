@@ -127,7 +127,9 @@ run_lint() {
 	local started=$SECONDS
 	local full_output=''
 	local lint_exit=0
-	full_output="$(tfproviderlint "${ANALYZERS[@]}" "${LINT_TARGETS[@]:1}" 2>&1)" ||
+	# tfproviderlint v0.31.0 cannot load Go 1.27 types. Pin the loader's Go
+	# subprocesses too; building the binary with an older Go alone is not enough.
+	full_output="$(GOTOOLCHAIN=go1.26.10 tfproviderlint "${ANALYZERS[@]}" "${LINT_TARGETS[@]:1}" 2>&1)" ||
 		lint_exit=$?
 
 	printf 'tfproviderlint finished in %s seconds (exit %s).\n' "$((SECONDS - started))" "$lint_exit"

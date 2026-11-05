@@ -24,6 +24,7 @@ data "alicloud_waf_domains" "default" {
   instance_id = data.alicloud_waf_instances.default.ids.0
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -56,8 +57,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `is_access_product` - Specifies whether to configure a Layer-7 proxy, such as Anti-DDoS Pro or CDN, to filter the inbound traffic before it is forwarded to WAF. Valid values: `On` and "Off". Default to `Off`.
   * `load_balancing` - The load balancing algorithm that is used to forward requests to the origin. Valid values: `IpHash` and `RoundRobin`. Default to `IpHash`.
   * `log_headers` - The key-value pair that is used to mark the traffic that flows through WAF to the domain. Each item contains two field:
-     * `key`: The key of label.
-     * `value`: The value of label.
+    * `key` - The key of label.
+    * `value` - The value of label.
   * `read_time` - The read timeout of a WAF exclusive cluster. Unit: seconds.
   * `resource_group_id` - The ID of the resource group to which the queried domain belongs in Resource Management.
   * `source_ips` - List of the IP address or domain of the origin server to which the specified domain points.

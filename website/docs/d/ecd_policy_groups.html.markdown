@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecd Policy Groups to the user.
 ---
 
-# alicloud\_ecd\_policy\_groups
+# alicloud_ecd_policy_groups
 
 This data source provides the Ecd Policy Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
@@ -61,44 +61,41 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of policy.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Policy Group names.
 * `groups` - A list of Ecd Policy Groups. Each element contains the following attributes:
-	* `authorize_access_policy_rules` - The rule of authorize access rule.
-		* `cidr_ip` - The cidrip of authorize access rule..
-		* `description` - The description of authorize access rule.
-	* `authorize_security_policy_rules` - The policy rule.
-		* `cidr_ip` - The cidrip of security rules.
-		* `description` - The description of security rules.
-		* `ip_protocol` - The ip protocol of security rules.
-		* `policy` - The policy of security rules.
-		* `port_range` - The port range of security rules.
-		* `priority` - The priority of security rules.
-		* `type` - The type of security rules.
-	* `clipboard` - The clipboard policy.
-	* `domain_list` - The list of domain.
-	* `eds_count` - The count of eds.
-	* `html_access` - The access of html5.
-	* `html_file_transfer` - The html5 file transfer.
-	* `id` - The ID of the Policy Group.
-	* `local_drive` - Local drive redirect policy.
-	* `policy_group_id` - The policy group id.
-	* `policy_group_name` - The name of policy group.
-	* `policy_group_type` - The type of policy group.
-	* `preempt_login` - The preempt login.
-	* `preempt_login_users` - A list of preempt log users.
-	* `status` - The status of policy.
-	* `usb_redirect` - The usb redirect policy.
-	* `visual_quality` - The quality of visual.sae_ecdsae_nameecd_po
-	* `watermark` - The watermark policy.
-	* `watermark_custom_text` - The custort text of water mark.
-	* `watermark_transparency` - The watermark transparency.
-	* `watermark_type` - The type of watemark.
-	* `recording` - (Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `alltime`, `period`.
-	* `recording_start_time` - (Available in 1.171.0+) The start time of recording.
-	* `recording_end_time` - (Available in 1.171.0+) The end time of recording.
-	* `recording_fps` - (Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
-	* `camera_redirect` - (Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.
+  * `authorize_access_policy_rules` - The rule of authorize access rule.
+    * `cidr_ip` - The cidrip of authorize access rule..
+    * `description` - The description of authorize access rule.
+  * `authorize_security_policy_rules` - The policy rule.
+    * `cidr_ip` - The cidrip of security rules.
+    * `description` - The description of security rules.
+    * `ip_protocol` - The ip protocol of security rules.
+    * `policy` - The policy of security rules.
+    * `port_range` - The port range of security rules.
+    * `priority` - The priority of security rules.
+    * `type` - The type of security rules.
+  * `clipboard` - The clipboard policy.
+  * `domain_list` - The list of domain.
+  * `eds_count` - The count of eds.
+  * `html_access` - The access of html5.
+  * `html_file_transfer` - The html5 file transfer.
+  * `id` - The ID of the Policy Group.
+  * `local_drive` - Local drive redirect policy.
+  * `policy_group_id` - The policy group id.
+  * `policy_group_name` - The name of policy group.
+  * `policy_group_type` - The type of policy group.
+  * `status` - The status of policy.
+  * `usb_redirect` - The usb redirect policy.
+  * `visual_quality` - The quality of visual.sae_ecdsae_nameecd_po
+  * `watermark` - The watermark policy.
+  * `watermark_transparency` - The watermark transparency.
+  * `watermark_type` - The type of watemark.
+  * `recording` - (Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `alltime`, `period`.
+  * `recording_start_time` - (Available in 1.171.0+) The start time of recording.
+  * `recording_end_time` - (Available in 1.171.0+) The end time of recording.
+  * `recording_fps` - (Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
+  * `camera_redirect` - (Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.

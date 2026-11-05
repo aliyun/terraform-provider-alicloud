@@ -7,11 +7,11 @@ description: |-
   Provides the access control list (ACL) function in the form of whitelists and blacklists for different SAG instances.
 ---
 
-# alicloud\_sag\_acls
+# alicloud_sag_acls
 
 This data source provides Sag Acls available to the user.
 
--> **NOTE:** Available in 1.60.0+
+-> **NOTE:** Available since v1.60.0+
 
 -> **NOTE:** Only the following regions support create Cloud Connect Network. [`cn-shanghai`, `cn-shanghai-finance-1`, `cn-hongkong`, `ap-southeast-1`, `ap-southeast-3`, `ap-southeast-5`, `ap-northeast-1`, `eu-central-1`]
 
@@ -19,21 +19,23 @@ This data source provides Sag Acls available to the user.
 
 Basic Usage
 
-```
+```terraform
 data "alicloud_sag_acls" "default" {
-  ids        = ["${alicloud_sag_acls.default.id}"]
-  name_regex = "^tf-testAcc.*"
+  ids        = ["${alicloud_sag_acl.default.id}"]
+  name_regex = "^terraform-example"
 }
 resource "alicloud_sag_acl" "default" {
-  name        = "tf-testAccSagAclName"
+  name = "terraform-example"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `ids` - (Optional) A list of Sag Acl IDs.
 * `name_regex` - (Optional) A regex string to filter Sag Acl instances by name.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 

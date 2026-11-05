@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Sae Application Scaling Rules of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.159.0+.
+-> **NOTE:** Available since v1.159.0.
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ The following arguments are supported:
 * `app_id` - (Required) The ID of the Application.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

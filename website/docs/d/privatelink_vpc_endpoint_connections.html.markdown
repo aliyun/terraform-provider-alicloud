@@ -45,6 +45,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Vpc Endpoint Connection IDs.
 * `connections` - A list of Privatelink Vpc Endpoint Connections. Each element contains the following attributes:
   * `bandwidth` - The Bandwidth.
+  * `traffic_control_mode` - The traffic control mode of the endpoint connection.
   * `endpoint_id` - The ID of the Vpc Endpoint.
+  * `endpoint_owner_id` - The owner ID of the endpoint.
   * `id` - The ID of the Vpc Endpoint Connection.
   * `status` - The status of Vpc Endpoint Connection.

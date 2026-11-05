@@ -16,6 +16,10 @@ For information about RDS Database and how to use it, see [What is Database](htt
 
 -> **NOTE:** Available since v1.5.0.
 
+-> **NOTE:** The `collation_name`, `account_name` and `account_privilege` arguments take effect only when the database is created. Changing any of them forces a new database to be created.
+
+-> **NOTE:** The account permission granted through `account_name` and `account_privilege` is not read back from the API. If the permission of the same account on this database is also managed by `alicloud_db_account_privilege`, both configurations write the same permission and the last applied one wins.
+
 ## Example Usage
 
 
@@ -63,16 +67,25 @@ resource "alicloud_db_instance" "default" {
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.0.min
   vswitch_id               = alicloud_vswitch.default.id
   instance_name            = var.name
   instance_charge_type     = "Postpaid"
 }
 
+resource "alicloud_rds_account" "default" {
+  db_instance_id   = alicloud_db_instance.default.id
+  account_name     = "terraform_example"
+  account_password = "Test12345"
+}
+
 resource "alicloud_db_database" "default" {
-  instance_id    = alicloud_db_instance.default.id
-  data_base_name = var.name
-  character_set  = "utf8"
+  instance_id       = alicloud_db_instance.default.id
+  data_base_name    = var.name
+  character_set     = "gbk"
+  collation_name    = "gbk_chinese_ci"
+  account_name      = alicloud_rds_account.default.account_name
+  account_privilege = "ReadWrite"
 }
 ```
 
@@ -101,6 +114,13 @@ The following arguments are supported:
 
   More details refer to [API Docs](https://www.alibabacloud.com/help/zh/doc-detail/26258.htm)
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
+* `account_name` - (Optional, ForceNew, String, Available since v2.2.0) The name of the account to be granted permissions on the database when you create the database. You can call the DescribeAccounts operation to query the account name.
+
+  -> **NOTE:** The account must belong to the instance specified by `instance_id` and must exist before the database is created.
+* `account_privilege` - (Optional, ForceNew, String, Available since v2.2.0) The privilege granted to the account specified by `account_name` when you create the database. Valid values: `ReadOnly`, `ReadWrite`, `DDLOnly`, `DMLOnly`, `DBOwner`.
+
+  -> **NOTE:** The valid values depend on the database engine. `DDLOnly` and `DMLOnly` are supported only by MySQL and MariaDB; `DBOwner` is supported only by SQL Server and PostgreSQL. This argument requires `account_name` to be set.
+* `collation_name` - (Optional, ForceNew, String, Available since v2.2.0) The collation of the database. This parameter is supported only for MySQL instances. Specify a collation that matches `character_set`, for example `gbk_chinese_ci` for `gbk` or `utf8mb4_general_ci` for `utf8mb4`.
 * `name` - (Optional, ForceNew, Deprecated from v1.267.0) The attribute has been deprecated from 1.267.0 and using `data_base_name` instead.
 
   -> **NOTE:** The value of "data_base_name" or "character_set"  does not support modification.

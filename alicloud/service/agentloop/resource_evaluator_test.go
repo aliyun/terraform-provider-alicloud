@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/agentloop"
 	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -14,17 +15,22 @@ import (
 // Case Evaluator全生命周期 11082
 func TestAccAliCloudAgentloopEvaluator_basic11082(t *testing.T) {
 	resourceId := "alicloud_agentloop_evaluator.default"
-	rac := resourceAttrCheckInit(resourceId, AlicloudAgentloopEvaluatorMap11082, (*agentloop.Service).DescribeEvaluator)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	var v map[string]interface{}
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudAgentloopEvaluatorMap11082)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return agentloop.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeEvaluator")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
 	rand := tfacctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tftestaccevaluator%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAgentloopEvaluatorBasicDependence11082)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudAgentloopEvaluatorBasicDependence11082)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
+			acctest.PreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 		},
 		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.checkResourceDestroy(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -120,22 +126,20 @@ func TestAccAliCloudAgentloopEvaluator_basic11082(t *testing.T) {
 }
 
 var AlicloudAgentloopEvaluatorMap11082 = map[string]string{
-	"created_at":      CHECKSET,
-	"updated_at":      CHECKSET,
-	"current_version": CHECKSET,
+	"created_at":      acctest.CHECKSET,
+	"updated_at":      acctest.CHECKSET,
+	"current_version": acctest.CHECKSET,
 }
 
 func AlicloudAgentloopEvaluatorBasicDependence11082(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
 resource "alicloud_agentloop_agent_space" "default" {
-    agent_space = "${var.name}-as"
-}
-
-`, name)
+  agent_space = "${var.name}-as"
+}`, name)
 }
 
 // Test Agentloop Evaluator. <<< Resource test cases, automatically generated.

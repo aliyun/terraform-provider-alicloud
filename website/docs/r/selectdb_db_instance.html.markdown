@@ -110,20 +110,36 @@ The following attributes are exported:
 * `lock_mode` - The lock mode of the instance. Set the value to lock, which specifies that the instance is locked when it automatically expires or has an overdue payment.
 * `lock_reason` - The reason why the instance is locked.
 * `instance_net_infos` - The net infos for instances.
-  * `db_ip` - The IP address of the instance.
-  * `vpc_instance_id` - The VPC ID.
-  * `connection_string` - The connection string of the instance.
-  * `net_type` - The network type of the instance.
-  * `vswitch_id` - The ID of vswitch.
-  * `port_list` - A list for port provides SelectDB service.
-    * `protocol` - The protocol of the port.
-    * `port` - The port that is used to connect.
 * `security_ip_lists` - The details about each IP address whitelist returned. 
-  * `group_name` - Security group name.
-  * `security_ip_type` - The IP address type. Valid values: `ipv4`, `ipv6` (not supported).
-  * `security_ip_list` - The IP list of Security group. Each single IP value should be Separated by comma.
-  * `group_tag` - The tag of Security group.
-  * `list_net_type` - The network type of Security group.
+
+### `instance_net_infos`
+
+The instance_net_infos supports the following:
+
+* `db_ip` - The IP address of the instance.
+* `vpc_instance_id` - The VPC ID.
+* `connection_string` - The connection string of the instance.
+* `net_type` - The network type of the instance.
+* `vswitch_id` - The ID of vswitch.
+* `port_list` - A list for port provides SelectDB service.
+
+### `instance_net_infos.port_list`
+
+The port_list supports the following:
+
+* `protocol` - The protocol of the port.
+* `port` - The port that is used to connect.
+
+### `security_ip_lists`
+
+The security_ip_lists supports the following:
+
+* `group_name` - Security group name.
+* `security_ip_type` - The IP address type. Valid values: `ipv4`, `ipv6` (not supported).
+* `security_ip_list` - The IP list of Security group. Each single IP value should be Separated by comma.
+* `group_tag` - The tag of Security group.
+* `list_net_type` - The network type of Security group.
+
 
 ## Timeouts
 

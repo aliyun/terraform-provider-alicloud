@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Cddc Dedicated Host Accounts of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.148.0+.
+-> **NOTE:** Available since v1.148.0.
 
 ## Example Usage
 
@@ -33,12 +33,12 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Account name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Account names.
 * `accounts` - A list of Cddc Dedicated Host Accounts. Each element contains the following attributes:
-	* `account_name` - The name of the Dedicated host account.
-	* `dedicated_host_id` - The ID of the Dedicated host.
-	* `id` - The ID of the Dedicated Host Account. The value formats as `<dedicated_host_id>:<account_name>`.
+  * `account_name` - The name of the Dedicated host account.
+  * `dedicated_host_id` - The ID of the Dedicated host.
+  * `id` - The ID of the Dedicated Host Account. The value formats as `<dedicated_host_id>:<account_name>`.

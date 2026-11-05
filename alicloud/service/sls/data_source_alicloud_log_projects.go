@@ -1,0 +1,206 @@
+package sls
+
+import (
+	"fmt"
+	"log"
+	"regexp"
+	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudLogProjects() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudLogProjectsRead,
+		Schema: map[string]*schema.Schema{
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Disable"}, true),
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"projects": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"last_modify_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"owner": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"project_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"region": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"policy": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudLogProjectsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	logService := Service{client}
+
+	var objects []*sls.LogProject
+	var logProjectNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return errs.WrapError(err)
+		}
+		logProjectNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+	status, statusOk := d.GetOk("status")
+	var response []string
+	err := retry.Retry(2*time.Minute, func() *retry.RetryError {
+		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return slsClient.ListProject()
+		})
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{errs.LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		response, _ = raw.([]string)
+		return nil
+	})
+	logs.AddDebug("ListProject", response)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, "alicloud_log_projects", "ListProject", errs.AliyunLogGoSdkERROR)
+	}
+	policyMap := make(map[string]string)
+	for _, projectName := range response {
+		if logProjectNameRegex != nil {
+			if !logProjectNameRegex.MatchString(projectName) {
+				continue
+			}
+		}
+		if len(idsMap) > 0 {
+			if _, ok := idsMap[projectName]; !ok {
+				continue
+			}
+		}
+		project, err := logService.DescribeLogProject(projectName)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				log.Printf("The project '%s' is no exist! \n", projectName)
+				continue
+			}
+			return errs.WrapError(err)
+		}
+		if statusOk && status.(string) != "" && status.(string) != project.Status {
+			continue
+		}
+
+		if policy, err := logService.DescribeLogProjectPolicy(projectName); err != nil {
+			return errs.WrapError(err)
+		} else {
+			policyMap[projectName] = policy
+		}
+
+		objects = append(objects, project)
+	}
+
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		mapping := map[string]interface{}{
+			"id":               object.Name,
+			"description":      object.Description,
+			"last_modify_time": object.LastModifyTime,
+			"owner":            object.Owner,
+			"project_name":     object.Name,
+			"region":           object.Region,
+			"status":           object.Status,
+		}
+		if policy, ok := policyMap[object.Name]; ok {
+			mapping["policy"] = policy
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object.Name)
+		s = append(s, mapping)
+	}
+
+	d.SetId(helper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return errs.WrapError(err)
+	}
+
+	if err := d.Set("projects", s); err != nil {
+		return errs.WrapError(err)
+	}
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		helper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

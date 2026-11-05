@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Amqp Queues of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.127.0+.
+-> **NOTE:** Available since v1.127.0.
 
 ## Example Usage
 
@@ -48,18 +48,18 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `virtual_host_name` - (Required, ForceNew) The name of the virtual host.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Queue names.
 * `queues` - A list of Amqp Queues. Each element contains the following attributes:
-	* `attributes` - The attributes for the Queue.
-	* `auto_delete_state` - Specifies whether the Auto Delete attribute is configured.
-	* `create_time` - CreateTime.
-	* `exclusive_state` - Specifies whether the queue is an exclusive queue.
-	* `id` - The ID of the Queue. Its value is same as Queue Name.
-	* `instance_id` - The ID of the instance.
-	* `last_consume_time` - The last consume time.
-	* `queue_name` - The queue name.
-	* `virtual_host_name` - The name of the virtual host.
+  * `attributes` - The attributes for the Queue.
+  * `auto_delete_state` - Specifies whether the Auto Delete attribute is configured.
+  * `create_time` - CreateTime.
+  * `exclusive_state` - Specifies whether the queue is an exclusive queue.
+  * `id` - The ID of the Queue. Its value is same as Queue Name.
+  * `instance_id` - The ID of the instance.
+  * `last_consume_time` - The last consume time.
+  * `queue_name` - The queue name.
+  * `virtual_host_name` - The name of the virtual host.

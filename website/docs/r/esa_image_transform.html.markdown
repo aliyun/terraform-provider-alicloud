@@ -53,25 +53,33 @@ resource "alicloud_esa_image_transform" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `enable` - (Optional) Indicates whether the image transformations feature is enabled. Valid values:
-  -   `on`: on
-  -   `off`: off
+* `enable` - (Required) Specifies whether to enable image transformation. Valid values:
+  - `on`: Enabled.
+  - `off`: Disabled.
 * `rule` - (Optional) Rule content, using conditional expressions to match user requests. When adding global configuration, this parameter does not need to be set. There are two usage scenarios:
   - Match all incoming requests: value set to true
   - Match specified request: Set the value to a custom expression, for example: (http.host eq \"video.example.com\")
-* `rule_enable` - (Optional) Rule switch. When adding global configuration, this parameter does not need to be set. Value range:
-  -   `on`: open
-  -   `off`: close
+* `rule_enable` - (Optional) Specifies whether to enable the rule. This parameter is not required when you add a global configuration. Valid values:
+  - `on`: Enabled.
+  - `off`: Disabled.
 * `rule_name` - (Optional) Rule name. When adding global configuration, this parameter does not need to be set.
 * `sequence` - (Optional, Computed, Int, Available since v1.262.1) The rule execution order prioritizes lower numerical values. It is only applicable when setting or modifying the order of individual rule configurations.
 * `site_id` - (Required, ForceNew) The site ID, which can be obtained by calling the ListSites API.
 * `site_version` - (Optional, ForceNew, Int) The version number of the site configuration. For sites that have enabled configuration version management, this parameter can be used to specify the effective version of the configuration site, which defaults to version 0.
+* `auto_avif` - (Optional, Available since v2.2.0) Specifies whether to enable adaptive AVIF. Valid values:
+  - `on`: Enabled.
+  - `off`: Disabled.
+* `auto_webp` - (Optional, Available since v2.2.0) Specifies whether to enable adaptive WebP. Valid values:
+  - `on`: Enabled.
+  - `off`: Disabled.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<site_id>:<config_id>`.
-* `config_id` - Config Id
+
+* `id` - The resource ID in terraform of Image Transform. It formats as `<site_id>:<config_id>`.
+* `config_id` - The configuration ID.
+* `config_type` - (Available since v2.2.0) The configuration type.
 
 ## Timeouts
 

@@ -101,7 +101,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`.
+* `id` - ID of the resource, It is formatted to `<transit_router_attachment_id>:<transit_router_route_table_id>`.
 * `status` - The associating status of the network.
 
 ## Timeouts
@@ -113,8 +113,8 @@ The `timeouts` block allows you to specify [timeouts](https://developer.hashicor
 
 ## Import
 
-CEN transit router route table propagation can be imported using the id, e.g.
+CEN transit router route table propagation can be imported using the id, which consists of transit_router_attachment_id and transit_router_route_table_id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_route_table_propagation.default tr-********:tr-attach-********
+$ terraform import alicloud_cen_transit_router_route_table_propagation.default <transit_router_attachment_id>:<transit_router_route_table_id>
 ```

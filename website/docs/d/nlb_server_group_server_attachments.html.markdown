@@ -41,13 +41,13 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `attachments` - A list of Nlb Server Group Server Attachments. Each element contains the following attributes:
-	* `description` - The description of the backend server.
-	* `port` - The port used by the backend server.
-	* `server_group_id` - The ID of the server group.
-	* `server_id` - The ID of the server.
-	* `server_ip` - The IP address of the backend server.
-	* `server_type` - The type of the backend server.
-	* `status` - Indicates the status of the backend server.
-	* `weight` - The weight of the backend server.
-	* `zone_id` - The zone ID of the server.
-	* `id` - The ID of the server group. The value is formulated as `<server_group_id>:<server_id>:<server_type>:<port>`.
+  * `description` - The description of the backend server.
+  * `port` - The port used by the backend server.
+  * `server_group_id` - The ID of the server group.
+  * `server_id` - The ID of the server.
+  * `server_ip` - The IP address of the backend server.
+  * `server_type` - The type of the backend server.
+  * `status` - Indicates the status of the backend server.
+  * `weight` - The weight of the backend server.
+  * `zone_id` - The zone ID of the server.
+  * `id` - The ID of the server group. The value is formulated as `<server_group_id>:<server_id>:<server_type>:<port>`.

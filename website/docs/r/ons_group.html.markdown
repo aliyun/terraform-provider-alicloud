@@ -56,15 +56,15 @@ resource "alicloud_ons_group" "default" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required) ID of the ONS Instance that owns the groups.
-* `group_id` - (Optional) Replaced by `group_name` after version 1.98.0.
-* `group_name` - (Optional) Name of the group. Two groups on a single instance cannot have the same name. A `group_name` starts with "GID_" or "GID-", and contains letters, numbers, hyphens (-), and underscores (_).
-* `group_type` - (Optional) Specify the protocol applicable to the created Group ID. Valid values: `tcp`, `http`. Default to `tcp`.
-* `remark` - (Optional) This attribute is a concise description of group. The length cannot exceed 256.
+* `instance_id` - (Required, ForceNew) ID of the ONS Instance that owns the groups.
+* `group_id` - (Optional, Deprecated) Replaced by `group_name` after version 1.98.0.
+* `group_name` - (Optional, ForceNew) Name of the group. Two groups on a single instance cannot have the same name. A `group_name` starts with "GID_" or "GID-", and contains letters, numbers, hyphens (-), and underscores (_).
+* `group_type` - (Optional, ForceNew) Specify the protocol applicable to the created Group ID. Valid values: `tcp`, `http`. Default to `tcp`.
+* `remark` - (Optional, ForceNew) This attribute is a concise description of group. The length cannot exceed 256.
 * `read_enable` - (Optional) This attribute is used to set the message reading enabled or disabled. It can only be set after the group is used by the client.
 * `tags` - (Optional, Available since v1.98.0) A mapping of tags to assign to the resource.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
 ## Attributes Reference
 

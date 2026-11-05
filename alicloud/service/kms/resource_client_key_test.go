@@ -1,0 +1,81 @@
+package kms_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/acctest"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/kms"
+	tfacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
+
+// Test Kms ClientKey. >>> Resource test cases, automatically generated.
+// Case 4119
+func TestAccAliCloudKmsClientKey_basic4119(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_client_key.default"
+	ra := acctest.ResourceAttrInit(resourceId, AlicloudKmsClientKeyMap4119)
+	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return kms.NewKmsServiceV2(acctest.Provider.Meta().(*connectivity.AliyunClient))
+	}, "DescribeKmsClientKey")
+	rac := acctest.ResourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.ResourceAttrMapUpdateSet()
+	rand := tfacctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmsclientkey%d", acctest.DefaultRegionToTest, rand)
+	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudKmsClientKeyBasicDependence4119)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+		},
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
+		CheckDestroy:             rac.CheckResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aap_name":              "${alicloud_kms_application_access_point.AAP0.application_access_point_name}",
+					"password":              "YouPassword123!",
+					"not_before":            "2023-09-01T14:11:22Z",
+					"not_after":             "2028-09-01T14:11:22Z",
+					"private_key_data_file": "./hello.txt",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aap_name":   acctest.CHECKSET,
+						"password":   "YouPassword123!",
+						"not_before": "2023-09-01T14:11:22Z",
+						"not_after":  "2028-09-01T14:11:22Z",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "private_key_data_file"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsClientKeyMap4119 = map[string]string{
+	"create_time": acctest.CHECKSET,
+}
+
+func AlicloudKmsClientKeyBasicDependence4119(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_kms_application_access_point" "AAP0" {
+  application_access_point_name = var.name
+  description = var.name
+  policies = ["aaa"]
+}
+
+`, name)
+}
+
+// Test Kms ClientKey. <<< Resource test cases, automatically generated.

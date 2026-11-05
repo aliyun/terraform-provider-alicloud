@@ -37,6 +37,7 @@ output "sddp_config_id" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Config IDs.
+* `lang` - (Optional) The Request and Receive the Language of the Message Type. Valid values: `zh`, `en`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
@@ -50,6 +51,3 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - Abnormal Alarm General Description of the Configuration Item.
   * `id` - The ID of the Config.
   * `value` - The Specified Exception Alarm Generic by Using the Value. Code Different Values for This Parameter the Specific Meaning of Different.
-    * `access_failed_cnt`: Value Represents the Non-Authorized Resource Repeatedly Attempts to Access the Threshold. 
-    * `access_permission_exprie_max_days`: Value Represents the Permissions during Periods of Inactivity Exceeding a Threshold. 
-    * `log_datasize_avg_days`: Value Represents the Date Certain Log Output Is Less than 10 Days before the Average Value of the Threshold.

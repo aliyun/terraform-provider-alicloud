@@ -178,6 +178,30 @@ class GoCacheTest(unittest.TestCase):
         self.assertEqual(len(set(keys)), 1)
         self.assertIn("hashFiles('go.mod', 'go.sum')", keys[0])
 
+    def test_tfproviderlint_toolchain_is_independent_of_provider_go_version(self):
+        version = "1.26.10"
+        toolchain = "go" + version
+        workflows = ROOT / ".github/workflows"
+        lint = (workflows / "acctest-terraform-lint.yml").read_text().split("  tflint:\n", 1)[1]
+        self.assertIn(f"      GOTOOLCHAIN: {toolchain}\n", lint)
+        self.assertIn(f"          go-version: '{version}'\n", lint)
+        self.assertNotIn("go-version-file: .go-version", lint)
+
+        consistency = (workflows / "consistency-check.yml").read_text()
+        build = consistency.split("      - name: Build master tfproviderlint binary\n", 1)[1]
+        build = build.split("      - name: ", 1)[0]
+        self.assertIn(f"          GOTOOLCHAIN: {toolchain}\n", build)
+        # The provider checks retain their own toolchain selection.
+        self.assertIn("go-version-file: .go-version", consistency)
+
+        keys = [line.strip() for workflow in (lint, consistency)
+                for line in workflow.splitlines() if "key: tfproviderlint-" in line]
+        self.assertEqual(len(keys), 3)
+        self.assertEqual(len(set(keys)), 1)
+        self.assertIn(f"-{toolchain}-v0.31.0", keys[0])
+        self.assertNotIn("hashFiles('.go-version')", keys[0])
+        self.assertNotIn("tfproviderlint-v1-", keys[0])
+
     def test_only_trusted_master_can_publish_shared_caches(self):
         workflow = (ROOT / ".github/workflows/consistency-check.yml").read_text()
         saves = [step for step in workflow.split("      - name: ")

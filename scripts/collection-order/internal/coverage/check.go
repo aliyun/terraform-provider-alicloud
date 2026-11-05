@@ -26,7 +26,7 @@ import (
 // bounded by a unit net. Only convergence is asserted: whether a reorder diffs
 // depends on the attribute's semantics and the API's ordering contract, which
 // review establishes.
-func Check(filename string, src []byte, resourceName string, r *schema.Resource, aliases ...string) []string {
+func Check(filename string, src []byte, testSources map[string][]byte, resourceName string, r *schema.Resource, aliases ...string) []string {
 	candidates := Candidates(r)
 	suppressed := Suppressed(r)
 	f, err := parser.ParseFile(token.NewFileSet(), filename, src, parser.ParseComments)
@@ -53,7 +53,7 @@ func Check(filename string, src []byte, resourceName string, r *schema.Resource,
 		}
 	}
 	for name := range suppressorNames {
-		nets[name] = resolveSuppressNet(f, name)
+		nets[name] = resolveSuppressNet(f, testSources, name)
 	}
 	resourceNames := map[string]bool{resourceName: true}
 	for _, name := range aliases {
@@ -233,7 +233,7 @@ func inspectTest(fn *ast.FuncDecl, sdk, tvar string, resourceNames map[string]bo
 				stringsByName[name] = value
 			}
 			call, ok := s.Rhs[0].(*ast.CallExpr)
-			if ok && ident(call.Fun) == "resourceTestAccConfigFunc" && len(call.Args) == 3 {
+			if ok && isConfigBuilder(call.Fun) && len(call.Args) == 3 {
 				address := text(call.Args[0])
 				if address == "" {
 					address = stringsByName[ident(call.Args[0])]
@@ -638,24 +638,37 @@ type suppressNet struct {
 
 // resolveSuppressNet reads the house unit-test form: a test function ranging over a
 // literal []struct table, calling the suppressor with the row's serialized old and new
-// values and comparing the result with the row's expected value.
-func resolveSuppressNet(f *ast.File, name string) suppressNet {
+// values and comparing the result with the row's expected value. The unit net may live
+// in a sibling *_unit_test.go file in the same package rather than the main *_test.go
+// file that carries the TestAcc steps; testSources carries those sibling sources so the
+// net is still discovered when the split-package layout separates them.
+func resolveSuppressNet(f *ast.File, testSources map[string][]byte, name string) suppressNet {
 	var net suppressNet
-	for _, decl := range f.Decls {
-		fn, ok := decl.(*ast.FuncDecl)
-		if !ok || fn.Body == nil || fn.Recv != nil || !strings.HasPrefix(fn.Name.Name, "Test") {
+	files := []*ast.File{f}
+	for _, src := range testSources {
+		tf, err := parser.ParseFile(token.NewFileSet(), "", src, parser.ParseComments)
+		if err != nil {
 			continue
 		}
-		for _, row := range unitRows(fn, name) {
-			oldMembers, newMembers := splitMembers(row.oldValue), splitMembers(row.newValue)
-			switch {
-			case sameMembers(oldMembers, newMembers) && row.oldValue != row.newValue:
-				if row.expected {
-					net.reorder = true
-				}
-			case !sameMembers(oldMembers, newMembers):
-				if !row.expected {
-					net.membership = true
+		files = append(files, tf)
+	}
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Body == nil || fn.Recv != nil || !strings.HasPrefix(fn.Name.Name, "Test") {
+				continue
+			}
+			for _, row := range unitRows(fn, name) {
+				oldMembers, newMembers := splitMembers(row.oldValue), splitMembers(row.newValue)
+				switch {
+				case sameMembers(oldMembers, newMembers) && row.oldValue != row.newValue:
+					if row.expected {
+						net.reorder = true
+					}
+				case !sameMembers(oldMembers, newMembers):
+					if !row.expected {
+						net.membership = true
+					}
 				}
 			}
 		}
@@ -837,6 +850,21 @@ func callName(fun ast.Expr) string {
 		return s.Sel.Name
 	}
 	return ident(fun)
+}
+
+// isConfigBuilder recognizes both the bare legacy constructor
+// (resourceTestAccConfigFunc) and the split-package qualified constructor
+// (acctest.ResourceTestAccConfig). The selector's package alias is not
+// constrained because the import alias is a per-file choice; the
+// constructor name is unique within the provider.
+func isConfigBuilder(fun ast.Expr) bool {
+	if id, ok := fun.(*ast.Ident); ok {
+		return id.Name == "resourceTestAccConfigFunc"
+	}
+	if s, ok := fun.(*ast.SelectorExpr); ok {
+		return s.Sel.Name == "ResourceTestAccConfig"
+	}
+	return false
 }
 
 func isSuppressorCall(expr ast.Expr, name string) bool {
