@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -193,12 +194,26 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 	if errors.Is(err, errListenerAclAttachmentWriteUnknown) {
 		return true
 	}
+	cause := listenerAclErrorCause(err)
 	// A response that reached the service but could not be decoded cannot prove
 	// whether the write applied, so it is reconciled like a transport failure.
-	if errors.Is(listenerAclErrorCause(err), connectivity.ErrUnreadableResponse) {
+	// A 4xx status is the opposite: the service refused the request even though
+	// its body was unreadable, so the outcome is known.
+	if errors.Is(cause, connectivity.ErrUnreadableResponse) {
 		return true
 	}
-	return helper.NeedRetry(listenerAclErrorCause(err))
+	if errors.Is(cause, connectivity.ErrRpcRejectedResponse) {
+		return false
+	}
+	// A transport level failure (dial, TLS, reset or timeout) never proves that
+	// the request was not applied. It is classified by type rather than by the
+	// scheme dependent error message, so an http test endpoint behaves like the
+	// https endpoint used in production.
+	var urlErr *url.Error
+	if errors.As(cause, &urlErr) {
+		return true
+	}
+	return helper.NeedRetry(cause)
 }
 
 // isUnresolvedListenerAclWrite reports whether a failed write may still have
@@ -267,26 +282,52 @@ func listenerAclAttachmentConfirms(object map[string]interface{}, aclId, aclType
 	return strings.EqualFold(value, aclType)
 }
 
+// listenerAclAttachmentObserved reports whether a Describe response carries
+// enough usable fields to either confirm or contradict a planned binding. A
+// response without a usable status, or one that reports an enabled listener
+// without a usable type or with malformed members, is incomplete: it can
+// neither prove nor disprove the planned change.
+func listenerAclAttachmentObserved(object map[string]interface{}) bool {
+	if object == nil {
+		return false
+	}
+	status, ok := listenerAclStatus(object)
+	if !ok {
+		return false
+	}
+	if !strings.EqualFold(status, "on") {
+		return true
+	}
+	if value, ok := object["AclType"].(string); !ok || strings.TrimSpace(value) == "" {
+		return false
+	}
+	_, membersComplete := listenerAclIds(object)
+	return membersComplete
+}
+
 // waitListenerAclAttachmentConverged reads the listener until it reports the
 // planned binding, so a stale response cannot store the previous type against a
 // new plan. It polls on the caller goroutine and returns converged=false when
-// the operation budget ends first.
-func waitListenerAclAttachmentConverged(ctx context.Context, api listenerAclAttachmentApi, listenerId, aclId, aclType string) (map[string]interface{}, bool, error) {
+// the operation budget ends first. The complete flag then reports whether the
+// last response was usable enough to prove that the binding differs from the
+// plan: an incomplete response is a pending confirmation, a complete one is a
+// contradiction that must not be reported as success.
+func waitListenerAclAttachmentConverged(ctx context.Context, api listenerAclAttachmentApi, listenerId, aclId, aclType string) (map[string]interface{}, bool, bool, error) {
 	var last map[string]interface{}
 	for {
 		if err := ctx.Err(); err != nil {
-			return last, false, nil
+			return last, false, listenerAclAttachmentObserved(last), nil
 		}
 		object, err := api.Describe(ctx, listenerId)
 		if err != nil {
-			return last, false, err
+			return last, false, listenerAclAttachmentObserved(last), err
 		}
 		last = object
 		if listenerAclAttachmentConfirms(object, aclId, aclType) {
-			return last, true, nil
+			return last, true, true, nil
 		}
 		if err := waitListenerAclWithContext(ctx, listenerAclAttachmentPollInterval); err != nil {
-			return last, false, nil
+			return last, false, listenerAclAttachmentObserved(last), nil
 		}
 	}
 }
@@ -303,13 +344,17 @@ func waitListenerAclWithContext(ctx context.Context, duration time.Duration) err
 }
 
 // listenerAclIds returns every access control policy group reported by
-// DescribeLoadBalancer*ListenerAttribute.
-func listenerAclIds(object map[string]interface{}) []string {
+// DescribeLoadBalancer*ListenerAttribute. The complete flag reports whether every
+// reported member could be read: a single unexpected type or empty member makes
+// the list unusable for proving which groups are bound.
+func listenerAclIds(object map[string]interface{}) ([]string, bool) {
 	var ids []string
 	seen := map[string]struct{}{}
+	complete := true
 	appendID := func(id string) {
 		id = strings.TrimSpace(id)
 		if id == "" {
+			complete = false
 			return
 		}
 		if _, ok := seen[id]; ok {
@@ -318,32 +363,58 @@ func listenerAclIds(object map[string]interface{}) []string {
 		seen[id] = struct{}{}
 		ids = append(ids, id)
 	}
-	if value, ok := object["AclId"].(string); ok && value != "" {
-		for _, id := range strings.Split(value, ",") {
-			appendID(id)
+	if value, ok := object["AclId"]; ok {
+		if raw, ok := value.(string); ok {
+			for _, id := range strings.Split(raw, ",") {
+				appendID(id)
+			}
+		} else {
+			complete = false
 		}
 	}
-	if value, ok := object["AclIds"].(map[string]interface{}); ok {
-		if items, ok := value["AclId"].([]interface{}); ok {
-			for _, item := range items {
-				if id, ok := item.(string); ok {
+	if value, ok := object["AclIds"]; ok {
+		container, ok := value.(map[string]interface{})
+		if !ok {
+			complete = false
+		} else if members, ok := container["AclId"]; ok {
+			switch typed := members.(type) {
+			case []interface{}:
+				for _, item := range typed {
+					id, ok := item.(string)
+					if !ok {
+						complete = false
+						continue
+					}
 					appendID(id)
 				}
+			case string:
+				// A single member may be reported without its one element array.
+				appendID(typed)
+			default:
+				complete = false
 			}
 		}
 	}
-	return ids
+	return ids, complete
 }
 
 // listenerAclContains reports whether the configured policy group is part of
 // the listener ACLs described by DescribeLoadBalancer*ListenerAttribute.
 func listenerAclContains(object map[string]interface{}, aclId string) bool {
-	for _, id := range listenerAclIds(object) {
+	ids, _ := listenerAclIds(object)
+	for _, id := range ids {
 		if id == aclId {
 			return true
 		}
 	}
 	return false
+}
+
+// listenerAclIdsForMessage lists the readable policy groups for a diagnostic;
+// the completeness of the member list is irrelevant there.
+func listenerAclIdsForMessage(object map[string]interface{}) []string {
+	ids, _ := listenerAclIds(object)
+	return ids
 }
 
 // parseListenerAclAttachmentId parses the resource and import ID. Both the three

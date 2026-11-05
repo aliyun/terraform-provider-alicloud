@@ -270,7 +270,7 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		// response does not drop an applied binding.
 		confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
 		defer cancel()
-		object, confirmed, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
+		object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
 		if confirmed {
 			return listenerAclAttachmentState(listenerId, aclId, plan.AclType, object), []string{
 				fmt.Sprintf("The request that binds policy group %s to listener %s returned an unknown result, but the listener reports the planned binding; the identity is kept in state.", aclId, listenerId),
@@ -285,13 +285,22 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	planState := listenerAclAttachmentPlanState(plan)
 	readCtx, cancelRead := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancelRead()
-	object, converged, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
+	object, converged, complete, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
 	if err != nil {
 		return planState, []string{
 			fmt.Sprintf("The policy group %s was bound to listener %s, but reading the listener failed: %s. The binding is kept in state and will be reconciled on the next refresh.", aclId, listenerId, err),
 		}, nil
 	}
 	if !converged {
+		if complete {
+			// The listener answered completely and still reports a different
+			// binding: this is a contradiction, not a pending readback, so it
+			// must not be reported as a successful create.
+			return listenerAclAttachmentResourceModel{}, nil, fmt.Errorf(
+				"listener %s was asked to bind policy group %s with type %s, but it reports a different access control binding (status %v, type %v, groups %v); no state was written",
+				listenerId, aclId, aclType, object["AclStatus"], object["AclType"], listenerAclIdsForMessage(object),
+			)
+		}
 		return planState, []string{
 			fmt.Sprintf("The policy group %s was bound to listener %s, but the listener did not report the planned access control settings within the read budget. The planned identity is kept and will be reconciled on the next refresh.", aclId, listenerId),
 		}, nil
@@ -316,7 +325,7 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 			}
 			confirmCtx, cancel := context.WithTimeout(ctx, listenerAclAttachmentConfirmTimeout)
 			defer cancel()
-			object, confirmed, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
+			object, confirmed, _, _ := waitListenerAclAttachmentConverged(confirmCtx, api, listenerId, aclId, aclType)
 			if !confirmed {
 				return listenerAclAttachmentResourceModel{}, nil, err
 			}
@@ -330,13 +339,19 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		planState := listenerAclAttachmentPlanState(plan)
 		readCtx, cancelRead := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 		defer cancelRead()
-		object, converged, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
+		object, converged, complete, err := waitListenerAclAttachmentConverged(readCtx, api, listenerId, aclId, aclType)
 		if err != nil {
 			return planState, []string{
 				fmt.Sprintf("The access control settings of listener %s were updated, but reading the listener failed: %s. The planned state is kept and will be reconciled on the next refresh.", listenerId, err),
 			}, nil
 		}
 		if !converged {
+			if complete {
+				return listenerAclAttachmentResourceModel{}, nil, fmt.Errorf(
+					"listener %s was asked to use policy group %s with type %s, but it reports a different access control binding (status %v, type %v, groups %v); no state was written",
+					listenerId, aclId, aclType, object["AclStatus"], object["AclType"], listenerAclIdsForMessage(object),
+				)
+			}
 			return planState, []string{
 				fmt.Sprintf("The access control settings of listener %s were updated, but the listener did not report the planned settings within the read budget. The planned state is kept and will be reconciled on the next refresh.", listenerId),
 			}, nil
@@ -391,14 +406,42 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 	// no longer part of the listener ACLs, or the listener is gone. An incomplete
 	// response proves none of that, so the existing state is kept instead of
 	// dropping a resource that may still be bound.
+	//
+	// An import carries no listener_id yet: there is no existing state to keep,
+	// and a partial imported resource would silently claim a binding that was
+	// never proven. Such a read reports the pending confirmation instead.
+	importing := state.ListenerId.IsNull()
 	status, statusKnown := listenerAclStatus(object)
 	if !statusKnown {
+		if importing {
+			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+				"cannot confirm the imported binding of listener %s: the describe response did not report a usable AclStatus; retry the import once the listener reports its access control status",
+				listenerId,
+			)
+		}
 		return state, true, nil
 	}
 	if strings.EqualFold(status, "off") {
 		return listenerAclAttachmentResourceModel{}, false, nil
 	}
 	if !strings.EqualFold(status, "on") {
+		if importing {
+			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+				"cannot confirm the imported binding of listener %s: the describe response reported AclStatus %q",
+				listenerId, status,
+			)
+		}
+		return state, true, nil
+	}
+
+	aclIds, membersComplete := listenerAclIds(object)
+	if !membersComplete {
+		if importing {
+			return listenerAclAttachmentResourceModel{}, false, fmt.Errorf(
+				"cannot confirm the imported binding of listener %s: the describe response reported malformed access control members",
+				listenerId,
+			)
+		}
 		return state, true, nil
 	}
 
@@ -406,7 +449,6 @@ func readListenerAclAttachment(ctx context.Context, api listenerAclAttachmentApi
 		// Imported without the ACL part. A single bound policy group is
 		// unambiguous; several groups need the four segment import form so the
 		// target identity is never guessed.
-		aclIds := listenerAclIds(object)
 		switch len(aclIds) {
 		case 0:
 			return listenerAclAttachmentResourceModel{}, false, nil

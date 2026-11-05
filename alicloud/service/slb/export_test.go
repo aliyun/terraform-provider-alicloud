@@ -14,7 +14,11 @@ var ListenerAclAttachmentPollIntervalForTest = &listenerAclAttachmentPollInterva
 
 // ListenerAclIdsForTest exposes the ACL identity extraction to the external
 // test package without exporting a production symbol.
-var ListenerAclIdsForTest = listenerAclIds
+var ListenerAclIdsForTest = listenerAclIdsForMessage
+
+// ListenerAclIdsCompleteForTest exposes the member completeness alongside the
+// readable policy groups.
+var ListenerAclIdsCompleteForTest = listenerAclIds
 
 // ListenerAclAttachmentOperationTimeoutForTest lets tests shorten the operation
 // budget used by the retry helper and the resource deadlines.
