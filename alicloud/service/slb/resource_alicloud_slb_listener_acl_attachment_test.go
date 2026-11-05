@@ -27,6 +27,7 @@ const (
 // re-attach.
 func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccSlbListenerAcl%d", tfacctest.RandIntRange(10000, 99999))
+	var createdNonAclAttrs map[string]string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -39,8 +40,9 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 					testAccCheckListenerAclAttachmentAttrs("alicloud_slb_acl.first", "white"),
 					resource.TestCheckResourceAttrPair(listenerAclAttachmentResourceId, "listener_id", listenerAclAttachmentListenerId, "id"),
 					resource.TestCheckResourceAttrPair(listenerAclAttachmentDsId, "slb_listeners.0.id", listenerAclAttachmentListenerId, "id"),
-					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId),
-					resource.ComposeTestCheckFunc(testAccListenerAttrChecks()...),
+					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId, name),
+					resource.ComposeTestCheckFunc(testAccListenerAttrChecks(name)...),
+					testAccCaptureListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
 				),
 			},
 			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.first"),
@@ -55,8 +57,9 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckListenerAclAttachmentAttrs("alicloud_slb_acl.second", "white"),
 					resource.TestCheckResourceAttrPair(listenerAclAttachmentDsId, "slb_listeners.0.id", listenerAclAttachmentListenerId, "id"),
-					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId),
-					resource.ComposeTestCheckFunc(testAccListenerAttrChecks()...),
+					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId, name),
+					resource.ComposeTestCheckFunc(testAccListenerAttrChecks(name)...),
+					testAccCompareListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
 				),
 			},
 			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.second"),
@@ -70,8 +73,9 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 				Config: testAccListenerAclAttachmentConfigHttp(name, "second", "black", true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckListenerAclAttachmentAttrs("alicloud_slb_acl.second", "black"),
-					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId),
-					resource.ComposeTestCheckFunc(testAccListenerAttrChecks()...),
+					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId, name),
+					resource.ComposeTestCheckFunc(testAccListenerAttrChecks(name)...),
+					testAccCompareListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
 				),
 			},
 			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.second"),
@@ -87,8 +91,9 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 					resource.TestCheckResourceAttr(listenerAclAttachmentDsId, "slb_listeners.#", "1"),
 					resource.TestCheckResourceAttrPair(listenerAclAttachmentDsId, "slb_listeners.0.id", listenerAclAttachmentListenerId, "id"),
 					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "off"),
-					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId),
-					resource.ComposeTestCheckFunc(testAccListenerAttrChecks()...),
+					testAccCheckListenerNonAclAttrsRemote(listenerAclAttachmentListenerId, name),
+					resource.ComposeTestCheckFunc(testAccListenerAttrChecks(name)...),
+					testAccCompareListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
 				),
 			},
 			{
@@ -102,6 +107,7 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckListenerAclAttachmentAttrs("alicloud_slb_acl.first", "white"),
 					testAccCheckListenerRemoteAclStatus(listenerAclAttachmentListenerId, "on"),
+					testAccCompareListenerNonAclAttrs(listenerAclAttachmentListenerId, &createdNonAclAttrs),
 				),
 			},
 			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.first"),
@@ -115,6 +121,7 @@ func TestAccAliCloudSLBListenerAclAttachment_basic0(t *testing.T) {
 // requested group.
 func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccSlbListenerAclMulti%d", tfacctest.RandIntRange(10000, 99999))
+	var listenerId, secondAclId string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -128,8 +135,12 @@ func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 					// Bind a second group outside Terraform so the listener
 					// exposes two ACLs while the resource still tracks the first.
 					testAccBindExtraListenerAcl("alicloud_slb_acl.first", "alicloud_slb_acl.second"),
+					testAccCaptureListenerIdentity(&listenerId, &secondAclId),
 				),
 			},
+			// The first successful apply is imported before the second group is
+			// used for the explicit four segment import below.
+			testAccListenerAclAttachmentImportStep("alicloud_slb_acl.first"),
 			{
 				Config:   testAccListenerAclAttachmentConfigHttp(name, "first", "white", true),
 				PlanOnly: true,
@@ -152,19 +163,49 @@ func TestAccAliCloudSLBListenerAclAttachment_multiAcl(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: false,
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					listener := s.RootModule().Resources[listenerAclAttachmentListenerId]
-					acl := s.RootModule().Resources["alicloud_slb_acl.second"]
-					if listener == nil || acl == nil {
-						return "", fmt.Errorf("cannot find listener or ACL state")
+					if listenerId == "" || secondAclId == "" {
+						return "", fmt.Errorf("listener or ACL identity was not captured")
 					}
-					return listener.Primary.ID + ":" + acl.Primary.ID, nil
+					return listenerId + ":" + secondAclId, nil
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrPair(listenerAclAttachmentResourceId, "acl_id", "alicloud_slb_acl.second", "id"),
-				),
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected one imported state for the second policy group, got %d", len(states))
+					}
+					state := states[0]
+					want := map[string]string{
+						"id":          listenerId,
+						"listener_id": listenerId,
+						"acl_id":      secondAclId,
+						"acl_type":    "white",
+						"acl_status":  "on",
+					}
+					for key, value := range want {
+						if got := state.Attributes[key]; got != value {
+							return fmt.Errorf("imported state %s = %q, want %q", key, got, value)
+						}
+					}
+					return nil
+				},
 			},
 		},
 	})
+}
+
+// testAccCaptureListenerIdentity records the listener and the second policy
+// group IDs so the later import steps can assert the exact identity instead of
+// reusing a single state value.
+func testAccCaptureListenerIdentity(listenerId, secondAclId *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		listener := s.RootModule().Resources[listenerAclAttachmentListenerId]
+		second := s.RootModule().Resources["alicloud_slb_acl.second"]
+		if listener == nil || second == nil {
+			return fmt.Errorf("cannot find listener or second ACL state")
+		}
+		*listenerId = listener.Primary.ID
+		*secondAclId = second.Primary.ID
+		return nil
+	}
 }
 
 // TestAccAliCloudSLBListenerAclAttachment_tcp covers the TCP dispatch path and
@@ -292,6 +333,22 @@ func TestAccAliCloudSLBListenerAclAttachment_negative(t *testing.T) {
 				Config:      testAccListenerAclAttachmentConfigIpVersionConflict(name),
 				ExpectError: regexp.MustCompile(`(?i)(ipversionconflict|ip version|invalidparameter)`),
 			},
+			// A combined ACL value would bind several groups while the resource
+			// tracks one, so it is rejected during validation.
+			{
+				Config:      testAccListenerAclAttachmentConfigCombinedAcl(),
+				ExpectError: regexp.MustCompile(`(?i)single access control policy group`),
+			},
+			// The listener identity is validated locally for both the
+			// configuration and the import path.
+			{
+				Config:      testAccListenerAclAttachmentConfigInvalidListenerPort(),
+				ExpectError: regexp.MustCompile(`(?i)between 1 and 65535`),
+			},
+			{
+				Config:      testAccListenerAclAttachmentConfigInvalidListenerProtocol(),
+				ExpectError: regexp.MustCompile(`(?i)protocol must be one of`),
+			},
 		},
 	})
 }
@@ -360,32 +417,91 @@ func testAccCheckListenerRemoteAclStatus(listenerResourceId, wantStatus string) 
 	}
 }
 
+// listenerAclAttachmentExpectedNonAclAttrs is the exact non ACL attribute set
+// configured by the HTTP test listener. Both the remote read and the data
+// source assertions compare against it, so an update can never reset a value
+// that only looks non empty.
+func listenerAclAttachmentExpectedNonAclAttrs(description string) map[string]string {
+	return map[string]string{
+		"Bandwidth":              "10",
+		"Scheduler":              "wrr",
+		"HealthCheck":            "on",
+		"HealthCheckURI":         "/cons",
+		"HealthCheckConnectPort": "20",
+		"HealthyThreshold":       "8",
+		"UnhealthyThreshold":     "8",
+		"HealthCheckTimeout":     "8",
+		"HealthCheckInterval":    "5",
+		"HealthCheckHttpCode":    "http_2xx,http_3xx",
+		"StickySession":          "on",
+		"StickySessionType":      "insert",
+		"CookieTimeout":          "86400",
+		"RequestTimeout":         "80",
+		"IdleTimeout":            "30",
+		"Description":            description,
+	}
+}
+
+func testAccListenerNonAclAttrs(s *terraform.State, listenerResourceId string) (map[string]string, error) {
+	listener := s.RootModule().Resources[listenerResourceId]
+	if listener == nil {
+		return nil, fmt.Errorf("cannot find %s state", listenerResourceId)
+	}
+	object, err := testAccListenerDescribe(listener.Primary.ID)
+	if err != nil {
+		return nil, err
+	}
+	attrs := make(map[string]string, len(listenerAclAttachmentExpectedNonAclAttrs("")))
+	for key := range listenerAclAttachmentExpectedNonAclAttrs("") {
+		attrs[key] = strings.TrimSpace(fmt.Sprint(object[key]))
+	}
+	return attrs, nil
+}
+
 // testAccCheckListenerNonAclAttrsRemote reads the listener from the API and
-// proves that binding or unbinding the ACL never resets the configured non ACL
-// settings.
-func testAccCheckListenerNonAclAttrsRemote(listenerResourceId string) resource.TestCheckFunc {
+// proves that binding or unbinding the ACL never resets any configured non ACL
+// setting to a different value.
+func testAccCheckListenerNonAclAttrsRemote(listenerResourceId, description string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		listener := s.RootModule().Resources[listenerResourceId]
-		if listener == nil {
-			return fmt.Errorf("cannot find %s state", listenerResourceId)
-		}
-		object, err := testAccListenerDescribe(listener.Primary.ID)
+		got, err := testAccListenerNonAclAttrs(s, listenerResourceId)
 		if err != nil {
 			return err
 		}
-		expect := map[string]string{
-			"Bandwidth":              "10",
-			"Scheduler":              "wrr",
-			"HealthCheck":            "on",
-			"HealthCheckURI":         "/cons",
-			"HealthCheckConnectPort": "20",
-			"HealthyThreshold":       "8",
-			"UnhealthyThreshold":     "8",
+		for key, want := range listenerAclAttachmentExpectedNonAclAttrs(description) {
+			if got[key] != want {
+				return fmt.Errorf("listener %s %s = %q, want %q", listenerResourceId, key, got[key], want)
+			}
 		}
-		for key, want := range expect {
-			got := strings.TrimSpace(fmt.Sprint(object[key]))
-			if got != want {
-				return fmt.Errorf("listener %s %s = %q, want %q", listener.Primary.ID, key, got, want)
+		return nil
+	}
+}
+
+func testAccCaptureListenerNonAclAttrs(listenerResourceId string, snapshot *map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		got, err := testAccListenerNonAclAttrs(s, listenerResourceId)
+		if err != nil {
+			return err
+		}
+		*snapshot = got
+		return nil
+	}
+}
+
+// testAccCompareListenerNonAclAttrs proves the full non ACL attribute set did
+// not drift between the first apply and the later update, detach and re-attach
+// steps.
+func testAccCompareListenerNonAclAttrs(listenerResourceId string, snapshot *map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if snapshot == nil || len(*snapshot) == 0 {
+			return fmt.Errorf("non ACL attribute snapshot for %s was not captured", listenerResourceId)
+		}
+		got, err := testAccListenerNonAclAttrs(s, listenerResourceId)
+		if err != nil {
+			return err
+		}
+		for key, want := range *snapshot {
+			if got[key] != want {
+				return fmt.Errorf("listener %s %s changed from %q to %q", listenerResourceId, key, want, got[key])
 			}
 		}
 		return nil
@@ -451,7 +567,7 @@ func testAccBindExtraListenerAcl(firstAcl, secondAcl string) resource.TestCheckF
 	}
 }
 
-func testAccListenerAttrChecks() []resource.TestCheckFunc {
+func testAccListenerAttrChecks(description string) []resource.TestCheckFunc {
 	attrs := map[string]string{
 		"bandwidth":                 "10",
 		"scheduler":                 "wrr",
@@ -468,12 +584,12 @@ func testAccListenerAttrChecks() []resource.TestCheckFunc {
 		"cookie_timeout":            "86400",
 		"request_timeout":           "80",
 		"idle_timeout":              "30",
+		"description":               description,
 	}
-	checks := make([]resource.TestCheckFunc, 0, len(attrs)+1)
+	checks := make([]resource.TestCheckFunc, 0, len(attrs))
 	for key, want := range attrs {
 		checks = append(checks, resource.TestCheckResourceAttr(listenerAclAttachmentDsId, "slb_listeners.0."+key, want))
 	}
-	checks = append(checks, resource.TestCheckResourceAttrSet(listenerAclAttachmentDsId, "slb_listeners.0.description"))
 	return checks
 }
 
@@ -705,4 +821,40 @@ resource "alicloud_slb_listener_acl_attachment" "default" {
   acl_type    = "white"
 }
 `, testAccListenerAclAttachmentCommonConfig(name))
+}
+
+// testAccListenerAclAttachmentConfigCombinedAcl configures a comma separated
+// ACL value, which the schema rejects before any request is sent.
+func testAccListenerAclAttachmentConfigCombinedAcl() string {
+	return `
+resource "alicloud_slb_listener_acl_attachment" "default" {
+  listener_id = "lb-notexist000000:http:80"
+  acl_id      = "acl-notexist1,acl-notexist2"
+  acl_type    = "white"
+}
+`
+}
+
+// testAccListenerAclAttachmentConfigInvalidListenerPort uses a port outside the
+// contract range so the listener_id validator rejects it locally.
+func testAccListenerAclAttachmentConfigInvalidListenerPort() string {
+	return `
+resource "alicloud_slb_listener_acl_attachment" "default" {
+  listener_id = "lb-notexist000000:http:65536"
+  acl_id      = "acl-notexist1"
+  acl_type    = "white"
+}
+`
+}
+
+// testAccListenerAclAttachmentConfigInvalidListenerProtocol uses an unsupported
+// protocol so the listener_id validator rejects it locally.
+func testAccListenerAclAttachmentConfigInvalidListenerProtocol() string {
+	return `
+resource "alicloud_slb_listener_acl_attachment" "default" {
+  listener_id = "lb-notexist000000:smtp:80"
+  acl_id      = "acl-notexist1"
+  acl_type    = "white"
+}
+`
 }

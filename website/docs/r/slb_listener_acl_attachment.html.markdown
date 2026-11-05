@@ -131,7 +131,7 @@ resource "alicloud_slb_listener_acl_attachment" "apiserver" {
 The following arguments are supported:
 
 * `listener_id` - (Required, ForceNew, String) The ID of the SLB listener, in the format of `<load_balancer_id>:<protocol>:<listener_port>`. The protocol is one of `http`, `https`, `tcp` and `udp`, and the port ranges from `1` to `65535`. It is the same as the `id` of `alicloud_slb_listener`.
-* `acl_id` - (Required, String) The ID of the access control policy group bound to the listener.
+* `acl_id` - (Required, String) The ID of the access control policy group bound to the listener. Exactly one policy group is managed by this resource; a comma separated value is rejected during validation.
 * `acl_type` - (Required, String) The access control type. Valid values: `white` and `black`.
 
 ## Attributes Reference
