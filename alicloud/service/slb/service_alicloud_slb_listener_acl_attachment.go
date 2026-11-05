@@ -313,20 +313,28 @@ func isUnknownListenerAclWriteOutcome(err error) bool {
 // isUnconfirmedListenerAclWrite reports whether a failed write may still have
 // been applied: a transport level failure, an unreadable response, a write budget
 // that expired, or any other error that does not prove the service refused the
-// request. The answer does not depend on the caller's context: a parent deadline
-// or cancellation stops further requests but says nothing about a request that
-// was already on the wire, so the caller still has to keep the planned identity.
+// request. It deliberately does not look at the parent operation context: a
+// parent deadline or cancellation stops further requests but says nothing about a
+// request that was already on the wire, so the caller still has to keep the
+// planned identity.
 //
 // A decoded service answer is checked first: it proves the request was answered,
 // so the terminal classification wins over a write budget that expired at the
 // same moment. Reconciling such a rejection could otherwise adopt a pre-existing
 // matching binding as the result of a refused write.
-func isUnconfirmedListenerAclWrite(err error) bool {
+func isUnconfirmedListenerAclWrite(writeCtx context.Context, err error) bool {
 	if err == nil {
 		return false
 	}
 	if isDefinitiveListenerAclWriteOutcome(err) {
 		return false
+	}
+	// The write helper reports an exhausted write budget as a generic timeout
+	// error, so the expired budget itself is the signal that the outcome is
+	// unknown. A cancelled or expired parent also ends the write context; the
+	// write may have been in flight, so it stays unconfirmed as well.
+	if writeCtx != nil && writeCtx.Err() != nil {
+		return true
 	}
 	if isUnknownListenerAclWriteOutcome(err) {
 		return true

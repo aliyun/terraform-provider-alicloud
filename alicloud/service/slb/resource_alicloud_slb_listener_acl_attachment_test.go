@@ -2383,9 +2383,10 @@ func TestUnitListenerAclAttachmentProtocolImportForms(t *testing.T) {
 		}
 	})
 
-	// The control case: an explicitly empty member list is a reported membership
-	// that proves nothing is bound, so the import clears the state.
-	t.Run("three segments with an empty reported member list clears the state", func(t *testing.T) {
+	// An enabled listener always reports at least one member, so a reported but
+	// empty list is as unusable as an omitted one: the import must neither adopt
+	// it nor conclude that nothing is bound.
+	t.Run("three segments with an empty reported member list cannot confirm", func(t *testing.T) {
 		state, diagnostics := importAndRead(t, func() (map[string]interface{}, error) {
 			return map[string]interface{}{
 				"ListenerPort": 80,
@@ -2394,13 +2395,11 @@ func TestUnitListenerAclAttachmentProtocolImportForms(t *testing.T) {
 				"AclIds":       map[string]interface{}{"AclId": []interface{}{}},
 			}, nil
 		}, "lb-123:http:80")
-		listenerAclTestRequireNoError(t, "ReadResource (empty member list)", diagnostics)
-		value, err := state.Unmarshal(listenerAclAttachmentTestType)
-		if err != nil {
-			t.Fatalf("decoding the read state: %s", err)
+		if !listenerAclTestHasError(diagnostics) {
+			t.Fatalf("an empty member list must not clear an enabled listener, state: %s", state)
 		}
-		if !value.IsNull() {
-			t.Fatalf("a listener without a bound group must clear the state, got %s", value)
+		if !listenerAclTestDiagnosticsContain(diagnostics, "cannot confirm the imported binding") {
+			t.Fatalf("the diagnostic did not report the unusable member list: %v", diagnostics)
 		}
 	})
 

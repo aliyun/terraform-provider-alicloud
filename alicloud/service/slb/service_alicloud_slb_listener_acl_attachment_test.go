@@ -295,28 +295,39 @@ func TestUnitListenerAclAttachmentWriteOutcomeClassification(t *testing.T) {
 		errs.WrapErrorf(fmt.Errorf("request failed: %w", context.DeadlineExceeded), "calling %s failed", "SetLoadBalancerHTTPListenerAttribute"),
 		errs.DefaultErrorMsg, "lb-123:http:80", "SetLoadBalancerHTTPListenerAttribute", errs.AlibabaCloudSdkGoERROR,
 	)
+	writeBudgetTimeout := errors.New("timeout while waiting for state to become 'success' (timeout: 200ms)")
+	liveCtx := context.Background()
+	expiredCtx, cancelExpired := context.WithCancel(context.Background())
+	cancelExpired()
 
 	cases := []struct {
-		name string
-		err  error
-		want bool
+		name     string
+		writeCtx context.Context
+		err      error
+		want     bool
 	}{
-		{"decoded terminal rejection", terminal, false},
-		{"undecodable 4xx rejection", rejection, false},
-		{"production wrapped rejection", productionRejection, false},
-		{"production wrapped deadline", productionDeadline, true},
-		{"transport failure", transport, true},
-		{"5xx answer", serverFailure, true},
+		{"decoded terminal rejection", liveCtx, terminal, false},
+		{"undecodable 4xx rejection", liveCtx, rejection, false},
+		{"production wrapped rejection", liveCtx, productionRejection, false},
+		{"production wrapped deadline", liveCtx, productionDeadline, true},
+		{"transport failure", liveCtx, transport, true},
+		{"5xx answer", liveCtx, serverFailure, true},
+		// The retry helper reports an exhausted write budget as a generic timeout;
+		// the expired budget itself proves that the outcome is unknown.
+		{"expired write budget with a generic timeout", expiredCtx, writeBudgetTimeout, true},
+		// The parent deadline ends the write context as well; the request may have
+		// been in flight, so the planned identity is still kept.
+		{"cancelled parent leaves the write unconfirmed", expiredCtx, transport, true},
 	}
 	for _, tc := range cases {
-		if got := isUnconfirmedListenerAclWrite(tc.err); got != tc.want {
+		if got := isUnconfirmedListenerAclWrite(tc.writeCtx, tc.err); got != tc.want {
 			t.Fatalf("%s: isUnconfirmedListenerAclWrite = %v, want %v", tc.name, got, tc.want)
 		}
 	}
-	// The classification must not depend on the caller's context: a cancelled
-	// parent stops further requests but does not prove that an in-flight write was
-	// not applied, so the caller still keeps the planned identity.
-	if !isUnconfirmedListenerAclWrite(transport) {
+	// The classification must not depend on the parent operation context: a
+	// cancelled parent stops further requests but does not prove that an in-flight
+	// write was not applied, so the caller still keeps the planned identity.
+	if !isUnconfirmedListenerAclWrite(expiredCtx, transport) {
 		t.Fatal("a transport failure must stay unconfirmed even after the parent stopped")
 	}
 	if !isDefinitiveListenerAclWriteOutcome(productionRejection) {

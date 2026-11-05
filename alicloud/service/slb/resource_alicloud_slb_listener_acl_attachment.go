@@ -284,7 +284,7 @@ func createListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 	writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 	defer cancelWrite()
 	if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
-		if !isUnconfirmedListenerAclWrite(err) {
+		if !isUnconfirmedListenerAclWrite(writeCtx, err) {
 			// The service refused the request, so no binding was created and no
 			// state is written.
 			return listenerAclAttachmentResourceModel{}, nil, err
@@ -360,7 +360,7 @@ func updateListenerAclAttachment(ctx context.Context, api listenerAclAttachmentA
 		writeCtx, cancelWrite := context.WithTimeout(ctx, listenerAclAttachmentOperationTimeout)
 		defer cancelWrite()
 		if err := api.SetAcl(writeCtx, listenerId, aclId, aclType, true); err != nil {
-			if !isUnconfirmedListenerAclWrite(err) {
+			if !isUnconfirmedListenerAclWrite(writeCtx, err) {
 				return listenerAclAttachmentResourceModel{}, nil, err
 			}
 			if ctx.Err() == nil {
