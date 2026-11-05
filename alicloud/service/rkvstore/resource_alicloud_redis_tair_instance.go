@@ -79,6 +79,21 @@ func ResourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"backup_period": {
+				Type:         schema.TypeSet,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"backup_time"},
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"backup_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				RequiredWith: []string{"backup_period"},
+			},
 			"bandwidth_burst": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -635,6 +650,17 @@ func ResourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		log.Printf("[WARN] Keeping the previous additional_bandwidth of %s: %s", d.Id(), err)
 	} else if !refreshAdditionalBandwidthState(d, dataNodes) {
 		log.Printf("[WARN] Keeping the previous additional_bandwidth of %s: the DescribeRoleZoneInfo listing has no row for a configured data shard", d.Id())
+	}
+
+	objectRaw, err = redisServiceV2.DescribeBackupPolicy(d.Id())
+	if err != nil && !errs.NotFoundError(err) {
+		return errs.WrapError(err)
+	}
+	if v, ok := objectRaw["PreferredBackupPeriod"]; ok && fmt.Sprint(v) != "" {
+		d.Set("backup_period", strings.Split(fmt.Sprint(v), ","))
+	}
+	if v, ok := objectRaw["PreferredBackupTime"]; ok && fmt.Sprint(v) != "" {
+		d.Set("backup_time", fmt.Sprint(v))
 	}
 
 	objectRaw, err = redisServiceV2.DescribeTairInstanceDescribeInstanceConfig(d.Id())
@@ -1381,6 +1407,46 @@ func ResourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		logs.AddDebug(action, response, request)
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+		}
+	}
+	if d.HasChange("backup_period") || d.HasChange("backup_time") {
+		action = "ModifyBackupPolicy"
+		request = make(map[string]interface{})
+		query = make(map[string]interface{})
+		request["InstanceId"] = d.Id()
+		request["RegionId"] = client.RegionId
+		if v, ok := d.GetOk("backup_time"); ok {
+			request["PreferredBackupTime"] = v
+		}
+		if v, ok := d.GetOk("backup_period"); ok && v.(*schema.Set).Len() > 0 {
+			request["PreferredBackupPeriod"] = convert.ConvertListToCommaSeparate(v.(*schema.Set).List())
+		}
+		// ModifyBackupPolicy requires the full policy; wait until both parts are known
+		// so a partially configured pair never reaches the API as a  400.
+		if _, timeOk := request["PreferredBackupTime"]; timeOk {
+			if _, periodOk := request["PreferredBackupPeriod"]; periodOk {
+				wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+				err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+					response, err = client.RpcPost("R-kvstore", "2015-01-01", action, query, request, true)
+					if err != nil {
+						if helper.NeedRetry(err) {
+							wait()
+							return retry.RetryableError(err)
+						}
+						return retry.NonRetryableError(err)
+					}
+					return nil
+				})
+				logs.AddDebug(action, response, request)
+				if err != nil {
+					return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+				}
+				redisServiceV2 := RedisServiceV2{client}
+				stateConf := helper.BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+				}
+			}
 		}
 	}
 	if d.HasChanges("bandwidth_burst", "additional_bandwidth") {
