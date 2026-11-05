@@ -258,7 +258,7 @@ The field_schema supports the following:
 * `date_format_list` - (Optional, ForceNew, Set) Specifies the date formats supported by the field. This parameter is required for `Date` fields. Available since v2.3.0.
 * `is_virtual_field` - (Optional, ForceNew, Bool) Specifies whether the field is a virtual column. Defaults to `false`. When you set this parameter to `true`, `source_field_name` is required. Available since v2.3.0.
 * `source_field_name` - (Optional, ForceNew, String) Specifies the source field to which the virtual column maps. This parameter is required for virtual columns, and only one source field is supported. This parameter can be set only when `is_virtual_field` is `true`. Available since v2.3.0.
-* `sub_field_schemas` - (Optional, ForceNew, Set) Specifies the sub-fields of a `Nested` field. This parameter is required for `Nested` fields. Each sub-field supports the same arguments as `field_schema`. A sub-field cannot contain a further `sub_field_schemas` block. Available since v2.3.0.
+* `sub_field_schemas` - (Optional, ForceNew, Set) Specifies the sub-fields of a `Nested` field. This parameter is required for `Nested` fields. See [`sub_field_schemas`](#schema-field_schema-sub_field_schemas) below. A sub-field cannot contain a further `sub_field_schemas` block. Available since v2.3.0.
 * `vector_options` - (Optional, ForceNew, List) Specifies the vector configuration. This parameter is required for `Vector` fields. See [`vector_options`](#schema-field_schema-vector_options) below. Available since v2.3.0.
 
 ### `schema-field_schema-vector_options`
