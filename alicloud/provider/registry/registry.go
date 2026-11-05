@@ -171,6 +171,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/tsdb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/ververica"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/videosurveillancesystem"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vod"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/service/vpcipam"
@@ -354,6 +355,7 @@ var servicePackages = []conns.ServicePackage{
 	tsdb.ServicePackage(),
 	ververica.ServicePackage(),
 	vod.ServicePackage(),
+	vms.ServicePackage(),
 	vpc.ServicePackage(),
 	vpcipam.ServicePackage(),
 	vpcpeer.ServicePackage(),
