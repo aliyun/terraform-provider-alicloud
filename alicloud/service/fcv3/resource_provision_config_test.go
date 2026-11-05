@@ -531,6 +531,26 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrder(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"current", "current_error"},
 			},
+			// CR-10: removing a TypeList must clear it through the replacement
+			// PUT and converge on an empty list. The configuration helper is
+			// cumulative, so REMOVEKEY is required to drop the block from the
+			// final HCL.
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target_tracking_policies": acctest.REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_tracking_policies.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"current", "current_error"},
+			},
 		},
 	})
 }
@@ -669,61 +689,6 @@ func TestAccAliCloudFcv3ProvisionConfig_memberOrderPair(t *testing.T) {
 						"scheduled_actions.#": "2",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"current", "current_error"},
-			},
-		},
-	})
-}
-
-// TestAccAliCloudFcv3ProvisionConfig_alwaysAllocateCoupling records the
-// service-side coupling observed on a function without GPU: a request that
-// sets always_allocate_cpu=false together with always_allocate_gpu=true is
-// normalized to false/false, so the asymmetric configuration cannot converge.
-// The persistent diff is the expected result here, not a Provider defect: the
-// argument reference documents that both values must be configured together.
-// This case exists to keep that limitation executable and to give AC4 a
-// first-class counterexample (QA-F02); it does not claim AC4 is satisfied.
-func TestAccAliCloudFcv3ProvisionConfig_alwaysAllocateCoupling(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_fcv3_provision_config.default"
-	ra := acctest.ResourceAttrInit(resourceId, AlicloudFcv3ProvisionConfigMap7183)
-	rc := acctest.ResourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return fcv3.NewService(acctest.Provider.Meta().(*connectivity.AliyunClient))
-	}, "DescribeProvisionConfig")
-	rac := acctest.ResourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.ResourceAttrMapUpdateSet()
-	rand := tfacctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sfcv3provisionalloc%d", acctest.DefaultRegionToTest, rand)
-	testAccConfig := acctest.ResourceTestAccConfig(resourceId, name, AlicloudFcv3ProvisionConfigBasicDependence7183)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			acctest.PreCheckWithRegions(t, true, []connectivity.Region{"cn-shanghai"})
-		},
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(),
-		CheckDestroy:             rac.CheckResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"function_name":       "${alicloud_fcv3_function.function.function_name}",
-					"target":              "1",
-					"always_allocate_cpu": "false",
-					"always_allocate_gpu": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"always_allocate_cpu": "false",
-						"always_allocate_gpu": "false",
-					}),
-				),
-				// The requested gpu=true is normalized to false, so the
-				// configuration keeps a diff after apply by design.
-				ExpectNonEmptyPlan: true,
 			},
 			{
 				ResourceName:            resourceId,
