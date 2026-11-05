@@ -490,7 +490,7 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		} else {
 			primaryConfig = fmt.Sprintf("\n\nresource \"%s\" \"%s\" ", strs[0], strs[1])
 		}
-		config := assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap)))
+		config := assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap), configSchemaFields(b.resourceId)))
 		for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
 			if strings.TrimSpace(part) == "terraform_test" {
 				log.Printf("###### (step %d) terraform test configuration ###### %s \n###### (END) ######\n\n", b.number, config)
@@ -501,17 +501,65 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 	}
 }
 
+// configSchemaFields resolves the top-level schema map of the resource or data
+// source a test config builder targets, so the renderer can tell nested blocks
+// from list-of-map attributes. Unknown identifiers yield nil and keep the
+// historical block rendering.
+func configSchemaFields(resourceId string) map[string]*schema.Schema {
+	parts := strings.Split(resourceId, ".")
+	if parts[0] == "data" {
+		if len(parts) < 3 {
+			return nil
+		}
+		if source, ok := Provider.DataSourcesMap[parts[1]]; ok && source != nil {
+			return source.Schema
+		}
+		return nil
+	}
+	if len(parts) < 2 {
+		return nil
+	}
+	if resource, ok := Provider.ResourcesMap[parts[0]]; ok && resource != nil {
+		return resource.Schema
+	}
+	return nil
+}
+
+// schemaAt reports the schema one level below key. fields is the schema of the
+// value holding the key: a nested block contributes its resource schema, while
+// a list/set of maps is an attribute HCL spells as a list of object literals
+// rather than repeated blocks.
+func schemaAt(fields map[string]*schema.Schema, key string) (map[string]*schema.Schema, bool) {
+	if fields == nil {
+		return nil, false
+	}
+	s, ok := fields[key]
+	if !ok || s == nil {
+		return nil, false
+	}
+	switch s.Type {
+	case schema.TypeList, schema.TypeSet:
+		switch elem := s.Elem.(type) {
+		case *schema.Resource:
+			return elem.Schema, false
+		case *schema.Schema:
+			return nil, elem.Type == schema.TypeMap
+		}
+	}
+	return nil, false
+}
+
 // deal with the parameter common method
-func valueConvert(indentation int, val reflect.Value) interface{} {
+func valueConvert(indentation int, val reflect.Value, fields map[string]*schema.Schema) interface{} {
 	switch val.Kind() {
 	case reflect.Interface:
-		return valueConvert(indentation, reflect.ValueOf(val.Interface()))
+		return valueConvert(indentation, reflect.ValueOf(val.Interface()), fields)
 	case reflect.String:
 		return fmt.Sprintf("\"%s\"", val.String())
 	case reflect.Slice:
 		return listValue(indentation, val)
 	case reflect.Map:
-		return mapValue(indentation, val)
+		return mapValue(indentation, val, fields)
 	case reflect.Bool:
 		return val.Bool()
 	case reflect.Int:
@@ -529,37 +577,44 @@ func listValue(indentation int, val reflect.Value) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
 		valList = append(valList, addIndentation(indentation+CHILDINDEND)+
-			fmt.Sprint(valueConvert(indentation+CHILDINDEND, val.Index(i))))
+			fmt.Sprint(valueConvert(indentation+CHILDINDEND, val.Index(i), nil)))
 	}
 
 	return fmt.Sprintf("[\n%s\n%s]", strings.Join(valList, ",\n"), addIndentation(indentation))
 }
 
 // deal with map parameter
-func mapValue(indentation int, val reflect.Value) string {
+func mapValue(indentation int, val reflect.Value, fields map[string]*schema.Schema) string {
 	var valList []string
 	for _, keyV := range val.MapKeys() {
+		key := keyV.String()
+		childFields, mapList := schemaAt(fields, key)
 		mapVal := getRealValueType(val.MapIndex(keyV))
 		var line string
 		if mapVal.Kind() == reflect.Slice && mapVal.Len() > 0 {
 			eleVal := getRealValueType(mapVal.Index(0))
 			if eleVal.Kind() == reflect.Map {
-				line = fmt.Sprintf(`%s%s`, addIndentation(indentation),
-					listValueMapChild(indentation+CHILDINDEND, keyV.String(), mapVal))
+				if mapList {
+					line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), key,
+						valueConvert(indentation+CHILDINDEND, val.MapIndex(keyV), nil))
+				} else {
+					line = fmt.Sprintf(`%s%s`, addIndentation(indentation),
+						listValueMapChild(indentation+CHILDINDEND, key, mapVal, childFields))
+				}
 				valList = append(valList, line)
 				continue
 			}
 		}
-		value := valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV))
+		value := valueConvert(indentation+len(key)+CHILDINDEND+3, val.MapIndex(keyV), nil)
 		switch value.(type) {
 		case bool:
-			line = fmt.Sprintf(`%s%s = %t`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+			line = fmt.Sprintf(`%s%s = %t`, addIndentation(indentation+CHILDINDEND), key, value)
 		case int:
-			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), key, value)
 		case int64:
-			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), key, value)
 		default:
-			line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+			line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), key, value)
 		}
 
 		valList = append(valList, line)
@@ -568,11 +623,11 @@ func mapValue(indentation int, val reflect.Value) string {
 }
 
 // deal with list parameter that child element is map
-func listValueMapChild(indentation int, key string, val reflect.Value) string {
+func listValueMapChild(indentation int, key string, val reflect.Value, fields map[string]*schema.Schema) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
 		valList = append(valList, addIndentation(indentation)+key+" "+
-			mapValue(indentation, getRealValueType(val.Index(i))))
+			mapValue(indentation, getRealValueType(val.Index(i)), fields))
 	}
 
 	return fmt.Sprintf("%s\n%s", strings.Join(valList, "\n"), addIndentation(indentation))

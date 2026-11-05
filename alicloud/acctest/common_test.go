@@ -3,11 +3,13 @@ package acctest
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -71,6 +73,80 @@ func Test_ResourceTestAccConfigBuildsHcl(t *testing.T) {
 	}
 	if !strings.HasSuffix(config, "\n}") {
 		t.Fatalf("built config must close the block, got tail %q", config[len(config)-5:])
+	}
+}
+
+func TestUnitAcctestResourceTestAccConfigRendersListOfMapAttribute(t *testing.T) {
+	configFunc := ResourceTestAccConfig("alicloud_cms_alert_rule_v2.default", "default", func(name string) string {
+		return ""
+	})
+	config := configFunc(map[string]interface{}{
+		"query_config": []map[string]interface{}{
+			{
+				"type": "CLOUD_MONITORING_QUERY",
+				"dimensions": []map[string]interface{}{
+					{"instanceId": "i-abc123"},
+					{"device": "/dev/vda"},
+				},
+			},
+		},
+	})
+
+	for _, want := range []string{
+		"query_config {",
+		"dimensions = [",
+		`instanceId = "i-abc123"`,
+		`device = "/dev/vda"`,
+	} {
+		if !strings.Contains(config, want) {
+			t.Fatalf("built config missing %q:\n%s", want, config)
+		}
+	}
+	if strings.Contains(config, "dimensions {") {
+		t.Fatalf("a list of maps must render as an attribute, not repeated blocks:\n%s", config)
+	}
+}
+
+func TestUnitAcctestMapValueKeepsBlockSyntaxForNestedResources(t *testing.T) {
+	fields := map[string]*schema.Schema{
+		"channels": {
+			Type:     schema.TypeList,
+			Optional: true,
+			Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+				"type": {Type: schema.TypeString, Optional: true},
+			}},
+		},
+		"dimensions": {
+			Type:     schema.TypeList,
+			Optional: true,
+			Elem:     &schema.Schema{Type: schema.TypeMap, Elem: &schema.Schema{Type: schema.TypeString}},
+		},
+	}
+	got := mapValue(0, reflect.ValueOf(map[string]interface{}{
+		"channels": []map[string]interface{}{
+			{"type": "GROUP"},
+			{"type": "CONTACT"},
+		},
+		"dimensions": []map[string]interface{}{
+			{"instanceId": "i-abc123"},
+			{"device": "/dev/vda"},
+		},
+	}), fields)
+	if !strings.Contains(got, "channels {") || strings.Contains(got, "channels = [") {
+		t.Fatalf("nested resource lists must keep block syntax:\n%s", got)
+	}
+	if !strings.Contains(got, "dimensions = [") || strings.Contains(got, "dimensions {") {
+		t.Fatalf("list-of-map attributes must render as list literals:\n%s", got)
+	}
+
+	legacy := mapValue(0, reflect.ValueOf(map[string]interface{}{
+		"unknown": []map[string]interface{}{
+			{"a": "1"},
+			{"b": "2"},
+		},
+	}), nil)
+	if !strings.Contains(legacy, "unknown {") {
+		t.Fatalf("unknown schema must keep the historical block rendering:\n%s", legacy)
 	}
 }
 

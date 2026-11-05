@@ -117,6 +117,8 @@ resource "alicloud_cms_alert_rule_v2" "default" {
     type          = "UMODEL_METRICSET_QUERY"
     entity_domain = "ecs"
     metric        = "CPUUtilization"
+    window_secs   = 60
+    aggregate     = "AVG"
     label_filters {
       operator = "="
       value    = "web-server"
