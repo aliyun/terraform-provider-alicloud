@@ -311,6 +311,17 @@ func TestAccAliCloudOtsTable_stream(t *testing.T) {
 				}),
 				ExpectError: regexp.MustCompile("expiration_time"),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stream_specification": []map[string]interface{}{
+						{
+							"enable_stream":   true,
+							"expiration_time": 0,
+						},
+					},
+				}),
+				ExpectError: regexp.MustCompile("expiration_time"),
+			},
 		},
 	})
 }

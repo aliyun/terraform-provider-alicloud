@@ -16,6 +16,8 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 
 -> **NOTE:** Available since v1.9.2.
 
+-> **NOTE:** Import reads the current stream configuration back from the table. Add the `stream_specification` block to the configuration if Terraform should keep managing Stream after an import.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -127,8 +129,8 @@ The primary_key supports the following:
 ### `stream_specification`
 
 The stream_specification supports the following:
-* `enable_stream` - (Required, Available since v2.3.0) Whether to enable stream for the table. Setting it to `false` or removing the `stream_specification` block disables stream. Changing this value updates the stream configuration without recreating the table.
-* `expiration_time` - (Optional, Available since v2.3.0) The retention period of stream records, in hours. Valid values: `1` to `168`. This parameter is required when `enable_stream` is `true`. Changing this value updates the retention period without recreating the table.
+* `enable_stream` - (Required, Bool, Available since v2.3.0) Whether to enable stream for the table. Setting it to `false`, or removing the `stream_specification` block, disables stream on the next apply. Changing this value updates the stream configuration without recreating the table.
+* `expiration_time` - (Optional, Int, Available since v2.3.0) The retention period of stream records, in hours. Valid values: `1` to `168`. This parameter is required when `enable_stream` is `true`. Changing this value updates the retention period without recreating the table.
 
 ## Attributes Reference
 

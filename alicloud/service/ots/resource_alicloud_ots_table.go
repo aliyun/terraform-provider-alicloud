@@ -100,6 +100,7 @@ func ResourceOtsTable() *schema.Resource {
 						},
 					},
 				},
+				DiffSuppressFunc: suppressOtsStreamSpecificationDiff,
 			},
 			"time_to_live": {
 				Type:         schema.TypeInt,
@@ -155,17 +156,33 @@ func resourceAliyunOtsTableCustomizeDiff(_ context.Context, d *schema.ResourceDi
 		specs, _ := v.([]interface{})
 		if len(specs) > 0 && specs[0] != nil {
 			spec := specs[0].(map[string]interface{})
-			if enableStream, _ := spec["enable_stream"].(bool); !enableStream {
-				// A disabled stream is reported as an absent block by Read, so keep the plan in sync with that shape.
-				return d.SetNew("stream_specification", []interface{}{})
-			}
-			expirationTime, _ := spec["expiration_time"].(int)
-			if expirationTime < 1 || expirationTime > 168 {
-				return fmt.Errorf("`expiration_time` must be set to a value between 1 and 168 when `enable_stream` is true")
+			if enableStream, _ := spec["enable_stream"].(bool); enableStream {
+				expirationTime, _ := spec["expiration_time"].(int)
+				if expirationTime < 1 || expirationTime > 168 {
+					return fmt.Errorf("`expiration_time` must be set to a value between 1 and 168 when `enable_stream` is true")
+				}
 			}
 		}
 	}
 	return nil
+}
+
+// suppressOtsStreamSpecificationDiff keeps a disabled block equivalent to an absent block. Read reports a disabled
+// stream as no block, so without this a configuration that sets enable_stream = false would never converge.
+func suppressOtsStreamSpecificationDiff(k, old, new string, d *schema.ResourceData) bool {
+	if k != "stream_specification.#" && !strings.HasPrefix(k, "stream_specification.") {
+		return false
+	}
+	specs, _ := d.Get("stream_specification").([]interface{})
+	if len(specs) == 0 || specs[0] == nil {
+		return false
+	}
+	spec := specs[0].(map[string]interface{})
+	if enableStream, _ := spec["enable_stream"].(bool); enableStream {
+		return false
+	}
+	// Only the transition from an absent block is a no-op; an existing enabled block must still be disabled.
+	return old == "" || old == "0"
 }
 
 func expandOtsStreamSpecification(specs []interface{}) *tablestore.StreamSpecification {
