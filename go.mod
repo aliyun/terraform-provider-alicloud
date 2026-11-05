@@ -35,7 +35,6 @@ require (
 	github.com/blues/jsonata-go v1.5.4
 	github.com/deckarep/golang-set v1.8.0
 	github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947
-	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/errwrap v1.1.0
@@ -108,6 +107,7 @@ require (
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
