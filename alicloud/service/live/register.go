@@ -17,5 +17,11 @@ func ServicePackage() conns.ServicePackage {
 				Factory:  ResourceLiveDomain,
 			},
 		},
+		Resources: []conns.Resource{
+			{
+				TypeName: "alicloud_live_ai_subtitle",
+				Factory:  NewLiveAISubtitleResource,
+			},
+		},
 	}
 }
