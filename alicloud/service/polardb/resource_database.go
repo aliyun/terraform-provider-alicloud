@@ -446,10 +446,44 @@ func resourceDatabaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		if err != nil {
 			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
 		}
+		// GrantAccountPrivilege is asynchronous. Reading immediately can observe the
+		// previous account list, and the read would then clear the managed account
+		// state for a change that is still in flight.
+		if err := waitDatabaseAccountVisible(polarDbServiceV2, d.Id(), fmt.Sprint(request["AccountName"]), d.Timeout(schema.TimeoutUpdate)); err != nil {
+			return errs.WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	d.Partial(false)
 	return resourceDatabaseRead(d, meta)
+}
+
+// waitDatabaseAccountVisible polls DescribeDatabases until the account is listed
+// for the database, so the read that follows an update observes the granted
+// account instead of the previous list.
+func waitDatabaseAccountVisible(service PolarDbServiceV2, id, accountName string, timeout time.Duration) error {
+	accountName = strings.TrimSpace(accountName)
+	if accountName == "" {
+		return nil
+	}
+	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
+	return retry.Retry(timeout, func() *retry.RetryError {
+		objectRaw, err := service.DescribePolarDbDatabase(id)
+		if err != nil {
+			if errs.NotFoundError(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		if accounts, authoritative := databaseAccounts(objectRaw); authoritative {
+			if _, found := selectDatabaseAccount(accounts, accountName); found {
+				return nil
+			}
+		}
+		wait()
+		return retry.RetryableError(fmt.Errorf("account %q is not listed for database %s yet", accountName, id))
+	})
 }
 
 func resourceDatabaseDelete(d *schema.ResourceData, meta interface{}) error {
