@@ -7,6 +7,9 @@ import (
 func ServicePackage() conns.ServicePackage {
 	return conns.ServicePackage{
 		Name: "live",
+		Resources: []conns.Resource{
+			{TypeName: "alicloud_live_private_line", Factory: NewLivePrivateLineResource},
+		},
 		SDKResources: []conns.SDKResource{
 			{
 				TypeName: "alicloud_live_caster",
