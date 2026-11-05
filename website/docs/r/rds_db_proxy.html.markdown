@@ -178,7 +178,7 @@ The following arguments are supported:
   - SpecificTime: ApsaraDB RDS performs the upgrade at a specified point in time.
 * `switch_time` - (Optional) The point in time at which you want to upgrade the database proxy version of the instance. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `resource_group_id` - (Optional) The ID of the resource group.
-* `persistent_connection_status` - (Optional, String, Available since v2.2.0) Specifies whether to enable the persistent connection feature. Valid values:
+* `persistent_connection_status` - (Optional, String, Available since v2.3.0) Specifies whether to enable the persistent connection feature. Valid values:
   - `Enabled`: enables the persistent connection feature.
   - `Disabled`: disables the persistent connection feature.
 
@@ -186,7 +186,7 @@ The following arguments are supported:
 
   -> **NOTE:** Removing this parameter from the configuration stops Terraform from managing the switch. The proxy keeps its current setting, the value reported by the API is recorded in the state, and later changes made outside Terraform are not reverted. To turn the feature off, set the value to `Disabled` explicitly.
 
-* `db_proxy_nodes` - (Optional, Set, Available since v2.2.0) The nodes of the database proxy. It is required when the database proxy is deployed in multiple availability zones. See [`db_proxy_nodes`](#db_proxy_nodes) below.
+* `db_proxy_nodes` - (Optional, Set, Available since v2.3.0) The nodes of the database proxy. It is required when the database proxy is deployed in multiple availability zones. See [`db_proxy_nodes`](#db_proxy_nodes) below.
 
   -> **NOTE:** The node layout is refreshed from the proxy node list only when this block is configured. Removing this block from the configuration stops Terraform from managing the node layout and leaves the existing layout unchanged. After `terraform import`, this block is empty until it is configured. When the specification of a proxy that is deployed in multiple availability zones is updated, this block has to be configured, because the API requires the node layout for such a proxy. If it is missing, Terraform reports an error before calling the API. Because an in-place network change moves every proxy node into the target availability zone, a two-zone layout cannot change `vswitch_id` or `vpc_id` in place.
 
@@ -201,14 +201,14 @@ The read_only_instance_weight mapping supports the following:
 
 The db_proxy_nodes mapping supports the following:
 
-* `cpu_cores` - (Optional, Int, Available since v2.2.0) The number of CPU cores of the proxy node. Valid values: 1 to 16. Must be set when the block is configured.
-* `node_counts` - (Optional, Int, Available since v2.2.0) The number of proxy nodes in the availability zone. Valid values: 1 to 2. The total number of proxy nodes cannot exceed 2 for a general-purpose database proxy. Must be set when the block is configured.
+* `cpu_cores` - (Optional, Int, Available since v2.3.0) The number of CPU cores of the proxy node. Valid values: 1 to 16. Must be set when the block is configured.
+* `node_counts` - (Optional, Int, Available since v2.3.0) The number of proxy nodes in the availability zone. Valid values: 1 to 2. The total number of proxy nodes cannot exceed 2 for a general-purpose database proxy. Must be set when the block is configured.
 
   -> **NOTE:** `DescribeDBProxy` returns one entry per proxy node, so the node list is grouped by `zone_id` when it is read back.
 
-* `zone_id` - (Optional, String, Available since v2.2.0) The ID of the availability zone in which the proxy node is deployed. The number of availability zones can be 1 or 2. Must be set when the block is configured.
+* `zone_id` - (Optional, String, Available since v2.3.0) The ID of the availability zone in which the proxy node is deployed. The number of availability zones can be 1 or 2. Must be set when the block is configured.
 
-  -> **NOTE:** All three attributes have to be set explicitly when `db_proxy_nodes` is configured. The provider validates them before calling the API and reports the missing attribute; the attributes are declared optional only to keep the schema backwards compatible.
+  -> **NOTE:** All three attributes have to be set explicitly when `db_proxy_nodes` is configured. The provider validates them before calling the API and reports the missing attribute.
 
 ## Attributes Reference
 
