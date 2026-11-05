@@ -2672,6 +2672,65 @@ func (client *AliyunClient) RpcGet(apiProductCode string, apiVersion string, api
 }
 
 func (client *AliyunClient) rpcRequest(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	return client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, endpoint, nil)
+}
+
+// RpcPostWithContext invokes a POST RPC that belongs to a Terraform operation budget. Unlike RpcPost
+// the HTTP attempt is bounded by ctx: the SDK read/connect timeouts of this request are clipped to
+// the remaining deadline, and a cancelled ctx returns as soon as it fires instead of leaving the
+// socket running until the client-wide timeout.
+func (client *AliyunClient) RpcPostWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "POST", apiProductCode, apiVersion, apiName, query, body, autoRetry)
+}
+
+// RpcGetWithContext is the GET variant of RpcPostWithContext.
+func (client *AliyunClient) RpcGetWithContext(ctx context.Context, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	return client.rpcRequestWithContext(ctx, "GET", apiProductCode, apiVersion, apiName, query, body, autoRetry)
+}
+
+// rpcRequestWithContext runs one bounded RPC attempt. The request runs in its own goroutine so a
+// lifecycle cancellation returns immediately; the per-attempt timeout keeps that goroutine from
+// outliving the operation when only the deadline passes.
+func (client *AliyunClient) rpcRequestWithContext(ctx context.Context, method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	var timeoutMillis *int
+	if deadline, ok := ctx.Deadline(); ok {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return nil, context.DeadlineExceeded
+		}
+		millis := int(remaining / time.Millisecond)
+		if millis < 1 {
+			millis = 1
+		}
+		timeoutMillis = &millis
+	}
+	type answer struct {
+		response map[string]interface{}
+		err      error
+	}
+	done := make(chan answer, 1)
+	go func() {
+		response, err := client.rpcRequestWithTimeouts(method, apiProductCode, apiVersion, apiName, query, body, autoRetry, "", timeoutMillis)
+		done <- answer{response: response, err: err}
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case result := <-done:
+		return result.response, result.err
+	}
+}
+
+// rpcRequestWithTimeouts runs one RPC attempt. When timeoutMillis is set, the SDK applies it to the
+// HTTP read and connect timeouts of this attempt only, so a caller that owns a Terraform operation
+// budget can stop an in-flight request at its deadline instead of the client-wide default.
+func (client *AliyunClient) rpcRequestWithTimeouts(method string, apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string, timeoutMillis *int) (map[string]interface{}, error) {
 	var err error
 	if endpoint == "" {
 		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
@@ -2695,6 +2754,10 @@ func (client *AliyunClient) rpcRequest(method string, apiProductCode string, api
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
+	if timeoutMillis != nil && *timeoutMillis > 0 {
+		runtime.SetReadTimeout(*timeoutMillis)
+		runtime.SetConnectTimeout(*timeoutMillis)
+	}
 	response, err := conn.DoRequest(tea.String(apiName), nil, tea.String(method), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
 	return response, formatError(response, err)
 }

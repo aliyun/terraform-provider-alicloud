@@ -28,18 +28,21 @@ import (
 )
 
 // retryRpcPost runs the write call through the shared context-aware retry path, so cancelling the
-// Terraform lifecycle aborts the backoff instead of continuing to send requests.
+// Terraform lifecycle aborts the backoff instead of continuing to send requests. Each attempt also
+// carries the remaining operation deadline into the HTTP layer: the retry loop only stops new
+// attempts, so a request that is already in flight needs its own bounded read/connect timeout.
 func retryRpcPost(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcPost(product, version, action, nil, request, true)
+		return client.RpcPostWithContext(ctx, product, version, action, nil, request, true)
 	}, timeout, vvpNamespaceRetryable)
 }
 
 // retryRpcGet keeps RPC APIs whose metadata only permits GET on the same shared retry path, so a
-// read shares the lifecycle cancellation and the transient classification with the write calls.
+// read shares the lifecycle cancellation, the in-flight deadline and the transient classification
+// with the write calls.
 func retryRpcGet(ctx context.Context, client *connectivity.AliyunClient, product, version, action string, request map[string]interface{}, timeout time.Duration) (map[string]interface{}, error) {
 	return helper.RetryRpcPost(ctx, action, func() (map[string]interface{}, error) {
-		return client.RpcGet(product, version, action, request, nil)
+		return client.RpcGetWithContext(ctx, product, version, action, request, nil, true)
 	}, timeout, vvpNamespaceRetryable)
 }
 
@@ -165,9 +168,21 @@ func vvpNamespaceGet(ctx context.Context, client *connectivity.AliyunClient, id 
 	return vvpNamespaceGetWithTimeout(ctx, client, id, 1*time.Minute, includeSecondary...)
 }
 
+// vvpNamespaceDescribePageSize bounds one DescribeNamespaces page. The published product contract
+// (foasconsole 2021-10-28) documents Namespace, PageIndex/PageSize and TotalCount/TotalPage for
+// this collection; the 2019-06-01 metadata is not published, so the read cannot assume the filter
+// always returns the identity on the first page and walks the pages instead.
+const vvpNamespaceDescribePageSize = 100
+
+// vvpNamespaceDescribeMaxPages bounds the walk so a product that keeps reporting another page
+// cannot turn one read into an unbounded loop.
+const vvpNamespaceDescribeMaxPages = 100
+
 // vvpNamespaceGetWithTimeout describes the resource with the read bounded by the caller's remaining
 // operation budget, so a stage late in a lifecycle cannot spend more time than the operation is
-// allowed to take. The context still carries the caller's cancellation.
+// allowed to take. The context still carries the caller's cancellation. The walk covers the
+// documented pagination of the collection and only accepts a row whose parent is the requested
+// instance, so a same-name namespace under another workspace is never mistaken for this one.
 func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.AliyunClient, id string, readTimeout time.Duration, includeSecondary ...bool) (map[string]interface{}, error) {
 	completeRead := len(includeSecondary) == 0 || includeSecondary[0]
 	getValues := map[string]interface{}{"RegionId": client.RegionId, "InstanceId": id}
@@ -175,50 +190,93 @@ func vvpNamespaceGetWithTimeout(ctx context.Context, client *connectivity.Aliyun
 	if identityPartsErr != nil {
 		return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace: %w", identityPartsErr)
 	}
+	instanceId := id
 	if len(parts) > 0 {
-		getValues["InstanceId"] = parts[0]
+		instanceId = parts[0]
 	}
 	if len(parts) > 1 {
 		getValues["Namespace"] = parts[1]
-	}
-	request := map[string]interface{}{}
-	request["RegionId"] = client.RegionId
-	if err := fwadapt.ApplyMappings(request, getValues, []fwadapt.Mapping{
-		{Source: "$.InstanceId", Target: "DescribeNamespacesRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
-		{Source: "$.Namespace", Target: "DescribeNamespacesRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
-		{Source: "$.RegionId", Target: "DescribeNamespacesRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
-	}, false); err != nil {
-		return nil, fmt.Errorf("building DescribeNamespaces request: %w", err)
 	}
 	identities := []fwadapt.ReadIdentity{}
 	if len(parts) > 1 {
 		identities = append(identities, fwadapt.ReadIdentity{Path: "$.Namespace", Value: parts[1], AllowMissing: false})
 	}
-	response, err := retryRpcGet(ctx, client, "foasconsole", "2019-06-01", "DescribeNamespaces", request, readTimeout)
-	if err != nil {
-		if errs.IsExpectedErrors(err, []string{"ResourceNotFound.VvpNamespace", "ResourceNotFound"}) {
+	for page := 1; page <= vvpNamespaceDescribeMaxPages; page++ {
+		getValues["InstanceId"] = instanceId
+		if len(parts) > 1 {
+			getValues["Namespace"] = parts[1]
+		}
+		request := map[string]interface{}{}
+		request["RegionId"] = client.RegionId
+		request["DescribeNamespacesRequest.PageIndex"] = page
+		request["DescribeNamespacesRequest.PageSize"] = vvpNamespaceDescribePageSize
+		if err := fwadapt.ApplyMappings(request, getValues, []fwadapt.Mapping{
+			{Source: "$.InstanceId", Target: "DescribeNamespacesRequest.InstanceId", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+			{Source: "$.Namespace", Target: "DescribeNamespacesRequest.Namespace", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+			{Source: "$.RegionId", Target: "DescribeNamespacesRequest.Region", Encoding: "", Constant: "", Repeat: true, Values: map[string]string{}},
+		}, false); err != nil {
+			return nil, fmt.Errorf("building DescribeNamespaces request: %w", err)
+		}
+		response, err := retryRpcGet(ctx, client, "foasconsole", "2019-06-01", "DescribeNamespaces", request, readTimeout)
+		if err != nil {
+			if errs.IsExpectedErrors(err, []string{"ResourceNotFound.VvpNamespace", "ResourceNotFound"}) {
+				return nil, nil
+			}
+			return nil, err
+		}
+		// Gets RootMapping "Namespaces". Only a decoded collection is evidence of what the workspace
+		// holds: the list is handed to fwadapt.SelectReadObject, which selects the row whose
+		// $.Namespace equals the requested identity; multiple matching rows and list items without a
+		// readable identity are errors, and the first element is never used as a fallback. A decoded
+		// list without this identity is a positive not-found, while an omitted, null or mistyped
+		// field is an unreadable response and fails the read instead of clearing state.
+		rows, rowsErr := vvpNamespaceResponseRows(response)
+		if rowsErr != nil {
+			return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, rowsErr)
+		}
+		inner, identityErr := fwadapt.SelectReadObject(rows, identities)
+		if identityErr != nil {
+			return nil, fmt.Errorf("selecting DescribeNamespaces resource: %w", identityErr)
+		}
+		if inner != nil {
+			// The collection is the one parent's list, but the identity of a row still has to match
+			// the requested workspace: a same-name namespace under another parent is a different
+			// resource and must not be adopted or reported as this one.
+			if parent, ok := inner["InstanceId"].(string); ok && parent != "" && parent != instanceId {
+				inner = nil
+			}
+		}
+		if inner != nil {
+			return vvpNamespaceCompleteRead(client, inner, id, completeRead)
+		}
+		if page >= vvpNamespaceTotalPage(response) {
 			return nil, nil
 		}
-		return nil, err
 	}
-	// Gets RootMapping "Namespaces". Only a decoded collection is evidence of what the workspace
-	// holds: the list is handed to fwadapt.SelectReadObject, which selects the row whose $.Namespace
-	// equals the requested identity; multiple matching rows and list items without a readable
-	// identity are errors, and the first element is never used as a fallback. A decoded list without
-	// this identity is a positive not-found, while an omitted, null or mistyped field is an
-	// unreadable response and fails the read instead of clearing state.
-	rows, rowsErr := vvpNamespaceResponseRows(response)
-	if rowsErr != nil {
-		return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: %w", id, rowsErr)
+	return nil, fmt.Errorf("reading alicloud_realtime_compute_vvp_namespace %s: the namespace was not found within %d DescribeNamespaces pages", id, vvpNamespaceDescribeMaxPages)
+}
+
+// vvpNamespaceTotalPage reads the reported page count of a DescribeNamespaces response. An absent
+// or unreadable count means the response does not advertise more pages, so the walk stops instead of
+// guessing that another page exists.
+func vvpNamespaceTotalPage(response map[string]interface{}) int {
+	raw, ok := response["TotalPage"]
+	if !ok || raw == nil {
+		return 1
 	}
-	inner, identityErr := fwadapt.SelectReadObject(rows, identities)
-	if identityErr != nil {
-		return nil, fmt.Errorf("selecting DescribeNamespaces resource: %w", identityErr)
+	switch value := raw.(type) {
+	case float64:
+		return int(value)
+	case int:
+		return value
+	case int64:
+		return int(value)
+	case string:
+		if parsed, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
+			return parsed
+		}
 	}
-	if inner == nil {
-		return nil, nil
-	}
-	return vvpNamespaceCompleteRead(client, inner, id, completeRead)
+	return 1
 }
 
 // vvpNamespaceResponseRows extracts the "Namespaces" collection from a DescribeNamespaces response.
