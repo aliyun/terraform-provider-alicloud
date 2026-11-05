@@ -1,6 +1,7 @@
 package adb
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -71,13 +72,19 @@ func ResourceAdbDbClusterLakeVersion() *schema.Resource {
 			"product_form": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
+			// ProductForm<->ProductVersion form conversion is an in-place
+			// ModifyDBCluster operation ("原地切换" per the published API):
+			// LegacyForm -> IntegrationForm enterprise upgrade sends
+			// ProductVersion=enterprise_version together with ProductForm,
+			// ReservedNodeSize and ReservedNodeCount, without rebuilding the
+			// cluster (DBClusterId is unchanged). ForceNew would rebuild and
+			// break the customer's same-instance upgrade requirement, so it
+			// must not be set here.
 			"product_version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
 			},
 			"compute_resource": {
@@ -118,6 +125,21 @@ func ResourceAdbDbClusterLakeVersion() *schema.Resource {
 			"enable_ssl": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
+			},
+			"ssl_enabled": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validators.StringInSlice([]string{"Enable", "Disable", "Update"}, false),
+			},
+			"ssl_connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_expire_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"db_cluster_description": {
 				Type:     schema.TypeString,
@@ -200,7 +222,81 @@ func ResourceAdbDbClusterLakeVersion() *schema.Resource {
 				Computed: true,
 			},
 		},
+		CustomizeDiff: resourceAdbDbClusterLakeVersionCustomizeDiff,
 	}
+}
+
+// resourceAdbDbClusterLakeVersionCustomizeDiff implements the product
+// contract: when ssl_enabled is explicitly set in HCL config, it takes
+// priority over enable_ssl; otherwise enable_ssl (the legacy boolean) is
+// used as-is.
+//
+// GetRawConfig returns the raw HCL config as a cty.Value. Unlike GetOk
+// (which reads merged state/config/diff via ReadFieldMerge and cannot
+// distinguish an explicitly configured ssl_enabled from a state-retained
+// value), GetRawConfig only reflects what the user wrote in HCL. When
+// ssl_enabled is omitted from config, GetRawConfig returns a typed null
+// for that attribute, so CustomizeDiff correctly returns nil and lets
+// the legacy enable_ssl boolean drive the operation. This prevents a
+// removed ssl_enabled command from reading stale state and swallowing a
+// legitimate enable_ssl true→false change.
+//
+// Unknown guard: cross-resource references may produce cty unknown
+// values during planning. Skip processing until the value is known.
+//
+// When ssl_enabled is explicitly set and known:
+//   - "Enable"  → plan enable_ssl=true  (priority)
+//   - "Disable" → plan enable_ssl=false (priority)
+//   - "Update"  → preserve the old actual SSL state (from prior state),
+//     not the user's new enable_ssl config value. Without this, a
+//     conflicting enable_ssl change would drive the next round's
+//     operation and unexpectedly disable SSL. By forcing enable_ssl
+//     back to its old state value, HasChange("enable_ssl") returns
+//     false on the next plan, preventing an unintended Disable.
+//
+// When ssl_enabled is absent (not in config), enable_ssl is used as-is.
+func resourceAdbDbClusterLakeVersionCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	rawConfig := d.GetRawConfig()
+	// Defensive: in production Terraform always provides a valid object.
+	// This guards against nil/non-object raw config in edge cases.
+	if rawConfig.IsNull() || !rawConfig.Type().IsObjectType() {
+		return nil
+	}
+	sslEnabledVal := rawConfig.GetAttr("ssl_enabled")
+	// Unknown guard: skip when the value is unknown (cross-resource
+	// references during planning).
+	if !sslEnabledVal.IsKnown() {
+		return nil
+	}
+	// Not configured: ssl_enabled is absent from HCL (typed null).
+	// The legacy enable_ssl boolean is used as-is.
+	if sslEnabledVal.IsNull() {
+		return nil
+	}
+	sslEnabledStr := sslEnabledVal.AsString()
+	if sslEnabledStr == "" {
+		return nil
+	}
+	switch sslEnabledStr {
+	case "Enable":
+		if err := d.SetNew("enable_ssl", true); err != nil {
+			return errs.WrapError(err)
+		}
+	case "Disable":
+		if err := d.SetNew("enable_ssl", false); err != nil {
+			return errs.WrapError(err)
+		}
+	case "Update":
+		// Renewal: preserve the server's actual SSL state from the
+		// prior state, not the user's new config value. This prevents
+		// a conflicting enable_ssl change from driving the next
+		// round's operation and unexpectedly disabling SSL.
+		oldEnableSsl, _ := d.GetChange("enable_ssl")
+		if err := d.SetNew("enable_ssl", oldEnableSsl); err != nil {
+			return errs.WrapError(err)
+		}
+	}
+	return nil
 }
 
 func ResourceAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta interface{}) error {
@@ -384,6 +480,35 @@ func ResourceAdbDbClusterLakeVersionRead(d *schema.ResourceData, meta interface{
 		log.Printf("[WARN] Resource alicloud_adb_db_cluster_lake_version DescribeAdbDbClusterLakeVersionDBClusterSSL Failed!!! %s", err)
 	} else {
 		d.Set("enable_ssl", sslObject["SSLEnabled"])
+		d.Set("ssl_connection_string", sslObject["ConnectionString"])
+		d.Set("ssl_expire_time", sslObject["ExpireTime"])
+		// SslEnabled (Enable/Disable/Update) is a write-only SSL operation
+		// command, so the API does not return it directly. When the state is
+		// "Update", retain it to prevent a persistent diff that would
+		// re-trigger renewal on every plan/apply — this is for Terraform
+		// state convergence only and does NOT prove the renewal was executed
+		// on the server; independent evidence (ssl_expire_time change) is
+		// required to verify renewal. For "Enable"/"Disable", derive the
+		// actual SSL state from the SSLEnabled boolean. This read is also
+		// required by the Update trigger: a later enable_ssl-only change
+		// (with ssl_enabled removed from config) compares the preserved
+		// state value to itself (equal-to-equal) and falls through to the
+		// EnableSSL branch. When both ssl_enabled and enable_ssl are set in
+		// config, CustomizeDiff resolves the priority (ssl_enabled takes
+		// priority) via SetNew: Enable/Disable override enable_ssl, and
+		// Update preserves the old actual enable_ssl state to prevent a
+		// conflicting bool from driving the next round's operation.
+		if d.Get("ssl_enabled").(string) != "Update" {
+			sslEnabledStr := fmt.Sprint(sslObject["SSLEnabled"])
+			var sslEnabledValue string
+			switch sslEnabledStr {
+			case "true", "Enable", "1":
+				sslEnabledValue = "Enable"
+			default:
+				sslEnabledValue = "Disable"
+			}
+			d.Set("ssl_enabled", sslEnabledValue)
+		}
 	}
 
 	return nil
@@ -432,6 +557,77 @@ func ResourceAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("product_form") {
+		update = true
+
+		if v, ok := d.GetOk("product_form"); ok {
+			request["ProductForm"] = v
+		}
+	}
+
+	// ProductVersion is required by ModifyDBCluster for an in-place
+	// ProductForm form conversion (e.g. LegacyForm -> IntegrationForm
+	// enterprise upgrade: ProductVersion=enterprise_version together with
+	// ProductForm, ReservedNodeSize and ReservedNodeCount). Without it the
+	// API rejects the upgrade with InvalidParameter.ReservedNodeSize/
+	// ReservedNodeCount ("...required for form conversion"). It is also
+	// sent when the user changes product_version directly. Send the value
+	// as-is from config/state; the stored/returned format is CamelCase
+	// (e.g. EnterpriseVersion), matching CreateDBCluster.
+	if !d.IsNewResource() && d.HasChange("product_version") {
+		update = true
+
+		if v, ok := d.GetOk("product_version"); ok {
+			request["ProductVersion"] = v
+		}
+	}
+
+	// Form conversion (ProductForm changed): force-send the target form's
+	// required parameter set. These Computed attributes may be read back
+	// from DescribeDBClusters with the same value the user configured,
+	// making d.HasChange false and omitting them from the regular
+	// per-parameter blocks above. Use d.Get (not d.GetOk) because d.GetOk
+	// for Optional+Computed fields returns false when the config value
+	// equals the state value (no diff entry), even though the value IS
+	// present in config — this would silently drop ComputeResource/
+	// StorageResource from the form-conversion request. d.Get returns the
+	// config-or-state value regardless of diff state, so the target form's
+	// parameter set is always sent.
+	//
+	// The API rejects a bare ProductForm change without its target parameter
+	// set:
+	// - LegacyForm->IntegrationForm upgrade: InvalidParameter.ReservedNodeSize/
+	//   ReservedNodeCount ("...required for form conversion"). Per
+	//   ModifyDBCluster docs, the upgrade must specify ProductForm,
+	//   ReservedNodeSize and ReservedNodeCount together with
+	//   ProductVersion=enterprise_version.
+	// - IntegrationForm->LegacyForm downgrade: the request includes
+	//   ProductForm=LegacyForm plus ComputeResource/StorageResource (via
+	//   d.Get), yet the API still returns NoNeedToScale. This is handled
+	//   as a non-fatal warning below — the conversion may be applied
+	//   server-side; Read reconciles the actual state.
+	if !d.IsNewResource() && d.HasChange("product_form") {
+		targetForm := d.Get("product_form").(string)
+		if targetForm == "IntegrationForm" {
+			if v := d.Get("product_version").(string); v != "" {
+				request["ProductVersion"] = v
+			}
+			if v := d.Get("reserved_node_size").(string); v != "" {
+				request["ReservedNodeSize"] = v
+			}
+			if v := d.Get("reserved_node_count").(int); v != 0 {
+				request["ReservedNodeCount"] = v
+			}
+		} else if targetForm == "LegacyForm" {
+			if v := d.Get("compute_resource").(string); v != "" {
+				request["ComputeResource"] = v
+			}
+			if v := d.Get("storage_resource").(string); v != "" {
+				request["StorageResource"] = v
+			}
+		}
+	}
+
 	if update {
 		action := "ModifyDBCluster"
 		wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
@@ -449,7 +645,20 @@ func ResourceAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta interfac
 		logs.AddDebug(action, response, request)
 
 		if err != nil {
-			return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			// NoNeedToScale during a ProductForm conversion: the API
+			// determined no scaling is required for the form conversion
+			// (IntegrationForm→LegacyForm where reserved nodes map to
+			// equivalent compute/storage). The conversion may be applied
+			// server-side despite the 400 response; treat as non-fatal and
+			// let Read reconcile state from DescribeDBClusters. Not silenced
+			// for regular scaling requests (non-form-conversion), where
+			// NoNeedToScale would surface as a genuine error to the user.
+			if errs.IsExpectedErrors(err, []string{"NoNeedToScale"}) && d.HasChange("product_form") {
+				logs.AddDebug(action, "NoNeedToScale during ProductForm conversion (non-fatal)", request)
+				err = nil
+			} else {
+				return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+			}
 		}
 
 		stateConf := helper.BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, adbService.AdbDbClusterLakeVersionStateRefreshFunc(d, []string{}))
@@ -503,10 +712,22 @@ func ResourceAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta interfac
 		"DBClusterId": d.Id(),
 	}
 
-	if d.HasChange("enable_ssl") {
+	// ssl_enabled (Enable/Disable/Update) takes priority over enable_ssl
+	// when both are set. CustomizeDiff resolves the priority via SetNew:
+	// Enable/Disable override enable_ssl; Update preserves the old actual
+	// enable_ssl state. Send SSLEnabled when ssl_enabled changed; otherwise
+	// fall back to EnableSSL for a pure enable_ssl change. When ssl_enabled
+	// is removed from config, CustomizeDiff SetNew removes it, making
+	// d.HasChange("ssl_enabled") false and falling through to the EnableSSL
+	// branch — a later enable_ssl-only change compares the preserved state
+	// value to itself (equal-to-equal) and correctly falls through here.
+	if d.HasChange("enable_ssl") || d.HasChange("ssl_enabled") {
 		update = true
-
-		if v, ok := d.GetOkExists("enable_ssl"); ok {
+		if d.HasChange("ssl_enabled") {
+			if v, ok := d.GetOk("ssl_enabled"); ok && v.(string) != "" {
+				modifyDBClusterSSLReq["SSLEnabled"] = v
+			}
+		} else if v, ok := d.GetOkExists("enable_ssl"); ok {
 			modifyDBClusterSSLReq["EnableSSL"] = v
 		}
 	}
@@ -536,9 +757,35 @@ func ResourceAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta interfac
 			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
 		}
 
-		sslEnabledStateConf := helper.BuildStateConf([]string{}, []string{fmt.Sprint(modifyDBClusterSSLReq["EnableSSL"])}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d, []string{}))
-		if _, err := sslEnabledStateConf.WaitForState(); err != nil {
-			return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+		// Determine the target SSL state for the SSL state refresh.
+		// SSLEnabled (Enable/Disable/Update) is the new API parameter;
+		// EnableSSL (bool) is the legacy parameter. Map both to the
+		// boolean string that
+		// AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc returns
+		// ("true"/"false"). For "Update" (certificate renewal), the SSL
+		// state does not change — renewal is only valid when SSL is
+		// enabled, so the target is "true"; the state refresh confirms
+		// SSL is enabled but does NOT verify the renewal itself (that
+		// requires checking ssl_expire_time changes independently).
+		var sslTarget string
+		if v, ok := modifyDBClusterSSLReq["SSLEnabled"]; ok {
+			switch fmt.Sprint(v) {
+			case "Enable":
+				sslTarget = "true"
+			case "Disable":
+				sslTarget = "false"
+			case "Update":
+				sslTarget = "true"
+			}
+		} else if v, ok := modifyDBClusterSSLReq["EnableSSL"]; ok {
+			sslTarget = fmt.Sprint(v)
+		}
+
+		if sslTarget != "" {
+			sslEnabledStateConf := helper.BuildStateConf([]string{}, []string{sslTarget}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, adbService.AdbDbClusterLakeVersionDBClusterSSLStateRefreshFunc(d, []string{}))
+			if _, err := sslEnabledStateConf.WaitForState(); err != nil {
+				return errs.WrapErrorf(err, errs.IdMsg, d.Id())
+			}
 		}
 
 	}

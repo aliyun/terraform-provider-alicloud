@@ -69,9 +69,11 @@ The following arguments are supported:
 * `payment_type` - (Required) The payment type of the resource. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** From version 1.245.0, `payment_type` can be set to `Subscription`. From version 1.272.0, `payment_type` can be modified.
 * `secondary_vswitch_id` - (Optional, ForceNew, Available since v1.248.0) The ID of the secondary zone.
 * `secondary_zone_id` - (Optional, ForceNew, Available since v1.248.0) The ID of the secondary vSwitch.
-* `product_form` - (Optional, ForceNew, Available since v1.245.0) The product form of the cluster. Valid values:
+* `product_form` - (Optional, Available since v1.245.0) The product form of the cluster. Valid values:
   - `IntegrationForm`: Integrated.
   - `LegacyForm`: Data Lakehouse Edition.
+
+  -> **NOTE:** From version 2.1.0, `product_form` can be modified in-place to upgrade the cluster between `LegacyForm` and `IntegrationForm` without recreating the resource. When upgrading to `IntegrationForm`, set `reserved_node_size` and `reserved_node_count` together.
 * `product_version` - (Optional, ForceNew, Available since v1.245.0) The edition of the cluster. Valid values:
   - `BasicVersion`: Basic Edition.
   - `EnterpriseVersion`: Enterprise Edition.
@@ -87,6 +89,12 @@ The following arguments are supported:
   - IP addresses, such as 10.23.XX.XX.
   - CIDR blocks, such as 10.23.xx.xx/24. In this example, 24 indicates that the prefix of each IP address in the IP whitelist is 24 bits in length. You can replace 24 with a value within the range of 1 to 32.
 * `enable_ssl` - (Optional, Bool, Available since v1.245.0) Specifies whether to enable SSL encryption. Valid values: `true`, `false`.
+* `ssl_enabled` - (Optional, Available since v2.1.0) The SSL operation command. This field takes priority over `enable_ssl` when both are set. Valid values:
+  - `Enable`: Enable SSL encryption.
+  - `Disable`: Disable SSL encryption.
+  - `Update`: Renew the SSL certificate. The SSL encryption state remains unchanged after renewal.
+
+  -> **NOTE:** `ssl_enabled` is retained in state after apply. Setting it to `Update` sends a certificate renewal request; the state retains `Update` to prevent persistent diffs that would re-trigger renewal on every plan/apply. Whether the renewal was actually executed on the server must be verified independently via `ssl_expire_time` changes. When both `ssl_enabled` and `enable_ssl` are configured, `ssl_enabled` takes priority: `Enable` derives `enable_ssl = true`, `Disable` derives `enable_ssl = false`; `Update` preserves the actual SSL state by retaining `enable_ssl` at its prior state value, preventing a conflicting `enable_ssl` config change from driving the next round's operation.
 * `db_cluster_description` - (Optional, Available since v1.198.0) The description of the cluster.
 * `resource_group_id` - (Optional, Available since v1.211.1) The ID of the resource group.
 * `period` - (Optional, Int, Available since v1.245.0) The subscription period of the subscription cluster. Valid values: `1` to `9`, `12`, `24`, `36`.
@@ -95,7 +103,7 @@ The following arguments are supported:
 * `backup_set_id` - (Optional, Available since v1.211.1) The ID of the backup set that you want to use to restore data.
 * `restore_type` - (Optional, Available since v1.211.1) The method that you want to use to restore data. Valid values:
   - `backup`: Restores data from a backup set. **NOTE:** You must set `source_db_cluster_id` and `backup_set_id`.
-  - `timepoint `: Restores data to a point in time. **NOTE:** You must set `source_db_cluster_id` and `restore_to_time`.
+  - `timepoint`: Restores data to a point in time. **NOTE:** You must set `source_db_cluster_id` and `restore_to_time`.
 * `restore_to_time` - (Optional, Available since v1.211.1) The point in time to which you want to restore data from the backup set.
 
 ## Attributes Reference
@@ -114,6 +122,8 @@ The following attributes are exported:
 * `port` - The port that is used to access the cluster.
 * `connection_string` - The endpoint of the cluster.
 * `create_time` - The createTime of the cluster.
+* `ssl_connection_string` - (Available since v2.1.0) The SSL connection string of the cluster.
+* `ssl_expire_time` - (Available since v2.1.0) The expiration time of the SSL certificate.
 
 ## Timeouts
 
