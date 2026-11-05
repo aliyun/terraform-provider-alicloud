@@ -74,6 +74,11 @@ func ResourceParameterGroup() *schema.Resource {
 					},
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"name": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -122,6 +127,9 @@ func resourceParameterGroupCreate(d *schema.ResourceData, meta interface{}) erro
 
 	if v, ok := d.GetOk("parameter_group_name"); ok {
 		request["ParameterGroupName"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 	wait := helper.IncrementalWait(3*time.Second, 5*time.Second)
 	err = retry.Retry(d.Timeout(schema.TimeoutCreate), func() *retry.RetryError {
