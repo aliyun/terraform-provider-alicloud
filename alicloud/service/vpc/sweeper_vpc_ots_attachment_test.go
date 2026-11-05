@@ -10,10 +10,8 @@ package vpc_test
 // vpc_test, which cannot see root-package helpers. The cluster is re-hosted
 // here verbatim so the migrated sweep graph's OTS branch
 // (nativeVpcOtsAttachmentSweeper(client.RegionId, id, client)) and its six
-// TestUnitVpcSweepOtsAttachment* tests resolve. The root copy is retained:
-// resource_alicloud_ots_instance_test.go still hosts non-VPC OTS ACC tests, so
-// the file (and thus the cluster) stays in the root package; the two packages
-// each carry their own copy without collision.
+// TestUnitVpcSweepOtsAttachment* tests resolve. This is the sole retained copy
+// after the root-package migration cleanup.
 
 import (
 	"encoding/json"

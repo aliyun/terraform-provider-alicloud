@@ -146,7 +146,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto", "cloud_essd_entry"}, false),
+				ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto", "cloud_essd_entry", "cloud_essd_xc0", "cloud_essd_xc1"}, false),
 			},
 			"system_disk_name": {
 				Type:         schema.TypeString,
@@ -257,7 +257,7 @@ func resourceAliCloudInstance() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto", "cloud_essd_entry", "cloud_regional_disk_auto", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
+							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto", "cloud_essd_entry", "cloud_essd_xc0", "cloud_essd_xc1", "cloud_regional_disk_auto", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
 							Default:      DiskCloudEfficiency,
 							ForceNew:     true,
 						},

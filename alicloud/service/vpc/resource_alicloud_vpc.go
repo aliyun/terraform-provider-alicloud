@@ -161,10 +161,12 @@ func ResourceAliCloudVpcVpc() *schema.Resource {
 			"system_route_table_description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"system_route_table_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"tags": tagsSchema(),
 			"is_default": {
