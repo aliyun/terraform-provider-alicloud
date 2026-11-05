@@ -19,6 +19,8 @@ Provides a PolarDB endpoint resource to manage custom endpoint of PolarDB cluste
 
 -> **NOTE:** The DynamoDB type endpoint does not support deletion. When destroying the Terraform resource, the DynamoDB endpoint will be removed from state but not deleted from the cloud.
 
+-> **NOTE:** The example filters `alicloud_polardb_node_classes` by a general-purpose node class so that the cluster can be created in an available zone. Replace `polar.mysql.x4.medium` with a node class that is available for purchase in your region and zone.
+
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
@@ -70,8 +72,6 @@ resource "alicloud_polardb_endpoint" "default" {
   endpoint_type = "Custom"
 }
 ```
-
--> **NOTE:** The example filters `alicloud_polardb_node_classes` by a general-purpose node class so that the cluster can be created in the selected zone. Replace `polar.mysql.x4.medium` with a node class that is available for purchase in your region and zone.
 
 📚 Need more examples? [VIEW MORE EXAMPLES](https://api.aliyun.com/terraform?activeTab=sample&source=Sample&sourcePath=OfficialSample:alicloud_polardb_endpoint&spm=docs.r.polardb_endpoint.example&intl_lang=EN_US)
 
