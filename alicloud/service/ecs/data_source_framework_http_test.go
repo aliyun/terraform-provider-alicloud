@@ -56,14 +56,14 @@ func newEcsLoopbackClient(t *testing.T, serverURL string) (*connectivity.AliyunC
 	return client, endpoint
 }
 
-// ecsReadReservedInstances drives one real Read of the reserved instance data
-// source. The configuration only carries strings, which is all these tests set.
-func ecsReadReservedInstances(t *testing.T, ctx context.Context, client *connectivity.AliyunClient, config map[string]string) (*datasource.ReadResponse, *reservedInstancesModel) {
+// ecsReadDataSource drives one real Read of any ECS Framework data source
+// against the loopback client. The configuration only carries strings, which is
+// all these tests set. The returned state stays null when the read fails, which
+// is how a test proves that no state was written.
+func ecsReadDataSource(t *testing.T, ctx context.Context, client *connectivity.AliyunClient, ds datasource.DataSource, config map[string]string) *datasource.ReadResponse {
 	t.Helper()
-	ds := NewReservedInstancesDataSource()
-
 	configurable, ok := ds.(datasource.DataSourceWithConfigure)
-	require.True(t, ok, "the reserved instance data source must accept the provider meta")
+	require.True(t, ok, "the data source must accept the provider meta")
 	var configureResponse datasource.ConfigureResponse
 	configurable.Configure(ctx, datasource.ConfigureRequest{ProviderData: client}, &configureResponse)
 	require.False(t, configureResponse.Diagnostics.HasError(), "configure diagnostics: %+v", configureResponse.Diagnostics)
@@ -91,11 +91,47 @@ func ecsReadReservedInstances(t *testing.T, ctx context.Context, client *connect
 	ds.Read(ctx, datasource.ReadRequest{
 		Config: tfsdk.Config{Schema: schemaResponse.Schema, Raw: tftypes.NewValue(objectType, raw)},
 	}, response)
+	return response
+}
+
+// ecsReadReservedInstances drives one real Read of the reserved instance data
+// source and decodes the state it wrote.
+func ecsReadReservedInstances(t *testing.T, ctx context.Context, client *connectivity.AliyunClient, config map[string]string) (*datasource.ReadResponse, *reservedInstancesModel) {
+	t.Helper()
+	response := ecsReadDataSource(t, ctx, client, NewReservedInstancesDataSource(), config)
 	if response.Diagnostics.HasError() {
 		return response, nil
 	}
 
 	var state reservedInstancesModel
+	require.False(t, response.State.Get(ctx, &state).HasError(), "state decode diagnostics")
+	return response, &state
+}
+
+// ecsReadAutoProvisioningGroups drives one real Read of the auto provisioning
+// group data source and decodes the state it wrote.
+func ecsReadAutoProvisioningGroups(t *testing.T, ctx context.Context, client *connectivity.AliyunClient, config map[string]string) (*datasource.ReadResponse, *autoProvisioningGroupsModel) {
+	t.Helper()
+	response := ecsReadDataSource(t, ctx, client, NewAutoProvisioningGroupsDataSource(), config)
+	if response.Diagnostics.HasError() {
+		return response, nil
+	}
+
+	var state autoProvisioningGroupsModel
+	require.False(t, response.State.Get(ctx, &state).HasError(), "state decode diagnostics")
+	return response, &state
+}
+
+// ecsReadImagePipelineExecutions drives one real Read of the image pipeline
+// execution data source and decodes the state it wrote.
+func ecsReadImagePipelineExecutions(t *testing.T, ctx context.Context, client *connectivity.AliyunClient, config map[string]string) (*datasource.ReadResponse, *imagePipelineExecutionsModel) {
+	t.Helper()
+	response := ecsReadDataSource(t, ctx, client, NewImagePipelineExecutionsDataSource(), config)
+	if response.Diagnostics.HasError() {
+		return response, nil
+	}
+
+	var state imagePipelineExecutionsModel
 	require.False(t, response.State.Get(ctx, &state).HasError(), "state decode diagnostics")
 	return response, &state
 }
@@ -391,5 +427,159 @@ func TestUnitEcsReservedInstancesReadRejectsAnEmptyBody(t *testing.T) {
 	assert.Nil(t, state)
 	for _, err := range response.Diagnostics.Errors() {
 		assert.Contains(t, fmt.Sprintf("%s %s", err.Summary(), err.Detail()), "without a JSON object body")
+	}
+}
+
+// newEcsStaticServer answers every request with the same status and body, so a
+// real Read can be pinned to one response shape.
+func newEcsStaticServer(t *testing.T, status int, body string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		if body != "" {
+			_, _ = w.Write([]byte(body))
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// ecsDataSourceRead drives one real Read of one data source and reports the
+// number of identities and the total count it wrote.
+type ecsDataSourceRead struct {
+	name string
+	read func(t *testing.T, ctx context.Context, client *connectivity.AliyunClient) (*datasource.ReadResponse, int, int64)
+}
+
+func ecsDataSourceReads() []ecsDataSourceRead {
+	return []ecsDataSourceRead{
+		{
+			name: "alicloud_ecs_auto_provisioning_groups",
+			read: func(t *testing.T, ctx context.Context, client *connectivity.AliyunClient) (*datasource.ReadResponse, int, int64) {
+				response, state := ecsReadAutoProvisioningGroups(t, ctx, client, map[string]string{"auto_provisioning_group_name": "target-group"})
+				if state == nil {
+					return response, 0, 0
+				}
+				return response, len(state.Ids.Elements()), state.TotalCount.ValueInt64()
+			},
+		},
+		{
+			name: "alicloud_ecs_image_pipeline_executions",
+			read: func(t *testing.T, ctx context.Context, client *connectivity.AliyunClient) (*datasource.ReadResponse, int, int64) {
+				response, state := ecsReadImagePipelineExecutions(t, ctx, client, map[string]string{"image_pipeline_id": "pipeline-1"})
+				if state == nil {
+					return response, 0, 0
+				}
+				return response, len(state.Ids.Elements()), state.TotalCount.ValueInt64()
+			},
+		},
+		{
+			name: "alicloud_reserved_instances",
+			read: func(t *testing.T, ctx context.Context, client *connectivity.AliyunClient) (*datasource.ReadResponse, int, int64) {
+				response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{"zone_id": "cn-hangzhou-k"})
+				if state == nil {
+					return response, 0, 0
+				}
+				return response, len(state.Ids.Elements()), state.TotalCount.ValueInt64()
+			},
+		},
+	}
+}
+
+func ecsDiagnosticsText(response *datasource.ReadResponse) string {
+	var builder strings.Builder
+	for _, err := range response.Diagnostics.Errors() {
+		builder.WriteString(err.Summary())
+		builder.WriteString(" ")
+		builder.WriteString(err.Detail())
+		builder.WriteString(" ")
+	}
+	return builder.String()
+}
+
+// A 2xx document that only carries a generic RequestId is not the empty success
+// envelope of any of the three queries: the read must fail and must not write a
+// zero result over the state.
+func TestUnitEcsDataSourceReadsRejectAGenericRequestIdBody(t *testing.T) {
+	for _, readCase := range ecsDataSourceReads() {
+		t.Run(readCase.name, func(t *testing.T) {
+			server := newEcsStaticServer(t, http.StatusOK, `{"RequestId":"fixture","error":"upstream"}`)
+			client, _ := newEcsLoopbackClient(t, server.URL)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			response, _, _ := readCase.read(t, ctx, client)
+			require.True(t, response.Diagnostics.HasError(), "a generic RequestId body must not be written as an empty result")
+			assert.True(t, response.State.Raw.IsNull(), "no state may be written when the body is not the query envelope")
+			assert.Contains(t, ecsDiagnosticsText(response), "success envelope")
+		})
+	}
+}
+
+// The documented empty envelope, which omits the container but keeps the
+// RequestId and the total count, is a successful empty read for all three
+// sources.
+func TestUnitEcsDataSourceReadsKeepTheEmptyEnvelope(t *testing.T) {
+	for _, readCase := range ecsDataSourceReads() {
+		t.Run(readCase.name, func(t *testing.T) {
+			server := newEcsStaticServer(t, http.StatusOK, `{"RequestId":"mock","TotalCount":0}`)
+			client, _ := newEcsLoopbackClient(t, server.URL)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			response, ids, total := readCase.read(t, ctx, client)
+			require.False(t, response.Diagnostics.HasError(), "diagnostics: %+v", response.Diagnostics)
+			assert.False(t, response.State.Raw.IsNull(), "a successful read writes its empty result")
+			assert.Zero(t, ids, "the empty envelope must read as an empty result")
+			assert.Zero(t, total)
+		})
+	}
+}
+
+// A failed call keeps its SDK code and message through all three read paths;
+// the failure is never treated as an empty envelope.
+func TestUnitEcsDataSourceReadsKeepTheSDKError(t *testing.T) {
+	for _, readCase := range ecsDataSourceReads() {
+		t.Run(readCase.name, func(t *testing.T) {
+			server := newEcsStaticServer(t, http.StatusForbidden, `{"RequestId":"mock","Code":"Forbidden.RAM","Message":"denied"}`)
+			client, _ := newEcsLoopbackClient(t, server.URL)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			response, _, _ := readCase.read(t, ctx, client)
+			require.True(t, response.Diagnostics.HasError(), "a failed call must stay failed")
+			assert.True(t, response.State.Raw.IsNull(), "a failed call must not write state")
+			text := ecsDiagnosticsText(response)
+			assert.Contains(t, text, "Forbidden.RAM", "the SDK error code must be preserved")
+			assert.Contains(t, text, "denied", "the SDK error message must be preserved")
+		})
+	}
+}
+
+// A 2xx error-shaped body may carry a numeric StatusCode in any shape the
+// transports produce: reading it must never panic and must keep the code and
+// message the service reported. This drives the real Read instead of calling
+// the formatter directly.
+func TestUnitEcsReadKeepsANumericErrorStatus(t *testing.T) {
+	bodies := map[string]string{
+		"json number":      `{"RequestId":"mock","Code":"InternalError","Message":"upstream","StatusCode":503}`,
+		"malformed status": `{"RequestId":"mock","Code":"InternalError","Message":"upstream","StatusCode":{"unexpected":1}}`,
+		"text status":      `{"RequestId":"mock","Code":"InternalError","Message":"upstream","StatusCode":"not-a-number"}`,
+	}
+	for name, body := range bodies {
+		t.Run(name, func(t *testing.T) {
+			server := newEcsStaticServer(t, http.StatusOK, body)
+			client, _ := newEcsLoopbackClient(t, server.URL)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			response, state := ecsReadReservedInstances(t, ctx, client, map[string]string{"zone_id": "cn-hangzhou-k"})
+			require.True(t, response.Diagnostics.HasError(), "a 2xx error body must fail the read instead of panicking")
+			assert.Nil(t, state, "no state may be written for an error body")
+			text := ecsDiagnosticsText(response)
+			assert.Contains(t, text, "InternalError", "the error code must be preserved")
+			assert.Contains(t, text, "upstream", "the error message must be preserved")
+		})
 	}
 }

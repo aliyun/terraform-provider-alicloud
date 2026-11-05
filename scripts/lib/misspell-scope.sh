@@ -2,26 +2,33 @@
 # Documentation spelling helpers shared by the strict and changed-docs checks.
 # Sourced by scripts/local-ci-check.sh and exercised by scripts/misspell-scope_test.sh.
 
-# The page that publishes the ECS status literals. It is the only page whose
-# `status` argument may be exempted; the override exists so the regression test
-# can exercise the same logic against a copy of the page.
-: "${MISSPELL_ENUM_DOC:=website/docs/d/ecs_image_pipeline_executions.html.markdown}"
+# The page that publishes the ECS status literals. The path is fixed here and is
+# not read from the environment: an override could grant the exemption to any
+# other page. A finding is only exempt when it is reported for this page, so a
+# redirect cannot turn the exception into a general one.
+readonly MISSPELL_ENUM_DOC="website/docs/d/ecs_image_pipeline_executions.html.markdown"
 
 # DescribeImagePipelineExecutions publishes CANCELLING and CANCELLED as status
 # literals, and misspell flags them. Only those literals in the `Valid values:`
-# list of the `status` argument on that one page are accepted: the exemption is
-# keyed on the exact line:column misspell reports, so the same word as ordinary
-# prose on the same line, the same literals on another page, the same phrase in
-# another paragraph of the same page, and every finding anywhere else stay
-# reported.
+# list of the `status` argument inside the `Argument Reference` section of that
+# one page are accepted: the exemption is keyed on the exact line:column
+# misspell reports, so the same word as ordinary prose on the same line, the same
+# literals on another page, the same phrase in another paragraph, in an appendix
+# or inside a fenced block, and every finding anywhere else stay reported.
 
-# misspell_enum_positions prints one `line:column` pair per accepted occurrence.
-# misspell reports the 0-based byte column of the word inside the line, so the
-# column is the offset of the literal after its opening backtick. Only the top
-# level `status` argument definition is read: an appendix, an example or another
-# argument that happens to repeat the phrase does not grant an exemption.
-misspell_enum_positions() {
+# misspell_enum_positions_from reads one document from stdin and prints one
+# `line:column` pair per accepted occurrence. misspell reports the 0-based byte
+# column of the word inside the line, so the column is the offset of the literal
+# after its opening backtick. Only the top level `status` argument definition in
+# the Argument Reference section is read: an appendix, an example, a fenced block
+# or another argument that happens to repeat the phrase does not grant an
+# exemption.
+misspell_enum_positions_from() {
   awk '
+    /^```/ { in_fence = !in_fence; next }
+    in_fence { next }
+    /^## / { in_arguments = ($0 ~ /^## Argument Reference[ \t]*$/); next }
+    !in_arguments { next }
     /^\* `status` - / && /Valid values:/ {
       start = index($0, "Valid values:")
       if (start == 0) next
@@ -38,7 +45,11 @@ misspell_enum_positions() {
         segment = substr(segment, advance + 1)
       }
     }
-  ' "$MISSPELL_ENUM_DOC"
+  '
+}
+
+misspell_enum_positions() {
+  misspell_enum_positions_from < "$MISSPELL_ENUM_DOC"
 }
 
 run_misspell_scoped() {
@@ -59,9 +70,10 @@ run_misspell_scoped() {
     echo "misspell exited with a finding status but printed nothing; the spelling check did not complete."
     return 1
   fi
-  # Source positions of the API enum declaration. The exemption is keyed on both
-  # the line and the column, not on the file or the line alone, so an ordinary
-  # uppercase sentence that happens to share the line is still reported.
+  # Source positions of the API enum declaration on the one exempted page. The
+  # exemption is keyed on both the line and the column, and on the reported
+  # path: an ordinary uppercase sentence that happens to share the line, or a
+  # finding on any other page, is still reported.
   enum_positions=$(misspell_enum_positions | paste -sd' ' -)
   remaining=$(printf '%s\n' "$output" | awk -v doc="$MISSPELL_ENUM_DOC" -v positions="$enum_positions" '
     BEGIN {
@@ -92,7 +104,7 @@ run_misspell_scoped() {
   fi
   if [ -z "$remaining" ]; then
     printf '%s\n' "$output"
-    echo "Accepted the documented API status literals CANCELLING/CANCELLED at the enum list positions."
+    echo "Accepted the documented API status literals CANCELLING/CANCELLED at the status argument of $MISSPELL_ENUM_DOC."
     return 0
   fi
   printf '%s\n' "$remaining"

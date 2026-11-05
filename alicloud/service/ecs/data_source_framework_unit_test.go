@@ -233,43 +233,46 @@ func TestUnitFwDecodeTags(t *testing.T) {
 }
 
 // A successful response must be the envelope of the action that was sent: the
-// documented container, or the RequestId an empty ECS result still carries. Any
-// other 2xx document would decode to zero records and overwrite the state.
+// documented container, or the empty envelope the action documents, which still
+// carries the RequestId and the total count. Any other 2xx document would decode
+// to zero records and overwrite the state.
 func TestUnitFwValidateQueryEnvelope(t *testing.T) {
 	assert.NoError(t, fwValidateQueryEnvelope(map[string]interface{}{
 		"RequestId":         "mock",
 		"TotalCount":        0,
 		"ReservedInstances": map[string]interface{}{"ReservedInstance": []interface{}{}},
-	}, "ReservedInstances", "DescribeReservedInstances"), "an explicit empty list is the envelope")
+	}, "ReservedInstances", "TotalCount", "DescribeReservedInstances"), "an explicit empty list is the envelope")
 
 	assert.NoError(t, fwValidateQueryEnvelope(map[string]interface{}{
 		"RequestId":  "mock",
 		"TotalCount": 0,
-	}, "ReservedInstances", "DescribeReservedInstances"), "the service omits the container for an empty result but keeps the RequestId")
+	}, "ReservedInstances", "TotalCount", "DescribeReservedInstances"), "the service omits the container for an empty result but keeps the RequestId and the total")
 
 	assert.NoError(t, fwValidateQueryEnvelope(map[string]interface{}{
 		"ReservedInstances": "not-an-object",
-	}, "ReservedInstances", "DescribeReservedInstances"), "a present container is validated by the decoder, not here")
+	}, "ReservedInstances", "TotalCount", "DescribeReservedInstances"), "a present container is validated by the decoder, not here")
 
-	nilErr := fwValidateQueryEnvelope(nil, "ReservedInstances", "DescribeReservedInstances")
+	nilErr := fwValidateQueryEnvelope(nil, "ReservedInstances", "TotalCount", "DescribeReservedInstances")
 	require.Error(t, nilErr, "a nil response is not a query envelope")
 	assert.Contains(t, nilErr.Error(), "DescribeReservedInstances")
 
 	for name, response := range map[string]map[string]interface{}{
-		"unexpected document":   {"unexpected": "shape"},
-		"error shaped body":     {"Code": "InvalidSecurityToken", "Message": "denied"},
-		"error with request id": {"RequestId": "mock", "Code": "InvalidSecurityToken", "Message": "denied"},
-		"request id not text":   {"RequestId": 7},
-		"blank request id":      {"RequestId": "  "},
-		"nil request id":        {"RequestId": nil},
+		"unexpected document":                 {"unexpected": "shape"},
+		"error shaped body":                   {"Code": "InvalidSecurityToken", "Message": "denied"},
+		"error with request id":               {"RequestId": "mock", "Code": "InvalidSecurityToken", "Message": "denied"},
+		"request id not text":                 {"RequestId": 7},
+		"blank request id":                    {"RequestId": "  "},
+		"nil request id":                      {"RequestId": nil},
+		"request id without the count":        {"RequestId": "fixture", "error": "upstream"},
+		"request id with an unreadable count": {"RequestId": "mock", "TotalCount": "many"},
+		"request id with a negative count":    {"RequestId": "mock", "TotalCount": -1},
 	} {
-		err := fwValidateQueryEnvelope(response, "ReservedInstances", "DescribeReservedInstances")
+		err := fwValidateQueryEnvelope(response, "ReservedInstances", "TotalCount", "DescribeReservedInstances")
 		if err == nil {
 			t.Errorf("%s must be rejected instead of being read as an empty result", name)
 			continue
 		}
 		assert.Contains(t, err.Error(), "DescribeReservedInstances")
-		assert.Contains(t, err.Error(), "success envelope")
 	}
 }
 
@@ -621,6 +624,18 @@ func TestUnitFwCollectNumberedPagesValidatesTheInt32PageRange(t *testing.T) {
 	})
 	assert.Error(t, err, "the loop must stop instead of incrementing past the largest page number")
 	assert.Equal(t, []int64{math.MaxInt32}, requested)
+
+	// Both bounds at their maximum: the skipped-row arithmetic stays inside
+	// int64 without a clamp, and the single short page ends the read normally.
+	requested = requested[:0]
+	objects, totalCount, err := fwCollectNumberedPages(context.Background(), 10, math.MaxInt32, math.MaxInt32, autoProvisioningGroupsAction, "AutoProvisioningGroupId", func(pageNumber int64) (fwNumberedPage, error) {
+		requested = append(requested, pageNumber)
+		return fwNumberedPage{items: []map[string]interface{}{{"AutoProvisioningGroupId": "apg-max"}}}, nil
+	})
+	require.NoError(t, err, "the largest accepted page bounds must not overflow")
+	assert.Equal(t, []int64{math.MaxInt32}, requested)
+	assert.Len(t, objects, 1)
+	assert.Equal(t, int64(1), totalCount)
 }
 
 // An explicit TotalCount of 0 is a real total: it must be reported as 0 and it

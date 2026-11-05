@@ -112,13 +112,21 @@ func TestAccAliCloudECSAutoProvisioningGroupsDataSource(t *testing.T) {
 				),
 			},
 			{
-				// The type filter must narrow the result as the request asks:
-				// every returned group carries the requested type, and the
-				// count drops below the unfiltered count whenever the account
-				// holds a group of another type.
-				Config: autoProvisioningGroupsConfig("  types = [data.alicloud_ecs_auto_provisioning_groups.all.groups.0.auto_provisioning_group_type]\n"),
+				// The type filter must narrow the result as the request asks.
+				// One read per documented type is compared with the unfiltered
+				// read: every row carries the requested type, no group is
+				// returned by two different type filters, and the three reads
+				// together cover the unfiltered result exactly. A server that
+				// ignores the filter returns every group for each type, so the
+				// sum and the overlap assertions fail even when the account
+				// holds groups of a single type.
+				Config: autoProvisioningGroupsTypesConfig(),
 				Check: resource.ComposeTestCheckFunc(
-					checkAutoProvisioningGroupsTypesFilter(resourceId, allResourceId),
+					checkAutoProvisioningGroupsTypesPartition(allResourceId, map[string]string{
+						"request":   "data.alicloud_ecs_auto_provisioning_groups.type_request",
+						"maintain":  "data.alicloud_ecs_auto_provisioning_groups.type_maintain",
+						"candidate": "data.alicloud_ecs_auto_provisioning_groups.type_candidate",
+					}),
 				),
 			},
 			{
@@ -233,56 +241,84 @@ func autoProvisioningGroupsStateCount(state *terraform.State, resourceId, key st
 	return count, nil
 }
 
-// checkAutoProvisioningGroupsTypesFilter proves the type filter actually narrows
-// the result: every row carries the requested type, and the count stays below
-// the unfiltered one whenever the account holds a group of another type.
-func checkAutoProvisioningGroupsTypesFilter(resourceId, allResourceId string) resource.TestCheckFunc {
+// autoProvisioningGroupsTypesConfig declares the unfiltered read together with
+// one read per documented auto provisioning group type. The type filter cannot
+// be derived from the account contents, so the partition of the unfiltered
+// result is what proves the filter narrows the query.
+func autoProvisioningGroupsTypesConfig() string {
+	return `
+data "alicloud_ecs_auto_provisioning_groups" "all" {
+}
+
+data "alicloud_ecs_auto_provisioning_groups" "type_request" {
+  types = ["request"]
+}
+
+data "alicloud_ecs_auto_provisioning_groups" "type_maintain" {
+  types = ["maintain"]
+}
+
+data "alicloud_ecs_auto_provisioning_groups" "type_candidate" {
+  types = ["candidate"]
+}
+`
+}
+
+// checkAutoProvisioningGroupsTypesPartition proves the type filter narrows the
+// result without depending on the account holding more than one type: every row
+// of each type-filtered read carries the requested type, no group appears under
+// two types, the reads together cover the unfiltered result, and their row
+// counts add up to it. A server that ignores `types` returns the full result for
+// each of the three reads, which fails the overlap and the sum assertions.
+func checkAutoProvisioningGroupsTypesPartition(allResourceId string, typeResources map[string]string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		allCount, err := autoProvisioningGroupsStateCount(state, allResourceId, "groups.#")
 		if err != nil {
 			return err
 		}
-		if allCount < 1 {
-			return fmt.Errorf("%s did not return a group to filter by type", allResourceId)
-		}
-		target, err := autoProvisioningGroupsStateAttribute(state, allResourceId, "groups.0.auto_provisioning_group_type")
-		if err != nil {
-			return err
-		}
-		if target == "" {
-			return fmt.Errorf("%s did not return a group type to filter by", allResourceId)
-		}
-		count, err := autoProvisioningGroupsStateCount(state, resourceId, "groups.#")
-		if err != nil {
-			return err
-		}
-		if count < 1 {
-			return fmt.Errorf("the type filter %q matched no group although the unfiltered read returned one", target)
-		}
-		if count > allCount {
-			return fmt.Errorf("the type filter returned %d groups while only %d exist", count, allCount)
-		}
-		otherType := false
+		allIds := make(map[string]struct{}, allCount)
 		for index := 0; index < allCount; index++ {
-			groupType, err := autoProvisioningGroupsStateAttribute(state, allResourceId, fmt.Sprintf("groups.%d.auto_provisioning_group_type", index))
+			id, err := autoProvisioningGroupsStateAttribute(state, allResourceId, fmt.Sprintf("ids.%d", index))
 			if err != nil {
 				return err
 			}
-			if groupType != target {
-				otherType = true
-			}
+			allIds[id] = struct{}{}
 		}
-		if otherType && count >= allCount {
-			return fmt.Errorf("the type filter did not narrow %d groups of mixed types down", allCount)
-		}
-		for index := 0; index < count; index++ {
-			groupType, err := autoProvisioningGroupsStateAttribute(state, resourceId, fmt.Sprintf("groups.%d.auto_provisioning_group_type", index))
+
+		seenTypes := make(map[string]string, allCount)
+		filteredRows := 0
+		for groupType, resourceId := range typeResources {
+			count, err := autoProvisioningGroupsStateCount(state, resourceId, "groups.#")
 			if err != nil {
 				return err
 			}
-			if groupType != target {
-				return fmt.Errorf("group %d is %q, want the filtered type %q", index, groupType, target)
+			filteredRows += count
+			for index := 0; index < count; index++ {
+				returnedType, err := autoProvisioningGroupsStateAttribute(state, resourceId, fmt.Sprintf("groups.%d.auto_provisioning_group_type", index))
+				if err != nil {
+					return err
+				}
+				if returnedType != groupType {
+					return fmt.Errorf("%s returned group %d of type %q for the type filter %q", resourceId, index, returnedType, groupType)
+				}
+				id, err := autoProvisioningGroupsStateAttribute(state, resourceId, fmt.Sprintf("ids.%d", index))
+				if err != nil {
+					return err
+				}
+				if previousType, duplicate := seenTypes[id]; duplicate {
+					return fmt.Errorf("group %q was returned by both the %q and the %q type filters", id, previousType, groupType)
+				}
+				seenTypes[id] = groupType
+				if _, ok := allIds[id]; !ok {
+					return fmt.Errorf("%s returned %q, which is not in the unfiltered result", resourceId, id)
+				}
 			}
+		}
+		if filteredRows != allCount {
+			return fmt.Errorf("the three type filters returned %d rows in total while the unfiltered read returned %d; a filter that the server ignored duplicates rows", filteredRows, allCount)
+		}
+		if len(seenTypes) != allCount {
+			return fmt.Errorf("the three type filters covered %d groups while the unfiltered read returned %d", len(seenTypes), allCount)
 		}
 		return nil
 	}

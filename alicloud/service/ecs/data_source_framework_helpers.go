@@ -430,28 +430,43 @@ func fwRpcPost(ctx context.Context, client *connectivity.AliyunClient, typeName,
 // A success envelope carries the documented container of the action, even when
 // the list itself is empty. The ECS RPC omits the container when nothing
 // matches, so a response without it is accepted only when it still carries the
-// RequestId that every ECS response includes; that is what separates a
-// legitimate empty result from a document of another API, a proxy page or an
-// error shape. A present container is decoded by fwDecodeRecordList, which
-// reports a member or entry of the wrong shape.
-func fwValidateQueryEnvelope(response map[string]interface{}, container, action string) error {
+// rest of that action's envelope: the RequestId every ECS response includes and
+// the total count the action documents. A generic object that happens to carry
+// a RequestId ({"RequestId":"fixture","error":"upstream"}) is therefore not read
+// as an empty result, while the documented empty envelope
+// ({"RequestId":"...","TotalCount":0}) still is. A present container is decoded
+// by fwDecodeRecordList, which reports a member or entry of the wrong shape.
+func fwValidateQueryEnvelope(response map[string]interface{}, container, countKey, action string) error {
 	if response == nil {
 		return fmt.Errorf("%s returned an empty response body", action)
 	}
 	if _, ok := response[container]; ok {
 		return nil
 	}
-	if raw, ok := response["RequestId"]; ok {
-		if requestId, isString := raw.(string); isString && strings.TrimSpace(requestId) != "" {
-			if _, hasCode := response["Code"]; hasCode {
-				// An error document can carry the request id as well; it is not
-				// an empty result of the query.
-				return fmt.Errorf("%s returned an error document instead of the %s member of its success envelope", action, container)
-			}
-			return nil
-		}
+	if _, hasCode := response["Code"]; hasCode {
+		// An error document is not an empty result of the query, even when it
+		// carries a RequestId.
+		return fmt.Errorf("%s returned an error document instead of the %s member of its success envelope", action, container)
 	}
-	return fmt.Errorf("%s returned a response without the %s member or a RequestId; it is not this action's success envelope and is not treated as an empty result", action, container)
+	raw, ok := response["RequestId"]
+	if !ok {
+		return fmt.Errorf("%s returned a response without the %s member or a RequestId; it is not this action's success envelope and is not treated as an empty result", action, container)
+	}
+	requestId, isString := raw.(string)
+	if !isString || strings.TrimSpace(requestId) == "" {
+		return fmt.Errorf("%s returned a response without the %s member or a valid RequestId; it is not this action's success envelope and is not treated as an empty result", action, container)
+	}
+	// The container is omitted when nothing matched, and the count member is
+	// part of the documented success envelope of this action. Requiring it keeps
+	// any other RequestId-bearing document from being read as an empty result.
+	rawCount, ok := response[countKey]
+	if !ok || rawCount == nil {
+		return fmt.Errorf("%s returned neither the %s member nor %s, which its empty success envelope still carries; it is not this action's success envelope and is not treated as an empty result", action, container, countKey)
+	}
+	if _, valid := fwParseCount(rawCount); !valid {
+		return fmt.Errorf("%s returned %s as %T instead of a non-negative integer; it is not this action's success envelope and is not treated as an empty result", action, countKey, rawCount)
+	}
+	return nil
 }
 
 // fwDecodeRecordList decodes a list of records nested under
@@ -711,7 +726,8 @@ type fwNumberedPage struct {
 func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSize int64, action, identityKey string, fetch func(pageNumber int64) (fwNumberedPage, error)) ([]map[string]interface{}, int64, error) {
 	// PageNumber and PageSize are int32 on the wire. Bounding the two inputs to
 	// that range keeps `skipped` inside int64 and keeps every page number this
-	// loop sends representable, instead of wrapping around after it is cast.
+	// loop sends representable, instead of wrapping around after it is cast:
+	// (MaxInt32-1)*MaxInt32 is still far below MaxInt64.
 	if startPage < 1 || startPage > math.MaxInt32 {
 		return nil, 0, fmt.Errorf("%s cannot start at page %d: the start page must be between 1 and %d", action, startPage, math.MaxInt32)
 	}
@@ -722,9 +738,6 @@ func fwCollectNumberedPages(ctx context.Context, maxPages int, startPage, pageSi
 	totalCount := int64(0)
 	totalKnown := false
 	skipped := (startPage - 1) * pageSize
-	if skipped < 0 {
-		skipped = 0
-	}
 	pageNumber := startPage
 	seen := make(map[string]struct{})
 	for page := 0; page < maxPages; page++ {

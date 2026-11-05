@@ -13,6 +13,11 @@ trap 'rm -rf "$tmpdir"' EXIT
 enum_doc="website/docs/d/ecs_image_pipeline_executions.html.markdown"
 other_doc="website/docs/d/reserved_instances.html.markdown"
 
+if [ "$MISSPELL_ENUM_DOC" != "$enum_doc" ]; then
+  echo "FAIL: the exemption page must be the fixed documented page, got $MISSPELL_ENUM_DOC"
+  exit 1
+fi
+
 # The exemption is keyed on the real source position, so the stand-in binary
 # reports findings on the exact line and column of the API enum literals, on an
 # ordinary prose line of the same page, and at a wrong column of the enum line.
@@ -70,13 +75,14 @@ case "$mode" in
     fi
     exit 0
     ;;
-  same_page_paragraph)
-    # Another paragraph of the same page repeats the enum phrase. Only the
-    # status argument definition may be exempt, so these findings stay reported.
+  duplicate_sections)
+    # Another paragraph, an appendix or a fenced block of the same page repeats
+    # the enum phrase at the shape of the status argument. Only the Argument
+    # Reference definition may be exempt, so these findings stay reported.
     if [ "$is_enum_page" -eq 1 ]; then
       printf '%s\n' \
-        "$last:${FAKE_PARAGRAPH_LINE}:${FAKE_PARAGRAPH_COL_FIRST}: \"CANCELLING\" is a misspelling of \"CANCELING\"" \
-        "$last:${FAKE_PARAGRAPH_LINE}:${FAKE_PARAGRAPH_COL_SECOND}: \"CANCELLED\" is a misspelling of \"CANCELED\""
+        "$last:${FAKE_DUPLICATE_LINE}:${FAKE_DUPLICATE_COL_FIRST}: \"CANCELLING\" is a misspelling of \"CANCELING\"" \
+        "$last:${FAKE_DUPLICATE_LINE}:${FAKE_DUPLICATE_COL_SECOND}: \"CANCELLED\" is a misspelling of \"CANCELED\""
       exit 2
     fi
     exit 0
@@ -160,37 +166,67 @@ expect "changed docs same line wrong column rejected" fail same_line_wrong_colum
 expect "changed docs prose rejected" fail prose run_misspell_changed_docs "$(printf '%s\n%s' "$enum_doc" "$other_doc")"
 expect "changed docs mixed findings rejected" fail mixed run_misspell_changed_docs "$(printf '%s\n%s' "$enum_doc" "$other_doc")"
 expect "changed docs empty tool failure rejected" fail empty run_misspell_changed_docs "$enum_doc"
+expect "changed docs tool crash rejected" fail crash run_misspell_changed_docs "$enum_doc"
+expect "changed docs usage error rejected" fail usage run_misspell_changed_docs "$enum_doc"
 
-# Another paragraph of the same page that repeats the enum phrase must not be
-# exempt. The fixture is a copy of the real page with such a paragraph appended,
-# so the accepted positions are computed from a page that contains the duplicate.
-paragraph_line='* `other` - (Optional, String) The same words are repeated in this paragraph. Valid values: `CANCELLING` and `CANCELLED`.'
-fixture_doc="$tmpdir/ecs_image_pipeline_executions.html.markdown"
-cp "$enum_doc" "$fixture_doc"
-paragraph_line_number=$(( $(wc -l < "$fixture_doc") + 1 ))
-printf '%s\n' "$paragraph_line" >> "$fixture_doc"
-paragraph_col_first="$(awk -v line="$paragraph_line" 'BEGIN { print index(line, "`CANCELLING`") }')"
-paragraph_col_second="$(awk -v line="$paragraph_line" 'BEGIN { print index(line, "`CANCELLED`") }')"
-export FAKE_PARAGRAPH_LINE="$paragraph_line_number"
-export FAKE_PARAGRAPH_COL_FIRST="$paragraph_col_first"
-export FAKE_PARAGRAPH_COL_SECOND="$paragraph_col_second"
-
-saved_enum_doc="$MISSPELL_ENUM_DOC"
-MISSPELL_ENUM_DOC="$fixture_doc"
-fixture_positions="$(misspell_enum_positions)"
-fixture_position_count="$(printf '%s\n' "$fixture_positions" | grep -c .)"
-if [ "$fixture_position_count" -ne 2 ]; then
-  echo "FAIL: expected the two status literals of the fixture page, got: $fixture_positions"
+# The page itself publishes an Example Usage fenced block before the argument
+# list. The parser must still find exactly the two status literals of the
+# Argument Reference argument.
+argument_reference_line="$(grep -n '^## Argument Reference' "$enum_doc" | head -1 | cut -d: -f1)"
+if [ -z "$argument_reference_line" ]; then
+  echo "FAIL: the Argument Reference section was not found in $enum_doc"
   failures=$((failures + 1))
 fi
-if printf '%s\n' "$fixture_positions" | grep -qx "${paragraph_line_number}:${paragraph_col_first}"; then
-  echo "FAIL: the repeated enum phrase in another paragraph was exempted"
-  failures=$((failures + 1))
-fi
-expect "strict same page paragraph rejected" fail same_page_paragraph run_misspell_scoped "$fixture_doc"
-expect "strict fixture page keeps the status literals" pass literals run_misspell_scoped "$fixture_doc"
-expect "changed docs same page paragraph rejected" fail same_page_paragraph run_misspell_changed_docs "$fixture_doc"
-MISSPELL_ENUM_DOC="$saved_enum_doc"
+
+# A duplicate of the status argument outside the Argument Reference section (an
+# appendix), and one inside a fenced block of that section, must not be exempt.
+duplicate_line='* `status` - (Optional, String) Valid values: `CANCELLING` and `CANCELLED`.'
+duplicate_col_first="$(awk -v line="$duplicate_line" 'BEGIN { print index(line, "`CANCELLING`") }')"
+duplicate_col_second="$(awk -v line="$duplicate_line" 'BEGIN { print index(line, "`CANCELLED`") }')"
+export FAKE_DUPLICATE_COL_FIRST="$duplicate_col_first"
+export FAKE_DUPLICATE_COL_SECOND="$duplicate_col_second"
+
+paragraph_fixture="$tmpdir/paragraph/ecs_image_pipeline_executions.html.markdown"
+mkdir -p "$(dirname "$paragraph_fixture")"
+cp "$enum_doc" "$paragraph_fixture"
+paragraph_line_number=$(( $(wc -l < "$paragraph_fixture") + 1 ))
+printf '%s\n' "$duplicate_line" >> "$paragraph_fixture"
+
+appendix_fixture="$tmpdir/appendix/ecs_image_pipeline_executions.html.markdown"
+mkdir -p "$(dirname "$appendix_fixture")"
+{
+  cat "$enum_doc"
+  printf '%s\n' '## Appendix' "$duplicate_line"
+} > "$appendix_fixture"
+appendix_line_number=$(( $(wc -l < "$enum_doc") + 2 ))
+
+fence_fixture="$tmpdir/fence/ecs_image_pipeline_executions.html.markdown"
+mkdir -p "$(dirname "$fence_fixture")"
+awk -v heading="$argument_reference_line" -v line="$duplicate_line" '
+  { print }
+  NR == heading { print "```hcl"; print line; print "```" }
+' "$enum_doc" > "$fence_fixture"
+fence_line_number=$(( argument_reference_line + 2 ))
+
+for fixture in "paragraph:$paragraph_fixture:$paragraph_line_number" "appendix:$appendix_fixture:$appendix_line_number" "fence:$fence_fixture:$fence_line_number"; do
+  fixture_name="${fixture%%:*}"
+  fixture_rest="${fixture#*:}"
+  fixture_doc="${fixture_rest%%:*}"
+  fixture_line="${fixture_rest##*:}"
+  positions="$(misspell_enum_positions_from < "$fixture_doc")"
+  position_count="$(printf '%s\n' "$positions" | grep -c .)"
+  if [ "$position_count" -ne 2 ]; then
+    echo "FAIL: the $fixture_name duplicate changed the accepted positions of $fixture_doc: $positions"
+    failures=$((failures + 1))
+  fi
+  if printf '%s\n' "$positions" | grep -qx "${fixture_line}:${duplicate_col_first}"; then
+    echo "FAIL: the $fixture_name duplicate was exempted"
+    failures=$((failures + 1))
+  fi
+  export FAKE_DUPLICATE_LINE="$fixture_line"
+  expect "strict $fixture_name copy is not exempt" fail duplicate_sections run_misspell_scoped "$fixture_doc"
+  expect "changed docs $fixture_name copy is not exempt" fail duplicate_sections run_misspell_changed_docs "$fixture_doc"
+done
 
 if [ "$failures" -ne 0 ]; then
   echo "spelling scope test: $failures failure(s)"
