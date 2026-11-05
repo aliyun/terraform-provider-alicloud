@@ -13,6 +13,10 @@ func ServicePackage() conns.ServicePackage {
 				TypeName: "alicloud_dts_check_job",
 				Factory:  NewCheckJobResource,
 			},
+			{
+				TypeName: "alicloud_dts_gad_instance",
+				Factory:  NewGadInstanceResource,
+			},
 		},
 		SDKResources: []conns.SDKResource{
 			{

@@ -5,13 +5,14 @@ import (
 	"log"
 	"time"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/validators"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceJobMonitorRule() *schema.Resource {
@@ -42,13 +43,13 @@ func ResourceJobMonitorRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Y", "N"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"Y", "N"}, false),
 			},
 			"type": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"delay", "error"}, false),
+				ValidateFunc: validators.StringInSlice([]string{"delay", "error"}, false),
 			},
 		},
 	}

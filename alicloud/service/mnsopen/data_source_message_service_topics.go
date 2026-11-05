@@ -1,0 +1,254 @@
+package mnsopen
+
+import (
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	tfconvert "github.com/aliyun/terraform-provider-alicloud/alicloud/convert"
+	tferrs "github.com/aliyun/terraform-provider-alicloud/alicloud/errs"
+	tfhelper "github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	tflogs "github.com/aliyun/terraform-provider-alicloud/alicloud/logs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func dataSourceAlicloudMessageServiceTopics() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceAlicloudMessageServiceTopicsRead,
+		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsValidRegExp,
+			},
+			"topic_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  tfhelper.PageSizeLarge,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"topics": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"topic_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"message_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"max_message_size": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"message_retention_period": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"logging_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"topic_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"topic_inner_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"last_modify_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func dataSourceAlicloudMessageServiceTopicsRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "ListTopic"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("topic_name"); ok {
+		request["TopicName"] = v
+	}
+
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNum"] = v.(int)
+	} else {
+		request["PageNum"] = 1
+	}
+
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = tfhelper.PageSizeLarge
+	}
+
+	var objects []map[string]interface{}
+	var topicNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return tferrs.WrapError(err)
+		}
+		topicNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var response map[string]interface{}
+	var err error
+	for {
+		wait := tfhelper.IncrementalWait(3*time.Second, 3*time.Second)
+		err = retry.Retry(5*time.Minute, func() *retry.RetryError {
+			response, err = client.RpcPost("Mns-open", "2022-01-19", action, nil, request, true)
+			if err != nil {
+				if tfhelper.NeedRetry(err) {
+					wait()
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		tflogs.AddDebug(action, response, request)
+		if err != nil {
+			return tferrs.WrapErrorf(err, tferrs.DataDefaultErrorMsg, "alicloud_message_service_topics", action, tferrs.AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return tferrs.WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		resp, err := jsonpath.Get("$.Data.PageData", response)
+		if err != nil {
+			return tferrs.WrapErrorf(err, tferrs.FailedGetAttributeMsg, action, "$.Data.PageData", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if topicNameRegex != nil && !topicNameRegex.MatchString(fmt.Sprint(item["TopicName"])) {
+				continue
+			}
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["TopicName"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
+		}
+		if len(result) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNum"] = request["PageNum"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+
+		message_countVal, err := tfconvert.FormatInt(object["MessageCount"])
+		if err != nil {
+			return err
+		}
+		max_message_sizeVal, err := tfconvert.FormatInt(object["MaxMessageSize"])
+		if err != nil {
+			return err
+		}
+		message_retention_periodVal, err := tfconvert.FormatInt(object["MessageRetentionPeriod"])
+		if err != nil {
+			return err
+		}
+
+		last_modify_timeVal, err := tfconvert.FormatInt(object["LastModifyTime"])
+		if err != nil {
+			return err
+		}
+		create_timeVal, err := tfconvert.FormatInt(object["CreateTime"])
+		if err != nil {
+			return err
+		}
+		mapping := map[string]interface{}{
+			"id":                       fmt.Sprint(object["TopicName"]),
+			"topic_name":               fmt.Sprint(object["TopicName"]),
+			"message_count":            message_countVal,
+			"max_message_size":         max_message_sizeVal,
+			"message_retention_period": message_retention_periodVal,
+			"logging_enabled":          object["LoggingEnabled"],
+			"topic_url":                object["TopicUrl"],
+			"topic_inner_url":          object["TopicInnerUrl"],
+			"last_modify_time":         last_modify_timeVal,
+			"create_time":              create_timeVal,
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["TopicName"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(tfhelper.DataResourceIdHash(ids))
+	if err := d.Set("ids", ids); err != nil {
+		return tferrs.WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return tferrs.WrapError(err)
+	}
+
+	if err := d.Set("topics", s); err != nil {
+		return tferrs.WrapError(err)
+	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		tfhelper.WriteToFile(output.(string), s)
+	}
+
+	return nil
+}

@@ -13,13 +13,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
+	"time"
 
 	"github.com/aliyun/credentials-go/credentials"
 	"github.com/aliyun/credentials-go/credentials/providers"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/features"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/helper"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -131,16 +131,18 @@ func Provider() *schema.Provider {
 				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
 			"client_read_timeout": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 60000),
-				Description: descriptions["client_read_timeout"],
+				Type:         schema.TypeInt,
+				Optional:     true,
+				DefaultFunc:  schema.EnvDefaultFunc("CLIENT_READ_TIMEOUT", 60000),
+				ValidateFunc: validation.IntAtLeast(0),
+				Description:  descriptions["client_read_timeout"],
 			},
 			"client_connect_timeout": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 60000),
-				Description: descriptions["client_connect_timeout"],
+				Type:         schema.TypeInt,
+				Optional:     true,
+				DefaultFunc:  schema.EnvDefaultFunc("CLIENT_CONNECT_TIMEOUT", 60000),
+				ValidateFunc: validation.IntAtLeast(0),
+				Description:  descriptions["client_connect_timeout"],
 			},
 			"source_ip": {
 				Type:        schema.TypeString,
@@ -173,463 +175,9 @@ func Provider() *schema.Provider {
 				Description: descriptions["max_retry_timeout"],
 			},
 		},
-		DataSourcesMap: map[string]*schema.Resource{
-			// account
-			"alicloud_account": dataSourceAlicloudAccount(),
-
-			// ack
-
-			// adb resources and data sources are registered via service/adb.ServicePackage()
-			// (provider/registry); see alicloud/service/adb/register.go.
-
-			// alikafka
-
-			// amqp
-
-			// api — registered via alicloud/service/apigateway.ServicePackage()
-
-			// apig
-
-			// brain
-
-			// bss
-
-			// caller
-			"alicloud_caller_identity": dataSourceAlicloudCallerIdentity(),
-
-			// cassandra
-
-			// chatbot
-
-			// click
-			// clickhouse resources/data sources migrated to alicloud/service/clickhouse
-
-			// cloud
-
-			// compute
-
-			// config
-
-			// cs
-
-			// das
-
-			// data
-
-			// database
-
-			// dataworks
-
-			// db (registered in alicloud/service/rds)
-
-			// ddoscoo
-
-			// direct
-
-			// disks
-
-			// dms
-			"alicloud_dms_enterprise_instances":       dataSourceAlicloudDmsEnterpriseInstances(),
-			"alicloud_dms_enterprise_users":           dataSourceAlicloudDmsEnterpriseUsers(),
-			"alicloud_dms_user_tenants":               dataSourceAlicloudDmsUserTenants(),
-			"alicloud_dms_enterprise_proxies":         dataSourceAlicloudDmsEnterpriseProxies(),
-			"alicloud_dms_enterprise_proxy_accesses":  dataSourceAlicloudDmsEnterpriseProxyAccesses(),
-			"alicloud_dms_enterprise_logic_databases": dataSourceAlicloudDmsEnterpriseLogicDatabases(),
-			"alicloud_dms_enterprise_databases":       dataSourceAlicloudDmsEnterpriseDatabases(),
-
-			// drds
-
-			// dts
-			// (registered via dts.ServicePackage)
-
-			// ecd
-
-			// ecp
-
-			// ecs
-
-			// edas
-
-			// ehpc
-
-			// eip
-
-			// eips
-
-			// elasticsearch
-
-			// enhanced
-
-			// ens
-
-			// esa
-
-			// event
-
-			// express
-
-			// fc
-
-			// fcv3 (migrated to alicloud/service/fcv3; registered via registry)
-
-			// file
-			"alicloud_file_crc64_checksum": dataSourceAlicloudFileCRC64Checksum(),
-
-			// forward
-
-			// ga
-			// ga types are registered via service/ga.ServicePackage().
-
-			// governance
-
-			// gpdb (registered via alicloud/service/gpdb.ServicePackage)
-			// graph (gdb migrated to alicloud/service/gdb)
-
-			// havips
-
-			// hbase
-
-			// hbr
-
-			// images
-
-			// instance
-
-			// instances
-
-			// key
-
-			// kms
-
-			// kvstore
-
-			// market
-
-			// maxcompute
-
-			// message
-			"alicloud_message_service_queues":        dataSourceAlicloudMessageServiceQueues(),
-			"alicloud_message_service_topics":        dataSourceAlicloudMessageServiceTopics(),
-			"alicloud_message_service_subscriptions": dataSourceAlicloudMessageServiceSubscriptions(),
-
-			// mns
-
-			// mse
-
-			// nas
-
-			// nat
-
-			// network
-
-			// ocean
-			// alicloud_ocean_base_instances is declared by service/oceanbasepro.ServicePackage().
-
-			// oos
-
-			// oss
-			// ots
-
-			// polardb
-
-			// privatelink
-
-			// pvtz
-
-			// quick
-			// quickbi types are registered via service/quickbi.ServicePackage().
-
-			// quotas
-
-			// ram
-
-			// rds (registered in alicloud/service/rds)
-
-			// realtime
-
-			// redis
-
-			// resource
-
-			// ros
-			// route
-
-			// router
-
-			// sae
-
-			// sag
-
-			// scdn
-
-			// security
-
-			// service
-
-			// smartag
-
-			// snapshots
-
-			// snat
-
-			// ssl
-
-			// tag
-
-			// threat
-
-			// tsdb
-
-			// vod
-
-			// vpc
-
-			// vpcs
-
-			// vpn
-
-			// vswitches
-
-			// waf
-			// alicloud_waf_* resources and data sources are registered via
-			// service/waf.ServicePackage() in provider/registry/registry.go.
-			// alicloud_wafv3_* types are registered via
-			// service/wafopenapi.ServicePackage() in provider/registry/registry.go.
-
-			// yundun
-
-			// zones
-		},
-		ResourcesMap: map[string]*schema.Resource{
-			// ack
-
-			// adb resources and data sources are registered via service/adb.ServicePackage()
-			// (provider/registry); see alicloud/service/adb/register.go.
-
-			// aligreen
-
-			// alikafka
-
-			// amqp
-
-			// api — registered via alicloud/service/apigateway.ServicePackage()
-
-			// apig
-
-			// auto
-
-			// brain
-
-			// cassandra
-
-			// chatbot
-
-			// click
-			// clickhouse resources migrated to alicloud/service/clickhouse
-
-			// cloud
-
-			// compute
-
-			// config
-			// copy
-
-			// cs
-
-			// das
-
-			// data
-
-			// database
-
-			// db (registered in alicloud/service/rds)
-
-			// ddoscoo
-
-			// direct
-
-			// disk
-
-			// dms
-			"alicloud_dms_enterprise_workspace":          resourceAliCloudDmsEnterpriseWorkspace(),
-			"alicloud_dms_enterprise_authority_template": resourceAliCloudDMSEnterpriseAuthorityTemplate(),
-			"alicloud_dms_enterprise_instance":           resourceAlicloudDmsEnterpriseInstance(),
-			"alicloud_dms_enterprise_user":               resourceAlicloudDmsEnterpriseUser(),
-			"alicloud_dms_enterprise_proxy":              resourceAlicloudDmsEnterpriseProxy(),
-			"alicloud_dms_enterprise_proxy_access":       resourceAlicloudDmsEnterpriseProxyAccess(),
-			"alicloud_dms_enterprise_logic_database":     resourceAlicloudDmsEnterpriseLogicDatabase(),
-
-			// drds
-
-			// dts
-			// (registered via dts.ServicePackage)
-
-			// ecd
-
-			// ecp
-
-			// ecs
-
-			// edas
-
-			// ehpc
-
-			// eip
-
-			// elasticsearch
-
-			// ens
-
-			// esa
-
-			// event
-
-			// express
-
-			// fc
-
-			// fcv3 (migrated to alicloud/service/fcv3; registered via registry)
-
-			// forward
-
-			// ga
-			// ga types are registered via service/ga.ServicePackage().
-
-			// governance
-
-			// gpdb (registered via alicloud/service/gpdb.ServicePackage)
-			// graph (gdb migrated to alicloud/service/gdb)
-
-			// havip
-
-			// hbase
-
-			// hbr
-
-			// image
-
-			// instance
-
-			// key
-
-			// kms
-
-			// kvstore
-
-			// launch
-
-			// live
-
-			// market
-
-			// maxcompute
-
-			// message
-			"alicloud_message_service_account_logging": resourceAliCloudMessageServiceAccountLogging(),
-			"alicloud_message_service_event_rule":      resourceAliCloudMessageServiceEventRule(),
-			"alicloud_message_service_service":         resourceAliCloudMessageServiceService(),
-			"alicloud_message_service_endpoint_acl":    resourceAliCloudMessageServiceEndpointAcl(),
-			"alicloud_message_service_endpoint":        resourceAliCloudMessageServiceEndpoint(),
-			"alicloud_message_service_queue":           resourceAliCloudMessageServiceQueue(),
-			"alicloud_message_service_topic":           resourceAliCloudMessageServiceTopic(),
-			"alicloud_message_service_subscription":    resourceAliCloudMessageServiceSubscription(),
-
-			// milvus
-
-			// mns
-
-			// mse
-
-			// nas
-
-			// nat
-
-			// network
-
-			// ocean
-			// alicloud_ocean_base_instance is declared by service/oceanbasepro.ServicePackage().
-
-			// oos
-
-			// oss
-			// ots
-
-			// pai
-
-			// polar
-
-			// polardb
-
-			// privatelink
-
-			// pvtz
-
-			// quick
-			// quickbi types are registered via service/quickbi.ServicePackage().
-
-			// quotas
-
-			// ram
-
-			// rds (registered in alicloud/service/rds)
-
-			// realtime
-
-			// redis
-
-			// reserved
-
-			// resource
-
-			// ros
-			// route
-
-			// router
-
-			// sae
-
-			// sag
-
-			// scdn
-
-			// security
-
-			// service
-
-			// smartag
-
-			// sms
-
-			// snapshot
-
-			// snat
-
-			// ssl
-
-			// star: alicloud_star_rocks_* migrated to alicloud/service/starrocks; see starrocks.ServicePackage().
-
-			// subnet
-
-			// tag
-
-			// threat
-
-			// tsdb
-
-			// vod
-
-			// vpc
-
-			// vpn
-
-			// vswitch
-
-			// waf
-			// alicloud_waf_* resources and data sources are registered via
-			// service/waf.ServicePackage() in provider/registry/registry.go.
-
-			// yundun
-		},
+		// Product declarations are assembled from provider/registry below.
+		DataSourcesMap: map[string]*schema.Resource{},
+		ResourcesMap:   map[string]*schema.Resource{},
 	}
 	provider.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		return providerConfigure(ctx, d, provider)
@@ -767,6 +315,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		accessKey, secretKey, securityToken = *creds.AccessKeyId, *creds.AccessKeySecret, *creds.SecurityToken
 	}
 
+	var credentialsURI, credentialsURIExpiration string
 	if accessKey == "" || secretKey == "" {
 		if v, ok := cfgString(d, "credentials_uri"); ok {
 			credentialsURIResp, err := getClientByCredentialsURI(v)
@@ -776,6 +325,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 			accessKey = credentialsURIResp.AccessKeyId
 			secretKey = credentialsURIResp.AccessKeySecret
 			securityToken = credentialsURIResp.SecurityToken
+			credentialsURI = v
+			credentialsURIExpiration = credentialsURIResp.Expiration
 		}
 	}
 
@@ -798,6 +349,9 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 		TerraformVersion:     p.TerraformVersion,
 	}
 	config.Features = expandFeatures(d.Get("features").([]interface{}))
+	if credential == nil && credentialsURI != "" {
+		credential = newCredentialsURICredential(credentialsURI, credentialsURIExpiration, config.ClientReadTimeout, config.ClientConnectTimeout)
+	}
 	if credential != nil {
 		config.Credential = credential
 	}
@@ -3018,6 +2572,37 @@ func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, 
 	}
 
 	return &response, nil
+}
+
+// newCredentialsURICredential returns a credential that re-reads the sidecar credentials URI
+// before the cached STS token expires, so that the token used by the provider can outlive a
+// single acquire. The credentials-go URI provider requires a RFC3339 "Expiration" field, so a
+// sidecar that does not return one keeps the legacy one-shot snapshot (nil is returned and the
+// caller falls back to a static credential).
+func newCredentialsURICredential(credentialsURI, expiration string, readTimeoutMs, connectTimeoutMs int) credentials.Credential {
+	if _, err := time.Parse("2006-01-02T15:04:05Z", expiration); err != nil {
+		log.Printf("[WARN] credentials_uri %s does not return a parsable Expiration (%q), falling back to a static credential", credentialsURI, expiration)
+		return nil
+	}
+
+	credentialConfig := new(credentials.Config).
+		SetType("credentials_uri").
+		SetURLCredential(credentialsURI)
+	// credentials-go forwards both values to providers.HttpOptions, which is millisecond based
+	// like the provider schema, so they are passed through without conversion.
+	if readTimeoutMs > 0 {
+		credentialConfig.SetTimeout(readTimeoutMs)
+	}
+	if connectTimeoutMs > 0 {
+		credentialConfig.SetConnectTimeout(connectTimeoutMs)
+	}
+	provider, err := credentials.NewCredential(credentialConfig)
+	if err != nil {
+		log.Printf("[WARN] failed to build a refreshable credential from credentials_uri %s: %v, falling back to a static credential", credentialsURI, err)
+		return nil
+	}
+
+	return provider
 }
 
 func getModuleAddr() string {

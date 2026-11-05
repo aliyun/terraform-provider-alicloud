@@ -334,6 +334,36 @@ func (s *Service) CheckJobStateRefreshFunc(id string, failStates []string) retry
 	}
 }
 
+// Detail lookups accept instance IDs too; mutations require the exact job identity.
+// Never adopt the current job under a stable instance ID implicitly.
+func validateJobIdentity(id string, object map[string]interface{}) error {
+	jobId, ok := object["DtsJobId"].(string)
+	if !ok || jobId == "" {
+		return fmt.Errorf("cannot verify DTS job %q: DescribeDtsJobDetail returned no DtsJobId; state identity has not been changed", id)
+	}
+	if id != jobId {
+		return fmt.Errorf("DTS job ID %q does not match DtsJobId %q returned by DescribeDtsJobDetail; use the canonical DtsJobId, not DtsInstanceID. State identity has not been changed; verify the intended job and explicitly re-import it", id, jobId)
+	}
+	return nil
+}
+
+func importJob(d *schema.ResourceData, describe func(string) (map[string]interface{}, error)) ([]*schema.ResourceData, error) {
+	object, err := describe(d.Id())
+	if err != nil {
+		if errs.NotFoundError(err) {
+			return nil, fmt.Errorf("cannot import non-existent DTS job %q: %s", d.Id(), err)
+		}
+		return nil, errs.WrapError(err)
+	}
+	if object["Status"] == "Finished" {
+		return nil, fmt.Errorf("cannot import non-existent DTS job %q: job is Finished", d.Id())
+	}
+	if err := validateJobIdentity(d.Id(), object); err != nil {
+		return nil, err
+	}
+	return []*schema.ResourceData{d}, nil
+}
+
 // setEndpointSSL folds source_endpoint_ssl and destination_endpoint_ssl into the DTS Reserve
 // parameter as its srcSSL and destSSL keys. ConfigureDtsJob has no dedicated SSL parameter, so
 // Reserve is the only place the connection mode can be sent. Values already present under those
@@ -1006,6 +1036,81 @@ func convertDtsMigrationJobPaymentTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PostPaid":
 		return "PayAsYouGo"
+	}
+	return source
+}
+
+// setDtsSynchronizationInstanceRenewal writes the renewal setting of an existing
+// subscription instance through the BSS SetRenewal API.
+func setDtsSynchronizationInstanceRenewal(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	action := "SetRenewal"
+	request, err := buildDtsSynchronizationInstanceRenewalRequest(d)
+	if err != nil {
+		return errs.WrapError(err)
+	}
+
+	var response map[string]interface{}
+	var endpoint string
+	wait := helper.IncrementalWait(3*time.Second, 3*time.Second)
+	err = retry.Retry(d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		response, err = client.RpcPostWithEndpoint("BssOpenApi", "2017-12-14", action, nil, request, false, endpoint)
+		if err != nil {
+			if helper.NeedRetry(err) {
+				wait()
+				return retry.RetryableError(err)
+			}
+			if endpoint == "" && !client.IsInternationalAccount() && errs.IsExpectedErrors(err, []string{"NotApplicable"}) {
+				endpoint = connectivity.BssOpenAPIEndpointInternational
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+	logs.AddDebug(action, response, request)
+	if err != nil {
+		return errs.WrapErrorf(err, errs.DefaultErrorMsg, d.Id(), action, errs.AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func buildDtsSynchronizationInstanceRenewalRequest(d *schema.ResourceData) (map[string]interface{}, error) {
+	request := map[string]interface{}{
+		"InstanceIDs":      d.Id(),
+		"ProductCode":      "dts",
+		"SubscriptionType": "Subscription",
+	}
+	if d.Get("auto_pay").(string) != "true" {
+		request["RenewalStatus"] = "ManualRenewal"
+		return request, nil
+	}
+
+	request["RenewalStatus"] = "AutoRenewal"
+	periodUnit, ok := d.GetOk("payment_duration_unit")
+	if !ok {
+		return nil, fmt.Errorf("payment_duration_unit must be set when auto_pay is true")
+	}
+	period, ok := d.GetOk("payment_duration")
+	if !ok {
+		return nil, fmt.Errorf("payment_duration must be set when auto_pay is true")
+	}
+	switch period.(int) {
+	case 1, 2, 3, 6, 12:
+	default:
+		return nil, fmt.Errorf("payment_duration must be one of 1, 2, 3, 6, 12 when auto_pay is true, got %d", period.(int))
+	}
+	request["RenewalPeriod"] = period
+	request["RenewalPeriodUnit"] = convertDtsSynchronizationInstanceRenewalPeriodUnitRequest(periodUnit.(string))
+	return request, nil
+}
+
+func convertDtsSynchronizationInstanceRenewalPeriodUnitRequest(source string) string {
+	switch source {
+	case "Month":
+		return "M"
+	case "Year":
+		return "Y"
 	}
 	return source
 }
