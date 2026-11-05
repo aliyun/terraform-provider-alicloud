@@ -53,9 +53,12 @@ type apiSecTokenResource struct {
 // attributes), round-trip on read for drift detection, and remain subject to
 // ESA product-owner confirmation before the Private APIs publish.
 //
-// SiteId and the composite Id are not part of the GetApiSecToken TokenInfos
-// output, so apiSecTokenState leaves them null and each caller overlays the
-// plan/state value (cf. snapshot_lock's write-only DryRun overlay).
+// SiteId, the composite Id and Credentials are not part of the GetApiSecToken
+// TokenInfos output, so apiSecTokenState leaves them null and each caller
+// overlays the plan/state value (cf. snapshot_lock's write-only DryRun overlay).
+// Credentials is create-only (ForceNew) and not returned by the API; mapping it
+// from the response would null it on refresh and plan a perpetual replace, so it
+// is preserved from plan/state instead.
 type apiSecTokenResourceModel struct {
 	Id               types.String `tfsdk:"id"`
 	SiteId           types.Int64  `tfsdk:"site_id"`
@@ -200,6 +203,7 @@ func (r *apiSecTokenResource) Create(ctx context.Context, req resource.CreateReq
 	state := apiSecTokenState(object)
 	state.Id = types.StringValue(id)
 	state.SiteId = plan.SiteId
+	state.Credentials = plan.Credentials
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -225,6 +229,7 @@ func (r *apiSecTokenResource) Read(ctx context.Context, req resource.ReadRequest
 	model := apiSecTokenState(object)
 	model.Id = state.Id
 	model.SiteId = state.SiteId
+	model.Credentials = state.Credentials
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -301,6 +306,7 @@ func (r *apiSecTokenResource) Update(ctx context.Context, req resource.UpdateReq
 	model := apiSecTokenState(object)
 	model.Id = state.Id
 	model.SiteId = state.SiteId
+	model.Credentials = state.Credentials
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -430,7 +436,6 @@ func apiSecTokenState(object map[string]interface{}) apiSecTokenResourceModel {
 		TokenName:        str("TokenName"),
 		TokenType:        str("TokenType"),
 		TokenSources:     encodeOpaqueJSON(object["TokenSources"]),
-		Credentials:      encodeOpaqueJSON(object["Credentials"]),
 		CredentialsCount: int64Val("CredentialsCount"),
 		ApiRuleIds:       encodeOpaqueJSON(object["ApiRuleIds"]),
 		LastUpdateAt:     flexStr("LastUpdateAt"),

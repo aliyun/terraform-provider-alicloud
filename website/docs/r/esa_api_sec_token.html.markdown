@@ -12,9 +12,11 @@ Provides a ESA Api Sec Token resource.
 
 -> **NOTE:** The ApiSecToken APIs (`AddApiSecToken`, `GetApiSecToken`, `SetApiSecToken`, `DeleteApiSecToken`) are **Private**. Confirm availability and the accepted `token_type` enum members, `token_sources` and `credentials` payload shapes with the ESA product owner before use.
 
+-> **NOTE:** Available since v1.295.0.
+
 ## Example Usage
 
-```hcl
+```terraform
 variable "name" {
   default = "tf-example-esa-api-sec-token"
 }
