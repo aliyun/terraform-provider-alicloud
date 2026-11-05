@@ -361,7 +361,7 @@ func TestValidateStringLenBetween(t *testing.T) {
 		"expected length of %s to be in the range (%d - %d), got %s", k, min, max, v)))
 }
 
-func TestValidateStringLenBetweenRune(t *testing.T) {
+func TestUnitCommonStringLenBetweenRune(t *testing.T) {
 	resourceSchemaValidationSkipped = false
 
 	k := "name"
