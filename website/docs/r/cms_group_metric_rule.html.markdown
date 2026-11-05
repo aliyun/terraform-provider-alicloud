@@ -26,6 +26,14 @@ Basic Usage
 </div></div>
 
 ```terraform
+terraform {
+  required_providers {
+    alicloud = {
+      source = "aliyun/alicloud"
+    }
+  }
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -42,6 +50,7 @@ resource "alicloud_cms_monitor_group" "default" {
 
 resource "alicloud_cms_group_metric_rule" "this" {
   group_id               = alicloud_cms_monitor_group.default.id
+  contact_groups         = alicloud_cms_alarm_contact_group.default.id
   group_metric_rule_name = var.name
   category               = "ecs"
   metric_name            = "cpu_total"
@@ -81,7 +90,7 @@ The following arguments are supported:
 * `metric_name` - (Required) The name of the metric.
 * `namespace` - (Required, ForceNew) The namespace of the service.
 * `category` - (Optional) The abbreviation of the service name.
-* `contact_groups` - (Optional) Alarm contact group.
+* `contact_groups` - (Optional) The alarm contact group for this rule, as a string. When referencing a contact group, use its name directly, for example `contact_groups = alicloud_cms_alarm_contact_group.default.id`. The `contact_groups` argument on `alicloud_cms_monitor_group` takes a list of names instead.
 * `dimensions` - (Optional) The dimensions that specify the resources to be associated with the alert rule.
 * `email_subject` - (Optional) The subject of the alert notification email.
 * `effective_interval` - (Optional) The time period during which the alert rule is effective.
